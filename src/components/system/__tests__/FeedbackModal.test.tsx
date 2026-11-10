@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FeedbackModal } from '../FeedbackModal';
 import { BrowserRouter } from 'react-router-dom';
@@ -9,6 +9,8 @@ import {
     recordGameFeedbackCommand,
     setCurrentGameFeedbackContext,
 } from '../../../lib/feedback/gameFeedbackContext';
+import { registerFeedbackReplayCapture } from '../../../lib/feedback/feedbackReplayBridge';
+import type { FeedbackReplayCaptureRequest } from '../../../engine/transport/feedbackReplayCaptureTypes';
 
 const feedbackScreenshotMocks = vi.hoisted(() => ({
     captureCurrentFeedbackScreenshot: vi.fn(async () => 'data:image/jpeg;base64,manual-capture'),
@@ -33,6 +35,8 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 describe('FeedbackModal', () => {
+    let unregisterFeedbackReplayCapture: (() => void) | undefined;
+
     beforeEach(() => {
         vi.clearAllMocks();
         feedbackScreenshotMocks.captureCurrentFeedbackScreenshot.mockResolvedValue('data:image/jpeg;base64,manual-capture');
@@ -45,6 +49,11 @@ describe('FeedbackModal', () => {
             ok: true,
             json: async () => ({ success: true })
         });
+    });
+
+    afterEach(() => {
+        unregisterFeedbackReplayCapture?.();
+        unregisterFeedbackReplayCapture = undefined;
     });
 
     it('应该正常渲染反馈弹窗', () => {
@@ -401,6 +410,14 @@ describe('FeedbackModal', () => {
 
     it('手动反馈附带命令关联及触发命令前后快照', async () => {
         window.history.pushState({}, '', '/play/dicethrone/match/match-1');
+        const replayCaptureRequests: FeedbackReplayCaptureRequest[] = [];
+        unregisterFeedbackReplayCapture = registerFeedbackReplayCapture('match-1', '0', async (request) => {
+            replayCaptureRequests.push(request);
+            return request.phase === 'prepare'
+                ? { accepted: true, captureId: 'capture-trigger-1', triggerCaptured: true }
+                : { accepted: true };
+        });
+        (global.fetch as any).mockResolvedValue({ ok: true, json: async () => ({ _id: '0123456789abcdef01234567' }) });
         const before = {
             sys: {
                 phase: 'offensiveRoll',
@@ -472,7 +489,22 @@ describe('FeedbackModal', () => {
         expect(packet.randomCursor).toBe(13);
         expect(packet.lastCommand).toMatchObject({ commandType: 'RESOLVE_INTERACTION', playerId: '0' });
         expect(packet.lastCommand).not.toHaveProperty('payload');
+        expect(packet.missingFields).toContain('privateReplay');
+        expect(packet.missingFields).not.toContain('privateReplay.trigger');
         expect(body.diagnosticPacket).not.toContain('hidden-card-option-canary');
+        expect(replayCaptureRequests).toEqual([
+            {
+                phase: 'prepare',
+                trigger: {
+                    commandType: 'RESOLVE_INTERACTION',
+                    playerId: '0',
+                    stateIdBefore: 41,
+                    randomCursorBefore: 11,
+                    requestId: 'choice-request',
+                },
+            },
+            { phase: 'attach', feedbackId: '0123456789abcdef01234567', captureId: 'capture-trigger-1' },
+        ]);
     });
 
     it('取消附带状态快照时不发送状态快照与诊断状态包', async () => {

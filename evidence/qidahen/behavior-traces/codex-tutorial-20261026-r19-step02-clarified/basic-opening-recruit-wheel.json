@@ -1,0 +1,78 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-recruit-wheel",
+  "sourceRun": "codex-tutorial-20261026-r19-step02-clarified",
+  "sourceRevision": "sha256:3f8c960e10be802daf9a4cfeee35a345c1470134036f9cb37a6103b4ef9463b3",
+  "status": "FAIL",
+  "outcome": "教程 E2E 未通过；本行为链不得用于最终 PASS。",
+  "steps": [
+    {
+      "id": "basic-opening-recruit-wheel-capture-001",
+      "action": "打开教程入口并确认棋盘与当前教程状态：01-开场-阅读三种胜利条件",
+      "before": {
+        "visible": {
+          "boardVisible": false,
+          "path": "blank",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": false,
+          "tutorialStepId": null,
+          "turnPhase": null,
+          "currentPlayer": null,
+          "selectedActionId": null,
+          "actionWheelPosition": null,
+          "factionActionUsed": null,
+          "mingHandCount": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-wheel-capture-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-wheel-capture-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-wheel-capture-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "welcome",
+          "expected": "welcome"
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r19-step02-clarified\\01-开场-阅读三种胜利条件.png",
+      "sha256": "0e91c223ecdffd1902c44d09eabd32c476c18df80f1355db5f8bcd573fb2b4a9"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "title": "蜘蛛侠 · 原始素材 PNG",
+  "items": [
+    {
+      "path": "player-board.png",
+      "label": "原始素材 · 玩家面板",
+      "transition": "素材目录中的原始 PNG，不是截图。"
+    },
+    {
+      "path": "落网.png",
+      "label": "原始素材 · 落网",
+      "transition": "素材目录中的原始状态图，不是截图。"
+    },
+    {
+      "path": "tip.png",
+      "label": "原始素材 · 提示卡",
+      "transition": "素材目录中的原始提示卡 PNG，不是截图。"
+    },
+    {
+      "path": "ability-cards.png",
+      "label": "原始素材 · 手牌图集",
+      "transition": "素材目录中的原始手牌图集 PNG，不是截图。"
+    },
+    {
+      "path": "dice.png",
+      "label": "原始素材 · 骰子",
+      "transition": "素材目录中的原始骰子 PNG，不是截图。"
+    },
+    {
+      "path": "status-icons-atlas.png",
+      "label": "原始素材 · 状态图集",
+      "transition": "素材目录中的原始状态图集 PNG，不是截图。"
+    }
+  ]
+}

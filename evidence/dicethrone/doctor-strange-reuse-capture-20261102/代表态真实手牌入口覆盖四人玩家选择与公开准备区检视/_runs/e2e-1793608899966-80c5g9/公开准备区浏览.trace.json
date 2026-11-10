@@ -1,0 +1,1619 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "公开准备区浏览",
+  "sourceRun": "1793609085694-289884-0c7f5ae3-3723-4243-a2b8-34772062a43e",
+  "sourceRevision": "ade8418aacccdcb22154c972b038fcfe9ab32621b0060ca2575d99b90fa91d2c",
+  "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+  "status": "PASS",
+  "outcome": "真实打牌、取消选中和确认完成，公开准备卡通过原阅读组件检视并关闭。",
+  "steps": [
+    {
+      "id": "public-prepared-browse",
+      "action": "回到正式牌桌查看三张公开准备法术",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": "setup",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "三张准备法术都存在",
+          "actual": 3,
+          "expected": 3
+        }
+      ]
+    },
+    {
+      "id": "public-prepared-reader-1440",
+      "action": "从公开准备区第三张正式法术打开原阅读界面",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": true,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "原放大阅读可见且准备区不被提交",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "public-prepared-browse-mobile",
+      "action": "横屏原牌桌实际横滚准备区至第三张",
+      "before": {
+        "visible": {
+          "magnifyVisible": true,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "三张准备法术仍存在",
+          "actual": 3,
+          "expected": 3
+        }
+      ]
+    },
+    {
+      "id": "public-prepared-reader-812",
+      "action": "从公开准备区第三张正式法术打开原阅读界面",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": true,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-rings-of-raggadorr",
+            "spell-vapors-of-valtorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-rings-of-raggadorr",
+                "spell-vapors-of-valtorr"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-time-loop",
+                "spell-mists-of-morpheus"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "2": {
+              "characterId": "paladin",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "crit": 0,
+                "accuracy": 0,
+                "protect": 0,
+                "retribution": 0,
+                "blessing_of_divinity": 0,
+                "tithes_upgraded": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-might",
+                "card-consecrate",
+                "card-divine-favor",
+                "card-absolution"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "3": {
+              "characterId": "barbarian",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "concussion": 0,
+                "daze": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-energetic",
+                "card-dizzy",
+                "card-head-blow",
+                "card-lucky"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "原放大阅读可见且准备区不被提交",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-public-prepared-browse",
+      "stepId": "public-prepared-browse",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "07f8221b468ca199c0b64c3e59ba0f7f559a9c640e4bdf4a00c6c70e3154b47b"
+    },
+    {
+      "id": "doctor-strange-public-prepared-reader-1440",
+      "stepId": "public-prepared-reader-1440",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "10e0ab32552dfcc88a1fcd69e87ce25fc39e2541094f838b6a3f9f4aad0ed2dd"
+    },
+    {
+      "id": "doctor-strange-public-prepared-browse-mobile",
+      "stepId": "public-prepared-browse-mobile",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "460934643d188fb06e0d85255e2ea8f8e3c475c6392127aaf3cc865bb99b1173"
+    },
+    {
+      "id": "doctor-strange-public-prepared-reader-812",
+      "stepId": "public-prepared-reader-812",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "8862205bc8aa2e4b38550281d4270e480e939a99c6cc88cbdc76cddf56dd3779"
+    }
+  ]
+}

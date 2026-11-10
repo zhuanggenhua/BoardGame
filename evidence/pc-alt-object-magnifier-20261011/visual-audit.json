@@ -1,0 +1,116 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": {
+    "passed": 6,
+    "total": 6
+  },
+  "reviewedAt": "2026-10-12T04:28:43.0301068Z",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "subagent-image-acceptance-20261012-final-no-border-v2"
+  },
+  "criteria": [
+    "no-added-yellow-border",
+    "no-added-outline",
+    "object-body-targeted",
+    "zoom-increased-2.60-to-2.80",
+    "no-crop",
+    "no-error"
+  ],
+  "media": [
+    {
+      "path": "01-betrayal-01-before-alt.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-added-yellow-border",
+        "no-added-outline",
+        "object-body-targeted",
+        "no-crop",
+        "no-error"
+      ],
+      "observation": "前态角色卡本体完整可见，交互界面可读，未见新增黄色外框、额外外描边、裁切或错误状态。"
+    },
+    {
+      "path": "01-betrayal-02-alt-2.60.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-added-yellow-border",
+        "no-added-outline",
+        "object-body-targeted",
+        "no-crop",
+        "no-error"
+      ],
+      "observation": "放大层显示目标角色卡本体；交互界面与卡面可读，仅见深色背景与普通投影，无新增黄色边框或 一像素 外描边，无裁切、无错误。"
+    },
+    {
+      "path": "01-betrayal-03-alt-2.80.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-added-yellow-border",
+        "no-added-outline",
+        "object-body-targeted",
+        "zoom-increased",
+        "no-crop",
+        "no-error"
+      ],
+      "observation": "相对 默认倍率，目标角色卡本体继续变大；交互界面与卡面保持可读，无新增黄色边框或外描边，无裁切、无错误。"
+    },
+    {
+      "path": "02-dicethrone-01-before-alt.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-added-yellow-border",
+        "no-added-outline",
+        "object-body-targeted",
+        "no-crop",
+        "no-error"
+      ],
+      "observation": "前态英雄对象与页面上下文完整可见，交互界面可读，未见放大层、黄色外框、额外外描边、裁切或错误状态。"
+    },
+    {
+      "path": "02-dicethrone-02-alt-2.60.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-added-yellow-border",
+        "no-added-outline",
+        "object-body-targeted",
+        "no-crop",
+        "no-error"
+      ],
+      "observation": "放大的是英雄图像本体而非外层选择容器；交互界面与目标图像可读，无新增黄色边框或 一像素 外描边，无裁切、无错误。"
+    },
+    {
+      "path": "02-dicethrone-03-alt-2.80.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-added-yellow-border",
+        "no-added-outline",
+        "object-body-targeted",
+        "zoom-increased",
+        "no-crop",
+        "no-error"
+      ],
+      "observation": "相对 默认倍率，目标英雄图像本体继续变大；交互界面与目标保持可读，无新增黄色边框或外描边，无裁切、无错误。"
+    }
+  ]
+}

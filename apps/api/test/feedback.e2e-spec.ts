@@ -411,18 +411,108 @@ describe('Feedback Module (e2e)', () => {
     it('用户反馈只能由对应对局和座位绑定服务端私有现场', async () => {
         const { adminToken } = await seedUsers();
         const created = await request(app.getHttpServer()).post('/feedback').send({
-            content: '玩家反馈', gameName: 'dicethrone', clientContext: { matchId: 'm1', playerId: '0', gameId: 'dicethrone' },
+            content: '玩家反馈',
+            gameName: 'dicethrone',
+            clientContext: { matchId: 'm1', playerId: '0', gameId: 'dicethrone' },
+            diagnosticPacket: {
+                schemaVersion: 1,
+                captureId: 'capture-pending-private-replay',
+                capturedAt: '2026-11-08T00:00:00.000Z',
+                source: 'user',
+                collectionStatus: 'partial',
+                replayability: 'partial',
+                missingFields: ['privateReplay', 'privateReplay.trigger', 'snapshots.privateStateRedacted', 'randomCursor'],
+                collectionErrors: ['private_replay_pending_attachment'],
+            },
         }).expect(201);
         const id = created.body._id as string;
         const attach = (matchId: string, playerId: string) => request(app.getHttpServer())
             .post(`/internal/feedback/${id}/private-replay`).set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
-            .send({ matchId, playerId, privateReplay: 'private-data' });
+            .send({ matchId, playerId, privateReplay: 'private-data', privateReplayTriggerCaptured: true });
         await attach('m2', '0').expect(404);
         await attach('m1', '1').expect(404);
         await attach('m1', '0').expect(201);
         await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`)
             .set('Authorization', `Bearer ${adminToken}`).expect(200).expect(({ body }) => expect(body.privateReplay).toBe('private-data'));
+        const reconciled = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200);
+        expect(reconciled.body.diagnosticPacket).toMatchObject({
+            collectionStatus: 'partial',
+            replayability: 'partial',
+            missingFields: ['randomCursor'],
+        });
+        expect(reconciled.body.diagnosticPacket.collectionErrors ?? []).toEqual([]);
         expect(JSON.stringify((await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`).expect(404)).body)).not.toContain('private-data');
+    });
+
+    it('私有现场附件失败时从等待状态写回准确缺项', async () => {
+        const { adminToken } = await seedUsers();
+        const created = await request(app.getHttpServer()).post('/feedback').send({
+            content: '私有现场附件失败',
+            gameName: 'dicethrone',
+            clientContext: { matchId: 'm1-failed', playerId: '0', gameId: 'dicethrone' },
+            diagnosticPacket: {
+                schemaVersion: 1,
+                captureId: 'capture-failed-private-replay',
+                capturedAt: '2026-11-08T00:00:00.000Z',
+                source: 'client-auto',
+                collectionStatus: 'partial',
+                replayability: 'partial',
+                missingFields: ['privateReplay'],
+                collectionErrors: ['private_replay_pending_attachment'],
+            },
+        }).expect(201);
+        const id = created.body._id as string;
+        await request(app.getHttpServer()).post(`/internal/feedback/${id}/private-replay`)
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ matchId: 'm1-failed', playerId: '0', captureError: 'private_replay_attachment_failed' })
+            .expect(201);
+        const item = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200);
+        expect(item.body.diagnosticPacket).toMatchObject({
+            collectionStatus: 'partial',
+            replayability: 'partial',
+            missingFields: ['privateReplay'],
+            collectionErrors: ['private_replay_attachment_failed'],
+        });
+    });
+
+    it('私有快照附件成功但未匹配触发命令时仍保留不可重放标记', async () => {
+        const { adminToken } = await seedUsers();
+        const created = await request(app.getHttpServer()).post('/feedback').send({
+            content: '缺少触发命令关联',
+            gameName: 'dicethrone',
+            clientContext: { matchId: 'm1-trigger-missing', playerId: '0', gameId: 'dicethrone' },
+            diagnosticPacket: {
+                schemaVersion: 1,
+                captureId: 'capture-missing-trigger',
+                capturedAt: '2026-11-08T00:00:00.000Z',
+                source: 'client-auto',
+                collectionStatus: 'partial',
+                replayability: 'partial',
+                missingFields: ['privateReplay', 'privateReplay.trigger', 'snapshots.privateStateRedacted'],
+                collectionErrors: ['private_replay_prepare_failed'],
+            },
+        }).expect(201);
+        const id = created.body._id as string;
+        await request(app.getHttpServer()).post(`/internal/feedback/${id}/private-replay`)
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                matchId: 'm1-trigger-missing',
+                playerId: '0',
+                privateReplay: 'snapshot-only',
+                privateReplayTriggerCaptured: false,
+            })
+            .expect(201);
+
+        const item = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200);
+        expect(item.body.diagnosticPacket).toMatchObject({
+            collectionStatus: 'partial',
+            replayability: 'partial',
+            missingFields: ['privateReplay.trigger'],
+        });
+        expect(item.body.diagnosticPacket.collectionErrors ?? []).toEqual([]);
     });
 
     it('未登录可以匿名提交反馈', async () => {
@@ -3061,7 +3151,7 @@ describe('Feedback Module (e2e)', () => {
             .get('/admin-api/feedback?reporterType=system&source=online-ai-watchdog&limit=20')
             .expect(200);
         const anonymousLegacy = anonymousLegacyList.body.items.find(
-            (item: { content: string }) => item.content.includes('legacy'),
+            (item: { _id: string }) => item._id === String(legacy.insertedId),
         );
         expect(anonymousLegacy?.diagnosticReplayability).toBeUndefined();
         expect(JSON.stringify(anonymousLegacyList.body)).not.toContain('legacy-replayability-capture-canary');

@@ -1,0 +1,61 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-23T23:59:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "角色选择、主牌桌常态和选目标压力态都沿用 PC 1920×1080 构图，手机不切换到移动专版。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts：5 个 PC/手机同状态用例全部通过。",
+        "手机端 shellWidth=1920px、shellScale=0.400000，nativeMobileUi 全部为 0。",
+        "角色选择、主牌桌、驱魔目标提示、选目标后态和结算页都保留 PC 的主区域层级。"
+      ]
+    },
+    {
+      "requirement": "手机端按 contain 等比缩放完整显示一级区域，不能只剩底部按钮或发生横向溢出。",
+      "status": "PASS",
+      "evidence": [
+        "手机 CSS 视口为 936×432，shell 实际显示 768×432，左右留边各 84px。",
+        "地图房间、持有区、左右状态栏、阶段提示和动作栏均可见；PC/手机矩形按 0.4 缩放。",
+        "document/body/root scrollWidth 均不超过手机视口宽度。"
+      ]
+    },
+    {
+      "requirement": "角色选择不是独立移动页面，选择列表的滚动可见数量和主体区域仍与 PC 同构。",
+      "status": "PASS",
+      "evidence": [
+        "PC 与手机角色选择都渲染同一候选列表，滚动位置下的可见卡数量一致。",
+        "角色候选区、左侧详情区和确认按钮的手机尺寸均按 PC 尺寸乘 0.4。",
+        "手机端不存在 betrayal-character-mobile-grid 或移动横屏布局节点。"
+      ]
+    },
+    {
+      "requirement": "驱魔目标提示和结算确认都在同一壳内完成缩放，不会因为进入压力态或终局态丢失主界面。",
+      "status": "PASS",
+      "evidence": [
+        "驱魔目标提示 PC/手机对照通过，目标提示区域尺寸按 0.4 映射。",
+        "结算夹具先完成真实的“进入终局”确认，再对照 PC/手机结算页主区域。",
+        "两组状态的 document/body/root scrollWidth 均不超过手机视口宽度。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\00-pc-1920x1080-角色选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\00-phone-936x432-角色选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\03-pc-1920x1080-驱魔目标提示.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\04-phone-936x432-驱魔目标提示.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\05-pc-1920x1080-结算页.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\06-phone-936x432-结算页.jpg"
+  ]
+}

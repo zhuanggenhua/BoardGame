@@ -1,0 +1,363 @@
+{
+  "browser": "145.0.7632.6",
+  "scope": "本机 Chromium 离线解码与 Canvas 裁片；未验证 Safari/iOS/Android 真机或游戏入口性能",
+  "formalSourcesUnchanged": true,
+  "reports": [
+    {
+      "name": "ability-cards",
+      "kind": "baseline",
+      "bytes": 8452896,
+      "sha256": "68d0df8ae6cedd3cce1e4045c6a24c3e87c82e1ab0c38be46630524c933212f4",
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "width": 7380,
+      "height": 4720,
+      "decodeAndLocalFetchMs": 769,
+      "frames": [
+        {
+          "opaque": 865341,
+          "nonblack": 580602
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 538544
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 470497
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 611593
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 662747
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 572776
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 658836
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 583735
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 629567
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 638013
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 603634
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 601005
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 566911
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 618405
+        },
+        {
+          "opaque": 865378,
+          "nonblack": 592148
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 364216
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 517351
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 520963
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 479643
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 454090
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 499454
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 514209
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 462836
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 393276
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 567930
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 557058
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 407229
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 420287
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 470618
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 489412
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 417046
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 441431
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 597236
+        }
+      ]
+    },
+    {
+      "name": "ability-cards",
+      "kind": "selected",
+      "bytes": 2039890,
+      "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "width": 7380,
+      "height": 4720,
+      "decodeAndLocalFetchMs": 467,
+      "frames": [
+        {
+          "opaque": 865341,
+          "nonblack": 598537
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 555382
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 473202
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 652010
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 698732
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 585340
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 656780
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 587513
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 660483
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 642147
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 634742
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 630598
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 592969
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 647900
+        },
+        {
+          "opaque": 865378,
+          "nonblack": 612774
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 348798
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 523696
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 539560
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 487297
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 456734
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 514811
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 521325
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 479450
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 389405
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 592545
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 622897
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 406527
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 416836
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 490712
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 500126
+        },
+        {
+          "opaque": 865341,
+          "nonblack": 422638
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 439115
+        },
+        {
+          "opaque": 865346,
+          "nonblack": 624754
+        }
+      ]
+    },
+    {
+      "name": "player-board",
+      "kind": "baseline",
+      "bytes": 3095888,
+      "sha256": "11b4c2e50f5e2732cd38cc448afd4fe2fa89ae5c5cb21cd07f3f8f57e374bdd8",
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "width": 4005,
+      "height": 2476,
+      "decodeAndLocalFetchMs": 291,
+      "frames": []
+    },
+    {
+      "name": "player-board",
+      "kind": "selected",
+      "bytes": 859280,
+      "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "width": 4005,
+      "height": 2476,
+      "decodeAndLocalFetchMs": 145,
+      "frames": []
+    },
+    {
+      "name": "tip",
+      "kind": "baseline",
+      "bytes": 743326,
+      "sha256": "30e1b62010aef2e75be2e31cb1f9abf8f3096100e024d7939ffbc0f18f49304f",
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "width": 967,
+      "height": 1804,
+      "decodeAndLocalFetchMs": 59,
+      "frames": []
+    },
+    {
+      "name": "tip",
+      "kind": "selected",
+      "bytes": 186676,
+      "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+      "chunks": [
+        "VP8X",
+        "ALPH",
+        "VP8 "
+      ],
+      "width": 967,
+      "height": 1804,
+      "decodeAndLocalFetchMs": 30,
+      "frames": []
+    }
+  ]
+}

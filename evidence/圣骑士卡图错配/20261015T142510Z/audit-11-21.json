@@ -1,0 +1,271 @@
+{
+  "objective": "圣骑士atlas帧11至21：完整源卡面与当前PALADIN_CARDS的previewRef／费用／时机／效果逐卡核对",
+  "agentId": "/root/audit_frames_11_21",
+  "scope": {
+    "firstFrame": 11,
+    "lastFrame": 21,
+    "count": 11
+  },
+  "evidenceBoundary": "逐卡源PNG视觉核对；未读取handler、未运行测试、未联网；passed只表示图面对象身份及卡面核心语义对应，无实现正确性外推",
+  "summary": {
+    "total": 11,
+    "passed": 9,
+    "failed": 2,
+    "partial": 0,
+    "blocked": 0,
+    "atlasIndexMismatchFrames": [
+      20,
+      21
+    ],
+    "titleOnlyDifferenceFrames": [
+      11,
+      15
+    ],
+    "runtimeTargetReviewFrames": [
+      16,
+      18
+    ]
+  },
+  "items": [
+    {
+      "frame": 11,
+      "actualTitle": "神的恩宠！",
+      "actualCpCost": 0,
+      "actualTimingColor": "蓝色；主要阶段行动；星形行动图标、M标记",
+      "bodyText": "投掷1[骰子]：\n如果投出[祈祷／合十双手骰面]，获得[4CP]。\n否则抽取[1张牌]。\n底部标签：推广卡。",
+      "identifiedRuntimeCardId": "card-gods-grace",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "title-only",
+          "detail": "图面标题为神的恩宠！，当前代码名为神佑！；0CP、主要阶段、祈祷得4CP／否则抽1张均一致，不构成图序错配。"
+        }
+      ],
+      "status": "passed",
+      "printedCardCode": "PALa33v1",
+      "sourceNumber": 33,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-11-source.png",
+      "sourceCropSha256": "1669fc4e7bfd5f06cf45cb43e456781e7d13e6d0355120900e318ba1b4991a95",
+      "expectedRuntimeCardId": "card-gods-grace",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 12,
+      "actualTitle": "反击 II／复仇",
+      "actualCpCost": 1,
+      "actualTimingColor": "浅蓝白色；英雄升级；向上箭头图标、M标记",
+      "bodyText": "上区：反击 II\n[头盔][头盔][头盔][祈祷／合十双手]\n1名玩家获得弹反[红色弹反标记]。\n获得[4CP]。\n下区：复仇\n[剑][头盔][心][祈祷／合十双手]\n获得弹反[红色弹反标记]。治疗[绿色心形1]。\n造成[红色伤害3]不可防御伤害。",
+      "identifiedRuntimeCardId": "card-vengeance-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "printedCardCode": "PALa20v1",
+      "sourceNumber": 20,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-12-source.png",
+      "sourceCropSha256": "8dac82375003bb77a77273ec474feaeb02188aa043cc39142f2a3f2277ea2609",
+      "expectedRuntimeCardId": "card-vengeance-2",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 13,
+      "actualTitle": "神圣攻击 II",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色；英雄升级；向上箭头图标、M标记",
+      "bodyText": "上区：[4个空白骰框]\n小顺子\n治疗[绿色心形1]。\n造成[黑色尖齿圆形伤害7]伤害。\n下区：[5个空白骰框]\n大顺子\n治疗[绿色心形2]。\n造成[黑色尖齿圆形伤害9]伤害。",
+      "identifiedRuntimeCardId": "card-holy-strike-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "printedCardCode": "PALa21v1",
+      "sourceNumber": 21,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-13-source.png",
+      "sourceCropSha256": "75c374f22379a0fcb66b36189fdfde0e4a6b75708392be39dbe26fe6937543b7",
+      "expectedRuntimeCardId": "card-holy-strike-2",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 14,
+      "actualTitle": "正义祷告 II／繁盛",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色；英雄升级；向上箭头图标、M标记",
+      "bodyText": "上区：正义祷告 II\n[祈祷／合十双手][祈祷／合十双手][祈祷／合十双手][祈祷／合十双手]\n造成[红色伤害8]不可防御伤害。\n然后获得暴击[蓝色暴击标记]和[2CP]。\n下区：繁盛\n[祈祷／合十双手][祈祷／合十双手][祈祷／合十双手]\n获得[4CP]。",
+      "identifiedRuntimeCardId": "card-righteous-prayer-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "printedCardCode": "PALa22v1",
+      "sourceNumber": 22,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-14-source.png",
+      "sourceCropSha256": "41344a21d9cc355d9d8fd9501741c7b280418b0809b94bbfe7049f691eff47df",
+      "expectedRuntimeCardId": "card-righteous-prayer-2",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 15,
+      "actualTitle": "玩得六啊！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "将你1颗骰子的数值改至6。",
+      "identifiedRuntimeCardId": "card-play-six",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "title-only",
+          "detail": "图面标题为玩得六啊！，当前代码名为来个六！；1CP、投掷阶段、将自己1骰改至6均一致，不构成图序错配。"
+        }
+      ],
+      "status": "passed",
+      "printedCardCode": "PALa18v1",
+      "sourceNumber": 18,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-15-source.png",
+      "sourceCropSha256": "3df13bf1c81362220a7215ff76aaebc6e128a0dd65f0a457e97c082686f51f23",
+      "expectedRuntimeCardId": "card-play-six",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 16,
+      "actualTitle": "就这？",
+      "actualCpCost": 0,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "1名玩家可以在其防御投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。",
+      "identifiedRuntimeCardId": "card-just-this",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面与expected.description均写1名玩家；expected.effects.action.target为self。此项仅登记目标范围的待审点，未追custom handler，不判定为规则已错，也不是图序错配。"
+        }
+      ],
+      "status": "passed",
+      "printedCardCode": "PALa17v1",
+      "sourceNumber": 17,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-16-source.png",
+      "sourceCropSha256": "2fe9a257461ea31a6ed9f4e450a2ab904e462eadb3af98375c033736b02e8c2a",
+      "expectedRuntimeCardId": "card-just-this",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 17,
+      "actualTitle": "抬一手！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "选择对手的1颗骰子，强制他重掷该骰子。",
+      "identifiedRuntimeCardId": "card-give-hand",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "printedCardCode": "PALa16v1",
+      "identificationNote": "完整卡面标题读为抬一手！；正文明确为强制对手1骰重掷，不能解释为增加自身投掷次数。",
+      "sourceNumber": 16,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-17-source.png",
+      "sourceCropSha256": "eae6def517e0b23a6c482dc9184d1b0b2964bde640eff13dc2fd9a9c6d4b9f3f",
+      "expectedRuntimeCardId": "card-give-hand",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 18,
+      "actualTitle": "我又行了！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "1名玩家可以在其进攻投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。",
+      "identifiedRuntimeCardId": "card-i-can-again",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面与expected.description均写1名玩家；expected.effects.action.target为self。此项仅登记目标范围的待审点，未追custom handler，不判定为规则已错，也不是图序错配。"
+        }
+      ],
+      "status": "passed",
+      "printedCardCode": "PALa15v1",
+      "sourceNumber": 15,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-18-source.png",
+      "sourceCropSha256": "6d8cd47fc96cdbff9d35b200ba618c6946187034414205eb2e71fd9b0e8cf472",
+      "expectedRuntimeCardId": "card-i-can-again",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 19,
+      "actualTitle": "俺也一样！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "将你1颗骰子的数值变为和你另一颗骰子的数值一样\n（同一阶段使用且目的相同）。",
+      "identifiedRuntimeCardId": "card-me-too",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "printedCardCode": "PALa14v1",
+      "sourceNumber": 14,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-19-source.png",
+      "sourceCropSha256": "41b5a8fb787c7e8aff274078f83016bd5b9423a4e01fa400d1b1625567c73d96",
+      "expectedRuntimeCardId": "card-me-too",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 20,
+      "actualTitle": "不愧是我！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "你或1名队友可以重掷\n至多2颗骰子\n（可以是同一颗骰子重掷2次或两颗骰子各重掷1次）。",
+      "identifiedRuntimeCardId": "card-worthy-of-me",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "expected为card-surprise／惊不惊喜？！／2CP／改变任意1骰；实际为不愧是我！／1CP／你或队友重掷至多2骰。标题、费用及核心效果均指向runtime-cards.json中的card-worthy-of-me（当前index21）。"
+        }
+      ],
+      "status": "failed",
+      "printedCardCode": "PALa12v1",
+      "sourceNumber": 12,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-20-source.png",
+      "sourceCropSha256": "7c7dad5a4a7382d2779d21bdf933574d9cf6b64635b3e3fa4e85f3ddae5abf1d",
+      "expectedRuntimeCardId": "card-surprise",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    },
+    {
+      "frame": 21,
+      "actualTitle": "意不意外？！",
+      "actualCpCost": 3,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "改变任意2颗骰子的数值。",
+      "identifiedRuntimeCardId": "card-unexpected",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "expected为card-worthy-of-me／不愧是我！／1CP／重掷至多2骰；实际为意不意外？！／3CP／改变任意2骰。标题、费用及核心效果均指向runtime-cards.json中的card-unexpected（当前index22）。"
+        }
+      ],
+      "status": "failed",
+      "printedCardCode": "PALa11v1",
+      "sourceNumber": 11,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-21-source.png",
+      "sourceCropSha256": "1378e9adc07d34b915944694e698bf1ff30ca5d4b87908964d60867aebfc02a9",
+      "expectedRuntimeCardId": "card-worthy-of-me",
+      "disposition": "reference",
+      "readMethod": "view_image完整单卡736x1178；分批最多3张；图标按可见形状登记后与expected效果对照"
+    }
+  ]
+}

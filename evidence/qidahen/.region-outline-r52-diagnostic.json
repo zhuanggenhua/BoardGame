@@ -1,0 +1,87 @@
+{
+  "kind": "private-visual-diagnostic",
+  "reviewer": "/root/qidahen_first_frame_rejection",
+  "objective": "只诊断用户指出的地区圆形选择在R52三张原图中的表现，核对地区轮廓、空间身份及遮挡；不作最终图审，不生成PASS清单。",
+  "userWords": "地区什么时候是圆形选择了",
+  "verdict": "REVISE",
+  "finalPass": false,
+  "inspectionMethod": "实际逐张读取三张原始整屏图片，以下可见事实不以源码、测试或文件名代替。",
+  "environmentLimit": "主线程交接说明R52期间有同仓其它UI会话改动CSS，source hash gate拒绝打包；本报告只诊断这三张图片，不证明其为当前完整源码的最终证据。",
+  "summary": {
+    "total": 3,
+    "circleOrGenericRectangleObserved": 0,
+    "closedRegionPerimeterDirectlyReadable": 1,
+    "regionPerimeterOccluded": 2,
+    "finding": "圆圈及通用蓝色方框在三张原图中均未见残留；桌面辽东显示整片不规则区域，但桌面叶赫下沿和移动叶赫主要区域仍被操作层遮挡，不能据此判地区轮廓整体可辨。"
+  },
+  "items": [
+    {
+      "id": "desktop-liaodong",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-region-outline-r52/00-辽东军屯地区选择.png",
+      "sha256": "9aae1c23f93be6f7188962f1ed77967a910446228ffc3941478eeceb12f1056b",
+      "viewport": { "width": 1920, "height": 1080 },
+      "diagnosticStatus": "local-circle-defect-not-observed",
+      "visualFacts": [
+        "地图缩放182%。绿色高亮约位于x707..1201、y432..639，顶部较平、左侧短折线、右侧沿河谷方向弯折、下侧为明显不规则折线，是一片地图面而非锚点圆。",
+        "白色主边界在该图中可沿整个外围追踪，未被右侧教程卡或底部手牌托盘截断。没有旧绿色圆圈、浅蓝色正方形框或路线目标角框。",
+        "区域内大明控制圆标、三张红色兵牌和数字3均在高亮之上显示；白边未划过这些兵牌主体，也未盖住底部手牌。圆形大明标是正式控制标记，不是残留的地区圆形选区。",
+        "教程仍写“正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。”当前高亮主体与其左侧数字3、红色驻军及明控制标的空间关系可见。",
+        "高亮所覆盖处能看到原地图印刷的纵向地名笔画，但部分由数字3/兵牌覆盖；不能把源码中的辽东名称当成图上完整印刷的辽东名称。"
+      ],
+      "printContourComparison": "宏观上是道路/河流之间的同一不规则地图面，不再是任意圆框。白边是像素化/阶梯状mask边缘，与旁边底图黑线/灰色道路有可见间距，并非逐像素重合；仅凭本图不能断言每条边均等同印刷界线，尤其不将shared printed的运行时分区直接宣称为印刷原生边界。未在该图中确认选错相邻地图面。",
+      "circleRemoved": true,
+      "genericRectangleRemoved": true,
+      "wholePerimeterVisible": true,
+      "tokenOrHandOccludedByOutline": false,
+      "remainingUncertainty": "没有通过这张截图独立证明辽东与共享printed区域内其它runtime地区的每个归属像素都正确；本项只记录圆形缺陷消失及完整区域外观可见。"
+    },
+    {
+      "id": "desktop-yehe",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-region-outline-r52/04-叶赫部真实地图目标.png",
+      "sha256": "b4218385db0c6d2894ec378350fc17bcb9e0fe9a7dbcccec5bfdaccee790b02d",
+      "viewport": { "width": 1920, "height": 1080 },
+      "diagnosticStatus": "REVISE",
+      "visualFacts": [
+        "绿色区域在屏幕中央约x786..1137、y289以下，是南北向不规则地图面；可见上、左、右白色轮廓，不是圆或方框。",
+        "蒙古控制圆标、金色兵槽、数字2位于绿色区内并可见，绿色fill及白边没有盖住这些标记。正式蒙古圆标不能误判为旧地区圆圈。",
+        "区域中下部能看到纵向“葉赫…”印刷地名笔画，右侧能看到海西女真字样；地名下端进入操作托盘背后，不可完整读出。",
+        "屏幕x530..1390、y685..770的红色突袭支付托盘横跨目标区域下端。左侧白边约在x828、y685进入托盘背后，右侧白边约在x1050、y685进入托盘背后；南侧闭合边界被托盘遮住。",
+        "右侧白色教程卡要求点击叶赫部。玩家可以辨认有一个绿色区域，但不能沿全部边界确认它完整的地图范围。未见旧蓝色矩形、圆形地区focus或目标角框。"
+      ],
+      "printContourComparison": "可见边界整体沿河道包围的纵长地图面展开，未发现把邻近另一块地图面画成目标的直接证据；但南侧印刷图及高亮边界被操作托盘挡住，无法完成整片印刷轮廓一致性判断。",
+      "circleRemoved": true,
+      "genericRectangleRemoved": true,
+      "wholePerimeterVisible": false,
+      "tokenOrHandOccludedByOutline": false,
+      "issue": "支付托盘遮挡地区下沿，整片边界不完整可辨。",
+      "requiredNextEvidence": "同一选择状态的目标地区完整外围、地名与驻军必须在操作托盘之外可读；补晚于调整的新整屏图，不能沿用本图作完整边界通过。"
+    },
+    {
+      "id": "mobile-yehe",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-region-outline-r52-mobile/移动-00-叶赫部地图目标避开支付托盘.png",
+      "sha256": "6e6a67c461cd235f864b46203bc1beb812bc01b5996117045c81388f9a9aec94",
+      "viewport": { "width": 844, "height": 390 },
+      "diagnosticStatus": "REVISE",
+      "visualFacts": [
+        "地图上未见旧圆形focus、蓝色矩形框或路线目标角框；不能把这件局部改善等同于目标地区可见。",
+        "红色支付操作层约占x181..635、y64..157，底部大手牌自y214左右起遮住中下部地图；绿色目标只剩约x365..497、y155..214一条狭窄可见带。",
+        "绿色可见带里能看到蒙古圆标下半部/主体、金色兵槽和数字2的一部分，但没有完整可读的叶赫部印刷地名，也看不到整片南北向地区轮廓。",
+        "右下及底部手牌占据目标下半部，地区是否与原印刷河道/界线一致无法从该图完整核查。文件名“避开支付托盘”不能证明实际已经避开。"
+      ],
+      "printContourComparison": "地图目标上端被红色支付层遮住，下端被手牌遮住；只凭残留窄带无法核对名称、整片形状及所有印刷边界，不作印刷轮廓一致结论。",
+      "circleRemoved": true,
+      "genericRectangleRemoved": true,
+      "wholePerimeterVisible": false,
+      "tokenOrHandOccludedByOutline": false,
+      "issue": "操作层及手牌遮挡了目标地区的大部分，玩家无法以地图本体识别完整地区。",
+      "requiredNextEvidence": "横屏同状态需要完整地区本体、可识别地名与驻军同时出现在操作层之间的有效视野；不能只以圆圈移除或地图点击命中通过收口。"
+    }
+  ],
+  "scopeLimits": [
+    "这是三张用户目标相关原图的私有诊断，不是整组最终视觉审查，也不是新的PASS清单。",
+    "未重跑浏览器，不证明输入命中、缩放/平移过程、数值规则或其它教程帧。",
+    "没有用102个unit或3个E2E通过覆盖本报告观察到的遮挡。",
+    "没有以正式mask来源直接宣称印刷地图边界完全一致；可见局部、完整外围和不可核查部分已分别记录。"
+  ],
+  "mutationScope": "只新增此诊断文件；不改源码、原始图片、历史报告或PASS清单。"
+}

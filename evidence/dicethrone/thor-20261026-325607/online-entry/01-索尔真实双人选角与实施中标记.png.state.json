@@ -1,0 +1,24 @@
+{
+  "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+  "visible": {
+    "text": "选择你的英雄\n实施中\n奇异博士\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792956230017(你)\nP2\n武僧\nGuest-1792956230262\n等待全员就绪"
+  },
+  "authoritative": {
+    "phase": "setup",
+    "selectedCharacters": {
+      "0": "thor",
+      "1": "monk"
+    },
+    "hostStarted": false,
+    "players": {
+      "0": {
+        "characterId": "thor",
+        "hand": []
+      },
+      "1": {
+        "characterId": "monk",
+        "hand": []
+      }
+    }
+  }
+}

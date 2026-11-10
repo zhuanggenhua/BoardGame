@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "entry": "实际R173失败存档经正式继续入口",
+  "bounds": {
+    "qidahen-chronology-zone": {
+      "left": 80,
+      "top": 542,
+      "right": 400,
+      "bottom": 756
+    },
+    "qidahen-chronology-choice": {
+      "left": 412,
+      "top": 542,
+      "right": 732,
+      "bottom": 634
+    },
+    "qidahen-map-viewport-controls": {
+      "left": 26,
+      "top": 798,
+      "right": 192,
+      "bottom": 836
+    }
+  },
+  "actualClaimClickAccepted": true
+}

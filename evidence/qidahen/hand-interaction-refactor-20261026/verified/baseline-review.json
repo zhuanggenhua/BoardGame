@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "桌面支付栏明确区分确认与取消，同时保留支付和手牌信息",
+      "status": "PASS",
+      "baselineSource": "{\"path\": \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/01-桌面支付确认与取消.png\", \"sha256\": \"072a24ae385648f8ecb9c2ba68f32b79a3662eefce0f8f3f8d6cf8663eb7b8ab\", \"log\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log\"}",
+      "preservedInformation": "[\"征召军队\", \"支付进度已选1/1\", \"托盘已选牌东北大军\", \"三张手牌及已选标记\", \"地图、玩家条和牌堆\"]",
+      "preservedActions": "[\"确认执行入口\", \"取消本次行动入口\", \"手牌选择对象\", \"三张手牌的看入口；点击行为由独立行为证据证明\"]",
+      "changes": "[\"基线中确认与取消均为浅色实底；当前确认保留浅色实底，取消改为次级文字表达。\", \"沿用原托盘位置和既有支付信息，未新增同级决策入口。\"]",
+      "duplicateDecision": "支付进度和已选牌由原托盘承载；卡牌对象及查看入口仍在原手牌，不新增重复支付面板或第三项同级动作。",
+      "changeAuthority": "用户：该优化重构的可以做一下。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/01-桌面支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/final-review-original.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "手机横屏支付托盘与最高选中手牌保持间隔，不遮挡卡头和查看入口",
+      "status": "PASS",
+      "baselineSource": "{\"path\": \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/02-手机横屏支付确认与取消.png\", \"sha256\": \"4c20dd14abccf00847f8d77f249ddde6204260ceb8a5bd68f7494986422643c2\", \"log\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log\"}",
+      "preservedInformation": "[\"征召军队、支付进度已选1/1及托盘已选牌名\", \"三张手牌对象与已选标记\", \"事件、战术、银两类别标签\", \"地图与顶部玩家条\"]",
+      "preservedActions": "[\"确认执行入口\", \"取消本次行动入口\", \"手牌选择对象\", \"三张手牌的看入口；截图不独立证明操作结果\"]",
+      "changes": "[\"基线托盘下沿约在纵坐标263，贴压选中牌顶；当前下沿约在纵坐标236，最高选中牌顶约在纵坐标260，形成可见间隔。\", \"当前取消为次级文字，确认继续使用浅色实底。\", \"手牌未为托盘避让而隐藏，三张看入口持续可见。\"]",
+      "duplicateDecision": "仅对既有托盘避让并区分既有两项动作主次，没有新增代理按钮或第二套支付承载；不把托盘牌名当作卡面原印标题完整性的补证。",
+      "changeAuthority": "用户：该优化重构的可以做一下。原始锁定范围是支付托盘不遮卡头和查看入口；不扩大为手牌自身类别角标的重设计。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/final-review-original.json",
+      "sourceReviewEntry": "/requirements/1"
+    }
+  ]
+}

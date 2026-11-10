@@ -1,0 +1,84 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03d-一格走法-退出教程继续对局.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程遮罩已退出，蒙古当前玩家、轮盘与手牌均可见；右侧行动入口和执行提示可读，未见报错。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/07-征召支付-选牌待确认.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "待支付卡牌抬升且显示已选，支付进度、确认执行与取消本次行动清楚可见；教程框避开手牌和主按钮，未见裁切或报错。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/07a-征召支付-点击看查看牌面.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "东北大军牌面完整放大，标题和正文可读，右上关闭入口可见；遮罩符合阅读状态，未见破图或报错。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/08-征召目标-选择宣府.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "宣府标签和高亮目标在教程框右侧清楚可见，点击目标提示可读；手牌看牌入口保留，目标未被提示框遮挡，未见报错。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/09-征召编制-选择建军方式.png",
+      "status": "REVISE",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "REVISE",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程正文要求在宣府建军，地图选中区也显示宣府；但右侧三个建军选项的说明全部写宁远。地点名称互相冲突，玩家无法确认这些按钮实际作用于哪个地区。三个按钮、手牌与教程本身均可读，无可见运行报错。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/10-征召结果-轮盘行动待执行.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右侧征召结果可见并被高亮，教程明确轮盘行动尚待执行，下一步按钮完整可见；轮盘上下文保留，未见目标遮挡或报错。该图只证明可见结果，实际地点正确性不在本图裁决内。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/11-教程结束后-下一位玩家继续.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程框已消失，蒙古当前玩家、征兵训练弃牌动作条及手牌看牌入口清楚可见；确认弃牌禁用外观和待选状态一致，未见裁切或报错。"
+    }
+  ]
+}

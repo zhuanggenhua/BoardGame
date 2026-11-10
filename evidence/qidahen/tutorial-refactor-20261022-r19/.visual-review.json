@@ -1,0 +1,1392 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "qidahen-r19-visual-review",
+    "delegatedAuditors": [
+      {
+        "id": "visual_r19_batch_01",
+        "scope": "r19 final media 1-29",
+        "total": 29,
+        "pass": 29,
+        "revise": 0,
+        "failedPaths": []
+      },
+      {
+        "id": "visual_r19_batch_02",
+        "scope": "r19 final media 30-58",
+        "total": 29,
+        "pass": 29,
+        "revise": 0,
+        "failedPaths": []
+      },
+      {
+        "id": "visual_r19_batch_03",
+        "scope": "r19 final media 59-89",
+        "total": 31,
+        "pass": 31,
+        "revise": 0,
+        "failedPaths": []
+      }
+    ]
+  },
+  "source": {
+    "runId": "tutorial-refactor-final-20261022-r19",
+    "finalMediaDirectory": "evidence/qidahen/tutorial-refactor-20261022-r19/media",
+    "screenshotCount": 107
+  },
+  "summary": {
+    "fullCoverage": true,
+    "desktopCount": 86,
+    "mobileCount": 3,
+    "totalMediaCount": 89,
+    "decodableCount": 89,
+    "passCount": 89,
+    "reviseCount": 0,
+    "failedPaths": [],
+    "missingMedia": [],
+    "extraMedia": [],
+    "badPngMetadata": [],
+    "duplicatePaths": [],
+    "numericOrRuleValidation": "excluded; covered by Vitest and Chromium E2E"
+  },
+  "media": [
+    {
+      "path": "media/00-教程目录-先选择章节.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/00-教程目录-先选择章节.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "七个章节完整排列成双列，标题、简介与各自进入按钮清楚，无裁切或错误提示。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/00a-目录选择后-阅读三种胜利条件.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/00a-目录选择后-阅读三种胜利条件.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜利条件提示正文和下一步完整可读，轮盘与手牌均在画面中，阅读目标无遮挡。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/00b-继续后-进入行动流程说明.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/00b-继续后-进入行动流程说明.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "流程说明位于轮盘右方，三个绿色扇区与行动标记可辨，上一步、下一步完整。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘走法说明文字完整，轮盘扇区可见，下一步入口清楚且未覆盖目标。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03-轮盘选择-当前标记下选择1到3格.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03-轮盘选择-当前标记下选择1到3格.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘三个候选扇区清楚可见，当前首个候选明亮描边；选择步数提示与等待操作状态清楚。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/04-轮盘结算-新年到开垦并增加人口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/04-轮盘结算-新年到开垦并增加人口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘开垦功能说明完整露出，教程白框位于其下方；结果提示和下一步可读，目标标记可见。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/04a-手牌行动规则-四个同层行动.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/04a-手牌行动规则-四个同层行动.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧四个手牌行动按钮全部可见，说明框位于左侧且文字完整，下一步无遮挡。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/05-赐印招安规则原文.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/05-赐印招安规则原文.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "赐印招安按钮有单独描边，旁边规则说明与继续按钮完整，行动入口没有被遮住。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/06-手牌行动-现在选择赐印招安.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/06-手牌行动-现在选择赐印招安.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "操作提示明确要求点击右侧赐印招安，按钮本体及高亮可见，等待当前操作状态可区分。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/07b-赐印招安-3张手牌已选待确认.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/07b-赐印招安-3张手牌已选待确认.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张已选手牌完整可见，抬升描边并各有已选标记；支付进度、确认执行及取消按钮完整无遮挡。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/08-赐印招安-选择山海关接收区.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/08-赐印招安-选择山海关接收区.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "放大地图中的山海关接收区有清晰边界，接收提示及当前目标名称可读，教程白框未挡住目标区域主体。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/10-赐印招安-部队位置与阵营变化.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/10-赐印招安-部队位置与阵营变化.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧结果说明完整可读且下一步可见；锦州与山海关的部队、阵营和计数在地图上可辨。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03a-00-两格分支入口-轮盘标记与三种走法.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03a-00-两格分支入口-轮盘标记与三种走法.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘起点标记和三个候选扇区同时可见，选择步数提示完整，未见操作区裁切。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03a-轮盘两格-选择对手抽牌.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03a-轮盘两格-选择对手抽牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘中央蒙古、后金两按钮清晰；军屯功能说明在上方完整可读，教程白框下移后不再覆盖正文。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03b-轮盘两格-进入军屯并结算.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03b-轮盘两格-进入军屯并结算.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "军屯结果提示、发亮区域和轮盘标记同时可见，五张手牌排列完整，下一步按钮清楚。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征兵训练功能说明完整露出，教程白框置于下方；弃牌条、确认弃牌按钮和手牌均可见。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03d-征兵训练费用与次数原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03d-征兵训练费用与次数原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "费用说明正文与下一步完整可读，弃牌支付栏与三张可选手牌在下方保留。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03e-征兵训练选择行动前规则原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03e-征兵训练选择行动前规则原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧征兵、训练、额外训练及完成按钮完整可读；解释白框在面板左边，不压住真实选择。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03f-征兵本土限制与候选区域.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03f-征兵本土限制与候选区域.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧本土区域候选列表完整可见且标签清楚，教程说明和下一步位于列表左侧，候选无遮挡。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/03g-征兵结算后返回手牌行动.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/03g-征兵结算后返回手牌行动.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结束提示明确可继续手牌行动，下一步完整；右侧行动入口及两张手牌仍可识别。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "进攻调度扇区有亮色边界，提示直接指向该区域；轮盘字样和等待操作状态可读。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家条中的蒙古、后金手牌读数清楚，教程框移至左上，下一步按钮完整露出且远离右上聊天浮球。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/14a-进攻调度规则-弃一张手牌.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/14a-进攻调度规则-弃一张手牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "进攻调度弃牌栏有高亮，需求与已选状态可读，教程说明及下一步完整，手牌仍可选择。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/14b-进攻调度支付-手牌已选待确认.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/14b-进攻调度支付-手牌已选待确认.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "东北大晕已抬升并显示已选标记；支付栏显示所选牌名与确认弃牌按钮，教程提示无遮挡。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/15-进攻调度支付完成-地图部队选择可继续.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15-进攻调度支付完成-地图部队选择可继续.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图参与部队有绿色描边，调度区域边界可辨；来源说明与完成并返回按钮完整，不挡住地图候选。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/15a-00-开垦专题起点-轮盘标记与决策入口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15a-00-开垦专题起点-轮盘标记与决策入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "进入开垦结算提示和下一步完整位于下方，轮盘候选扇区可见，未见报错或乱码。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/15a-开垦第1步-点击高亮开垦.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15a-开垦第1步-点击高亮开垦.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开垦扇区发亮且描边，提示直接说明点击此区域，目标本体和正文无遮挡。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/15b-开垦第2步-看己方控制区人口增加.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15b-开垦第2步-看己方控制区人口增加.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开垦结果说明和下一步清楚，宣府计数及部队可见；功能说明位于上方且文字完整。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/15c-00-军屯专题起点-轮盘标记与决策入口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15c-00-军屯专题起点-轮盘标记与决策入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "进入军屯结算提示和下一步可读，轮盘军屯等候选完整可见，未见报错或乱码。",
+      "reviewerId": "visual_r19_batch_01"
+    },
+    {
+      "path": "media/15c-军屯第1步-点击高亮军屯.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15c-军屯第1步-点击高亮军屯.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：军屯专题第 2 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15d-军屯第2步-看补牌并建立正规军.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15d-军屯第2步-看补牌并建立正规军.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：军屯专题第 3 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15e-征兵训练第1步-点击高亮征兵训练.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e-征兵训练第1步-点击高亮征兵训练.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 1 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15e0-费用与次数原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e0-费用与次数原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 2 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15e1-征兵与训练行动原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e1-征兵与训练行动原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 3 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15e2-炮兵等级限制原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e2-炮兵等级限制原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 4 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15e3-轮盘落点等待支付.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e3-轮盘落点等待支付.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 5 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15f-选择炮兵训练.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15f-选择炮兵训练.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 6 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15g-炮兵训练结算结果.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15g-炮兵训练结算结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 7 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15h-本土征兵限制原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15h-本土征兵限制原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 8 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15i-征兵候选本土区域.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15i-征兵候选本土区域.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 9 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15j-征兵结算结果.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15j-征兵结算结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 10 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15k-额外训练原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15k-额外训练原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 11 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15l-额外训练弃牌.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15l-额外训练弃牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 12 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/15m-征兵训练汇总与继续对局.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/15m-征兵训练汇总与继续对局.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：征兵训练专题第 13 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/16-军备第1步-先点升级军备.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/16-军备第1步-先点升级军备.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：军备升级专题第 1 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/17-军备第2步-点击底部手牌支付2张.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/17-军备第2步-点击底部手牌支付2张.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：军备升级专题第 2 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/18-军备第3步-看火炮技术升到2级.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/18-军备第3步-看火炮技术升到2级.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：军备升级专题第 3 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/19-事件第1步-先点大汗令箭.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/19-事件第1步-先点大汗令箭.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：大汗令箭专题第 1 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/20-事件第2步-点击底部手牌支付1张.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/20-事件第2步-点击底部手牌支付1张.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：大汗令箭专题第 2 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/21-事件第3步-选择征兵训练效果.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/21-事件第3步-选择征兵训练效果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：大汗令箭专题第 3 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/22-大汗令箭征兵训练行动原句.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/22-大汗令箭征兵训练行动原句.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：大汗令箭专题第 4 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/25-大汗令箭结算摘要.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/25-大汗令箭结算摘要.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：大汗令箭专题第 5 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/23-进攻第1步-点击突袭作战入口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/23-进攻第1步-点击突袭作战入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：进攻与野战专题第 1 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/24-进攻第2步-弃1张手牌支付突袭.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/24-进攻第2步-弃1张手牌支付突袭.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：进攻与野战专题第 2 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：进攻与野战专题第 3 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：进攻与野战专题第 4 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：进攻与野战专题第 5 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/27a-进攻第6步-看占领结果摘要.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/27a-进攻第6步-看占领结果摘要.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "子代理逐图确认：进攻与野战专题第 6 步教学截图；目标可见、操作提示可读，无遮挡或可见错误。",
+      "reviewerId": "visual_r19_batch_02"
+    },
+    {
+      "path": "media/27-00-撤退专题起点-野战败方待选撤退方式.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/27-00-撤退专题起点-野战败方待选撤退方式.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开场说明与下一步完整可读，右侧断后和溃退均可见，地图交战双方和行军箭头可辨。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/28-撤退第1步-先看断后和溃退入口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/28-撤退第1步-先看断后和溃退入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程框移至选项面板上方，断后与溃退说明均无遮挡，溃退蓝框与指令对应。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程框位于左上，下一步与右侧聊天球分离；顶部战败标记及地图撤出区域清晰。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/30-攻城第1步-真实守城宣告入口.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/30-攻城第1步-真实守城宣告入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "守城避战蓝框可见，出城野战、断后、溃退均完整呈现；提示置于面板上方。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/30a-攻城第1a步-右侧断后结算城战.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/30a-攻城第1a步-右侧断后结算城战.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "断后蓝框与溃退入口均完整，教程框在面板左边；城战地图双方可识别。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31-攻城第2步-选择围城该区.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31-攻城第2步-选择围城该区.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧围城该区及各劫掠围城项文字完整，底部确认入口可见；说明不覆盖列表或地图山海关。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31b-围城结算后-山海关仍由守方控制.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31b-围城结算后-山海关仍由守方控制.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结果说明位于左侧，山海关后金控制标记和城外明军可见；下一步可读。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31a-00-占领对照专题起点-守城决策.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-00-占领对照专题起点-守城决策.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "底部开场说明和下一步清楚，右侧四种守城选择完整，地图交战对象可辨。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31a-01-攻下城市后-选择占领或围城.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-01-攻下城市后-选择占领或围城.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "占领、围城、撤回三个并列按钮全部可读，说明移至候选左上方，山海关高亮可见。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31a-02-同章选择占领目标.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-02-同章选择占领目标.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "占领方式标题、占领该区及劫掠选项清楚，提示不再错误要求围城；滚动提示和底部确认可见，列表末项有滚动边界。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31a-03-同章占领结算结果.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-03-同章占领结算结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧占领结果说明可读，山海关明控制标记和城内清空状态可辨，下一步完整。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/32-外交第1步-点击高亮外交雇佣.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/32-外交第1步-点击高亮外交雇佣.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘外交雇佣扇区与蓝框可见，提示箭头指向扇区，目标文字和操作关系清楚。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/33-外交第2步-先放置友好标记.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/33-外交第2步-先放置友好标记.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "放大地图突出宁远区域，教程框避开目标蓝框；右侧放置友好标记入口及说明可读。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/33a-外交第2a步-翻为附庸.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/33a-外交第2a步-翻为附庸.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宣府友好状态文字可辨，右侧翻为附庸蓝框完整，左侧说明与目标按钮不重叠。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/33b-外交第2b步-移除他方控制标记.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/33b-外交第2b步-移除他方控制标记.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "放大地图中的东江及后金附庸标签可见，右侧移除控制标记和结算雇佣入口完整，指令清楚。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/34-外交第3步-结束并结算雇佣军.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/34-外交第3步-结束并结算雇佣军.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "外交结果说明、完成并返回按钮清楚；地图外交标记与雇佣部队结果区域可见。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/36-跨年第1步-推进到年中并查看税赋与人物.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/36-跨年第1步-推进到年中并查看税赋与人物.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部玩家条蓝框与年中税赋说明相邻，下一步完整，底部手牌检视入口保留。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/37-跨年第2步-先看新年朝鲜朝贡.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/37-跨年第2步-先看新年朝鲜朝贡.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "朝鲜牌库及弃牌堆蓝框与数量可见，说明和下一步位于左边；下方维护选项完整。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/38-跨年第3步-进入新年防线维护.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/38-跨年第3步-进入新年防线维护.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示明确写点击尽量维护防线，与右侧同名高亮按钮一致；放弃维护选项也完整可见。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/40-跨年第5步-看新顺位与人物刷新.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/40-跨年第5步-看新顺位与人物刷新.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "纪年结算说明与下一步完整，顶部行动玩家条及左侧纪年卡可见，未挡当前焦点。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/41-跨年第6步-看到新年结算与新年份.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/41-跨年第6步-看到新年结算与新年份.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "年度完成说明及完成并返回均可读，顶部玩家条完整，未见当前操作被遮挡。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "朝鲜牌库和弃牌堆被蓝框突出，数量、名称与旁侧说明清楚，下一步无遮挡。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "汉城威望说明指向顶部玩家信息，蓝框玩家条保留，下一步可读。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示明确写尽量维护防线，与高亮按钮同名；维护、放弃维护两选项及说明完整。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧边界说明与下一步清楚，地图山海关及朝鲜区域结果可见，主焦点未被提示覆盖。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/移动-01-移动教程-手牌检视前.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/移动-01-移动教程-手牌检视前.png",
+      "device": "mobile",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "移动横屏中赐印招安蓝框与左侧提示对应，三张手牌及看入口可见，玩家条完整。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/移动-02-移动教程-长按手牌打开检视.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/移动-02-移动教程-长按手牌打开检视.png",
+      "device": "mobile",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "移动端东北大旱检视卡居中完整，卡面文字可读，右上关闭叉明确，暗化背景区分阅读层。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/移动-03-移动教程-关闭检视回到牌桌.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/移动-03-移动教程-关闭检视回到牌桌.png",
+      "device": "mobile",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "关闭检视后手牌和看入口恢复可见，赐印招安高亮及教程指令仍可辨。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31c-01-攻城战后处理-选择前.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31c-01-攻城战后处理-选择前.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回链选择前的占领、围城、撤回三个按钮均完整，教程框不遮候选，山海关高亮可见。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31c-02-攻城战后处理-撤回确认前.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31c-02-攻城战后处理-撤回确认前.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回路线标题、退回宁远和各劫掠撤回项可读，滚动提示及确认战后处理入口可见，教程框避开列表。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    },
+    {
+      "path": "media/31c-03-攻城战后处理-撤回结果.png",
+      "relativePath": "evidence/qidahen/tutorial-refactor-20261022-r19/media/31c-03-攻城战后处理-撤回结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回完成说明及下一步清楚，山海关后金控制标记保留、相邻友区部队可见，结果无遮挡。 未见可见报错或乱码；仅裁决当前截图交互焦点，不证明规则数值或运行时日志。",
+      "reviewerId": "visual_r19_batch_03"
+    }
+  ]
+}

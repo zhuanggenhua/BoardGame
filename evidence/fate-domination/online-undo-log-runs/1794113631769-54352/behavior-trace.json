@@ -1,0 +1,235 @@
+{
+  "gameId": "fate-domination",
+  "kind": "online-undo-log",
+  "steps": [
+    {
+      "step": "准备完成并打开操作日志",
+      "at": "2026-11-08T04:54:11.071Z",
+      "round": 1,
+      "phase": "outpost",
+      "currentPlayerId": "0",
+      "pending": null,
+      "rollbackRevision": 0,
+      "log": [
+        {
+          "kind": "SELECT_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113646147
+        },
+        {
+          "kind": "SELECT_SERVANT",
+          "actorId": "0",
+          "timestamp": 1794113647598
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "0",
+          "timestamp": 1794113647882
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "1",
+          "timestamp": 1794113648114
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "2",
+          "timestamp": 1794113648375
+        },
+        {
+          "kind": "INSPECT_CARD",
+          "actorId": "0",
+          "timestamp": 1794113648544
+        },
+        {
+          "kind": "DEPLOY_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113650646
+        }
+      ]
+    },
+    {
+      "step": "申请撤回",
+      "at": "2026-11-08T04:54:24.707Z",
+      "round": 1,
+      "phase": "outpost",
+      "currentPlayerId": "0",
+      "pending": {
+        "requesterId": "0",
+        "approvals": [],
+        "requiredApprovals": 1
+      },
+      "rollbackRevision": 0,
+      "log": [
+        {
+          "kind": "SELECT_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113646147
+        },
+        {
+          "kind": "SELECT_SERVANT",
+          "actorId": "0",
+          "timestamp": 1794113647598
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "0",
+          "timestamp": 1794113647882
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "1",
+          "timestamp": 1794113648114
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "2",
+          "timestamp": 1794113648375
+        },
+        {
+          "kind": "INSPECT_CARD",
+          "actorId": "0",
+          "timestamp": 1794113648544
+        },
+        {
+          "kind": "DEPLOY_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113650646
+        }
+      ]
+    },
+    {
+      "step": "申请者取消",
+      "at": "2026-11-08T04:54:29.759Z",
+      "round": 1,
+      "phase": "outpost",
+      "currentPlayerId": "0",
+      "pending": null,
+      "rollbackRevision": 0,
+      "log": [
+        {
+          "kind": "SELECT_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113646147
+        },
+        {
+          "kind": "SELECT_SERVANT",
+          "actorId": "0",
+          "timestamp": 1794113647598
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "0",
+          "timestamp": 1794113647882
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "1",
+          "timestamp": 1794113648114
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "2",
+          "timestamp": 1794113648375
+        },
+        {
+          "kind": "INSPECT_CARD",
+          "actorId": "0",
+          "timestamp": 1794113648544
+        },
+        {
+          "kind": "DEPLOY_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113650646
+        }
+      ]
+    },
+    {
+      "step": "对方拒绝",
+      "at": "2026-11-08T04:54:35.104Z",
+      "round": 1,
+      "phase": "outpost",
+      "currentPlayerId": "0",
+      "pending": null,
+      "rollbackRevision": 0,
+      "log": [
+        {
+          "kind": "SELECT_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113646147
+        },
+        {
+          "kind": "SELECT_SERVANT",
+          "actorId": "0",
+          "timestamp": 1794113647598
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "0",
+          "timestamp": 1794113647882
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "1",
+          "timestamp": 1794113648114
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "2",
+          "timestamp": 1794113648375
+        },
+        {
+          "kind": "INSPECT_CARD",
+          "actorId": "0",
+          "timestamp": 1794113648544
+        },
+        {
+          "kind": "DEPLOY_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113650646
+        }
+      ]
+    },
+    {
+      "step": "对方同意并恢复状态",
+      "at": "2026-11-08T04:54:38.170Z",
+      "round": 1,
+      "phase": "outpost",
+      "currentPlayerId": "0",
+      "pending": null,
+      "rollbackRevision": 1,
+      "log": [
+        {
+          "kind": "SELECT_MASTER",
+          "actorId": "0",
+          "timestamp": 1794113646147
+        },
+        {
+          "kind": "SELECT_SERVANT",
+          "actorId": "0",
+          "timestamp": 1794113647598
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "0",
+          "timestamp": 1794113647882
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "1",
+          "timestamp": 1794113648114
+        },
+        {
+          "kind": "ADVANCE_PHASE",
+          "actorId": "2",
+          "timestamp": 1794113648375
+        },
+        {
+          "kind": "INSPECT_CARD",
+          "actorId": "0",
+          "timestamp": 1794113648544
+        }
+      ]
+    }
+  ]
+}

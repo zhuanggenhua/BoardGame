@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fate/Domination 牌桌设计稿 v2</title>
+  <style>
+    :root {
+      --ink: #10161b;
+      --ink-soft: #19242b;
+      --blue: #2c78a4;
+      --blue-bright: #74d6f3;
+      --gold: #f2bf5d;
+      --gold-soft: #ffe4a3;
+      --paper: #e8eef0;
+      --muted: #9aaab0;
+      --danger: #db6f57;
+      --bg: #080e12;
+      --surface-0: #0b1318;
+      --surface-1: #0c151a;
+      --surface-2: #0d171d;
+      --surface-3: #111c22;
+      --surface-4: #121d23;
+      --surface-5: #131e24;
+      --surface-6: #15252c;
+      --surface-map: #1b2428;
+      --surface-card: #202b31;
+      --surface-inspect: #11232c;
+      --action: #9c6e2a;
+      --action-hover: #b58236;
+      --action-text: #fff3cc;
+      --black: #000;
+      --shadow: rgba(0, 0, 0, .46);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+      color: var(--paper);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 320px; min-height: 100%; background: var(--bg); }
+    body { display: grid; place-items: center; }
+    button { font: inherit; color: inherit; }
+
+    .design-stage {
+      width: min(100vw, 1920px);
+      min-height: 100vh;
+      padding: 24px;
+      background: var(--bg);
+    }
+
+    .table {
+      position: relative;
+      min-height: 1032px;
+      overflow: hidden;
+      border: 1px solid rgba(116, 214, 243, .28);
+      background: var(--ink);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .5);
+    }
+
+    .top-rail {
+      height: 96px;
+      display: grid;
+      grid-template-columns: 290px 150px 1fr 1fr 258px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(242, 191, 93, .28);
+      background: var(--surface-4);
+    }
+
+    .brand { border-left: 3px solid var(--gold); padding-left: 12px; }
+    .brand-kicker, .eyebrow, .label { color: var(--blue-bright); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .brand h1 { margin: 4px 0 0; font-size: 24px; line-height: 1; letter-spacing: .03em; }
+    .brand p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .round { padding-left: 18px; border-left: 1px solid rgba(255,255,255,.12); }
+    .round strong { display: block; margin-top: 3px; color: var(--gold-soft); font-size: 30px; line-height: 1; }
+    .round strong small { color: var(--muted); font-size: 13px; font-weight: 500; }
+    .phase { margin-top: 4px; color: var(--paper); font-size: 12px; }
+
+    .mini-card { min-width: 0; display: flex; align-items: center; gap: 12px; }
+    .mini-card button, .inspect { cursor: pointer; border: 0; padding: 0; background: none; }
+    .mini-card img { width: 44px; height: 66px; object-fit: cover; border: 1px solid rgba(242,191,93,.62); box-shadow: 0 5px 12px var(--shadow); }
+    .mini-card b { display: block; margin-top: 5px; color: var(--gold-soft); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-card .label { display: block; }
+    .piles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .pile { padding: 8px 10px; border: 1px solid rgba(116,214,243,.18); background: var(--surface-2); }
+    .pile span { display: block; color: var(--muted); font-size: 10px; }
+    .pile strong { display: block; margin-top: 4px; color: var(--gold-soft); font-size: 18px; }
+
+    .content { display: grid; grid-template-columns: minmax(0, 1fr) 324px; gap: 14px; padding: 14px; }
+    .map-wrap { position: relative; height: 598px; min-height: 0; overflow: hidden; border: 1px solid rgba(242,191,93,.38); background: var(--surface-map); }
+    .map-wrap > img { width: 100%; height: 598px; min-height: 0; display: block; object-fit: cover; object-position: center; filter: saturate(.82) contrast(1.05) brightness(.76); }
+    .map-tint { position: absolute; inset: 0; pointer-events: none; background: rgba(7, 18, 23, .22); }
+    .map-grid { position: absolute; inset: 0; opacity: .18; pointer-events: none; background-size: 72px 72px; background-image: linear-gradient(rgba(116,214,243,.28) 1px, transparent 1px), linear-gradient(90deg, rgba(116,214,243,.28) 1px, transparent 1px); }
+    .map-header { position: absolute; top: 16px; left: 18px; right: 18px; display: flex; justify-content: space-between; align-items: start; }
+    .map-title { padding: 10px 13px; border-left: 3px solid var(--gold); background: rgba(16,22,27,.83); }
+    .map-title strong { display: block; color: var(--gold-soft); font-size: 18px; }
+    .map-title span { color: var(--muted); font-size: 11px; }
+    .map-state { display: flex; gap: 8px; }
+    .map-state span { padding: 8px 10px; border: 1px solid rgba(116,214,243,.34); background: rgba(16,22,27,.82); color: var(--blue-bright); font-size: 11px; }
+
+    .location { position: absolute; transform: translate(-50%, -50%); cursor: pointer; min-width: 118px; padding: 9px 10px 8px; border: 1px solid rgba(232,238,240,.36); background: rgba(15,25,31,.84); text-align: left; box-shadow: 0 7px 17px rgba(0,0,0,.28); }
+    .location:hover, .location.is-active { border-color: var(--gold); background: rgba(30,49,56,.95); }
+    .location.is-open { border-color: var(--blue-bright); box-shadow: 0 0 0 2px rgba(116,214,243,.25), 0 8px 22px rgba(0,0,0,.35); }
+    .location strong { display: block; color: var(--paper); font-size: 13px; }
+    .location small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .marker { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 4px; border: 1px solid var(--gold); border-radius: 50%; color: var(--gold); font-size: 11px; vertical-align: -3px; }
+    .loc-workshop { left: 14%; top: 72%; }
+    .loc-miyama { left: 44%; top: 53%; }
+    .loc-shinto { left: 70%; top: 47%; }
+    .loc-recon { left: 87%; top: 25%; }
+    .route { position: absolute; height: 1px; transform-origin: left center; background: rgba(116,214,243,.55); box-shadow: 0 0 6px rgba(116,214,243,.5); pointer-events: none; }
+    .route-a { width: 310px; left: 18%; top: 68%; transform: rotate(-17deg); }
+    .route-b { width: 280px; left: 48%; top: 49%; transform: rotate(-6deg); }
+    .route-c { width: 190px; left: 73%; top: 41%; transform: rotate(-34deg); }
+    .map-footer { position: absolute; bottom: 16px; left: 18px; right: 18px; display: flex; align-items: end; justify-content: space-between; }
+    .map-footer p { max-width: 420px; margin: 0; padding: 9px 12px; background: rgba(16,22,27,.83); color: var(--muted); font-size: 11px; }
+    .map-footer b { color: var(--gold-soft); }
+
+    .side-rail { display: grid; align-content: start; gap: 12px; }
+    .panel { border: 1px solid rgba(116,214,243,.21); background: var(--surface-3); }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .panel-head b { font-size: 14px; }
+    .panel-head span { color: var(--blue-bright); font-size: 11px; }
+    .active-player { padding-bottom: 12px; }
+    .player-hero { display: flex; gap: 12px; padding: 14px; align-items: center; }
+    .player-hero img { width: 68px; height: 68px; object-fit: cover; border: 2px solid var(--gold); border-radius: 50%; }
+    .player-hero strong { display: block; font-size: 18px; color: var(--gold-soft); }
+    .player-hero small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .resources { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 0 14px; }
+    .resource { padding: 9px 6px; border: 1px solid rgba(242,191,93,.2); text-align: center; background: var(--surface-1); }
+    .resource strong { display: block; color: var(--gold-soft); font-size: 20px; line-height: 1; }
+    .resource span { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .score-list { padding: 4px 14px 10px; }
+    .score-row { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .score-row:last-child { border-bottom: 0; }
+    .score-row.is-current { color: var(--gold-soft); }
+    .score-dot { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--blue); color: var(--blue-bright); font-size: 10px; }
+    .score-row b { display: block; font-size: 12px; }
+    .score-row small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .score-row strong { font-size: 17px; }
+    .log { padding: 0 14px 13px; }
+    .log p { margin: 8px 0 0; padding-left: 10px; border-left: 2px solid rgba(116,214,243,.45); color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+    .identity-strip { display: grid; grid-template-columns: 190px 1fr 180px; gap: 14px; align-items: center; margin: 0 14px 14px; padding: 10px 14px; border: 1px solid rgba(242,191,93,.25); background: var(--surface-5); }
+    .identity-title strong { display: block; color: var(--gold-soft); font-size: 13px; }
+    .identity-title span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .identities { display: flex; gap: 9px; }
+    .identity { position: relative; width: 76px; height: 78px; padding: 3px; cursor: pointer; border: 1px solid rgba(255,255,255,.17); background: var(--surface-0); }
+    .identity:hover, .identity.is-selected { border-color: var(--gold); }
+    .identity img { width: 100%; height: 100%; object-fit: cover; }
+    .identity span { position: absolute; right: 3px; bottom: 3px; left: 3px; padding: 3px; background: rgba(0,0,0,.72); font-size: 9px; text-align: center; }
+    .source { text-align: right; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .source b { display: block; color: var(--blue-bright); font-size: 12px; }
+
+    .dock { display: grid; grid-template-columns: 126px 1fr 225px 290px; gap: 14px; align-items: end; padding: 14px 18px 18px; border-top: 1px solid rgba(116,214,243,.23); background: var(--surface-2); }
+    .hand-label { align-self: center; }
+    .hand-label strong { display: block; color: var(--gold-soft); font-size: 14px; }
+    .hand-label span { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+    .hand { display: flex; align-items: end; gap: 9px; min-width: 0; }
+    .card-wrap { position: relative; width: 88px; flex: 0 0 88px; }
+    .hand-card { position: relative; display: block; width: 88px; height: 128px; padding: 0; cursor: pointer; border: 1px solid rgba(255,255,255,.28); background: var(--surface-card); box-shadow: 0 7px 14px rgba(0,0,0,.35); transition: transform .15s ease, border-color .15s ease; }
+    .hand-card:hover, .hand-card.is-selected { transform: translateY(-9px); border-color: var(--gold); }
+    .hand-card img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .card-meta { position: absolute; top: 5px; right: 5px; left: 5px; display: flex; justify-content: space-between; font-size: 10px; text-shadow: 0 1px 3px var(--black); }
+    .card-meta b { color: var(--gold-soft); }
+    .inspect { position: absolute; right: -5px; top: -8px; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--blue-bright); border-radius: 50%; background: var(--surface-inspect); color: var(--blue-bright); font-size: 11px; }
+    .active-zone { min-width: 0; }
+    .active-zone .zone-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .zone-head strong { color: var(--gold-soft); font-size: 12px; }
+    .zone-head span { color: var(--muted); font-size: 10px; }
+    .active-cards { display: flex; gap: 8px; height: 106px; }
+    .active-cards img { width: 74px; height: 106px; object-fit: cover; border: 1px solid var(--gold); }
+    .notice { padding-bottom: 9px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .notice b { display: block; margin-top: 3px; color: var(--paper); font-size: 12px; }
+    .primary { width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; cursor: pointer; border: 1px solid var(--gold); background: var(--action); color: var(--action-text); font-weight: 700; }
+    .primary:hover { background: var(--action-hover); }
+    .primary span:last-child { font-size: 22px; }
+
+    .modal { position: fixed; inset: 0; z-index: 4; display: none; place-items: center; padding: 24px; background: rgba(5,10,13,.78); }
+    .modal.is-open { display: grid; }
+    .modal-card { position: relative; display: grid; grid-template-columns: 230px 1fr; gap: 20px; width: min(560px, 100%); padding: 20px; border: 1px solid var(--gold); background: var(--surface-3); box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+    .modal-card img { width: 230px; height: 330px; object-fit: cover; }
+    .modal-card h2 { margin: 8px 0; color: var(--gold-soft); font-size: 24px; }
+    .modal-card p { color: var(--muted); line-height: 1.7; font-size: 13px; }
+    .close { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; cursor: pointer; border: 1px solid rgba(255,255,255,.25); background: var(--surface-6); }
+    @media (max-width: 1180px) {
+      .design-stage { padding: 10px; }
+      .top-rail { grid-template-columns: 250px 120px 1fr 1fr; height: auto; }
+      .piles { grid-column: 1 / -1; }
+      .content { grid-template-columns: minmax(0, 1fr) 280px; }
+      .dock { grid-template-columns: 90px 1fr 180px; }
+      .dock .action { grid-column: 1 / -1; }
+    }
+    @media (max-width: 760px) {
+      body { display: block; }
+      .design-stage { padding: 0; }
+      .table { min-height: 100vh; border-width: 0; }
+      .top-rail { grid-template-columns: 1fr 1fr; padding: 12px; }
+      .brand { grid-column: 1 / -1; }
+      .mini-card { min-height: 76px; }
+      .content { grid-template-columns: 1fr; padding: 10px; }
+      .map-wrap, .map-wrap > img { height: 460px; min-height: 0; }
+      .side-rail { grid-template-columns: 1fr; }
+      .identity-strip { grid-template-columns: 1fr; margin: 0 10px 10px; }
+      .source { text-align: left; }
+      .dock { grid-template-columns: 1fr; padding: 12px; }
+      .hand { overflow-x: auto; padding-bottom: 7px; }
+      .active-cards { overflow-x: auto; }
+      .modal-card { grid-template-columns: 110px 1fr; gap: 14px; }
+      .modal-card img { width: 110px; height: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="design-stage">
+    <div class="table" data-testid="fate-domination-design">
+      <header class="top-rail">
+        <div class="brand"><div class="brand-kicker">FATE / DOMINATION</div><h1>命运支配</h1><p>冬木市圣杯战争 · 牌桌基线稿</p></div>
+        <div class="round"><span class="label">ROUND</span><strong>04 <small>/ 11</small></strong><div class="phase">行动阶段</div></div>
+        <div class="mini-card"><button class="inspect" data-card="situation" aria-label="检查局势"><img src="assets/situation-turning-point.webp" alt="局势：转折点"></button><div><span class="label">当前局势</span><b>转折点</b></div></div>
+        <div class="mini-card"><button class="inspect" data-card="event" aria-label="检查事件"><img src="assets/event-fate-battle.webp" alt="事件：命运之战"></button><div><span class="label">深山事件</span><b>命运之战 · 3 VP</b></div></div>
+        <div class="piles"><div class="pile"><span>局势牌库</span><strong>08</strong></div><div class="pile"><span>事件牌库</span><strong>14</strong></div><div class="pile"><span>事件弃牌</span><strong>06</strong></div></div>
+      </header>
+
+      <main class="content">
+        <section class="map-wrap" data-od-id="battlefield-map" aria-label="冬木市牌桌地图">
+          <img src="assets/fuyuki-city.webp" alt="冬木市地图">
+          <div class="map-tint"></div><div class="map-grid"></div>
+          <div class="map-header"><div class="map-title"><strong>冬木市 · 战场</strong><span>部署、移动与区域争夺</span></div><div class="map-state"><span>行动点 02</span><span>费用上限 04</span></div></div>
+          <div class="route route-a"></div><div class="route route-b"></div><div class="route route-c"></div>
+          <button class="location loc-workshop is-open" data-location="工房"><strong><i class="marker">A</i>远坂工房</strong><small>移动 1 · 地形 +2</small></button>
+          <button class="location loc-miyama" data-location="深山町"><strong><i class="marker">B</i>深山町</strong><small>移动 2 · 事件区</small></button>
+          <button class="location loc-shinto" data-location="新都"><strong><i class="marker">C</i>新都中心</strong><small>移动 2 · 容量 2</small></button>
+          <button class="location loc-recon" data-location="侦察线"><strong><i class="marker">D</i>侦察线</strong><small>移动 3 · 伏击 +1</small></button>
+          <div class="map-footer"><p><b>当前部署：</b>卫宫士郎 · Saber 已占据远坂工房。高亮区域为可行动位置。</p><span class="label">FUYUKI CITY / 04</span></div>
+        </section>
+
+        <aside class="side-rail">
+          <section class="panel active-player" data-od-id="active-player"><div class="panel-head"><b>当前玩家</b><span>PLAYER 01 · 你的回合</span></div><div class="player-hero"><img src="assets/master-emiya.webp" alt="卫宫士郎"><div><strong>卫宫士郎</strong><small>Master · 远坂工房</small></div></div><div class="resources"><div class="resource"><strong>04</strong><span>魔力</span></div><div class="resource"><strong>06</strong><span>VP</span></div><div class="resource"><strong>02</strong><span>指令咒</span></div></div></section>
+          <section class="panel" data-od-id="scoreboard"><div class="panel-head"><b>圣杯战争排名</b><span>4 PLAYERS</span></div><div class="score-list"><div class="score-row is-current"><span class="score-dot">01</span><div><b>卫宫士郎</b><small>远坂工房</small></div><strong>06</strong></div><div class="score-row"><span class="score-dot">02</span><div><b>间桐慎二</b><small>深山町</small></div><strong>05</strong></div><div class="score-row"><span class="score-dot">03</span><div><b>言峰绮礼</b><small>新都中心</small></div><strong>04</strong></div><div class="score-row"><span class="score-dot">04</span><div><b>伊莉雅</b><small>未部署</small></div><strong>03</strong></div></div></section>
+          <section class="panel" data-od-id="action-log"><div class="panel-head"><b>行动记录</b><span>LIVE</span></div><div class="log"><p>卫宫士郎部署至远坂工房</p><p>翻开深山町事件：命运之战</p><p>当前局势触发：转折点</p></div></section>
+        </aside>
+      </main>
+
+      <section class="identity-strip" data-od-id="identity-strip"><div class="identity-title"><strong>身份配置</strong><span>选择你的 Master 与 Servant</span></div><div class="identities"><button class="identity is-selected" data-identity="卫宫士郎"><img src="assets/master-emiya.webp" alt="卫宫士郎"><span>卫宫士郎</span></button><button class="identity" data-identity="Saber"><img src="assets/servant-saber.webp" alt="Saber"><span>Saber</span></button><button class="identity" data-identity="备用位"><img src="assets/master-slot-b.webp" alt="备用 Master"><span>备用位</span></button></div><div class="source">素材状态<b>正式资源 · 已核验</b>地图、身份牌与手牌均来自项目素材包</div></section>
+
+      <footer class="dock"><div class="hand-label"><strong>我的手牌</strong><span>已选 02 / 02</span></div><div class="hand"><div class="card-wrap"><button class="hand-card is-selected" data-card="attack-magic-low"><img src="assets/attack-magic-low.webp" alt="魔术：低阶"><span class="card-meta"><b>12</b><span>02 M</span></span></button><button class="inspect" data-card="attack-magic-low" aria-label="检查魔术低阶">+</button></div><div class="card-wrap"><button class="hand-card is-selected" data-card="attack-strength-high"><img src="assets/attack-strength-high.webp" alt="力量：高阶"><span class="card-meta"><b>18</b><span>03 M</span></span></button><button class="inspect" data-card="attack-strength-high" aria-label="检查力量高阶">+</button></div><div class="card-wrap"><button class="hand-card" data-card="skill-luck"><img src="assets/skill-luck.webp" alt="技能：幸运"><span class="card-meta"><b>08</b><span>01 M</span></span></button><button class="inspect" data-card="skill-luck" aria-label="检查幸运">+</button></div><div class="card-wrap"><button class="hand-card" data-card="skill-moment"><img src="assets/skill-moment.webp" alt="技能：瞬间"><span class="card-meta"><b>10</b><span>02 M</span></span></button><button class="inspect" data-card="skill-moment" aria-label="检查瞬间">+</button></div></div><div class="active-zone"><div class="zone-head"><strong>攻击区 · 已编成</strong><span>总威力 30 · 消耗 05 M</span></div><div class="active-cards"><img src="assets/attack-magic-low.webp" alt="已编成魔术低阶"><img src="assets/attack-strength-high.webp" alt="已编成力量高阶"></div></div><div class="action"><div class="notice">当前建议<b>确认两张攻击牌以推进战斗</b></div><button class="primary" id="primary-action"><span>确认攻击</span><span>→</span></button></div></footer>
+    </div>
+  </div>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="卡牌检查"><div class="modal-card"><button class="close" id="close-modal" aria-label="关闭">×</button><img id="modal-image" src="assets/attack-magic-low.webp" alt=""><div><span class="label">CARD INSPECTION</span><h2 id="modal-title">魔术：低阶</h2><p id="modal-copy">将此攻击牌编入攻击区。它会与第二张攻击牌一起结算本轮战斗威力。</p><p class="label">正式素材 · 已核验</p></div></div></div>
+  <script>
+    const cards = {
+      situation: ['assets/situation-turning-point.webp', '转折点', '本轮所有区域的地形加成提高 1。'],
+      event: ['assets/event-fate-battle.webp', '命运之战', '在深山町结算一次战斗，胜者获得 3 VP。'],
+      'attack-magic-low': ['assets/attack-magic-low.webp', '魔术：低阶', '基础威力 12，消耗 2 魔力。'],
+      'attack-strength-high': ['assets/attack-strength-high.webp', '力量：高阶', '基础威力 18，消耗 3 魔力。'],
+      'skill-luck': ['assets/skill-luck.webp', '技能：幸运', '战斗结算时可重掷一次判定。'],
+      'skill-moment': ['assets/skill-moment.webp', '技能：瞬间', '移动后保留一次行动机会。']
+    };
+    const modal = document.querySelector('#modal');
+    const openCard = id => { const data = cards[id]; if (!data) return; document.querySelector('#modal-image').src = data[0]; document.querySelector('#modal-image').alt = data[1]; document.querySelector('#modal-title').textContent = data[1]; document.querySelector('#modal-copy').textContent = data[2]; modal.classList.add('is-open'); };
+    document.querySelectorAll('[data-card]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); openCard(button.dataset.card); }));
+    document.querySelectorAll('.hand-card').forEach(button => button.addEventListener('click', () => button.classList.toggle('is-selected')));
+    document.querySelectorAll('.location').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.location').forEach(item => item.classList.remove('is-open')); button.classList.add('is-open'); document.querySelector('.notice b').textContent = `已选中 ${button.dataset.location}，确认后执行部署`; }));
+    document.querySelectorAll('.identity').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.identity').forEach(item => item.classList.remove('is-selected')); button.classList.add('is-selected'); }));
+    document.querySelector('#close-modal').addEventListener('click', () => modal.classList.remove('is-open'));
+    modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('is-open'); });
+    document.querySelector('#primary-action').addEventListener('click', event => { const button = event.currentTarget; button.querySelector('span').textContent = '战斗已确认'; document.querySelector('.notice b').textContent = '等待对手响应'; });
+  </script>
+</body>
+</html>

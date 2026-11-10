@@ -42,13 +42,19 @@ test('PC 逐兵选择的说明锚定实际推荐兵牌', async ({ page }) => {
             const rect = node.getBoundingClientRect();
             return tip.left < rect.right && tip.right > rect.left && tip.top < rect.bottom && tip.bottom > rect.top;
         }).map(node => node.getAttribute('data-testid'));
-        return { anchorId, distance: Math.hypot(dx, dy), tip: tip.toJSON(), troop: troop.toJSON(), blocked,
+        const coveredPopulation = [...document.querySelectorAll('[data-qidahen-map-population="true"]')].filter(node => {
+            const rect = node.getBoundingClientRect();
+            return tip.left < rect.right && tip.right > rect.left && tip.top < rect.bottom && tip.bottom > rect.top;
+        }).map(node => node.getAttribute('data-testid'));
+        return { anchorId, distance: Math.hypot(dx, dy), tip: tip.toJSON(), troop: troop.toJSON(), blocked, coveredPopulation,
             arrowPoints: document.querySelector('[data-testid="tutorial-anchor-arrow"] polygon')?.getAttribute('points') };
     });
     mkdirSync(output, { recursive: true });
     try {
         await expect.poll(async () => (await geometry()).distance).toBeLessThanOrEqual(64);
         expect((await geometry()).blocked).toEqual([]);
+        expect((await geometry()).coveredPopulation).not.toContain('qidahen-map-population-city-region-7');
+        expect((await geometry()).coveredPopulation).not.toContain('qidahen-map-population-city-region-9');
         writeFileSync(`${output}/result.json`, JSON.stringify({ status: 'PASS', entry: 'representative-state-real-resume', geometry: await geometry() }, null, 2));
     } finally {
         writeFileSync(`${output}/geometry.json`, JSON.stringify(await geometry(), null, 2));

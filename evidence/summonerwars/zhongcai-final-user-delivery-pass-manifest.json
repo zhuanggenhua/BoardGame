@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "title": "仲裁修正后最终网页查看器交付",
+  "requirements": [
+    {
+      "requirement": "网页查看器中提供修正后的 19 步真实入口全流程截图，包含效果原文红框和抹消双侧候选。",
+      "status": "PASS",
+      "evidence": [
+        "19 张标注图均来自当前工作树真实入口 E2E 原始截图，标注说明区在画布上方，不覆盖原始棋盘。",
+        "抹消选择态使用修正后的截图，画面同时保留己方与敌方合法士兵候选。",
+        "每张图上方红框直接显示对应规则效果文字；抹消三张图使用卡面逐字繁体原文。"
+      ]
+    },
+    {
+      "requirement": "网页查看器中提供抹消对应的原卡本体和多个持续事件同屏截图。",
+      "status": "PASS",
+      "evidence": [
+        "原卡图片从仲裁 cards.png 第 2 帧裁出，尺寸 1050x750；卡面显示睿智者阿不思和繁体原文。",
+        "同屏截图来自真实棋盘入口，完整显示圣戒律令与忠诚律令两张持续事件卡。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/01-labeled-仲裁派系真实入口开局.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/02-labeled-仲裁服从触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/03-labeled-仲裁服从选择士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/04-labeled-仲裁服从选择相邻空格.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/05-labeled-仲裁服从结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/06-labeled-仲裁圣言触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/07-labeled-仲裁圣言选择移动目标.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/08-labeled-仲裁圣言选择友方士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/09-labeled-仲裁圣言选择推拉落点.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/10-labeled-仲裁圣言结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/11-labeled-仲裁抹消触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/12-labeled-仲裁抹消选择己方与敌方士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/13-labeled-仲裁抹消结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/14-labeled-仲裁鼓舞触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/15-labeled-仲裁鼓舞选择受伤士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/16-labeled-仲裁鼓舞结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/17-labeled-仲裁律令触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/18-labeled-仲裁律令回合开始提示.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/19-labeled-仲裁律令保留持续效果后.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/20-抹消原卡本体.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/zhongcai-final-user-delivery-20260920-v2/21-仲裁多个持续事件同时显示.jpg"
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "房主选择奇异博士",
+  "sourceRun": "1793537757498-148728-ad8b2ec1-3056-4e6f-81a4-0c1edd68dbed",
+  "sourceRevision": "d2f9014a9b3e14ce1259cb94d2400c98a03117c0cb5466ab8401f8ae16123d44",
+  "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+  "status": "PASS",
+  "outcome": "索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。",
+  "steps": [
+    {
+      "id": "host-selects-doctor-strange",
+      "action": "房主以真实鼠标选择奇异博士",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [
+            "doctor_strange"
+          ],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "房主选中奇异博士",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-selected-by-host",
+      "stepId": "host-selects-doctor-strange",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "a9ecabe1a7d5d658b5d3de8c2c39127b774093636686509fd984632130e3d43f"
+    }
+  ]
+}

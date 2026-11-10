@@ -1,0 +1,197 @@
+diff --git a/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts b/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts
+index c40cd5ac7..ab85380b4 100644
+--- a/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts
++++ b/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts
+@@ -95,10 +95,13 @@ const JPEG_START_OF_FRAME_MARKERS = new Set([
+     0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+ ]);
+ 
+-const readJpegDimensions = async (path: string): Promise<ImageDimensions> => {
++const readImageDimensions = async (path: string): Promise<ImageDimensions> => {
+     const buffer = await readFile(path);
++    if (buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
++        return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
++    }
+     if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+-        throw new Error(`截图不是有效 JPEG 文件：${path}`);
++        throw new Error(`截图不是有效 PNG 或 JPEG 文件：${path}`);
+     }
+ 
+     let offset = 2;
+@@ -136,7 +139,7 @@ const readJpegDimensions = async (path: string): Promise<ImageDimensions> => {
+         offset += segmentLength;
+     }
+ 
+-    throw new Error(`未能读取 JPEG 截图尺寸：${path}`);
++    throw new Error(`未能读取截图尺寸：${path}`);
+ };
+ 
+ const createTrueDeviceEvidenceContext = async (
+@@ -210,10 +213,12 @@ type HudLayoutSnapshot = {
+     phaseItemFontSizes: number[];
+     phaseItemRenderedFontSizes: number[];
+     phaseItemHeights: number[];
++    truncatedPhaseLabels: string[];
+     overlaps: {
+         phaseStatusTokens: boolean;
+         phaseStats: boolean;
+         phaseDeck: boolean;
++        phasePlayerBoard: boolean;
+     };
+     gaps: {
+         phaseToStatusTokens: number | null;
+@@ -287,11 +292,11 @@ const saveEvidenceScreenshot = async (
+     name: string,
+ ): Promise<string> => {
+     const path = getEvidenceScreenshotPath(testInfo, name, {
+-        filename: `${name}.jpg`,
++        filename: `${name}.png`,
+         requireChineseName: true,
+     });
+     await mkdir(dirname(path), { recursive: true });
+-    await page.screenshot({ path, fullPage: false, type: 'jpeg', quality: 90 });
++    await page.screenshot({ path, fullPage: false, type: 'png' });
+     return path;
+ };
+ 
+@@ -372,7 +377,7 @@ const readHudLayout = async (page: Page): Promise<HudLayoutSnapshot> => page.eva
+     const deck = document.querySelector('[data-tutorial-id="draw-deck"]');
+     const deckCard = document.querySelector('[data-testid="dt-draw-deck-card"]');
+     const playerBoard = document.querySelector('[data-testid="player-board-surface"]');
+-    const handToggle = document.querySelector('[data-testid="dicethrone-hand-visibility-toggle"]');
++    const handToggle = document.querySelector('[data-testid="dicethrone-hand-visibility-visual"]');
+     const handToggleHitArea = document.querySelector('[data-testid="dicethrone-hand-visibility-hit-area"]');
+     const phaseItems = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="dt-phase-indicator"] [data-dt-phase-item="true"]'));
+     const protectedIcons = Array.from(document.querySelectorAll('[data-tutorial-id="status-tokens"] [data-token-id], [data-tutorial-id="status-tokens"] [data-status-id]'));
+@@ -441,10 +446,12 @@ const readHudLayout = async (page: Page): Promise<HudLayoutSnapshot> => page.eva
+         phaseItemFontSizes: phaseItems.map((item) => Number.parseFloat(window.getComputedStyle(item).fontSize)),
+         phaseItemRenderedFontSizes: phaseItems.map(renderedFontSize),
+         phaseItemHeights: phaseItems.map((item) => item.getBoundingClientRect().height),
++        truncatedPhaseLabels: phaseItems.filter((item) => item.scrollWidth > item.clientWidth + 1).map((item) => item.textContent ?? ''),
+         overlaps: {
+             phaseStatusTokens: overlaps(phaseRect, statusTokensRect),
+             phaseStats: overlaps(phaseRect, statsRect),
+             phaseDeck: overlaps(phaseRect, deckRect),
++            phasePlayerBoard: overlaps(phaseRect, visibleRect(playerBoard)),
+         },
+         gaps: {
+             phaseToStatusTokens: phaseRect && statusTokensRect ? statusTokensRect.top - phaseRect.bottom : null,
+@@ -487,6 +494,7 @@ const summariseLayout = (layout: HudLayoutSnapshot) => ({
+     phaseFontSizes: layout.phaseItemFontSizes,
+     phaseRenderedFontSizes: layout.phaseItemRenderedFontSizes,
+     phaseItemHeights: layout.phaseItemHeights,
++    truncatedPhaseLabels: layout.truncatedPhaseLabels,
+     gaps: layout.gaps,
+     overlaps: layout.overlaps,
+ });
+@@ -508,22 +516,14 @@ const expectSameColumnLayout = (layout: HudLayoutSnapshot, label: string): void
+     expect(layout.selfPanelGroupGridTemplateAreas, `${label} 不得出现移动端 grid 分区`).toBe('none');
+ };
+ 
+-const expectPhaseKeepsViewportProportion = (
++const expectPhaseRemainsReadable = (
+     layout: HudLayoutSnapshot,
+     viewportCase: ViewportCase,
+-    pcLayout: HudLayoutSnapshot,
+     stateCase: HudStateCase,
+ ): void => {
+-    const expectedScale = Number.parseFloat(layout.cssVars.boardShellScale) || (viewportCase.width / PC_BASELINE_WIDTH);
+-    const actualFontScale = Math.min(...layout.phaseItemRenderedFontSizes) / Math.min(...pcLayout.phaseItemFontSizes);
+-    const actualTitleScale = layout.phaseTitleRenderedFontSize / pcLayout.phaseTitleFontSize;
+-    const renderedPhaseScale = layout.phase!.height / pcLayout.phase!.height;
+-
+-    expect(actualFontScale, `${viewportCase.label} ${stateCase.label} 阶段字号必须按 board-shell 缩放等比，不得 clamp 成另一套移动字号`).toBeGreaterThanOrEqual(expectedScale * 0.96);
+-    expect(actualFontScale, `${viewportCase.label} ${stateCase.label} 阶段字号必须按 board-shell 缩放等比，不得 clamp 成另一套移动字号`).toBeLessThanOrEqual(expectedScale * 1.04);
+-    expect(actualTitleScale, `${viewportCase.label} ${stateCase.label} 阶段标题字号必须按 board-shell 缩放等比`).toBeGreaterThanOrEqual(expectedScale * 0.96);
+-    expect(actualTitleScale, `${viewportCase.label} ${stateCase.label} 阶段标题字号必须按 board-shell 缩放等比`).toBeLessThanOrEqual(expectedScale * 1.04);
+-    expect(renderedPhaseScale, `${viewportCase.label} ${stateCase.label} 阶段区最终屏幕高度不得膨胀成手机专用重排`).toBeLessThanOrEqual(expectedScale * 1.08);
++    // 结构仍用 PC 单列；文字必须按最终屏幕尺寸验收，不能把 5px 字号锁成正确比例。
++    expect(Math.min(...layout.phaseItemRenderedFontSizes), `${viewportCase.label} ${stateCase.label} 阶段文字缩放后仍应接近历史 12px 可读字号`).toBeGreaterThanOrEqual(11.8);
++    expect(layout.phaseTitleRenderedFontSize, `${viewportCase.label} ${stateCase.label} 阶段标题缩放后仍应保持 13px 可读字号`).toBeGreaterThanOrEqual(12.8);
+ };
+ 
+ const expectCenterBoardKeepsPcProportion = (
+@@ -547,6 +547,7 @@ const expectLeftHudLayout = (
+ ): void => {
+     expect(layout.gamePageDataset.gameId).toBe('dicethrone');
+     expect(layout.phaseItemCount, `${viewportCase.label} ${stateCase.label} 阶段提示必须保留完整 7 项`).toBe(7);
++    expect(layout.truncatedPhaseLabels, `${viewportCase.label} ${stateCase.label} 阶段名称必须完整可读，不能用省略号掩盖字号恢复后的宽度不足`).toEqual([]);
+     expect(layout.activePhaseItemCount, `${viewportCase.label} ${stateCase.label} 当前高亮必须为 1 个；总阶段项由上一条断言锁定为 7 个`).toBe(1);
+     expect(layout.visibleTokenCount, `${viewportCase.label} ${stateCase.label} Token 数量必须和该状态一致`).toBe(stateCase.expectedTokens);
+     expect(layout.visibleStatusCount, `${viewportCase.label} ${stateCase.label} 状态图标数量必须和该状态一致`).toBe(stateCase.expectedStatuses);
+@@ -593,6 +594,7 @@ const expectLeftHudLayout = (
+     }
+ 
+     expect(layout.gamePageDataset.mobileProfile).toBe('landscape-adapted');
++    expect(layout.overlaps.phasePlayerBoard, `${viewportCase.label} ${stateCase.label} 手机阶段栏自然展开后不得覆盖中央玩家板`).toBe(false);
+     expect(layout.gamePageDataset.mobileLayoutPreset).toBe('board-shell');
+     expect(layout.leftHudDensity, `${viewportCase.label} ${stateCase.label} 左侧 HUD 必须保持 PC 同构 normal 密度，不得按 Token 压力态改小`).toBe('normal');
+     expect(layout.cssVars.boardShellDesignWidth, `${viewportCase.label} ${stateCase.label} DiceThrone 手机壳层必须使用 2340x1080 横屏设计宽度`).toBe(DICETHRONE_MOBILE_SHELL_DESIGN_WIDTH);
+@@ -603,6 +605,7 @@ const expectLeftHudLayout = (
+     expect(layout.shell!.right, `${viewportCase.label} ${stateCase.label} mobile board shell 右边界必须在屏内`).toBeLessThanOrEqual(layout.viewport.width + 1);
+     expect(layout.documentScrollWidth, `${viewportCase.label} ${stateCase.label} html 不应横向溢出`).toBeLessThanOrEqual(layout.viewport.width + 1);
+     expect(layout.bodyScrollWidth, `${viewportCase.label} ${stateCase.label} body 不应横向溢出`).toBeLessThanOrEqual(layout.viewport.width + 1);
++    expectPhaseRemainsReadable(layout, viewportCase, stateCase);
+     expect(layout.phase!.height / layout.sidebar!.height, `${viewportCase.label} ${stateCase.label} 阶段提示不能膨胀挤掉 Token / 底部槽位`).toBeLessThanOrEqual(0.48);
+     expect(layout.gaps.phaseToStats, `${viewportCase.label} ${stateCase.label} 阶段提示下方必须保留底部 HUD 空间`).not.toBeNull();
+     const minimumScaledGap = Math.max(4, viewportCase.width * 0.006);
+@@ -618,7 +621,6 @@ const expectLeftHudLayout = (
+     expect(layout.handToggleHitArea!.height, `${viewportCase.label} ${stateCase.label} 手牌隐藏按钮透明热区需接近 44px`).toBeGreaterThanOrEqual(42);
+ 
+     if (pcLayout) {
+-        expectPhaseKeepsViewportProportion(layout, viewportCase, pcLayout, stateCase);
+         expectCenterBoardKeepsPcProportion(layout, viewportCase, pcLayout, stateCase);
+     }
+ };
+@@ -709,7 +711,7 @@ test.describe('DiceThrone 左侧 HUD 手机横屏回归', () => {
+ 
+                 const screenshotName = `${String(screenshotPaths.length + 1).padStart(2, '0')}-${trueDeviceMobileViewportCase.screenshotPrefix}-${stateCase.screenshotLabel}-左侧阶段与Token对照`;
+                 const screenshotPath = await saveEvidenceScreenshot(page, testInfo, screenshotName);
+-                const dimensions = await readJpegDimensions(screenshotPath);
++                const dimensions = await readImageDimensions(screenshotPath);
+                 expect(dimensions, 'DPR 2.5 手机横屏截图必须是 2340x1080 原图尺寸').toEqual({
+                     width: TRUE_DEVICE_SCREENSHOT_WIDTH,
+                     height: TRUE_DEVICE_SCREENSHOT_HEIGHT,
+diff --git a/src/games/dicethrone/ui/PhaseIndicator.tsx b/src/games/dicethrone/ui/PhaseIndicator.tsx
+index 3d192c3ef..7a3ce43cd 100644
+--- a/src/games/dicethrone/ui/PhaseIndicator.tsx
++++ b/src/games/dicethrone/ui/PhaseIndicator.tsx
+@@ -7,6 +7,7 @@ import type { PhaseInfo } from '../../../core/ui';
+ import { UI_Z_INDEX } from '../../../core';
+ import { resolveI18nList, type TranslateFn } from './utils';
+ import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
++import './PhaseIndicator.css';
+ 
+ /** 构建阶段信息列表 */
+ const buildPhases = (t: TranslateFn): Array<PhaseInfo & { desc: string[] }> => {
+@@ -25,7 +26,7 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
+ 
+     return (
+         <div
+-            className="flex flex-col pointer-events-auto opacity-100 w-full"
++            className="dt-phase-indicator flex flex-col pointer-events-auto opacity-100 w-full"
+             style={{ zIndex: UI_Z_INDEX.hud, gap: buildBoardShellInlineUnitValue(0.4) }}
+             data-testid="dt-phase-indicator"
+             data-tutorial-id="phase-indicator"
+@@ -33,7 +34,8 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
+             <h3
+                 className="dt-phase-indicator__title font-black text-slate-300/80 tracking-[0.2em] uppercase truncate drop-shadow-md"
+                 style={{
+-                    fontSize: buildBoardShellInlineUnitValue(1),
++                    fontSize: `var(--dt-phase-title-font-size, ${buildBoardShellInlineUnitValue(1)})`,
++                    lineHeight: 'var(--dt-phase-readable-line-height, inherit)',
+                     marginBottom: buildBoardShellInlineUnitValue(0.4),
+                     marginLeft: buildBoardShellInlineUnitValue(0.3),
+                 }}
+@@ -66,8 +68,9 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
+                                 `}
+                                 style={{
+                                     paddingInline: buildBoardShellInlineUnitValue(0.8),
+-                                    paddingBlock: buildBoardShellInlineUnitValue(0.5),
+-                                    fontSize: buildBoardShellInlineUnitValue(0.75),
++                                    paddingBlock: `var(--dt-phase-item-padding-block, ${buildBoardShellInlineUnitValue(0.5)})`,
++                                    fontSize: `var(--dt-phase-item-font-size, ${buildBoardShellInlineUnitValue(0.75)})`,
++                                    lineHeight: 'var(--dt-phase-readable-line-height, inherit)',
+                                     borderTopRightRadius: buildBoardShellInlineUnitValue(0.6),
+                                     borderBottomRightRadius: buildBoardShellInlineUnitValue(0.6),
+                                     borderLeftWidth: buildBoardShellInlineUnitValue(0.3),

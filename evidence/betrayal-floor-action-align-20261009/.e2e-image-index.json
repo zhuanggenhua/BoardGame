@@ -1,0 +1,32 @@
+{
+  "title": "山屋惊魂切层与结束回合同高验收",
+  "media": [
+    {
+      "path": "01-PC-1920x1080-切层与结束回合同高.jpg",
+      "chainId": "floor-action-align",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-action-align-20261009",
+      "stage": "前态",
+      "description": "电脑开局牌桌，楼层切换底边和结束回合那排按钮齐平，切层钮在右下角，没有给继续悬浮球留空。"
+    },
+    {
+      "path": "03-PC-1920x1080-一层切换后切层与结束回合同高.jpg",
+      "chainId": "floor-action-align",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/floor-switcher-visual.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-action-align-20261009",
+      "stage": "中态",
+      "description": "玩家切到一层后，楼层切换仍是上下箭头加一层字样，底边继续和结束回合那排按钮齐平。"
+    },
+    {
+      "path": "02-Vivo-796x360-切层与结束回合同高.jpg",
+      "chainId": "floor-action-align",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-action-align-20261009",
+      "stage": "后态",
+      "description": "手机横屏同一开局，楼层切换底边仍和结束回合那排按钮齐平，切层钮在右下，与继续按钮重叠。"
+    }
+  ]
+}

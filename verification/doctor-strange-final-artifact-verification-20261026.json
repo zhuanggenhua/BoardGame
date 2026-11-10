@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-26T13:45:40.509Z",
+  "heroId": "doctor_strange",
+  "acceptanceCriteria": [
+    {
+      "id": "C1",
+      "status": "pass"
+    },
+    {
+      "id": "C2",
+      "status": "pass"
+    },
+    {
+      "id": "C3",
+      "status": "pass"
+    },
+    {
+      "id": "C4",
+      "status": "pass"
+    },
+    {
+      "id": "C5",
+      "status": "pass"
+    },
+    {
+      "id": "C6",
+      "status": "pass"
+    }
+  ],
+  "requiredArtifacts": 18,
+  "mediaCount": 42,
+  "behaviorChains": 9,
+  "sourceRevisions": [
+    "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+    "01e88285a349eb3ef26d165915024fccf39ed815e3981b02827dd9b0cc65cc4b"
+  ],
+  "currentWorktreeRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "latestOnlineRun": "e2e-1793019370902-ksuvti",
+  "incrementalImpactReviewed": [
+    "src/components/game/framework/widgets/GameHUD.tsx",
+    "src/components/tutorial/TutorialOverlay.tsx",
+    "src/engine/types.ts"
+  ],
+  "globalGateResiduals": [
+    "TypeScript",
+    "Treant i18n",
+    "common/audio/registry.json"
+  ],
+  "releasePerformed": false,
+  "taskCardRetired": true
+}

@@ -138,7 +138,7 @@ for (const mobile of [false, true]) {
 }
 
 for (const mobile of [false, true]) {
-    test(`${mobile ? '手机' : '桌面'}经典保持原大厅，详情收藏隔离及刷新持久化`, async ({ browser, accounts }, info) => {
+    test(`${mobile ? '手机' : '桌面'}经典保持原大厅与原版详情，访客和账户均不增加收藏入口`, async ({ browser, accounts }, info) => {
         info.setTimeout(90_000);
         const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: mobile ? { width: 375, height: 812 } : { width: 1920, height: 1080 }, hasTouch: mobile, isMobile: mobile });
         try {
@@ -151,39 +151,22 @@ for (const mobile of [false, true]) {
             await expect(page.locator('[data-game-id="smashup"]')).toHaveCount(0);
             await openGame(page, 'classic', 'tictactoe', '井字棋', mobile);
             const details = page.getByTestId('game-details-modal-root');
-            await details.getByRole('button', { name: '收藏：井字棋', exact: true }).click();
+            await expect(details.getByRole('button', { name: /收藏/ })).toHaveCount(0);
             await page.getByTestId('game-details-close-button').click();
             await expect(page.getByRole('button', { name: '抽象', exact: true })).toHaveAttribute('aria-pressed', 'true');
             await page.reload();
             await openGame(page, 'classic', 'tictactoe', '井字棋', mobile);
-            await expect(details.getByRole('button', { name: '移出收藏：井字棋', exact: true })).toHaveAttribute('aria-pressed', 'true');
+            await expect(details.getByRole('button', { name: /收藏/ })).toHaveCount(0);
             await page.getByTestId('game-details-close-button').click();
             await login(page, accounts.alice);
             await openGame(page, 'classic', 'tictactoe', '井字棋', mobile);
-            await expect(details.getByRole('button', { name: '收藏：井字棋', exact: true })).toHaveAttribute('aria-pressed', 'false');
-            const write = page.waitForResponse(r => r.url().endsWith('/auth/user-settings/library') && r.request().method() === 'PUT');
-            await details.getByRole('button', { name: '收藏：井字棋', exact: true }).click();
-            expect((await write).ok()).toBe(true);
+            await expect(details.getByRole('button', { name: /收藏/ })).toHaveCount(0);
             await page.getByTestId('game-details-close-button').click();
             await page.reload();
             await openGame(page, 'classic', 'tictactoe', '井字棋', mobile);
-            await expect(details.getByRole('button', { name: '移出收藏：井字棋', exact: true })).toHaveAttribute('aria-pressed', 'true');
+            await expect(details.getByRole('button', { name: /收藏/ })).toHaveCount(0);
             await page.getByTestId('game-details-close-button').click();
-            await page.getByTestId('user-menu-trigger').click();
-            await page.locator('[data-user-menu-panel] > button').last().click();
-            await login(page, accounts.bob);
-            await openGame(page, 'classic', 'tictactoe', '井字棋', mobile);
-            await expect(details.getByRole('button', { name: '收藏：井字棋', exact: true })).toHaveAttribute('aria-pressed', 'false');
-            await page.getByTestId('game-details-close-button').click();
-            await page.getByTestId('user-menu-trigger').click();
-            await page.locator('[data-user-menu-panel] > button').last().click();
-            await login(page, accounts.alice);
-            await openGame(page, 'classic', 'tictactoe', '井字棋', mobile);
-            await expect(details.getByRole('button', { name: '移出收藏：井字棋', exact: true })).toHaveAttribute('aria-pressed', 'true');
-            const remove = page.waitForResponse(r => r.url().endsWith('/auth/user-settings/library') && r.request().method() === 'PUT');
-            await details.getByRole('button', { name: '移出收藏：井字棋', exact: true }).click();
-            expect((await remove).ok()).toBe(true);
-            await record(`${mobile ? '手机' : '桌面'}经典纠正行为`, { originalLobby: true, noAddedSearchOrLibrary: true, categoryDetailsReturn: true, guestPersistence: true, guestAccountIsolation: true, accountPersistence: true, bobIsolation: true, aliceRestored: true, noClassicScreenshots: '按用户要求不重新交付经典旧图' });
+            await record(`${mobile ? '手机' : '桌面'}经典纠正行为`, { originalLobby: true, noAddedSearchOrLibrary: true, categoryDetailsReturn: true, guestAndAccountNoFavoriteControl: true, reloadRetainsClassic: true, noClassicScreenshots: '按用户要求不重新交付经典旧图' });
         } finally { await context.close(); }
     });
 }

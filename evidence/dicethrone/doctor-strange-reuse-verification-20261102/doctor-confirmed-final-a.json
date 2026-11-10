@@ -1,0 +1,1043 @@
+{
+  "status": "PASS",
+  "productAcceptance": "待用户验收",
+  "scope": "独立新交互图面与旧UI对应，产品用户验收待定",
+  "reviewer": "/root/stable_panel_visual_review",
+  "objective": "审查博士当前二十张正式来源原图，并核对原选择界面保留和用户点名的稳定操作修复；不扩大为全游戏或发布验收。",
+  "reviewMethod": "当前二十张新原图逐张实际私有整屏读取且散列全部核对；修前六图中前三张沿用本代理前次实读、后三张本次补读。固定后血色杀戮十二图沿用本代理真实实读报告，不重复读取。",
+  "summary": {
+    "total": 20,
+    "pass": 20,
+    "carriedForward": 0,
+    "revise": 0,
+    "beforeReadCount": 6
+  },
+  "authorizationVerdict": {
+    "status": "PASS",
+    "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+  },
+  "baselineRequirements": [
+    {
+      "id": "ui-2",
+      "requirement": "所有来源卡牌复用完整牌库选择器，候选尺度可读且保留搜索选中确认和原读牌入口",
+      "baselineSource": "用户2026-11-02回答“是这个”，确认来源对照第一组所指血色杀戮完整选择UI；源码c057cfe76的InteractionOverlay。灰骨架不是最终卡图依据，before采用同源组件在当前应用加载正式卡图后的重放；非原时历史截图。恢复原整体布局和响应式，保留必要来源适配、源frame、原检视及搜索单清空修复；短屏真实裁切只补原滚窗单卡高度与顶部约束，不借BoardOverlays尺寸。 用户随后指出确认按钮随候选和搜索结果移动，本轮按ui-responsive-layout的连续选择操作位置稳定合同，仅固定原外壳与底部操作槽；卡宽、皮肤、来源与动作不变。before为此补丁前同一真实入口六态，不冒充旧历史截图。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\04-血色杀戮-取消选中.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\05-血色杀戮-无匹配.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\06-血色杀戮-清空恢复.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\01-弃牌法术候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\02-弃牌法术已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\03-弃牌法术候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\04-弃牌法术已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\12-抽牌返还候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\13-抽牌返还已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\15-牌库顶五法术候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\16-牌库顶五第二张已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\17-剩余牌重排候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\18-剩余牌首张已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\19-准备区法术施放候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\20-准备区法术已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\29-卡牌候选复用放大阅读.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\40-弃牌直接施放完整候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41-弃牌直接施放八牌候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41b-弃牌直接施放法术已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\42-弃牌搜索无匹配可清除-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\44-手机横屏-弃牌候选原阅读界面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\46-桌面-弃牌候选原阅读界面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\47-预感返还多卡候选-横屏.png"
+      ],
+      "preservedInformation": "沿用用户确认的血色杀戮完整选择器承载标题、真实卡区候选、搜索、计数和选中反馈；博士使用自己的正式来源卡图与真实候选数量。原卡宽、皮肤、卡面比例及骰盘保留，博士与吸血鬼不同规则对象不相互替代。",
+      "preservedActions": "保留原选择、取消选中、确认与合法跳过，以及既有右键或长按的原阅读入口；本组原图只直接覆盖入口、选择反馈与阅读层的呈现。动作语义未改依据独立源码审查，真实执行结果须由独立行为证据证明。",
+      "changes": "用户点名按钮随候选或搜索数量位移后，本次只将原内容自适应外壳改为同视口稳定高度，候选区在原层内伸缩并内部滚动，标题、搜索和底部操作带不参与候选数量收缩；确认使用居中固定列。短屏保留完整首行和屏内操作，不从阅读层移入卡牌尺寸。",
+      "duplicateDecision": "当前候选和确认继续由唯一原选择层承接，原放大层承担阅读，搜索保留单一清除入口；未新增第二套候选列表、卡外底框、重复动作或替代读牌界面。",
+      "changeAuthority": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。",
+      "status": "PASS",
+      "unchangedEvidence": "本代理上一子任务实际读取修前桌面前三张与固定后桌面、横屏各六张原图，沿用其真实读取报告；本次补读修前后三张，当前二十张博士正式来源新原图全部实际读取。未把旧结论或测试通过用作当前图面替代。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-stable-panel-visual-review-20261102.json"
+      ],
+      "pairComparison": "同效果血色杀戮六态对照说明原桌面多候选操作行在纵坐标约五百六十处，搜索单候选后移至约三百九十三处；固定后桌面六态均在五百七十三处，横屏六态均在三百一十五处。该零位移由两份六态几何及本代理已读十二张修后图共同支持，不从博士不同规则图硬推。原桌面卡尺寸前后相同；固定外壳与操作位置是已授权差异，未宣称与旧自适应高度逐像素一致。"
+    }
+  ],
+  "media": [
+    {
+      "number": "01",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\桌面-弃牌准备选择态.png",
+      "sha256": "4a8fa19994aa5b672500d355e374d888bfcf60f92bd8f0b0ab00b41a520aff5d",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\桌面-弃牌准备选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面弃牌准备界面在标题下完整显示法瑞拉之牙原卡，原卡没有新增底框或纵横变形；灰色确认独立留在固定底部操作带，未因只有一张候选上移。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\01-弃牌法术候选-桌面.png"
+    },
+    {
+      "number": "02",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\桌面-法术卡已选待确认.png",
+      "sha256": "c71eebbfb7f8b232137c0da4927288fcbd1eb89e3c71c356ebea2f9397593bac",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\桌面-法术卡已选待确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面法瑞拉之牙本体和贴合四边的金色选择边界完整可见，确认亮起且仍在固定底部中列；原卡尺寸与未选态一致。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\02-弃牌法术已选-桌面.png"
+    },
+    {
+      "number": "03",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\手机横屏-弃牌准备选择态.png",
+      "sha256": "f9f3c58ebc52d6effcbd3573443330be4e8c74d8a36b32032c2c063a87f2626c",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\手机横屏-弃牌准备选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏法瑞拉之牙从卡名到施放文字及卡底完整显示，标题与候选分离；灰色确认完整位于屏内，固定高度没有裁掉首张。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\03-弃牌法术候选-横屏.png"
+    },
+    {
+      "number": "04",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\手机横屏-法术卡已选待确认.png",
+      "sha256": "c6daf4cf12b3bf470969198a8570a968c736b71cf103104239a5df7690face58",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\手机横屏-法术卡已选待确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏法瑞拉之牙金色选中边界四面完整，没有压住原卡文字或图案；金色确认仍在未选态同一底部位置，未出现新卡框。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\04-弃牌法术已选-横屏.png"
+    },
+    {
+      "number": "12",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌返还选择-桌面.png",
+      "sha256": "41b1ae432d43a6ee32cd3aa22aac4f27a8832982209da1949e1fd76dc303926e",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌返还选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面返还三张正式候选并列完整显示，牌名图案与各自规则区均保留；灰色确认在固定操作带，预留候选容量未通过缩小原卡换取空间。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\12-抽牌返还候选.png"
+    },
+    {
+      "number": "13",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌已选待确认-桌面.png",
+      "sha256": "588e55da90cf970b9ddea1be224e8ddf19a9b21f6abcfaaafc33789a4eadab99",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌已选待确认-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面返还首张候选金色边界贴合原卡，其余两张完整保留；确认亮起且操作带没有向候选行移动，卡面比例无异常。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\13-抽牌返还已选.png"
+    },
+    {
+      "number": "15",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼顶五法术选择-桌面.png",
+      "sha256": "b5702196c272aa9cb64829e90d3c54bf003d4f6a0204581dcdbca7f63a1459f4",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼顶五法术选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面牌库顶五准备界面展示两张完整正式法术候选，标题与卡行可区分；金色跳过位于固定底部中列，候选没有新增底框。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\15-牌库顶五法术候选.png"
+    },
+    {
+      "number": "16",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼次张法术已选-桌面.png",
+      "sha256": "3106f14cf1af7f4fe473c74db706ce3fc149447c5fc9cf21f5f6cd6ac2ce1071",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼次张法术已选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面当前剩余法瑞拉之牙候选居中完整显示，金色选择边界贴合卡面；确认在固定底部位置，单候选没有令外壳收缩。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\16-牌库顶五第二张已选.png"
+    },
+    {
+      "number": "17",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼重排剩余三张-桌面.png",
+      "sha256": "e8de223f0ef3c36b46772810742a23103e951c5bb34ff1796739265aca825beb",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼重排剩余三张-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面剩余三张重排候选完整并列，下一张牌的指令清楚；灰色确认留在固定底部，卡幅与同类候选一致。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\17-剩余牌重排候选.png"
+    },
+    {
+      "number": "18",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼重排首张已选-桌面.png",
+      "sha256": "4592f69f542c39b89f71e767262e74e58a71543fab96abdf8bd02913ee09ebb7",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼重排首张已选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面重排首张候选的金色选择主边界完整，另两张卡面仍可比较；确认亮起且底部操作带与未选态保持同一位置。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\18-剩余牌首张已选.png"
+    },
+    {
+      "number": "19",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼攻击后施法选择-桌面.png",
+      "sha256": "3f8e899dc2722bf2954e965b7d0e35da8b9b7806d86e4c8e736af7b09eda85c8",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼攻击后施法选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面准备区施法界面三张正式法术完整并列，准备和施放文字区保留；跳过在候选窗后的固定底部中列，没有挤入骰盘。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\19-准备区法术施放候选.png"
+    },
+    {
+      "number": "20",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼准备区法术已选-桌面.png",
+      "sha256": "96e064caa8ba088a3f87583fb18014a7b4da309eb886d757e707f4e43c0a1257",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼准备区法术已选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面准备区第三张法术本体与金色选中边界完整可见，另两张法术保留；确认亮起且仍处于固定底部操作带，未出现比例改变。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\20-准备区法术已选.png"
+    },
+    {
+      "number": "29",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌复用放大阅读-桌面.png",
+      "sha256": "981f5e428d32dbf9506b11b12723376899d7554dba1a9cd9813abc3d8a4bce10",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌复用放大阅读-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面沿用原放大阅读层完整展示玩得六啊的卡名、图案和规则文字，卡底未截断，右上关闭叉清楚；阅读卡幅与候选卡幅职责分离。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户要求保留原读牌入口；本图沿用原阅读层和正式卡图，未把固定外壳修复扩大为新的阅读皮肤或尺寸方案。"
+      },
+      "oldUiComparison": "沿用原放大阅读层与正式卡图，阅读层独立承担详情阅读，不以放大尺寸反推候选尺寸；本次固定选择外壳未新增第二套读牌界面。",
+      "protectedSlots": {
+        "当前目标": "放大卡四边和全文完整。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "阅读层右上关闭叉完整可见。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "阅读层为当前前景，关闭叉归属该阅读卡。",
+        "选中边缘": "阅读状态不用于证明选择边缘。",
+        "素材比例": "正式阅读卡上下完整、比例自然。",
+        "固定高度影响": "阅读卡和关闭叉没有被背后固定外壳裁切。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\29-卡牌候选复用放大阅读.png"
+    },
+    {
+      "number": "40",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放完整候选-桌面.png",
+      "sha256": "f3ca8074f120f6181cda041879ad6cb6a14c7cafc710e2baa3ecb0047c508018",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放完整候选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面弃牌直接施放八张正式法术在一行内完整显示，搜索与八张计数在上方，跳过在固定底部；原卡无新增外底框或挤压变形。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\40-弃牌直接施放完整候选-桌面.png"
+    },
+    {
+      "number": "41",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放八牌候选-横屏.png",
+      "sha256": "5dbc2b3bff00ece81b2fb083f8bf00dacf6d87b411b69ece11cf806ca0147659",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放八牌候选-横屏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏弃牌直接施放显示八张计数，首行七张正式法术从卡名到卡底均完整；候选在内部视窗内，跳过完整留在固定底部，未看到第八张，不能由静图证明尾项可达。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41-弃牌直接施放八牌候选-横屏.png"
+    },
+    {
+      "number": "41b",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放法术已选-横屏.png",
+      "sha256": "310c6c5aee424987ff911fbf02f41cd818c5378cc893c719b1eab9a193a0dc94",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放法术已选-横屏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏首行第一张法术金色主边界四面完整，其余六张首行卡本体保留；确认亮起并完整留在固定底部，未因选中产生裁切。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "已选主边界贴合卡本体，四面完整且不压住图案文字。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41b-弃牌直接施放法术已选-横屏.png"
+    },
+    {
+      "number": "42",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌搜索无匹配可清除-横屏.png",
+      "sha256": "8a6fe9e53eff654299de547a6e76f6483163e0345e58af9174cd0062d5de8a68",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌搜索无匹配可清除-横屏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏搜索无匹配后显示零张计数及没有匹配的牌，输入框中仅一个清除叉；空态不伪造卡牌，跳过仍完整在固定底部位置。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "搜索无匹配提示完整，不伪造候选。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\42-弃牌搜索无匹配可清除-横屏.png"
+    },
+    {
+      "number": "44",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\手机横屏-弃牌候选原阅读界面.png",
+      "sha256": "4bf99f50238ea2de41dbb6da388fbe2850f40ae0bb503eea84ea538a917494df",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\手机横屏-弃牌候选原阅读界面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏原阅读层完整显示法瑞拉之牙的卡名、准备与施放文字和整幅法阵，右上关闭叉位于阅读卡边界内，卡底留在屏内；背后选择层按阅读职责受遮挡。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户要求保留原读牌入口；本图沿用原阅读层和正式卡图，未把固定外壳修复扩大为新的阅读皮肤或尺寸方案。"
+      },
+      "oldUiComparison": "沿用原放大阅读层与正式卡图，阅读层独立承担详情阅读，不以放大尺寸反推候选尺寸；本次固定选择外壳未新增第二套读牌界面。",
+      "protectedSlots": {
+        "当前目标": "放大卡四边和全文完整。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "阅读层右上关闭叉完整可见。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "阅读层为当前前景，关闭叉归属该阅读卡。",
+        "选中边缘": "阅读状态不用于证明选择边缘。",
+        "素材比例": "正式阅读卡上下完整、比例自然。",
+        "固定高度影响": "阅读卡和关闭叉没有被背后固定外壳裁切。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\44-手机横屏-弃牌候选原阅读界面.png"
+    },
+    {
+      "number": "46",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\桌面-弃牌候选原阅读界面.png",
+      "sha256": "94cac4f91f41b6f5fbec29eaee9cb0439671c45b66265bed0dda6cc4d2d8055a",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\桌面-弃牌候选原阅读界面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面原阅读层完整展示法瑞拉之牙四边、卡名和上下效果文字，右上关闭入口清楚；没有以放大卡的尺寸重设候选卡幅。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户要求保留原读牌入口；本图沿用原阅读层和正式卡图，未把固定外壳修复扩大为新的阅读皮肤或尺寸方案。"
+      },
+      "oldUiComparison": "沿用原放大阅读层与正式卡图，阅读层独立承担详情阅读，不以放大尺寸反推候选尺寸；本次固定选择外壳未新增第二套读牌界面。",
+      "protectedSlots": {
+        "当前目标": "放大卡四边和全文完整。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "阅读层右上关闭叉完整可见。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "阅读层为当前前景，关闭叉归属该阅读卡。",
+        "选中边缘": "阅读状态不用于证明选择边缘。",
+        "素材比例": "正式阅读卡上下完整、比例自然。",
+        "固定高度影响": "阅读卡和关闭叉没有被背后固定外壳裁切。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\46-桌面-弃牌候选原阅读界面.png"
+    },
+    {
+      "number": "47",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\预感返还多卡候选-横屏.png",
+      "sha256": "6e66b22221ba175cdd24403fad0b8fbce1f457c378b95afeb9843396e34d357a",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\预感返还多卡候选-横屏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏三张返还候选整张并列，卡名、图案和规则文字区保留；灰色确认完整处于固定底部操作带，标题与卡行分离且卡面没有新增底框。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户确认复用血色杀戮原完整选择器，并进一步点名候选或搜索数量变化令按钮位移，要求固定容器；固定原外壳高度、候选区内滚动与底部操作带为直接解决该问题的必要授权差异。原卡宽、卡面皮肤、比例和动作语义保留；不宣称与原内容自适应高度逐像素一致。"
+      },
+      "oldUiComparison": "对照本次补丁前血色杀戮六态原界面及同效果固定后六态，保留原正式卡幅、皮肤、主边界、上方指令和原操作；只将内容自适应外壳及动作随候选变位改为稳定外壳与底部操作带。博士规则对象和数量不同，不将其与血色杀戮当成同一效果。",
+      "protectedSlots": {
+        "当前目标": "当前首行候选本体完整可见；多行候选由内部视窗承载。",
+        "当前提示": "指令仍在原选择层上方；阅读层作为更高前景可按职责遮挡背后局部。",
+        "主动作": "确认或跳过独立位于固定底部中列，未被候选数量挤出视口。",
+        "原牌桌": "阶段、生命、战斗点、棋盘、骰盘与手牌仍在原牌桌背景槽位；选择和阅读前景依原职责遮挡。"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "标题、搜索或候选、底部操作带分离；未见新增重复动作或额外读牌面板。",
+        "选中边缘": "当前未选或为空态，不用于证明已选边缘。",
+        "素材比例": "正式候选无可见拉伸、压扁或新增卡外底框；空态不替代正式卡图。",
+        "固定高度影响": "固定高度保留原卡幅，首行与操作带完整；预留容量承担按钮稳定职责，没有形成挤小原卡的无职责空白。",
+        "错误展示": "未见关键素材缺失、可见报错或内部调试标识；不据此推论未覆盖的行为。"
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮子代理逐张实际私有读取原始整屏，未以缩略图、旧结论或测试结果替代。",
+      "finalPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\47-预感返还多卡候选-横屏.png"
+    }
+  ],
+  "hardFailures": [],
+  "sourceReview": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-stable-panel-source-review-20261102.json",
+  "pairReport": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-stable-panel-visual-review-20261102.json",
+  "sourceBoundary": "已读取本次独立源码增量审查，原卡宽、卡面渲染、动作处理和骰盘未改是其直接结论；本图审不重审代码，不以源码或测试取代当前图面。",
+  "beforeReads": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "88d9088b58748cf5495f1d885af4c4a34f0c12413613f1723864872da4604223",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "status": "已读基线",
+      "reviewMethod": "沿用本代理上一子任务原图实读记录，见固定面板报告。",
+      "observation": "修前多候选保留原九列卡面，操作带随内容定高。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "7734570dc63a7521d474dd0859807c1d6ddace23c8cdef3e297382fc31e47501",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+      "status": "已读基线",
+      "reviewMethod": "沿用本代理上一子任务原图实读记录，见固定面板报告。",
+      "observation": "修前搜索单张后操作带向上移动，原卡幅不变。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "075282d05cc572e126643e7394a9d9784cb893a8a3d15149aadae8019a35f47f",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+      "status": "已读基线",
+      "reviewMethod": "沿用本代理上一子任务原图实读记录，见固定面板报告。",
+      "observation": "修前选中金边与确认反馈完整，外壳仍为单候选高度。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\04-血色杀戮-取消选中.png",
+      "sha256": "a26adeed754a061ebf5f929e660c3c947c84675d49aefe86354db7493401d5e3",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\04-血色杀戮-取消选中.png",
+      "status": "已读基线",
+      "reviewMethod": "本轮补充实际私有读取原始整屏。",
+      "observation": "修前取消选中后原卡仍完整，确认置灰，操作带仍位于收缩后的高度。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\05-血色杀戮-无匹配.png",
+      "sha256": "83ae84e6b21ee8d194a2a84aef294d39e9ef438d9de7936f5d07ffc3d78fde59",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\05-血色杀戮-无匹配.png",
+      "status": "已读基线",
+      "reviewMethod": "本轮补充实际私有读取原始整屏。",
+      "observation": "修前无匹配提示与单一搜索清除叉可见，操作带位于收缩后的高度。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\06-血色杀戮-清空恢复.png",
+      "sha256": "e188d9bcd1ea7dda75dede10e3d64f4cb6b2dd7f4b145ff932b2e1faa97740c0",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\06-血色杀戮-清空恢复.png",
+      "status": "已读基线",
+      "reviewMethod": "本轮补充实际私有读取原始整屏。",
+      "observation": "修前清空搜索恢复九列满载候选，操作带随多候选内容再次下移。"
+    }
+  ],
+  "stablePositionEvidence": {
+    "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-stable-panel-visual-review-20261102.json",
+    "captures": [
+      "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json",
+      "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    ],
+    "desktopSixStateActionY": 573,
+    "landscapeSixStateActionY": 315,
+    "evidenceBoundary": "只使用同效果六态前后图与几何证明位置稳定，不将博士不同卡区静图当成该零位移测量。"
+  },
+  "limitations": [
+    "本图面结论只证明所给状态的目标、原卡保留、布局和无可见错误，不代替规则结算、完整动作、AI、联机或部署验收。",
+    "横屏八张候选本组静图直接显示首行七张完整；血色杀戮同源卡池独立真实滚轮记录已证明两视口滚到底末张进入视窗且操作带不动、页面不滚动。该行为事实单独引用，不冒充本组博士第八张卡的原图实读。",
+    "只覆盖本组桌面与横屏状态，没有软键盘、真实设备触控热区、竖屏及其它极端视口证据。",
+    "固定后候选窗口的空余区域承担候选容量与稳定操作职责；本结论不等于与旧内容自适应外壳逐像素一致。",
+    "放大阅读图只证明当前阅读卡与关闭入口完整，不证明持续显示时间、关闭后状态恢复或手势执行。",
+    "本报告没有公开图片、注册查看器或改产品；用户最终产品验收待定。"
+  ],
+  "independentBehaviorEvidence": [
+    {
+      "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-scroll-desktop\\scroll-probe.json",
+      "scope": "real-wheel-scroll-only",
+      "verdict": "PASS",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "initialActions": {
+        "x": 172,
+        "y": 573,
+        "width": 1096,
+        "height": 32
+      },
+      "finalActions": {
+        "x": 172,
+        "y": 573,
+        "width": 1096,
+        "height": 32
+      },
+      "lastBox": {
+        "x": 963.3125,
+        "y": 383.78125,
+        "width": 103.671875,
+        "height": 169.703125
+      },
+      "pane": {
+        "x": 172,
+        "y": 191.5,
+        "width": 1096,
+        "height": 373.5
+      },
+      "scrolled": {
+        "scrollTop": 372,
+        "clientHeight": 374,
+        "scrollHeight": 746,
+        "pageScroll": 0
+      },
+      "boundary": "本项为已读取的独立真实滚轮行为记录，不替代当前二十张图面实读，也不扩充为第八张博士卡的独立视觉截图。"
+    },
+    {
+      "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-scroll-landscape\\scroll-probe.json",
+      "scope": "real-wheel-scroll-only",
+      "verdict": "PASS",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "initialActions": {
+        "x": 28,
+        "y": 315,
+        "width": 756,
+        "height": 32
+      },
+      "finalActions": {
+        "x": 28,
+        "y": 315,
+        "width": 756,
+        "height": 32
+      },
+      "lastBox": {
+        "x": 558.78125,
+        "y": 151,
+        "width": 88,
+        "height": 144.046875
+      },
+      "pane": {
+        "x": 28,
+        "y": 144.25,
+        "width": 756,
+        "height": 162.75
+      },
+      "scrolled": {
+        "scrollTop": 623,
+        "clientHeight": 163,
+        "scrollHeight": 786,
+        "pageScroll": 0
+      },
+      "boundary": "本项为已读取的独立真实滚轮行为记录，不替代当前二十张图面实读，也不扩充为第八张博士卡的独立视觉截图。"
+    }
+  ]
+}

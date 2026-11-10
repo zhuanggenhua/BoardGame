@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>骑车的鹈鹕 · 29颗糖</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      display: grid;
+      place-items: center;
+      padding: clamp(12px, 3vw, 36px);
+      background: #172e42;
+      font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    }
+    .artwork {
+      width: min(100%, 1600px);
+      overflow: hidden;
+      border-radius: clamp(18px, 2.5vw, 32px);
+      box-shadow: 0 28px 80px #0919288c, 0 2px 0 #ffffff38 inset;
+      background: #ccecf0;
+    }
+    svg { display: block; width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <main class="artwork">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="art-title art-desc">
+      <title id="art-title">骑自行车的鹈鹕喊出答案：29颗</title>
+      <desc id="art-desc">一只戴着蓝色头盔、系着红色围巾的鹈鹕骑着薄荷绿自行车，经过开满小花的海边道路。它喊出糖果题的最少保证数量：29颗。</desc>
+      <defs>
+        <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#9fdbe9"/>
+          <stop offset=".57" stop-color="#d2f0e8"/>
+          <stop offset="1" stop-color="#fff0cd"/>
+        </linearGradient>
+        <radialGradient id="sun-glow">
+          <stop stop-color="#fff4c0" stop-opacity=".9"/>
+          <stop offset="1" stop-color="#fff4c0" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="road" x1="0" x2="0" y1="0" y2="1">
+          <stop stop-color="#4d6873"/>
+          <stop offset="1" stop-color="#213e4d"/>
+        </linearGradient>
+        <linearGradient id="rim" x1="0" x2="1" y1="0" y2="1">
+          <stop stop-color="#fff8e8"/>
+          <stop offset="1" stop-color="#b6d6d8"/>
+        </linearGradient>
+        <linearGradient id="frame" x1="0" x2="1" y1="0" y2="1">
+          <stop stop-color="#8de1c6"/>
+          <stop offset="1" stop-color="#26a6a0"/>
+        </linearGradient>
+        <linearGradient id="feather" x1="0" x2="1" y1="0" y2="1">
+          <stop stop-color="#fffdf2"/>
+          <stop offset=".72" stop-color="#f6eed4"/>
+          <stop offset="1" stop-color="#d8d8c3"/>
+        </linearGradient>
+        <linearGradient id="pouch" x1="0" x2=".8" y1="0" y2="1">
+          <stop stop-color="#ffc887"/>
+          <stop offset=".62" stop-color="#ec997b"/>
+          <stop offset="1" stop-color="#dc777d"/>
+        </linearGradient>
+        <linearGradient id="beak" x1="0" x2="1" y1="0" y2=".6">
+          <stop stop-color="#ffcd8a"/>
+          <stop offset=".58" stop-color="#f6a76f"/>
+          <stop offset="1" stop-color="#e68968"/>
+        </linearGradient>
+        <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="17"/>
+        </filter>
+        <filter id="bubble-shadow" x="-15%" y="-20%" width="135%" height="150%">
+          <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#225161" flood-opacity=".18"/>
+        </filter>
+        <pattern id="confetti" width="85" height="75" patternUnits="userSpaceOnUse">
+          <circle cx="14" cy="15" r="2" fill="#fff" opacity=".28"/>
+          <circle cx="62" cy="58" r="1.7" fill="#fff" opacity=".25"/>
+        </pattern>
+        <g id="flower">
+          <path d="M0 0v27" stroke="#477e69" stroke-width="4" stroke-linecap="round"/>
+          <path d="M0 15c-15-13-20-8-7 4M0 18c13-12 20-8 7 5" fill="#6dbb7c"/>
+          <g fill="#fff8df">
+            <ellipse cx="0" cy="-10" rx="7" ry="12"/>
+            <ellipse cx="0" cy="10" rx="7" ry="12"/>
+            <ellipse cx="-10" cy="0" rx="12" ry="7"/>
+            <ellipse cx="10" cy="0" rx="12" ry="7"/>
+          </g>
+          <circle r="6" fill="#ed9b76"/>
+        </g>
+        <g id="star-candy">
+          <path d="m0-16 4.7 10 11 1.4-8 7.6 2.1 11-9.8-5.2-9.8 5.2 2.1-11-8-7.6 11-1.4Z" fill="#ffbc8e" stroke="#dc7d6e" stroke-width="2"/>
+          <path d="m-20-2-12-7 4 13 9 3M20-2l12-7-4 13-9 3" fill="#e98d80"/>
+        </g>
+      </defs>
+
+      <!-- Sea, sky, distant town, and the lane -->
+      <rect width="1600" height="1000" fill="url(#sky)"/>
+      <rect width="1600" height="1000" fill="url(#confetti)"/>
+      <circle cx="258" cy="194" r="206" fill="url(#sun-glow)"/>
+      <circle cx="258" cy="194" r="82" fill="#fff4be"/>
+      <circle cx="258" cy="194" r="69" fill="#ffe6a2" opacity=".55"/>
+      <g fill="#fff" opacity=".77">
+        <path d="M96 251c-21 0-30-15-20-28 8-11 22-10 30-6 8-27 47-34 61-10 23-9 42 7 37 26 24-3 30 18 12 18Z"/>
+        <path d="M417 145c-22 0-28-18-14-28 7-5 16-6 23-3 12-23 43-22 53-1 16-8 32 4 32 19 18 0 21 13 8 13Z"/>
+        <path d="M1209 318c-18 0-26-13-14-22 8-5 14-5 20-3 9-21 39-21 49-1 18-6 27 6 26 16 17 0 20 10 7 10Z"/>
+      </g>
+      <g opacity=".4" fill="none" stroke="#4b9ba3" stroke-width="4" stroke-linecap="round">
+        <path d="m106 374 18-9 18 9M160 384l14-7 14 7"/>
+        <path d="m1338 399 18-9 18 9M1391 383l14-7 14 7"/>
+      </g>
+      <path d="M0 579c196-46 304-20 460-8 132 10 212-24 333-28 187-6 275 34 409 19 164-19 280-8 398 19v150H0Z" fill="#80c3b5" opacity=".6"/>
+      <path d="M0 618c176-26 348-10 527 8 192 19 320-9 451-26 222-29 414-8 622 29v106H0Z" fill="#5db6b5"/>
+      <path d="M0 646c218-13 420 12 596 14 243 3 352-34 552-30 180 4 345 15 452 28v70H0Z" fill="#77c7bd" opacity=".8"/>
+      <g fill="#edf9e4" opacity=".7">
+        <path d="M69 650h84v4H69ZM243 664h124v4H243ZM483 642h89v4h-89ZM1240 656h94v4h-94ZM1404 641h88v4h-88Z"/>
+      </g>
+      <path d="M0 690c251-36 436 25 736-11 320-38 571-1 864 10v98H0Z" fill="#e5dba9"/>
+      <path d="M0 743c288-33 499 0 768-13 274-13 539-19 832 18v252H0Z" fill="url(#road)"/>
+      <path d="M0 745c288-33 499 0 768-13 274-13 539-19 832 18" fill="none" stroke="#f8f1ce" stroke-width="10" opacity=".85"/>
+      <path d="M0 936c331-23 463-9 748-15 286-5 552 3 852 31" fill="none" stroke="#e2d9b2" stroke-width="10" stroke-dasharray="116 94" opacity=".7"/>
+      <g opacity=".65" fill="#244351">
+        <circle cx="113" cy="809" r="3"/><circle cx="1429" cy="850" r="3"/><circle cx="1260" cy="785" r="2"/>
+        <circle cx="290" cy="895" r="2.5"/><circle cx="1347" cy="923" r="3"/>
+      </g>
+      <g transform="translate(138 686) scale(.8)"><use href="#flower"/></g>
+      <g transform="translate(224 703) scale(.64)"><use href="#flower"/></g>
+      <g transform="translate(1454 703) scale(.87)"><use href="#flower"/></g>
+      <g transform="translate(1516 714) scale(.56)"><use href="#flower"/></g>
+      <g transform="translate(1286 685) scale(.45)"><use href="#flower"/></g>
+      <path d="M144 711c17-36 24-56 33-62m-3 60c16-24 31-33 43-37M1353 708c-13-37-22-54-34-66" stroke="#5c9e75" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+      <!-- A small candy-shaped roadside sign -->
+      <g transform="translate(1415 525)">
+        <path d="M0 92v111" stroke="#326c69" stroke-width="15" stroke-linecap="round"/>
+        <path d="M-67 1h134v105H-67Z" rx="20" fill="#f6f2df" stroke="#326c69" stroke-width="9"/>
+        <path d="m-43 49-16-13v32l16-13M43 49l16-13v32L43 55" fill="#eaa687"/>
+        <circle cx="0" cy="50" r="29" fill="#f5a28c"/>
+        <path d="m-8 42 8-12 8 12-8 12Z" fill="#ffe9b6" opacity=".8"/>
+      </g>
+
+      <!-- Bicycle ground shadow -->
+      <ellipse cx="764" cy="866" rx="598" ry="38" fill="#0b2330" opacity=".36" filter="url(#soft-shadow)"/>
+
+      <!-- Wheels: two hand-built spoke systems -->
+      <g stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="445" cy="715" r="173" fill="#d5f1e8" fill-opacity=".12" stroke="#1b3c4b" stroke-width="19"/>
+        <circle cx="445" cy="715" r="160" fill="none" stroke="url(#rim)" stroke-width="8"/>
+        <circle cx="445" cy="715" r="151" fill="none" stroke="#4f8790" stroke-width="2" opacity=".8"/>
+        <g stroke="#e7f2e8" stroke-width="3" opacity=".9">
+          <path d="M445 555v320M285 715h320M332 602l226 226M332 828l226-226M384 567l122 296M297 654l296 122M297 776l296-122M384 863l122-296"/>
+        </g>
+        <circle cx="445" cy="715" r="20" fill="#f6f5df" stroke="#28515b" stroke-width="8"/>
+        <circle cx="1032" cy="715" r="173" fill="#d5f1e8" fill-opacity=".12" stroke="#1b3c4b" stroke-width="19"/>
+        <circle cx="1032" cy="715" r="160" fill="none" stroke="url(#rim)" stroke-width="8"/>
+        <circle cx="1032" cy="715" r="151" fill="none" stroke="#4f8790" stroke-width="2" opacity=".8"/>
+        <g stroke="#e7f2e8" stroke-width="3" opacity=".9">
+          <path d="M1032 555v320M872 715h320M919 602l226 226M919 828l226-226M971 567l122 296M884 654l296 122M884 776l296-122M971 863l122-296"/>
+        </g>
+        <circle cx="1032" cy="715" r="20" fill="#f6f5df" stroke="#28515b" stroke-width="8"/>
+      </g>
+
+      <!-- Frame and hardware -->
+      <g fill="none" stroke="url(#frame)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M445 715 657 534 733 715Z"/>
+        <path d="M657 534h252L733 715"/>
+        <path d="M909 534 1032 715"/>
+      </g>
+      <g fill="none" stroke="#245f68" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".76">
+        <path d="M445 715 657 534 733 715Z"/>
+        <path d="M657 534h252L733 715M909 534 1032 715"/>
+      </g>
+      <path d="M658 534 643 490" stroke="#28525c" stroke-width="15" stroke-linecap="round"/>
+      <path d="M587 482c38-11 88-11 110 2 6 8-1 19-15 19h-95c-24 0-29-13 0-21Z" fill="#233e4e"/>
+      <path d="M606 484c31-6 59-5 78-1" fill="none" stroke="#547482" stroke-width="4" opacity=".7"/>
+      <path d="M910 532 890 476c-5-15 2-28 15-31l48-10" fill="none" stroke="#2c565e" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M942 434h77c17 0 27 8 30 21" fill="none" stroke="#2c565e" stroke-width="16" stroke-linecap="round"/>
+      <path d="M983 435h36" stroke="#223c49" stroke-width="20" stroke-linecap="round"/>
+      <path d="M887 548 1011 716" fill="none" stroke="#d3f0df" stroke-width="5" opacity=".65"/>
+      <circle cx="733" cy="715" r="38" fill="#e5e8d8" stroke="#25434c" stroke-width="10"/>
+      <circle cx="733" cy="715" r="23" fill="#619e96" stroke="#f5f1df" stroke-width="5"/>
+      <path d="M733 715 782 777M733 715 688 654" fill="none" stroke="#25434c" stroke-width="12" stroke-linecap="round"/>
+      <path d="M754 776h61M656 653h62" stroke="#223c49" stroke-width="14" stroke-linecap="round"/>
+      <path d="M754 773h61M656 650h62" stroke="#e6b477" stroke-width="5" stroke-linecap="round"/>
+      <path d="M790 716c15 4 31 6 44 5" fill="none" stroke="#d5d7be" stroke-width="3"/>
+      <path d="M440 516c-49 2-84 23-108 53" fill="none" stroke="#29414a" stroke-width="12" stroke-linecap="round"/>
+      <path d="M1037 518c43 5 81 26 105 57" fill="none" stroke="#29414a" stroke-width="12" stroke-linecap="round"/>
+      <path d="M440 522c-43 3-74 18-97 43M1039 524c38 5 72 23 91 48" fill="none" stroke="#fff5da" stroke-width="4" opacity=".8"/>
+      <rect x="1021" y="686" width="31" height="27" rx="9" fill="#f8f5de" stroke="#32525c" stroke-width="5"/>
+
+      <!-- Pelican: back leg, tail, body, neck, wing and expressive face -->
+      <g stroke-linecap="round" stroke-linejoin="round">
+        <path d="M622 472c-43 16-88 10-117-13 10 40 48 66 99 64Z" fill="#d2dacb" stroke="#b6c8bd" stroke-width="5"/>
+        <path d="M609 501c-9 23-21 35-35 40-11-22-22-32-37-40 10 1 25-9 34-21" fill="#f8f2d9" stroke="#c8cfb8" stroke-width="5"/>
+        <path d="M610 471c-13 55-5 82 25 110l69 72" fill="none" stroke="#cc8076" stroke-width="22"/>
+        <path d="M606 471c-13 55-5 82 25 110l69 72" fill="none" stroke="#efae8e" stroke-width="13"/>
+        <path d="M705 649c-16 10-31 12-53 6-12-4-23 1-22 10 3 19 65 28 94 11l-5-19Z" fill="#f4b583" stroke="#c97971" stroke-width="6"/>
+        <path d="M655 675c18 6 39 8 59 3" fill="none" stroke="#f6d4a2" stroke-width="4"/>
+
+        <!-- Wide body with layered plumage -->
+        <path d="M546 392c13-72 72-132 163-129 75 2 124 58 114 130-8 69-59 119-133 127-100 12-159-35-144-128Z" fill="url(#feather)" stroke="#c6d5c4" stroke-width="7"/>
+        <path d="M545 394c20-52 48-76 78-91-20 25-26 48-25 65-30 6-47 16-53 26Z" fill="#fffef4" opacity=".8"/>
+        <path d="M557 435c35 58 100 76 172 63" fill="none" stroke="#d9dcc4" stroke-width="6"/>
+        <g fill="#f6f3df" stroke="#d6d9c4" stroke-width="4">
+          <path d="M554 412c-15 20-19 48-2 59 23 15 50-6 59-24Z"/>
+          <path d="M569 449c-5 26 4 42 19 44 23 4 37-18 38-34Z"/>
+          <path d="M606 469c-1 28 10 42 25 39 22-4 27-29 24-44Z"/>
+        </g>
+
+        <!-- Forward leg and oversized webbed cycling foot -->
+        <path d="M688 478c22 45 30 71 38 96l57 190" fill="none" stroke="#c87c72" stroke-width="31"/>
+        <path d="M688 478c22 45 30 71 38 96l57 190" fill="none" stroke="#f4b68d" stroke-width="22"/>
+        <path d="M774 759c27-17 56-15 67 2 13 2 28 10 25 22-4 18-36 22-64 22-31 0-55-7-57-22-1-9 10-15 29-24Z" fill="#f5b788" stroke="#cb7d72" stroke-width="6"/>
+        <path d="M789 776c13 15 24 20 40 21M815 769c11 11 25 15 39 17" fill="none" stroke="#df9278" stroke-width="5"/>
+
+        <!-- Belly and raised wing pointing forward -->
+        <path d="M609 339c32-24 76-20 104 8 16 18 23 46 11 74-25 54-74 72-128 49-21-9-32-27-30-52 1-28 19-59 43-79Z" fill="#e8e8d4" stroke="#cdd3bf" stroke-width="5"/>
+        <path d="M600 363c35-21 83-14 104 15 12 17 14 39 2 55-26 32-65 39-104 20-31-15-32-63-2-90Z" fill="url(#feather)" stroke="#c8d3c1" stroke-width="5"/>
+        <path d="M618 390c28 9 49 22 72 45M611 413c21 11 33 18 52 35" fill="none" stroke="#d7dac8" stroke-width="4"/>
+
+        <!-- Neck, outlined independently for a clean silhouette -->
+        <path d="M753 345c-2-65 9-111 35-160 17-31 41-42 62-37 26 6 35 28 21 54-34 56-46 96-40 149 6 55-18 85-57 81-32-3-45-34-21-87Z" fill="url(#feather)" stroke="#c5d5c5" stroke-width="7"/>
+        <path d="M797 194c-19 43-31 81-26 127" fill="none" stroke="#fffef2" stroke-width="12" opacity=".75"/>
+
+        <!-- Red scarf with a lively trailing tip -->
+        <path d="M752 345c37 29 70 32 103 5l13 19c-27 32-77 46-121 10Z" fill="#ed746d" stroke="#b64d60" stroke-width="6"/>
+        <path d="M750 371c-61-2-96 10-135 25 37 10 62 20 92 42 23-17 38-42 43-67Z" fill="#e96d69" stroke="#b64d60" stroke-width="6"/>
+        <path d="M690 402c-24-5-45-7-63-7" fill="none" stroke="#f7a49a" stroke-width="5"/>
+        <circle cx="799" cy="367" r="9" fill="#ffe5bb"/>
+
+        <!-- Helmet behind face -->
+        <path d="M789 186c-3-59 41-99 94-91 43 7 69 47 60 89Z" fill="#427998" stroke="#285069" stroke-width="8"/>
+        <path d="M817 130c30-31 78-25 100 12" fill="none" stroke="#85c7d0" stroke-width="9"/>
+        <path d="M779 183c48-16 100-16 163 2" fill="none" stroke="#285069" stroke-width="15" stroke-linecap="round"/>
+        <path d="M812 189c6 37 20 54 50 62" fill="none" stroke="#285069" stroke-width="6"/>
+        <path d="M882 251c21-1 30-13 31-31" fill="none" stroke="#285069" stroke-width="6"/>
+        <circle cx="861" cy="251" r="7" fill="#e8ae6f" stroke="#285069" stroke-width="3"/>
+
+        <!-- Head and long, unmistakable pelican bill -->
+        <path d="M795 180c10-45 58-64 95-48 34 14 42 49 30 75-11 23-36 38-74 34-39-4-60-27-51-61Z" fill="url(#feather)" stroke="#c8d2c0" stroke-width="7"/>
+        <path d="M872 212c53 14 131 21 254 5-11 28-53 45-104 55-57 10-100 9-121-3-24-14-28-37-29-57Z" fill="url(#pouch)" stroke="#bf776e" stroke-width="7"/>
+        <path d="M883 207c80-17 167-18 259-9 16 2 17 17 2 22-91 24-194 25-262 12-16-3-17-21 1-25Z" fill="url(#beak)" stroke="#bd7c6b" stroke-width="6"/>
+        <path d="M921 219c72-13 144-14 215-11" fill="none" stroke="#ffe7ad" stroke-width="6" opacity=".8"/>
+        <path d="M909 237c27 21 89 26 144 17" fill="none" stroke="#f8c392" stroke-width="4" opacity=".68"/>
+        <circle cx="849" cy="178" r="19" fill="#fffdf3"/>
+        <circle cx="855" cy="180" r="8" fill="#253e4b"/>
+        <circle cx="859" cy="176" r="3" fill="#fff"/>
+        <path d="M815 157c13-11 29-15 43-10" fill="none" stroke="#9daea9" stroke-width="5"/>
+        <ellipse cx="842" cy="211" rx="18" ry="9" fill="#eea5a0" opacity=".65"/>
+
+        <!-- Wing extends to grip the handlebars -->
+        <path d="M694 382c47 13 89 33 123 50l75 28-8 28c-59-4-95-8-124-21-33-14-65-40-82-58Z" fill="url(#feather)" stroke="#c8d2c0" stroke-width="7"/>
+        <path d="M730 410c34 13 59 26 79 43M716 428c28 18 48 27 69 37" fill="none" stroke="#d4d8c5" stroke-width="5"/>
+        <path d="M883 457c21-11 35-11 46 1 7 8 5 18-1 25-3 16-13 23-25 19-13-4-23-17-20-45Z" fill="#f8f0d9" stroke="#bdc9ba" stroke-width="5"/>
+        <path d="M911 454c14 2 23 8 26 18" fill="none" stroke="#c4cdbb" stroke-width="4"/>
+      </g>
+
+      <!-- The shouted answer: speech balloon and candy details -->
+      <g filter="url(#bubble-shadow)">
+        <path d="M1178 83h272c54 0 92 39 92 92v190c0 54-38 92-92 92h-250c-54 0-92-38-92-92V219l-59-33 59-14c3-54 37-89 70-89Z" fill="#fffaf0" stroke="#244f5c" stroke-width="9" stroke-linejoin="round"/>
+        <path d="M1133 173c4-45 31-70 65-70h252" fill="none" stroke="#fff" stroke-width="7" opacity=".85" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(1175 156) rotate(-18)"><use href="#star-candy"/></g>
+      <circle cx="1479" cy="169" r="15" fill="#8ad8b5" stroke="#2f927f" stroke-width="3"/>
+      <circle cx="1474" cy="164" r="4" fill="#fff" opacity=".8"/>
+      <path d="m1192 370 28 15m219-8 28-18" stroke="#df9d78" stroke-width="6" stroke-linecap="round" opacity=".8"/>
+      <text x="1323" y="218" text-anchor="middle" font-family="Microsoft YaHei,Noto Sans CJK SC,sans-serif" font-size="34" font-weight="900" letter-spacing="5" fill="#42737a">最少取出</text>
+      <text x="1323" y="360" text-anchor="middle" font-family="Arial Black,Microsoft YaHei,sans-serif" font-size="142" font-weight="900" letter-spacing="-9" fill="#254c5a" paint-order="stroke" stroke="#254c5a" stroke-width="2">29<tspan fill="#ee8a6c" font-size="58" dx="4" letter-spacing="0">颗!</tspan></text>
+      <path d="M1228 389c56 24 136 30 198 0" fill="none" stroke="#8ac8b6" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Motion marks and a tiny candy escaping into the air -->
+      <g fill="none" stroke="#fff6dc" stroke-width="9" stroke-linecap="round" opacity=".9">
+        <path d="M210 553h93M180 587h111M222 623h58"/>
+        <path d="M1193 583h76M1230 613h94"/>
+      </g>
+      <g transform="translate(334 416) rotate(-21) scale(.75)"><use href="#star-candy"/></g>
+      <path d="M290 391c-23-13-39-15-58-12" fill="none" stroke="#f8f4d8" stroke-width="6" stroke-linecap="round" opacity=".8"/>
+      <circle cx="362" cy="374" r="7" fill="#fff8d8" opacity=".85"/>
+      <circle cx="313" cy="475" r="5" fill="#fff8d8" opacity=".8"/>
+    </svg>
+  </main>
+</body>
+</html>

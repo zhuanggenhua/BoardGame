@@ -1,0 +1,4 @@
+{
+  "message": "page.waitForFunction: Timeout 30000ms exceeded.",
+  "stack": "page.waitForFunction: Timeout 30000ms exceeded.\n    at waitForVisibleDiceSettled (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:362:16)\n    at runRabbitConfirm (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:533:9)\n    at async main (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:911:28)"
+}

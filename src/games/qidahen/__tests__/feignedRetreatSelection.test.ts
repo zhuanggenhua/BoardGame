@@ -212,6 +212,7 @@ describe('七大恨诈败诱敌', () => {
         });
         expect(state.core.handCards.some((card) => card.id === 'jin-feigned-retreat')).toBe(true);
         expect(state.core.discardPileCount).toBe(buildCore().discardPileCount);
+        expect(state.sys.eventStream.entries.some(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED')).toBe(false);
     });
 
     it('响应期间只允许守方打出对应真实手牌，并阻止提前结算', () => {
@@ -258,7 +259,7 @@ describe('七大恨诈败诱敌', () => {
 
     it('打出后消耗真实手牌、取消劫掠并让原骑兵进入正常战斗', () => {
         const offered = declareCavalryPlunder();
-        const initialDiscardPileCount = offered.core.discardPileCount;
+        const initialDiscardPileCount = offered.core.factions.jin.discardPileCount;
         const next = execute(offered, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '2',
@@ -267,7 +268,7 @@ describe('七大恨诈败诱敌', () => {
 
         expect(next.core.feignedRetreatSelection).toBeNull();
         expect(next.core.handCards.some((card) => card.id === 'jin-feigned-retreat')).toBe(false);
-        expect(next.core.discardPileCount).toBe(initialDiscardPileCount + 1);
+        expect(next.core.factions.jin.discardPileCount).toBe(initialDiscardPileCount + 1);
         expect(next.core.regions.find((region) => region.id === 'city-region-14')?.population).toBe(3);
         expect(next.core.actionLog.some((entry) => entry.text.includes('诈败诱敌'))).toBe(true);
         expect(next.core.actionLog.some((entry) => /劫掠 \d+ 人口/.test(entry.text))).toBe(false);
@@ -280,6 +281,64 @@ describe('七大恨诈败诱敌', () => {
                 regionId: 'city-region-16',
             }),
         ]));
+    });
+
+    it('诈败出牌后才公开本场正式骰果和参战兵牌', () => {
+        const offered = declareCavalryPlunder();
+        expect(offered.sys.eventStream.entries.some(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED')).toBe(false);
+        const next = execute(offered, { type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD, playerId: '2',
+            payload: { cardId: 'jin-feigned-retreat' } } satisfies QidahenCommand);
+        const visual = next.sys.eventStream.entries.filter(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED');
+        expect(visual).toHaveLength(1);
+        const report = (visual[0].event.payload as { report: { rolls: unknown; battlefield: { pieces: Array<{id: string}> } } }).report;
+        expect(report.rolls).toEqual(next.core.postBattleSelection?.battleRolls);
+        expect(next.core.postBattleSelection?.battleReport).toEqual(report);
+        expect(report.battlefield.pieces.some(piece => piece.id.startsWith('ming-cavalry-'))).toBe(true);
+        expect(report.battlefield.pieces.some(piece => piece.id === 'jin-infantry-1')).toBe(true);
+        expect(JSON.stringify(report)).not.toContain('jin-feigned-retreat');
+    });
+
+    it('诈败响应前不掷骰，打出后只按正式骰数掷一次，不使用则无需战斗骰', () => {
+        let diceCalls = 0;
+        const counted: RandomFn = { ...random, d: () => { diceCalls += 1; return 4; } };
+        const run = (state: MatchState<QidahenCore>, command: Command) => {
+            const result = executePipeline({ domain: engineConfig.domain, systems: engineConfig.systems as any },
+                state, command, counted, ['0', '1', '2']);
+            expect(result.success).toBe(true);
+            return result.state;
+        };
+        const declare = () => run(stateOf(buildCore()), { type: QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
+            playerId: '0', payload: { attackerCavalryPlunder: true, attackerCavalryPlunderSource: 'attacker' } });
+        const offered = declare();
+        expect(diceCalls).toBe(0);
+        expect(offered.sys.eventStream.entries.some(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED')).toBe(false);
+        const fought = run(offered, { type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD, playerId: '2', payload: { cardId: 'jin-feigned-retreat' } });
+        const rolls = fought.core.postBattleSelection?.battleRolls;
+        expect(rolls).toBeTruthy();
+        const actualDice = rolls!.stages.reduce((total, stage) => total + stage.attackerRolls.length + stage.defenderRolls.length, 0);
+        expect(actualDice).toBeGreaterThan(0);
+        expect(diceCalls).toBe(actualDice);
+        diceCalls = 0;
+        const secondOffer = declare();
+        const skipped = run(secondOffer, { type: 'SYS_INTERACTION_RESPOND', playerId: '2',
+            payload: { interactionId: secondOffer.sys.interaction?.current?.id, optionId: 'skip' } });
+        expect(diceCalls).toBe(0);
+        expect(skipped.sys.eventStream.entries.some(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED')).toBe(false);
+    });
+
+    it('交互入口宣告劫掠时也等待诈败响应，不预先消耗骰子', () => {
+        const state = stateOf(buildCore());
+        expect(getOptionIds(state)).toContain('cavalry-plunder-attacker');
+        let diceCalls = 0;
+        const counted: RandomFn = { ...random, d: () => { diceCalls += 1; return 4; } };
+        const result = executePipeline({ domain: engineConfig.domain, systems: engineConfig.systems as any }, state,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: {
+                interactionId: state.sys.interaction?.current?.id, optionId: 'cavalry-plunder-attacker',
+            } }, counted, ['0', '1', '2']);
+        expect(result.success).toBe(true);
+        expect(result.state.core.feignedRetreatSelection).not.toBeNull();
+        expect(diceCalls).toBe(0);
+        expect(result.state.sys.eventStream.entries.some(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED')).toBe(false);
     });
 
     it.each([

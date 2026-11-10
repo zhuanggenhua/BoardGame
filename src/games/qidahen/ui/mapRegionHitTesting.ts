@@ -19,7 +19,7 @@ export function resolveQidahenMapRegionAtPoint(
 }
 
 export function renderQidahenCitySelectionFeedback(
-    canvas: HTMLCanvasElement, candidateIds: readonly string[], selectedId: string | null,
+    canvas: HTMLCanvasElement, candidateIds: readonly string[], selectedId: string | null, recommendedId: string | null = null,
 ): void {
     const context = canvas.getContext('2d');
     if (!context) return;
@@ -28,9 +28,9 @@ export function renderQidahenCitySelectionFeedback(
         const { left, top, width, height } = region.markerBounds;
         // 原图城名位于土地之上；地域填色/描线不穿过城名本体。
         context.clearRect(left, top, width, height);
-        if (!candidateIds.includes(region.id) && selectedId !== region.id) continue;
-        context.lineWidth = selectedId === region.id ? 2 : 1;
-        context.strokeStyle = selectedId === region.id ? '#fff5cf' : '#6dd78b';
+        if (!candidateIds.includes(region.id) && selectedId !== region.id && recommendedId !== region.id) continue;
+        context.lineWidth = selectedId === region.id || recommendedId === region.id ? 2 : 1;
+        context.strokeStyle = selectedId === region.id ? '#ffdd70' : recommendedId === region.id ? '#fff5cf' : '#6dd78b';
         context.strokeRect(left - 1, top - 1, width + 2, height + 2);
     }
 }

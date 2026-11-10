@@ -1,0 +1,124 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "sourceRevision": "sha256:f9f55d436cec7366a439cfae74f1c9dcbce19e8d69320dfce026f9048dfd4a94",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r82_mobile_visual_fresh"
+  },
+  "method": "本轮手机四张变化图重新逐张实读，一张与上一轮原图字节一致并沿用原实读结论。分别检查文字必要性、关键对象、支付与检视动作及布局，不审数值结算，不宣称五张全部重读。",
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-00-轮盘两格与指定对手.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/移动-00-轮盘两格与指定对手.png",
+      "sha256": "c5d79dc5b224f691dedc39aafe7de9bef1affe42f573044df5824102e88f1da0",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重新实读整屏：对手弹框的蒙古、后金按钮与辽北军屯地点清楚；教程只补指定后金及抽两张牌，抽牌数量未由按钮表达，具有独立必要性。地区浮层仅留名称，地图兵牌和手牌仍在，没有用军种文字副本复述对象；下一步明确点击后金，无遮挡缺图。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r82_mobile_visual_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-mobile.json",
+      "actualReaderEntry": "/entries/0",
+      "unchangedEvidence": "当前截图与上一轮已逐张实读并通过的原始截图字节一致，已核验两文件哈希及比较记录，因此保留原观察与检查结论，不重复读图。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-mobile.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "sha256": "74697e972b54ee443272b6f843220eeeee9ea77fe0c822c5172c0a20b317b5fd",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本轮重新实读整屏：叶赫部名称与贴合地区的候选轮廓露在支付托盘上方，提示仅点名本次练习目标，补足具体选谁，没有重复列出部队和调度路线。支付进度、地图选择说明、确认及取消入口完整，手牌仍可见，删减未造成关键目标信息丢失。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r82_mobile_visual_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r84-mobile.json",
+      "actualReaderEntry": "/entries/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+      "sha256": "a7249af4c6354922bf294320ea57ab0b659fae9c406936ed9209d897f529b0ab",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本轮重新实读整屏：五张实际手牌完整加载，银两和鸳鸯阵可辨，托盘保留支付进度及当前目标路线。教程只补用银两保留战术牌的当前取舍与检视手势，没有额外播报军屯结果；手牌选择区未被托盘覆盖，地区名称仍由地图承接。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r82_mobile_visual_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r84-mobile.json",
+      "actualReaderEntry": "/entries/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-03-长按银两检视卡面.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-03-长按银两检视卡面.png",
+      "sha256": "9cd5ea59bf2350e00d906cc2896d90919572d69f5895db0078c729ece22b8283",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本轮重新实读整屏：中央银两卡面完整清晰，标题、银锭图案及四边均可见，关闭按钮独立明确。读牌由真实卡面承接，没有新增复述卡面或结果的说明；底层支付场景保留，当前焦点明确为检视，关闭后的选择状态由下一张衔接。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r82_mobile_visual_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r84-mobile.json",
+      "actualReaderEntry": "/entries/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "sha256": "84bf648b2cae2990589835d9f8d71e3fa3b9d15b6052e4185af912894f2fb71d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本轮重新实读整屏：银两已抬升并显示选中标记，支付托盘显示选中银两及满足支付数量，确认执行按钮清楚亮起。提示补明确认会弃掉该牌的后果，不另建结果摘要；其它手牌、目标路线与取消动作仍可见，返回后的选择和下一步相符。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r82_mobile_visual_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r84-mobile.json",
+      "actualReaderEntry": "/entries/4"
+    }
+  ],
+  "summary": {
+    "revise": 0,
+    "carriedForward": 1,
+    "total": 5,
+    "pass": 4
+  }
+}

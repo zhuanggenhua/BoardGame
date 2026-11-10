@@ -73,6 +73,19 @@ const gameManifest: GameManifestEntry = {
 };
 
 describe('CreateRoomModal AI default state', () => {
+    it('经典建房配置保留取消与提交操作', () => {
+        const onConfirm = vi.fn();
+        render(createElement(CreateRoomModal, {
+            isOpen: true, onClose: vi.fn(), onConfirm, gameManifest, visualStyle: 'classic',
+        }));
+
+        expect(screen.getByTestId('create-room-modal')).toHaveClass('classic-room-dialog');
+        expect(screen.getByTestId('create-room-cancel-button')).toHaveTextContent('取消');
+        fireEvent.change(screen.getByTestId('create-room-name-input'), { target: { value: '经典房间' } });
+        fireEvent.click(screen.getByTestId('create-room-confirm-button'));
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ roomName: '经典房间' }));
+    });
+
     it('纸牌帮没有保存偏好时默认按四人创建房间', () => {
         const onConfirm = vi.fn();
 
@@ -545,6 +558,7 @@ describe('CreateRoomModal AI default state', () => {
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             setupSelections: {
                 qidahenInMatchScenarioVote: 'enabled',
+                specialCards: 'disabled',
             },
         }));
     });

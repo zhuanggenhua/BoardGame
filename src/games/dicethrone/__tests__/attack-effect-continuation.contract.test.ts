@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameEvent } from '../../../engine/types';
 import type { DiceThroneEvent } from '../domain/types';
 import { attachAttackEffectContinuation, getEffectSequenceBlockerId, isAttackEffectSequenceBlocker } from '../domain/attackEffectContinuationTypes';
+import { isEffectSequenceSuspensionEvent } from '../domain/effects';
 import { beginEffectSequenceContinuation, resumeCompletedEffectSequence } from '../domain/attackEffectContinuation';
 import { createHeroMatchup, fixedRandom } from './test-utils';
 
@@ -86,6 +87,36 @@ function createState() {
 }
 
 describe('攻击效果续接帧完成信号合同', () => {
+    it('统一暂停判定覆盖每类交互；待确认的展示骰阻塞，空奖励骰不阻塞', () => {
+        for (const { request } of cases.filter(item => item.name !== '奖励骰')) {
+            expect(isEffectSequenceSuspensionEvent(request as DiceThroneEvent)).toBe(true);
+        }
+
+        const interactiveBonus = {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: {
+                settlement: {
+                    id: 'pending-settlement', sourceAbilityId: 'bonus', attackerId: '0', targetId: '1',
+                    dice: [{ index: 0, value: 3, face: '1' }], rerollCostTokenId: 'cp', rerollCostAmount: 1,
+                    rerollCount: 0, readyToSettle: false,
+                },
+            },
+            timestamp: 10,
+        } as DiceThroneEvent;
+        const displayOnlyBonus = {
+            ...interactiveBonus,
+            payload: { settlement: { ...interactiveBonus.payload.settlement, displayOnly: true } },
+        } as DiceThroneEvent;
+        const emptyBonus = {
+            ...interactiveBonus,
+            payload: { settlement: { ...interactiveBonus.payload.settlement, dice: [] } },
+        } as DiceThroneEvent;
+
+        expect(isEffectSequenceSuspensionEvent(interactiveBonus)).toBe(true);
+        expect(isEffectSequenceSuspensionEvent(displayOnlyBonus)).toBe(true);
+        expect(isEffectSequenceSuspensionEvent(emptyBonus)).toBe(false);
+    });
+
     it.each(cases)('$name 收口后只恢复一次并移除帧', ({ request, blockerId, completion }) => {
         let state = createState();
         state = beginEffectSequenceContinuation(state, tagged(request), blockerId).state;

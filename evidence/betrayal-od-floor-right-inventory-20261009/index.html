@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂楼层右下角属性对齐与持有区加大验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂楼层右下角属性对齐与持有区加大验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-PC-1920x1080-属性条与HUD.jpg","displayTitle":"01 · PC · 1920x1080 · 属性条与HUD","description":"电脑开局牌桌，楼层切换在右下角用小箭头显示一层，属性格金色填满并与格间竖线对齐，左下急救包加大且空预兆行收起。","kind":"image"},{"relativePath":"02-Vivo-796x360-属性条与HUD等比.jpg","displayTitle":"02 · Vivo · 796x360 · 属性条与HUD等比","description":"手机横屏同一牌桌，楼层切换仍在右下角小箭头，属性格对齐可读，急救包可读，能力说明换行且未挡住持有区。","kind":"image"},{"relativePath":"03-PC-1920x1080-当前值与初始值分离.jpg","displayTitle":"03 · PC · 1920x1080 · 当前值与初始值分离","description":"电脑速度初始格深绿、当前格金色相邻共边，物品与预兆都空时持有区只留当前持有区标题，楼层切换在右下角。","kind":"image"},{"relativePath":"04-PC-1920x1080-高密度持有区.jpg","displayTitle":"04 · PC · 1920x1080 · 高密度持有区","description":"电脑高密度持有，物品多张加大卡牌铺开并露出第六张边，预兆书本和狗不占空行，楼层切换仍在右下角。","kind":"image"},{"relativePath":"05-PC-1920x1080-一层切换后.jpg","displayTitle":"05 · PC · 1920x1080 · 一层切换后","description":"玩家切到一层后，楼层切换仍是右下角上下箭头加一层字样，未挡住继续按钮。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

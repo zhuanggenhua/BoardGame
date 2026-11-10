@@ -1,0 +1,51 @@
+{
+  "status": "PASS",
+  "sourceSnapshot": {
+    "index.html": "27b1226a8488f976e9f9ce81dfcfaa2f4cd9b902d4e22b6cdcb28e1de7616b4e",
+    "mobile.css": "3d3037383e77db858747e2f25aa3e88d4936d1ef588a4d3ca31cd7841ac867cf",
+    "capture.mjs": "1203e736acb1852718b3990a4ef73a90d3771fe77f36804b25c182f4f64314f8",
+    "mobile-capture.mjs": "3d515e6c3f563316041c9966b3fa0585a6582270cf0beeef7c04b892d7224b65",
+    "library-tasks.mjs": "e8f3c111e90795bc81bfc85e9cbfa3a265803711a495c6b03be685a2c519a8b0",
+    "library-task.behavior.test.ts": "d3b1635532679ecec567237f937fb962a18d370598b080def475a347c7367e1a",
+    "vitest.config.ts": "910172b0efdde51d13f83f49d86a88b867854682b4d60e5cfeb8c102327fb148"
+  },
+  "priorFailure": {
+    "original": "移动端收藏库游戏都看不见了怎么通过验收的",
+    "result": "旧首屏八款中只有两款完整可见",
+    "log": "library-main-task-red.log"
+  },
+  "vitest": {
+    "tests": 2,
+    "status": "PASS",
+    "log": "library-task-vitest.log",
+    "checks": [
+      "默认八款全部可见且中心可点击",
+      "搜索有结果、无结果与清除恢复",
+      "按时长和名称排序",
+      "封面单次进入",
+      "返回恢复实际滚动位置",
+      "展开折叠次要情报",
+      "底栏回库"
+    ]
+  },
+  "browser": {
+    "status": "PASS",
+    "log": "library-task-capture.log",
+    "viewports": [
+      "1920×1080",
+      "375×812",
+      "375×540"
+    ],
+    "independentInAppCheck": "内置浏览器输入战争，单次进入召唤师战争，返回后搜索仍为战争且焦点回到该游戏"
+  },
+  "visual": {
+    "fresh": 16,
+    "carriedForward": 27,
+    "total": 43,
+    "reviewFile": ".visual-review.json"
+  },
+  "limitations": [
+    "三百七十五乘五百四十仅为缩短可视高度的压力替身，未覆盖真机软键盘",
+    "命运支配与井字棋保留既有演示素材占位，未新增游戏素材接入"
+  ]
+}

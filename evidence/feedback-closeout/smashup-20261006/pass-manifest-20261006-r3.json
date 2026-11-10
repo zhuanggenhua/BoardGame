@@ -1,0 +1,100 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "feedback-closeout",
+  "generatedAt": "2026-10-06",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index-r3.json",
+  "requirements": [
+    {
+      "requirement": "时间盒真实选项与提交收口",
+      "status": "PASS",
+      "evidence": [
+        "evidence/feedback-closeout/smashup-20261006/01-6a1118-before-time-box.jpg",
+        "evidence/feedback-closeout/smashup-20261006/02-6a1118-during-time-box-reaction.jpg",
+        "evidence/feedback-closeout/smashup-20261006/03-6a1118-after-pass.jpg"
+      ]
+    },
+    {
+      "requirement": "外星人探究真实目标选择与弃牌结果",
+      "status": "PASS",
+      "evidence": [
+        "evidence/feedback-closeout/smashup-20261006/04-69a2ed9-before-probe.jpg",
+        "evidence/feedback-closeout/smashup-20261006/05-69a2ed9-during-target-choice.jpg",
+        "evidence/feedback-closeout/smashup-20261006/06-69a2ed9-after-discard.jpg"
+      ]
+    },
+    {
+      "requirement": "海盗湾计分、移动随从与重新计分",
+      "status": "PASS",
+      "evidence": [
+        "evidence/feedback-closeout/smashup-20261006/07-69c93-before-pirate-cove-r3.jpg",
+        "evidence/feedback-closeout/smashup-20261006/08-69c93-during-pirate-cove-r3.jpg",
+        "evidence/feedback-closeout/smashup-20261006/09-69c93-during-pirate-cove-target-r3.jpg",
+        "evidence/feedback-closeout/smashup-20261006/10-69c93-after-pirate-cove-r3.jpg"
+      ],
+      "notes": "同一次真实入口重跑，前态、中态两个真实交互窗口、后态均有中文截图；运行时事件证明海盗湾先计分，再移动海盗王，海盗王留在目标基地。"
+    },
+    {
+      "requirement": "托尔图加 afterScoring 移动后随从仍存在并进入替换基地",
+      "status": "PASS",
+      "evidence": [
+        "evidence/feedback-closeout/smashup-20261006/10-69c75-before-tortuga.jpg",
+        "evidence/feedback-closeout/smashup-20261006/11-69c75-during-tortuga-choice.jpg",
+        "evidence/feedback-closeout/smashup-20261006/12-69c75-after-tortuga-move.jpg"
+      ]
+    },
+    {
+      "requirement": "在线 AI 三基地计分真实入口自动收口",
+      "status": "PASS",
+      "evidence": [
+        "evidence/feedback-closeout/smashup-20261006/18-69c903-online-before-r2.jpg",
+        "evidence/feedback-closeout/smashup-20261006/19-69c903-online-during-r2.jpg",
+        "evidence/feedback-closeout/smashup-20261006/20-69c903-online-after-r2.jpg"
+      ]
+    },
+    {
+      "requirement": "AI 计分交互前中后画面可读代表态",
+      "status": "PASS",
+      "evidence": [
+        "evidence/feedback-closeout/smashup-20261006/15-69c903-visual-before.jpg",
+        "evidence/feedback-closeout/smashup-20261006/16-69c903-visual-during.jpg",
+        "evidence/feedback-closeout/smashup-20261006/17-69c903-visual-after.jpg"
+      ]
+    }
+  ],
+  "media": [
+    "evidence/feedback-closeout/smashup-20261006/01-6a1118-before-time-box.jpg",
+    "evidence/feedback-closeout/smashup-20261006/02-6a1118-during-time-box-reaction.jpg",
+    "evidence/feedback-closeout/smashup-20261006/03-6a1118-after-pass.jpg",
+    "evidence/feedback-closeout/smashup-20261006/04-69a2ed9-before-probe.jpg",
+    "evidence/feedback-closeout/smashup-20261006/05-69a2ed9-during-target-choice.jpg",
+    "evidence/feedback-closeout/smashup-20261006/06-69a2ed9-after-discard.jpg",
+    "evidence/feedback-closeout/smashup-20261006/07-69c93-before-pirate-cove-r3.jpg",
+    "evidence/feedback-closeout/smashup-20261006/08-69c93-during-pirate-cove-r3.jpg",
+    "evidence/feedback-closeout/smashup-20261006/09-69c93-during-pirate-cove-target-r3.jpg",
+    "evidence/feedback-closeout/smashup-20261006/10-69c93-after-pirate-cove-r3.jpg",
+    "evidence/feedback-closeout/smashup-20261006/10-69c75-before-tortuga.jpg",
+    "evidence/feedback-closeout/smashup-20261006/11-69c75-during-tortuga-choice.jpg",
+    "evidence/feedback-closeout/smashup-20261006/12-69c75-after-tortuga-move.jpg",
+    "evidence/feedback-closeout/smashup-20261006/18-69c903-online-before-r2.jpg",
+    "evidence/feedback-closeout/smashup-20261006/19-69c903-online-during-r2.jpg",
+    "evidence/feedback-closeout/smashup-20261006/20-69c903-online-after-r2.jpg",
+    "evidence/feedback-closeout/smashup-20261006/15-69c903-visual-before.jpg",
+    "evidence/feedback-closeout/smashup-20261006/16-69c903-visual-during.jpg",
+    "evidence/feedback-closeout/smashup-20261006/17-69c903-visual-after.jpg"
+  ],
+  "notes": [
+    "本轮海盗湾链来自同一次真实浏览器 E2E 运行，四张截图按前态、两个中态、后态呈现。",
+    "海盗湾中态截图直接显示中文交互标题，后态截图直接显示海盗王已位于绿洲丛林。",
+    "运行时事件顺序为海盗湾计分、海盗王移动、海盗湾来源基地清场并换新基地；目标基地未因夹具力量达到破坏点而二次清场。",
+    "旧 pass-manifest-20261006-r2.json 保留为历史 REVISE 诊断记录，本清单是本轮最终验收清单。",
+    "本轮没有修改 UI 或交互语义，只修正了 E2E 夹具的力量分配以让真人成为海盗湾非冠军，并把目标基地降到不触发第二次结算。"
+  ]
+}

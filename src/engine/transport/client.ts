@@ -9,6 +9,7 @@
 
 import { io, type Socket } from 'socket.io-client';
 import msgpackParser from 'socket.io-msgpack-parser';
+import type { FeedbackReplayCaptureRequest, FeedbackReplayCaptureResult } from './feedbackReplayCaptureTypes';
 import { SOCKET_CONNECT_TIMEOUT_MS, getSocketIoTransports, shouldTryAllSocketTransports } from '../../lib/socketConnectionConfig';
 import type {
     MatchPlayerInfo,
@@ -133,7 +134,7 @@ export class GameTransportClient {
             && this._connectionState === 'connected';
     }
 
-    captureFeedbackReplay(request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }): Promise<{ accepted: boolean; captureId?: string }> {
+    captureFeedbackReplay(request: FeedbackReplayCaptureRequest): Promise<FeedbackReplayCaptureResult> {
         if (!this.socket || this._destroyed || this._connectionState !== 'connected' || !this.config.playerID) {
             return Promise.resolve({ accepted: false });
         }

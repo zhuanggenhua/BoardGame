@@ -1,0 +1,72 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-23",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "test-results/evidence-screenshots/betrayal/haunt-reveal-discovery-confirmation-final-20260923"
+  },
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts \"普通预兆\"",
+      "result": "2 passed",
+      "scope": "触发作祟与未触发作祟的预兆确认、物理骰子与结果承接"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "预兆作祟检定显示物理骰子、总点数，并先等待所有真人确认。",
+      "status": "PASS",
+      "evidence": [
+        "触发路径显示物理骰子滚动和总点数 8，初始按钮为确认 0/3。",
+        "未触发路径显示物理骰子和总点数 0，初始按钮为确认 0/3。"
+      ],
+      "images": [
+        "01-触发作祟-物理骰子滚动中-确认0-3.jpg",
+        "05-未触发作祟-物理骰子总点数0-确认0-3.jpg"
+      ]
+    },
+    {
+      "requirement": "一名玩家确认后结果层仍保留，显示已确认 1/3。",
+      "status": "PASS",
+      "evidence": [
+        "触发路径本人确认后仍显示已确认 1/3。",
+        "未触发路径本人确认后仍显示已确认 1/3。"
+      ],
+      "images": [
+        "02-触发作祟-本人确认后仍保留-确认1-3.jpg",
+        "06-未触发作祟-本人确认后仍保留-确认1-3.jpg"
+      ]
+    },
+    {
+      "requirement": "全员确认后才关闭结果层并进入对应后续流程。",
+      "status": "PASS",
+      "evidence": [
+        "触发路径全员确认后进入剧本书，再进入作祟中阶段。",
+        "未触发路径全员确认后返回作祟前牌桌，0 点不触发作祟。"
+      ],
+      "images": [
+        "03-触发作祟-全员确认后打开剧本书.jpg",
+        "04-触发作祟-进入作祟阶段.jpg",
+        "07-未触发作祟-全员确认后回到牌桌.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\01-触发作祟-物理骰子滚动中-确认0-3.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\02-触发作祟-本人确认后仍保留-确认1-3.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\03-触发作祟-全员确认后打开剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\04-触发作祟-进入作祟阶段.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\05-未触发作祟-物理骰子总点数0-确认0-3.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\06-未触发作祟-本人确认后仍保留-确认1-3.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation-final-20260923\\07-未触发作祟-全员确认后回到牌桌.jpg"
+  ]
+}

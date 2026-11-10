@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import sharp from 'sharp';
 import {
     buildQidahenRegionMaskColorMap,
     findQidahenRegionGraphEdge,
@@ -210,7 +211,8 @@ describe('七大恨区域图谱运行时解析', () => {
             expect(region.name).toBe(persistedRegion?.name);
             expect(graphNode?.name).toBe(persistedRegion?.name);
             expect(region.seed).toEqual(persistedRegion?.seed ?? null);
-            expect(region.center).toEqual(graphNode?.center ?? graphNode?.seed ?? persistedRegion?.seed ?? null);
+            expect(region.center).toEqual(region.id === 'city-region-8' ? persistedRegion?.seed
+                : graphNode?.center ?? graphNode?.seed ?? persistedRegion?.seed ?? null);
             expect(region.pixelCount).toBe(graphNode?.pixelCount ?? 0);
             expect(region.printedRegionIds.every((printedRegionId) => QIDAHEN_MASK_REGION_BY_ID.has(printedRegionId))).toBe(true);
         }
@@ -221,6 +223,16 @@ describe('七大恨区域图谱运行时解析', () => {
         expect(QIDAHEN_RUNTIME_REGION_DEFINITIONS.find((region) => region.id === 'city-region-21')?.printedRegionIds).toEqual([
             'city-region-21',
         ]);
+    });
+
+    it('巴林运行时锚点位于真实地区，算术质心仍保留在图谱中', async () => {
+        const raw = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+        const region = QIDAHEN_RUNTIME_REGION_DEFINITIONS.find(item => item.id === 'city-region-8')!;
+        const centroid = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(region.id)!.center!;
+        const pixel = ({ x, y }: { x: number; y: number }) => [...raw.data.subarray((y * raw.info.width + x) * 4, (y * raw.info.width + x) * 4 + 4)];
+        expect(region.center).toEqual({ x: 478, y: 201 });
+        expect(pixel(region.center!)).toEqual([191, 120, 68, 255]);
+        expect(pixel(centroid)[3]).toBe(0);
     });
 
     it('独立土地一一映射，不能因旧推荐编号把点击转移到另一片土地', () => {

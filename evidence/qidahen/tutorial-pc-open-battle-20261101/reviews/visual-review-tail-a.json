@@ -1,0 +1,155 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": 94,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r134_tail_a"
+  },
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\28-opponent-round.png",
+      "sha256": "fa03aca756300099221c8e4d74f6160d29eb2bc764acc78a8b3d840c7560911a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手回合说明与轮盘蓝框对应，下一步入口清楚，顶部势力读数和牌堆入口保留，教程文字完整，无报错或乱码。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\29-diplomacy-target.png",
+      "sha256": "04e55ce010800ffcb6e8e0bb7cf2001ed2645fae35f3dddca5a9656656870533",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "外交候选区域以轮廓高亮呈现，外喀尔喀部名称与教程说明可辨，右侧结束外交入口完整，教程未遮住当前候选。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\30-diplomacy-finish.png",
+      "sha256": "d2061e0d2f7ca051c02063431e74cf5fdc13d8eea4673dfa950d95621bf1f722",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "外交结束选项具有焦点描边，教程说明友好标记移除后的下一步，选项和说明各自完整，未见遮挡裁切或错误。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\31-hire-action.png",
+      "sha256": "a372ebd8db3f3954fb54e86e908bd325a462c5873a1bac8f15844b670fdb48c8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "雇佣动作选项具有清楚焦点，右侧行动列表与下方教程相邻分离，底部手牌入口保留，玩家可辨本步行动。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\32-hire-target.png",
+      "sha256": "a18efe3663aa7c95cb1792a46fa15dbd6af8896df7b9533b2b96d6cbdaa81e72",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "雇佣军建立区域以地图轮廓高亮，辽东名称可见，右侧选择标题与确认入口完整，教程位于候选之外。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\33-new-year.png",
+      "sha256": "342c54ba0b37eaa31eb22f504f41332f712f189baea8f1772e57bbadbe99db91",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新年说明位于轮盘旁且文字完整，下一步按钮清楚，右侧维护山海关选项仍可辨，顶部读数与牌堆入口保留。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\34-maintain-shanhai.png",
+      "sha256": "6c7ab0936bf847eba79507cfbd322384ac85f90c9772cceb38ca516fc8c4a71f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "维护山海关的弃牌维护与放弃维护选项完整，当前选项描边清楚，教程说明位于面板下方，未压住真实操作控件。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\35-upkeep-yehe.png",
+      "sha256": "76a8507bb93907ef513699af234cceea933d7a7784bfa901410e2078acd09a47",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部区域与三支部队候选可见，右侧耗损标题和确认入口完整，手牌候选具有边界与放大入口，教程未覆盖候选部队。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\36-upkeep-yehe-selected.png",
+      "sha256": "836cf77cc623e2264a4ac9d22d3f40fbf8909369f9d2b6380a3b9f5d0c26ab7c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张选中手牌抬升显示并带已选标识，卡牌主体可辨，右侧确认按钮明亮，叶赫部候选与教程保持可见。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\37-hand-scroll-end.png",
+      "sha256": "9e4d31f627cb4c141ccd43f04832e24d7a5cb64b9b302ca5f37801386898f78d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌横向滚动末端呈现新的牌面与左侧返回入口，叶赫部候选和右侧确认仍完整，教程文字无裁切，未见错误。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\38-upkeep-pyongyang.png",
+      "sha256": "60d5f8c28dec872cc876e75b2ed3387c05d03f3b767f08c1817f2addba9aa916",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "平壤区域和雇佣军候选居中可辨，部队绿色描边贴合主体，右侧耗损控件与上方教程分离，文字完整且没有遮挡候选。",
+      "failures": []
+    }
+  ]
+}

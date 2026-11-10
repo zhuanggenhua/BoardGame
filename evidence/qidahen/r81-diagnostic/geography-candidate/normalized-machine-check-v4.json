@@ -1,0 +1,317 @@
+[
+  {
+    "id": "city-region-1",
+    "seedMatches": true,
+    "area": 13933,
+    "components": [
+      13933
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-2",
+    "seedMatches": true,
+    "area": 24798,
+    "components": [
+      24798
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-3",
+    "seedMatches": true,
+    "area": 35507,
+    "components": [
+      35507
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-4",
+    "seedMatches": true,
+    "area": 32063,
+    "components": [
+      32063
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-5",
+    "seedMatches": true,
+    "area": 24571,
+    "components": [
+      24571
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-6",
+    "seedMatches": true,
+    "area": 21682,
+    "components": [
+      21682
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-7",
+    "seedMatches": true,
+    "area": 28178,
+    "components": [
+      28178
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-8",
+    "seedMatches": true,
+    "area": 160413,
+    "components": [
+      160413
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-9",
+    "seedMatches": true,
+    "area": 7841,
+    "components": [
+      7841
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-10",
+    "seedMatches": true,
+    "area": 12387,
+    "components": [
+      12387
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-11",
+    "seedMatches": true,
+    "area": 12479,
+    "components": [
+      12479
+    ],
+    "count": 1
+  },
+  {
+    "id": "xian-xing",
+    "seedMatches": true,
+    "area": 1132,
+    "components": [
+      1132
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-13",
+    "seedMatches": true,
+    "area": 15887,
+    "components": [
+      15887
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-14",
+    "seedMatches": true,
+    "area": 41914,
+    "components": [
+      41914
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-15",
+    "seedMatches": true,
+    "area": 13779,
+    "components": [
+      13779
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-16",
+    "seedMatches": true,
+    "area": 23757,
+    "components": [
+      23757
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-17",
+    "seedMatches": true,
+    "area": 7034,
+    "components": [
+      7034
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-18",
+    "seedMatches": true,
+    "area": 1384,
+    "components": [
+      1384
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-19",
+    "seedMatches": true,
+    "area": 6503,
+    "components": [
+      6503
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-20",
+    "seedMatches": true,
+    "area": 34050,
+    "components": [
+      34050
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-21",
+    "seedMatches": true,
+    "area": 20577,
+    "components": [
+      20577
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-26",
+    "seedMatches": true,
+    "area": 29602,
+    "components": [
+      29602
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-27",
+    "seedMatches": true,
+    "area": 40910,
+    "components": [
+      40910
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-28",
+    "seedMatches": true,
+    "area": 10046,
+    "components": [
+      10046
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-29",
+    "seedMatches": true,
+    "area": 1289,
+    "components": [
+      1289
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-30",
+    "seedMatches": true,
+    "area": 44318,
+    "components": [
+      44318
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-31",
+    "seedMatches": true,
+    "area": 27763,
+    "components": [
+      27763
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-32",
+    "seedMatches": true,
+    "area": 17298,
+    "components": [
+      17298
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-33",
+    "seedMatches": true,
+    "area": 24401,
+    "components": [
+      24401
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-15-liaodong",
+    "seedMatches": true,
+    "area": 17262,
+    "components": [
+      17262
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-19-liaoxi",
+    "seedMatches": true,
+    "area": 9001,
+    "components": [
+      9001
+    ],
+    "count": 1
+  },
+  {
+    "id": "duoyan",
+    "seedMatches": true,
+    "area": 9938,
+    "components": [
+      9938
+    ],
+    "count": 1
+  },
+  {
+    "id": "xuan-fu",
+    "seedMatches": true,
+    "area": 15762,
+    "components": [
+      15762
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-28-jizhen",
+    "seedMatches": true,
+    "area": 20058,
+    "components": [
+      20058
+    ],
+    "count": 1
+  },
+  {
+    "id": "city-region-22",
+    "seedMatches": true,
+    "area": 10609,
+    "components": [
+      10609
+    ],
+    "count": 1
+  }
+]

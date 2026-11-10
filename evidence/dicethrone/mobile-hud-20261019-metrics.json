@@ -1,0 +1,1275 @@
+{
+  "scope": "本地同源网页，HUD尺寸和文案完整性，非安卓设备验收",
+  "before": {
+    "source": "实际修复前同源测试牌桌，无状态常态，非旧逻辑重放",
+    "viewport": {
+      "width": 936,
+      "height": 432
+    },
+    "phaseRenderedFont": 5.731462878715702,
+    "phase": {
+      "x": 19.193750381469727,
+      "y": 16.631250381469727,
+      "width": 107.5250015258789,
+      "height": 131.8874969482422
+    }
+  },
+  "after": [
+    {
+      "evidence": "dicethrone-left-sidebar-mobile-regression-layout",
+      "state": "无 Token 常态",
+      "viewport": "PC 1920x1080",
+      "layout": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "cssVars": {
+          "boardShellScale": "1",
+          "boardShellDesignWidth": "2340px",
+          "boardShellDesignHeight": "",
+          "boardShellReferenceWidth": "1920px",
+          "boardShellReferenceHeight": "",
+          "boardShellLogicalHeight": ""
+        },
+        "sidebar": {
+          "x": 28.796875,
+          "y": 38.390625,
+          "width": 307.1875,
+          "height": 1012.8125,
+          "top": 38.390625,
+          "right": 335.984375,
+          "bottom": 1051.203125,
+          "left": 28.796875
+        },
+        "turnOrderPanel": {
+          "x": 28.796875,
+          "y": 38.390625,
+          "width": 307.1875,
+          "height": 332.90625,
+          "top": 38.390625,
+          "right": 335.984375,
+          "bottom": 371.296875,
+          "left": 28.796875
+        },
+        "selfPanelGroup": {
+          "x": 28.796875,
+          "y": 617.890625,
+          "width": 307.1875,
+          "height": 433.3125,
+          "top": 617.890625,
+          "right": 335.984375,
+          "bottom": 1051.203125,
+          "left": 28.796875
+        },
+        "phase": {
+          "x": 47.984375,
+          "y": 41.578125,
+          "width": 268.8125,
+          "height": 329.71875,
+          "top": 41.578125,
+          "right": 316.796875,
+          "bottom": 371.296875,
+          "left": 47.984375
+        },
+        "statusTokens": null,
+        "stats": {
+          "x": 28.796875,
+          "y": 627.484375,
+          "width": 307.1875,
+          "height": 128.609375,
+          "top": 627.484375,
+          "right": 335.984375,
+          "bottom": 756.09375,
+          "left": 28.796875
+        },
+        "deck": {
+          "x": 28.796875,
+          "y": 765.6875,
+          "width": 307.1875,
+          "height": 285.515625,
+          "top": 765.6875,
+          "right": 335.984375,
+          "bottom": 1051.203125,
+          "left": 28.796875
+        },
+        "deckCard": {
+          "x": 47.984375,
+          "y": 771.4375,
+          "width": 195.828125,
+          "height": 279.765625,
+          "top": 771.4375,
+          "right": 243.8125,
+          "bottom": 1051.203125,
+          "left": 47.984375
+        },
+        "playerBoard": {
+          "x": 311.6199951171875,
+          "y": 171.36312866210938,
+          "width": 970.59375,
+          "height": 595.1875,
+          "top": 171.36312866210938,
+          "right": 1282.2137451171875,
+          "bottom": 766.5506286621094,
+          "left": 311.6199951171875
+        },
+        "handToggle": {
+          "x": 251.40625,
+          "y": 1008.078125,
+          "width": 42.234375,
+          "height": 42.234375,
+          "top": 1008.078125,
+          "right": 293.640625,
+          "bottom": 1050.3125,
+          "left": 251.40625
+        },
+        "handToggleHitArea": {
+          "x": 250.53125,
+          "y": 1007.203125,
+          "width": 44,
+          "height": 44,
+          "top": 1007.203125,
+          "right": 294.53125,
+          "bottom": 1051.203125,
+          "left": 250.53125
+        },
+        "selfPanelGroupCss": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gridTemplateAreas": "none"
+        },
+        "counts": {
+          "phaseItems": 7,
+          "activePhaseItems": 1,
+          "tokens": 0,
+          "statuses": 0
+        },
+        "protectedIconSizes": [],
+        "phaseTitleFontSize": 19.2,
+        "phaseTitleRenderedFontSize": 19.065517241379307,
+        "phaseFontSizes": [
+          14.4,
+          14.4,
+          14.4,
+          14.4,
+          14.4,
+          14.4,
+          14.4
+        ],
+        "phaseRenderedFontSizes": [
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365
+        ],
+        "phaseItemHeights": [
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875
+        ],
+        "truncatedPhaseLabels": [],
+        "hudFonts": {
+          "resources": [
+            15.284454545454546,
+            20.798709677419353,
+            15.284454545454546,
+            20.798709677419353
+          ],
+          "opponent": [
+            17.228076923076923,
+            10.3785,
+            14.849250000000001,
+            14.849250000000001,
+            14.144318181818182
+          ],
+          "action": [
+            14.4
+          ],
+          "deck": [
+            11.7,
+            34.12800000000001
+          ],
+          "response": [
+            10.507636363636365
+          ]
+        },
+        "gaps": {
+          "phaseToStatusTokens": null,
+          "phaseToStats": 256.1875,
+          "phaseToDeck": 394.390625,
+          "statusTokensToStats": null,
+          "statsToDeck": 9.59375
+        },
+        "overlaps": {
+          "phaseStatusTokens": false,
+          "phaseStats": false,
+          "phaseDeck": false
+        }
+      }
+    },
+    {
+      "evidence": "dicethrone-left-sidebar-mobile-regression-layout",
+      "state": "无 Token 常态",
+      "viewport": "手机横屏 936x432",
+      "layout": {
+        "viewport": {
+          "width": 936,
+          "height": 432
+        },
+        "cssVars": {
+          "boardShellScale": "0.400000",
+          "boardShellDesignWidth": "2340px",
+          "boardShellDesignHeight": "1080px",
+          "boardShellReferenceWidth": "1920px",
+          "boardShellReferenceHeight": "1080px",
+          "boardShellLogicalHeight": "1080.000px"
+        },
+        "sidebar": {
+          "x": 11.518750190734863,
+          "y": 15.356249809265137,
+          "width": 122.875,
+          "height": 405.125,
+          "top": 15.356249809265137,
+          "right": 134.39375019073486,
+          "bottom": 420.48124980926514,
+          "left": 11.518750190734863
+        },
+        "turnOrderPanel": {
+          "x": 11.518750190734863,
+          "y": 15.356249809265137,
+          "width": 122.875,
+          "height": 164.66250610351562,
+          "top": 15.356249809265137,
+          "right": 134.39375019073486,
+          "bottom": 180.01875591278076,
+          "left": 11.518750190734863
+        },
+        "selfPanelGroup": {
+          "x": 11.518750190734863,
+          "y": 249.125,
+          "width": 122.875,
+          "height": 171.35626220703125,
+          "top": 249.125,
+          "right": 134.39375019073486,
+          "bottom": 420.48126220703125,
+          "left": 11.518750190734863
+        },
+        "phase": {
+          "x": 19.193750381469727,
+          "y": 16.631250381469727,
+          "width": 131.03749084472656,
+          "height": 163.3874969482422,
+          "top": 16.631250381469727,
+          "right": 150.2312412261963,
+          "bottom": 180.0187473297119,
+          "left": 19.193750381469727
+        },
+        "statusTokens": null,
+        "stats": {
+          "x": 11.518750190734863,
+          "y": 252.96250915527344,
+          "width": 122.875,
+          "height": 49.47499084472656,
+          "top": 252.96250915527344,
+          "right": 134.39375019073486,
+          "bottom": 302.4375,
+          "left": 11.518750190734863
+        },
+        "deck": {
+          "x": 11.518750190734863,
+          "y": 306.2749938964844,
+          "width": 122.875,
+          "height": 114.20626831054688,
+          "top": 306.2749938964844,
+          "right": 134.39375019073486,
+          "bottom": 420.48126220703125,
+          "left": 11.518750190734863
+        },
+        "deckCard": {
+          "x": 19.193750381469727,
+          "y": 308.57501220703125,
+          "width": 78.33125305175781,
+          "height": 111.90625,
+          "top": 308.57501220703125,
+          "right": 97.52500343322754,
+          "bottom": 420.48126220703125,
+          "left": 19.193750381469727
+        },
+        "playerBoard": {
+          "x": 208.6479949951172,
+          "y": 68.54524993896484,
+          "width": 388.23748779296875,
+          "height": 238.07498168945312,
+          "top": 68.54524993896484,
+          "right": 596.8854827880859,
+          "bottom": 306.62023162841797,
+          "left": 208.6479949951172
+        },
+        "handToggle": {
+          "x": 113.76250457763672,
+          "y": 390.03125,
+          "width": 16.89374542236328,
+          "height": 16.893768310546875,
+          "top": 390.03125,
+          "right": 130.65625,
+          "bottom": 406.9250183105469,
+          "left": 113.76250457763672
+        },
+        "handToggleHitArea": {
+          "x": 100.2125015258789,
+          "y": 376.48126220703125,
+          "width": 44.00000762939453,
+          "height": 44,
+          "top": 376.48126220703125,
+          "right": 144.21250915527344,
+          "bottom": 420.48126220703125,
+          "left": 100.2125015258789
+        },
+        "selfPanelGroupCss": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gridTemplateAreas": "none"
+        },
+        "counts": {
+          "phaseItems": 7,
+          "activePhaseItems": 1,
+          "tokens": 0,
+          "statuses": 0
+        },
+        "protectedIconSizes": [],
+        "phaseTitleFontSize": 31.25,
+        "phaseTitleRenderedFontSize": 12.466756587332867,
+        "phaseFontSizes": [
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5
+        ],
+        "phaseRenderedFontSizes": [
+          11.000001785602976,
+          11.000001785602976,
+          10.999997321595536,
+          11.000001785602976,
+          11.000006249610413,
+          11.000001785602976,
+          11.000001785602976
+        ],
+        "phaseItemHeights": [
+          18.800003051757812,
+          18.800003051757812,
+          18.79999542236328,
+          18.800003051757812,
+          18.800010681152344,
+          18.800003051757812,
+          18.800003051757812
+        ],
+        "truncatedPhaseLabels": [],
+        "hudFonts": {
+          "resources": [
+            7.402197937011718,
+            10.079714095266242,
+            7.402208251953124,
+            10.07970394736842
+          ],
+          "opponent": [
+            8.317055189609528,
+            5.175978260869565,
+            7.239009520053863,
+            7.239009520053863,
+            7.1043753862380985
+          ],
+          "action": [
+            7.020004463195801
+          ],
+          "deck": [
+            5.632726527622768,
+            16.898118373325893
+          ],
+          "response": [
+            5.28569384765625
+          ]
+        },
+        "gaps": {
+          "phaseToStatusTokens": null,
+          "phaseToStats": 72.94376182556152,
+          "phaseToDeck": 126.25624656677246,
+          "statusTokensToStats": null,
+          "statsToDeck": 3.837493896484375
+        },
+        "overlaps": {
+          "phaseStatusTokens": false,
+          "phaseStats": false,
+          "phaseDeck": false
+        }
+      }
+    },
+    {
+      "evidence": "dicethrone-left-sidebar-mobile-regression-layout",
+      "state": "无 Token 常态",
+      "viewport": "手机横屏 812x375",
+      "layout": {
+        "viewport": {
+          "width": 812,
+          "height": 375
+        },
+        "cssVars": {
+          "boardShellScale": "0.347009",
+          "boardShellDesignWidth": "2340px",
+          "boardShellDesignHeight": "1080px",
+          "boardShellReferenceWidth": "1920px",
+          "boardShellReferenceHeight": "1080px",
+          "boardShellLogicalHeight": "1080.000px"
+        },
+        "sidebar": {
+          "x": 9.992774963378906,
+          "y": 13.431267738342285,
+          "width": 106.5968246459961,
+          "height": 351.4550476074219,
+          "top": 13.431267738342285,
+          "right": 116.589599609375,
+          "bottom": 364.88631534576416,
+          "left": 9.992774963378906
+        },
+        "turnOrderPanel": {
+          "x": 9.992774963378906,
+          "y": 13.431267738342285,
+          "width": 106.5968246459961,
+          "height": 142.84841918945312,
+          "top": 13.431267738342285,
+          "right": 116.589599609375,
+          "bottom": 156.2796869277954,
+          "left": 9.992774963378906
+        },
+        "selfPanelGroup": {
+          "x": 9.992774963378906,
+          "y": 216.4477996826172,
+          "width": 106.5968246459961,
+          "height": 148.4385223388672,
+          "top": 216.4477996826172,
+          "right": 116.589599609375,
+          "bottom": 364.8863220214844,
+          "left": 9.992774963378906
+        },
+        "phase": {
+          "x": 16.651010513305664,
+          "y": 14.537358283996582,
+          "width": 113.67798614501953,
+          "height": 141.74234008789062,
+          "top": 14.537358283996582,
+          "right": 130.3289966583252,
+          "bottom": 156.2796983718872,
+          "left": 16.651010513305664
+        },
+        "statusTokens": null,
+        "stats": {
+          "x": 9.992774963378906,
+          "y": 219.77691650390625,
+          "width": 106.5968246459961,
+          "height": 42.70379638671875,
+          "top": 219.77691650390625,
+          "right": 116.589599609375,
+          "bottom": 262.480712890625,
+          "left": 9.992774963378906
+        },
+        "deck": {
+          "x": 9.992774963378906,
+          "y": 265.8098449707031,
+          "width": 106.5968246459961,
+          "height": 99.07647705078125,
+          "top": 265.8098449707031,
+          "right": 116.589599609375,
+          "bottom": 364.8863220214844,
+          "left": 9.992774963378906
+        },
+        "deckCard": {
+          "x": 16.651010513305664,
+          "y": 267.8051452636719,
+          "width": 67.9541244506836,
+          "height": 97.0811767578125,
+          "top": 267.8051452636719,
+          "right": 84.60513496398926,
+          "bottom": 364.8863220214844,
+          "left": 16.651010513305664
+        },
+        "playerBoard": {
+          "x": 181.0068359375,
+          "y": 59.57392501831055,
+          "width": 336.80474853515625,
+          "height": 206.53541564941406,
+          "top": 59.57392501831055,
+          "right": 517.8115844726562,
+          "bottom": 266.1093406677246,
+          "left": 181.0068359375
+        },
+        "handToggle": {
+          "x": 101.60857391357422,
+          "y": 335.55865478515625,
+          "width": 14.655708312988281,
+          "height": 14.65570068359375,
+          "top": 335.55865478515625,
+          "right": 116.2642822265625,
+          "bottom": 350.21435546875,
+          "left": 101.60857391357422
+        },
+        "handToggleHitArea": {
+          "x": 86.93389129638672,
+          "y": 320.8839416503906,
+          "width": 43.999656677246094,
+          "height": 43.999664306640625,
+          "top": 320.8839416503906,
+          "right": 130.9335479736328,
+          "bottom": 364.88360595703125,
+          "left": 86.93389129638672
+        },
+        "selfPanelGroupCss": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gridTemplateAreas": "none"
+        },
+        "counts": {
+          "phaseItems": 7,
+          "activePhaseItems": 1,
+          "tokens": 0,
+          "statuses": 0
+        },
+        "protectedIconSizes": [],
+        "phaseTitleFontSize": 31.25,
+        "phaseTitleRenderedFontSize": 10.815191776194471,
+        "phaseFontSizes": [
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5
+        ],
+        "phaseRenderedFontSizes": [
+          9.54274664533899,
+          9.542748877342712,
+          9.542748877342712,
+          9.542744413335273,
+          9.542744413335273,
+          9.54275334135015,
+          9.542744413335273
+        ],
+        "phaseItemHeights": [
+          16.30942153930664,
+          16.309425354003906,
+          16.309425354003906,
+          16.309417724609375,
+          16.309417724609375,
+          16.309432983398438,
+          16.309417724609375
+        ],
+        "truncatedPhaseLabels": [],
+        "hudFonts": {
+          "resources": [
+            6.421577087402343,
+            8.744372516832854,
+            6.421566772460937,
+            8.744372516832854
+          ],
+          "opponent": [
+            7.215231691002845,
+            4.490277454127436,
+            6.280004033088684,
+            6.280004033088684,
+            6.163204550743104
+          ],
+          "action": [
+            6.090002775192261
+          ],
+          "deck": [
+            4.88652099609375,
+            14.65950177873884
+          ],
+          "response": [
+            4.585480224609375
+          ]
+        },
+        "gaps": {
+          "phaseToStatusTokens": null,
+          "phaseToStats": 63.49721813201904,
+          "phaseToDeck": 109.53014659881592,
+          "statusTokensToStats": null,
+          "statsToDeck": 3.329132080078125
+        },
+        "overlaps": {
+          "phaseStatusTokens": false,
+          "phaseStats": false,
+          "phaseDeck": false
+        }
+      }
+    },
+    {
+      "evidence": "dicethrone-left-sidebar-mobile-regression-layout",
+      "state": "Token / 状态压力态",
+      "viewport": "PC 1920x1080",
+      "layout": {
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "cssVars": {
+          "boardShellScale": "1",
+          "boardShellDesignWidth": "2340px",
+          "boardShellDesignHeight": "",
+          "boardShellReferenceWidth": "1920px",
+          "boardShellReferenceHeight": "",
+          "boardShellLogicalHeight": ""
+        },
+        "sidebar": {
+          "x": 28.796875,
+          "y": 38.390625,
+          "width": 307.1875,
+          "height": 1012.8125,
+          "top": 38.390625,
+          "right": 335.984375,
+          "bottom": 1051.203125,
+          "left": 28.796875
+        },
+        "turnOrderPanel": {
+          "x": 28.796875,
+          "y": 38.390625,
+          "width": 307.1875,
+          "height": 332.90625,
+          "top": 38.390625,
+          "right": 335.984375,
+          "bottom": 371.296875,
+          "left": 28.796875
+        },
+        "selfPanelGroup": {
+          "x": 28.796875,
+          "y": 462.390625,
+          "width": 307.1875,
+          "height": 588.8125,
+          "top": 462.390625,
+          "right": 335.984375,
+          "bottom": 1051.203125,
+          "left": 28.796875
+        },
+        "phase": {
+          "x": 47.984375,
+          "y": 41.578125,
+          "width": 268.8125,
+          "height": 329.71875,
+          "top": 41.578125,
+          "right": 316.796875,
+          "bottom": 371.296875,
+          "left": 47.984375
+        },
+        "statusTokens": {
+          "x": 28.796875,
+          "y": 462.390625,
+          "width": 307.1875,
+          "height": 155.5,
+          "top": 462.390625,
+          "right": 335.984375,
+          "bottom": 617.890625,
+          "left": 28.796875
+        },
+        "stats": {
+          "x": 28.796875,
+          "y": 627.484375,
+          "width": 307.1875,
+          "height": 128.609375,
+          "top": 627.484375,
+          "right": 335.984375,
+          "bottom": 756.09375,
+          "left": 28.796875
+        },
+        "deck": {
+          "x": 28.796875,
+          "y": 765.6875,
+          "width": 307.1875,
+          "height": 285.515625,
+          "top": 765.6875,
+          "right": 335.984375,
+          "bottom": 1051.203125,
+          "left": 28.796875
+        },
+        "deckCard": {
+          "x": 47.984375,
+          "y": 771.4375,
+          "width": 195.828125,
+          "height": 279.765625,
+          "top": 771.4375,
+          "right": 243.8125,
+          "bottom": 1051.203125,
+          "left": 47.984375
+        },
+        "playerBoard": {
+          "x": 311.6199951171875,
+          "y": 171.36312866210938,
+          "width": 970.59375,
+          "height": 595.1875,
+          "top": 171.36312866210938,
+          "right": 1282.2137451171875,
+          "bottom": 766.5506286621094,
+          "left": 311.6199951171875
+        },
+        "handToggle": {
+          "x": 251.40625,
+          "y": 1008.078125,
+          "width": 42.234375,
+          "height": 42.234375,
+          "top": 1008.078125,
+          "right": 293.640625,
+          "bottom": 1050.3125,
+          "left": 251.40625
+        },
+        "handToggleHitArea": {
+          "x": 250.53125,
+          "y": 1007.203125,
+          "width": 44,
+          "height": 44,
+          "top": 1007.203125,
+          "right": 294.53125,
+          "bottom": 1051.203125,
+          "left": 250.53125
+        },
+        "selfPanelGroupCss": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gridTemplateAreas": "none"
+        },
+        "counts": {
+          "phaseItems": 7,
+          "activePhaseItems": 1,
+          "tokens": 6,
+          "statuses": 4
+        },
+        "protectedIconSizes": [
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal"
+        ],
+        "phaseTitleFontSize": 19.2,
+        "phaseTitleRenderedFontSize": 19.065517241379307,
+        "phaseFontSizes": [
+          14.4,
+          14.4,
+          14.4,
+          14.4,
+          14.4,
+          14.4,
+          14.4
+        ],
+        "phaseRenderedFontSizes": [
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365,
+          14.328658536585365
+        ],
+        "phaseItemHeights": [
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875,
+          40.796875
+        ],
+        "truncatedPhaseLabels": [],
+        "hudFonts": {
+          "resources": [
+            15.284454545454546,
+            20.798709677419353,
+            15.284454545454546,
+            20.798709677419353
+          ],
+          "opponent": [
+            17.228076923076923,
+            10.3785,
+            14.849250000000001,
+            14.849250000000001,
+            14.144318181818182
+          ],
+          "action": [
+            14.4
+          ],
+          "deck": [
+            11.7,
+            34.12800000000001
+          ],
+          "response": [
+            10.507636363636365
+          ]
+        },
+        "gaps": {
+          "phaseToStatusTokens": 91.09375,
+          "phaseToStats": 256.1875,
+          "phaseToDeck": 394.390625,
+          "statusTokensToStats": 9.59375,
+          "statsToDeck": 9.59375
+        },
+        "overlaps": {
+          "phaseStatusTokens": false,
+          "phaseStats": false,
+          "phaseDeck": false
+        }
+      }
+    },
+    {
+      "evidence": "dicethrone-left-sidebar-mobile-regression-layout",
+      "state": "Token / 状态压力态",
+      "viewport": "手机横屏 936x432",
+      "layout": {
+        "viewport": {
+          "width": 936,
+          "height": 432
+        },
+        "cssVars": {
+          "boardShellScale": "0.400000",
+          "boardShellDesignWidth": "2340px",
+          "boardShellDesignHeight": "1080px",
+          "boardShellReferenceWidth": "1920px",
+          "boardShellReferenceHeight": "1080px",
+          "boardShellLogicalHeight": "1080.000px"
+        },
+        "sidebar": {
+          "x": 11.518750190734863,
+          "y": 15.356249809265137,
+          "width": 122.875,
+          "height": 405.125,
+          "top": 15.356249809265137,
+          "right": 134.39375019073486,
+          "bottom": 420.48124980926514,
+          "left": 11.518750190734863
+        },
+        "turnOrderPanel": {
+          "x": 11.518750190734863,
+          "y": 15.356249809265137,
+          "width": 122.875,
+          "height": 164.66250610351562,
+          "top": 15.356249809265137,
+          "right": 134.39375019073486,
+          "bottom": 180.01875591278076,
+          "left": 11.518750190734863
+        },
+        "selfPanelGroup": {
+          "x": 11.518750190734863,
+          "y": 186.9250030517578,
+          "width": 122.875,
+          "height": 233.55625915527344,
+          "top": 186.9250030517578,
+          "right": 134.39375019073486,
+          "bottom": 420.48126220703125,
+          "left": 11.518750190734863
+        },
+        "phase": {
+          "x": 19.193750381469727,
+          "y": 16.631250381469727,
+          "width": 131.03749084472656,
+          "height": 163.3874969482422,
+          "top": 16.631250381469727,
+          "right": 150.2312412261963,
+          "bottom": 180.0187473297119,
+          "left": 19.193750381469727
+        },
+        "statusTokens": {
+          "x": 11.518750190734863,
+          "y": 186.9250030517578,
+          "width": 122.875,
+          "height": 62.19999694824219,
+          "top": 186.9250030517578,
+          "right": 134.39375019073486,
+          "bottom": 249.125,
+          "left": 11.518750190734863
+        },
+        "stats": {
+          "x": 11.518750190734863,
+          "y": 252.96250915527344,
+          "width": 122.875,
+          "height": 49.47499084472656,
+          "top": 252.96250915527344,
+          "right": 134.39375019073486,
+          "bottom": 302.4375,
+          "left": 11.518750190734863
+        },
+        "deck": {
+          "x": 11.518750190734863,
+          "y": 306.2749938964844,
+          "width": 122.875,
+          "height": 114.20626831054688,
+          "top": 306.2749938964844,
+          "right": 134.39375019073486,
+          "bottom": 420.48126220703125,
+          "left": 11.518750190734863
+        },
+        "deckCard": {
+          "x": 19.193750381469727,
+          "y": 308.57501220703125,
+          "width": 78.33125305175781,
+          "height": 111.90625,
+          "top": 308.57501220703125,
+          "right": 97.52500343322754,
+          "bottom": 420.48126220703125,
+          "left": 19.193750381469727
+        },
+        "playerBoard": {
+          "x": 208.6479949951172,
+          "y": 68.54524993896484,
+          "width": 388.23748779296875,
+          "height": 238.07498168945312,
+          "top": 68.54524993896484,
+          "right": 596.8854827880859,
+          "bottom": 306.62023162841797,
+          "left": 208.6479949951172
+        },
+        "handToggle": {
+          "x": 113.76250457763672,
+          "y": 390.03125,
+          "width": 16.89374542236328,
+          "height": 16.893768310546875,
+          "top": 390.03125,
+          "right": 130.65625,
+          "bottom": 406.9250183105469,
+          "left": 113.76250457763672
+        },
+        "handToggleHitArea": {
+          "x": 100.2125015258789,
+          "y": 376.48126220703125,
+          "width": 44.00000762939453,
+          "height": 44,
+          "top": 376.48126220703125,
+          "right": 144.21250915527344,
+          "bottom": 420.48126220703125,
+          "left": 100.2125015258789
+        },
+        "selfPanelGroupCss": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gridTemplateAreas": "none"
+        },
+        "counts": {
+          "phaseItems": 7,
+          "activePhaseItems": 1,
+          "tokens": 6,
+          "statuses": 4
+        },
+        "protectedIconSizes": [
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal"
+        ],
+        "phaseTitleFontSize": 31.25,
+        "phaseTitleRenderedFontSize": 12.466756587332867,
+        "phaseFontSizes": [
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5
+        ],
+        "phaseRenderedFontSizes": [
+          11.000001785602976,
+          11.000001785602976,
+          10.999997321595536,
+          11.000001785602976,
+          11.000006249610413,
+          11.000001785602976,
+          11.000001785602976
+        ],
+        "phaseItemHeights": [
+          18.800003051757812,
+          18.800003051757812,
+          18.79999542236328,
+          18.800003051757812,
+          18.800010681152344,
+          18.800003051757812,
+          18.800003051757812
+        ],
+        "truncatedPhaseLabels": [],
+        "hudFonts": {
+          "resources": [
+            7.402197937011718,
+            10.079714095266242,
+            7.402208251953124,
+            10.07970394736842
+          ],
+          "opponent": [
+            8.317055189609528,
+            5.175978260869565,
+            7.239009520053863,
+            7.239009520053863,
+            7.1043753862380985
+          ],
+          "action": [
+            7.020004463195801
+          ],
+          "deck": [
+            5.632726527622768,
+            16.898118373325893
+          ],
+          "response": [
+            5.28569384765625
+          ]
+        },
+        "gaps": {
+          "phaseToStatusTokens": 6.906255722045898,
+          "phaseToStats": 72.94376182556152,
+          "phaseToDeck": 126.25624656677246,
+          "statusTokensToStats": 3.8375091552734375,
+          "statsToDeck": 3.837493896484375
+        },
+        "overlaps": {
+          "phaseStatusTokens": false,
+          "phaseStats": false,
+          "phaseDeck": false
+        }
+      }
+    },
+    {
+      "evidence": "dicethrone-left-sidebar-mobile-regression-layout",
+      "state": "Token / 状态压力态",
+      "viewport": "手机横屏 812x375",
+      "layout": {
+        "viewport": {
+          "width": 812,
+          "height": 375
+        },
+        "cssVars": {
+          "boardShellScale": "0.347009",
+          "boardShellDesignWidth": "2340px",
+          "boardShellDesignHeight": "1080px",
+          "boardShellReferenceWidth": "1920px",
+          "boardShellReferenceHeight": "1080px",
+          "boardShellLogicalHeight": "1080.000px"
+        },
+        "sidebar": {
+          "x": 9.992774963378906,
+          "y": 13.431267738342285,
+          "width": 106.5968246459961,
+          "height": 351.4550476074219,
+          "top": 13.431267738342285,
+          "right": 116.589599609375,
+          "bottom": 364.88631534576416,
+          "left": 9.992774963378906
+        },
+        "turnOrderPanel": {
+          "x": 9.992774963378906,
+          "y": 13.431267738342285,
+          "width": 106.5968246459961,
+          "height": 142.84841918945312,
+          "top": 13.431267738342285,
+          "right": 116.589599609375,
+          "bottom": 156.2796869277954,
+          "left": 9.992774963378906
+        },
+        "selfPanelGroup": {
+          "x": 9.992774963378906,
+          "y": 162.48789978027344,
+          "width": 106.5968246459961,
+          "height": 202.39842224121094,
+          "top": 162.48789978027344,
+          "right": 116.589599609375,
+          "bottom": 364.8863220214844,
+          "left": 9.992774963378906
+        },
+        "phase": {
+          "x": 16.651010513305664,
+          "y": 14.537358283996582,
+          "width": 113.67798614501953,
+          "height": 141.74234008789062,
+          "top": 14.537358283996582,
+          "right": 130.3289966583252,
+          "bottom": 156.2796983718872,
+          "left": 16.651010513305664
+        },
+        "statusTokens": {
+          "x": 9.992774963378906,
+          "y": 162.48789978027344,
+          "width": 106.5968246459961,
+          "height": 53.95989990234375,
+          "top": 162.48789978027344,
+          "right": 116.589599609375,
+          "bottom": 216.4477996826172,
+          "left": 9.992774963378906
+        },
+        "stats": {
+          "x": 9.992774963378906,
+          "y": 219.77691650390625,
+          "width": 106.5968246459961,
+          "height": 42.70379638671875,
+          "top": 219.77691650390625,
+          "right": 116.589599609375,
+          "bottom": 262.480712890625,
+          "left": 9.992774963378906
+        },
+        "deck": {
+          "x": 9.992774963378906,
+          "y": 265.8098449707031,
+          "width": 106.5968246459961,
+          "height": 99.07647705078125,
+          "top": 265.8098449707031,
+          "right": 116.589599609375,
+          "bottom": 364.8863220214844,
+          "left": 9.992774963378906
+        },
+        "deckCard": {
+          "x": 16.651010513305664,
+          "y": 267.8051452636719,
+          "width": 67.9541244506836,
+          "height": 97.0811767578125,
+          "top": 267.8051452636719,
+          "right": 84.60513496398926,
+          "bottom": 364.8863220214844,
+          "left": 16.651010513305664
+        },
+        "playerBoard": {
+          "x": 181.0068359375,
+          "y": 59.57392501831055,
+          "width": 336.80474853515625,
+          "height": 206.53541564941406,
+          "top": 59.57392501831055,
+          "right": 517.8115844726562,
+          "bottom": 266.1093406677246,
+          "left": 181.0068359375
+        },
+        "handToggle": {
+          "x": 101.60857391357422,
+          "y": 335.55865478515625,
+          "width": 14.655708312988281,
+          "height": 14.65570068359375,
+          "top": 335.55865478515625,
+          "right": 116.2642822265625,
+          "bottom": 350.21435546875,
+          "left": 101.60857391357422
+        },
+        "handToggleHitArea": {
+          "x": 86.93389129638672,
+          "y": 320.8839416503906,
+          "width": 43.999656677246094,
+          "height": 43.999664306640625,
+          "top": 320.8839416503906,
+          "right": 130.9335479736328,
+          "bottom": 364.88360595703125,
+          "left": 86.93389129638672
+        },
+        "selfPanelGroupCss": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gridTemplateAreas": "none"
+        },
+        "counts": {
+          "phaseItems": 7,
+          "activePhaseItems": 1,
+          "tokens": 6,
+          "statuses": 4
+        },
+        "protectedIconSizes": [
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal"
+        ],
+        "phaseTitleFontSize": 31.25,
+        "phaseTitleRenderedFontSize": 10.815191776194471,
+        "phaseFontSizes": [
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5,
+          27.5
+        ],
+        "phaseRenderedFontSizes": [
+          9.54274664533899,
+          9.542748877342712,
+          9.542748877342712,
+          9.542744413335273,
+          9.542744413335273,
+          9.54275334135015,
+          9.542744413335273
+        ],
+        "phaseItemHeights": [
+          16.30942153930664,
+          16.309425354003906,
+          16.309425354003906,
+          16.309417724609375,
+          16.309417724609375,
+          16.309432983398438,
+          16.309417724609375
+        ],
+        "truncatedPhaseLabels": [],
+        "hudFonts": {
+          "resources": [
+            6.421577087402343,
+            8.744372516832854,
+            6.421566772460937,
+            8.744372516832854
+          ],
+          "opponent": [
+            7.215231691002845,
+            4.490277454127436,
+            6.280004033088684,
+            6.280004033088684,
+            6.163204550743104
+          ],
+          "action": [
+            6.090002775192261
+          ],
+          "deck": [
+            4.88652099609375,
+            14.65950177873884
+          ],
+          "response": [
+            4.585480224609375
+          ]
+        },
+        "gaps": {
+          "phaseToStatusTokens": 6.2082014083862305,
+          "phaseToStats": 63.49721813201904,
+          "phaseToDeck": 109.53014659881592,
+          "statusTokensToStats": 3.3291168212890625,
+          "statsToDeck": 3.329132080078125
+        },
+        "overlaps": {
+          "phaseStatusTokens": false,
+          "phaseStats": false,
+          "phaseDeck": false
+        }
+      }
+    }
+  ],
+  "command": "node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts \"阶段提示沿用 PC 单列比例，并覆盖无 Token 常态与 Token 压力态\"",
+  "result": "1 passed (14.8s); shared viewport unit; real image loading and hand flip completion verified"
+}

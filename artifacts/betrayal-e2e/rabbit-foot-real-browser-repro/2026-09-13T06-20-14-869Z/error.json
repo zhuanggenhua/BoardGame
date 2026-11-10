@@ -1,0 +1,4 @@
+{
+  "message": "Timed out waiting for stable direct tutorial entry: {\"hasBoard\":true,\"hasCharacterSelect\":false,\"hasTutorialOverlayCard\":true,\"hasLoadingScreen\":false,\"activeStepDom\":\"setup-runtime\",\"ready\":false}",
+  "stack": "Error: Timed out waiting for stable direct tutorial entry: {\"hasBoard\":true,\"hasCharacterSelect\":false,\"hasTutorialOverlayCard\":true,\"hasLoadingScreen\":false,\"activeStepDom\":\"setup-runtime\",\"ready\":false}\n    at waitForDirectTutorialEntry (file:///D:/gongzuo/webgame/BoardGame/scripts/verify/betrayal-rabbit-foot-real-browser-repro.mjs:191:9)\n    at async runDirectEntry (file:///D:/gongzuo/webgame/BoardGame/scripts/verify/betrayal-rabbit-foot-real-browser-repro.mjs:614:3)\n    at async main (file:///D:/gongzuo/webgame/BoardGame/scripts/verify/betrayal-rabbit-foot-real-browser-repro.mjs:1224:28)"
+}

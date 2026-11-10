@@ -1,0 +1,202 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r149_late_final"
+  },
+  "media": [
+    {
+      "sha256": "5d5bda8640a94eae59b5ecc441dbaf934d0903a9e8f8925bf9120649a502260e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\36-upkeep-datong.png",
+      "observation": "大同地区章位于高亮地区内、三支绿框兵牌上方，人口牌在兵牌右侧；说明紧贴地区章解释本次补给，右侧支持面板及确认完整，未遮住当前驻军。"
+    },
+    {
+      "sha256": "5a60bba1b930921b31d433f58d5cca2e9a385601fa3e5029534dfaf281b0fc2c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\37-upkeep-yehe.png",
+      "observation": "叶赫部地区章、三支候选兵牌和人口牌均在高亮地区内，说明贴章右侧解释非汉人地区补给；右侧支持面板、底部手牌及横滚入口保留。"
+    },
+    {
+      "sha256": "2ec2023c6909482cb2f2c11a09f108e12d26a39463503f8f15f5a612e2d8491b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\38-upkeep-yehe-selected.png",
+      "observation": "叶赫部真实驻军和人口仍可见，三张支付手牌抬起并带已选标识；右侧已选数量与亮起确认相承接，说明不压当前候选本体。"
+    },
+    {
+      "sha256": "9850ea46bb1b12a2fd59d762ed3631698e8065be3c6b14a9d02e0a905e1f7665",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\39-hand-scroll-end.png",
+      "observation": "手牌横滚至末端后尾部牌面及向左恢复入口可见；叶赫部地区章、驻军、人口和已选数量仍保留，右侧确认不被手牌行占用。"
+    },
+    {
+      "sha256": "462c6efe627098d41dfb7bd982b281c2296c8a352cbeed23923015bd420e61b2",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\40-upkeep-pyongyang.png",
+      "observation": "平壤地区名、控制章和绿色候选兵牌同屏，撤去守军的说明贴地区章右上；右侧支持面板与底部手牌可辨，候选兵牌未被说明覆盖。"
+    },
+    {
+      "sha256": "7104d6671b907101b18afc3cf0fda30560563b69c37a880118b37ae6a2f62c3f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\41-upkeep-pyongyang-selected.png",
+      "observation": "平壤候选兵牌以绿框和勾号表达已选，右侧已选部队数量和亮起确认承接操作；说明、地区章与候选兵牌之间的归属明确。"
+    },
+    {
+      "sha256": "baf87907c1280d33b9c2ed52d4c3150bd287360629003864b78b5e8fb64e097d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\42-claim-year.png",
+      "observation": "纪年卡与旧卡在左侧成组高亮，说明贴卡解释此刻领取；右侧取得与放弃选项、确认及底部剩余手牌同屏，地图下层覆盖不损害当前领取操作。"
+    },
+    {
+      "sha256": "1e1fe27161eb8734c16ab9293e3c90cc0616311195a3ea274258fb7f625b58af",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\43-new-order.png",
+      "observation": "左侧新纪年卡单独高亮，说明贴卡解释新顺位并提供下一步；右侧人物候选保留正式卡图和放大入口，当前阅读与后续选择职责分开。"
+    },
+    {
+      "sha256": "618ec981ee81c61d0140dea2aef102c6b9d4a4136f453a322040e3731d991ecf",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\44-year-character.png",
+      "observation": "右侧人物候选以正式卡图、姓名和放大镜构成独立行，杨镐行清楚高亮；旁边说明点名杨镐并引导查看，候选行与确认不被说明压住。"
+    },
+    {
+      "sha256": "6ebd8b7aa7ff67a8dd348e790e805d94a670d3bdf44bc4abf779c361240f4f4f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\45-year-character-inspect.png",
+      "observation": "杨镐整张正式人物卡在中央前景放大，卡名及效果文字可读，右上关闭入口明确；背后人物列表保留，当前阅读层覆盖地图和教学说明符合层级。"
+    },
+    {
+      "sha256": "c40f539b58470b34d1e4c7c8b01ef0237e80567dc2a280f5106a818053831797",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\46-training-kind.png",
+      "observation": "征兵训练面板将征兵、训练、额外训练和完成四种动作分行呈现，完成次数位于标题下；底部剩余手牌和地图驻军人口可见，下一步入口清楚。"
+    },
+    {
+      "sha256": "145e8f10ec4f28c0ad7010df262626be5887c06d2015248ec019ef8dd315352c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\47-training-target.png",
+      "observation": "训练面板按地区、兵种和等级区分候选，叶赫部炮兵行高亮且完整；旁边说明点名本次训练来源，列表滚动提示可见，地图实际驻军与人口未被说明压住。"
+    },
+    {
+      "sha256": "4d324a81d46723001eef5aea361fde55cdd0821a713e87dcc1809232def2e35d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\48-training-second-target.png",
+      "observation": "面板保留上次训练的可见结果摘要及本次剩余候选，叶赫部步兵目标行高亮；说明贴候选列表左侧解释继续训练，真实叶赫部驻军和人口仍完整。"
+    },
+    {
+      "sha256": "0c157ec11c616801315ad2985a9501f23eafc4d34a4826160672722e2e574c9a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\49-training-recruit-target.png",
+      "observation": "征兵列表按地区列出承载选项，辽东行高亮并与左侧说明相邻；辽东实际驻军和人口可见，说明不覆盖列表，当前选择与上一动作摘要可区分。"
+    },
+    {
+      "sha256": "02dc04ade0906a6f04a5948603f15424031ff7ec62476c6c38c3b442c3a576d1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\50-training-finish.png",
+      "observation": "完成征兵训练按钮高亮，额外训练支付入口与最后一张手牌仍可见；说明贴完成按钮左侧解释保留手牌结束本次动作，面板结果摘要完整。"
+    },
+    {
+      "sha256": "fb73f2087401a26cea33a3305c3a85b8feee936d1dceee4a44ca2b1465291230",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\51-finish.png",
+      "observation": "结束说明置于右侧并以完成并返回收口，叶赫部控制章和当前后金手牌仍可见；地图兵牌背面与当前阵营标记可辨，说明未挤占底部手牌输入区。"
+    }
+  ],
+  "claimScope": "interaction-ui"
+}

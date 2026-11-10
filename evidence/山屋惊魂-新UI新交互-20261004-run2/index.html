@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂 · 新UI新交互 · 20261004 · run2</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂 · 新UI新交互 · 20261004 · run2</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"001-手电筒-01-手电筒加骰前牌桌可操作.jpg","displayTitle":"001 · 手电筒 · 01 · 手电筒加骰前牌桌可操作","description":"","kind":"image"},{"relativePath":"002-手电筒-02-选择未知房间前.jpg","displayTitle":"002 · 手电筒 · 02 · 选择未知房间前","description":"","kind":"image"},{"relativePath":"003-手电筒-03-外星几何翻出等待投掷.jpg","displayTitle":"003 · 手电筒 · 03 · 外星几何翻出等待投掷","description":"","kind":"image"},{"relativePath":"004-手电筒-04-5骰事件检定骰盘停稳.jpg","displayTitle":"004 · 手电筒 · 04 · 5骰事件检定骰盘停稳","description":"","kind":"image"},{"relativePath":"005-手电筒-05-加骰结算结果可见.jpg","displayTitle":"005 · 手电筒 · 05 · 加骰结算结果可见","description":"","kind":"image"},{"relativePath":"006-手电筒-06-关闭后回牌桌状态清空.jpg","displayTitle":"006 · 手电筒 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"007-灯笼-01-灯笼加骰前牌桌可操作.jpg","displayTitle":"007 · 灯笼 · 01 · 灯笼加骰前牌桌可操作","description":"","kind":"image"},{"relativePath":"008-灯笼-02-选择未知房间前.jpg","displayTitle":"008 · 灯笼 · 02 · 选择未知房间前","description":"","kind":"image"},{"relativePath":"009-灯笼-03-外星几何翻出等待投掷.jpg","displayTitle":"009 · 灯笼 · 03 · 外星几何翻出等待投掷","description":"","kind":"image"},{"relativePath":"010-灯笼-04-5骰事件检定骰盘停稳.jpg","displayTitle":"010 · 灯笼 · 04 · 5骰事件检定骰盘停稳","description":"","kind":"image"},{"relativePath":"011-灯笼-05-加骰结算结果可见.jpg","displayTitle":"011 · 灯笼 · 05 · 加骰结算结果可见","description":"","kind":"image"},{"relativePath":"012-灯笼-06-关闭后回牌桌状态清空.jpg","displayTitle":"012 · 灯笼 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"013-魔法相机-01-魔法相机替代前牌桌可操作.jpg","displayTitle":"013 · 魔法相机 · 01 · 魔法相机替代前牌桌可操作","description":"","kind":"image"},{"relativePath":"014-魔法相机-02-选择未知房间前.jpg","displayTitle":"014 · 魔法相机 · 02 · 选择未知房间前","description":"","kind":"image"},{"relativePath":"015-魔法相机-03-外星几何翻出等待投掷.jpg","displayTitle":"015 · 魔法相机 · 03 · 外星几何翻出等待投掷","description":"","kind":"image"},{"relativePath":"016-魔法相机-04-5骰相机替代检定骰盘停稳.jpg","displayTitle":"016 · 魔法相机 · 04 · 5骰相机替代检定骰盘停稳","description":"","kind":"image"},{"relativePath":"017-魔法相机-05-魔法相机替代检定结算结果可见.jpg","displayTitle":"017 · 魔法相机 · 05 · 魔法相机替代检定结算结果可见","description":"","kind":"image"},{"relativePath":"018-魔法相机-06-关闭后回牌桌状态清空.jpg","displayTitle":"018 · 魔法相机 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"019-书本-01-书本使用前牌桌可操作.jpg","displayTitle":"019 · 书本 · 01 · 书本使用前牌桌可操作","description":"","kind":"image"},{"relativePath":"020-书本-02-书本本体已选中准备使用.jpg","displayTitle":"020 · 书本 · 02 · 书本本体已选中准备使用","description":"","kind":"image"},{"relativePath":"021-书本-03-书本已使用并选择未知房间前.jpg","displayTitle":"021 · 书本 · 03 · 书本已使用并选择未知房间前","description":"","kind":"image"},{"relativePath":"022-书本-04-小丑房间5骰神志检定停稳.jpg","displayTitle":"022 · 书本 · 04 · 小丑房间5骰神志检定停稳","description":"","kind":"image"},{"relativePath":"023-书本-05-书本替代检定结算结果可见.jpg","displayTitle":"023 · 书本 · 05 · 书本替代检定结算结果可见","description":"","kind":"image"},{"relativePath":"024-书本-06-关闭后回牌桌状态清空.jpg","displayTitle":"024 · 书本 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"025-事件-上古旧宅-完整链路-03-事件牌翻出选择前.jpg","displayTitle":"025 · 事件 · 上古旧宅 · 完整链路 · 03 · 事件牌翻出选择前","description":"","kind":"image"},{"relativePath":"026-事件-上古旧宅-完整链路-04-选择目标后待选伤害.jpg","displayTitle":"026 · 事件 · 上古旧宅 · 完整链路 · 04 · 选择目标后待选伤害","description":"","kind":"image"},{"relativePath":"027-事件-上古旧宅-完整链路-05-结算后.jpg","displayTitle":"027 · 事件 · 上古旧宅 · 完整链路 · 05 · 结算后","description":"","kind":"image"},{"relativePath":"028-事件-上古旧宅-完整链路-06-关闭后.jpg","displayTitle":"028 · 事件 · 上古旧宅 · 完整链路 · 06 · 关闭后","description":"","kind":"image"},{"relativePath":"029-事件-肉质苔癣-完整链路-03-事件牌翻出可选择吸入.jpg","displayTitle":"029 · 事件 · 肉质苔癣 · 完整链路 · 03 · 事件牌翻出可选择吸入","description":"","kind":"image"},{"relativePath":"030-事件-肉质苔癣-完整链路-04-吸入后投骰结果待确认.jpg","displayTitle":"030 · 事件 · 肉质苔癣 · 完整链路 · 04 · 吸入后投骰结果待确认","description":"","kind":"image"},{"relativePath":"031-事件-肉质苔癣-完整链路-04-选择吸入后骰盘停稳并出现属性选项.jpg","displayTitle":"031 · 事件 · 肉质苔癣 · 完整链路 · 04 · 选择吸入后骰盘停稳并出现属性选项","description":"","kind":"image"},{"relativePath":"032-事件-肉质苔癣-完整链路-05-选择知识奖励后结算结果可见.jpg","displayTitle":"032 · 事件 · 肉质苔癣 · 完整链路 · 05 · 选择知识奖励后结算结果可见","description":"","kind":"image"},{"relativePath":"033-事件-肉质苔癣-完整链路-06-关闭后回牌桌.jpg","displayTitle":"033 · 事件 · 肉质苔癣 · 完整链路 · 06 · 关闭后回牌桌","description":"","kind":"image"},{"relativePath":"034-事件-一瓶微尘-完整链路-03-事件牌翻出可选择作祟检定.jpg","displayTitle":"034 · 事件 · 一瓶微尘 · 完整链路 · 03 · 事件牌翻出可选择作祟检定","description":"","kind":"image"},{"relativePath":"035-事件-一瓶微尘-完整链路-04-选择作祟检定后骰盘停稳.jpg","displayTitle":"035 · 事件 · 一瓶微尘 · 完整链路 · 04 · 选择作祟检定后骰盘停稳","description":"","kind":"image"},{"relativePath":"036-事件-一瓶微尘-完整链路-05-神志奖励结算结果可见.jpg","displayTitle":"036 · 事件 · 一瓶微尘 · 完整链路 · 05 · 神志奖励结算结果可见","description":"","kind":"image"},{"relativePath":"037-事件-一瓶微尘-完整链路-06-关闭后回牌桌.jpg","displayTitle":"037 · 事件 · 一瓶微尘 · 完整链路 · 06 · 关闭后回牌桌","description":"","kind":"image"},{"relativePath":"038-事件-大宅饿了-完整链路-03-事件牌翻出可选择作祟检定.jpg","displayTitle":"038 · 事件 · 大宅饿了 · 完整链路 · 03 · 事件牌翻出可选择作祟检定","description":"","kind":"image"},{"relativePath":"039-事件-大宅饿了-完整链路-04-选择知识奖励后准备跳过作祟.jpg","displayTitle":"039 · 事件 · 大宅饿了 · 完整链路 · 04 · 选择知识奖励后准备跳过作祟","description":"","kind":"image"},{"relativePath":"040-事件-夜幕众星-完整链路-03-事件牌翻出选择前.jpg","displayTitle":"040 · 事件 · 夜幕众星 · 完整链路 · 03 · 事件牌翻出选择前","description":"","kind":"image"},{"relativePath":"041-事件-夜幕众星-完整链路-05-结算后.jpg","displayTitle":"041 · 事件 · 夜幕众星 · 完整链路 · 05 · 结算后","description":"","kind":"image"},{"relativePath":"042-事件-夜幕众星-完整链路-06-关闭后.jpg","displayTitle":"042 · 事件 · 夜幕众星 · 完整链路 · 06 · 关闭后","description":"","kind":"image"},{"relativePath":"043-事件-一抹鲜红-完整链路-03-事件牌翻出可选择作祟检定.jpg","displayTitle":"043 · 事件 · 一抹鲜红 · 完整链路 · 03 · 事件牌翻出可选择作祟检定","description":"","kind":"image"},{"relativePath":"044-事件-一抹鲜红-完整链路-04-选择作祟检定后骰盘停稳.jpg","displayTitle":"044 · 事件 · 一抹鲜红 · 完整链路 · 04 · 选择作祟检定后骰盘停稳","description":"","kind":"image"},{"relativePath":"045-事件-吊死鬼-完整链路-03-事件牌翻出四项检定全过.jpg","displayTitle":"045 · 事件 · 吊死鬼 · 完整链路 · 03 · 事件牌翻出四项检定全过","description":"","kind":"image"},{"relativePath":"046-事件-吊死鬼-完整链路-05-知识奖励结算结果可见.jpg","displayTitle":"046 · 事件 · 吊死鬼 · 完整链路 · 05 · 知识奖励结算结果可见","description":"","kind":"image"},{"relativePath":"047-事件-吊死鬼-完整链路-06-关闭后回牌桌.jpg","displayTitle":"047 · 事件 · 吊死鬼 · 完整链路 · 06 · 关闭后回牌桌","description":"","kind":"image"},{"relativePath":"048-事件-外星几何-完整链路-03-事件牌翻出投掷入口.jpg","displayTitle":"048 · 事件 · 外星几何 · 完整链路 · 03 · 事件牌翻出投掷入口","description":"","kind":"image"},{"relativePath":"049-事件-外星几何-完整链路-04-投掷后描述不重复检定结果.jpg","displayTitle":"049 · 事件 · 外星几何 · 完整链路 · 04 · 投掷后描述不重复检定结果","description":"","kind":"image"},{"relativePath":"050-事件-外星几何-完整链路-05-骰盘停稳直接结算.jpg","displayTitle":"050 · 事件 · 外星几何 · 完整链路 · 05 · 骰盘停稳直接结算","description":"","kind":"image"},{"relativePath":"051-事件-外星几何-完整链路-06-结算结果可见.jpg","displayTitle":"051 · 事件 · 外星几何 · 完整链路 · 06 · 结算结果可见","description":"","kind":"image"},{"relativePath":"052-事件-外星几何-完整链路-07-关闭后.jpg","displayTitle":"052 · 事件 · 外星几何 · 完整链路 · 07 · 关闭后","description":"","kind":"image"},{"relativePath":"053-事件-说茄子-完整链路-03-事件牌翻出可选择作祟检定.jpg","displayTitle":"053 · 事件 · 说茄子 · 完整链路 · 03 · 事件牌翻出可选择作祟检定","description":"","kind":"image"},{"relativePath":"054-事件-说茄子-完整链路-04-选择作祟检定后骰盘停稳.jpg","displayTitle":"054 · 事件 · 说茄子 · 完整链路 · 04 · 选择作祟检定后骰盘停稳","description":"","kind":"image"},{"relativePath":"055-事件-移动端横屏-事件检定复核保留牌桌-01-事件检定复核.jpg","displayTitle":"055 · 事件 · 移动端横屏 · 事件检定复核保留牌桌 · 01 · 事件检定复核","description":"","kind":"image"},{"relativePath":"056-事件-移动端横屏-事件检定复核保留牌桌-02-PC对照.jpg","displayTitle":"056 · 事件 · 移动端横屏 · 事件检定复核保留牌桌 · 02 · PC对照","description":"","kind":"image"},{"relativePath":"057-事件-一瓶微尘-跳过作祟-多人确认-01-发起者确认前.jpg","displayTitle":"057 · 事件 · 一瓶微尘 · 跳过作祟 · 多人确认 · 01 · 发起者确认前","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

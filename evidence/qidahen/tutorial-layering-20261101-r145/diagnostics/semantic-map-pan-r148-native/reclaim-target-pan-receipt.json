@@ -1,0 +1,54 @@
+{
+  "status": "PASS-diagnostic-only",
+  "candidates": "city-region-1|jinzhou|city-region-22|song-jin|city-region-24|city-region-25|city-region-27|city-region-28-jizhen|city-region-30|city-region-31|city-region-32|city-region-33|city-region-15-liaodong|city-region-19-liaoxi|xuan-fu",
+  "before": {
+    "x": "-331.7312252964425",
+    "y": "-96.08102766798424"
+  },
+  "beforeName": {
+    "x": 1032,
+    "y": 351.140625,
+    "width": 36,
+    "height": 20
+  },
+  "panned": {
+    "x": "765.8241998385698",
+    "y": "-557.1004048469161",
+    "name": {
+      "x": 2129.53125,
+      "y": -109.859375,
+      "width": 36,
+      "height": 20
+    },
+    "recoveredCandidate": "city-region-31",
+    "originalCandidate": {
+      "id": "city-region-31",
+      "rect": {
+        "x": -160.9677734375,
+        "y": 888.637451171875,
+        "width": 44.01580810546875,
+        "height": 44.015869140625,
+        "top": 888.637451171875,
+        "right": -116.95196533203125,
+        "bottom": 932.6533203125,
+        "left": -160.9677734375
+      },
+      "distance": 1559.605224609375,
+      "offscreen": true
+    },
+    "recovered": {
+      "x": 936.5634765625,
+      "y": 427.621826171875,
+      "width": 44.01580810546875,
+      "height": 44.015869140625
+    }
+  },
+  "restored": {
+    "x": 1032,
+    "y": 351.078125,
+    "width": 36,
+    "height": 20
+  },
+  "stateStep": "reclaim-target",
+  "fullChainClaimed": false
+}

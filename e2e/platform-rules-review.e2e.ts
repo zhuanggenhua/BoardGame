@@ -63,7 +63,8 @@ test.afterAll(async () => {
     writeFileSync(path.join(out, 'capture-record.json'), JSON.stringify({ sources, media, internalMedia, steps, capturedAt: new Date().toISOString(), environment: { base, mongo: mongoUri, storage: process.env.UGC_LOCAL_PATH, apiMocked: false, lobbySocketFixture: true } }, null, 2));
 });
 
-for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}后台实际驳回、修订重送与批准发布`, async ({ request }) => {
+for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}后台实际驳回、修订重送与批准发布`, async ({ request }, info) => {
+    info.setTimeout(120_000);
     const viewport = mobile ? '手机' : '桌面';
     const owner = await login(request, accounts[0]), admin = await login(request, accounts[1]);
     const headers = { Authorization: `Bearer ${owner.token}` };
@@ -120,7 +121,9 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}后台�
         await expect(ownerPage.getByRole('textbox', { name: '规则说明（选填）', exact: true })).toBeEnabled(); await take(ownerPage, '投稿者退回意见');
         await ownerPage.getByRole('textbox', { name: '规则说明（选填）', exact: true }).fill('已补充回合流程及英雄技能阅读顺序，完整内容见修订规则。');
         await ownerPage.getByLabel('规则文件', { exact: true }).setInputFiles({ name: '王权骰铸规则修订.pdf', mimeType: 'application/pdf', buffer: revisedPdf });
-        await ownerPage.getByRole('button', { name: '提交审核', exact: true }).click(); await expect(ownerPage.getByRole('button', { name: '撤回投稿', exact: true })).toBeVisible();
+        const submit = ownerPage.getByRole('button', { name: '提交审核', exact: true });
+        if (mobile) await submit.tap({ position: { x: 15, y: 15 } }); else await submit.click();
+        await expect(ownerPage.getByRole('button', { name: '撤回投稿', exact: true })).toBeVisible();
         const pending = await readSubmission(); recordCheck(viewport, '投稿者页面修订后重新待审', pending.status, 'pending');
         recordCheck(viewport, '文件修订已保存', pending.rulesDocument.name, '王权骰铸规则修订.pdf');
         await adminPage.getByRole('button', { name: '刷新队列', exact: true }).click(); await expect(card).toBeVisible();

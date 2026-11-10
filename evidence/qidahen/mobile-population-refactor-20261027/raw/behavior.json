@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+  "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+  "evidenceCategory": "independent",
+  "representative": true,
+  "assertions": [
+    "三席/两纪年/朝鲜/抽弃牌保留",
+    "三张手牌守恒",
+    "支付选1张",
+    "查看后选牌不变",
+    "取消后手牌与弃牌不变",
+    "实际支付3张进入地图选择",
+    "查看热区不与类型条相交"
+  ],
+  "before": {
+    "hand": 3,
+    "discard": 7
+  },
+  "after": {
+    "hand": 3,
+    "discard": 7
+  }
+}

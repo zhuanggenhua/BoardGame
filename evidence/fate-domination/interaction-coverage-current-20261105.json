@@ -1,0 +1,2740 @@
+{
+  "scope": "fate-tutorial-and-shared-interactions",
+  "status": "REVISE",
+  "sourceRun": "1793802660476-548892-87a97a04-0bb1-4dff-92b7-c420be671880",
+  "note": "采集条目由真实行为链逐条映射；缺项及源码漂移均不视为通过。此表未宣称已穷尽全部控件。",
+  "rows": [
+    {
+      "interactionId": "intro",
+      "tutorialStep": "intro",
+      "controlAndAction": "固定身份进入规则课程，未部署且不出现选角",
+      "before": {
+        "visible": {
+          "tutorialText": "在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。\n\n你控制韦伯与伊斯坎达尔。下一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "intro"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。\n\n你控制韦伯与伊斯坎达尔。下一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "intro"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/01-固定身份进入规则课程，未部署且不出现选角.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-preparation",
+      "tutorialStep": "play-7",
+      "controlAndAction": "准备阶段补充手牌的规则",
+      "before": {
+        "visible": {
+          "tutorialText": "按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽）。上一步下一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-7"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽）。上一步下一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-7"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/02-准备阶段补充手牌的规则.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-deploymentChoice",
+      "tutorialStep": "play-12",
+      "controlAndAction": "魔术工房的三个 +1 点位可选",
+      "before": {
+        "visible": {
+          "tutorialText": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。\n\n这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-12"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。\n\n这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-12"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/03-魔术工房的三个 +1 点位可选.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "deployment-refused",
+      "tutorialStep": "play-12",
+      "controlAndAction": "点其它地点被拒绝，练习和局面保持不变",
+      "before": {
+        "visible": {
+          "tutorialText": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。\n\n这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-12"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。\n\n这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-12"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/04-点其它地点被拒绝，练习和局面保持不变.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "deployment-landed-workshop-third-option",
+      "tutorialStep": "play-13",
+      "controlAndAction": "点击第三个合法 +1 点位后已直接落位，无二次确认",
+      "before": {
+        "visible": {
+          "tutorialText": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。\n\n你能支付1魔力来抽2张牌。\n\n点击“战略部署”，为本轮攻击补充手牌。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-13"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。\n\n你能支付1魔力来抽2张牌。\n\n点击“战略部署”，为本轮攻击补充手牌。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-13"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/05-点击第三个合法 +1 点位后已直接落位，无二次确认.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "deployment-drag",
+      "tutorialStep": "play-12",
+      "controlAndAction": "从本人头像拖到工房点位，松手直接部署",
+      "before": {
+        "visible": {
+          "tutorialText": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。\n\n这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-12"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。\n\n这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-12"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/06-从本人头像拖到工房点位，松手直接部署.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "deployment-landed",
+      "tutorialStep": "play-13",
+      "controlAndAction": "点击或拖放结束后，棋子已位于实际部署点位",
+      "before": {
+        "visible": {
+          "tutorialText": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。\n\n你能支付1魔力来抽2张牌。\n\n点击“战略部署”，为本轮攻击补充手牌。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-13"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。\n\n你能支付1魔力来抽2张牌。\n\n点击“战略部署”，为本轮攻击补充手牌。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-13"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/07-点击或拖放结束后，棋子已位于实际部署点位.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "master-ability-tooltip",
+      "tutorialStep": "play-13",
+      "controlAndAction": "御主能力直接位于角色旁，右侧只读说明，不打开详情发动",
+      "before": {
+        "visible": {
+          "tutorialText": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。\n\n你能支付1魔力来抽2张牌。\n\n点击“战略部署”，为本轮攻击补充手牌。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-13"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。\n\n你能支付1魔力来抽2张牌。\n\n点击“战略部署”，为本轮攻击补充手牌。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-13"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/08-御主能力直接位于角色旁，右侧只读说明，不打开详情发动.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-phaseOrder",
+      "tutorialStep": "play-14",
+      "controlAndAction": "所有玩家完成前哨后进入下一阶段",
+      "before": {
+        "visible": {
+          "tutorialText": "当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-14"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-14"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/09-所有玩家完成前哨后进入下一阶段.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-movement",
+      "tutorialStep": "play-19",
+      "controlAndAction": "先移动再出牌及移动目的",
+      "before": {
+        "visible": {
+          "tutorialText": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n点击棋盘上的韦伯，再点深山町；也可直接把韦伯拖到深山町，前往战场争夺事件战果。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n点击棋盘上的韦伯，再点深山町；也可直接把韦伯拖到深山町，前往战场争夺事件战果。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/10-先移动再出牌及移动目的.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "navigation-zoomed",
+      "tutorialStep": "play-19",
+      "controlAndAction": "地图平移与缩放后的视野变化",
+      "before": {
+        "visible": {
+          "tutorialText": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n点击棋盘上的韦伯，再点深山町；也可直接把韦伯拖到深山町，前往战场争夺事件战果。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n点击棋盘上的韦伯，再点深山町；也可直接把韦伯拖到深山町，前往战场争夺事件战果。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/11-地图平移与缩放后的视野变化.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "deck-count",
+      "tutorialStep": "play-19",
+      "controlAndAction": "牌堆计数与一级资源威力同帧可读",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/12-牌堆计数与一级资源威力同帧可读.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "movement-choosing",
+      "tutorialStep": "play-19",
+      "controlAndAction": "选择棋子后合法目的地可点，也能直接拖放；无取消叉",
+      "before": {
+        "visible": {
+          "tutorialText": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n点击棋盘上的韦伯，再点深山町；也可直接把韦伯拖到深山町，前往战场争夺事件战果。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n点击棋盘上的韦伯，再点深山町；也可直接把韦伯拖到深山町，前往战场争夺事件战果。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-19"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/13-选择棋子后合法目的地可点，也能直接拖放；无取消叉.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-engagement",
+      "tutorialStep": "engagement-observe",
+      "controlAndAction": "抵达交战战场后无法常规移动的原因",
+      "before": {
+        "visible": {
+          "tutorialText": "若你与至少一名对手（包括玩家和NPC）一起位于一处会发生战斗的战场，则你处于“交战状态”，此时你无法进行常规移动。上一步下一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "engagement-observe"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "若你与至少一名对手（包括玩家和NPC）一起位于一处会发生战斗的战场，则你处于“交战状态”，此时你无法进行常规移动。上一步下一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "engagement-observe"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/14-抵达交战战场后无法常规移动的原因.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-cardReading",
+      "tutorialStep": "ui-inspection-15",
+      "controlAndAction": "攻击牌费用、威力与时机",
+      "before": {
+        "visible": {
+          "tutorialText": "攻击牌有魔力消耗和基本威力。\n\n悬浮后点放大镜，或长按、右键检视“骑乘”。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-inspection-15"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "攻击牌有魔力消耗和基本威力。\n\n悬浮后点放大镜，或长按、右键检视“骑乘”。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-inspection-15"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/15-攻击牌费用、威力与时机.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "hand-magnifier",
+      "tutorialStep": "ui-inspection-15",
+      "controlAndAction": "悬浮骑乘显示放大镜，点击检视原卡",
+      "before": {
+        "visible": {
+          "tutorialText": "攻击牌有魔力消耗和基本威力。\n\n悬浮后点放大镜，或长按、右键检视“骑乘”。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-inspection-15"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "攻击牌有魔力消耗和基本威力。\n\n悬浮后点放大镜，或长按、右键检视“骑乘”。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-inspection-15"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/16-悬浮骑乘显示放大镜，点击检视原卡.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "hand-inspection",
+      "tutorialStep": "ui-inspection-15",
+      "controlAndAction": "首次读骑乘原卡后再筹备费用与选牌",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 1,
+          "inspectionVisible": true,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-inspection-15"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 1,
+          "inspectionVisible": true,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-inspection-15"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/17-首次读骑乘原卡后再筹备费用与选牌.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-sealMana",
+      "tutorialStep": "play-20",
+      "controlAndAction": "技能出牌门槛与令咒恢复魔力",
+      "before": {
+        "visible": {
+          "tutorialText": "通常你必须在出牌前拥有8点及以上的魔力才可以从技能区打出攻击。\n\n点令咒，选择“恢复魔力”并确认，为打出“骑乘”补充魔力。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-20"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "通常你必须在出牌前拥有8点及以上的魔力才可以从技能区打出攻击。\n\n点令咒，选择“恢复魔力”并确认，为打出“骑乘”补充魔力。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-20"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/18-技能出牌门槛与令咒恢复魔力.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "seal-cancel",
+      "tutorialStep": "play-20",
+      "controlAndAction": "令咒未选效果时不能提交",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-20"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-20"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/19-令咒未选效果时不能提交.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "seal-mana",
+      "tutorialStep": "play-20",
+      "controlAndAction": "令咒选择效果后明确确认",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-20"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-20"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/20-令咒选择效果后明确确认.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-mixedAttack",
+      "tutorialStep": "play-21",
+      "controlAndAction": "第一次选牌：点牌选择、再点撤回，选齐后确认攻击",
+      "before": {
+        "visible": {
+          "tutorialText": "打出正好两张攻击牌作为你本回合的常规出牌。\n\n它们可以是你手中的普通攻击牌（背面为深蓝色），或是你技能区的技能攻击（背面为红色且具有魔力消耗和威力）\n\n点选翻弄（明置）、骑乘（明置）；再点已选牌可撤回，选齐后点“确认攻击”。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-21"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "打出正好两张攻击牌作为你本回合的常规出牌。\n\n它们可以是你手中的普通攻击牌（背面为深蓝色），或是你技能区的技能攻击（背面为红色且具有魔力消耗和威力）\n\n点选翻弄（明置）、骑乘（明置）；再点已选牌可撤回，选齐后点“确认攻击”。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-21"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/21-第一次选牌：点牌选择、再点撤回，选齐后确认攻击.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "draft",
+      "tutorialStep": "play-21",
+      "controlAndAction": "两张草稿及一级预计威力，确认前可撤回",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-21"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-21"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/22-两张草稿及一级预计威力，确认前可撤回.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "cards-wide-desktop",
+      "tutorialStep": "play-21",
+      "controlAndAction": "2560桌面的大牌、一级威力与常显技能区",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-21"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-21"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/23-2560桌面的大牌、一级威力与常显技能区.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-riding",
+      "tutorialStep": "play-22",
+      "controlAndAction": "已打出的骑乘可以发动",
+      "before": {
+        "visible": {
+          "tutorialText": "需要将此牌激活才可使用。（激活：明置于你的攻击区）\n\n坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-22"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "需要将此牌激活才可使用。（激活：明置于你的攻击区）\n\n坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-22"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/24-已打出的骑乘可以发动.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-ridingChoice",
+      "tutorialStep": "play-23",
+      "controlAndAction": "选择骑乘追加的普通攻击",
+      "before": {
+        "visible": {
+          "tutorialText": "这次用中位魔法、急行、强打追加攻击。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-23"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "这次用中位魔法、急行、强打追加攻击。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-23"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/25-选择骑乘追加的普通攻击.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "riding",
+      "tutorialStep": "play-23",
+      "controlAndAction": "骑乘候选卡面完整，轻描边区分选择与实付费用",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-23"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-23"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/26-骑乘候选卡面完整，轻描边区分选择与实付费用.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-actionAbility",
+      "tutorialStep": "play-24",
+      "controlAndAction": "发动已打出的急行前往新都",
+      "before": {
+        "visible": {
+          "tutorialText": "使用这些效果移动时若无特别说明，无需花费移动成本\n\n行动阶段：无视交战状态，沿箭头移动至下一地点。\n\n发动已打出的“急行”，前往新都。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-24"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "使用这些效果移动时若无特别说明，无需花费移动成本\n\n行动阶段：无视交战状态，沿箭头移动至下一地点。\n\n发动已打出的“急行”，前往新都。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-24"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/27-发动已打出的急行前往新都.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "effect-move-result",
+      "tutorialStep": "play-25",
+      "controlAndAction": "急行结算后，韦伯已抵达新都",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-25"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-25"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/28-急行结算后，韦伯已抵达新都.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "public-cards",
+      "tutorialStep": "ui-public-cards-25",
+      "controlAndAction": "对手一级威力与无框单排出牌同时可比较",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-public-cards-25"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-public-cards-25"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/29-对手一级威力与无框单排出牌同时可比较.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-revelation",
+      "tutorialStep": "revelation-observe",
+      "controlAndAction": "真实从者揭示与技能公开",
+      "before": {
+        "visible": {
+          "tutorialText": "对手玩家 2（间桐慎二）\n\n有些卡牌会拥有【真名解放】词条，当你使用这些卡牌后，立即展示你的从者概览卡与所有技能牌并处于【真名解放】状态。上一步下一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "revelation-observe"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "对手玩家 2（间桐慎二）\n\n有些卡牌会拥有【真名解放】词条，当你使用这些卡牌后，立即展示你的从者概览卡与所有技能牌并处于【真名解放】状态。上一步下一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "revelation-observe"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/30-真实从者揭示与技能公开.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "opponent-detail-revealed",
+      "tutorialStep": "revelation-observe",
+      "controlAndAction": "已揭示对手的静态身份与技能可检视",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "revelation-observe"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "revelation-observe"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/31-已揭示对手的静态身份与技能可检视.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-battle",
+      "tutorialStep": "play-29",
+      "controlAndAction": "结束当前玩家的战斗阶段",
+      "before": {
+        "visible": {
+          "tutorialText": "然后，在所有玩家的战斗阶段结束后开始进行战力结算。上一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-29"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "然后，在所有玩家的战斗阶段结束后开始进行战力结算。上一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-29"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/32-结束当前玩家的战斗阶段.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-settlement",
+      "tutorialStep": "play-31",
+      "controlAndAction": "战力结算",
+      "before": {
+        "visible": {
+          "tutorialText": "以如下的方式计算每名玩家的合计威力：\n一名玩家激活的攻击威力+地利数+受到自己能力的影响以及局势牌和天气牌的影响。然后，分别结算每个战场中，合计威力最高的胜利者（们）。\n\n令胜利者（们）获得该战场事件牌的战果点数之和的战果上一步下一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-31"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "以如下的方式计算每名玩家的合计威力：\n一名玩家激活的攻击威力+地利数+受到自己能力的影响以及局势牌和天气牌的影响。然后，分别结算每个战场中，合计威力最高的胜利者（们）。\n\n令胜利者（们）获得该战场事件牌的战果点数之和的战果上一步下一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-31"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/33-战力结算.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-discard",
+      "tutorialStep": "ui-pile-32",
+      "controlAndAction": "回合结束后，技能返回技能区，普通攻击进入弃牌堆",
+      "before": {
+        "visible": {
+          "tutorialText": "回合结束时\n\n令技能牌明置返回其技能区并令非技能牌暗置进入其弃牌堆\n\n你可以于任何时候查看自己的弃牌堆。\n\n点击弃牌堆查看本轮收回的普通攻击牌。上一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 2,
+          "phase": "preparation",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-pile-32"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "回合结束时\n\n令技能牌明置返回其技能区并令非技能牌暗置进入其弃牌堆\n\n你可以于任何时候查看自己的弃牌堆。\n\n点击弃牌堆查看本轮收回的普通攻击牌。上一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 2,
+          "phase": "preparation",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-pile-32"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/34-回合结束后，技能返回技能区，普通攻击进入弃牌堆.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "discard",
+      "tutorialStep": "ui-pile-32",
+      "controlAndAction": "回合收牌后检视弃牌堆，只说明当前查看动作",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "准备",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 2,
+          "phase": "preparation",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-pile-32"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "准备",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 2,
+          "phase": "preparation",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "ui-pile-32"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/35-回合收牌后检视弃牌堆，只说明当前查看动作.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-battleDeployment",
+      "tutorialStep": "play-63",
+      "controlAndAction": "后续回合部署到深山町的最高空位，读取地利",
+      "before": {
+        "visible": {
+          "tutorialText": "若部署于战场且位于地利位置，战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。\n\n这次选择深山町的亮起点位。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力3",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-63"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "若部署于战场且位于地利位置，战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。\n\n这次选择深山町的亮起点位。上一步",
+          "primaryLabel": "前哨",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力3",
+            "威力3"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "outpost",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-63"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/36-后续回合部署到深山町的最高空位，读取地利.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-battlefieldDarkAttack",
+      "tutorialStep": "play-70",
+      "controlAndAction": "在战场准备一明一暗两张攻击",
+      "before": {
+        "visible": {
+          "tutorialText": "若你位于战场，则你的常规出牌中必须要有一张明置牌。\n\n暗置牌处于未被激活的状态，它们不消耗魔力，不计算威力，也不属于攻击且于回合结束时进入你的弃牌堆。通常而言，技能牌不能被暗置打出。\n\n先明置选择瞬间的一击，再切换“暗置选牌”选择会心的一击，为后续行动保留魔力。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力19"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-70"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "若你位于战场，则你的常规出牌中必须要有一张明置牌。\n\n暗置牌处于未被激活的状态，它们不消耗魔力，不计算威力，也不属于攻击且于回合结束时进入你的弃牌堆。通常而言，技能牌不能被暗置打出。\n\n先明置选择瞬间的一击，再切换“暗置选牌”选择会心的一击，为后续行动保留魔力。上一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力19"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-70"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/37-在战场准备一明一暗两张攻击.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "dark-mode",
+      "tutorialStep": "play-70",
+      "controlAndAction": "切换到暗置选牌，尚未选中暗置牌",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力19"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-70"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力19"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-70"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/38-切换到暗置选牌，尚未选中暗置牌.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "dark-draft",
+      "tutorialStep": "play-70",
+      "controlAndAction": "明暗混合草稿与暗置标记，确认前仍可撤回",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力19"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-70"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力19"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "action",
+          "current": "0",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-70"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/39-明暗混合草稿与暗置标记，确认前仍可撤回.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-masterAbility-m_kirei-s3",
+      "tutorialStep": "play-72",
+      "controlAndAction": "另一御主首次使用的实际能力及玩家归属",
+      "before": {
+        "visible": {
+          "tutorialText": "对手玩家 3（言峰绮礼） · 执行者\n\n战斗阶段：你的总威力+2。上一步下一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力21"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "battle",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-72"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "对手玩家 3（言峰绮礼） · 执行者\n\n战斗阶段：你的总威力+2。上一步下一步",
+          "primaryLabel": "战斗",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力17",
+            "威力21"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 3,
+          "phase": "battle",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-72"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/40-另一御主首次使用的实际能力及玩家归属.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-sealBattle",
+      "tutorialStep": "play-94",
+      "controlAndAction": "对手使用令咒强化战斗",
+      "before": {
+        "visible": {
+          "tutorialText": "对手玩家 3（言峰绮礼） · 令咒·强化战斗\n\n获得2 点合计威力以及获胜后获得 2 点战果点数上一步下一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力8"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 4,
+          "phase": "action",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-94"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "对手玩家 3（言峰绮礼） · 令咒·强化战斗\n\n获得2 点合计威力以及获胜后获得 2 点战果点数上一步下一步",
+          "primaryLabel": "行动",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力12",
+            "威力8"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 4,
+          "phase": "action",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-94"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/41-对手使用令咒强化战斗.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-postBattle",
+      "tutorialStep": "play-203",
+      "controlAndAction": "战后恢复令咒选择",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力9",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 8,
+          "phase": "battle",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-203"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力9",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 8,
+          "phase": "battle",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-203"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/42-战后恢复令咒选择.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "post-battle",
+      "tutorialStep": "play-203",
+      "controlAndAction": "选择恢复后仍需确认，当前令咒尚未变化",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力9",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 8,
+          "phase": "battle",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-203"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "战斗",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力9",
+            "威力12"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 8,
+          "phase": "battle",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "play-203"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/43-选择恢复后仍需确认，当前令咒尚未变化.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "lesson-elimination",
+      "tutorialStep": "elimination-observe",
+      "controlAndAction": "第十日淘汰状态",
+      "before": {
+        "visible": {
+          "tutorialText": "在第 10 天【回合结束时】，除了 VP 的前 2 名的玩家外，所有玩家都被淘汰出局。上一步下一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "elimination-observe"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": "在第 10 天【回合结束时】，除了 VP 的前 2 名的玩家外，所有玩家都被淘汰出局。上一步下一步",
+          "primaryLabel": "准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "elimination-observe"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/44-第十日淘汰状态.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "eliminated-detail",
+      "tutorialStep": "elimination-observe",
+      "controlAndAction": "淘汰详情保留静态身份，不显示临时威力",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "准备",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "elimination-observe"
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "准备",
+          "dialogCount": 1,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "current": "2",
+          "gameOver": false,
+          "tutorialActive": true,
+          "tutorialStep": "elimination-observe"
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/45-淘汰详情保留静态身份，不显示临时威力.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "terminal",
+      "tutorialStep": null,
+      "controlAndAction": "自然十一轮终局与结果",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "结束",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": true,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "complete",
+          "current": "2",
+          "gameOver": true,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "结束",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": true,
+          "identityVisible": false,
+          "opponentPowers": [
+            "威力0",
+            "威力0"
+          ],
+          "mapStatus": "ready"
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "complete",
+          "current": "2",
+          "gameOver": true,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/46-自然十一轮终局与结果.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "after-completion",
+      "tutorialStep": null,
+      "controlAndAction": "凛的宝石、关联攻击与升华原卡同页，阅读不改变选择",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "完成准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": true,
+          "opponentPowers": [],
+          "mapStatus": null
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "完成准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": true,
+          "opponentPowers": [],
+          "mapStatus": null
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/47-凛的宝石、关联攻击与升华原卡同页，阅读不改变选择.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "identity-constrained",
+      "tutorialStep": null,
+      "controlAndAction": "受限桌面滚至肯尼斯末张关联卡并阅读，候选及确认仍可达",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "完成准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": true,
+          "opponentPowers": [],
+          "mapStatus": null
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "完成准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": true,
+          "opponentPowers": [],
+          "mapStatus": null
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/48-受限桌面滚至肯尼斯末张关联卡并阅读，候选及确认仍可达.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "identity-tokiomi",
+      "tutorialStep": null,
+      "controlAndAction": "时臣四道具、追加技能攻击及升华资料不受三槽限制",
+      "before": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "完成准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": true,
+          "opponentPowers": [],
+          "mapStatus": null
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "after": {
+        "visible": {
+          "tutorialText": null,
+          "primaryLabel": "完成准备",
+          "dialogCount": 0,
+          "inspectionVisible": false,
+          "gameOver": false,
+          "identityVisible": true,
+          "opponentPowers": [],
+          "mapStatus": null
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "preparation",
+          "current": "1",
+          "gameOver": false,
+          "tutorialActive": false,
+          "tutorialStep": null
+        }
+      },
+      "image": "evidence/fate-domination/direct-input-20261103-media/tutorial-real-entry/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/e2e-1793802634998-t8rw7c/49-时臣四道具、追加技能攻击及升华资料不受三槽限制.png",
+      "captureSourceRevision": "12d40948a17c04e4d32badcfb0776aef783b7a9f981162d9405ea53b53f498e2",
+      "status": "STALE_SOURCE",
+      "boundary": "截图版本早于牌排修复，待当前源码复验"
+    },
+    {
+      "interactionId": "online-undo-request",
+      "tutorialStep": null,
+      "controlAndAction": "多人撤回申请",
+      "status": "NOT_VERIFIED",
+      "boundary": "本地教程自动同意不能代表多人协商；需真实联网双人页面证明",
+      "formalUiOwner": "src/components/game/framework/widgets/GameHUD.tsx",
+      "stateOwner": "src/engine/systems/UndoSystem.ts",
+      "realEntry": "online-undo-log.e2e.ts（脚本已准备，尚未执行）",
+      "teachingBoundary": "当前教程为本地模式，撤回请求自动批准，不能产生真人对方审批；多人协商须真实在线席位验证，不能伪造教程截图。"
+    },
+    {
+      "interactionId": "online-undo-approve",
+      "tutorialStep": null,
+      "controlAndAction": "对方同意并观察恢复",
+      "status": "NOT_VERIFIED",
+      "boundary": "本地教程自动同意不能代表多人协商；需真实联网双人页面证明",
+      "formalUiOwner": "src/components/game/framework/widgets/GameHUD.tsx",
+      "stateOwner": "src/engine/systems/UndoSystem.ts",
+      "realEntry": "online-undo-log.e2e.ts（脚本已准备，尚未执行）",
+      "teachingBoundary": "当前教程为本地模式，撤回请求自动批准，不能产生真人对方审批；多人协商须真实在线席位验证，不能伪造教程截图。"
+    },
+    {
+      "interactionId": "online-undo-reject",
+      "tutorialStep": null,
+      "controlAndAction": "对方拒绝",
+      "status": "NOT_VERIFIED",
+      "boundary": "本地教程自动同意不能代表多人协商；需真实联网双人页面证明",
+      "formalUiOwner": "src/components/game/framework/widgets/GameHUD.tsx",
+      "stateOwner": "src/engine/systems/UndoSystem.ts",
+      "realEntry": "online-undo-log.e2e.ts（脚本已准备，尚未执行）",
+      "teachingBoundary": "当前教程为本地模式，撤回请求自动批准，不能产生真人对方审批；多人协商须真实在线席位验证，不能伪造教程截图。"
+    },
+    {
+      "interactionId": "online-undo-cancel",
+      "tutorialStep": null,
+      "controlAndAction": "申请者取消",
+      "status": "NOT_VERIFIED",
+      "boundary": "本地教程自动同意不能代表多人协商；需真实联网双人页面证明",
+      "formalUiOwner": "src/components/game/framework/widgets/GameHUD.tsx",
+      "stateOwner": "src/engine/systems/UndoSystem.ts",
+      "realEntry": "online-undo-log.e2e.ts（脚本已准备，尚未执行）",
+      "teachingBoundary": "当前教程为本地模式，撤回请求自动批准，不能产生真人对方审批；多人协商须真实在线席位验证，不能伪造教程截图。"
+    },
+    {
+      "interactionId": "online-action-log",
+      "tutorialStep": null,
+      "controlAndAction": "双方查看操作日志与公开隐藏边界",
+      "status": "NOT_VERIFIED",
+      "boundary": "本地教程自动同意不能代表多人协商；需真实联网双人页面证明",
+      "formalUiOwner": "src/components/game/framework/widgets/GameHUD.tsx",
+      "stateOwner": "src/engine/systems/ActionLogSystem.ts",
+      "realEntry": "online-undo-log.e2e.ts（脚本已准备，尚未执行）",
+      "teachingBoundary": "当前教程为本地模式，撤回请求自动批准，不能产生真人对方审批；多人协商须真实在线席位验证，不能伪造教程截图。"
+    }
+  ]
+}

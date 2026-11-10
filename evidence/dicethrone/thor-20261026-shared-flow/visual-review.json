@@ -1,0 +1,810 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_reuse_reviewer"
+  },
+  "primarySampleReview": {
+    "reviewer": "/root",
+    "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793036760545-ahqi4o/04-骰盘预览到允许的四点后可确认.png",
+    "sha256": "52d4915dc644dcf481d3a9cd8a6006f8b3831426186ac448440283e59321ab46",
+    "status": "PASS",
+    "observation": "已打开整屏原图复核：顶部P2头像和面板完整，首骰四点预览、原加减控件及取消/确认同屏可辨，其余四骰仍为一；未见点数弹窗。"
+  },
+  "media": [
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/01-索尔正式角色板与卡牌.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/01-索尔正式角色板与卡牌.png",
+      "sha256": "dda643df0068f073410fa836208b22543082d144288e4c624b2ebf52af2ad6bb",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "索尔正式角色板与卡牌",
+      "beforeAfter": "正式夹具预置索尔/武僧主阶段后读取角色板、正式素材和四张手牌",
+      "observation": "正式角色板、提示板和四张手牌图像均已加载，技能槽与主板对应；常态扇形下缘延伸到视口外属于此次未改默认布局，本图仅验素材识别及当前主板。",
+      "technicalEvidence": {
+        "originalObservation": "正式角色板、提示板和四张手牌图像均已加载，技能槽与主板对应；常态扇形下缘延伸到视口外属于此次未改默认布局，本图仅验素材识别及当前主板。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/02-弃牌飞掷选择成本.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/02-弃牌飞掷选择成本.png",
+      "sha256": "b793e195b71a6081cb556d005f59d69aebaeddf6078507731f5666780703a8dc",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "弃牌飞掷选择成本",
+      "beforeAfter": "点击姆乔尔尼尔主动入口，在原手牌区选择弃牌成本",
+      "observation": "四张弃牌成本候选保留在原手牌区，外侧旋转牌的外底边均完整可见；顶部提示与取消不覆盖候选，没有卡池弹窗。最外左牌底角接近屏幕边缘但未裁掉。",
+      "technicalEvidence": {
+        "originalObservation": "四张弃牌成本候选保留在原手牌区，外侧旋转牌的外底边均完整可见；顶部提示与取消不覆盖候选，没有卡池弹窗。最外左牌底角接近屏幕边缘但未裁掉。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/03-手牌区弃置成本后飞掷结算.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/04-手牌区弃置成本后飞掷结算.png",
+      "sha256": "88cdd9895efa87fc1be30ba6aa74ea2613212bf6b617221b9f931d4bcb98fb33",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "手牌区弃置成本后飞掷结算",
+      "beforeAfter": "再次打开主动入口并在原手牌区点击雷霆万钧支付飞掷成本",
+      "observation": "成本牌已在右下弃牌堆出现，原手牌区剩余三张，飞掷召回入口状态可区分；顶部锤子图标和短伤害反馈可见。",
+      "technicalEvidence": {
+        "originalObservation": "成本牌已在右下弃牌堆出现，原手牌区剩余三张，飞掷召回入口状态可区分；顶部锤子图标和短伤害反馈可见。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/04-奥丁之力二级升级完成.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/05-奥丁之力二级升级完成.png",
+      "sha256": "b32d82676a28cd44dc8f317e657eecf3575657d312f92c0522957b64945c437a",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "奥丁之力二级升级完成",
+      "beforeAfter": "真实拖出奥丁之力II升级卡，读取升级牌面和费用",
+      "observation": "奥丁之力二级卡已落于左下技能槽并保持比例，剩余两张手牌处于原区；升级未产生第二技能面板。",
+      "technicalEvidence": {
+        "originalObservation": "奥丁之力二级卡已落于左下技能槽并保持比例，剩余两张手牌处于原区；升级未产生第二技能面板。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/05-奥丁效果骰等待选择重掷骰子.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/06-奥丁效果骰等待选择重掷骰子.png",
+      "sha256": "a9ffb8a368e00a7b6e3b256a2d32ea1eb7f461ec30bb9d938fc0714fe70ce186",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "奥丁效果骰等待选择重掷骰子",
+      "beforeAfter": "推进攻击、掷骰、选奥丁并进入五颗效果骰窗口",
+      "observation": "五颗奥丁效果骰在右侧原骰盘中，奖励骰归属标签和下方确认可见；可从原骰盘开始选取子集。",
+      "technicalEvidence": {
+        "originalObservation": "五颗奥丁效果骰在右侧原骰盘中，奖励骰归属标签和下方确认可见；可从原骰盘开始选取子集。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/06-使用原掷骰操作提交两颗所选骰子.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/07-使用原掷骰操作提交两颗所选骰子.png",
+      "sha256": "aca583c0475f785d98ab3c00becaff9bd581dc5e46265924b41ac39d1babfa20",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "使用原掷骰操作提交两颗所选骰子",
+      "beforeAfter": "点击第1及第3颗效果骰选中子集，同槽重掷操作可用",
+      "observation": "第一及第三颗效果骰各有清楚选中边界和勾选，下方同槽显示重掷与确认两个不同动作；候选骰本体未被高亮挡住。",
+      "technicalEvidence": {
+        "originalObservation": "第一及第三颗效果骰各有清楚选中边界和勾选，下方同槽显示重掷与确认两个不同动作；候选骰本体未被高亮挡住。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/07-整组重掷一次完成.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/08-整组重掷一次完成.png",
+      "sha256": "970972a98b9039a94650b4ef0d88fa95620e06a5bd149656c54b2057d0eb3b8b",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "整组重掷一次完成",
+      "beforeAfter": "点击原重掷动作槽一次提交两颗所选骰子",
+      "observation": "重掷后同一骰盘显示更新后的骰面，所选边界及重掷提交按钮退场，只保留结算确认；没有另建重掷面板。",
+      "technicalEvidence": {
+        "originalObservation": "重掷后同一骰盘显示更新后的骰面，所选边界及重掷提交按钮退场，只保留结算确认；没有另建重掷面板。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/08-效果骰收口后进入主攻击防御.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/09-效果骰收口后进入主攻击防御.png",
+      "sha256": "ad46e5bb8d73f43488bf55856a8b7ba01d3b43303d01e41c32d799534cb237ff",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "效果骰收口后进入主攻击防御",
+      "beforeAfter": "点击原效果骰确认，处理规则分支并回到主攻击防御",
+      "observation": "奥丁效果骰确认后切入主攻击防御板，右侧总伤害和防御骰可见，效果骰临时选择已退出；当前保护槽位可辨。",
+      "technicalEvidence": {
+        "originalObservation": "奥丁效果骰确认后切入主攻击防御板，右侧总伤害和防御骰可见，效果骰临时选择已退出；当前保护槽位可辨。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/09-手牌放大完整阅读挥锤时刻.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793036760545-ahqi4o/01-手牌放大完整阅读挥锤时刻.png",
+      "sha256": "c3aef2a6bcb33d5cddbd9e1d4c2b035d75dfba9b09b519f16651e6a9e6899f26",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "手牌放大完整阅读挥锤时刻",
+      "beforeAfter": "真实鼠标命中并点击挥锤时刻手牌，打开完整牌面检视",
+      "observation": "挥锤时刻放大卡完整，关闭按钮可辨；顶部对手栏和头像完整保留，放大层没有让整页上移。下方常态手牌仅作来源上下文，不判为完整候选态。",
+      "technicalEvidence": {
+        "originalObservation": "挥锤时刻放大卡完整，关闭按钮可辨；顶部对手栏和头像完整保留，放大层没有让整页上移。下方常态手牌仅作来源上下文，不判为完整候选态。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/10-改骰前自己的五颗骰子.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793036760545-ahqi4o/02-改骰前自己的五颗骰子.png",
+      "sha256": "3e38da2584eb981adada72111918bfdea56916817ae588a365bd54c9b52f2d5b",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "改骰前自己的五颗骰子",
+      "beforeAfter": "关闭检视，推进进攻阶段并通过原投骰按钮掷五骰",
+      "observation": "改骰前五颗原骰和下方两张手牌处于原区域，顶部对手栏完整；当前主板和右侧操作槽位未被放大检视挤动。",
+      "technicalEvidence": {
+        "originalObservation": "改骰前五颗原骰和下方两张手牌处于原区域，顶部对手栏完整；当前主板和右侧操作槽位未被放大检视挤动。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/11-当之无愧复用骰盘原有加减改面交互.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793036760545-ahqi4o/03-当之无愧复用骰盘原有加减改面交互.png",
+      "sha256": "3562892818a5e73afab6645757d942b929997626f4692f75490d9a6feccb6fe4",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "当之无愧复用骰盘原有加减改面交互",
+      "beforeAfter": "真实拖出当之无愧，进入共用任意改骰加减预览",
+      "observation": "进入改骰后五颗骰仍在原骰盘，加减按钮贴近各骰，下方取消与尚未可确认态清楚；顶部对手栏完整，没有选点弹窗。",
+      "technicalEvidence": {
+        "originalObservation": "进入改骰后五颗骰仍在原骰盘，加减按钮贴近各骰，下方取消与尚未可确认态清楚；顶部对手栏完整，没有选点弹窗。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/12-骰盘预览到允许的四点后可确认.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793036760545-ahqi4o/04-骰盘预览到允许的四点后可确认.png",
+      "sha256": "52d4915dc644dcf481d3a9cd8a6006f8b3831426186ac448440283e59321ab46",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "骰盘预览到允许的四点后可确认",
+      "beforeAfter": "点击第1骰加号三次，预览4；2/3时不可确认，4时原确认入口可用",
+      "observation": "四点预览和单颗加减控件位于原骰盘，下方取消与可确认态清楚；顶部对手栏和头像完整，与进入改骰前构图一致，先前内层滚动导致的上缘裁切已恢复。状态记录同时确认顶部位置稳定，内部没有滚动。",
+      "technicalEvidence": {
+        "originalObservation": "四点预览和单颗加减控件位于原骰盘，下方取消与可确认态清楚；顶部对手栏和头像完整，与进入改骰前构图一致，先前内层滚动导致的上缘裁切已恢复。本图sidecar另录header.top=17.265625、scrollers=[]。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/13-改为四且其余骰子保持.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793036760545-ahqi4o/05-改为四且其余骰子保持.png",
+      "sha256": "23370b40a4769595fa338fc4bee4a4ea2d637c386adc14c4b97cf61a3d6898c1",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "改为四且其余骰子保持",
+      "beforeAfter": "点击原改骰确认，只提交首骰为4且其余四骰保持",
+      "observation": "确认后首骰四点及其余原骰可辨，普通投掷入口恢复；顶部对手栏、头像与前态位置一致且完整，改骰控件退出。状态记录同时确认顶部位置稳定，内部没有滚动。",
+      "technicalEvidence": {
+        "originalObservation": "确认后首骰四点及其余原骰可辨，普通投掷入口恢复；顶部对手栏、头像与前态位置一致且完整，改骰控件退出。本图sidecar另录header.top=17.265625、scrollers=[]。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/14-当之无愧取消前的四点预览.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧取消预览后不提交改骰/_runs/e2e-1793036760545-ahqi4o/01-当之无愧取消前的四点预览.png",
+      "sha256": "9f272bb99e5bf846c68b76aec8b7591600bc98d61cfe78fc0e25e309d3fe7943",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "当之无愧取消前的四点预览",
+      "beforeAfter": "真实拖出当之无愧并用原加号预览首骰4",
+      "observation": "右侧原骰盘首骰显示四点预览及加减按钮，下方取消和确认同时可见；其余四骰仍在同一骰盘中，未出现选点弹窗。",
+      "technicalEvidence": {
+        "originalObservation": "右侧原骰盘首骰显示四点预览及加减按钮，下方取消和确认同时可见；其余四骰仍在同一骰盘中，未出现选点弹窗。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/15-取消改骰后骰面保持且卡牌资源退回.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧取消预览后不提交改骰/_runs/e2e-1793036760545-ahqi4o/02-取消改骰后骰面保持且卡牌资源退回.png",
+      "sha256": "3e099cadcf92e4e7f3ae643132c2a3cc1aed65c3c59f02cdf33b357caa755946",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "取消改骰后骰面保持且卡牌资源退回",
+      "beforeAfter": "点击原取消入口，退出预览并退还手牌与CP",
+      "observation": "取消后右侧恢复普通投掷和确认入口，五骰显示原有锤面；当之无愧卡回到下方手牌区，当前骰盘无改骰高亮。",
+      "technicalEvidence": {
+        "originalObservation": "取消后右侧恢复普通投掷和确认入口，五骰显示原有锤面；当之无愧卡回到下方手牌区，当前骰盘无改骰高亮。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/16-连锁闪电触发前.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793036760545-ahqi4o/01-连锁闪电触发前.png",
+      "sha256": "4341a87e3067d057dbc6ab14598eb3a648d86827c39bb81a64bf2f4d7383f1e9",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "连锁闪电触发前",
+      "beforeAfter": "真实投骰并确认主骰，读取连锁闪电触发前状态",
+      "observation": "连锁闪电触发前五颗进攻骰和结束攻击入口同时可见，技能板、提示板及右侧骰盘没有互相遮住。",
+      "technicalEvidence": {
+        "originalObservation": "连锁闪电触发前五颗进攻骰和结束攻击入口同时可见，技能板、提示板及右侧骰盘没有互相遮住。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/17-三颗效果骰等待确认.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793036760545-ahqi4o/02-三颗效果骰等待确认.png",
+      "sha256": "abe61d2e2815e224d60706580dbe4078a41ef292925647955b72505d86ccf5b1",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "三颗效果骰等待确认",
+      "beforeAfter": "点击连锁闪电并进入三颗效果骰原确认窗口",
+      "observation": "三颗效果骰位于右侧既有骰盘并有索尔奖励骰归属标签，确认在骰盘下方；不存在另设效果骰容器。",
+      "technicalEvidence": {
+        "originalObservation": "三颗效果骰位于右侧既有骰盘并有索尔奖励骰归属标签，确认在骰盘下方；不存在另设效果骰容器。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/18-选择两颗效果骰组合.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793036760545-ahqi4o/03-选择两颗效果骰组合.png",
+      "sha256": "d29f50869239490482feb8ebd305dbcc5135ac0b1627ca12e2729c995bb4111e",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "选择两颗效果骰组合",
+      "beforeAfter": "点击效果骰确认，在既有技能结算框比较两骰组合及伤害",
+      "observation": "中央三个候选分别展示两颗真实骰面、编号和伤害和，候选完整无遮挡；这是成对结果比较，不是重掷选骰控件。",
+      "technicalEvidence": {
+        "originalObservation": "中央三个候选分别展示两颗真实骰面、编号和伤害和，候选完整无遮挡；这是成对结果比较，不是重掷选骰控件。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/19-附属伤害自动命中唯一对手并保留主攻击.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793036760545-ahqi4o/04-附属伤害自动命中唯一对手并保留主攻击.png",
+      "sha256": "b282e92fad38e0fab6e3a67903b763806c08cbd848c7e46728be6f17535cc81c",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "附属伤害自动命中唯一对手并保留主攻击",
+      "beforeAfter": "真实点击4+6组合，唯一附属目标自动结算并保留主攻击",
+      "observation": "选择组合后比较层退场，防御板和下一阶段等待状态可辨；右侧总伤害读数保留。顶部伤害飘字临时覆盖生命读数，只证明可见反馈，不据此判数值正确。",
+      "technicalEvidence": {
+        "originalObservation": "选择组合后比较层退场，防御板和下一阶段等待状态可辨；右侧总伤害读数保留。顶部伤害飘字临时覆盖生命读数，只证明可见反馈，不据此判数值正确。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/20-破防正式图标与消费入口.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793036760545-ahqi4o/01-破防正式图标与消费入口.png",
+      "sha256": "fad683d8eb0ddbce766bf20abbd2f0b2e2e59bae0589ac82f4dd608a9495a98e",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "破防正式图标与消费入口",
+      "beforeAfter": "正式夹具后真实掷骰、选技能，进入有两枚破防的响应窗口",
+      "observation": "破防正式图标在左下资源区清晰可见并有可响应提示，提示板与右侧原骰盘仍可识别，没有为破防另造结果面板。",
+      "technicalEvidence": {
+        "originalObservation": "破防正式图标在左下资源区清晰可见并有可响应提示，提示板与右侧原骰盘仍可识别，没有为破防另造结果面板。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/21-第一枚破防效果骰失败.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793036760545-ahqi4o/02-第一枚破防效果骰失败.png",
+      "sha256": "50bac3c9c5596841bfcc1c13070852d1e7be4b4ae411a962108cb28b45c3eb9e",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "第一枚破防效果骰失败",
+      "beforeAfter": "点击原破防响应入口，第一枚效果骰为1",
+      "observation": "第一枚消费后右侧既有骰盘显示单颗锤面效果骰，确认按钮紧邻其下；左下剩余破防图标仍在。",
+      "technicalEvidence": {
+        "originalObservation": "第一枚消费后右侧既有骰盘显示单颗锤面效果骰，确认按钮紧邻其下；左下剩余破防图标仍在。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/22-失败后仍可使用第二枚破防.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793036760545-ahqi4o/03-失败后仍可使用第二枚破防.png",
+      "sha256": "f3c147ddb23138951f8bc730d362eae4cb48007614bf72fd302137f73cdb9e1b",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "失败后仍可使用第二枚破防",
+      "beforeAfter": "确认失败骰面，回到仍可响应的主攻击窗口",
+      "observation": "确认失败骰后恢复五颗原骰，左下剩余破防再次有响应高亮；继续响应入口与骰盘分工可辨。",
+      "technicalEvidence": {
+        "originalObservation": "确认失败骰后恢复五颗原骰，左下剩余破防再次有响应高亮；继续响应入口与骰盘分工可辨。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/23-第二枚破防效果骰成功.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793036760545-ahqi4o/04-第二枚破防效果骰成功.png",
+      "sha256": "a38760d9a2c8a58f280a912b2ddc38eee0261b12a328be4360764efd521e750c",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "第二枚破防效果骰成功",
+      "beforeAfter": "再次点击破防原响应入口，第二枚效果骰为4",
+      "observation": "第二枚效果骰显示当之无愧面，确认仍位于原骰盘下；原破防图标已退场，画面没有第二份待选控件。",
+      "technicalEvidence": {
+        "originalObservation": "第二枚效果骰显示当之无愧面，确认仍位于原骰盘下；原破防图标已退场，画面没有第二份待选控件。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/24-不可防御主攻击结算后收口.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793036760545-ahqi4o/05-不可防御主攻击结算后收口.png",
+      "sha256": "4df67cba256819f45c47c8e71e74b5e2044f7cdcad21655b9df255c557fcefb4",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "不可防御主攻击结算后收口",
+      "beforeAfter": "确认成功骰面，完成不可防御主攻击并回主要阶段2",
+      "observation": "效果骰收口后回到主骰并显示下一阶段，临时破防响应条已退场；顶部伤害飘字可见，数值正确性不由本图判定。",
+      "technicalEvidence": {
+        "originalObservation": "效果骰收口后回到主骰并显示下一阶段，临时破防响应条已退场；顶部伤害飘字可见，数值正确性不由本图判定。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/25-索尔真实双人选角与实施中标记.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1793038085138-is2r0u/01-索尔真实双人选角与实施中标记.png",
+      "sha256": "7e6d45ad986d18c57a64a2892bc48d13dc796291206ecf6b811aed92c8d7d589",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "索尔真实双人选角与实施中标记",
+      "beforeAfter": "真实双人房间分别选索尔和武僧",
+      "observation": "真实双人选角左栏索尔头像及实施中条带清楚，底部双方选择与就绪状态可辨；主预览显示正式索尔板及提示板。",
+      "technicalEvidence": {
+        "originalObservation": "真实双人选角左栏索尔头像及实施中条带清楚，底部双方选择与就绪状态可辨；主预览显示正式索尔板及提示板。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/26-索尔在线开局角色板九槽与手牌.png",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1793038085138-is2r0u/02-索尔在线开局角色板九槽与手牌.png",
+      "sha256": "f9263b64884127a69f861c30944a824d78058327beefd6b465599fae076d8ff2",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "索尔在线开局角色板九槽与手牌",
+      "beforeAfter": "双方通过自己的页面准备并由主持人开局",
+      "observation": "在线开局显示索尔九槽、正式提示板、四张原手牌及右侧骰盘，顶部对手栏完整；本图只证明实施中进入运行场景，不代表用户完成态确认。",
+      "technicalEvidence": {
+        "originalObservation": "在线开局显示索尔九槽、正式提示板、四张原手牌及右侧骰盘，顶部对手栏完整；本图只证明实施中进入运行场景，不代表用户完成态确认。"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    }
+  ],
+  "excludedMedia": [
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793036760545-ahqi4o/03-取消弃牌支付且资源未扣.png",
+      "contract": "独特界面状态",
+      "reason": "成本取消后返回常态，与初始常态重复；动作和退款权威状态仍在行为trace中。"
+    }
+  ],
+  "notes": [
+    "桌面1920x1080；共享消费者另包含1280x720；移动端未验收。",
+    "常态手牌保留既有扇形低位布局，当前弃牌候选完整可见。",
+    "新当之无愧链以实际鼠标点击进入检视，原加减定位点击仍保留；根clip阻止内部滚动，受保护顶部面板未移出；sourceRevision绑定运行时而非工作区实时摘要。"
+  ]
+}

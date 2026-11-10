@@ -39,7 +39,7 @@ export function describeFateTutorialAction(state: MatchState<FateDominationCore>
             const skill = player.skills.find(skill => skill.id === payload.skillId);
             const attack = player.hand.find(card=>card.id===payload.skillId);
             const goal:FateLessonId = skill?.isMasterSkill ? 'masterAbility' : String(payload.skillId).startsWith('sc_iskandar_1') ? 'riding' : 'actionAbility';
-            const described=lesson(goal, skill?.isMasterSkill ? `点击“${skill.name}”，为本轮攻击补充手牌。` : attack&&location?`发动已打出的“${resolveFateAttack(player,attack.id)?.definition.name}”，前往${location}。`:undefined, skill?.isMasterSkill ? `fate-master-ability-${String(payload.skillId)}` : 'fate-hand');
+            const described=lesson(goal, skill?.isMasterSkill ? `点击“${skill.name}”，为本轮攻击补充手牌。` : goal==='riding'?'点击已打出的“骑乘”，发动坐骑召唤。':attack&&location?`点击已打出的“${resolveFateAttack(player,attack.id)?.definition.name}”，前往${location}。`:undefined, skill?.isMasterSkill ? `fate-master-ability-${String(payload.skillId)}` : 'fate-hand');
             described.fateCopy.ability={...(skill?.isMasterSkill?{masterId:player.masterId}:attack?{attackId:attack.definitionId}:{servantId:player.servantId}),skillId:attack?.definitionId??String(payload.skillId).split(':')[0],...(goal==='riding'?{clause:'action' as const}:{})};
             described.content=fateTutorialText(described.fateCopy);
             return { ...described,

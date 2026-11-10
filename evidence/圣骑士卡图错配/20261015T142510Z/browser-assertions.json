@@ -1,0 +1,43 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "scope": "五张完整卡面与真实手牌/放大入口；正义战法II真实拖动出牌结算",
+  "cards": [
+    {
+      "id": "card-righteous-combat-2",
+      "index": 10,
+      "cost": 2,
+      "title": "正义战法二级"
+    },
+    {
+      "id": "card-righteous-combat-3",
+      "index": 8,
+      "cost": 4,
+      "title": "正义战法三级"
+    },
+    {
+      "id": "card-surprise",
+      "index": 20,
+      "cost": 2,
+      "title": "惊不惊喜"
+    },
+    {
+      "id": "card-worthy-of-me",
+      "index": 21,
+      "cost": 1,
+      "title": "不愧是我"
+    },
+    {
+      "id": "card-unexpected",
+      "index": 22,
+      "cost": 3,
+      "title": "意不意外"
+    }
+  ],
+  "beforeCp": 10,
+  "afterCp": 8,
+  "beforeLevel": 1,
+  "afterLevel": 2,
+  "actor": "0",
+  "scene": "main1合法代表态，结果未预置"
+}

@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "title": "仲裁抹消原卡本体",
+  "requirements": [
+    {
+      "requirement": "展示抹消对应的原卡本体，而不是流程截图或标注副本。",
+      "status": "PASS",
+      "evidence": [
+        "图片从 public/assets/i18n/zh-CN/summonerwars/hero/zhongcai/cards.png 的第 2 帧裁出，对应 SPRITE_INDEX_ZHONGCAI.HERO_ABUSI = 2。",
+        "卡面标题为睿智者阿不思，技能原文为抹消。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/summonerwars/zhongcai-erase-card-original.png"
+  ]
+}

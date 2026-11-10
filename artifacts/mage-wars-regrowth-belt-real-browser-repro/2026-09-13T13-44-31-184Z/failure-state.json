@@ -1,0 +1,179 @@
+{
+  "targetUrl": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+  "failureScreenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T13-44-31-184Z\\00-failure-page.png",
+  "pageState": {
+    "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+    "title": "法师战争 - 测试模式 | 易桌游",
+    "hasBoard": true,
+    "bodyText": "60%24/2424/24兽王行动中24生命: 24/2420法力: 20/2010聚魔: 10/12女祭司24生命: 24/2410法力: 10/2010聚魔: 10/12对手已计划 0弃牌 0法术书全部攻击结界生物咒语装备‹1 / 9›让过快速施法空计划槽",
+    "loaderText": null,
+    "loaderHtml": null
+  },
+  "captureError": null,
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "at": "2026-09-13T13:44:44.885Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "at": "2026-09-13T13:44:44.954Z"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "at": "2026-09-13T13:44:45.035Z"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙",
+      "at": "2026-09-13T13:44:45.081Z"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token",
+      "at": "2026-09-13T13:44:46.115Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T13:44:47.196Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-13T13:44:47.202Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T13:44:47.198Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"timeoutMs\":120000}",
+      "at": "2026-09-13T13:44:47.202Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T13:44:47.209Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-13T13:44:47.212Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T13:44:47.210Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"mage-wars\"}",
+      "at": "2026-09-13T13:44:47.213Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T13:44:59.115Z\",\"stage\":\"load-http-fallback-success\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":11906}",
+      "at": "2026-09-13T13:44:59.145Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T13:45:02.441Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":15243}",
+      "at": "2026-09-13T13:45:02.442Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T13:45:02.441Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":15231}",
+      "at": "2026-09-13T13:45:02.442Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"reset\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T13:45:02.749Z"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}",
+      "at": "2026-09-13T13:45:02.750Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":2,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T13:45:02.773Z"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 2, activePhaseElapsedMs: null}",
+      "at": "2026-09-13T13:45:02.773Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"initiativeQuickcast\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T13:45:03.163Z"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}",
+      "at": "2026-09-13T13:45:03.163Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":0,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T13:45:03.164Z"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 0, activePhaseElapsedMs: null}",
+      "at": "2026-09-13T13:45:03.164Z"
+    },
+    {
+      "type": "warning",
+      "text": "[CardPreview] 图集候选已耗尽，2014ms 后自动重试（第 1/5 轮）: mage-wars:spell-equipment-core-atlas (lazy-atlas:mage-wars:spell-equipment-core-atlas)",
+      "at": "2026-09-13T13:45:22.375Z"
+    },
+    {
+      "type": "warning",
+      "text": "[CardPreview] 图集候选已耗尽，1887ms 后自动重试（第 1/5 轮）: mage-wars:spell-equipment-core-atlas (lazy-atlas:mage-wars:spell-equipment-core-atlas)",
+      "at": "2026-09-13T13:45:22.375Z"
+    },
+    {
+      "type": "warning",
+      "text": "[CardPreview] 图集候选已耗尽，2242ms 后自动重试（第 1/5 轮）: mage-wars:spell-equipment-core-atlas (lazy-atlas:mage-wars:spell-equipment-core-atlas)",
+      "at": "2026-09-13T13:45:22.375Z"
+    },
+    {
+      "type": "warning",
+      "text": "[CardPreview] 图集候选已耗尽，2115ms 后自动重试（第 1/5 轮）: mage-wars:spell-equipment-core-atlas (lazy-atlas:mage-wars:spell-equipment-core-atlas)",
+      "at": "2026-09-13T13:45:22.375Z"
+    },
+    {
+      "type": "warning",
+      "text": "[CardPreview] 图集候选已耗尽，1851ms 后自动重试（第 1/5 轮）: mage-wars:spell-equipment-core-atlas (lazy-atlas:mage-wars:spell-equipment-core-atlas)",
+      "at": "2026-09-13T13:45:22.375Z"
+    },
+    {
+      "type": "warning",
+      "text": "[CardPreview] 图集候选已耗尽，1503ms 后自动重试（第 1/5 轮）: mage-wars:spell-equipment-core-atlas (lazy-atlas:mage-wars:spell-equipment-core-atlas)",
+      "at": "2026-09-13T13:45:22.376Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): mage-wars/board/standard-arena",
+      "at": "2026-09-13T13:45:22.769Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): mage-wars/cards/backs/spell-card-back",
+      "at": "2026-09-13T13:45:22.769Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): mage-wars/cards/backs/spell-card-back",
+      "at": "2026-09-13T13:45:22.769Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): mage-wars/board/standard-arena",
+      "at": "2026-09-13T13:45:30.782Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): mage-wars/cards/backs/spell-card-back",
+      "at": "2026-09-13T13:45:30.783Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): mage-wars/cards/backs/spell-card-back",
+      "at": "2026-09-13T13:45:30.783Z"
+    }
+  ],
+  "error": {
+    "message": "Regrowth Belt real-browser check failed: {\"cardVisibleBeforeClick\":true,\"cardCenterHitsCardBody\":true,\"cardPrimaryActionEnabledBeforeClick\":true,\"noMagnifyBeforeClick\":true,\"cardSelectedAfterCardClick\":true,\"ownMageBecomesTargetAfterCardClick\":true,\"noMagnifyAfterCardClick\":true,\"cardLeavesPreparedAfterMageClick\":false,\"manaSpentAfterMageClick\":false,\"regrowthEquipmentCreatedOnMage\":false,\"noMagnifyAfterMageClick\":false}",
+    "stack": "Error: Regrowth Belt real-browser check failed: {\"cardVisibleBeforeClick\":true,\"cardCenterHitsCardBody\":true,\"cardPrimaryActionEnabledBeforeClick\":true,\"noMagnifyBeforeClick\":true,\"cardSelectedAfterCardClick\":true,\"ownMageBecomesTargetAfterCardClick\":true,\"noMagnifyAfterCardClick\":true,\"cardLeavesPreparedAfterMageClick\":false,\"manaSpentAfterMageClick\":false,\"regrowthEquipmentCreatedOnMage\":false,\"noMagnifyAfterMageClick\":false}\n    at run (file:///D:/gongzuo/webgame/BoardGame/scripts/verify/mage-wars-regrowth-belt-real-browser-repro.mjs:345:13)"
+  }
+}

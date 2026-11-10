@@ -461,6 +461,8 @@ export interface TutorialStepSnapshot {
      * 引擎不感知此字段，门控逻辑在 Board 组件中实现。
      */
     allowedTargets?: string[];
+    /** 仅用于视觉推荐，不限制其他合法输入。 */
+    recommendedTargets?: string[];
     advanceOnEvents?: TutorialEventMatcher[];
     randomPolicy?: TutorialRandomPolicy;
     aiActions?: TutorialAiAction[];
@@ -545,6 +547,8 @@ export interface TutorialManifest {
      * 注意：函数不可序列化，不会存入 TutorialState。
      */
     stepValidator?: (state: MatchState<unknown>, step: TutorialStepSnapshot) => boolean;
+    /** 根据正式对局状态解析当前步骤；函数不序列化，恢复时由绑定的 manifest 重建。 */
+    resolveStep?: (state: MatchState<unknown>, step: TutorialStepSnapshot) => TutorialStepSnapshot;
     /** Select one course branch from a successfully completed visible step. */
     selectBranch?: (state: MatchState<unknown>, step: TutorialStepSnapshot, command: Command, events: GameEvent[]) => string | undefined;
 }

@@ -1,0 +1,70 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": 97,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "01a12a42-d4de-72c2-bba9-9001e4aef7a9"
+  },
+  "media": [
+    {
+      "path": "01-投骰前玩家当前镜头.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "投骰前石板在画面右侧，山猫与牧师停在左下格，未见骰子，底部牌列和己方提示卡都在"
+    },
+    {
+      "path": "02-攻击骰在可见石板居中.jpg",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "两颗红骰与近战攻击和四点伤害落在石板中部，已离开左下战斗格，镜头仍停在右侧石板"
+    },
+    {
+      "path": "03-投骰后底图镜头仍在原位.jpg",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "骰子已退场，石板仍在画面右侧，战斗双方仍在左下原位，底部牌列和提示卡仍在"
+    },
+    {
+      "path": "00-近战攻击实际动效.gif",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "动效里骰子在石板中部出现后消失，全程未把战斗拉到画面中央，底图位置保持不变"
+    }
+  ],
+  "hard_failures": [],
+  "target_requirements": [
+    {
+      "requirement": "攻击骰结算层落在可见石板中部，离开左下战斗格",
+      "status": "PASS",
+      "evidence": "中态图与动效中间帧均显示两颗红骰及近战攻击、四点伤害叠在石板中部标志附近，山猫与牧师仍在左下格，未钉在战斗格或黑底界面区"
+    },
+    {
+      "requirement": "投骰不改镜头、不影响底图，保持玩家当前石板构图",
+      "status": "PASS",
+      "evidence": "前态、中态、后态与动效全程石板都在画面右侧，战斗在石板左下，标志在石板右侧，未见镜头被拉回整图中心"
+    },
+    {
+      "requirement": "骰子是独立结算层：前态无骰、中态有骰、后态退场，底图双方仍在原位",
+      "status": "PASS",
+      "evidence": "前态无骰子，中态与动效中段有骰子，后态与动效末帧骰子退场；山猫和牧师始终留在同一左下格"
+    },
+    {
+      "requirement": "法术书底部牌列、己方提示卡仍在",
+      "status": "PASS",
+      "evidence": "四份媒体底部均可见法术书牌列，左侧己方兽王提示卡始终保留"
+    }
+  ],
+  "negative_impact_checks": [
+    "骰子未钉在左下战斗格上",
+    "骰子未贴到界面缝或黑底区",
+    "中态镜头未被拉回整图中心",
+    "底图战斗位置未随投骰漂移",
+    "底部牌列与己方提示卡未被结算层挤掉"
+  ],
+  "notes": [
+    "本轮只审可见性与镜头，不审点数对错",
+    "红骰略压在石板中部标志上，仍属可见石板中部，不构成范围内硬失败"
+  ]
+}

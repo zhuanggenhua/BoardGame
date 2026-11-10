@@ -1,0 +1,1356 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "全知之眼攻击后选择法术",
+  "sourceRun": "1793527054222-122080-e9b885e2-d30b-41ee-b80b-da0e936e74a8",
+  "sourceRevision": "82c6596e18a65ac46b2147b94701f0397cc7ca4ce55f987ce5b90f496052409f",
+  "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+  "status": "PASS",
+  "outcome": "索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。",
+  "steps": [
+    {
+      "id": "ultimate-post-damage-cast-choice",
+      "action": "完成剩余卡牌排序并进入攻击后的施法选择",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-all-seeing-eye"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-bolts-of-balthakk",
+            "spell-fangs-of-farallah"
+          ],
+          "choiceLabels": [
+            "来个六！ action 1 CP",
+            "就这？ action 0 CP",
+            "抬一手！ action 1 CP"
+          ],
+          "choiceIds": [
+            "dt-deck-card-option-card-play-six",
+            "dt-deck-card-option-card-just-this",
+            "dt-deck-card-option-card-give-hand"
+          ],
+          "selectedChoiceIds": [
+            "dt-deck-card-option-card-play-six"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择放回牌库顶的下一张牌确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择放回牌库顶的下一张牌"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 6,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-all-seeing-eye",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-bolts-of-balthakk",
+                "spell-fangs-of-farallah"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 2
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-all-seeing-eye",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-all-seeing-eye"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-bolts-of-balthakk",
+            "spell-fangs-of-farallah"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-preparedSpells-card-option-spell-flames-of-faltine",
+            "dt-preparedSpells-card-option-spell-bolts-of-balthakk",
+            "dt-preparedSpells-card-option-spell-fangs-of-farallah"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择要施放的法术跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 6,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-all-seeing-eye",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-bolts-of-balthakk",
+                "spell-fangs-of-farallah"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 40,
+                "cp": 2
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-all-seeing-eye",
+            "bonusDamage": 0,
+            "settlementStage": "postDamagePending",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "施法选择中的跳过按钮可见",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "ultimate-prepared-spell-selected",
+      "action": "选中准备区的法瑞拉之牙施放并等待确认",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-all-seeing-eye"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-bolts-of-balthakk",
+            "spell-fangs-of-farallah"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-preparedSpells-card-option-spell-flames-of-faltine",
+            "dt-preparedSpells-card-option-spell-bolts-of-balthakk",
+            "dt-preparedSpells-card-option-spell-fangs-of-farallah"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择要施放的法术跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 6,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-all-seeing-eye",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-bolts-of-balthakk",
+                "spell-fangs-of-farallah"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 40,
+                "cp": 2
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-all-seeing-eye",
+            "bonusDamage": 0,
+            "settlementStage": "postDamagePending",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-all-seeing-eye"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-bolts-of-balthakk",
+            "spell-fangs-of-farallah"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-preparedSpells-card-option-spell-flames-of-faltine",
+            "dt-preparedSpells-card-option-spell-bolts-of-balthakk",
+            "dt-preparedSpells-card-option-spell-fangs-of-farallah"
+          ],
+          "selectedChoiceIds": [
+            "dt-preparedSpells-card-option-spell-fangs-of-farallah"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择要施放的法术确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 6,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-all-seeing-eye",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-bolts-of-balthakk",
+                "spell-fangs-of-farallah"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 40,
+                "cp": 2
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-all-seeing-eye",
+            "bonusDamage": 0,
+            "settlementStage": "postDamagePending",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "准备区法术高亮且可确认",
+          "actual": {
+            "selected": true,
+            "confirmVisible": true
+          },
+          "expected": {
+            "selected": true,
+            "confirmVisible": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ultimate-second-cast-choice",
+      "action": "完成第一次施放后显示剩余准备法术与跳过操作",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-all-seeing-eye"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-bolts-of-balthakk",
+            "spell-fangs-of-farallah"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-preparedSpells-card-option-spell-flames-of-faltine",
+            "dt-preparedSpells-card-option-spell-bolts-of-balthakk",
+            "dt-preparedSpells-card-option-spell-fangs-of-farallah"
+          ],
+          "selectedChoiceIds": [
+            "dt-preparedSpells-card-option-spell-fangs-of-farallah"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择要施放的法术确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 6,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-all-seeing-eye",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-bolts-of-balthakk",
+                "spell-fangs-of-farallah"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 40,
+                "cp": 2
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-all-seeing-eye",
+            "bonusDamage": 0,
+            "settlementStage": "postDamagePending",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-all-seeing-eye"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-bolts-of-balthakk"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "博萨特之雷 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-preparedSpells-card-option-spell-flames-of-faltine",
+            "dt-preparedSpells-card-option-spell-bolts-of-balthakk"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择要施放的法术跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet",
+            "strange-amulet"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 6,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-all-seeing-eye",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-bolts-of-balthakk"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 29,
+              "discardCount": 1,
+              "discardIds": [
+                "spell-fangs-of-farallah"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 37,
+                "cp": 2
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-all-seeing-eye",
+            "bonusDamage": 3,
+            "settlementStage": "readyToResolve",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "剩余准备法术候选和跳过操作可见",
+          "actual": {
+            "candidates": 2,
+            "skipVisible": true
+          },
+          "expected": {
+            "candidates": 2,
+            "skipVisible": true
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-ultimate-post-damage-cast",
+      "stepId": "ultimate-post-damage-cast-choice",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "722eb922f14dae8d79d52566aa8f5a440ee0894ce33da5ede778f187fd39909a"
+    },
+    {
+      "id": "doctor-strange-ultimate-prepared-spell-selected",
+      "stepId": "ultimate-prepared-spell-selected",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "978831df6aa14a782e8a66571e4b020fcefbf6b0f9ca90d57e3bd83b07ff1c1f"
+    },
+    {
+      "id": "doctor-strange-ultimate-second-cast-choice",
+      "stepId": "ultimate-second-cast-choice",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "d1bf66a157e764ed7f3e5005be8d09141b2f19d3605146622330e9817fa08b92"
+    }
+  ]
+}

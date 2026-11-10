@@ -1,0 +1,284 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-diagnostic\\2026-09-09T19-37-11-128Z",
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-diagnostic\\2026-09-09T19-37-11-128Z\\final.png",
+  "samples": [
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": true,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 0,
+        "stepId": "setup-runtime",
+        "stepAiActionCount": 1,
+        "aiActionCount": 1
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 0,
+        "stepId": "setup-runtime",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": 1,
+        "stepAiActions": 1
+      },
+      "core": {
+        "phase": "characterSelect",
+        "currentPlayer": "0"
+      },
+      "bodyText": "选择探索者玩家0/3已就绪伊莎·瓦伦西亚当前选择待确认属性力量3速度5知识4神志4特性：无特殊能力：基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。P1P1玩家0/3P1玩家1待确认—P2玩家2空位—P3玩家3空位—P4—空位—P5—空位—P6—空位随机局内剧本木乃伊横行待确认剧本卡先选探索者确认🛠️"
+    }
+  ],
+  "logs": [
+    {
+      "at": 1788982635845,
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": 1788982635858,
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": 1788982635896,
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": 1788982635921,
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": 1788982636321,
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": 1788982636870,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:37:16.870Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": 1788982636871,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:37:16.871Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": 1788982636874,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788982636875,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": 1788982637314,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:37:17.313Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": 1788982637314,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:37:17.314Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": 1788982638298,
+      "type": "warning",
+      "text": "🟡 [性能] 平均 42.4 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": 1788982640325,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:37:20.324Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":3453}"
+    },
+    {
+      "at": 1788982640325,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:37:20.325Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":3011}"
+    },
+    {
+      "at": 1788982640586,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:37:20.586Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":3273}"
+    },
+    {
+      "at": 1788982649809,
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": 1788982649822,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788982649823,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": 1788982649823,
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788982649824,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": 1788982650128,
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788982650128,
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": 1788982650729,
+      "type": "warning",
+      "text": "🟡 [性能] 平均 41.9 FPS | P95 帧时 50.0ms — 低于 60fps"
+    }
+  ]
+}

@@ -199,7 +199,10 @@ const summarizeCollectionErrors = (value: unknown): string[] => {
     return Array.from(new Set(value.flatMap((entry) => {
         const code = safeText(entry);
         if (!code) return [];
-        if (code === 'private_replay_prepare_failed' || code === 'private_replay_not_captured') return [code];
+        if (code === 'private_replay_prepare_failed'
+            || code === 'private_replay_pending_attachment'
+            || code === 'private_replay_attachment_failed'
+            || code === 'private_replay_not_captured') return [code];
         if (code.startsWith('private_replay_capture_failed')) return ['private_replay_capture_failed'];
         if (code.startsWith('private_replay_missing:')) return ['private_replay_missing_fields'];
         return [];
@@ -669,6 +672,9 @@ const collectMissingFields = (args: {
     stateId?: number;
     stateRevision?: number;
     randomCursor?: number;
+    privateReplayRequired?: boolean;
+    privateReplayAttached?: boolean;
+    privateReplayTriggerCaptured?: boolean;
     snapshots: FeedbackDiagnosticPacket['snapshots'];
 }): string[] => {
     const missing: string[] = [];
@@ -681,6 +687,8 @@ const collectMissingFields = (args: {
     if (args.randomCursor === undefined) missing.push('randomCursor');
     if (!args.state) missing.push('snapshots.at');
     else missing.push('snapshots.privateStateRedacted');
+    if (args.privateReplayRequired && !args.privateReplayAttached) missing.push('privateReplay');
+    if (args.privateReplayRequired && !args.privateReplayTriggerCaptured) missing.push('privateReplay.trigger');
     if (!args.snapshots.before) missing.push('snapshots.before');
     if (!args.snapshots.after) missing.push('snapshots.after');
     const undo = args.state?.sys?.undo as { snapshots?: unknown[]; snapshotCount?: number } | undefined;
@@ -707,6 +715,9 @@ export function buildFeedbackDiagnosticPacket(args: {
     stateId?: number;
     stateRevision?: number;
     randomCursor?: number;
+    privateReplayRequired?: boolean;
+    privateReplayAttached?: boolean;
+    privateReplayTriggerCaptured?: boolean;
     before?: MatchState<unknown>;
     after?: MatchState<unknown>;
     legalActions?: unknown;
@@ -732,6 +743,9 @@ export function buildFeedbackDiagnosticPacket(args: {
         stateId,
         stateRevision,
         randomCursor: args.randomCursor,
+        privateReplayRequired: args.privateReplayRequired,
+        privateReplayAttached: args.privateReplayAttached,
+        privateReplayTriggerCaptured: args.privateReplayTriggerCaptured,
         snapshots,
     });
     const collectionStatus = args.collectionErrors?.length || missingFields.length > 0

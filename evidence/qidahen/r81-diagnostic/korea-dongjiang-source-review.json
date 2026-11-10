@@ -1,0 +1,75 @@
+{
+  "reviewer": {
+    "agent_id": "/root/r81_boundary_candidate",
+    "role": "独立源图视觉复核子代理",
+    "method": "已读完整原图；对朝鲜点位、东江文字和旧seed同图局部放大核对"
+  },
+  "source": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "sha256": "C50C1D3CFDF8F2B09FFB403C22E31F90523F7A20C7F051C8432B93490B90FF0E"
+  },
+  "coordinate_system": "原图1265x893像素；bbox=[left,top,right,bottom)，右/下边界不含；保守覆盖完整椭圆及描边软边，约1至2px余量",
+  "point_observation": "咸兴、平壤、汉城均为白色椭圆城市字牌；以下bbox覆盖整枚本体与内部城市文字，不是只框名字。bbox是裁取/定位范围，不应直接将整矩形填成最终像素mask。",
+  "points": [
+    {
+      "name": "咸兴",
+      "bbox": [
+        1049,
+        408,
+        1082,
+        452
+      ],
+      "inside_point": [
+        1064,
+        426
+      ],
+      "observation": "覆盖灰色椭圆描边、完整白底及咸兴字牌。"
+    },
+    {
+      "name": "平壤",
+      "bbox": [
+        1012,
+        553,
+        1048,
+        602
+      ],
+      "inside_point": [
+        1030,
+        578
+      ],
+      "observation": "覆盖灰色椭圆描边、完整白底及平壤字牌。"
+    },
+    {
+      "name": "汉城",
+      "bbox": [
+        1122,
+        604,
+        1157,
+        651
+      ],
+      "inside_point": [
+        1141,
+        629
+      ],
+      "observation": "覆盖橙红色椭圆描边、完整白底及汉城字牌；完整本体左侧超出既有名字框x1127。"
+    }
+  ],
+  "dongjiang": {
+    "verdict": "旧seed明显错误",
+    "red_label_bbox": [
+      807,
+      505,
+      829,
+      548
+    ],
+    "observation": "红字东江位于辽东南侧陆地，皮岛字牌左侧。旧seed(878,717)位于地图下方海浪纹理区，既不是东江红字，也不是该陆地。",
+    "old_seed": [
+      878,
+      717
+    ],
+    "old_seed_surface": "海域纹理",
+    "scope": "只核对源图对象与位置；不据此划定整个东江地区边界。"
+  },
+  "verdict": "PASS",
+  "limitations": "仅源图点位与东江文字位置校准；未查看或认可既有mask、正式数据、应用UI或教程。"
+}

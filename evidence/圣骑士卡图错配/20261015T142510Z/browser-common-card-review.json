@@ -1,0 +1,129 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "agentId": "/root/audit_frames_11_21",
+  "reviewer": {
+    "kind": "subagent",
+    "agentId": "/root/audit_frames_11_21"
+  },
+  "objective": "三张通用改骰牌真实UI原始整屏截图的卡面—运行时映射复核",
+  "claimScope": "三张指定卡的图面—运行时映射与目标卡完整可读",
+  "visualReview": {
+    "mode": "all-media",
+    "source": "original-full-screen-screenshots",
+    "notCropped": true
+  },
+  "verdict": "PASS",
+  "summary": {
+    "total": 3,
+    "PASS": 3,
+    "REVISE": 0
+  },
+  "targetRequirements": [
+    "惊不惊喜？！：2CP／改任意1骰",
+    "不愧是我！：1CP／重掷至多2骰",
+    "意不意外？！：3CP／改任意2骰",
+    "主卡完整可读且使用真实卡图",
+    "无影响当前目标的遮挡、错误图或边界裁切"
+  ],
+  "hardFailures": [],
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_惊不惊喜_正式放大卡面.jpg",
+      "fileName": "圣骑士_惊不惊喜_正式放大卡面.jpg",
+      "sha256": "5d9ee903cbe4b5701f4fea0e8ec01bd470aa155e9f797b0a57ed154e9ec56bcf",
+      "verdict": "PASS",
+      "cardId": "card-surprise",
+      "expected": "2CP；改变任意1颗骰子的数值",
+      "actualTitle": "惊不惊喜？！",
+      "actualCpCost": 2,
+      "actualTimingColor": "投掷阶段行动；橙色边框",
+      "bodyText": "改变任意1颗骰子的数值。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullScreenReviewed": true,
+      "cropped": false,
+      "reviewMethod": "view_image(detail=original)逐张读取原始1920x1080整屏截图",
+      "mainCardCompleteAndReadable": true,
+      "mainCardEvidence": "中央放大卡完整位于视口内；四周边框、标题、左上费用、投掷阶段标签、插画和全部正文可读，正文无裁切。",
+      "authenticArtwork": true,
+      "authenticArtworkEvidence": "呈现橙边正式中文扫描卡图及独立原插画、卡号和纸纹；图面与本代理此前逐卡读取的源卡身份及正文对应，非文字占位卡。此项仅判断截图所见素材。",
+      "occlusion": {
+        "targetObscured": false,
+        "detail": "右上关闭按钮触及卡边但未遮挡标题、费用或正文；背景遮罩与中央卡压住部分底部手牌，属于放大态；未影响本轮目标卡图身份及语义读取。"
+      },
+      "wrongArtwork": false,
+      "boundaryIssues": [],
+      "issues": [],
+      "playerVisibleResult": "玩家可在中央完整卡面读取该牌费用与效果，明确区分改1骰、重掷至多2骰及改2骰。",
+      "scopeLimit": "只证明该整屏截图中的放大卡图面与目标运行时卡身份对应；不证明实际出牌结算、费用扣除、其它视口或整个页面UI质量。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_不愧是我_正式放大卡面.jpg",
+      "fileName": "圣骑士_不愧是我_正式放大卡面.jpg",
+      "sha256": "0cef22ec279b5c8cbbe6a219f54efad878ef5b01a9a57c0827062c2e0e998474",
+      "verdict": "PASS",
+      "cardId": "card-worthy-of-me",
+      "expected": "1CP；你或1名队友重掷至多2颗骰子",
+      "actualTitle": "不愧是我！",
+      "actualCpCost": 1,
+      "actualTimingColor": "投掷阶段行动；橙色边框",
+      "bodyText": "你或1名队友可以重掷至多2颗骰子（可以是同一颗骰子重掷2次或两颗骰子各重掷1次）。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullScreenReviewed": true,
+      "cropped": false,
+      "reviewMethod": "view_image(detail=original)逐张读取原始1920x1080整屏截图",
+      "mainCardCompleteAndReadable": true,
+      "mainCardEvidence": "中央放大卡完整位于视口内；四周边框、标题、左上费用、投掷阶段标签、插画和全部正文可读，正文无裁切。",
+      "authenticArtwork": true,
+      "authenticArtworkEvidence": "呈现橙边正式中文扫描卡图及独立原插画、卡号和纸纹；图面与本代理此前逐卡读取的源卡身份及正文对应，非文字占位卡。此项仅判断截图所见素材。",
+      "occlusion": {
+        "targetObscured": false,
+        "detail": "右上关闭按钮触及卡边但未遮挡标题、费用或正文；背景遮罩与中央卡压住部分底部手牌，属于放大态；未影响本轮目标卡图身份及语义读取。"
+      },
+      "wrongArtwork": false,
+      "boundaryIssues": [],
+      "issues": [],
+      "playerVisibleResult": "玩家可在中央完整卡面读取该牌费用与效果，明确区分改1骰、重掷至多2骰及改2骰。",
+      "scopeLimit": "只证明该整屏截图中的放大卡图面与目标运行时卡身份对应；不证明实际出牌结算、费用扣除、其它视口或整个页面UI质量。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_意不意外_正式放大卡面.jpg",
+      "fileName": "圣骑士_意不意外_正式放大卡面.jpg",
+      "sha256": "481359f28d5a632b8e617dc5290680db9723955ea169f687f7f25cf0177ca590",
+      "verdict": "PASS",
+      "cardId": "card-unexpected",
+      "expected": "3CP；改变任意2颗骰子的数值",
+      "actualTitle": "意不意外？！",
+      "actualCpCost": 3,
+      "actualTimingColor": "投掷阶段行动；橙色边框",
+      "bodyText": "改变任意2颗骰子的数值。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "fullScreenReviewed": true,
+      "cropped": false,
+      "reviewMethod": "view_image(detail=original)逐张读取原始1920x1080整屏截图",
+      "mainCardCompleteAndReadable": true,
+      "mainCardEvidence": "中央放大卡完整位于视口内；四周边框、标题、左上费用、投掷阶段标签、插画和全部正文可读，正文无裁切。",
+      "authenticArtwork": true,
+      "authenticArtworkEvidence": "呈现橙边正式中文扫描卡图及独立原插画、卡号和纸纹；图面与本代理此前逐卡读取的源卡身份及正文对应，非文字占位卡。此项仅判断截图所见素材。",
+      "occlusion": {
+        "targetObscured": false,
+        "detail": "右上关闭按钮触及卡边但未遮挡标题、费用或正文；背景遮罩与中央卡压住部分底部手牌，属于放大态；未影响本轮目标卡图身份及语义读取。"
+      },
+      "wrongArtwork": false,
+      "boundaryIssues": [],
+      "issues": [],
+      "playerVisibleResult": "玩家可在中央完整卡面读取该牌费用与效果，明确区分改1骰、重掷至多2骰及改2骰。",
+      "scopeLimit": "只证明该整屏截图中的放大卡图面与目标运行时卡身份对应；不证明实际出牌结算、费用扣除、其它视口或整个页面UI质量。"
+    }
+  ],
+  "evidenceBoundary": "实际逐张读取原始整屏截图得出裁决；未依赖浏览器测试通过、DOM、文件名或旧PASS替代画面验收。仅写本报告，未修改实现。"
+}

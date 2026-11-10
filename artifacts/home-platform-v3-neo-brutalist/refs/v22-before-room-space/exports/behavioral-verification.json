@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "sourceSnapshot": {
+    "index.html": "6f5d37e3be2f499262a58d0d14516e3936c8fbdcc4de5a89528f58896363071b",
+    "mobile.css": "ede1ce490f7e5a136a8e98dd5828dc6c437de52703993808f4d73ac1a8ae2d29",
+    "capture.mjs": "c6e068979e701a85703972e716533249db7109eb8242135b59da3a5fb35e9242",
+    "mobile-capture.mjs": "d3012542e114fd921617be2ab409587d5bf976036732c34dd8e9571cb7cdfec4",
+    "details-layout.mjs": "b9e4a9999e45edf580366a8b70ebf18a684d968ab0c86fff3677264f5df2ec64",
+    "details-actions.behavior.test.ts": "853af74784c4d3a1901f753213c56b91046b3a922374ca217541d2990a0fd9bf",
+    "library-tasks.mjs": "e8f3c111e90795bc81bfc85e9cbfa3a265803711a495c6b03be685a2c519a8b0",
+    "library-task.behavior.test.ts": "d3b1635532679ecec567237f937fb962a18d370598b080def475a347c7367e1a",
+    "vitest.config.ts": "9a2ae93ae87da3514bf4972ae42d17a2ea14e7b8700a5356c9438cebf3beffde"
+  },
+  "originalIssue": "06按钮挤在一坨，作者与只读人数冒充同级操作，旧媒体沿用通过结论",
+  "red": {
+    "status": "EXPECTED_FAILURE",
+    "log": "details-actions-red.log",
+    "reason": "改前没有独立主操作和辅助操作承载"
+  },
+  "iteration": {
+    "log": "details-actions-vitest-initial.log",
+    "fixed": "发现辅助按钮悬停上移造成同排错位，已取消位移；未放松间距或同排断言"
+  },
+  "vitest": {
+    "status": "PASS",
+    "files": 3,
+    "tests": 4,
+    "log": "details-actions-vitest-final.log",
+    "checks": [
+      "桌面手机主辅分区间距",
+      "三个辅助入口同排且有触控区域",
+      "作者位于署名区且保持可点",
+      "只读人数不再呈现选择控件",
+      "收藏切换恢复",
+      "教程配置原有示意反馈",
+      "作者打开关闭",
+      "满房按钮禁用",
+      "收藏库主任务回归"
+    ]
+  },
+  "browser": {
+    "status": "PASS",
+    "log": "details-actions-capture.log",
+    "freshMedia": 11,
+    "checks": [
+      "详情",
+      "作者弹窗",
+      "销毁确认",
+      "创建表单",
+      "规则页签",
+      "电脑展开",
+      "创建按钮滚动可达"
+    ]
+  },
+  "visual": {
+    "fresh": 11,
+    "carriedForward": 32,
+    "total": 43,
+    "reviewFile": ".visual-review.json"
+  },
+  "limitations": [
+    "操作入口仍为现有设计稿示意行为，不代表真实教程配置或联机功能",
+    "移动新图为三百七十五竖屏；没有真机键盘或安全区验收",
+    "只修当前设计稿，未提交推送或部署"
+  ]
+}

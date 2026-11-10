@@ -1,0 +1,131 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r134_final_baseline",
+  "scope": "只做最终归档文字及JSON复核，不重新进行图审、浏览器或HTTP检查，不读取或输出图片。",
+  "findings": [],
+  "checks": [
+    {
+      "check": "清单通过且只送验PC、人工认可待定、移动端未开始",
+      "status": "PASS"
+    },
+    {
+      "check": "归档trace原sourceIdentity完整保留",
+      "status": "PASS"
+    },
+    {
+      "check": "一项字节漂移与715项一致真实保留",
+      "status": "PASS"
+    },
+    {
+      "check": "漂移字段跨清单、机器证据、独立影响审查一致：file",
+      "status": "PASS"
+    },
+    {
+      "check": "漂移字段跨清单、机器证据、独立影响审查一致：capturedRawHash",
+      "status": "PASS"
+    },
+    {
+      "check": "漂移字段跨清单、机器证据、独立影响审查一致：capturedNormalizedHash",
+      "status": "PASS"
+    },
+    {
+      "check": "漂移字段跨清单、机器证据、独立影响审查一致：currentRawHash",
+      "status": "PASS"
+    },
+    {
+      "check": "漂移字段跨清单、机器证据、独立影响审查一致：currentNormalizedHash",
+      "status": "PASS"
+    },
+    {
+      "check": "采集原始哈希仍等于trace",
+      "status": "PASS"
+    },
+    {
+      "check": "浏览器源码原哈希仍等于trace",
+      "status": "PASS"
+    },
+    {
+      "check": "恢复采集源码全文相等机器证据成立",
+      "status": "PASS"
+    },
+    {
+      "check": "当前没有超出已审精确漂移的新变化",
+      "status": "PASS"
+    },
+    {
+      "check": "完整79记录、49媒体、一条桌面链与49项原视觉审查",
+      "status": "PASS"
+    },
+    {
+      "check": "49审查媒体哈希与trace映射相同",
+      "status": "PASS"
+    },
+    {
+      "check": "独立基线三需求均通过且人工状态待定",
+      "status": "PASS"
+    },
+    {
+      "check": "独立影响审查身份及通过范围正确",
+      "status": "PASS"
+    },
+    {
+      "check": "既有查看器健康报告为49条全部成功",
+      "status": "PASS"
+    },
+    {
+      "check": "当前三文档均保留人工PC验收在先及移动端边界",
+      "status": "PASS"
+    },
+    {
+      "check": "当前任务明确历史授权不适用且未提交推送发布",
+      "status": "PASS"
+    }
+  ],
+  "sourceIdentity": {
+    "capturedSourceIdentityPreserved": true,
+    "sourceFiles": 716,
+    "unchangedRawFiles": 715,
+    "actualByteDrift": 1,
+    "reviewedDrift": [
+      {
+        "path": "src/components/common/media/CardPreview.tsx",
+        "capturedRawHash": "c3bbb402d95283e8681410537b4f9ff5100bf4bad3c0d0670731dd8088000c28",
+        "currentRawHash": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269"
+      }
+    ],
+    "unknownNewDrift": [],
+    "impactReview": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-pc-open-battle-20261101\\reviews\\cardpreview-drift-impact-review.json",
+    "machineEvidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-pc-open-battle-20261101\\reviews\\cardpreview-drift-ast-evidence.json"
+  },
+  "delivery": {
+    "mediaCount": 49,
+    "behaviorChains": 1,
+    "visualReviewEntries": 49,
+    "viewerUrl": "http://127.0.0.1:4867/?key=c781db0faf5e",
+    "viewerHealthEvidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\qidahen-open-battle-r134-viewer-health.json",
+    "viewerHealthScope": "读取既有健康报告，未在本次独立发起HTTP请求。",
+    "humanPcApproval": "pending",
+    "mobileWork": "not-started",
+    "gitAndRelease": "未提交、推送、切分支或发布。"
+  },
+  "documents": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\docs\\games\\qidahen\\records\\qidahen-pc-open-battle-review-20261101.md",
+      "sha256": "205932803287b6d7069fa2bc5fe36f2bbd4b09ae3feeaf5cf7ee175acf95609e"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\docs\\games\\qidahen\\records\\qidahen-annual-tutorial-design-20261030.md",
+      "sha256": "380638f05f40bf2ae20b74ac8e555ae2dc6429e155e83aa75de2cef73ca84273"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\openspec\\changes\\refactor-qidahen-continuous-annual-tutorial\\tasks.md",
+      "sha256": "cee209e6c1210bc1823b62f0fcab4c69a89369fbada61f12f255ebc2e4163b5a"
+    }
+  ],
+  "completionStatement": "当前PC目标链的AI核验和送验归档完成，可供用户人工验收；不能称用户已认可、全规则通过、所有测试通过或已部署。",
+  "remainingBoundaries": [
+    "全局国际化仍有其它文件八条告警，额外军备领域套件七项失败，原限制保留。",
+    "精确CardPreview导出变化不影响本链的结论不覆盖未来日志预览专项，未知后续漂移仍阻止相关链。",
+    "本次没有重读49媒体或105视频帧，视觉结论继承原报告与此前限定4张代表原图的独立审查。"
+  ]
+}

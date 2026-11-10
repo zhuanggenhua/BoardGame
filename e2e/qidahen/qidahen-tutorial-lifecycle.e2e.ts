@@ -37,6 +37,7 @@ test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退
     };
     await page.goto(route, { waitUntil: 'domcontentloaded' }); await waitStep('frontier-goal');
     const initial = await read(page);
+    await clickVisibleButton(page, 'tutorial-next-button'); await waitStep('frontier-target');
     await clickVisibleButton(page, 'tutorial-next-button'); await waitStep('opening-move');
     await page.getByTestId('qidahen-wheel-move-target-move-1-free').click(); await waitStep('farm-action');
     const beforeReload = await read(page);
@@ -55,6 +56,7 @@ test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退
     await page.getByRole('button', { name: '重头开始', exact: true }).click({ timeout: 90_000 }); await waitStep('frontier-goal');
     expect(restartComparable((await read(page)).core)).toEqual(restartComparable(initial.core));
     records.push({ id: 'restart', after: await read(page), assertions: [{ name: 'fresh-legal-opening', actual: true, expected: true }] });
+    await clickVisibleButton(page, 'tutorial-next-button'); await waitStep('frontier-target');
     await clickVisibleButton(page, 'tutorial-next-button'); await waitStep('opening-move');
     await expect.poll(() => storedStep(page)).toBe('opening-move');
     // 构造旧版本的真实持久化快照，只验证版本拒绝恢复；不改当前对局规则结果。
@@ -78,6 +80,9 @@ test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退
     await expect(page.getByTestId('tutorial-highlight-ring')).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => (window as any).__BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?.active)).toBe(false);
     records.push({ id: 'exit-through-real-menu', assertions: [{ name: 'tutorial-overlay-highlight-and-context-cleared', actual: true, expected: true }] });
+    // 大厅仍会异步加载模块；离开前收完真实响应，避免导航销毁尚在读取的响应体。
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await verifySourceIdentity.flush();
     await page.goto('/play/qidahen', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 90_000 });
     await expect.poll(() => page.evaluate(() => Boolean((window as any).__BG_TEST_HARNESS__?.state.get()?.sys?.tutorial?.active))).toBe(false);

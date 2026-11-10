@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "screenshotRunId": "codex-tutorial-20261026-r16-final",
+  "command": "$env:QIDAHEN_TUTORIAL_SCREENSHOT_RUN_ID='codex-tutorial-20261026-r16-final'; $env:QIDAHEN_CAPTURE_BEHAVIOR_TRACE='1'; node scripts/infra/run-e2e-single.mjs default e2e/qidahen/qidahen-closeout.e2e.ts '--grep=唯一入门入口|教程模式会带玩家走完真实回合主路|入门征召备选|基础教程的 1 格走法|玩家可先做轮盘行动|基础教程的 3 格走法|移动横屏真实教程' --retries=0",
+  "result": "8/8 Chromium tests passed in 1.6m.",
+  "chains": [
+    {
+      "chainId": "basic-opening-entry",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-entry.json"
+    },
+    {
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-mobile-hand-inspect.json"
+    },
+    {
+      "chainId": "basic-opening-one-grid",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-one-grid.json"
+    },
+    {
+      "chainId": "basic-opening-recruit-artillery",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-recruit-artillery.json"
+    },
+    {
+      "chainId": "basic-opening-recruit-chuanbing",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-recruit-chuanbing.json"
+    },
+    {
+      "chainId": "basic-opening-recruit-wheel",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-recruit-wheel.json"
+    },
+    {
+      "chainId": "basic-opening-three-grid",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-three-grid.json"
+    },
+    {
+      "chainId": "basic-opening-wheel-first",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-wheel-first.json"
+    }
+  ],
+  "screenshots": {
+    "generated": 40,
+    "distinctUIStates": 37,
+    "duplicateCapturesExcluded": 3,
+    "desktopFiles": 34,
+    "mobileFiles": 6
+  }
+}

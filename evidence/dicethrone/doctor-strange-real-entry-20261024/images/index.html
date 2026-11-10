@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>images</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>images</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"all-seeing-eye__全知之眼顶五法术选择-桌面.png","displayTitle":"all · seeing · eye 全知之眼顶五法术选择 · 桌面","description":"真实鼠标触发终极技能后，顶五中法术以卡图供选择准备。","kind":"image"},{"relativePath":"all-seeing-eye__全知之眼法术准备目标选择-桌面.png","displayTitle":"all · seeing · eye 全知之眼法术准备目标选择 · 桌面","description":"准备法瑞拉之牙后，选择其效果影响的对手。","kind":"image"},{"relativePath":"all-seeing-eye__全知之眼攻击后施法选择-桌面.png","displayTitle":"all · seeing · eye 全知之眼攻击后施法选择 · 桌面","description":"终极攻击结算后显示至多两张不同法术的施放选择。","kind":"image"},{"relativePath":"all-seeing-eye__全知之眼攻击结算-桌面.png","displayTitle":"all · seeing · eye 全知之眼攻击结算 · 桌面","description":"跳过施法后终极攻击造成10点伤害且准备区保留三张法术。","kind":"image"},{"relativePath":"all-seeing-eye__全知之眼攻击前-桌面.png","displayTitle":"all · seeing · eye 全知之眼攻击前 · 桌面","description":"内部初始化场景；五颗护身符满足全知之眼终极技能。","kind":"image"},{"relativePath":"all-seeing-eye__全知之眼已选待结算-桌面.png","displayTitle":"all · seeing · eye 全知之眼已选待结算 · 桌面","description":"真实鼠标选择全知之眼后，等待玩家提交攻击结算。","kind":"image"},{"relativePath":"all-seeing-eye__全知之眼重排剩余三张-桌面.png","displayTitle":"all · seeing · eye 全知之眼重排剩余三张 · 桌面","description":"准备两张不同法术后，玩家选择顶五中剩余三张的顺序。","kind":"image"},{"relativePath":"astral-invasion__星际侵入奖励骰待确认-桌面.png","displayTitle":"astral · invasion 星际侵入奖励骰待确认 · 桌面","description":"星际侵入生成两颗右侧奖励骰，玩家可见骰面并等待普通确认。","kind":"image"},{"relativePath":"astral-invasion__星际侵入奖励骰确认-桌面.png","displayTitle":"astral · invasion 星际侵入奖励骰确认 · 桌面","description":"确认奖励骰后记录三点攻击加伤与一点预感；当前攻击进入伤害前阶段。","kind":"image"},{"relativePath":"astral-invasion__星际侵入前-桌面.png","displayTitle":"astral · invasion 星际侵入前 · 桌面","description":"桌面牌桌展示星际侵入所需四种骰面与第五颗曼荼罗骰。","kind":"image"},{"relativePath":"astral-invasion__星际侵入已选-桌面.png","displayTitle":"astral · invasion 星际侵入已选 · 桌面","description":"真实鼠标选择星际侵入后，等待玩家提交攻击结算。","kind":"image"},{"relativePath":"awareness-desktop__桌面-法术准备结算态.png","displayTitle":"awareness · desktop 桌面 · 法术准备结算态","description":"内部初始化场景；确认法术进入公开准备区且资源与状态结算。","kind":"image"},{"relativePath":"awareness-desktop__桌面-法术准备目标选择态.png","displayTitle":"awareness · desktop 桌面 · 法术准备目标选择态","description":"准备法瑞拉之牙后出现真实目标选择；对手初始拥有3点施法值。","kind":"image"},{"relativePath":"awareness-desktop__桌面-公开法术起始态.png","displayTitle":"awareness · desktop 桌面 · 公开法术起始态","description":"初始化特写关闭后，公开起始法术与可操作技能槽均已显示。","kind":"image"},{"relativePath":"awareness-desktop__桌面-弃牌准备选择态.png","displayTitle":"awareness · desktop 桌面 · 弃牌准备选择态","description":"内部初始化场景；真实鼠标命中技能槽后显示弃牌准备选择。","kind":"image"},{"relativePath":"awareness-desktop__桌面-宇宙感知已选待结算.png","displayTitle":"awareness · desktop 桌面 · 宇宙感知已选待结算","description":"真实鼠标选择宇宙感知；技能待结算，法术效果尚未触发。","kind":"image"},{"relativePath":"awareness-mobile__手机横屏-法术准备结算态.png","displayTitle":"awareness · mobile 手机横屏 · 法术准备结算态","description":"内部初始化场景；确认法术进入公开准备区且资源与状态结算。","kind":"image"},{"relativePath":"awareness-mobile__手机横屏-法术准备目标选择态.png","displayTitle":"awareness · mobile 手机横屏 · 法术准备目标选择态","description":"准备法瑞拉之牙后出现真实目标选择；对手初始拥有3点施法值。","kind":"image"},{"relativePath":"awareness-mobile__手机横屏-公开法术起始态.png","displayTitle":"awareness · mobile 手机横屏 · 公开法术起始态","description":"初始化特写关闭后，公开起始法术与可操作技能槽均已显示。","kind":"image"},{"relativePath":"awareness-mobile__手机横屏-弃牌准备选择态.png","displayTitle":"awareness · mobile 手机横屏 · 弃牌准备选择态","description":"内部初始化场景；真实鼠标命中技能槽后显示弃牌准备选择。","kind":"image"},{"relativePath":"awareness-mobile__手机横屏-宇宙感知已选待结算.png","displayTitle":"awareness · mobile 手机横屏 · 宇宙感知已选待结算","description":"真实鼠标选择宇宙感知；技能待结算，法术效果尚未触发。","kind":"image"},{"relativePath":"crimson-bands__深红系带目标选择-桌面.png","displayTitle":"crimson · bands 深红系带目标选择 · 桌面","description":"真实打出法术后显示深红系带的对手目标选择。","kind":"image"},{"relativePath":"crimson-bands__深红系带手牌-桌面.png","displayTitle":"crimson · bands 深红系带手牌 · 桌面","description":"主阶段手牌中显示可打出的深红系带法术。","kind":"image"},{"relativePath":"crimson-bands__深红系带已施加-桌面.png","displayTitle":"crimson · bands 深红系带已施加 · 桌面","description":"对手状态区显示深红系带；权威状态记录获得回合以延迟本回合激活。","kind":"image"},{"relativePath":"deja-vu__即视感使用前-桌面.png","displayTitle":"deja · vu 即视感使用前 · 桌面","description":"内部初始化场景；本回合投掷次数用尽，状态与即视感仍可见。","kind":"image"},{"relativePath":"deja-vu__即视感悬停说明态-桌面.png","displayTitle":"deja · vu 即视感悬停说明态 · 桌面","description":"鼠标悬停即视感标记后，标记高亮并显示操作说明。","kind":"image"},{"relativePath":"deja-vu__即视感重开后-桌面.png","displayTitle":"deja · vu 即视感重开后 · 桌面","description":"真实鼠标点击即视感后，状态标记消耗、投掷计数归零且旧阶段效果清理。","kind":"image"},{"relativePath":"hidden-selection__真实创建房间-待确认.png","displayTitle":"hidden · selection 真实创建房间 · 待确认","description":"玩家从王权骰铸入口打开创建房间确认界面。","kind":"image"},{"relativePath":"hidden-selection__真实选角入口-奇异博士隐藏-窄屏.png","displayTitle":"hidden · selection 真实选角入口 · 奇异博士隐藏 · 窄屏","description":"手机横屏真实选角页中，奇异博士仍不在可选角色目录内。","kind":"image"},{"relativePath":"hidden-selection__真实选角入口-奇异博士隐藏-桌面.png","displayTitle":"hidden · selection 真实选角入口 · 奇异博士隐藏 · 桌面","description":"玩家进入真实选角页后，奇异博士不在可选角色目录中。","kind":"image"},{"relativePath":"premonition-income__本次抽牌返还选择-桌面.png","displayTitle":"premonition · income 本次抽牌返还选择 · 桌面","description":"选择花费3层预感抽3张后，只显示本次抽到的卡牌供返还。","kind":"image"},{"relativePath":"premonition-income__收入阶段替代选项-桌面.png","displayTitle":"premonition · income 收入阶段替代选项 · 桌面","description":"真实主要阶段推进到收入阶段后显示正常收入与预感替代选项。","kind":"image"},{"relativePath":"premonition-income__选择牌库底-桌面.png","displayTitle":"premonition · income 选择牌库底 · 桌面","description":"选择本次抽到的牌后，显示返还牌库顶或牌库底选项。","kind":"image"},{"relativePath":"premonition-income__预感收入结算后-桌面.png","displayTitle":"premonition · income 预感收入结算后 · 桌面","description":"结算后预感消耗3、其余两张留手牌且一张回到牌库底。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

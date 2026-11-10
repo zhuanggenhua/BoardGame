@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>tutorial · r344 · before · after</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>tutorial · r344 · before · after</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-修改前-开局控制章重叠.png","displayTitle":"01 · 修改前 · 开局控制章重叠","description":"","kind":"image"},{"relativePath":"02-修改后-开局控制章.png","displayTitle":"02 · 修改后 · 开局控制章","description":"","kind":"image"},{"relativePath":"02b-修改后-前线目标.png","displayTitle":"02b · 修改后 · 前线目标","description":"","kind":"image"},{"relativePath":"03-修改前-进攻目标.png","displayTitle":"03 · 修改前 · 进攻目标","description":"","kind":"image"},{"relativePath":"04-修改后-进攻目标.png","displayTitle":"04 · 修改后 · 进攻目标","description":"","kind":"image"},{"relativePath":"05-修改前-外长城维护.png","displayTitle":"05 · 修改前 · 外长城维护","description":"","kind":"image"},{"relativePath":"06-修改后-外长城维护.png","displayTitle":"06 · 修改后 · 外长城维护","description":"","kind":"image"},{"relativePath":"07-修改前-征兵地图.png","displayTitle":"07 · 修改前 · 征兵地图","description":"","kind":"image"},{"relativePath":"08-修改后-征兵地图.png","displayTitle":"08 · 修改后 · 征兵地图","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

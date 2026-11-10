@@ -1,0 +1,76 @@
+[
+  {
+    "channel": "edge",
+    "manifestUrl": "https://assets.easyboardgame.top/official/mobile-packages/android/edge/games/dicethrone.json",
+    "publishedAt": "2026-10-15T13:00:10.010Z",
+    "version": "0.6.4-dicethrone-idx-04b563a73e5e",
+    "fileIndexUrl": "http://8.148.71.102/official/mobile-packages/android/edge/file-index/dicethrone/0.6.4-dicethrone-idx-04b563a73e5e.json",
+    "fileIndexChecksumMatches": true,
+    "entries": [
+      {
+        "asset": "ability-cards",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp",
+          "hash": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+          "size": 2039890
+        },
+        "matchesSelected": true
+      },
+      {
+        "asset": "player-board",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp",
+          "hash": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+          "size": 859280
+        },
+        "matchesSelected": true
+      },
+      {
+        "asset": "tip",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp",
+          "hash": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+          "size": 186676
+        },
+        "matchesSelected": true
+      }
+    ]
+  },
+  {
+    "channel": "stable",
+    "manifestUrl": "https://assets.easyboardgame.top/official/mobile-packages/android/stable/games/dicethrone.json",
+    "publishedAt": "2026-10-15T13:00:11.004Z",
+    "version": "0.6.4-dicethrone-idx-04b563a73e5e",
+    "fileIndexUrl": "http://8.148.71.102/official/mobile-packages/android/stable/file-index/dicethrone/0.6.4-dicethrone-idx-04b563a73e5e.json",
+    "fileIndexChecksumMatches": true,
+    "entries": [
+      {
+        "asset": "ability-cards",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp",
+          "hash": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+          "size": 2039890
+        },
+        "matchesSelected": true
+      },
+      {
+        "asset": "player-board",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp",
+          "hash": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+          "size": 859280
+        },
+        "matchesSelected": true
+      },
+      {
+        "asset": "tip",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp",
+          "hash": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+          "size": 186676
+        },
+        "matchesSelected": true
+      }
+    ]
+  }
+]

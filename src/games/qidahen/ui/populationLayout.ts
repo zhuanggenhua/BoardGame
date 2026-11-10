@@ -70,10 +70,13 @@ const squaredDistance = (a: Point, b: Point) => (a.x - b.x) ** 2 + (a.y - b.y) *
 export function layoutQidahenPopulation(
     sites: ReadonlyMap<string, PopulationSite>, regions: readonly Region[],
     tokens: readonly Obstacle[], width: number, height: number,
+    reservedAreas: readonly { left: number; top: number; width: number; height: number }[] = [],
 ): PopulationPlacement[] {
     const obstacles = tokens.map(token => ({ x: token.x * width, y: token.y * height, half: (token.size ?? 30) / 2 }));
     const half = QIDAHEN_POPULATION_SIZE / 2;
     const free = (point: Point) => point.x >= CLEARANCE && point.x < width - CLEARANCE && point.y >= CLEARANCE && point.y < height - CLEARANCE
+        && reservedAreas.every(area => point.x + half + GAP <= area.left || point.x - half - GAP >= area.left + area.width
+            || point.y + half + GAP <= area.top || point.y - half - GAP >= area.top + area.height)
         && obstacles.every(box => Math.abs(point.x - box.x) >= half + box.half + GAP || Math.abs(point.y - box.y) >= half + box.half + GAP);
     const result: PopulationPlacement[] = [];
     const ordered = regions.filter(r => !r.isLogicalRegion && sites.has(r.id))

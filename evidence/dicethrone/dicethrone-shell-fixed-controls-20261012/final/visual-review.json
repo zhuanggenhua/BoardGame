@@ -1,0 +1,46 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/dt_visual_review"
+  },
+  "media": [
+    {
+      "path": "00-壳内固定控件-提示卡已加载-整屏.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示卡不是空壳，右侧卡面文字、图标和放大镜均已加载；整屏无裁切、空白或错误。玩家面板与提示卡右上角各自有独立的小型圆形放大镜，未见命中区导致的可视放大。"
+    },
+    {
+      "path": "01-壳内固定控件-玩家面板放大镜-整屏.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家面板放大镜位于玩家面板上方右侧，保持小图标尺寸；完整棋盘、提示卡、手牌和主操作区均保留，没有被挤动或遮挡。"
+    },
+    {
+      "path": "02-壳内固定控件-提示卡放大镜-整屏.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示卡放大镜位于提示卡右上角，仍是小型清晰图标；提示卡处于当前交互显示状态但没有变成空壳，整屏上下文完整，未见裁切、空白或错误截图。"
+    }
+  ],
+  "sourceRun": "20261012-dicethrone-shell-fixed-controls-r8",
+  "reviewedAt": "2026-10-12T11:21:37.003Z"
+}

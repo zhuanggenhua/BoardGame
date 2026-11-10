@@ -31,7 +31,8 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
     const cardIds = active ? options.filter(option => state.core.handCards.some(card => card.id === option.id)).map(option => option.id) : [];
     const pieceIds = step === 'dispatch-troops' || step === 'upkeep' ? options.filter(option => state.core.pieces.some(piece => piece.id === option.id)).map(option => option.id) : [];
     const allowedTargets = state.sys.tutorial?.active ? state.sys.tutorial.step?.allowedTargets : undefined;
-    const authoredSelectionAllowed = (ids: string[]) => !allowedTargets?.length || ids.length > 0 && ids.every(id => allowedTargets.includes(id)
+    const authoredSelectionAllowed = (ids: string[]) => ['dispatch-source', 'dispatch-troops', 'dispatch-target'].includes(tutorialStep?.id ?? '')
+        || !allowedTargets?.length || ids.length > 0 && ids.every(id => allowedTargets.includes(id)
         || allowedTargets.includes(state.core.handCards.find(card => card.id === id)?.cardDefId ?? ''))
         && (!data?.multi || allowedTargets.every(id => ids.includes(id)));
     const troopsCanReach = step !== 'dispatch-troops' || !frame || getQidahenDispatchDraftTargets(state.core, frame.metadata.qidahenTurn.factionId, frame.metadata.qidahenTurn.sourceRegionId!, selectedIds).length > 0;
@@ -70,6 +71,7 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
     const actorName = active ? Object.values(state.core.factions).find(faction => faction.playerId === current?.playerId)?.name : undefined;
     return { active, canAct, step, maintenanceFortificationId, actorName, title: active ? data.title : '', options, handOptions, handActionCardIds, chooseHandCard, selectedIds, mapCandidateIds, cardIds, pieceIds,
         committedPieceIds: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.selectedPieceIds ?? [] : [],
+        dispatchSourceRegionId: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.sourceRegionId ?? null : null,
         season: frame?.metadata.qidahenTurn.season ?? null, choose, isDirectChoice,
         yearOpening: active && frame?.metadata.qidahenTurn.season === 'new-year'
             && frame.metadata.qidahenTurn.yearCharacterIndex >= 0

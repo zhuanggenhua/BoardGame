@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "2388x1080 equivalent browser viewport reproduces ordinary Betrayal map move after zoom and pan, and the player's token is focused in the HUD-adjusted visible map area.",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mobile-zoom-move-animation.e2e.ts",
+        "FOCUS_DEBUG visibleMapResidualX=-4.6217803955078125 CSS px",
+        "targetState=settled"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-focus-2388x1080/01-before-zoom-pan.jpg",
+    "evidence/betrayal-focus-2388x1080/02-after-zoom-pan.jpg",
+    "evidence/betrayal-focus-2388x1080/03-after-move-focus.jpg"
+  ]
+}

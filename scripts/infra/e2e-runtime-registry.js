@@ -154,7 +154,7 @@ function isPidAlive(pid) {
     process.kill(pid, 0);
     return true;
   } catch (error) {
-    return error?.code === 'EPERM';
+    return error?.code !== 'ESRCH';
   }
 }
 
@@ -557,12 +557,14 @@ function syncLocalRegistry(cwd = process.cwd()) {
 function tryRemoveStaleRegistryLock(lockPath) {
   const lock = readJson(lockPath, null);
   const lockPid = Number(lock?.pid);
-  const createdAt = typeof lock?.createdAt === 'string' ? Date.parse(lock.createdAt) : NaN;
-  const expired = Number.isFinite(createdAt) ? (Date.now() - createdAt) > REGISTRY_LOCK_STALE_MS : true;
-  const ownerDead = !Number.isInteger(lockPid) || lockPid <= 0 || !isPidAlive(lockPid);
-
-  if (!expired && !ownerDead) {
+  if (Number.isInteger(lockPid) && lockPid > 0 && isPidAlive(lockPid)) {
     return false;
+  }
+  // 创建锁文件和写入 owner 并非同一操作；元数据未写完时不能立即删除。
+  if (!Number.isInteger(lockPid) || lockPid <= 0) {
+    let ageMs;
+    try { ageMs = Date.now() - fs.statSync(lockPath).mtimeMs; } catch { return false; }
+    if (ageMs <= REGISTRY_LOCK_STALE_MS) return false;
   }
 
   try {

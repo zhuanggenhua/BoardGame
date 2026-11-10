@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "method": "actual-browser-responses-and-inline-source-maps",
+  "trace": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/behavior-trace.json",
+  "traceSha256": "0c873f398cb94b7d42f85020d82f48f0b5bf9f760eb281c9d2d1469a39420aca",
+  "checked": 725,
+  "changed": []
+}

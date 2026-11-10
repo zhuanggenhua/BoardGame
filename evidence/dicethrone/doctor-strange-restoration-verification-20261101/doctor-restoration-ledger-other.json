@@ -1,0 +1,842 @@
+{
+  "scope": "独立只读审查：非骰子UI与当前ui-change-gates本轮新hunk；只写本JSON，不改产品/规范/测试，不生成PASS。",
+  "createdAt": "2026-11-01T11:54:38.170892+00:00",
+  "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "snapshot": "temp/doctor-ui-restoration-before-20261101/inventory.json",
+  "limits": [
+    "基线源代码只证明旧实现合同；未读取真实旧像素，不能称已重看旧截图。",
+    "原49图/旧PASS已被用户撤销，本审查不沿用放行结论。",
+    "恢复处置为给父代理的逐hunk建议；本JSON不证明父代理已实施或运行验收完成。",
+    "本聊天主rollout中未命中写入仅证明当前检查未找到，不自动证明其它聊天所有权。"
+  ],
+  "canonicalStandardsReview": {
+    "reviewed": " .spec/knowledge/standards/ui-change-gates.md本轮新增既有UI复用与授权顺序、外部参考前置顺序、抽查不缩范围；不审改其它聊天旧hunk的授权。",
+    "finding": "未发现本轮新增hunk与既有主源冲突或复制第二套可执行规范。",
+    "coverage": [
+      "完整旧入口/状态/消费者/owner先核对，封住把GameHints同色浅橙条误当RightSidebar真实旧提示的问题。",
+      "授权先于评分，禁止以更清楚或新PASS合理化卡池12单位及短屏重排。",
+      "抽查不缩原未完成全集，41/42/25只是抽查不能替代本聊天全部UI清点。",
+      "恢复和复用先旧来源，外部参考只用于已授权新增/重做，防用商业参考取得隐式改版权。"
+    ],
+    "singleSource": [
+      "回归流程继续链接regression-closeout；缩放继续链接ui-responsive-layout；本文件新增仅是UI授权执行顺序，不另抄它们完整流程。",
+      "ui-ux.md:28及65已要求浮层不挤主对象，辅助检视不得移动主UI有既有主源，无需再复制一段规范。"
+    ],
+    "qualification": "此审查只评新规则覆盖与主源关系，spec:lint及当前真实UI闭环由父代理执行；不宣称规范更新已修复产品。"
+  },
+  "records": [
+    {
+      "file": "src/games/dicethrone/ui/AbilityOverlays.tsx",
+      "hunk": "selected/highlight style; highlightOverlayClassName; selected-check",
+      "oldOwnerAndNormalSource": "AbilityOverlays.buildAbilityHighlightStyle及原技能槽边界；c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/AbilityOverlays.tsx",
+      "change": "2.5px改3px；删渐变遮罩与旧强halo；削弱候选发光；移除pulse；新增24px勾标",
+      "origin": "本聊天；rollout原始补丁61046、61067；提交90b7dba67只是纳入点",
+      "authorizationOrRealBlocker": "未发现用户对技能槽外观改版的授权；卡池选中强调的要求不能代授技能槽",
+      "disposition": "恢复上述完整视觉hunk；保留原槽位绑定与数据接入",
+      "reverification": "博士和一个旧英雄技能可用/已选原入口整屏；核旧边界、pulse、层级与不抢点击",
+      "evidence": [
+        "rollout:61046",
+        "rollout:61067"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/LeftSidebar.tsx",
+      "hunk": "TokensContainer tooltipPosition=\"top\"",
+      "oldOwnerAndNormalSource": "LeftSidebar → TokensContainer → TokenBadge → InfoTooltip；旧默认right",
+      "change": "所有英雄侧栏token说明无条件改为top",
+      "origin": "本聊天；rollout32133",
+      "authorizationOrRealBlocker": "博士新token说明遮挡不能授权其它英雄HUD位置改变",
+      "disposition": "恢复其它英雄right；博士top是否保留须同入口证明必要，未证明前记为候选，不能宣称已正确",
+      "reverification": "旧英雄/博士分别hover多个token；原HUD不移动、其它token与主动作可读",
+      "evidence": [
+        "rollout:32133"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/LeftSidebar.tsx",
+      "hunk": "doctor_strange placementBoundarySelector",
+      "oldOwnerAndNormalSource": "原同一token说明owner",
+      "change": "仅博士按status-tokens整组边界放置说明",
+      "origin": "本聊天；rollout42561",
+      "authorizationOrRealBlocker": "原记录说明博士预感说明覆盖同组候选；绑定范围限博士；原PASS不证明当前",
+      "disposition": "保留最窄参数候选，须重新证明；不扩大到旧英雄",
+      "reverification": "博士真实预感hover整屏及直接点击，说明不遮同组其它标记",
+      "evidence": [
+        "rollout:42561"
+      ]
+    },
+    {
+      "file": "src/components/common/overlays/InfoTooltip.tsx",
+      "hunk": "InfoTooltipPosition/top/bottom/arrowOffset",
+      "oldOwnerAndNormalSource": "原共享InfoTooltip右/左viewport定位；c057cfe76afab5c2078c129183a02d6f1fb21a90:src/components/common/overlays/InfoTooltip.tsx",
+      "change": "扩四向且为top/bottom算箭头偏移；缺省仍right",
+      "origin": "本聊天；rollout32096、32119、32171",
+      "authorizationOrRealBlocker": "为说明必要避让扩原owner；未传新参数的right/left计算仍等价；不应默认给所有旧HUD改方向",
+      "disposition": "保留能力扩展；收窄调用方，不能以四向能力存在证明调用必要",
+      "reverification": "共享无参数right/left对照；博士确有阻断入口四向图面",
+      "evidence": [
+        "rollout:32096",
+        "rollout:32119",
+        "rollout:32171"
+      ]
+    },
+    {
+      "file": "src/components/common/overlays/InfoTooltip.tsx",
+      "hunk": "placementBoundarySelector",
+      "oldOwnerAndNormalSource": "原共享InfoTooltip浮层位置计算",
+      "change": "可选closest边界用于说明排在整组外；缺省anchor不变",
+      "origin": "本聊天；rollout42561",
+      "authorizationOrRealBlocker": "候选同组遮挡修复，默认路径未换owner；边界必须真实存在",
+      "disposition": "保留最窄可选扩展；每个消费者分别证明",
+      "reverification": "原anchor默认入口与单持有人状态入口；无边界参数不改变旧定位",
+      "evidence": [
+        "rollout:42561"
+      ]
+    },
+    {
+      "file": "src/components/common/overlays/InfoTooltip.tsx",
+      "hunk": "avoidSelector候选位置搜索",
+      "oldOwnerAndNormalSource": "原共享InfoTooltip，同一浮层独立overlay",
+      "change": "可选保护rect检测及四向候选位置搜索，不改主UI",
+      "origin": "本聊天；rollout79437",
+      "authorizationOrRealBlocker": "R4多人状态说明遮另一持有人候选记录；与用户要求直接状态选择相关；尚需本轮实际图重证",
+      "disposition": "保留最窄可选避让候选；不能移主UI；本次未私自生成PASS",
+      "reverification": "多人hover说明与两持有人/标题/按钮同帧；无参数旧入口不变；记录无可放位置情况",
+      "evidence": [
+        "rollout:79437",
+        "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md:56"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "hunk": "hasUsableStatusImage null guard",
+      "oldOwnerAndNormalSource": "原图片有效性判断",
+      "change": "Boolean(img)改img != null，维持非空后尺寸判断",
+      "origin": "源码类型收敛；具体聊天未证明",
+      "authorizationOrRealBlocker": "没有视觉构图变化",
+      "disposition": "保留；不当成UI恢复对象",
+      "reverification": "既有类型/图片检查，不另增视觉验收",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "hunk": "getClickableTokenRippleStyle及inner/outer两层",
+      "oldOwnerAndNormalSource": "TokenBadge共享可点击提示",
+      "change": "新增并柔化双涟漪",
+      "origin": "其它聊天合法工作；父任务明确排除，当前源码独立存在",
+      "authorizationOrRealBlocker": "用户未授权撤此任务；不能把基线差异一律算本聊天",
+      "disposition": "保留，不覆盖",
+      "reverification": "仅检查恢复tooltip没有覆盖涟漪",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "hunk": "TokenBadge/TokensContainer tooltip props",
+      "oldOwnerAndNormalSource": "原TokenBadge/InfoTooltip；旧position=right",
+      "change": "传可选tooltipPosition和boundary；缺省仍通过InfoTooltip默认right",
+      "origin": "本聊天；rollout32126、42561",
+      "authorizationOrRealBlocker": "为最窄说明避让复用原组件，参数自身不改所有实例",
+      "disposition": "保留能力；LeftSidebar具体调用按上项收窄",
+      "reverification": "未传props实例right默认不变；博士调用同入口",
+      "evidence": [
+        "rollout:32126",
+        "rollout:42561"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "hunk": "SelectableStatusBadge data-selected与点击收hover",
+      "oldOwnerAndNormalSource": "原SelectableStatusBadge候选、选中、onSelect",
+      "change": "增加测试状态属性；点击合法状态先setIsHovered(false)再onSelect",
+      "origin": "本聊天；rollout44411、68904",
+      "authorizationOrRealBlocker": "选择后旧说明遮挡候选/确认的直接问题记录；不改候选、边框或确认语义",
+      "disposition": "保留；不是外观改版",
+      "reverification": "状态hover→点击→选中待确认；说明关闭且选中状态保留；可重新hover",
+      "evidence": [
+        "rollout:44411",
+        "rollout:68904"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "hunk": "SelectableStatusBadge/SelectableEffectsContainer tooltip boundary/avoid",
+      "oldOwnerAndNormalSource": "原状态候选→原共享InfoTooltip",
+      "change": "可选参数贯通，不改状态图本体",
+      "origin": "本聊天；rollout68396/68904/79437及当前快照",
+      "authorizationOrRealBlocker": "单人紧凑窗口与多人遮挡分别是不同消费者，不用单人证据证明多人",
+      "disposition": "保留最窄能力；每个消费者待新图证明",
+      "reverification": "单人/多人各hover整屏；旧未传消费者保持原right",
+      "evidence": [
+        "rollout:79437"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+      "hunk": "固定0.61→正式atlas frame；去金框/halo",
+      "oldOwnerAndNormalSource": "原CardSpotlightOverlay → CardPreview → 正式atlas",
+      "change": "按实际sprite比例显式算高度；去border、金halo与额外圆角；宽仍16vw",
+      "origin": "本聊天；rollout76116、76128",
+      "authorizationOrRealBlocker": "用户明确原卡无额外底框且不变形；当前旧0.61会覆盖不同素材帧",
+      "disposition": "保留",
+      "reverification": "普通来源卡整屏；native/frame比例vs最终bbox；关闭路径不变",
+      "evidence": [
+        "rollout:76116",
+        "rollout:76128"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+      "hunk": "autoCloseDelay默认3000→undefined；disableAutoClose",
+      "oldOwnerAndNormalSource": "原CardSpotlightOverlay/SpotlightContainer/onClose队列",
+      "change": "普通可读卡不再3秒timer退场；显式教程参数仍能自动推进",
+      "origin": "本聊天；rollout78043",
+      "authorizationOrRealBlocker": "engine-visual-events.md:75-79明确CardSpotlightQueue可读特写只由玩家关闭；此为当前阅读合同，不是泛泛可读性评分",
+      "disposition": "保留最窄普通阅读修复；显式教程旧参数不改",
+      "reverification": "普通卡>3秒仍可读→点空白关闭→队列下一张；教程显式delay单独核验",
+      "evidence": [
+        "rollout:78043",
+        ".spec/knowledge/standards/engine-visual-events.md:75-79"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+      "hunk": "DieFace type import",
+      "oldOwnerAndNormalSource": "原bonusDice.face类型",
+      "change": "补DieFace类型引用",
+      "origin": "类型修复；本聊天归属未证明",
+      "authorizationOrRealBlocker": "无玩家可见变化",
+      "disposition": "保留",
+      "reverification": "相关类型检查",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+      "hunk": "magnifiedCardAspectRatio与宽高限制",
+      "oldOwnerAndNormalSource": "原BoardOverlays/MagnifyOverlay单卡阅读；原多卡分支不改",
+      "change": "单卡读真实frame，去0.61写死；限定可用高度避免底边裁切",
+      "origin": "本聊天；rollout76895-77103",
+      "authorizationOrRealBlocker": "用户卡图不变形；窄读图底部裁切记录；仅原owner改参数",
+      "disposition": "保留",
+      "reverification": "旧卡/博士卡各原放大入口及窄高视口；整张原比例/印刷边界；关闭回原选择",
+      "evidence": [
+        "rollout:76895-77103"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "hunk": "preparedSpells props/renderPreparedSpells",
+      "oldOwnerAndNormalSource": "旧CenterBoard无博士公开准备区；新规则preparedSpells由原CardPreview/onMagnifyCard承接",
+      "change": "博士单独公开准备槽、数量、横滚、原卡点击阅读；旧英雄无该节点",
+      "origin": "本聊天；rollout1915",
+      "authorizationOrRealBlocker": "新博士必要规则对象；没有借此改旧HUD尺寸或锚点",
+      "disposition": "保留必要新对象",
+      "reverification": "真实准备→公开区可见→横滚→点原卡→关闭；整屏核同板技能与旧HUD保护槽",
+      "evidence": [
+        "rollout:1915"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "hunk": "准备卡button去h-full/白框/固定aspect",
+      "oldOwnerAndNormalSource": "原新准备区CardPreview正式frame",
+      "change": "删写死满高、额外白边和固定669/1086，让CardPreview原比例自然排",
+      "origin": "本聊天；rollout78163",
+      "authorizationOrRealBlocker": "用户原卡不额外框且不变形明确要求；h-full+width双约束实在同一新对象",
+      "disposition": "保留",
+      "reverification": "准备区不同帧实际比例、原印刷边界、卡尾完整",
+      "evidence": [
+        "rollout:78163"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "hunk": "准备区style zIndex: UI_Z_INDEX.hud+1",
+      "oldOwnerAndNormalSource": "新准备区原z-30与AbilityOverlays技能命中层竞争",
+      "change": "仅准备区提高命中层",
+      "origin": "本聊天；rollout78654",
+      "authorizationOrRealBlocker": "真实点击日志sky/strange-book-of-vishanti拦准备卡；原记录非测试强制点击",
+      "disposition": "保留候选；本轮以自然click/scroll重新确认必要性",
+      "reverification": "不force点击准备卡并打开原阅读；技能槽自己仍能正常点；整屏确认未盖旧HUD",
+      "evidence": [
+        "rollout:78654",
+        "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md:47"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "hunk": "characterId?: string→HeroState.characterId",
+      "oldOwnerAndNormalSource": "原CenterBoard角色参数",
+      "change": "收窄类型，不改render分支",
+      "origin": "类型修复；具体归属未证明",
+      "authorizationOrRealBlocker": "无可见变化",
+      "disposition": "保留",
+      "reverification": "目标类型检查",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/CompareRollOverlay.tsx",
+      "hunk": "resultTextKey/labelKey存在性守卫",
+      "oldOwnerAndNormalSource": "原结果/选项翻译消费",
+      "change": "key存在才调用hasTranslation，缺省继续原text",
+      "origin": "类型/可选key消费修复；具体归属未证明",
+      "authorizationOrRealBlocker": "不改布局/样式；不能把缺失key的守卫当视觉改版",
+      "disposition": "保留",
+      "reverification": "已存在key和无key结果文字保持各自原来源",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/PhaseIndicator.tsx",
+      "hunk": "PHASE_ORDER与phaseId类型收敛",
+      "oldOwnerAndNormalSource": "原7阶段相同顺序与点击合同",
+      "change": "常量提升并从同数组找id；原classes/tooltip/阶段顺序未改",
+      "origin": "90b7dba67纳入类型构建修复；本聊天补丁未命中",
+      "authorizationOrRealBlocker": "无UI布局变化；不得仅因提交范围同批而撤",
+      "disposition": "保留",
+      "reverification": "旧7阶段、hover/click合同原样；类型检查",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityChoiceText.ts",
+      "hunk": "variant.name/description元数据优先",
+      "oldOwnerAndNormalSource": "原getAbilityChoiceText/AbilityChoiceModal",
+      "change": "显式variant文案优先；没有元数据仍走原构造键；实际影响是效果信息来源",
+      "origin": "本聊天精确写入未证明；源码能力扩展；相关小/大顺子记录存在",
+      "authorizationOrRealBlocker": "新变体不能共用泛化说明；没有改变选项窗外形",
+      "disposition": "保留语义接入；不要用它授权改弹窗",
+      "reverification": "博士小/大顺子分别6/9及一个无variant元数据旧技能输出",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityOverlayHelpers.ts",
+      "hunk": "THOR_CARDS/HERO_CARDS_MAP.thor",
+      "oldOwnerAndNormalSource": "原英雄→卡数据表",
+      "change": "新增雷神卡表",
+      "origin": "其它任务；本聊天初始补丁已以thor为旧上下文",
+      "authorizationOrRealBlocker": "不是本聊天撤销对象",
+      "disposition": "保留",
+      "reverification": "无需为此次恢复重复雷神全验",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotLayout.ts",
+      "hunk": "doctor_strange dimensions/v2",
+      "oldOwnerAndNormalSource": "原v2槽位结构及正式博士棋盘尺寸",
+      "change": "只加博士3568x2179和v2映射",
+      "origin": "本聊天；rollout463",
+      "authorizationOrRealBlocker": "新角色素材与既有v2槽承接必要数据",
+      "disposition": "保留",
+      "reverification": "博士9槽按正式棋盘对位，不据此改旧槽",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotLayout.ts",
+      "hunk": "thor dimensions/v2",
+      "oldOwnerAndNormalSource": "原角色尺寸数据表",
+      "change": "加雷神3576x2157和v2",
+      "origin": "其它角色数据；本聊天精确写入未证明",
+      "authorizationOrRealBlocker": "不能随博士UI恢复撤邻近角色数据",
+      "disposition": "保留",
+      "reverification": "不改",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotMapping.ts",
+      "hunk": "doctor_strange physical slot overrides",
+      "oldOwnerAndNormalSource": "原CHARACTER_SLOT_ABILITY_OVERRIDES实际物理槽",
+      "change": "新增博士9技能id绑定",
+      "origin": "本聊天；rollout463",
+      "authorizationOrRealBlocker": "正式博士板实际槽内容，属新角色数据接入",
+      "disposition": "保留",
+      "reverification": "9槽点击/可用/选中均对应正式技能",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotMapping.ts",
+      "hunk": "thor overrides及zhizhuxia槽映射修正",
+      "oldOwnerAndNormalSource": "原按角色物理槽数据owner",
+      "change": "新增thor与蜘蛛侠sky/lotus/combo/lightning绑定变化",
+      "origin": "非博士范围；精确任务归属未证明",
+      "authorizationOrRealBlocker": "没有证据是博士旧UI改版；父任务要求保留其它合法改动",
+      "disposition": "保留，不反向覆盖",
+      "reverification": "不拿博士截图证明其它角色；如需归属继续独立追trace",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/assets.ts",
+      "hunk": "doctor_strange portrait atlas/binding",
+      "oldOwnerAndNormalSource": "原PortraitAtlas/CHARACTER_PORTRAIT_BINDINGS",
+      "change": "从正式博士板明确裁出肖像位置，独立atlasId",
+      "origin": "本聊天；rollout1915",
+      "authorizationOrRealBlocker": "新角色头像必要接入，未更换旧角色binding",
+      "disposition": "保留",
+      "reverification": "博士原玩家头像正常，原角色映射不变",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/assets.ts",
+      "hunk": "thor portrait/binding；Math.max分母；assetPath类型guard",
+      "oldOwnerAndNormalSource": "原肖像/骰图资源消费owner",
+      "change": "雷神独立头像；一格atlas防0分母；可选path先类型收窄",
+      "origin": "thor在本聊天博士补丁旧侧已存在；guard具体归属未证明",
+      "authorizationOrRealBlocker": "单格正式atlas确有0分母输入；类型guard不改正常path输出；不是UI改版",
+      "disposition": "保留",
+      "reverification": "单格头像背景位置有限值，已有atlas输出保持同值",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/cardAtlas.ts",
+      "hunk": "doctorStrangeAtlasConfig注册",
+      "oldOwnerAndNormalSource": "原CardPreview正式hero atlas",
+      "change": "博士配置导入/parse/getHeroAtlasConfig分支",
+      "origin": "本聊天；rollout1293",
+      "authorizationOrRealBlocker": "新卡素材实际帧必要接入",
+      "disposition": "保留",
+      "reverification": "原正式卡素材加载与frame比例",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/cardAtlas.ts",
+      "hunk": "thor atlas注册",
+      "oldOwnerAndNormalSource": "原卡图atlas数据owner",
+      "change": "雷神导入与分支",
+      "origin": "其它任务或未证明；不能归为博士改版",
+      "authorizationOrRealBlocker": "新增邻近角色数据不在恢复目标",
+      "disposition": "保留",
+      "reverification": "不改",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/fxSetup.ts",
+      "hunk": "DissipateEffect zIndex effect→overlayRaised",
+      "oldOwnerAndNormalSource": "原消散特效owner",
+      "change": "单项特效层级变化",
+      "origin": "90b7dba67纳入；本聊天已筛原始变更未找到写入，归属未证明",
+      "authorizationOrRealBlocker": "不能以全局diff直接撤其它任务，也不能虚称必要修复已证",
+      "disposition": "保留并明确未证明归属；若父代理另获本聊天原始写入/阻断证据再裁决",
+      "reverification": "恢复图观察消散层是否直接阻断当前目标；本轮不宣称其全效果验收",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/resolveMoves.ts",
+      "hunk": "useDejaVu",
+      "oldOwnerAndNormalSource": "原resolveMoves→dispatch权威命令",
+      "change": "新增USE_DEJA_VU转发",
+      "origin": "本聊天；rollout1249",
+      "authorizationOrRealBlocker": "新博士Token规则必要命令，不改旧按钮视觉",
+      "disposition": "保留",
+      "reverification": "真实点Token→原命令→新回合规则状态",
+      "evidence": [
+        "rollout:1249"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/resolveMoves.ts",
+      "hunk": "rerollBonusDie dieIndices",
+      "oldOwnerAndNormalSource": "原骰子命令转发",
+      "change": "可选多骰indices透传",
+      "origin": "骰子子任务/父代理负责",
+      "authorizationOrRealBlocker": "独立审查避免与父代理重复裁决",
+      "disposition": "移交父代理",
+      "reverification": "父代理骰子链验证",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/handPlayPolicy.ts",
+      "hunk": "CanSellHandCardsForCurrentBoardParams",
+      "oldOwnerAndNormalSource": "原手牌权限布尔逻辑",
+      "change": "提取同字段参数类型；isSpectator||isActivePlayer原样",
+      "origin": "类型修复；本聊天归属未证明",
+      "authorizationOrRealBlocker": "没有改功能/布局",
+      "disposition": "保留",
+      "reverification": "类型检查即可",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/ui/interactionPresentationContract.ts",
+      "hunk": "通用hint类型",
+      "oldOwnerAndNormalSource": "旧域交互owner；新文件只定义类型",
+      "change": "可复用kind/hint类型，不渲染UI、不持状态",
+      "origin": "本聊天精确写入未证明；供骰子和弃牌合同消费",
+      "authorizationOrRealBlocker": "无第二可执行UI；不是独立新界面",
+      "disposition": "保留；具体hint渲染由父代理和cards代理裁决",
+      "reverification": "不以纯类型文件证明旧提示恢复",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "canUseDejaVu import/activeRollTokenIds/handleActiveRollTokenClick",
+      "oldOwnerAndNormalSource": "原Board→LeftSidebar原token→resolveMoves",
+      "change": "只把新DEJA_VU加入既有可点击token集合并派原权威命令",
+      "origin": "本聊天；rollout1249",
+      "authorizationOrRealBlocker": "新角色合法动作必要接入；没有独立新HUD",
+      "disposition": "保留",
+      "reverification": "点正式token、规则校验与旧token行为分别核验",
+      "evidence": [
+        "rollout:1249"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "preparedSpells={viewPlayer.preparedSpells}",
+      "oldOwnerAndNormalSource": "原Board→CenterBoard→CardPreview",
+      "change": "新公开准备区仅传新字段",
+      "origin": "本聊天；rollout1915",
+      "authorizationOrRealBlocker": "新规则对象必要绑定",
+      "disposition": "保留",
+      "reverification": "视角属于正确玩家，公开准备区不借用hand/deck隐私",
+      "evidence": [
+        "rollout:1915"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "choice.hasChoice card/player/status→ChoiceObjectSelection；allowPointerThrough",
+      "oldOwnerAndNormalSource": "原ChoiceModal泛化文本→原InteractionOverlay对象选择器",
+      "change": "把对象型规则候选映射到已有完整卡/玩家/状态选择；文本仍ChoiceModal；透传放大reader",
+      "origin": "本聊天；rollout44256及cards代理独立审查",
+      "authorizationOrRealBlocker": "用户43669明确复用所有新交互；不能变成新对象选择器或新布局",
+      "disposition": "保留必要适配；视觉合同随cards代理恢复",
+      "reverification": "同一发起者→正式候选→选择/取消/确认→原状态；辅助检视不提交",
+      "evidence": [
+        "rollout:44256",
+        "rollout:user43669"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "onMagnifyCard={setMagnifiedCard}/players/playerNames传既有组件",
+      "oldOwnerAndNormalSource": "原Board.setMagnifiedCard→BoardOverlays/MagnifyOverlay",
+      "change": "卡候选检视接已有阅读；玩家候选消费原姓名/头像来源",
+      "origin": "本聊天必要能力接入；cards代理详审",
+      "authorizationOrRealBlocker": "用户要求复用且原小卡检视能力存在；不能因此移动主UI",
+      "disposition": "保留绑定，不新增阅读状态",
+      "reverification": "检视与关闭返回同选择且选中不变；候选不因reader重排",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "handDiscardInteraction/isMandatoryDiscardMode/HandArea合同",
+      "oldOwnerAndNormalSource": "原HandArea弃牌本体动作与既有取消",
+      "change": "单张当前手牌弃置复用原手牌；复数候选仍原卡池；mandatory提示语义分开",
+      "origin": "本聊天扩展；cards代理详审",
+      "authorizationOrRealBlocker": "复用既有完整承载；原手牌大小不可改",
+      "disposition": "移交cards代理并保留必要语义接入",
+      "reverification": "单张本体弃置、取消、复数旧卡池、原强制超限流程",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "preserveCardVisibility扩selectCard/cardpool/selectedAbility/sharedResponse/manualSelf",
+      "oldOwnerAndNormalSource": "原HandArea自身显隐/响应提示链",
+      "change": "新增更多需要看手牌的上下文及response底隙",
+      "origin": "本聊天具体触发归属未全部证明；cards代理详审",
+      "authorizationOrRealBlocker": "显隐/底隙会改旧可见合同，不能按纯数据保留",
+      "disposition": "待cards代理按真实阻断逐项收敛；不在本分工替代裁决",
+      "reverification": "无压力常态与响应/卡池态；不以压力状态替代原常态",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "ModalEntry类型与owner/resolutionFrameId条件展开",
+      "oldOwnerAndNormalSource": "原三个modal stack entry owner",
+      "change": "可选owner/id省略undefined以满足正式类型；可见render不变",
+      "origin": "类型构建修复；具体归属未证明",
+      "authorizationOrRealBlocker": "没有改UI，原status allowPointerThrough基线已true",
+      "disposition": "保留类型收敛",
+      "reverification": "既有modal链；不把原已存在true误算本聊天新增",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "pendingAttack.sourcePlayerId→attackerId；DtResponseWindowType校验/Die核心类型",
+      "oldOwnerAndNormalSource": "原视角/响应窗口/手牌权限消费",
+      "change": "纠正正式字段和类型；合法windowType原结果不变",
+      "origin": "类型/真实字段修复；具体聊天归属未证明",
+      "authorizationOrRealBlocker": "不属于外观改版；不可整文件回旧导致错误字段复现",
+      "disposition": "保留",
+      "reverification": "目标类型检查与响应操作者/视角原入口",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "overflow-hidden→overflow-clip",
+      "oldOwnerAndNormalSource": "原Board根滚动容器",
+      "change": "根clip行为变更，视觉几何通常等价但滚动容器语义不同",
+      "origin": "86712291b纳入；本聊天trace未找到写入，归属未证明",
+      "authorizationOrRealBlocker": "不可把批量纳入提交当改动所有权，也不可据无样式diff声称无行为影响",
+      "disposition": "保留并标未证明；若得到本聊天写入及原投诉对应证据再裁决",
+      "reverification": "同入口根容器滚动/浮层坐标实测；不把此项冒称已恢复",
+      "evidence": []
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "hunk": "adminDebugAvailable及观众调试入口",
+      "oldOwnerAndNormalSource": "原GameDebugPanel/可选GameClient权限",
+      "change": "管理员调试权限允许观众debug显示",
+      "origin": "本聊天归属未证明；独立管理工具能力",
+      "authorizationOrRealBlocker": "用户未要求撤管理权限接入；不冒充玩家旧UI改版",
+      "disposition": "保留",
+      "reverification": "目标类型/权限检查；玩家截图不证明管理入口",
+      "evidence": []
+    }
+  ],
+  "snapshotIdentity": [
+    {
+      "file": "src/components/common/overlays/InfoTooltip.tsx",
+      "snapshotSHA256": "08dd720029c5156179c207dadeee5bb0ba6efbd24b1043199dc275c11744ffa6",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -2,4 +2,6 @@",
+        "@@ -7,5 +9,9 @@",
+        "@@ -22,4 +28,6 @@",
+        "@@ -31,5 +39,6 @@",
+        "@@ -46,4 +55,7 @@",
+        "@@ -51,23 +63,76 @@",
+        "@@ -79,5 +144,5 @@",
+        "@@ -111,11 +176,22 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "snapshotSHA256": "87abe359dda3777a2a26c90f6598a9a65eb6b134397093ca04fbfe0091f89bc0",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -2,9 +2,11 @@",
+        "@@ -21,6 +23,8 @@",
+        "@@ -57,10 +61,11 @@",
+        "@@ -108,4 +113,5 @@",
+        "@@ -115,9 +121,22 @@",
+        "@@ -133,4 +152,5 @@",
+        "@@ -174,4 +194,5 @@",
+        "@@ -201,4 +222,8 @@",
+        "@@ -302,5 +327,5 @@",
+        "@@ -541,4 +566,5 @@",
+        "@@ -546,8 +572,19 @@",
+        "@@ -778,6 +815,6 @@",
+        "@@ -790,4 +827,43 @@",
+        "@@ -1060,5 +1136,6 @@",
+        "@@ -1066,5 +1143,5 @@",
+        "@@ -1156,16 +1233,11 @@",
+        "@@ -1200,10 +1272,9 @@",
+        "@@ -1211,10 +1282,14 @@",
+        "@@ -1475,4 +1550,5 @@",
+        "@@ -1481,5 +1557,5 @@",
+        "@@ -1518,6 +1594,7 @@",
+        "@@ -1530,7 +1607,18 @@",
+        "@@ -1646,14 +1734,18 @@",
+        "@@ -1672,4 +1764,5 @@",
+        "@@ -1688,4 +1781,5 @@",
+        "@@ -1699,53 +1793,162 @@",
+        "@@ -1781,5 +1984,5 @@",
+        "@@ -1865,4 +2068,48 @@",
+        "@@ -2121,8 +2368,8 @@",
+        "@@ -2307,4 +2554,5 @@",
+        "@@ -2375,6 +2623,5 @@",
+        "@@ -2385,8 +2632,9 @@",
+        "@@ -2398,5 +2646,4 @@",
+        "@@ -2426,5 +2673,6 @@",
+        "@@ -2437,13 +2685,12 @@",
+        "@@ -2469,5 +2716,7 @@",
+        "@@ -2507,4 +2756,5 @@",
+        "@@ -2520,5 +2770,12 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/AbilityOverlays.tsx",
+      "snapshotSHA256": "c592b0aac380f26d1984509c12acbf149532d664de6eb436b35dafb767d09d6a",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -1,4 +1,5 @@",
+        "@@ -323,12 +324,7 @@",
+        "@@ -337,5 +333,5 @@",
+        "@@ -410,5 +406,5 @@",
+        "@@ -700,5 +696,21 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+      "snapshotSHA256": "df842a2a36c5ef91c62c1b7afd603a4980f6f8aedc31e46dac642c537b328e07",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -8,5 +8,5 @@",
+        "@@ -92,5 +92,10 @@",
+        "@@ -150,6 +155,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+      "snapshotSHA256": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -9,11 +9,12 @@",
+        "@@ -68,5 +69,5 @@",
+        "@@ -77,5 +78,5 @@",
+        "@@ -110,4 +111,9 @@",
+        "@@ -118,4 +124,5 @@",
+        "@@ -138,10 +145,8 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "snapshotSHA256": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -5,4 +5,5 @@",
+        "@@ -32,5 +33,5 @@",
+        "@@ -41,4 +42,5 @@",
+        "@@ -66,4 +68,5 @@",
+        "@@ -160,4 +163,38 @@",
+        "@@ -354,4 +391,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/CompareRollOverlay.tsx",
+      "snapshotSHA256": "6686a77caf0e3e5a466381c01bd498c099f10deaa9071684d66c2f9a1962e03d",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -60,5 +60,5 @@",
+        "@@ -107,5 +107,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/LeftSidebar.tsx",
+      "snapshotSHA256": "a9a5141ebd4a1abf3b59638754fca372b0a0426cddfe5190e07a23b4a61f6990",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -163,4 +163,6 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/PhaseIndicator.tsx",
+      "snapshotSHA256": "f03950e12c68b48a93a28398be0e42975a61c06e669e5d8958bc6d1235d11dec",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -11,7 +11,8 @@",
+        "@@ -51,4 +52,6 @@",
+        "@@ -74,7 +77,7 @@",
+        "@@ -82,5 +85,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityChoiceText.ts",
+      "snapshotSHA256": "f038573ee890fb4095e5a7ccc747e5689b5d14b870484df72aae1f001eccd309",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -132,7 +132,7 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityOverlayHelpers.ts",
+      "snapshotSHA256": "5962a40a22880353ca707ee23c2595b1a30c84f0c5baca3990d1f21a12a47484",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -18,8 +18,10 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotLayout.ts",
+      "snapshotSHA256": "7ad0d26fbb19d08d16196ae2cdc80906513b767874ed7d95075c4b9034809bfb",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -71,4 +71,6 @@",
+        "@@ -91,4 +93,6 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotMapping.ts",
+      "snapshotSHA256": "c8ab960ad9f77aa6f61e64b199014535fc97f57500d49e8bfff2dba8d9755663",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -16,4 +16,14 @@",
+        "@@ -185,8 +195,8 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/assets.ts",
+      "snapshotSHA256": "e150ebb5a729eeca32212a40bd19cca0ae7d4f110d105f103c1bb4548fb9db7d",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -112,5 +112,7 @@",
+        "@@ -211,5 +213,5 @@",
+        "@@ -233,4 +235,6 @@",
+        "@@ -258,4 +262,6 @@",
+        "@@ -288,6 +294,6 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/cardAtlas.ts",
+      "snapshotSHA256": "cdb1739ca500f1da9e9114c6c0e2bf5507c7a0bcaec471a168e24d09c7ffaf2c",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -17,4 +17,6 @@",
+        "@@ -56,6 +58,9 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/fxSetup.ts",
+      "snapshotSHA256": "db5cee6d25db46500d899f403deac914e923902d132334128304c1196b9cf99a",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -272,5 +272,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/handPlayPolicy.ts",
+      "snapshotSHA256": "7d35a9b053efed5a085b8f00e67a0f779f9c5166c9eae52da399bf6a270b9f26",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -9,4 +9,9 @@",
+        "@@ -22,5 +27,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/interactionPresentationContract.ts",
+      "snapshotSHA256": "d16c6bf50b63ab2cd451399addd88432930f806d342409d297545a0e5fd9d2af",
+      "baselineExists": false,
+      "hunks": [
+        "@@ -0,0 +1,10 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/resolveMoves.ts",
+      "snapshotSHA256": "4c119fb121020bea153c0313795b460df804c2bd5b14c7fb9f87f4d8d74a179b",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -10,4 +10,5 @@",
+        "@@ -38,5 +39,5 @@",
+        "@@ -61,4 +62,5 @@",
+        "@@ -95,5 +97,5 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "snapshotSHA256": "eb036b203c8c999633d0c314c1e0cca7cf676d80bf40508fbf020c6f9d597413",
+      "baselineExists": true,
+      "hunks": [
+        "@@ -15,5 +15,5 @@",
+        "@@ -189,5 +189,5 @@",
+        "@@ -858,4 +858,23 @@",
+        "@@ -937,4 +956,6 @@",
+        "@@ -952,4 +973,6 @@",
+        "@@ -995,4 +1018,24 @@",
+        "@@ -1048,5 +1091,6 @@",
+        "@@ -1071,4 +1115,6 @@",
+        "@@ -1092,4 +1138,6 @@",
+        "@@ -1132,4 +1180,6 @@",
+        "@@ -1157,4 +1207,6 @@",
+        "@@ -1169,4 +1221,6 @@",
+        "@@ -1212,9 +1266,14 @@",
+        "@@ -1251,4 +1310,6 @@",
+        "@@ -1271,4 +1332,6 @@",
+        "@@ -1285,4 +1348,6 @@",
+        "@@ -1308,4 +1373,6 @@"
+      ]
+    }
+  ],
+  "memoryUsed": {
+    "entry": "MEMORY.md:664-690",
+    "purpose": "定位本聊天原始rollout与历史声称；历史成功标记及旧PASS均未用作当前接受依据。",
+    "rolloutId": "01a16842-fe32-7e40-9403-8ff3efc5ae1d"
+  },
+  "rolloutPath": "D:/codex-home/sessions/2026/10/23/rollout-2026-10-23T18-16-23-01a16842-fe32-7e40-9403-8ff3efc5ae1d.jsonl"
+}

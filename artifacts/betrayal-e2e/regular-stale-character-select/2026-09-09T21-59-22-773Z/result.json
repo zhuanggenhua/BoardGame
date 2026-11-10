@@ -1,0 +1,313 @@
+{
+  "snap": {
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasOverlay": true,
+    "activeStep": "objective-and-turn",
+    "body": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "corePhase": "preHaunt",
+        "tutorialStepId": "objective-and-turn",
+        "tutorialActive": true
+      }
+    ]
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T21:59:29.006Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T21:59:29.007Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T21:59:29.444Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T21:59:29.444Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 42.4 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T21:59:32.062Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":3055}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T21:59:32.062Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":2618}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T21:59:32.287Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":2843}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 38.7 FPS | P95 帧时 100.0ms — 低于 60fps"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 29356ms（11 张）"
+    },
+    {
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Latch%20C.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Latch%20C.ogg net::ERR_FAILED"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/system/Computers%20&%20Machinery%20Sound%20FX%20Pack%20Vol.%202/Foley%20and%20Impacts/Rattling/compressed/Wood%20Rattling%20003.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/system/Computers%20&%20Machinery%20Sound%20FX%20Pack%20Vol.%202/Foley%20and%20Impacts/Rattling/compressed/Wood%20Rattling%20003.ogg net::ERR_FAILED"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Latch%20C.ogg net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/monsters/compressed/ghost.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/monsters/compressed/werewolf.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/jaden-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/stephanie-richter.webp net::ERR_ABORTED"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T22:00:04.037Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:00:04.038Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T22:00:04.069Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:00:04.070Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T22:00:04.103Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":34}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:00:04.337Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":299}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:00:04.337Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":268}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio"
+    },
+    {
+      "type": "warning",
+      "text": "HTML5 Audio pool exhausted, returning potentially locked audio object."
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 31.6 FPS | P95 帧时 99.9ms — 低于 60fps"
+    },
+    {
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 40448ms（83 张）"
+    }
+  ],
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\regular-stale-character-select\\2026-09-09T21-59-22-773Z\\regular-stale-character-select.png",
+  "out": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\regular-stale-character-select\\2026-09-09T21-59-22-773Z"
+}

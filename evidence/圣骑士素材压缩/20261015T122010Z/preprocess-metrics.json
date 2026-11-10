@@ -1,0 +1,80 @@
+[
+  {
+    "id": "gaussian-04",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\gaussian-04.webp",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 2066324,
+    "bytes": 513146,
+    "width": 3680,
+    "height": 1178,
+    "edgeLumaRmse": 5.6879,
+    "encodedAlphaExact": true,
+    "savedVsPreviousPercent": 10.54
+  },
+  {
+    "id": "gaussian-06",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\gaussian-06.webp",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 3529050,
+    "bytes": 346810,
+    "width": 3680,
+    "height": 1178,
+    "edgeLumaRmse": 11.7287,
+    "encodedAlphaExact": true,
+    "savedVsPreviousPercent": 39.54
+  },
+  {
+    "id": "edge-protected-06",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\edge-protected-06.webp",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 2530155,
+    "bytes": 457568,
+    "width": 3680,
+    "height": 1178,
+    "edgeLumaRmse": 4.8475,
+    "encodedAlphaExact": true,
+    "savedVsPreviousPercent": 20.23
+  },
+  {
+    "id": "edge-protected-09",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\edge-protected-09.webp",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 2799687,
+    "bytes": 423968,
+    "width": 3680,
+    "height": 1178,
+    "edgeLumaRmse": 4.929,
+    "encodedAlphaExact": true,
+    "savedVsPreviousPercent": 26.09
+  },
+  {
+    "id": "bilateral-10",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\bilateral-10.webp",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 2997898,
+    "bytes": 547020,
+    "width": 3680,
+    "height": 1178,
+    "edgeLumaRmse": 4.7972,
+    "encodedAlphaExact": true,
+    "savedVsPreviousPercent": 4.63
+  },
+  {
+    "id": "bilateral-18",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\bilateral-18.webp",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 3530367,
+    "bytes": 506272,
+    "width": 3680,
+    "height": 1178,
+    "edgeLumaRmse": 5.0388,
+    "encodedAlphaExact": true,
+    "savedVsPreviousPercent": 11.74
+  }
+]

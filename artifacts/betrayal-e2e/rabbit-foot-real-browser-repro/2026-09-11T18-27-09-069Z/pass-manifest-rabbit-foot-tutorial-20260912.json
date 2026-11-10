@@ -1,0 +1,91 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-11T18:42:37.871Z",
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "e2eRunDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "直接教程入口进入牌桌，不停在选择角色或加载页",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\result.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\direct-entry.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\direct-entry.png"
+      ]
+    },
+    {
+      "requirement": "兔脚选骰可选框/选中高亮清楚贴合骰子，不遮挡骰子且没有明显大间隙",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\result.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-selection-highlight.png"
+      ]
+    },
+    {
+      "requirement": "兔脚重投有真实可见位移动画，不是原地打转或闪现",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\result.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-reroll-motion.png"
+      ]
+    },
+    {
+      "requirement": "兔脚重投后仍停留在确认骰面窗口，显示确认 0/1",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\result.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-confirm.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-before-confirm.png"
+      ]
+    },
+    {
+      "requirement": "确认骰面后进入伤害分配，伤害分配后当前步骤允许结束回合",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\result.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-confirm.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-after-damage-allocation.png"
+      ]
+    },
+    {
+      "requirement": "点击结束回合不再被教程拒绝，并进入队友后续提示",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\result.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-confirm.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-after-end-turn.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\01-labeled-direct-entry.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\02-labeled-rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\03-labeled-rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\04-labeled-rabbit-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\05-labeled-rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\_labeled-for-pureref\\06-labeled-rabbit-after-end-turn.png"
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\direct-entry.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-after-end-turn.png"
+  ],
+  "observations": [
+    "真实脚本 skipImageGate=false，目标端口为 127.0.0.1:4274。",
+    "兔脚结果窗口显示确认 0/1，当前允许命令为 FINALIZE_EVENT_ROLL。",
+    "伤害分配后当前允许命令为 END_TURN，日志中没有 tutorial_command_blocked。",
+    "选中骰子使用 Three.js backside shader shell，高亮热区宽高与投影基本一致。",
+    "重投选中骰子的过程位移约 35.8px，落点变化约 37.9px，落点仍在骰盘内。"
+  ]
+}

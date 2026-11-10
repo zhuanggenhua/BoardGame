@@ -1,0 +1,74 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-13T15:03:40.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "同一现有端到端用例显示四张圣骑士手牌的新图集映射与对齐",
+      "status": "PASS",
+      "evidence": ["01-出牌前四张手牌.png"]
+    },
+    {
+      "requirement": "端到端显示拖动升级牌和升级后落位结果",
+      "status": "PASS",
+      "evidence": ["02-拖动升级牌.png", "03-升级牌落位后.png"]
+    }
+  ],
+  "coverageMatrix": [
+    {
+      "step": "升级前手牌",
+      "action": "显示四张圣骑士升级牌",
+      "assertion": "新图集卡面、费用角标与手牌框同屏可辨",
+      "evidence": "01-出牌前四张手牌.png"
+    },
+    {
+      "step": "拖动升级牌",
+      "action": "玩家拖动神圣攻击升级牌",
+      "assertion": "拖动牌面和技能槽目标清楚可见",
+      "evidence": "02-拖动升级牌.png"
+    },
+    {
+      "step": "升级落位",
+      "action": "完成打牌并等待动画收口",
+      "assertion": "升级牌落入圣骑士玩家板对应技能槽",
+      "evidence": "03-升级牌落位后.png"
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-hand-e2e-20261013\\01-出牌前四张手牌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-hand-e2e-20261013\\02-拖动升级牌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-hand-e2e-20261013\\03-升级牌落位后.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/paladin_screenshot_review_v2"
+    },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cardPreviewHelper.test.ts src/games/dicethrone/__tests__/card-system.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": ["两份 Dice Throne 测试文件通过，共 16 项测试通过。"]
+  },
+  "notes": [
+    "端到端命令：npm run test:e2e:file -- e2e/dicethrone/dicethrone-ability-atlas-regression.e2e.ts \"圣骑士满升级牌端到端截图\"。",
+    "截图视口为 1920×1360；手牌贴底布局使牌面下缘仍部分超出视口，本组验证可见区域的图集映射、角标对齐、拖动和槽位落位。",
+    "素材只在本地预览环境使用，未上传或部署服务器。"
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "reviewType": "independent-read-only-source-review",
+  "reviewer": "confirmed_ui_source_review",
+  "reviewDate": "2026-11-02",
+  "verdict": "通过",
+  "verdictScope": "仅本轮恢复补丁的源码与来源一致性，允许继续真实入口图验；不代表视觉、E2E、部署或用户验收通过。",
+  "mayContinueVisualVerification": true,
+  "visualVerdict": "未评审",
+  "target": {
+    "confirmedSource": "c057cfe76:src/games/dicethrone/ui/InteractionOverlay.tsx",
+    "confirmedEntry": "vampire-lord-bloody-slaughter-search-deck-card -> selectDeckCard -> InteractionOverlay",
+    "authorizationRecord": "evidence/dicethrone/doctor-confirmed-deck-ui-restoration-20261102.md",
+    "environment": "当前共享工作区；本评审不操作运行服务或外部状态",
+    "scope": "card选择分支相对用户确认来源的恢复；读取直接适配链以核对正式候选、原optionId、确认权限、搜索和检视。",
+    "excluded": "非卡状态/玩家选择、手牌本体、技能、骰盘及全仓其它脏改；相对历史提交的这些差异不归因于本轮恢复补丁。"
+  },
+  "actualcurrentfilehash": {
+    "algorithm": "SHA256",
+    "path": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+    "value": "206671d6bac874631a08a0c266b027bda89c19a4ff625afe79d82a0621998b84"
+  },
+  "reviewedRelatedFileHashes": {
+    "src/games/dicethrone/ui/ChoiceObjectSelection.tsx": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299",
+    "src/games/dicethrone/Board.tsx": "92a5f83fb93036f97db8a025f819214c80e2bbb1a2bb22ce534024a466e2cad3",
+    "src/hooks/ui/useTouchLongPress.ts": "1dedd50fe36fba72374ec7d289304e2c94163f4f59072804efc71dfededb9205"
+  },
+  "findings": [],
+  "sourceChecks": [
+    {
+      "subject": "完整布局恢复",
+      "result": "通过",
+      "evidence": "与c057cfe76比较：原CARD_POOL_CARD_WIDTH=clamp(88px,min(7.2vw,12.5vh),132px)、max-w-[70rem]、自适应表面高度、flex-wrap居中及原gap、下方mt-2操作行保留。原top clamp和40vh最大滚窗保留为基础，但短屏现有两处必要geometry适配，详见geometrySupplement，不再宣称历史手机布局完全一致。",
+      "limitations": "这是源码布局合同一致性；未据此推定实际牌面可读或空间遮挡合格。"
+    },
+    {
+      "subject": "未说明布局重造",
+      "result": "未发现",
+      "evidence": "当前card分支没有350px多卡阅读尺度、cqh、containerType、ResizeObserver、全高flex面板、bottom锚点或scrollIntoView选中滚动。新增dt-card-pool命名类和surface冗余pointer-events-auto未附带布局实现；src内CSS检索未发现dt-card-pool规则。新增短屏top/minHeight差异已明确记录，不属于未说明布局重造。"
+    },
+    {
+      "subject": "正式候选与原optionId",
+      "result": "通过",
+      "evidence": "血色杀戮正式handler创建selectDeckCard；未指定候选时InteractionOverlay直接取玩家deck。Doctor适配由ChoiceObjectSelection提供cardSourceZone和candidateCardIds，InteractionOverlay从对应正式区域过滤候选，选中后仍由同一owner确认；confirm使用selectedOption.id，Board以原optionId提交RESPOND，没有另造卡图/选择流程。"
+    },
+    {
+      "subject": "确认、跳过和清空权限",
+      "result": "通过",
+      "evidence": "canConfirm同时消费canResolve和minSelectCount；ChoiceObjectSelection将权限与hasValidSelection合并，只有正式skipOption存在时允许零选确认并提交原skipOption.id；canCancel=false隐藏重复清空，点击已选卡取消本地选择。既有selectDeckCard默认参数仍保留其原取消与确认路径。"
+    },
+    {
+      "subject": "搜索与空态",
+      "result": "通过",
+      "evidence": "原候选容量判定、名称/描述/id/type/timing/cpCost检索、计数与空态保留；改为text+inputMode=search+role=searchbox以保留单个自绘清空按钮，Escape清空与垂直居中修复符合已记录保留范围。"
+    },
+    {
+      "subject": "正式检视与选择隔离",
+      "result": "通过",
+      "evidence": "previewRef仍来自原卡或getDiceThroneCardPreviewRef；同一正式卡对象进入既有setMagnifiedCard。右键preventDefault后检视；触控长按复用useTouchLongPress并阻止兼容点击选择，没有新增检视owner或在检视时提交选项。"
+    },
+    {
+      "subject": "Doctor源卡适配差异",
+      "result": "已明示，待图验",
+      "evidence": "Doctor保留无额外background/rounded底框的CardPreview以及原比例；未选态brightness/drop-shadow、选中ring/shadow、长按/右键是当前保留差异，不能描述成整个文件逐字恢复c057cfe76。卡宽、卡池结构、锚点与滚窗沿确认来源。"
+    }
+  ],
+  "verification": [
+    {
+      "command": "git show c057cfe76:src/games/dicethrone/ui/InteractionOverlay.tsx; git diff c057cfe76 -- src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "result": "已读取并逐项核对card分支，允许的来源适配差异见sourceChecks。"
+    },
+    {
+      "command": "rg -n dt-card-pool src -g '*.css'；核对InteractionOverlay内cqh/containerType/scrollIntoView/ResizeObserver",
+      "result": "未发现新增类的外部CSS布局覆盖或上述重造残留。"
+    },
+    {
+      "evidence": "temp/doctor-confirmed-ui-unit-20261102.log",
+      "result": "已核验现有日志为1文件40测试通过；未在本评审重复执行。读取对应候选选择/确认原optionId与skip测试；其CardPreview是mock，不证明正式卡图实际加载。日志未绑定源码hash，本报告hash只标识本次读取版本。"
+    },
+    {
+      "evidence": "16场景E2E",
+      "result": "主任务告知正在运行；本评审未核验结果，不声明通过。"
+    }
+  ],
+  "remainingRisks": [
+    "灰色骨架来源图不能证明卡图、可读性或最终渲染；需当前正式卡图同视口、同效果、同卡组、同搜索/选中状态成对截图。",
+    "Doctor保留的无底框源图与亮度/阴影需在正式图像实载后检查；源码一致性不证明这些图面状态通过。",
+    "真实血色杀戮入口最终入手、洗牌、Token、伤害，以及Doctor各来源区域的正式结果需主任务E2E和真实截图分别补证。",
+    "共享工作区可能继续变化；如目标文件hash变化，应重查变化hunk后再引用本评审。"
+  ],
+  "geometrySupplement": {
+    "scope": "追加只读复核冻结源码的新top/minHeight两处geometry；未复核其它增量，未看图。",
+    "verdict": "源码通过，允许继续图验",
+    "failureEvidence": {
+      "path": "temp/doctor-confirmed-ui-phone-diagnostic-20261102.log",
+      "observed": "812×375手机横屏真实入口测试：optionBottom=270.84375，visibleBottom+1=267，断言失败。严格超出1px容差3.84375px；原始几何裁切量为4.84375px。",
+      "proofLimit": "日志直接证明该可视边界断言失败，不据此作整屏视觉判定。"
+    },
+    "panelTop": {
+      "implementation": "top: min(clamp(4.25rem, 9vh, 6.25rem), 9vh)",
+      "desktop1440x900": "默认16px根字号下，旧新均81px，确认此指定PC视口锚点不变。",
+      "phone812x375": "默认16px根字号下，旧68px，新33.75px；这是明确的短屏上移差异，不是历史手机逐字恢复。",
+      "limit": "不能推广成所有桌面视口完全不变；视口高度低于约755.56px时也会解除原4.25rem下限。"
+    },
+    "scrollMinimum": {
+      "implementation": "minHeight = calc(原clamp卡宽 / 所有正式候选的最小frame宽高比 + 1.5rem原上下padding)",
+      "source": "getCardPreviewAspectRatio -> 已同步注册的正式atlas -> computeSpriteAspectRatio。Doctor当前32个frame均669×1086，所有候选比例一致；未造新卡宽、比例或数据。",
+      "desktop1440x900": "默认16px根字号下，原卡宽103.68px，Doctor完整单行自然高度约192.305px，新minHeight同值，低于原360px滚窗上限；非空Doctor卡池不会因此增大原单行自然高度，多行仍受原maxHeight控制。",
+      "phone812x375": "原卡宽仍88px；完整单行加原padding约166.852px，新minHeight在CSS中优先于150px的40vh最大值，避免首行牌底被40vh裁掉。保留纵向滚动及原卡池结构。",
+      "limits": "桌面自然高度结论直接覆盖当前同frame比例的非空Doctor候选。不能声称所有游戏角色/混合比例/空候选完全等高：使用全部候选最小比例可能使搜索后较矮卡的容器高于其自身自然高度；这些并非本次已观察到的失败，需按实际覆盖声明。正式比例未注册时仍用1兜底，不据此保证所有未知素材入口单卡完整。"
+    },
+    "interactionImpact": "两处变化只增加布局派生值；不新增事件处理、动作、按钮、UI对象、重排、组件owner或选择状态；正式候选、原optionId、搜索、检视和确认逻辑没有因此变化。",
+    "pendingVerification": "主任务正在重跑手机两例与40项单测；本评审未核验新结果，旧40/40日志不自动覆盖新hash。正式卡图同视口截图仍待审，不给视觉PASS。"
+  },
+  "minimalNextAction": "核验新hash的手机重测、单测及正式图像同视口截图；明确短屏top/minHeight为必要适配，再分别给行为与图面裁决。无需依据本次源码补审新增布局或替代流程。",
+  "mutations": ["仅新增本JSON评审产物；未修改产品、测试、规范、清单或他人改动。"]
+}

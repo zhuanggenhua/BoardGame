@@ -62,3 +62,25 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}封面�
         await record(`${mobile ? '手机' : '桌面'}-缓存候选恢复`, { cachedUrl, rejectedRequests: rejected, recoveredUrl: await cover.getAttribute('data-debug-current-src'), boundary: '可重复的候选失效场景，不声称复现用户未知入口的全部网络条件' });
     } finally { await context.close(); }
 });
+
+for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}现代首页山屋封面在竖卡中可辨`, async ({ browser }, info) => {
+    const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: mobile ? { width: 375, height: 812 } : { width: 1920, height: 1080 }, isMobile: mobile, hasTouch: mobile });
+    try {
+        const page = await context.newPage();
+        await initHome(page);
+        const card = page.locator('.platform-game-card[data-game-id="betrayal"]');
+        const image = card.locator('img');
+        await card.scrollIntoViewIfNeeded();
+        await expect.poll(() => image.evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+        await expect(image).toHaveCSS('object-fit', 'cover');
+        await expect(image).toHaveCSS('object-position', '8% 50%');
+        await capture(page, `${mobile ? '手机' : '桌面'}-山屋封面竖卡`);
+        await record(`${mobile ? '手机' : '桌面'}-山屋封面竖卡`, { fit: await image.evaluate(node => getComputedStyle(node).objectFit), position: await image.evaluate(node => getComputedStyle(node).objectPosition), boundary: '尺寸与源图加载的行为断言；画面可辨性另做视觉审查' });
+        await card.locator('.platform-game-open').click();
+        const detailImage = page.locator('.platform-details-cover .betrayal-game-thumbnail img');
+        await expect(detailImage).toBeVisible();
+        await expect(detailImage).toHaveCSS('object-fit', 'cover');
+        await expect(detailImage).toHaveCSS('object-position', '8% 50%');
+        await capture(page, `${mobile ? '手机' : '桌面'}-山屋封面详情`);
+    } finally { await context.close(); }
+});

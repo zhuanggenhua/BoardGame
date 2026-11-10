@@ -1,0 +1,71 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "interaction-ui",
+  "generatedAt": "2026-10-19T23:20:00+08:00",
+  "targetObject": "回合顺序中点击阶段名称后出现的阶段说明浮层",
+  "excludedObjects": ["右侧玩家提示板"],
+  "scopeNote": "三张图比较阶段说明在桌面、手机等效视口和真实安卓横屏中的显示。桌面和手机等效图使用预置 Seraph 测试局面，真机图使用 Gunslinger 实际对局，只比较阶段说明的入口、可读性、完整性和屏幕边界，不比较英雄素材或对局内容。真机运行的是本地调试包；共享信息浮层代码有定向单测，但本轮没有覆盖全部游戏的视觉回归。",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "回合顺序阶段说明在 PC、手机等效视口和安卓真机均完整显示且可读。",
+      "status": "PASS",
+      "evidence": [
+        "PC 与手机等效视口 E2E 等待淡入到 opacity=1，并断言盒子尺寸和完整视口边界。",
+        "手机等效视口说明盒为 133.47×89.38 CSS px，位置 x=166.80、y=67.03，完整落在 796×360 视口内；真机整屏图逐张目视通过。"
+      ]
+    },
+    {
+      "requirement": "移动端阶段说明脱离缩放壳后按真实视口定位，保持统一 PC 棋盘构图。",
+      "status": "PASS",
+      "evidence": [
+        "共享 InfoTooltip 已通过 document.body portal 保持屏幕定位，PC 字体尺寸保持原 vw 基线。",
+        "整屏 E2E 对照阶段栏、资源、玩家板、牌堆与背景覆盖；三张截图均显示完整背景和阶段顺序。"
+      ]
+    },
+    {
+      "requirement": "触屏点击回合阶段可打开并再次点击关闭阶段说明。",
+      "status": "PASS",
+      "evidence": [
+        "PhaseIndicator 定向 Vitest 覆盖触控点击、重复点击和阶段变化时清除选择。",
+        "真实安卓横屏截图由实际阶段名称点按后取得，页面中显示对应阶段说明。"
+      ]
+    }
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root",
+      "reason": "主代理已逐张复核全部三张原始整屏图。"
+    },
+    "reviewFile": "visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "npm run test:e2e:file -- e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts",
+      "node scripts/infra/vitest-cli-safe.mjs run src/components/__tests__/InfoTooltipLayer.test.tsx src/games/dicethrone/ui/__tests__/PhaseIndicator.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "Playwright 1 项通过；PC 和 796×360 阶段说明均在 opacity=1、尺寸合理、边界完整时截图。",
+      "Vitest 2 个文件、5 项通过；覆盖通用信息浮层和触屏阶段说明入口。"
+    ]
+  },
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/round-order-stage-description-20261019/01-PC-1920x960-阶段说明.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/round-order-stage-description-20261019/02-手机等效796x360-阶段说明.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/round-order-stage-description-20261019/03-安卓真机2388x1080-阶段说明.png"
+  ]
+}

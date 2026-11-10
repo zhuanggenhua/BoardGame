@@ -1,0 +1,56 @@
+{
+  "runId": "20261029-hand-battle-r85",
+  "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+  "requirements": [
+    {
+      "requirement": "手牌半露与悬停抬起",
+      "after": [
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03-辽北军屯结果.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03a-手牌悬停完整抬起.png"
+      ]
+    },
+    {
+      "requirement": "共享放大镜与检视返回",
+      "after": [
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03b-共享放大镜检视手牌.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-03-长按银两检视卡面.png"
+      ]
+    },
+    {
+      "requirement": "出兵选择与战前决策",
+      "after": [
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05b-出兵选择前与真实兵牌引导.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png"
+      ]
+    },
+    {
+      "requirement": "连续教学与同局继续",
+      "after": [
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05a-鸳鸯阵选中与确认出牌.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/08-叶赫部占领结果.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png"
+      ]
+    },
+    {
+      "requirement": "手机长按与支付",
+      "after": [
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-00-轮盘两格与指定对手.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-03-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ]
+    }
+  ],
+  "traceFiles": [
+    "evidence/qidahen/behavior-traces/20261029-hand-battle-r85/basic-opening-entry.json",
+    "evidence/qidahen/behavior-traces/20261029-hand-battle-r85/basic-opening-natural-raid.json",
+    "evidence/qidahen/behavior-traces/20261029-hand-battle-r85/basic-opening-mobile-hand-inspect.json"
+  ]
+}

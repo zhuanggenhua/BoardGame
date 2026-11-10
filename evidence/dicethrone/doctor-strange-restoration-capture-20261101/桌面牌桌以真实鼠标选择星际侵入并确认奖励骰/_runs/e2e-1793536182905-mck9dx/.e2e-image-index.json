@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "星际侵入已选-桌面.png",
+      "chainId": "星际侵入技能选择",
+      "chainStep": "技能已选待结算",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-astral-selected",
+      "behaviorStepId": "astral-incursion-selected",
+      "description": "真实鼠标选择星际侵入后，等待玩家提交攻击结算。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击星际侵入技能槽。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击星际侵入技能槽。",
+      "sourceRevision": "d4ae112917fea4cd7147d788eef52053400106e2ef43bae294580bc77cd09546",
+      "e2eSourceRevision": "78da06532274d6ff7d96c38ed2703f293637d872c6f845398fed3d0e4debee16",
+      "requirements": [
+        "星际侵入技能与奖励骰交互"
+      ],
+      "sourceRun": "1793536195812-159840-9a5d6eaf-bd01-424f-b26d-e5a93ee75ef0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1793536182905-mck9dx"
+    },
+    {
+      "path": "星际侵入奖励骰待确认-桌面.png",
+      "chainId": "星际侵入奖励骰确认",
+      "chainStep": "奖励骰待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-astral-bonus-dice",
+      "behaviorStepId": "astral-bonus-dice-pending",
+      "description": "星际侵入生成两颗右侧奖励骰，玩家可见骰面并等待普通确认。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "提交星际侵入攻击并生成奖励骰。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "提交星际侵入攻击并生成奖励骰。",
+      "sourceRevision": "d4ae112917fea4cd7147d788eef52053400106e2ef43bae294580bc77cd09546",
+      "e2eSourceRevision": "78da06532274d6ff7d96c38ed2703f293637d872c6f845398fed3d0e4debee16",
+      "requirements": [
+        "星际侵入技能与奖励骰交互"
+      ],
+      "sourceRun": "1793536195812-159840-9a5d6eaf-bd01-424f-b26d-e5a93ee75ef0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1793536182905-mck9dx"
+    }
+  ]
+}

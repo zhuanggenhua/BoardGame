@@ -1,0 +1,143 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "verdict": "PASS",
+  "score": 94,
+  "runId": "e2e-1792757343532-13ucob",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_cards_intake"
+  },
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "revise": 0
+  },
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电逐段选择效果骰与附属目标/_runs/e2e-1792757343532-13ucob/01-连锁闪电触发前.png",
+      "status": "PASS",
+      "score": 93,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "进攻投掷阶段高亮，连锁闪电技能槽、确认后的五颗进攻骰、结算攻击入口清楚；生命、资源、姆乔尔尼尔和提示板可见，无目标遮挡。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sha256": "968ec06202029087ed7da3bf98373bff28f8cd2d1f4b68d0bdf0d2c2e03be5e2",
+      "reviewMethod": "逐张读取当前run原始1920x1080截图；未使用联系表代替",
+      "hardFailures": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电逐段选择效果骰与附属目标/_runs/e2e-1792757343532-13ucob/02-三颗效果骰等待确认.png",
+      "status": "PASS",
+      "score": 94,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "索尔的奖励骰提示、三颗效果骰本体及1/4/6点数清楚；黄色确认按钮紧邻骰盘，主攻击按钮禁用态与当前步骤一致；资源和技能板未被新增浮层覆盖。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sha256": "abe61d2e2815e224d60706580dbe4078a41ef292925647955b72505d86ccf5b1",
+      "reviewMethod": "逐张读取当前run原始1920x1080截图；未使用联系表代替",
+      "hardFailures": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电逐段选择效果骰与附属目标/_runs/e2e-1792757343532-13ucob/03-手动选择两颗效果骰.png",
+      "status": "PASS",
+      "score": 96,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三组组合候选均直接显示两颗正式骰面本体与点数，候选按钮文字标明组合及伤害；中心弹窗与提示共轴，无截断、重叠或内部标识泄漏。背景暂时模糊，当前需要比较的骰子已在弹窗完整承接。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sha256": "6b89239b072e2a9aeef1d54dcf36b9b78d72bc22bd124f7ba0b21f5a8da326fd",
+      "reviewMethod": "逐张读取当前run原始1920x1080截图；未使用联系表代替",
+      "hardFailures": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电逐段选择效果骰与附属目标/_runs/e2e-1792757343532-13ucob/04-独立选择附属伤害目标.png",
+      "status": "PASS",
+      "score": 95,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "附属伤害目标候选直接显示武僧头像、英雄名和二号玩家身份，目标本体与提示同一面板；按钮清楚可识别，无其它浮层遮挡目标。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sha256": "62c9128830310bfc214d3e81b6f26c770a1784c57f15c289db2e89516ec7358a",
+      "reviewMethod": "逐张读取当前run原始1920x1080截图；未使用联系表代替",
+      "hardFailures": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电逐段选择效果骰与附属目标/_runs/e2e-1792757343532-13ucob/05-独立伤害完成且主攻击保留.png",
+      "status": "PASS",
+      "score": 93,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "界面已切换武僧玩家板，防御投掷阶段高亮，绿色清修防御槽有清楚黄色边界；防御骰盘、总伤害侧条、资源和状态提示板均可见，主流程未被残留选择弹窗覆盖。",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sha256": "ecbf2e4fa96e5650c00c025cbca5d00fd0901909cd32d2e4604139a79f7e1fef",
+      "reviewMethod": "逐张读取当前run原始1920x1080截图；未使用联系表代替",
+      "hardFailures": []
+    }
+  ],
+  "targetRequirements": [
+    "触发前可辨识索尔连锁闪电与已确认进攻骰",
+    "三颗效果骰与确认入口可见",
+    "手动两骰组合候选有骰面本体和点数",
+    "独立附属目标有头像和英雄/玩家身份",
+    "进入武僧防御且主流程可见"
+  ],
+  "elementResponsibilityAudit": {
+    "decisions": [
+      "连锁技能由正式玩家板槽承载",
+      "效果骰本体和点数由骰盘及组合候选承载",
+      "附属目标由头像和英雄/玩家身份候选承载",
+      "当前操作由阶段条、确认按钮及当前选择弹窗承载"
+    ],
+    "uncoveredElements": []
+  },
+  "negativeImpactChecks": [
+    "弹窗不挪动或删除生命、CP、提示板、牌堆、技能板；03/04背景暂时模糊时，当前合法候选本体在弹窗内等价完整承接。",
+    "01/02/05无选择弹窗占据骰盘、资源、同伴或正式技能槽。",
+    "05结束附属目标选择后弹窗退场，防御骰盘、清修技能槽与总伤害读数重新完整可见。"
+  ],
+  "hardFailures": [],
+  "blockingItems": [],
+  "limits": [
+    "仅证明此1920x1080桌面五图覆盖的交互可见性与可读性。",
+    "不判伤害数值、规则、骰子随机性、服务器状态、联机或移动端。",
+    "本报告不承担成熟英雄玩家板几何对照，该门禁由主线程独立证据覆盖。",
+    "不证明持续展示时长或动画连续性。"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "20261027-mobile-camera-writer-r58b",
+  "sourceRevision": "sha256:177ae5c052016d87e96f6794fbbbec54098bda95c9a307f190181e64a60823d0",
+  "status": "FAIL",
+  "outcome": "教程 E2E 未通过；本行为链不得用于最终 PASS。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

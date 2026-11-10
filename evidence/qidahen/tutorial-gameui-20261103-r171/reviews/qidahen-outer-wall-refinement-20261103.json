@@ -1,0 +1,162 @@
+{
+  "objective": "只读复核大同西北上坡外墙高亮是否真实偏离印刷墙身，并只细化该段取点；不改生产代码",
+  "agent": "/root/wall_geometry_fresh",
+  "date": "2026-11-03",
+  "verdict": "confirmed-real-deviation",
+  "finding": "实际截图青线在大同西北上坡进入棕色地面，偏离已超过印刷墙体厚度；不能归因于逐垛口齿形或墙身宽度。此前对此具体段的人工核准不准确。",
+  "sources": [
+    {
+      "role": "原图坐标真相源",
+      "path": "D:/gongzuo/webgame/BoardGame/public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+      "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e",
+      "width": 1265,
+      "height": 893,
+      "sizeBytes": 2959659
+    },
+    {
+      "role": "实际渲染偏离证据",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r163-gameui-pc-20261102/desktop/37-abandon-outer-wall.png",
+      "sha256": "10ce8820c457b0d54d6f01c5690d5382997a569db656820ce988e91af248162e",
+      "width": 1920,
+      "height": 1080,
+      "sizeBytes": 2627817
+    },
+    {
+      "role": "当前48点序列快照",
+      "path": "D:/gongzuo/webgame/BoardGame/src/games/qidahen/ui/fortificationGeometry.ts",
+      "sha256": "9c077d7fdc4e2f363a14c56f60858e2300c6e4405fef0e851f72d602aa586405"
+    }
+  ],
+  "coordinateSystem": "原图1265x893像素，左上角[0,0]，x向右、y向下；不是截图屏幕坐标",
+  "replacement": {
+    "target": "outer-wall.points",
+    "indexBase": 0,
+    "startIndexInclusive": 13,
+    "endIndexInclusive": 21,
+    "preservedStartAnchor": [
+      249,
+      594
+    ],
+    "preservedEndAnchor": [
+      336,
+      516
+    ],
+    "oldPoints": [
+      [
+        249,
+        594
+      ],
+      [
+        262,
+        590
+      ],
+      [
+        269,
+        581
+      ],
+      [
+        275,
+        565
+      ],
+      [
+        282,
+        555
+      ],
+      [
+        295,
+        546
+      ],
+      [
+        309,
+        535
+      ],
+      [
+        322,
+        524
+      ],
+      [
+        336,
+        516
+      ]
+    ],
+    "newPoints": [
+      [
+        249,
+        594
+      ],
+      [
+        251,
+        584
+      ],
+      [
+        255,
+        571
+      ],
+      [
+        260,
+        561
+      ],
+      [
+        266,
+        554
+      ],
+      [
+        276,
+        548
+      ],
+      [
+        286,
+        540
+      ],
+      [
+        295,
+        531
+      ],
+      [
+        306,
+        521
+      ],
+      [
+        319,
+        515
+      ],
+      [
+        329,
+        512
+      ],
+      [
+        336,
+        516
+      ]
+    ],
+    "oldCount": 9,
+    "newCount": 12,
+    "operation": "以newPoints替换旧数组索引13至21（含）；其它已核准段原样保留"
+  },
+  "method": [
+    "私下读取实际截图必要裁图，确认青线相对印刷连续墙身的偏离",
+    "从原图裁切争议段，加坐标网格重新人工取点",
+    "对替换点串生成原图局部叠线，私下确认线位于连续墙身内；不追逐垛口齿形",
+    "保持首尾锚点，避免改动西南段与东北段"
+  ],
+  "uncertainties": [
+    "重新取点为人工主轴近似，允许约2至3原图像素误差",
+    "终点邻近印刷圆形6，圆形标记范围应继续使用已有遮罩留空；其下遮挡部分不作为像素级路径真相",
+    "此次复核只证明争议段确实偏离及替换点串在原图上贴合墙身；没有修改生产，也没有复拍浏览器效果"
+  ],
+  "diagnosticPaths": [
+    ".tmp/qidahen-outer-refine-raw-overview-20261103.png",
+    ".tmp/qidahen-outer-refine-source-20261103.png",
+    ".tmp/qidahen-outer-refine-screen-20261103.png",
+    ".tmp/qidahen-outer-refine-candidate-20261103.png",
+    ".tmp/qidahen-outer-refine-verified-20261103.png"
+  ],
+  "productionFilesModified": false,
+  "scopeExcluded": [
+    "规则拓扑变更",
+    "其它墙线段改动",
+    "其它UI检查",
+    "浏览器重跑",
+    "向主线程返回图片或base64"
+  ]
+}

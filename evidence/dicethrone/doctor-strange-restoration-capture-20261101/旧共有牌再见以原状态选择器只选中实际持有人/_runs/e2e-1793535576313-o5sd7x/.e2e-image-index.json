@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "旧共有牌再见-状态候选.png",
+      "chainId": "旧共有牌状态选择对照",
+      "chainStep": "old-common-status-candidates",
+      "stage": "中态",
+      "uiStateId": "old-common-status-candidates",
+      "behaviorStepId": "old-common-status-candidates",
+      "description": "真实使用原共有牌再见后，以旧状态选择器显示双方眩目候选。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实使用原共有牌再见后，以旧状态选择器显示双方眩目候选。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "真实使用原共有牌再见后，以旧状态选择器显示双方眩目候选。",
+      "sourceRevision": "650bde884c7a09f026ae17cff6ebf781a8b7f0d03ac9863540ca8360af43d4ee",
+      "e2eSourceRevision": "f3f44a5666a739fad7d6885d1624a2105113d8526704dd0e02a8f724b321a9af",
+      "requirements": [
+        "旧共有牌状态选择对照"
+      ],
+      "sourceRun": "1793535703508-159888-74ce5f48-279b-4497-b889-e17a8108d673",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/旧共有牌再见以原状态选择器只选中实际持有人/_runs/e2e-1793535576313-o5sd7x"
+    },
+    {
+      "path": "旧共有牌再见-实际持有人已选.png",
+      "chainId": "旧共有牌状态选择对照",
+      "chainStep": "old-common-status-selected",
+      "stage": "中态",
+      "uiStateId": "old-common-status-selected",
+      "behaviorStepId": "old-common-status-selected",
+      "description": "点中对手眩目后，只有实际持有人的图标选中，等待原确认。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点中对手眩目后，只有实际持有人的图标选中，等待原确认。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点中对手眩目后，只有实际持有人的图标选中，等待原确认。",
+      "sourceRevision": "650bde884c7a09f026ae17cff6ebf781a8b7f0d03ac9863540ca8360af43d4ee",
+      "e2eSourceRevision": "f3f44a5666a739fad7d6885d1624a2105113d8526704dd0e02a8f724b321a9af",
+      "requirements": [
+        "旧共有牌状态选择对照"
+      ],
+      "sourceRun": "1793535703508-159888-74ce5f48-279b-4497-b889-e17a8108d673",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/旧共有牌再见以原状态选择器只选中实际持有人/_runs/e2e-1793535576313-o5sd7x"
+    }
+  ]
+}

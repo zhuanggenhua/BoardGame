@@ -61,7 +61,7 @@ import {
     buildPendingAttackResolvedEvent,
     getPendingAttackSettlementStage,
 } from './utils';
-import { createDTPassiveTriggerHandler, resolveEffectsToEvents } from './effects';
+import { createDTPassiveTriggerHandler, isEffectSequenceSuspensionEvent, resolveEffectsToEvents } from './effects';
 import type { ResponseWindowOpenedEvent } from './events';
 import { createDiceThroneDamageCalculation as createDamageCalculation } from './effects';
 import { CP_MAX } from './types';
@@ -86,7 +86,6 @@ import {
 } from './statusEvents';
 import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 import { deferAttackDebuffFollowups } from './deferredAttackDebuff';
-import { isAttackEffectSequenceBlocker } from './attackEffectContinuationTypes';
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
@@ -157,11 +156,11 @@ const isSkirmishLeader = (state: DiceThroneCore, playerId: PlayerId): boolean =>
     return (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) === maxHealth;
 };
 
-const isBlockingInteractionEvent = isAttackEffectSequenceBlocker;
+const isBlockingInteractionEvent = isEffectSequenceSuspensionEvent;
 
 const isInteractiveBonusDiceRerollEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'BONUS_DICE_REROLL_REQUESTED'
-    && hasPendingBonusDiceSettlement(event.payload.settlement);
+    && isEffectSequenceSuspensionEvent(event);
 
 const hasInteractivePendingBonusDiceSettlement = (core: DiceThroneCore): boolean =>
     hasPendingBonusDiceSettlement(core.pendingBonusDiceSettlement)
@@ -851,6 +850,11 @@ function resolvePostAttackFollowUp(
 
     if (core.pendingAttack?.countsAsOffensiveAttackMade === false) {
         events.push(...resolveCursedPirateNoAttackPowderKegEvents(core, commandType, timestamp));
+        const { dazeEvents, triggered } = checkDazeExtraAttack(core, events, commandType, timestamp);
+        if (triggered) {
+            events.push(...dazeEvents);
+            return { events, overrideNextPhase: 'offensiveRoll' };
+        }
         return { events, overrideNextPhase: 'main2' };
     }
 
@@ -1810,12 +1814,6 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         : postDamageEvents;
                     events.push(...filteredPostDamageEvents);
 
-                    // rollDie 等效果可能产生 BONUS_DICE_REROLL_REQUESTED；只要该 settlement 仍可改骰，就必须暂停。
-                    const hasBonusDiceRerollOffDR = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-                    if (hasBonusDiceRerollOffDR) {
-                        return { events, halt: true };
-                    }
-
                     if (postDamageEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
@@ -1883,9 +1881,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     }
                     events.push(...preDefenseEventsSneak);
 
-                    const hasSneakChoice = preDefenseEventsSneak.some(isBlockingInteractionEvent);
-                    const hasBonusDiceRerollPreDefenseSneak = preDefenseEventsSneak.some(isInteractiveBonusDiceRerollEvent);
-                    if (hasSneakChoice || hasBonusDiceRerollPreDefenseSneak) {
+                    const hasSneakBlocker = preDefenseEventsSneak.some(isBlockingInteractionEvent);
+                    if (hasSneakBlocker) {
                         return { events, halt: true };
                     }
 
@@ -1912,10 +1909,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     events.push(...filterPreventedDefenderDamage(postDamageEventsSneak, coreForPostDamage.pendingAttack));
 
                     // === 与非潜行路径对齐的 halt 检查 ===
-                    const hasBonusDiceRerollSneak = postDamageEventsSneak.some(isInteractiveBonusDiceRerollEvent);
-                    const hasPostDamageChoiceSneak = postDamageEventsSneak.some(isBlockingInteractionEvent);
-                    const hasTokenResponseSneak = postDamageEventsSneak.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-                    if (hasBonusDiceRerollSneak || hasPostDamageChoiceSneak || hasTokenResponseSneak) {
+                    if (postDamageEventsSneak.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
 
@@ -1938,10 +1932,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 }
                 events.push(...preDefenseEvents);
 
-                const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
-                // displayOnly 只是展示壳层；若 settlement 允许改骰，仍然需要 halt。
-                const hasBonusDiceRerollPreDefense = preDefenseEvents.some(isInteractiveBonusDiceRerollEvent);
-                if (hasChoice || hasBonusDiceRerollPreDefense) {
+                const hasPreDefenseBlocker = preDefenseEvents.some(isBlockingInteractionEvent);
+                if (hasPreDefenseBlocker) {
                     // 需要用户做选择或处理奖励骰重掷，阻止阶段切换
                     return { events, halt: true };
                 }
@@ -1987,10 +1979,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 const attackEvents = resolveAttack(coreAfterPreDefenseWithBountyReward, random, { includePreDefense: false }, timestamp);
                 events.push(...attackEvents);
 
-                const hasAttackChoice = attackEvents.some(isBlockingInteractionEvent);
-                const hasTokenResponse = attackEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
-                const hasBonusDiceRerollOff = attackEvents.some(isInteractiveBonusDiceRerollEvent);
-                if (hasAttackChoice || hasTokenResponse || hasBonusDiceRerollOff) {
+                if (attackEvents.some(isBlockingInteractionEvent)) {
                     return { events, halt: true };
                 }
 
@@ -2276,7 +2265,6 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     }
 
                     if (replayEvents.some(isBlockingInteractionEvent)
-                        || replayEvents.some(isInteractiveBonusDiceRerollEvent)
                         || replayEvents.some(event => event.resolutionContinuation !== undefined)) {
                         const remainingCardIds = deferredAttackModifierCardIds.slice(index + 1);
                         const updateDeferredCards: DiceThroneEvent = {
@@ -2327,11 +2315,6 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     ? filterPreventedDefenderDamage(postDamageEvents, coreForPostDamage.pendingAttack)
                     : postDamageEvents;
                 events.push(...filteredPostDamageEvents);
-
-                const hasBonusDiceRerollPost = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-                if (hasBonusDiceRerollPost) {
-                    return { events, halt: true };
-                }
 
                 if (postDamageEvents.some(isBlockingInteractionEvent)) {
                     return { events, halt: true };
@@ -2394,9 +2377,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 }
                 events.push(...preDefenseEventsSneak);
 
-                const hasSneakChoice = preDefenseEventsSneak.some(isBlockingInteractionEvent);
-                const hasBonusDiceRerollPreDefenseSneak = preDefenseEventsSneak.some(isInteractiveBonusDiceRerollEvent);
-                if (hasSneakChoice || hasBonusDiceRerollPreDefenseSneak) {
+                if (preDefenseEventsSneak.some(isBlockingInteractionEvent)) {
                     return { events, halt: true };
                 }
 
@@ -2415,10 +2396,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 const postDamageEventsSneak = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
                 events.push(...filterPreventedDefenderDamage(postDamageEventsSneak, coreForPostDamage.pendingAttack));
 
-                const hasBonusDiceRerollSneak = postDamageEventsSneak.some(isInteractiveBonusDiceRerollEvent);
-                const hasPostDamageChoiceSneak = postDamageEventsSneak.some(isBlockingInteractionEvent);
-                const hasTokenResponseSneak = postDamageEventsSneak.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-                if (hasBonusDiceRerollSneak || hasPostDamageChoiceSneak || hasTokenResponseSneak) {
+                if (postDamageEventsSneak.some(isBlockingInteractionEvent)) {
                     return { events, halt: true };
                 }
 
@@ -2442,9 +2420,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             }
             events.push(...preDefenseEvents);
 
-            const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
-            const hasBonusDiceRerollPreDefense = preDefenseEvents.some(isInteractiveBonusDiceRerollEvent);
-            if (hasChoice || hasBonusDiceRerollPreDefense) {
+            if (preDefenseEvents.some(isBlockingInteractionEvent)) {
                 return { events, halt: true };
             }
 
@@ -2476,10 +2452,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const attackEvents = resolveAttack(coreAfterPreDefenseWithBountyReward, random, { includePreDefense: false }, timestamp);
             events.push(...attackEvents);
 
-            const hasAttackChoice = attackEvents.some(isBlockingInteractionEvent);
-            const hasTokenResponse = attackEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
-            const hasBonusDiceRerollOff = attackEvents.some(isInteractiveBonusDiceRerollEvent);
-            if (hasAttackChoice || hasTokenResponse || hasBonusDiceRerollOff) {
+            if (attackEvents.some(isBlockingInteractionEvent)) {
                 return { events, halt: true };
             }
 
@@ -2494,10 +2467,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     const withDamageEvents = resolveWithDamageAfterChoice(core, random, timestamp);
                     events.push(...withDamageEvents);
 
-                    const hasChoice = withDamageEvents.some(isBlockingInteractionEvent);
-                    const hasTokenResponse = withDamageEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
-                    const hasBonusDiceReroll = withDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-                    if (hasChoice || hasTokenResponse || hasBonusDiceReroll) {
+                    if (withDamageEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
 
@@ -2507,10 +2477,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     const postDamageEvents = resolvePostDamageEffects(coreAfterWithDamage, random, timestamp);
                     events.push(...postDamageEvents);
 
-                    const hasPostChoice = postDamageEvents.some(isBlockingInteractionEvent);
-                    const hasPostTokenResponse = postDamageEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
-                    const hasPostBonusDiceReroll = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-                    if (hasPostChoice || hasPostTokenResponse || hasPostBonusDiceReroll) {
+                    if (postDamageEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
 
@@ -2540,12 +2507,6 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         : postDamageEvents;
                     events.push(...filteredPostDamageEvents);
 
-                    // rollDie 等效果可能产生 BONUS_DICE_REROLL_REQUESTED；只要该 settlement 仍可改骰，就必须暂停。
-                    const hasBonusDiceRerollPost = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-                    if (hasBonusDiceRerollPost) {
-                        return { events, halt: true };
-                    }
-
                     if (postDamageEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
@@ -2574,10 +2535,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         ? resolveAttackWithSneakImmunityAfterDefense(core, random, timestamp)
                         : resolveAttack(core, random, { skipDefense: true }, timestamp);
                     events.push(...attackEvents);
-                    const hasAttackChoice = attackEvents.some(isBlockingInteractionEvent);
-                    const hasTokenResponse = attackEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
-                    const hasBonusDiceReroll = attackEvents.some(isInteractiveBonusDiceRerollEvent);
-                    if (hasAttackChoice || hasTokenResponse || hasBonusDiceReroll) {
+                    if (attackEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
@@ -2594,11 +2552,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     : resolveAttack(core, random, undefined, timestamp);
                 events.push(...attackEvents);
 
-                const hasAttackChoice = attackEvents.some(isBlockingInteractionEvent);
-                const hasTokenResponse = attackEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
-                const hasBonusDiceReroll = attackEvents.some(isInteractiveBonusDiceRerollEvent);
-                
-                if (hasAttackChoice || hasTokenResponse || hasBonusDiceReroll) {
+                if (attackEvents.some(isBlockingInteractionEvent)) {
                     return { events, halt: true };
                 }
 

@@ -1,0 +1,204 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "refactor",
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "重投提示复用原骰盘左侧垂直中点，攻击修正保留上方且二者同屏不重合",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\23-值得拥有骰子候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\24-值得拥有骰子已选一次.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\25-值得拥有骰子已选两次.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\54-重投左中与上方攻击修正同屏.png"
+      ]
+    },
+    {
+      "requirement": "所有来源卡牌复用完整牌库选择器，候选尺度可读且保留搜索选中确认和原读牌入口",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\01-弃牌法术候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\02-弃牌法术已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\03-弃牌法术候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\04-弃牌法术已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\12-抽牌返还候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\13-抽牌返还已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\15-牌库顶五法术候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\16-牌库顶五第二张已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\17-剩余牌重排候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\18-剩余牌首张已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\19-准备区法术施放候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\20-准备区法术已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\29-卡牌候选复用放大阅读.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\40-弃牌直接施放完整候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41-弃牌直接施放八牌候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41b-弃牌直接施放法术已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\42-弃牌搜索无匹配可清除-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\44-手机横屏-弃牌候选原阅读界面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\46-桌面-弃牌候选原阅读界面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\47-预感返还多卡候选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "预感及牌库位置分支保留已指定的高对比平面单列选项",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\11-预感收入替代选项.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\11b-预感收入替代选项-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\14-牌库位置选择.png"
+      ]
+    },
+    {
+      "requirement": "秘术雷击复用原技能分支选择器及真实规则说明",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\39-秘术雷击原技能分支-桌面.png"
+      ]
+    },
+    {
+      "requirement": "状态和玩家选择复用旧完整组件，保留候选归属紧凑布局及说明检视",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\05-深红系带玩家候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\06-深红系带玩家已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\07-状态候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\08-状态已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\09-状态候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\10-状态已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\34-所有玩家目标候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\35-所有玩家队友已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\36-多持有人状态候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\37-多持有人状态候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\38-无合法状态仅跳过-桌面.png"
+      ]
+    },
+    {
+      "requirement": "原技能槽选中与普通手牌保持既有视觉和操作",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\21-星际侵入技能已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\50-手机横屏-宇宙感知已选待结算.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\53-桌面-宇宙感知已选待结算.png"
+      ]
+    },
+    {
+      "requirement": "新准备区及即视感奖励骰完整显示并复用原检视关闭和骰盘流程",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\22-奖励骰待确认.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\26-即视感悬停说明.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\30-公开准备区三张法术-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\31-公开准备区原卡阅读-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\32-公开准备区横向找到第三张-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\33-公开准备区原卡阅读-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\43-值得拥有-来源卡等待玩家关闭.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\45-即视感重开后-桌面.png"
+      ]
+    },
+    {
+      "requirement": "旧共有牌状态选择只选中实际持有人且原确认行为不变",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\51-旧共有牌再见-状态候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\52-旧共有牌再见-实际持有人已选.png"
+      ]
+    },
+    {
+      "requirement": "角色保持实施中且排序位于已完成角色之后",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\27-角色排序-已完成角色前段.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\28-角色排序-实施中角色后段.png"
+      ]
+    }
+  ],
+  "acceptanceReason": "用户要求“卡牌选择找到现有完整UI直接复用”“所有新交互按真正基线重新验收”，并回答“是这个”确认血色杀戮原完整界面。恢复该owner整体布局与响应式，带正式卡图重放原组件作同状态对照；不是原时历史截图。短屏真实裁切仅补顶部约束与单卡滚窗高度，其他必要来源/合法动作/原检视保留。54张新交互逐项审查，行为与视觉分开，最终用户验收待定。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\01-弃牌法术候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\02-弃牌法术已选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\03-弃牌法术候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\04-弃牌法术已选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\05-深红系带玩家候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\06-深红系带玩家已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\07-状态候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\08-状态已选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\09-状态候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\10-状态已选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\11-预感收入替代选项.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\11b-预感收入替代选项-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\12-抽牌返还候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\13-抽牌返还已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\14-牌库位置选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\15-牌库顶五法术候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\16-牌库顶五第二张已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\17-剩余牌重排候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\18-剩余牌首张已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\19-准备区法术施放候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\20-准备区法术已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\21-星际侵入技能已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\22-奖励骰待确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\23-值得拥有骰子候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\24-值得拥有骰子已选一次.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\25-值得拥有骰子已选两次.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\26-即视感悬停说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\27-角色排序-已完成角色前段.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\28-角色排序-实施中角色后段.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\29-卡牌候选复用放大阅读.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\30-公开准备区三张法术-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\31-公开准备区原卡阅读-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\32-公开准备区横向找到第三张-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\33-公开准备区原卡阅读-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\34-所有玩家目标候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\35-所有玩家队友已选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\36-多持有人状态候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\37-多持有人状态候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\38-无合法状态仅跳过-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\39-秘术雷击原技能分支-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\40-弃牌直接施放完整候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41-弃牌直接施放八牌候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41b-弃牌直接施放法术已选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\42-弃牌搜索无匹配可清除-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\43-值得拥有-来源卡等待玩家关闭.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\44-手机横屏-弃牌候选原阅读界面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\45-即视感重开后-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\46-桌面-弃牌候选原阅读界面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\47-预感返还多卡候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\50-手机横屏-宇宙感知已选待结算.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\51-旧共有牌再见-状态候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\52-旧共有牌再见-实际持有人已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\53-桌面-宇宙感知已选待结算.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\54-重投左中与上方攻击修正同屏.png"
+  ],
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\doctor-confirmed-ui-final-unit-20261102.log"
+    ]
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

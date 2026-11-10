@@ -1,0 +1,161 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03c-三格走法-征兵训练支付.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "征兵训练弃牌提示和确认弃牌按钮完整可见；下方两张手牌均有类别及“看”入口，教程气泡未遮住支付对象和确认入口。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03e-征兵训练-行动规则与选择.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "规则气泡清楚说明征兵和训练；右侧征兵、训练、额外训练、完成四项均完整可读，气泡停在面板左侧，没有覆盖选项。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03f-训练目标-当前等级与目标等级.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右侧候选逐项显示地点、兵种、当前等级到目标等级；气泡没有压住候选，列表底部截断属于固定高度滚动容器，且上方明确提示列表内滚动。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03g-训练结果-出现额外训练选择.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右侧顶部训练结果文字及额外训练弃牌选项同时可见；规则气泡与操作列表分离，继续征兵、训练及结束入口可辨识。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03h-征兵目标-本土限制与候选区.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "本土限制气泡完整可读，右侧区域候选列表从咸兴到辽西可见，候选行没有被气泡覆盖；该图证明列表选择入口，不证明地图区域本体被高亮。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03i-额外训练-支付规则.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "额外训练支付规则、确认弃牌栏和剩余银两手牌同屏可见；手牌“看”入口保留，气泡未遮支付按钮。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03j-额外训练-目标选择.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右侧额外训练候选的地点、兵种及等级箭头完整可读，左侧气泡不覆盖候选；有列表内滚动提示，当前可见候选具有独立行。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03k-征兵训练-最终结算.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右上方结果框完整展示本次征兵训练三条变化；教程的完成并返回按钮可见，结果框与教程气泡不相互遮挡，底部手牌保留“看”入口。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/03l-教程结束后-同局继续.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程气泡已消失，棋盘、轮盘、当前玩家栏、手牌和右侧行动按钮保持可见；可作为教程退出后回到同局界面的静态证据。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/移动-00-开场-胜利条件说明.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "横屏小视口中胜利条件文字与下一步按钮完整可读，三方玩家栏、轮盘及右侧行动入口可辨；底部小卡正文较小，但各卡有明显“看”入口供恢复检视。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/移动-01-首个行动选择-轮盘或征召.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "首行动教程气泡完整可读；左侧可选轮盘扇区高亮与右侧征召军队按钮同时可见，没有被教程气泡遮挡，底部持牌检视入口保留。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/移动-02-征召支付-手牌检视前.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程提示点击“看”或移动端长按；支付进度、确认执行和取消本次行动完整显示，三张手牌及各自“看”入口可见，支付栏没有压住手牌。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/移动-03-征召支付-长按手牌打开检视.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "放大牌面从标题、效果正文到下方阵营说明均在视口内，右上关闭按钮完整可见；遮罩压暗背景符合阅读层级，支付栏被检视层部分覆盖属于当前模态阅读态。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-context-fix-20261023-r1/移动-04-关闭检视-回到征召支付.png",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "放大检视消失，教程说明、支付进度、确认执行、取消及三张手牌检视入口恢复完整可见，与检视前同类布局一致。 未见可见报错、破图或目标控件越界；本项仅裁决静态交互界面，不证明操作成功或规则数值正确。"
+    }
+  ]
+}

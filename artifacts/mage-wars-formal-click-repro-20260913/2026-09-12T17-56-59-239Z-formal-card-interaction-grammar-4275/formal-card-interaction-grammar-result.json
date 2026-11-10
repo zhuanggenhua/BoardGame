@@ -1,0 +1,597 @@
+{
+  "status": "not-reproduced-formal-cards-use-primary-action-grammar",
+  "firstClick": {
+    "label": "点击第一张牌中心",
+    "point": {
+      "x": 278.42857360839844,
+      "y": 1106.9241638183594
+    }
+  },
+  "firstClickOpenedOverlay": false,
+  "firstClickPlanned": true,
+  "unexpectedZoomAudits": [],
+  "beforeClick": {
+    "label": "before-click",
+    "state": {
+      "href": "http://127.0.0.1:4275/play/mage-wars/match/T6YBeM_rnfG?playerID=0",
+      "phase": "planning",
+      "phaseActorId": "0",
+      "currentPlayerId": "0",
+      "shelfPlanningEnabled": "true",
+      "overlay": {
+        "ariaHidden": "true",
+        "sourceCardId": null,
+        "text": ""
+      },
+      "cards": [
+        {
+          "index": 0,
+          "sourceCardId": "3725",
+          "ariaLabel": "法师魔杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 144,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 1,
+          "sourceCardId": "3711",
+          "ariaLabel": "巨熊皮甲",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 426.3571472167969,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 2,
+          "sourceCardId": "3710",
+          "ariaLabel": "群兽法杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 708.7142944335938,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 3,
+          "sourceCardId": "3802",
+          "ariaLabel": "法术",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 991.0714721679688,
+            "top": 917.8482666015625,
+            "width": 269.6785888671875,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 4,
+          "sourceCardId": "3709",
+          "ariaLabel": "元素斗篷",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 1274.25,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 5,
+          "sourceCardId": "3707",
+          "ariaLabel": "重生腰带",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 1556.607177734375,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        }
+      ],
+      "drafts": []
+    },
+    "audits": [
+      {
+        "index": 0,
+        "point": {
+          "x": 278.42857360839844,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3725",
+          "ariaLabel": "法师魔杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 1,
+        "point": {
+          "x": 560.7857208251953,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3711",
+          "ariaLabel": "巨熊皮甲",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 2,
+        "point": {
+          "x": 843.1428680419922,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3710",
+          "ariaLabel": "群兽法杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 3,
+        "point": {
+          "x": 1125.9107666015625,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3802",
+          "ariaLabel": "法术",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 4,
+        "point": {
+          "x": 1408.6785736083984,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3709",
+          "ariaLabel": "元素斗篷",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      }
+    ]
+  },
+  "afterFirstClick": {
+    "label": "after-first-click",
+    "state": {
+      "href": "http://127.0.0.1:4275/play/mage-wars/match/T6YBeM_rnfG?playerID=0",
+      "phase": "planning",
+      "phaseActorId": "0",
+      "currentPlayerId": "0",
+      "shelfPlanningEnabled": "true",
+      "overlay": {
+        "ariaHidden": "true",
+        "sourceCardId": null,
+        "text": ""
+      },
+      "cards": [
+        {
+          "index": 0,
+          "sourceCardId": "3725",
+          "ariaLabel": "法师魔杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": "1",
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 144,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 1,
+          "sourceCardId": "3711",
+          "ariaLabel": "巨熊皮甲",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 426.3571472167969,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 2,
+          "sourceCardId": "3710",
+          "ariaLabel": "群兽法杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 708.7142944335938,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 3,
+          "sourceCardId": "3802",
+          "ariaLabel": "法术",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 991.0714721679688,
+            "top": 917.8482666015625,
+            "width": 269.6785888671875,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 4,
+          "sourceCardId": "3709",
+          "ariaLabel": "元素斗篷",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 1274.25,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        },
+        {
+          "index": 5,
+          "sourceCardId": "3707",
+          "ariaLabel": "重生腰带",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "disabled": false,
+          "visible": true,
+          "rect": {
+            "left": 1556.607177734375,
+            "top": 917.8482666015625,
+            "width": 268.8571472167969,
+            "height": 378.15179443359375
+          }
+        }
+      ],
+      "drafts": [
+        {
+          "sourceCardId": "3725",
+          "ariaLabel": "法师魔杖",
+          "slot": "1"
+        }
+      ]
+    },
+    "audits": [
+      {
+        "index": 0,
+        "point": {
+          "x": 278.42857360839844,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3725",
+          "ariaLabel": "法师魔杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": "1",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 1,
+        "point": {
+          "x": 560.7857208251953,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3711",
+          "ariaLabel": "巨熊皮甲",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 2,
+        "point": {
+          "x": 843.1428680419922,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3710",
+          "ariaLabel": "群兽法杖",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 3,
+        "point": {
+          "x": 1125.9107666015625,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3802",
+          "ariaLabel": "法术",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      },
+      {
+        "index": 4,
+        "point": {
+          "x": 1408.6785736083984,
+          "y": 1106.9241638183594
+        },
+        "card": {
+          "tag": "BUTTON",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3709",
+          "ariaLabel": "元素斗篷",
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "browseInspectable": null,
+          "secondaryInspect": "true",
+          "selectedCount": null,
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer",
+          "cursorBeforeHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+        },
+        "hit": {
+          "tag": "DIV",
+          "closestTestId": "mage-wars-desktop-spellbook-card",
+          "inspectButton": false,
+          "primaryActionIsElement": true,
+          "browseInspectable": false,
+          "containsHit": true
+        },
+        "cursorAfterHover": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "inspectButtonVisibleAtCenter": false
+      }
+    ]
+  },
+  "diagnostics": {
+    "baseUrl": "http://127.0.0.1:4275",
+    "viewport": {
+      "width": 2560,
+      "height": 1304
+    },
+    "deviceScaleFactor": 1,
+    "headless": false,
+    "hostErrors": [
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: qidahen/thumbnails/cover, currentSrc: /assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:blob:http://127.0.0.1:4275/33f83c76-3649-44fe-bc16-52a88a3955e3:0:Failed to load resource: net::ERR_FILE_NOT_FOUND",
+      "console:blob:http://127.0.0.1:4275/615904d8-3749-41bb-96e5-c716b0bb8af0:0:Failed to load resource: net::ERR_FILE_NOT_FOUND",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: dicethrone/thumbnails/fengm, currentSrc: /assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: cardia/thumbnails/title, currentSrc: /assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}"
+    ]
+  },
+  "artifacts": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T17-56-59-239Z-formal-card-interaction-grammar-4275\\01-formal-board-before-sampling.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T17-56-59-239Z-formal-card-interaction-grammar-4275\\02-formal-board-after-first-center-click.png"
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "codex-tutorial-20261026-r04",
+  "sourceRevision": "sha256:035cd4a29463f3f1fab267b74b1598673d81cbec161361bd387164d37d82e93f",
+  "status": "FAIL",
+  "outcome": "教程 E2E 未通过；本行为链不得用于最终 PASS。",
+  "steps": [
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-001",
+      "action": "打开教程入口并确认棋盘与当前教程状态：移动-00-开场-胜利条件说明",
+      "before": {
+        "visible": {
+          "boardVisible": false,
+          "path": "blank",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": false,
+          "tutorialStepId": null,
+          "turnPhase": null,
+          "currentPlayer": null,
+          "selectedActionId": null,
+          "actionWheelPosition": null,
+          "factionActionUsed": null,
+          "mingHandCount": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "welcome",
+          "expected": "welcome"
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-01",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-001",
+      "change": "panel",
+      "viewport": "mobile",
+      "sha256": "e069c9d1805c4686f9ea590fedbe931cefec48cb8f4e4887b7d86a6ddb3cfeec",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r04-mobile\\移动-00-开场-胜利条件说明.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，00，开场，胜利条件说明状态。"
+    }
+  ],
+  "skippedDuplicateScreenshots": []
+}

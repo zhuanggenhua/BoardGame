@@ -1,0 +1,75 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-12T14:25:00.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "轮盘进攻调度弃牌一开始就有托盘时，不要再叠顶部操作横幅。",
+      "status": "PASS",
+      "evidence": [
+        "独立 E2E e2e/qidahen/discard-banner-tray-timing.e2e.ts 走 3 格后 qidahen-wheel-dispatch-payment-panel 可见，qidahen-operation-banner 数量为 0。",
+        "media/前态-轮盘进攻调度托盘弃牌无横幅.png 可见进攻调度弃牌托盘与确认弃牌，顶部没有操作横幅。"
+      ]
+    },
+    {
+      "requirement": "势力行动支付托盘出现时不要叠横幅，托盘也不重复说明效果或操作方法。",
+      "status": "PASS",
+      "evidence": [
+        "同一用例点击赐印招安后 qidahen-action-payment-panel 含赐印招安，横幅数量为 0，面板不含「点击底部手牌」。",
+        "media/中态-势力行动托盘弃牌无横幅.png 可见赐印招安支付托盘、确认执行和取消，没有操作说明，没有顶部横幅。"
+      ]
+    },
+    {
+      "requirement": "没有底部托盘时，才显示统一横幅「选择弃置的手牌」。",
+      "status": "PASS",
+      "evidence": [
+        "高第调度注入 selectedCardId 为空后，qidahen-operation-banner 文案为「选择弃置的手牌」，qidahen-hand-interaction-tray 数量为 0。",
+        "media/后态-高第无托盘显示选择弃置的手牌横幅.png 可见顶部「选择弃置的手牌」，底部没有托盘。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/qidahen/discard-banner-tray-timing-20261012/media/前态-轮盘进攻调度托盘弃牌无横幅.png",
+    "evidence/qidahen/discard-banner-tray-timing-20261012/media/中态-势力行动托盘弃牌无横幅.png",
+    "evidence/qidahen/discard-banner-tray-timing-20261012/media/后态-高第无托盘显示选择弃置的手牌横幅.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "image_acceptance_audit"
+    },
+    "reviewFile": ".visual-review.json",
+    "summary": {
+      "fullCoverage": true,
+      "totalMediaCount": 3,
+      "passCount": 3,
+      "reviseCount": 0,
+      "numericOrRuleValidation": "excluded; covered by E2E/Vitest"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/operationPrompt.test.ts --config vitest.config.core.ts --configLoader native --pool forks --maxWorkers 1",
+      "node scripts/infra/run-e2e-single.mjs default e2e/qidahen/discard-banner-tray-timing.e2e.ts \"有托盘不叠横幅，无托盘才显示选择弃置的手牌\""
+    ],
+    "evidence": [
+      "Board.test.ts：213 tests passed。",
+      "operationPrompt.test.ts：3 tests passed。",
+      "独立 E2E：1 passed（23.9s），前态/中态/后态截图来自同一次运行。"
+    ]
+  }
+}

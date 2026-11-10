@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "status": "REVISE",
+  "verdict": "退回",
+  "reviewLayer": "source",
+  "reviewedAt": "2026-10-28T11:32:00.4931442Z",
+  "reviewer": "/root/r81_source_closeout_review",
+  "scope": "R81工作源码：全部合法候选/教程推荐分层、土地与城市身份、权限与动作消费、正式basic-opening及三个E2E用例源码；不是最终UI、全游戏或全仓验收。",
+  "sourceFiles": [
+    {
+      "path": "src/games/qidahen/ui/mapSelectionCandidates.ts",
+      "sha256": "febd74acc96e82aced143e2811d61b3a387706f9940c4279b7e9410bbd048ee1"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapRegionHitTesting.ts",
+      "sha256": "ac2473bd04ebdc0b7f230e92df6f30e7d9bc72f929b5db40a9bdae9588c6842e"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapGraph.ts",
+      "sha256": "903595803cc3748a245753eb9824f937ee23b7f142e3027387dd1f26e5b22495"
+    },
+    {
+      "path": "src/games/qidahen/ui/runtimeRegionOwnership.ts",
+      "sha256": "8a550662d3b0c90eff3db09f18fd6e473dae2019bd021ea7467280a451c6f40e"
+    },
+    {
+      "path": "src/games/qidahen/ui/regionMaskOverlay.ts",
+      "sha256": "b8b658f9a9e2dba15d72f1a8b58fff48fa12093f08e200d41ad02ad8d6a0f204"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapRegionFocus.ts",
+      "sha256": "3bfb4a08dfd101668bd5265f06a6c984b57a030fe862c6a1dc3685c03c1c1cf5"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionSelectionPreferences.ts",
+      "sha256": "2f75ef63c4737f3f0cb186ce1f9a81f69fb6fbaf29589808037493eacc795801"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionRuleSemantics.ts",
+      "sha256": "fe73fd030f27f782d962f31b090f100dd28ee22c0ac309c601e7526ff67e6a03"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionConfig.ts",
+      "sha256": "3a5ab9a89967aad2e3ebaae35daa5653b9227fbe71bdeae43026e2e0fc47bd3e"
+    },
+    {
+      "path": "src/games/qidahen/domain/mapTokens.ts",
+      "sha256": "8da7a5d2f993fa8433500a198df0b94791106224d193db12b6a3e5fb9465677b"
+    },
+    {
+      "path": "src/games/qidahen/domain/scenarioRuntimeRegionPresets.ts",
+      "sha256": "523e46b3b847f4048673da92681716ee08a015b10c751e65886953ac08ae77f5"
+    },
+    {
+      "path": "src/games/qidahen/domain/victoryResolution.ts",
+      "sha256": "987ad032502e1b7e221c49aa245f7fe19ed1bf346021d995f7b89da769728134"
+    },
+    {
+      "path": "src/games/qidahen/domain/interactionSystem.ts",
+      "sha256": "3a7d869a4881a150e924caf5b503611805340f4755a7dcd588d95088a4941bb6"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelImmediateEffect.ts",
+      "sha256": "12db7c931b3b458ae701ad9729e8810efbb9ba91c5042abf6401d75a140ba027"
+    },
+    {
+      "path": "src/games/qidahen/tutorial.ts",
+      "sha256": "68b5af89871282bb22ebcade0c40ec09d187c99b1c35c99414313ba1a6fc440b"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "0ce59506c2943b7928e7b40fdd92b38874157e6b1a1fc05d51456f8fe479b2d4"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-closeout.e2e.ts",
+      "sha256": "18797967d35487e16bda7b59f6bb8b55a6583ff47733f8dcf7cd8bf4a35f5308"
+    }
+  ],
+  "sources": [
+    "docs/games/qidahen/records/qidahen-map-selection-rebuild-20261028.md",
+    "test-results/qidahen-r81-rule-map.txt"
+  ],
+  "findings": [
+    {
+      "priority": "P2",
+      "title": "没有合法本土建军地时，军屯仍在所选非本土区建立正规军",
+      "file": "src/games/qidahen/domain/wheelImmediateEffect.ts",
+      "line": 61,
+      "consequence": "地图候选为空，但军屯正式结算仍给当前选区加正规军，与本轮统一的本土限制不一致。",
+      "evidence": "正规军目标读取为空后使用 state.selectedRegionId；后续 targetRegion 未再验 canPlaceRegularTroopsInRegion，仍应用 troopDelta。只读tsx探针：明全部有效本土转给后金、保留明对汉城控制、明控制并选中叶赫；victoryStatus=null，legal=[]，叶赫troops 1->2。EXECUTE_WHEEL_MOVE验证无额外目标合法性门禁。",
+      "sourceRule": "原PDF抽取文本62及117-124行：正规军只能在有效本土建立。",
+      "blocks": "当前范围功能实现：合法候选与最终结算必须一致。",
+      "minimalRemedy": "无合法正规军放置目标时停止回退非法选区；保留规则允许的补牌等效果，明确无可建军地点，并覆盖未终局失地局面。"
+    }
+  ],
+  "verification": {
+    "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/mapGeographyContract.test.ts src/games/qidahen/__tests__/mapSelectionCandidates.test.ts src/games/qidahen/__tests__/mapGraph.test.ts src/games/qidahen/__tests__/runtimeRegionOwnership.test.ts src/games/qidahen/__tests__/mapRegionFocus.test.ts src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+    "result": "34 passed / 6 failed / 40 total；5 files passed / 1 failed",
+    "passed": "mapGeographyContract(4)、mapSelectionCandidates(4)、runtimeRegionOwnership(4)、mapRegionFocus(6)、tutorialNaturalOpening(7)，以及mapGraph其余9项。",
+    "failed": "mapGraph 6个旧合同：印刷边数、城市无土地像素、宣府旧编号、旧共享映射、旧shared-audit列表和辽西-锦州旧代价断言。",
+    "contractMigrationGap": "这些失败需要按当前原图/规则语义更新或明确失效记录，不能恢复旧错误映射以使测试变绿。",
+    "probe": "tsx直接消费正式setup/本土判定/军屯owner/victory owner；无源文件修改。",
+    "runtimeBaseline": "主线程提供的新旧冻结runtime合同日志均21失败；本审查不将其称为全套通过，也未重新归因为R81新增回归。"
+  },
+  "reviewedConclusions": [
+    "候选owner复用正式建军/突袭目标条件；教程推荐不裁剪候选，不自动设置explicitRegionId。",
+    "土地像素一一对应；城市通过markerBounds独立命中；候选为父土地时城牌不劫持父土地点击。",
+    "霸权计数排除城市子对象及朝鲜点位；新地理合同对此有直接断言。",
+    "TACTIC_CARD_PLAYED后清旧运行时交互并从正式core结果重建，未改为旧mirror优先。",
+    "自然开局直接测试含正常无教程命令链、战术D10=9、永久等级2、占领/撤回及权限拒绝。"
+  ],
+  "remainingRisks": [
+    "最终真实E2E和新整屏图仍在主线程迭代，本审查未接收或输出图像；不据此新增源码缺陷。",
+    "城市聚合控制/维护/税赋/跨年完整语义不在本轮审查，不作全游戏正确性结论。",
+    "本JSON绑定上述源码哈希；后续修复需重新核对对应finding。"
+  ]
+}

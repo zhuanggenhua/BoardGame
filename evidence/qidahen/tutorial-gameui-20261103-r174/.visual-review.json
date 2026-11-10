@@ -1,0 +1,1097 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/01-PC-公开纪年与年度扩张目标.png",
+      "sha256": "81313d0ed23165cad87318f8732dda3f666f487c07c3e6b3a7bda0e7507cabda",
+      "status": "PASS",
+      "score": 94,
+      "observation": "胜利目标说明与下一步按钮同处纪年牌旁，顶部大明当前回合标记可读，轮盘和地图本体保持可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "frontier-goal",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\00-frontier-goal.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-a.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/02-PC-轮盘免费前进一步.png",
+      "sha256": "3226f31e660213a4fa97e2d29900749303e192bc859ef0017827c50d3a462f39",
+      "status": "PASS",
+      "score": 94,
+      "observation": "轮盘右侧提示紧贴轮盘并明确本次前进一格，开垦军屯扇区白边突出，其他可达扇区绿色较弱，当前回合标记清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "opening-move",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\01-opening-move.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-a.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/03-PC-点击「军屯」.png",
+      "sha256": "d1b28df2dcc16c386e1f9bb0e147cd14a91435c2ed3635d7ad6827f4b1e52541",
+      "status": "PASS",
+      "score": 92,
+      "observation": "军屯文字按钮位于当前绿色轮盘扇区内，提示箭头贴近军屯入口，轮盘下放弃按钮和底部势力行动分区明确，未遮住本步操作目标。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "farm-action",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\02-farm-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-a.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/04-PC-点击「开垦」.png",
+      "sha256": "7daa3b09ab6e061dbe9ee25ea5c27cedf3c62f42cee738bbe7f40904b0b297dd",
+      "status": "PASS",
+      "score": 92,
+      "observation": "开垦入口在轮盘当前扇区内以独立边界显示，人口说明紧邻该入口，放大地图与固定轮盘保持层级区分，手牌和征召军队入口仍可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "reclaim-action",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\03-reclaim-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-a.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/05-PC-开垦地区选择.png",
+      "sha256": "24008a3873884af8f321d45b74cf1b6995509aa387c51decd7d7cdaa96cdc423",
+      "status": "PASS",
+      "score": 91,
+      "observation": "合法开垦区域沿地图本体绿边显示，辽东推荐区域以白色主边界区别于其他候选，辽东名称和人口标记可读，邻近提示与右侧大明确认面板共同说明当前对象和下一步。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "reclaim-target",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\04-reclaim-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-a.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/06-PC-直接选择征召军队.png",
+      "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313",
+      "status": "PASS",
+      "score": 94,
+      "observation": "征召军队提示在按钮上方并同轴承接，四个势力行动按钮位于半露手牌正上方，轮盘完成入口独立，抽弃牌堆及准备牌仍可辨认，未见本步目标裁切或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-action",
+      "reviewer": "/root/r174_a_resume",
+      "readSource": "tools.view_image，完整原图，detail=original",
+      "reviewMode": "actual-read",
+      "carriedForward": false,
+      "priorReview": {
+        "reviewer": "/root/r174_a",
+        "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+        "status": "PASS",
+        "score": 94,
+        "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313"
+      },
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\05-recruit-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-a.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/07-PC-征召弃牌支付.png",
+      "sha256": "fc2f07a1e2d4634b318274d624ec367086d7af3110bb907abbc8b7eef7af4b2e",
+      "status": "PASS",
+      "score": 92,
+      "observation": "银两说明清楚交代弃牌支付和保留其他牌，说明卡位于支付栏上方，支付进度与确认和取消入口清楚；下方银两牌以绿色边界区别于其余灰化手牌，放大镜可发现，当前没有选中勾记；黄色人口引线未被当作教程指向，未见目标遮挡或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-payment",
+      "actualReviewer": "/root/r174_b_head",
+      "sourcePartFile": "reviews/r174-review-b-head.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\06-recruit-payment.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-b.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/08-PC-共享放大镜检视征召手牌.png",
+      "sha256": "2b7a5319c1e8ff223b497764713c8d4b1558d130df2955c483dd3347202c8ccc",
+      "status": "PASS",
+      "score": 96,
+      "observation": "银两整张牌面居中完整展示，标题和银锭图案可识别，未见卡面裁切或变形；右上角关闭叉号贴在阅读层内且清楚，不占正文行，底层支付栏降为背景，没有重复银两说明争抢阅读焦点。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-payment-inspect",
+      "actualReviewer": "/root/r174_b_head",
+      "sourcePartFile": "reviews/r174-review-b-head.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-b.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/09-PC-征召建军地区与辽北引导.png",
+      "sha256": "d576b09a72dcb8d4088a82a4e10c0c527df7c9180bc13186448f72c458116960",
+      "status": "PASS",
+      "score": 94,
+      "observation": "建军说明紧邻辽北地区，说明卡左侧缺口朝向该地区，辽北名称及军队本体可见，白色推荐边界与其余绿色合法地区可分辨；右侧当前任务为选择建军地区，玩家能据此直接点击辽北，未见选中勾记冒充已提交结果，也未把黄色人口引线当作教程指向。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-source",
+      "actualReviewer": "/root/r174_b_head",
+      "sourcePartFile": "reviews/r174-review-b-head.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\08-recruit-source.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-b.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/10-PC-辽北建军方式.png",
+      "sha256": "1794db243de208cfd506c5336043961173cf9b8395f36de423ba9a3deac734b3",
+      "status": "PASS",
+      "score": 94,
+      "observation": "辽北地区以贴合地界的白边和城名承接当前建军地点，区内大明兵牌正面与数量标记可辨；右侧两种建军方式具有完整按钮底面，教学说明紧邻选择区，没有遮住当前地区及兵牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-troops",
+      "actualReviewer": "/root/r174_b_tail",
+      "sourcePartFile": "reviews/r174-review-b-tail.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\09-recruit-troops.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-b.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/11-PC-年中税赋与漕运.png",
+      "sha256": "4d989edd97be1a4738ab28464174b03d9741873ae42d77fde4602b4d61a27859",
+      "status": "PASS",
+      "score": 93,
+      "observation": "左上轮盘的年中格与时标仍可见，教学浮层贴轮盘并保留明确的下一步按钮；中央偏下的手牌上限请求标明大明及确认弃牌，和顶部当前回合身份一致，未遮住下方可选手牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "midyear",
+      "actualReviewer": "/root/r174_b_tail",
+      "sourcePartFile": "reviews/r174-review-b-tail.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\10-midyear.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-b.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/12-PC-年中补牌后的手牌上限处理.png",
+      "sha256": "1b864f1dc8275da7b3e4686c86c59831e16c0120c2504303da228d1fb2f7078e",
+      "status": "PASS",
+      "score": 94,
+      "observation": "弃牌请求以大明和手牌上限为明确标题，已择进度与确认弃牌按钮归于同一横条；右侧教学明确保留与弃牌任务，下方手牌的绿色推荐边界、牌面和检视入口可辨，未与教学浮层互相遮挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "hand-limit",
+      "actualReviewer": "/root/r174_b_tail",
+      "sourcePartFile": "reviews/r174-review-b-tail.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\11-hand-limit.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-b.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "id": "upgrade-card",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/13-PC-火炮技术研发.png",
+      "sha256": "840591d319cf9900696e5e1da600884c69d28d146c28bd5fb1ab39bcd32f7f19",
+      "status": "PASS",
+      "score": 92,
+      "observation": "军备火炮技术以真实牌面出现在大明手牌托盘中，类别与标题能辨认；教学说明指出辽北炮兵和先研发后进攻的关系，行动轮盘及手牌区分明确，半露手牌按本轮合同保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_d1",
+      "sourcePartFile": "reviews/r174-review-d1.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\12-upgrade-card.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-d.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "dispatch-source",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/14-PC-先选出兵来源.png",
+      "sha256": "ff3ab18f428279ab2145f5ea028a3a23c8801ddada0b17e1869ae93ef65958cd",
+      "status": "PASS",
+      "observation": "出兵来源提示清楚归属大明，辽北以白色边界显示推荐来源，其余合法地区以绿色边界表达，区域内兵牌与所属标记可辨，确认在尚未选定时为不可用外观。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\13-dispatch-source.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-c.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "dispatch-troops",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/15-PC-地图兵牌选择出兵.png",
+      "sha256": "3aeff4e92b0573d1814cf7d2ea36e8cf90aaa01a6d8d2dfcdcf4766dc1fd549f",
+      "status": "PASS",
+      "observation": "辽北地区已放大，步兵及炮兵牌面、等级角标清楚，合法兵牌以绿色贴边，推荐的两支步兵和一支炮兵以白色贴边，教学说明位于兵群右侧，尚未选择时计数为零且确认置灰。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\14-dispatch-troops.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-c.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "dispatch-troops-selected",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/16-PC-已选部队与确认出兵.png",
+      "sha256": "12a60f464e47447f74547277cefb92f9c49f3c7dab3ba16abf6b5e96d5eb35a5",
+      "status": "PASS",
+      "observation": "三张已选兵牌改为金色贴边并附勾号，其余合法兵牌保留绿色，牌面兵种仍可辨，右侧已选数量与亮起的确认按钮组成清楚的提交承载。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\15-dispatch-troops-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-c.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "id": "dispatch-target",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/17-PC-出兵来源到叶赫部目标.png",
+      "sha256": "c6e9922e41baeef5d78347fd253d9d3200a449b0e782cbfec256bb5477b356c3",
+      "status": "PASS",
+      "observation": "叶赫部以白色边界和就近城名承接目标推荐，其余合法区域以绿色区分，辽北三支已选部队仍保留金色勾号，教学提示指向目标附近，右侧重新选择部队承接回退。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\16-dispatch-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-c.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "id": "tactic-card",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/18-PC-战术牌使用前.png",
+      "sha256": "eb7b94fe30d9007a493f28548b4f30218196b1ae7beb2a8c03b79109b62a57b2",
+      "status": "PASS",
+      "observation": "辽北至叶赫部的交战关系在右侧集中承载，叶赫部以红色区域及可辨骑兵牌表示目标，教学提示贴近左侧推荐战术手牌，战术分类与牌面上部可发现，开始战斗入口清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\17-tactic-card.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-c.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "id": "tactic-card-selected",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/19-PC-选中鸳鸯阵并确认.png",
+      "sha256": "9d7fe9599db1bcc3614fe8537ec259b6452ae2f6875b2635f1946be262020612",
+      "status": "PASS",
+      "observation": "所选战术牌完整抬起并以金色贴边及已选徽记表达状态，打出战术牌与取消按钮贴在该牌上沿，教学说明位于牌右侧，地图上的辽北至叶赫部交战对象仍可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\18-tactic-card-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-c.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "status": "PASS",
+      "observation": "辽北至叶赫部的交战标题与炮兵阶段明确，大明攻方列头带原有明字阵营标记；开放的白骰倾斜显示投掷中状态，大明辽北兵牌与北侧带蒙古标记的蒙古骑兵完整可见，骰子未遮挡参战兵牌或读数。列头控制骰子列，邻近后金背牌仍是隐藏的非参战背景。地图顶边连续填满，未见顶部空白或错误。",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/20-PC-炮兵白骰真实投掷.jpg",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "sha256": "9f27dfc9187952230517787e07ee19495e68d760ce6b9cc1f2860f81c1646c3e",
+      "reviewer": "/root/r174_video_a",
+      "sourcePartFile": "reviews/r174-video-part-a.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-rolling.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵结果保留在大明攻方骰子列下，结果正文明确写出对蒙古造成损伤，承受阵营直接可读；北侧蒙古骑兵及其蒙古标记、大明辽北兵牌保持显露，右侧非参战后金背牌没有被揭露。地图铺满顶部，骰子和结果没有遮住真实参战兵牌或其读数，画面未见错误。这里只确认归属文字，不据图验证结算数值。",
+      "status": "PASS",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/21-PC-炮兵停稳与结果.jpg",
+      "reviewer": "/root/r174_video_a",
+      "sourcePartFile": "reviews/r174-video-part-a.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-damage.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/22-PC-骑兵红骰真实投掷.jpg",
+      "sha256": "067e80f3f37a27b635017d4e83e0272dce1e689681ae942eb1d6a9b40966246d",
+      "status": "PASS",
+      "observation": "骑兵投掷整屏中，蒙古守方文字与原有蒙古标记贴近骰区，大明辽北兵群与叶赫蒙古骑兵实牌可辨，后金背景背牌没有被误作参战兵；未见遮挡、顶部空白或可见报错。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "reviewer": "/root/r174_video_b1",
+      "sourcePartFile": "reviews/r174-video-part-b1.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-rolling.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/23-PC-骑兵停稳与结果.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "status": "PASS",
+      "observation": "骑兵结果整屏可读，蒙古原有阵营标记及守方列头贴近骰子，损伤文字明确指向大明；蒙古骑兵正面及大明兵牌可辨，邻近后金背牌属于背景，未见遮挡目标、顶部留白或可见报错。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "reviewer": "/root/r174_video_b2",
+      "sourcePartFile": "reviews/r174-video-part-b2.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-damage.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/24-PC-步兵绿骰真实投掷.jpg",
+      "sha256": "9d457bff7e4957475b294fae8b6d702dabadc41c50b6d0614c373e7f4e1c86ae",
+      "status": "PASS",
+      "observation": "步兵阶段标题与辽北至叶赫部的进攻方向可读，骰子列头显示红色明标及大明攻方，绿色骰子直接在地图上投掷；地图北侧蒙古骑兵及黄色蒙标显露，大明参战兵牌可辨。邻近蓝色金标与背牌是地图背景，未据此误认守军。地图铺满顶部，手牌与牌堆保持可见，无可见报错。本张为投掷态，不据此判定最终损伤归属。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "reviewer": "/root/r174_video_c1",
+      "sourcePartFile": "reviews/r174-video-part-c1.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-rolling.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/25-PC-步兵停稳与结果.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "status": "PASS",
+      "observation": "步兵阶段在地图上显示大明攻方及明字原标记，绿色实体骰与合计结果相邻，结果明确写对蒙古造成损伤；大明步兵及蒙古标记旁的骑兵牌正面可见，邻近后金背牌仍为非参战背景。顶部阵营条、底部手牌和地图完整，没有新增顶部空白、结果遮挡或报错。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "reviewer": "/root/r174_video_c2",
+      "sourcePartFile": "reviews/r174-video-part-c2.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+      "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五个独立短批次按连续重叠区间核完原录屏全部127帧；本段实际覆盖零至二十九帧。零至二帧为全局开场，三至四帧放大到交战地图；五至十六帧白色炮兵骰连续改变面向和位置，十六至十七帧收束停稳；十八至二十三帧保留稳定骰面并显示结果，二十四至二十九帧进入下一段红骰运动，因此只确认本段炮兵投掷的运动至停稳，不声称其余帧或全场完成。两张原始整屏可直接识别大明攻方骰子列、辽北至叶赫部交战、带蒙古标记的真实守军骑兵及对蒙古造成损伤的结果文字；骰子列靠近后金背景，但列头和结果明确所属，不把后金背牌当参战者。参战对象和读数未被骰子遮挡，交战地图顶边没有空白。；仅亲读本批三张连续联系表的帧二十七至六十二及骑兵投掷原始整屏。连续画面呈现红骰位移翻转、逐渐停稳与结果小标出现并持续，地图和参战兵牌持续可见。原始整屏确认当前骑兵投掷属于蒙古守方。结果小标的详细文字与承受阵营不凭联系表缩略图判定，需由负责骑兵结果原始整图的批次核对；本批结论不代表整片或其余阶段完成。；仅亲读所分配的第五十一至八十帧连续联系表及骑兵结果原始整屏。骑兵骰子停稳并持续展示结果，随后自然切换步兵阶段，绿色骰子持续移动旋转；蒙古守方和大明承受损伤由整屏文字及原有阵营标记可理解，参战兵牌可辨。此段不覆盖骑兵起掷或步兵最终结果，也不判断骰数与伤害规则。；仅亲读本批第七十八至第一百一十三帧。绿色骰子连续移动并改变朝向，随后停稳，结果文字出现并持续保持；没有突发遮罩、黑屏、顶部空白或可见错误。本批原始整屏核对步兵投掷态的大明攻方标记、蒙古骑兵及地图背景层级；最终结果的归属文字不以缩略联系表代替原始结果图验收，交由负责结果原图的批次核对。；仅亲读本批第一百零二至第一百二十六帧：步兵结果停留后回到缩小地图并出现下一步面板和教学说明，画面连续，没有跳黑或报错。此末段未覆盖骰体运动或停止瞬间，不声称前段及整片已审。阵营、参战牌与结果承受方的文字判定来自本批当前原始整屏。",
+      "sourceParts": [
+        {
+          "file": "reviews/r174-video-part-a.json",
+          "sha256": "58b0a6f40fcd57c3cacb3165a1a8cde173a5c3da4a2d20600b95ae036c792a9f",
+          "reviewer": "/root/r174_video_a",
+          "firstFrame": 0,
+          "lastFrame": 29,
+          "observation": "本段实际覆盖零至二十九帧。零至二帧为全局开场，三至四帧放大到交战地图；五至十六帧白色炮兵骰连续改变面向和位置，十六至十七帧收束停稳；十八至二十三帧保留稳定骰面并显示结果，二十四至二十九帧进入下一段红骰运动，因此只确认本段炮兵投掷的运动至停稳，不声称其余帧或全场完成。两张原始整屏可直接识别大明攻方骰子列、辽北至叶赫部交战、带蒙古标记的真实守军骑兵及对蒙古造成损伤的结果文字；骰子列靠近后金背景，但列头和结果明确所属，不把后金背牌当参战者。参战对象和读数未被骰子遮挡，交战地图顶边没有空白。"
+        },
+        {
+          "file": "reviews/r174-video-part-b1.json",
+          "sha256": "5147e86dc9c7aa0cf30911a818adfc3fd6d5a3411737fbc5f09ada78bd71963c",
+          "reviewer": "/root/r174_video_b1",
+          "firstFrame": 27,
+          "lastFrame": 62,
+          "observation": "仅亲读本批三张连续联系表的帧二十七至六十二及骑兵投掷原始整屏。连续画面呈现红骰位移翻转、逐渐停稳与结果小标出现并持续，地图和参战兵牌持续可见。原始整屏确认当前骑兵投掷属于蒙古守方。结果小标的详细文字与承受阵营不凭联系表缩略图判定，需由负责骑兵结果原始整图的批次核对；本批结论不代表整片或其余阶段完成。"
+        },
+        {
+          "file": "reviews/r174-video-part-b2.json",
+          "sha256": "a913b6ea981f904303a29affb6eca1af004c417772e3e67ad0b14aed98421fb6",
+          "reviewer": "/root/r174_video_b2",
+          "firstFrame": 51,
+          "lastFrame": 80,
+          "observation": "仅亲读所分配的第五十一至八十帧连续联系表及骑兵结果原始整屏。骑兵骰子停稳并持续展示结果，随后自然切换步兵阶段，绿色骰子持续移动旋转；蒙古守方和大明承受损伤由整屏文字及原有阵营标记可理解，参战兵牌可辨。此段不覆盖骑兵起掷或步兵最终结果，也不判断骰数与伤害规则。"
+        },
+        {
+          "file": "reviews/r174-video-part-c1.json",
+          "sha256": "3c4c43e12dc07eee13c60e2b15231d675585b4ee273159fc9b3e18eef24c5fcd",
+          "reviewer": "/root/r174_video_c1",
+          "firstFrame": 78,
+          "lastFrame": 113,
+          "observation": "仅亲读本批第七十八至第一百一十三帧。绿色骰子连续移动并改变朝向，随后停稳，结果文字出现并持续保持；没有突发遮罩、黑屏、顶部空白或可见错误。本批原始整屏核对步兵投掷态的大明攻方标记、蒙古骑兵及地图背景层级；最终结果的归属文字不以缩略联系表代替原始结果图验收，交由负责结果原图的批次核对。"
+        },
+        {
+          "file": "reviews/r174-video-part-c2.json",
+          "sha256": "432b06415504acfa29acb710c7eba30e4ab7d86f65e78c465c1fc739826827de",
+          "reviewer": "/root/r174_video_c2",
+          "firstFrame": 102,
+          "lastFrame": 126,
+          "observation": "仅亲读本批第一百零二至第一百二十六帧：步兵结果停留后回到缩小地图并出现下一步面板和教学说明，画面连续，没有跳黑或报错。此末段未覆盖骰体运动或停止瞬间，不声称前段及整片已审。阵营、参战牌与结果承受方的文字判定来自本批当前原始整屏。"
+        }
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-video.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "id": "occupy",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/27-PC-战后占领选择.png",
+      "sha256": "776702b4c29fa9f240d25a830ebd7104d3333f9c1f29fb996f689a5bd81432fd",
+      "status": "PASS",
+      "score": 94,
+      "observation": "战后选择明确显示辽北进攻叶赫部，攻方损失与幸存结果仅在摘要各出现一次；占领和撤回按钮紧接结果，战报折叠入口归在同一战后面板，教学箭头贴此面板，目标叶赫区域仍可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_d1",
+      "sourcePartFile": "reviews/r174-review-d1.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\26-occupy.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-d.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "occupy-report",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/28-PC-主动展开只读战报.png",
+      "sha256": "25d2978ded0da037fb985af151ec6a65c81beafe2bdd6fd84f76b4dc0880521e",
+      "status": "PASS",
+      "score": 94,
+      "observation": "展开战报保留辽北至叶赫部的战后标题与占领撤回按钮，炮兵骑兵步兵阶段依次排列，攻守方行文和结果清楚可读；幸存结果只保留在顶部摘要，展开内容未再次显示幸存结果，没有叠加第二套结果包装。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_d1",
+      "sourcePartFile": "reviews/r174-review-d1.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\27-occupy-report.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-d.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "id": "diplomacy-target",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/29-PC-外交友好标记选择.png",
+      "sha256": "f6a1e2ac4c5687e1e2e90038ccb615713163f555c402e1e6227c762cc207fed9",
+      "status": "PASS",
+      "score": 94,
+      "observation": "外喀尔喀部名称、蒙古反面标记和白色目标边界均可辨认，说明框位于目标上方邻近处，清楚说明移除友好关系而非取得控制；外交结束按钮独立承载命令，目标本体未被遮住。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_d2",
+      "sourcePartFile": "reviews/r174-review-d2.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\28-diplomacy-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-d.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "id": "diplomacy-finish",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/30-PC-外交结果与落点继续.png",
+      "sha256": "edbc0d4d6a7742c0e41bf286ee67d45452231c721ee73ed1a30536485fe495c3",
+      "status": "PASS",
+      "score": 95,
+      "observation": "结束外交位于外交请求面板内并具有清楚按钮外观与蓝色强调，教程说明紧邻按钮下方，说明本次处理完成后转去补强大同；无第二套外交导航，结束命令没有被浮层遮挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_d2",
+      "sourcePartFile": "reviews/r174-review-d2.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\29-diplomacy-finish.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-d.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "id": "hire-action",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/31-PC-点击「雇佣」.png",
+      "sha256": "868f0a29669772b92b8f346f7f1951f23344f4b9c3fe4900a9ab73a4a6999d94",
+      "status": "PASS",
+      "score": 93,
+      "observation": "轮盘左上当前格以绿色边界表达可用范围，雇佣文字本体以蓝框强调并完整露出，教程框贴右侧解释首次与继续雇佣的差异，玩家可以直接点击轮盘雇佣；放弃命令位于轮盘下方，没有额外雇佣导航菜单，说明未覆盖当前雇佣入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_d2",
+      "sourcePartFile": "reviews/r174-review-d2.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\30-hire-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-d.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "id": "hire-target",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/32-PC-在大同建立新守军.png",
+      "sha256": "01fec0cdd8f82824e42b3ca0f4cd0bb1f57517483700db0de89d7da2a874df5c",
+      "status": "PASS",
+      "score": 93,
+      "observation": "雇佣军建立区域请求标明大明归属，地图绿色候选边界与中央白边推荐区域清楚，未选择时确认按钮灰置，下一步是点击地图区域；教学文字与地图邻接，手牌仍可辨认，未见导航菜单或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-e1.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\31-hire-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-e.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "save-hand",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/33-PC-保留手牌结束回合.png",
+      "sha256": "0c774a24ad8748d7ca3f5123ea6925d1c93e9962aa660288429cb5600d305459",
+      "status": "PASS",
+      "score": 94,
+      "observation": "保留手牌的教学提示紧邻蓝边结束回合按钮，按钮明确写明放弃手牌行动并结束回合；下方其它手牌行动与底部半露手牌仍能辨认，玩家能理解本次应直接结束，未见导航菜单或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-e1.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\32-save-hand.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-e.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "new-year",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/34-PC-新年结算.png",
+      "sha256": "a06ef60ca76a6e2c0e3fe6b34b97d71b57839777d66f03214a9b89d16839cf8c",
+      "status": "PASS",
+      "score": 93,
+      "observation": "新年教学卡的尖角贴合轮盘新年位置，下一步按钮直接承接教学正文；右侧正式请求清楚标明大明维护山海关，并与顶部蒙古当前回合区分。手牌、朝鲜牌库和弃牌堆仍在各自位置，未见导航菜单、遮挡当前教学操作或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-e1.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\33-new-year.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-e.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "id": "maintain-shanhai",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/35-PC-山海关维护选择.png",
+      "sha256": "667a088a96cdbd37407922e78fea4a0e6c59b64cff03d7b8dcdb85c084a443c9",
+      "status": "PASS",
+      "observation": "山海关地名和城防位置可读，教程解释保留该关的意义，右侧维护山海关请求与弃牌或放弃两个按钮明确对应；地图主体未被提示遮住，未见重复决策或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-review-e2.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\34-maintain-shanhai.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-e.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "id": "abandon-jinzhou",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/36-PC-城市破败与维护取舍.png",
+      "sha256": "25cff198c33e78b9816ec99bde8337b1121e11559fc9ea8bf9269a1a4e97af5e",
+      "status": "PASS",
+      "observation": "锦州地名与城防在地图中央可读，右侧维护锦州请求紧接放弃维护按钮，教程在其下说明放弃城防的后果与资源取舍；放弃按钮蓝色边界清楚，未见目标被遮挡或重复菜单。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-review-e2.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\35-abandon-jinzhou.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-e.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "id": "abandon-inner-wall",
+      "reviewer": "/root/r174_f1",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/37-PC-内长城维护与墙线.png",
+      "sha256": "2152d9471f7f3d5810875dabb9fbbe0217a0c6bdaae48b3f54832c3caac6822a",
+      "status": "PASS",
+      "score": 94,
+      "observation": "内长城青线沿印刷墙体主轴转折，未切入内侧地面；名称位于兵牌及人口读数右侧，费用二处断线留空清楚，维护与放弃按钮和当前内长城对应。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_f1",
+      "sourcePartFile": "reviews/r174-review-f1.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\36-abandon-inner-wall.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-f.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "abandon-outer-wall",
+      "reviewer": "/root/r174_f1",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/38-PC-外长城维护与墙线.png",
+      "sha256": "f77d2397d0fbab88b695365bc4e40874fd6254fc98f1bf93a3b18939e6d84c98",
+      "status": "PASS",
+      "score": 94,
+      "observation": "外长城青线沿印刷墙体蜿蜒主轴延伸，没有切入墙内地面；外长城名称与兵牌人口区分开，费用六处断线留空，右侧维护面板明确归属大明外长城。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_f1",
+      "sourcePartFile": "reviews/r174-review-f1.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\37-abandon-outer-wall.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-f.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "upkeep-datong",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/39-PC-大同撤旧兵保留新守军.png",
+      "sha256": "13d080cdc045dd998f90c8a27f43d9605de01bc24bdeb01103e2386dec96cc40",
+      "status": "PASS",
+      "observation": "大同白边区域居中，三支兵牌及等级清楚可辨，绿色候选与白边推荐有区别；教程明确建议撤去旧兵，下面支持请求和确认按钮对应本区，手牌仍可见，未见提示遮住部队或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-review-e2.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\38-upkeep-datong.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-e.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "id": "upkeep-yehe",
+      "reviewer": "/root/r174_f1",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/40-PC-叶赫部队维持费用.png",
+      "sha256": "df9c3583ce55bf2c811def6c26d0becee226bf401ee581eb3fefe4fa67814037",
+      "status": "PASS",
+      "score": 92,
+      "observation": "叶赫部名称和绿色区域内三支大明部队可见，耗损说明指明非汉人地区的大明驻军，支付栏再次以叶赫部定位对象并承接手牌选择与确认；确认置灰和已选零张状态清楚，未从静态图推断人口或手牌变化。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_f1",
+      "sourcePartFile": "reviews/r174-review-f1.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\39-upkeep-yehe.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-f.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/41-PC-三张费用牌分别选中.png",
+      "sha256": "a07d022b44bba37175d44a207b10fad7d3e0bde5e9c5a8c66ba63d4afe73f02c",
+      "status": "PASS",
+      "observation": "叶赫部维护条位于手牌上方，已选牌名列出露营阵、火炮技术和银两；三张已选实牌抬起并以金边及已选标记区分，牌名和确认按钮完整可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "upkeep-yehe-selected",
+      "actualReviewer": "/root/r174_f2",
+      "sourcePartFile": "reviews/r174-review-f2.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\40-upkeep-yehe-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-f.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/42-PC-翻看末端仍可复核费用牌.png",
+      "sha256": "2a8f650e3cd24ad79c54727bbaf2bc9bd18a6753d2adb98308b6cf1563e6bc9f",
+      "status": "PASS",
+      "observation": "手牌横向翻至末端后，最右翻页箭头置灰且末端牌面仍能识别；叶赫部支付条继续明确列出露营阵、火炮技术、银两，已选实牌离开可视窗口后仍可复核支付身份并确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "hand-scroll-end",
+      "actualReviewer": "/root/r174_f2",
+      "sourcePartFile": "reviews/r174-review-f2.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\41-hand-scroll-end.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-f.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/43-PC-平壤雇佣军耗损选择.png",
+      "sha256": "da5f1394bd61462a5711002a49249697ac66717d1237269b6dc71d73ac3c67d0",
+      "status": "PASS",
+      "observation": "平壤城名与明军控制标记清楚，当前步兵本体以白边突出且未被提示遮挡；提示紧邻平壤，明确先撤平壤再撤汉城雇佣军，支付条标明平壤尚待支持且确认置灰，移除主体与支付对象可区分。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "upkeep-pyongyang",
+      "actualReviewer": "/root/r174_f2",
+      "sourcePartFile": "reviews/r174-review-f2.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\42-upkeep-pyongyang.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-f.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "id": "upkeep-pyongyang-selected",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/44-PC-选中平壤耗损部队.png",
+      "sha256": "45694bc5366784506a667e34cd6eeb628dd9f9017a46c1ba4d29782b5ba53bc1",
+      "status": "PASS",
+      "score": 92,
+      "observation": "平壤步兵以贴合本体的金边和勾表达已选，维护条直接列出平壤及所选雇佣军并承接确认；教学正文、所选兵牌和手牌各自可辨，顶部蒙古标记明确写出当前回合。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\43-upkeep-pyongyang-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-g.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "claim-year",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/45-PC-在纪年牌旁决定领取.png",
+      "sha256": "df3e307a31de40dba7823806ca76dbbbd2686e0f876f19a2a23e477ff778f059",
+      "status": "PASS",
+      "score": 94,
+      "observation": "纪年领取与放弃面板紧贴两张纪年牌右侧，两个按钮清楚且不与左下地图缩放导航重叠；教学说明接在决策区下方，当前领取阵营和代价均可直接辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\44-claim-year.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-g.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "new-order",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/46-PC-新顺位与本次选择者.png",
+      "sha256": "2a6b27ecb2e914635b3e4fa5b5b8ecdea50156f3f20db02c9f1e3833c37aabda",
+      "status": "PASS",
+      "score": 92,
+      "observation": "新顺位教学贴在纪年牌旁并以深色下一步承接；右侧人物面板写明大明打出人物，顶部蒙古另标当前回合，两个归属层级可区分，人物名称和检视入口可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\45-new-order.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-g.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "id": "year-character",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/47-PC-为大明选择新年度人物.png",
+      "sha256": "5abcd508d4ec37efb88e12bb33c6213e5c50be7cafbd7429fc21be11cee6d760",
+      "status": "PASS",
+      "score": 93,
+      "observation": "人物选择面板明确标注大明，毛文龙、熊廷弼、杨镐及不打出人物均完整可读；杨镐的推荐轮廓与独立放大镜入口清楚，教学紧接面板下方，顶部当前回合未冒充人物操作者。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\46-year-character.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-g.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "id": "year-character-inspect",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/48-PC-检视当前人物牌.png",
+      "sha256": "8ac98ea0a24a84c5385796b266d6a1e3bb2118db19a5bd8fb2732229fd645e09",
+      "status": "PASS",
+      "score": 91,
+      "observation": "杨镐完整牌面居中放大，人物名称、能力与人物判定分段可辨；关闭图标叠在牌面右上角而不另占正文行，右侧大明选择面板保留上下文且未压住放大牌面。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\47-year-character-inspect.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-g.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "id": "training-kind",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/49-PC-选择训练或征兵.png",
+      "sha256": "8aa4c5c25103d892b4f70ef5640f59b6a7862db5948cf117ee2dce579420e2e8",
+      "status": "PASS",
+      "score": 94,
+      "observation": "征兵、训练、额外训练和完成命令均有清楚的实线边框与浅色填充，和上方次数说明形成按钮与状态的层级；额外训练直接说明弃牌代价，完成按钮归属同一操作面板，文字与边缘均完整。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\48-training-kind.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-g.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "id": "training-target",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/50-PC-在地图训练参战炮兵.png",
+      "sha256": "e3b01a89f84d748cdd2741543c3a211d5095176648bf6c600a0047ffc7062ac9",
+      "status": "PASS",
+      "observation": "训练教程说明位于目标左上方，叶赫部当前推荐炮兵以贴身白边呈现，旁边绿色步兵候选可辨认，右侧显示训练进度，底部半露手牌符合约定且未遮挡推荐炮兵。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-review-h1.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\49-training-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-h.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "id": "training-pan",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/51-PC-自由平移查看其它候选.png",
+      "sha256": "cf83f40aec3622cdfd8802a9458913678c5b31b55a020165b72e5f363861e586",
+      "status": "PASS",
+      "observation": "地图平移后山西及周边合法训练兵牌以绿色贴边呈现，本次查看的骑兵完整可辨，教程说明与固定进度继续可读，推荐炮兵随世界层移至画面上沿属于主动浏览约定。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-review-h1.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\50-training-pan.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-h.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "id": "training-second-target",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/52-PC-继续训练参战步兵.png",
+      "sha256": "4cb7839d7d6bc5a83af38296d1914b70062bb4c5c6116fa2e555443e751b83fc",
+      "status": "PASS",
+      "observation": "叶赫部第二次训练的推荐步兵白边完整贴合兵牌，旁侧绿色步兵仍是可选候选，炮兵已不带绿色边，说明位于部队左上方且进度显示已完成一次，下一步选择清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-review-h1.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\51-training-second-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-h.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "id": "training-recruit-target",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/53-PC-在辽东地图征兵.png",
+      "sha256": "17278221d3245b49240dd1ae3956c57f2a5a0f21fbbfd94614bce7fef3eb4122",
+      "status": "PASS",
+      "score": 92,
+      "observation": "征兵教学贴在辽东右邻，辽东城名、人口与部队本体可见，白边推荐区域与其它绿色候选有区别；右侧选择建军地区请求显示已完成进度，当前应点击辽东建立新军，未见导航菜单或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-h2.json",
+      "sourcePartEntry": 0,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\52-training-recruit-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-h.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "id": "training-finish",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/54-PC-四次基础行动完成并保留手牌.png",
+      "sha256": "825994b4b2857b6f4a2e56321242894c1d048550990ab2855250f6e967234d04",
+      "status": "PASS",
+      "score": 95,
+      "observation": "征兵训练面板清楚显示基础行动已完成，额外训练与完成征兵训练均有实体矩形按钮边界；完成按钮蓝边突出，教学卡紧邻下方说明保留最后手牌，下一步明确为完成征兵训练，未见导航菜单或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-h2.json",
+      "sourcePartEntry": 1,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\53-training-finish.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-h.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "id": "finish",
+      "path": "evidence/qidahen/tutorial-gameui-20261103-r174/media/55-PC-首点威望与下一年度目标.png",
+      "sha256": "b63dc75eabde207723fc560cb1417e0f96f3285f48028c1f23287dc37bc42c22",
+      "status": "PASS",
+      "score": 94,
+      "observation": "教学收尾说明与完成并返回按钮同处右侧卡片，地图、行动轮盘、三阵营状态和大明手牌仍在场；玩家下一步是点击完成并返回，没有新增导航菜单。此图只证明返回前收尾界面，不证明返回后续局行为。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-h2.json",
+      "sourcePartEntry": 2,
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\54-finish.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-gameui-20261103-r174/reviews/r174-review-h.json",
+      "sourceReviewEntry": "/media/5"
+    }
+  ]
+}

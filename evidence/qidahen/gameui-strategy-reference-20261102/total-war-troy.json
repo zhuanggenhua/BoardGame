@@ -1,0 +1,113 @@
+{
+  "objective": "核查同类商业战略游戏真实操作态，支持七大恨交互重构，不以图库浏览冒充实机完整教程",
+  "reviewer": "/root/strategy_reference_review_two",
+  "date": "2026-11-02",
+  "source": "https://www.gameuidatabase.com/gameData.php?id=1234",
+  "game": "A Total War Saga: Troy",
+  "method": "浏览器站内搜索 Total War，进入真实游戏图库，逐张打开原图灯箱并读取截图。原图不是标题页/列表缩略图；可查询原图加载完成且宽1920高1080。浏览器视口中约1024乘576展示，未冒称原尺寸逐像素审计。",
+  "summary": {"total":11,"passed":11,"blocked":0},
+  "items": [
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085809-49754.jpg",
+      "state":"Guided Tutorial，界面总览",
+      "observed":"战略地图整体变暗，顶部按钮/资源条以亮边框标出；右上Toggle overlays标签以短折线直接连到对应图标。主地图并未被另一个虚构列表代替。",
+      "adopt":"解释某个控件时，锚点直接落在那个控件，同屏能建立明确关联。",
+      "reject":"这是界面覆盖层介绍，不足以支持七大恨开局就讲全界面，也不足以支持永久遮暗所有棋盘。",
+      "cannotProve":"未观察点击真实图标后的效果，不能推断完整操作链。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085809-11442.jpg",
+      "state":"Guided Tutorial，Faction Mechanics",
+      "observed":"橙色Faction Mechanics说明框贴在左上对应派系机制图标附近，顶部其它按钮仍有轮廓；说明明确这些按钮用于打开派系面板。",
+      "adopt":"当前解释跟实际入口靠近，并说入口承担什么任务。",
+      "reject":"不能照抄古希腊配色或把七大恨手牌行动改造成同样一排顶部图标。",
+      "cannotProve":"静态截图不证明入口点击后面板内容和收口。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085810-47079.jpg",
+      "state":"Guided Tutorial，Resources",
+      "observed":"资源长说明框从顶部资源条下方展开，按图标区分食物、木材、石材、青铜、黄金，当前值与收入在原资源条承载。",
+      "adopt":"解释的资源符号对应屏上真对象；原资源条仍是读数主承载。",
+      "reject":"这张是长篇界面tour，不能拿来支持七大恨把全部资源/规则一次上屏；当前用不到的内容不移植。",
+      "cannotProve":"没有实际支付/收入变化过程。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085810-81229.jpg",
+      "state":"Guided Tutorial，Faction Controls",
+      "observed":"派系操作说明框紧接左上实际按钮组下方，以相应图标解释胜利目标、法令、外交入口，没有在说明框另造一组同名可提交按钮。",
+      "adopt":"教程解释和正式操作入口分工，解释不复制正式输入。",
+      "reject":"没有来源支持七大恨轮盘/手牌切换菜单，不能拿该图为此背书。",
+      "cannotProve":"仅能证明静态布局与文案，不证明实际点击或完整教程。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085809-42160.jpg",
+      "state":"战略地图征贡结果",
+      "observed":"地图上方偏右出现Demand Tribute结果卡，正文显示领取1260食物及相关后果；事件消息列在右侧作为归档，地图城镇与军队仍可见。",
+      "adopt":"真正的结果显示领取物和后果，历史入口降权。",
+      "reject":"该图存在独立结果卡，不能泛化为每次小数值变化都必须弹阻塞结果卡。",
+      "cannotProve":"未看到领取动作、关闭动作和卡片消失时机。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085810-69402.jpg",
+      "state":"战略地图军队/姿态状态",
+      "observed":"地图有Ajax军队/城市锚点，底部中央是具名军队栏和7/20容量及单位槽位；左下对应将领头像与状态图标。中部短状态显示Ajax changed stance: Full Speed。",
+      "adopt":"兵力面板挂在具名实体，军队规模与槽位可见，姿态变化给短反馈。",
+      "reject":"该图单位槽位有问号，不能把它当实际兵种候选的可读性范本。",
+      "cannotProve":"看不到来源点击、姿态点击、目的地选择，不据此声称已观察先来源后目标完整链。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085811-44161.jpg",
+      "state":"选中城镇、省份守军兵种检视",
+      "observed":"Tiryns在地图上由醒目的金色光圈包围；底部省份上下文面板按Tiryns/Epitayros/Trozen列列出守军卡片；指针位于Light Swordsmen小卡，左侧打开同名属性详情，包括兵种特征、人数与战斗属性。地图本体与上下文选中对象能对上。",
+      "adopt":"七大恨地图本体选中、高亮与具名兵种候选/详情必须对应，检视不能只有缩写数字堆。",
+      "reject":"不能照搬守军省份管理规则和古希腊皮肤；该图是守军检视不是招募确认。",
+      "cannotProve":"不能由此证明招募入口、兵种支付、出兵数量或进攻目标顺序。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085811-13931.jpg",
+      "state":"同省份城镇建设上下文",
+      "observed":"地图Tiryns同样以金色选中光圈标出；底部同一个具名省份面板切为三个城镇的建筑槽位和图标，左侧省份概览仍在原处。选中地图实体没有换成圆形代理目标列表。",
+      "adopt":"同一地图对象的上下文内容复用承载，实体选中锚点不随二级内容变化。",
+      "reject":"不能推导七大恨需要城市建筑槽位，也不是出兵候选参考。",
+      "cannotProve":"未看到切换实际点击过程、建造提交和取消行为。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085808-54780.jpg",
+      "state":"外交Quick Deal及Peace Treaty悬停",
+      "observed":"地图仍显示势力与地域；底部中央Known Factions面板列出具名势力、关系与协议信息；左右分别是本方和所选对方人物/关系/资源；协议图标上显示Peace Treaty短提示，说明用途。",
+      "adopt":"需要比较对象的决策可以有上下文列表，但必须显示真实对象身份及对当前决策有用字段，动作提示贴合该图标。",
+      "reject":"该外交列表不能用于证明地图选地区可以脱离地图变成文字列表，也不能证明手牌行动需要模式切换菜单。",
+      "cannotProve":"未观察到条约发起、对方响应或确认链。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085808-13405.jpg",
+      "state":"外交Negotiate势力候选与资源筛选",
+      "observed":"同Known Factions面板显示具名势力候选行；左右保持双方对象信息，底部新增资源筛选Sort on/Rich in。",
+      "adopt":"只有候选规模和检索需求真实存在才用候选表与筛选，同任务的对象信息留在同层。",
+      "reject":"七大恨两个征召效果没有必要照搬这种多行资源筛选器。",
+      "cannotProve":"不能推断筛选和点击后提交方式。",
+      "status":"passed"
+    },
+    {
+      "url":"https://www.gameuidatabase.com/uploads/A-Total-War-Saga-TROY11242021-085809-59168.jpg",
+      "state":"The Lion's Share征贡对象及资源候选",
+      "observed":"左边先列Your Vassals，当前Troizen一行；下方5个真实资源图标均带可领取数量（1260/420/315/315/51），悬停黄金显示Click to receive 51 Gold from your selected vassal。右侧信息解释征贡只领取其生产的资源及关系后果。",
+      "adopt":"当前候选必须表现真实获得物和数量，短提示回答点击做什么；数量/对象已有原承载时不另造冗余状态菜单。",
+      "reject":"这是征贡，不是军队招募。不能说商业参考证明七大恨建军固定两个按钮或无需规则要求的确认。",
+      "cannotProve":"静态提示称点击领取，但未在游戏中点击，不能确认是否还有二次确认、动画和后果状态。",
+      "status":"passed"
+    }
+  ],
+  "verdict":"真实原图参考核对完成，支持对象本体锚定、上下文信息与实体对应、短提示贴所属控件；不支持原轮盘/手牌切换菜单，也不证明七大恨全部规则和交互链已经完成。",
+  "remaining":"该图库未找到CK3对应游戏；没有亲玩Troy完整教程，没有在这些静态图中找到可证明招募候选或先来源后目标完整过程的连续证据。不得把当前参考范围冒称完整商业教程实机核验。",
+  "implementationChanges":[]
+}

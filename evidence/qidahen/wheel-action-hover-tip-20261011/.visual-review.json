@@ -1,0 +1,69 @@
+{
+  "verdict": "PASS",
+  "score": 96,
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "image_acceptance_audit",
+    "fallback": "spawn_subagent 因账户余额返回四零三后，由父代理实际读取四张原图完成逐图审计"
+  },
+  "target_requirements": [
+    {
+      "requirement": "行动按钮悬浮显示具体功能",
+      "status": "PASS",
+      "evidence": "赐印招安左侧浮层可见功能说明、花费三、指定一个对手将相邻部队改为大明控制。"
+    },
+    {
+      "requirement": "轮盘扇区或走格悬浮显示具体功能",
+      "status": "PASS",
+      "evidence": "轮盘右侧浮层可见功能说明、一名对手抽二走二、进攻调度和指挥最多六个部队。"
+    }
+  ],
+  "media": [
+    {
+      "path": "media/00-行动窗口-悬浮前无功能提示.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "开局行动窗口完整，轮盘和右侧行动按钮可见，画面没有功能说明浮层。"
+    },
+    {
+      "path": "media/09-行动按钮-悬浮显示功能提示.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "悬浮赐印招安后，按钮左侧出现可读功能说明浮层，行动按钮本体仍可见。"
+    },
+    {
+      "path": "media/11-轮盘扇区-悬浮显示功能提示.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "悬浮轮盘走两格后，轮盘右侧出现可读功能说明浮层，轮盘本体和高亮扇区仍可见。"
+    },
+    {
+      "path": "media/12-移出后功能提示关闭.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "鼠标移开后浮层消失，轮盘、行动按钮、手牌和牌堆仍保持可操作。"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    {
+      "slot": "行动按钮",
+      "status": "PASS",
+      "note": "浮层贴在按钮左侧，没有盖住赐印招安本体。"
+    },
+    {
+      "slot": "轮盘",
+      "status": "PASS",
+      "note": "浮层贴在轮盘右侧，没有盖住扇区文字。"
+    },
+    {
+      "slot": "手牌与牌堆",
+      "status": "PASS",
+      "note": "底部手牌、抽牌堆和弃牌堆始终可见。"
+    }
+  ],
+  "issues": []
+}

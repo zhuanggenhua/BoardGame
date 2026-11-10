@@ -1,0 +1,95 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "problemChain": {
+    "problemOriginal": "第一都被挡住了，第二棋子大小怎么不一样。",
+    "understanding": "教程提示卡不能挡住出兵区域；新增兵牌必须和地图上原有兵牌同尺寸，并在真实区域闪烁后淡出。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "同一真实入口：/play/qidahen/tutorial/wheel-recruit-train。",
+        "同一真实动作：点击公共轮盘推进到征兵/训练。",
+        "同一真实对象：反馈节点绑定 city-region-24（宣府），而不是蒙古行动窗口或其它教程章节。",
+        "同一真实结果：宣府兵力从 2 增至 4，并同步训练火炮技术等级 2；同一截图覆盖教程卡、出兵区域和新增兵牌。"
+      ]
+    },
+    "currentSolution": "保留教程提示卡，用地图反馈安全区和右侧避让规则把卡片移开；使用该区域真实兵牌尺寸渲染新增兵牌；区域闪烁后新增兵牌向上淡出；隐藏旧结算摘要和旧文字节点。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "真实浏览器 E2E：轮盘征兵训练教程会真实展示加兵并按军备等级训练炮兵，目标用例 passed。",
+        "同一张真实截图同时看见教程提示卡、地图区域高亮和兵力结果；提示卡没有被结果反馈逻辑删掉，也没有覆盖出兵区域。",
+        "真实浏览器 E2E 断言教程卡与地图反馈安全区不重叠。",
+        "真实浏览器 E2E 断言新增兵牌的计算宽高与同区域地图原兵牌一致。",
+        "E2E 断言反馈区域为 city-region-24、兵力增量为 2、存在 2 个淡出兵牌、没有旧 +2 文字节点和结算摘要节点。",
+        "规则/教程单测：src/games/qidahen/__tests__/tutorialFlow.test.ts，21 tests passed。",
+        "TypeScript 类型检查：npm run typecheck，通过。",
+        "全屏图与地图特写均来自同一次真实 E2E 运行，运行目录为 2026-09-24-recruit-prompt-fix-v5。"
+      ]
+    }
+  },
+  "requirements": [
+    {
+      "requirement": "教程提示卡仍可见，且不挡住出兵区域",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 result 教程步骤和提示卡可见，并断言提示卡与 qidahen-map-result-feedback-safe-zone 不重叠。",
+        "全屏图显示教程提示卡在宣府高亮区域右侧，宣府出兵区域完整可见。"
+      ]
+    },
+    {
+      "requirement": "结算不再用地名、结算摘要或 +2 兵文字提示玩家",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 qidahen-season-summary 节点不存在。",
+        "E2E 断言 qidahen-map-result-troop-delta 旧文字节点数量为 0。"
+      ]
+    },
+    {
+      "requirement": "新增兵牌与地图原兵牌同尺寸",
+      "status": "PASS",
+      "evidence": [
+        "E2E 读取新增兵牌与同区域地图原兵牌的计算宽高，宽高差均不超过 0.01px。",
+        "地图特写显示新增兵牌叠入宣府原有兵堆，视觉尺寸一致。"
+      ]
+    },
+    {
+      "requirement": "真实地图区域闪烁并绑定出兵区域",
+      "status": "PASS",
+      "evidence": [
+        "地图反馈画布存在，data-qidahen-map-result-region=city-region-24。",
+        "特写图显示宣府区域白金描边和区域内高亮。"
+      ]
+    },
+    {
+      "requirement": "新增兵牌在对应区域出现并向上淡出",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 2 个 qidahen-map-result-troop-fade 节点。",
+        "特写图显示两张橙金高亮兵牌叠入宣府真实兵堆。"
+      ]
+    },
+    {
+      "requirement": "结算后仍承接到下一教程步骤",
+      "status": "PASS",
+      "evidence": [
+        "玩家点击教程卡“下一步”后进入 finish 教程步骤，未回到蒙古行动窗口链。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-recruit-prompt-fix-v5/15f-征兵训练第2步-看加兵并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-recruit-prompt-fix-v5/15f-征兵训练第2步-地图区域闪烁与兵牌淡出特写.png"
+  ],
+  "verification": {
+    "e2e": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+    "unit": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+    "typecheck": "npm run typecheck"
+  }
+}

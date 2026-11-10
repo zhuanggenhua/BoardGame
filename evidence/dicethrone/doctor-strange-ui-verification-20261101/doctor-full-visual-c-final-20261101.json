@@ -1,0 +1,797 @@
+{
+  "scope": "奇异博士新交互逐张原图复审第三组",
+  "status": "PARTIAL",
+  "claimScope": "interaction-ui",
+  "reviewer": "/root/doctor_full_visual_c",
+  "run": "e2e-1793526898908-1ye6hw",
+  "summary": {
+    "total": 4,
+    "PASS": 4,
+    "REVISE": 0
+  },
+  "pending": [
+    "05-深红系带玩家候选.png",
+    "06-深红系带玩家已选.png",
+    "21-星际侵入技能已选.png",
+    "22-奖励骰待确认.png",
+    "23-值得拥有骰子候选.png",
+    "24-值得拥有骰子已选一次.png",
+    "25-值得拥有骰子已选两次.png",
+    "26-即视感悬停说明.png",
+    "27-角色排序-已完成角色前段.png",
+    "28-角色排序-实施中角色后段.png",
+    "42-值得拥有-来源卡等待玩家关闭.png",
+    "44-即视感重开后-桌面.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "reviewer": "/root/doctor_full_visual_c",
+    "method": "本人逐张私有读取当前正式归档原图"
+  },
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态效果候选.png",
+      "label": "07-状态候选-桌面.png",
+      "sha256": "4ddd199118d6f1d7e8d0aeeb1518952fd22366dde38a5b04b0c5a82e54d22617",
+      "status": "PASS",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "claimScope": "interaction-ui",
+      "reviewer": {
+        "kind": "sub-agent",
+        "id": "/root/doctor_full_visual_c",
+        "method": "personally-viewed-original-whole-screen"
+      },
+      "observation": "桌面单持有人窗口以标题、持有人卡和跳过按钮构成纵向操作链。致盲与另一枚眼状状态均以正式图标清楚呈现；致盲悬停说明位于右侧，正文完整，未盖住候选或跳过按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": [
+        {
+          "ref": "22790d2c7^",
+          "component": "InteractionOverlay / PlayerCardShell / GameModal",
+          "difference": "旧状态选择将玩家卡排入宽幅窗口；当前单持有人使用紧凑窗，保留玩家名、关系、席位、正式状态图标及原动作语法。",
+          "necessity": "用户明确保留单持有人紧凑窗口，避免为单张持有人卡占用旧宽幅面板。"
+        },
+        {
+          "ref": "22790d2c7^",
+          "component": "SelectableEffectsContainer",
+          "difference": "继续直接操作正式状态图标，悬停效果说明在候选之外显示。",
+          "necessity": "不新增先选玩家再选状态的代理步骤，保持原状态选择职责。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态效果候选.png",
+            "observation": "单持有人卡是唯一选择主体，标题与底部动作上下承接，背景角色板不抢当前选择。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态效果候选.png",
+            "observation": "标题、持有人卡与跳过中心同轴；右侧说明与卡片边缘分开。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态效果候选.png",
+            "observation": "金色候选边缘表达可选择，绿色边缘与对勾只在选中时出现；未增加空状态占位、规则复写或额外确认横幅。"
+          }
+        ]
+      },
+      "targetRequirements": [
+        {
+          "requirement": "两枚状态候选本体与持有人身份可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态效果候选.png"
+        },
+        {
+          "requirement": "悬停说明不遮候选与当前动作",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态效果候选.png"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "slot": "令牌与状态",
+          "status": "保留",
+          "observation": "目标层两枚状态图标完整，持有人身份和敌方关系可见；背景左下令牌仍在原位。"
+        },
+        {
+          "slot": "生命与资源",
+          "status": "保留",
+          "observation": "左下生命与战斗点数读数仍在，目标层没有迁移资源。"
+        },
+        {
+          "slot": "玩家面板",
+          "status": "保留",
+          "observation": "顶部对手摘要完整，持有人卡明确本次状态归属。"
+        },
+        {
+          "slot": "阶段轨道",
+          "status": "保留",
+          "observation": "左侧掷骰攻击阶段高亮仍可见，沿用旧模态背景处理。"
+        },
+        {
+          "slot": "骰盘",
+          "status": "保留",
+          "observation": "右侧五颗锁定骰与原动作区完整留在原位。"
+        },
+        {
+          "slot": "牌库",
+          "status": "保留",
+          "observation": "左下牌库及剩余数量未被目标窗口覆盖。"
+        },
+        {
+          "slot": "弃牌堆",
+          "status": "保留",
+          "observation": "右下弃牌堆槽保留，本态未显示弃牌内容。"
+        },
+        {
+          "slot": "手牌与持有物",
+          "status": "保留",
+          "observation": "底部两张原手牌仍可辨认；状态窗口不建立第二套手牌副本。"
+        },
+        {
+          "slot": "主动作入口",
+          "status": "保留",
+          "observation": "当前跳过或确认位于候选正下，背景骰区动作保持原锁定状态。"
+        },
+        {
+          "slot": "当前交互提示",
+          "status": "保留",
+          "observation": "致盲说明完整，未盖候选、跳过或确认。"
+        },
+        {
+          "slot": "日志与目标摘要",
+          "status": "不适用",
+          "observation": "本态未打开日志或独立目标摘要，未把它们用作状态选择入口。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "criterion": "候选守恒",
+          "status": "PASS",
+          "observation": "两枚状态始终同屏保留，说明与选择边缘没有遮住另一候选。"
+        },
+        {
+          "criterion": "原槽位与动作",
+          "status": "PASS",
+          "observation": "紧凑窗未迁移牌库、资源、骰盘或原手牌，当前选择直接落在正式状态本体。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json",
+        "uncoveredElements": [],
+        "decisions": [
+          "保留标题说明要移除状态。",
+          "保留持有人身份、关系与席位标识状态归属。",
+          "正式状态图标承担候选与选择；悬停说明只承担细则阅读。",
+          "跳过或确认承担本次规则提交，不增加重复代理操作。"
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别性",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态与动作载体",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局完整性",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材完整性",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "只裁决当前界面的可见性、状态表达和布局；效果数值、提交、同步与关闭生命周期另用真实行为证据。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态已选待确认.png",
+      "label": "08-状态已选-桌面.png",
+      "sha256": "1289a8aa493f8e50ce1aad3ac3766291712160b9a7e9877c7ce19c293dd472e0",
+      "status": "PASS",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "claimScope": "interaction-ui",
+      "reviewer": {
+        "kind": "sub-agent",
+        "id": "/root/doctor_full_visual_c",
+        "method": "personally-viewed-original-whole-screen"
+      },
+      "observation": "桌面致盲图标具有贴合圆形本体的绿色边缘与右上角对勾，旁边眼状状态仍清楚可见；底部动作变为金色确认，选中状态没有挤动持有人卡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": [
+        {
+          "ref": "22790d2c7^",
+          "component": "InteractionOverlay / PlayerCardShell / GameModal",
+          "difference": "旧状态选择将玩家卡排入宽幅窗口；当前单持有人使用紧凑窗，保留玩家名、关系、席位、正式状态图标及原动作语法。",
+          "necessity": "用户明确保留单持有人紧凑窗口，避免为单张持有人卡占用旧宽幅面板。"
+        },
+        {
+          "ref": "22790d2c7^",
+          "component": "SelectableEffectsContainer",
+          "difference": "继续由状态本体承担选择，绿色边缘与对勾表达选中，确认位于其下。",
+          "necessity": "不新增先选玩家再选状态的代理步骤，保持原状态选择职责。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态已选待确认.png",
+            "observation": "单持有人卡是唯一选择主体，标题与底部动作上下承接，背景角色板不抢当前选择。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态已选待确认.png",
+            "observation": "两枚状态沿同一水平基线排列；绿色选中边缘贴本体，确认中心与窗口中心重合。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态已选待确认.png",
+            "observation": "金色候选边缘表达可选择，绿色边缘与对勾只在选中时出现；未增加空状态占位、规则复写或额外确认横幅。"
+          }
+        ]
+      },
+      "targetRequirements": [
+        {
+          "requirement": "两枚状态候选本体与持有人身份可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态已选待确认.png"
+        },
+        {
+          "requirement": "已选状态和确认动作可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-状态已选待确认.png"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "slot": "令牌与状态",
+          "status": "保留",
+          "observation": "目标层两枚状态图标完整，持有人身份和敌方关系可见；背景左下令牌仍在原位。"
+        },
+        {
+          "slot": "生命与资源",
+          "status": "保留",
+          "observation": "左下生命与战斗点数读数仍在，目标层没有迁移资源。"
+        },
+        {
+          "slot": "玩家面板",
+          "status": "保留",
+          "observation": "顶部对手摘要完整，持有人卡明确本次状态归属。"
+        },
+        {
+          "slot": "阶段轨道",
+          "status": "保留",
+          "observation": "左侧掷骰攻击阶段高亮仍可见，沿用旧模态背景处理。"
+        },
+        {
+          "slot": "骰盘",
+          "status": "保留",
+          "observation": "右侧五颗锁定骰与原动作区完整留在原位。"
+        },
+        {
+          "slot": "牌库",
+          "status": "保留",
+          "observation": "左下牌库及剩余数量未被目标窗口覆盖。"
+        },
+        {
+          "slot": "弃牌堆",
+          "status": "保留",
+          "observation": "右下弃牌堆槽保留，本态未显示弃牌内容。"
+        },
+        {
+          "slot": "手牌与持有物",
+          "status": "保留",
+          "observation": "底部两张原手牌仍可辨认；状态窗口不建立第二套手牌副本。"
+        },
+        {
+          "slot": "主动作入口",
+          "status": "保留",
+          "observation": "当前跳过或确认位于候选正下，背景骰区动作保持原锁定状态。"
+        },
+        {
+          "slot": "当前交互提示",
+          "status": "保留",
+          "observation": "未保留悬停说明，选中后只呈现候选与确认。"
+        },
+        {
+          "slot": "日志与目标摘要",
+          "status": "不适用",
+          "observation": "本态未打开日志或独立目标摘要，未把它们用作状态选择入口。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "criterion": "候选守恒",
+          "status": "PASS",
+          "observation": "两枚状态始终同屏保留，说明与选择边缘没有遮住另一候选。"
+        },
+        {
+          "criterion": "原槽位与动作",
+          "status": "PASS",
+          "observation": "紧凑窗未迁移牌库、资源、骰盘或原手牌，当前选择直接落在正式状态本体。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json",
+        "uncoveredElements": [],
+        "decisions": [
+          "保留标题说明要移除状态。",
+          "保留持有人身份、关系与席位标识状态归属。",
+          "正式状态图标承担候选与选择；悬停说明只承担细则阅读。",
+          "跳过或确认承担本次规则提交，不增加重复代理操作。"
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别性",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态与动作载体",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局完整性",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材完整性",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "只裁决当前界面的可见性、状态表达和布局；效果数值、提交、同步与关闭生命周期另用真实行为证据。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态效果候选.png",
+      "label": "09-状态候选-横屏.png",
+      "sha256": "08110766bff8c3096163f1fe67cb24434f9e3c98c660552e0ed9040ac0bc4394",
+      "status": "PASS",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "claimScope": "interaction-ui",
+      "reviewer": {
+        "kind": "sub-agent",
+        "id": "/root/doctor_full_visual_c",
+        "method": "personally-viewed-original-whole-screen"
+      },
+      "observation": "横屏窗口居中且完整落在视口内。两枚状态候选可辨；致盲说明移到窗口左侧，右边缘止于候选之前，正文两行完整，跳过按钮仍可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": [
+        {
+          "ref": "22790d2c7^",
+          "component": "InteractionOverlay / PlayerCardShell / GameModal",
+          "difference": "旧状态选择将玩家卡排入宽幅窗口；当前单持有人使用紧凑窗，保留玩家名、关系、席位、正式状态图标及原动作语法。",
+          "necessity": "用户明确保留单持有人紧凑窗口，避免为单张持有人卡占用旧宽幅面板。"
+        },
+        {
+          "ref": "22790d2c7^",
+          "component": "SelectableEffectsContainer",
+          "difference": "继续直接操作正式状态图标，悬停效果说明在候选之外显示。",
+          "necessity": "不新增先选玩家再选状态的代理步骤，保持原状态选择职责。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态效果候选.png",
+            "observation": "横屏紧凑窗优先保证状态图标和动作按钮可读，目标区域未被页边或安全区挤出。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态效果候选.png",
+            "observation": "标题、持有人卡与跳过中心同轴；左侧说明右缘止于候选左方，未穿过两个圆形本体。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态效果候选.png",
+            "observation": "金色候选边缘表达可选择，绿色边缘与对勾只在选中时出现；未增加空状态占位、规则复写或额外确认横幅。"
+          }
+        ]
+      },
+      "targetRequirements": [
+        {
+          "requirement": "两枚状态候选本体与持有人身份可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态效果候选.png"
+        },
+        {
+          "requirement": "悬停说明不遮候选与当前动作",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态效果候选.png"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "slot": "令牌与状态",
+          "status": "保留",
+          "observation": "目标层两枚状态图标完整，持有人身份和敌方关系可见；背景左下令牌仍在原位。"
+        },
+        {
+          "slot": "生命与资源",
+          "status": "保留",
+          "observation": "左下生命与战斗点数读数仍在，目标层没有迁移资源。"
+        },
+        {
+          "slot": "玩家面板",
+          "status": "保留",
+          "observation": "顶部对手摘要完整，持有人卡明确本次状态归属。"
+        },
+        {
+          "slot": "阶段轨道",
+          "status": "保留",
+          "observation": "左侧掷骰攻击阶段高亮仍可见，沿用旧模态背景处理。"
+        },
+        {
+          "slot": "骰盘",
+          "status": "保留",
+          "observation": "右侧五颗锁定骰与原动作区完整留在原位。"
+        },
+        {
+          "slot": "牌库",
+          "status": "保留",
+          "observation": "左下牌库及剩余数量未被目标窗口覆盖。"
+        },
+        {
+          "slot": "弃牌堆",
+          "status": "保留",
+          "observation": "右下弃牌堆槽保留，本态未显示弃牌内容。"
+        },
+        {
+          "slot": "手牌与持有物",
+          "status": "保留",
+          "observation": "底部两张原手牌仍可辨认；状态窗口不建立第二套手牌副本。"
+        },
+        {
+          "slot": "主动作入口",
+          "status": "保留",
+          "observation": "当前跳过或确认位于候选正下，背景骰区动作保持原锁定状态。"
+        },
+        {
+          "slot": "当前交互提示",
+          "status": "保留",
+          "observation": "致盲说明完整，未盖候选、跳过或确认。"
+        },
+        {
+          "slot": "日志与目标摘要",
+          "status": "不适用",
+          "observation": "本态未打开日志或独立目标摘要，未把它们用作状态选择入口。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "criterion": "候选守恒",
+          "status": "PASS",
+          "observation": "两枚状态始终同屏保留，说明与选择边缘没有遮住另一候选。"
+        },
+        {
+          "criterion": "原槽位与动作",
+          "status": "PASS",
+          "observation": "紧凑窗未迁移牌库、资源、骰盘或原手牌，当前选择直接落在正式状态本体。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json",
+        "uncoveredElements": [],
+        "decisions": [
+          "保留标题说明要移除状态。",
+          "保留持有人身份、关系与席位标识状态归属。",
+          "正式状态图标承担候选与选择；悬停说明只承担细则阅读。",
+          "跳过或确认承担本次规则提交，不增加重复代理操作。"
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别性",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态与动作载体",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局完整性",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材完整性",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "只裁决当前界面的可见性、状态表达和布局；效果数值、提交、同步与关闭生命周期另用真实行为证据。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态已选待确认.png",
+      "label": "10-状态已选-横屏.png",
+      "sha256": "5dbd0b3eff0247e1cc09d1c2ec07666b2fa607aaf307e5f5aa0fba1d0675841a",
+      "status": "PASS",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "claimScope": "interaction-ui",
+      "reviewer": {
+        "kind": "sub-agent",
+        "id": "/root/doctor_full_visual_c",
+        "method": "personally-viewed-original-whole-screen"
+      },
+      "observation": "横屏已选状态以绿色圆形边缘与对勾表达，旁边候选保持独立金色边缘；标题和金色确认在同一中轴，窗口上下均保留视口余量。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": [
+        {
+          "ref": "22790d2c7^",
+          "component": "InteractionOverlay / PlayerCardShell / GameModal",
+          "difference": "旧状态选择将玩家卡排入宽幅窗口；当前单持有人使用紧凑窗，保留玩家名、关系、席位、正式状态图标及原动作语法。",
+          "necessity": "用户明确保留单持有人紧凑窗口，避免为单张持有人卡占用旧宽幅面板。"
+        },
+        {
+          "ref": "22790d2c7^",
+          "component": "SelectableEffectsContainer",
+          "difference": "继续由状态本体承担选择，绿色边缘与对勾表达选中，确认位于其下。",
+          "necessity": "不新增先选玩家再选状态的代理步骤，保持原状态选择职责。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态已选待确认.png",
+            "observation": "横屏紧凑窗优先保证状态图标和动作按钮可读，目标区域未被页边或安全区挤出。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态已选待确认.png",
+            "observation": "两枚状态沿同一水平基线排列；绿色选中边缘贴本体，确认中心与窗口中心重合。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态已选待确认.png",
+            "observation": "金色候选边缘表达可选择，绿色边缘与对勾只在选中时出现；未增加空状态占位、规则复写或额外确认横幅。"
+          }
+        ]
+      },
+      "targetRequirements": [
+        {
+          "requirement": "两枚状态候选本体与持有人身份可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态已选待确认.png"
+        },
+        {
+          "requirement": "已选状态和确认动作可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\瓦图姆之风-横屏-状态已选待确认.png"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "slot": "令牌与状态",
+          "status": "保留",
+          "observation": "目标层两枚状态图标完整，持有人身份和敌方关系可见；背景左下令牌仍在原位。"
+        },
+        {
+          "slot": "生命与资源",
+          "status": "保留",
+          "observation": "左下生命与战斗点数读数仍在，目标层没有迁移资源。"
+        },
+        {
+          "slot": "玩家面板",
+          "status": "保留",
+          "observation": "顶部对手摘要完整，持有人卡明确本次状态归属。"
+        },
+        {
+          "slot": "阶段轨道",
+          "status": "保留",
+          "observation": "左侧掷骰攻击阶段高亮仍可见，沿用旧模态背景处理。"
+        },
+        {
+          "slot": "骰盘",
+          "status": "保留",
+          "observation": "右侧五颗锁定骰与原动作区完整留在原位。"
+        },
+        {
+          "slot": "牌库",
+          "status": "保留",
+          "observation": "左下牌库及剩余数量未被目标窗口覆盖。"
+        },
+        {
+          "slot": "弃牌堆",
+          "status": "保留",
+          "observation": "右下弃牌堆槽保留，本态未显示弃牌内容。"
+        },
+        {
+          "slot": "手牌与持有物",
+          "status": "保留",
+          "observation": "底部两张原手牌仍可辨认；状态窗口不建立第二套手牌副本。"
+        },
+        {
+          "slot": "主动作入口",
+          "status": "保留",
+          "observation": "当前跳过或确认位于候选正下，背景骰区动作保持原锁定状态。"
+        },
+        {
+          "slot": "当前交互提示",
+          "status": "保留",
+          "observation": "未保留悬停说明，选中后只呈现候选与确认。"
+        },
+        {
+          "slot": "日志与目标摘要",
+          "status": "不适用",
+          "observation": "本态未打开日志或独立目标摘要，未把它们用作状态选择入口。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "criterion": "候选守恒",
+          "status": "PASS",
+          "observation": "两枚状态始终同屏保留，说明与选择边缘没有遮住另一候选。"
+        },
+        {
+          "criterion": "原槽位与动作",
+          "status": "PASS",
+          "observation": "紧凑窗未迁移牌库、资源、骰盘或原手牌，当前选择直接落在正式状态本体。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json",
+        "uncoveredElements": [],
+        "decisions": [
+          "保留标题说明要移除状态。",
+          "保留持有人身份、关系与席位标识状态归属。",
+          "正式状态图标承担候选与选择；悬停说明只承担细则阅读。",
+          "跳过或确认承担本次规则提交，不增加重复代理操作。"
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别性",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态与动作载体",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局完整性",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材完整性",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "只裁决当前界面的可见性、状态表达和布局；效果数值、提交、同步与关闭生命周期另用真实行为证据。"
+    }
+  ]
+}

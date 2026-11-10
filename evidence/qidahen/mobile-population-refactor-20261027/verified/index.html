@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>七大恨主棋盘横屏与人口布局</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>七大恨主棋盘横屏与人口布局</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-桌面棋盘代表态.png","displayTitle":"01 · 桌面棋盘代表态","description":"三席状态、轮盘、纪年、朝鲜与牌堆保留；人口按区域锚定","kind":"image"},{"relativePath":"02-手机横屏棋盘代表态.png","displayTitle":"02 · 手机横屏棋盘代表态","description":"标准936×432横屏保留原规则对象，地图控件和行动区不被工具遮住","kind":"image"},{"relativePath":"03-手机横屏支付选择.png","displayTitle":"03 · 手机横屏支付选择","description":"选入支付牌后，确认与取消可辨，托盘不压卡面标题及查看入口","kind":"image"},{"relativePath":"04-手机横屏卡牌检视.png","displayTitle":"04 · 手机横屏卡牌检视","description":"从手牌查看当前牌，放大层关闭入口清楚","kind":"image"},{"relativePath":"05-桌面支付选择.png","displayTitle":"05 · 桌面支付选择","description":"同一支付状态的桌面对照，托盘与选中牌上沿分离","kind":"image"},{"relativePath":"06-手机横屏地图目标.png","displayTitle":"06 · 手机横屏地图目标","description":"实际支付后进入地图目标选择，右侧单一提示与地图高亮同时可见","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

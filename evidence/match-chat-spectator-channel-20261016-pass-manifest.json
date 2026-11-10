@@ -1,0 +1,89 @@
+{
+  "verdict": "REVISE",
+  "scope": "independent",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\chat-channels.e2e\\玩家与观众在现有聊天窗口切换玩家频道与观战席\\.e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "频道名称显示为玩家与观战席，观战席输入提示同步改名。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/01-玩家频道-双方交流与仅玩家可见提示.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/02-观战席-玩家与观众公开交流.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/03-观众视角-默认可发言且无玩家频道.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/04-玩家频道-观战席未读绿点提示.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/05-宽屏玩家频道-保留当前窗口设计.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/06-手机横屏观众频道-输入与发送可见.jpg"
+      ]
+    },
+    {
+      "requirement": "玩家停留在玩家频道时，观战席新消息显示小绿点提示。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/04-玩家频道-观战席未读绿点提示.jpg"
+      ]
+    },
+    {
+      "requirement": "切入观战席后清除未读绿点，玩家与观众均可在观战席发言。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/dicethrone/chat-channels.e2e.ts",
+        "evidence/match-chat-spectator-channel-20261016-verification.md",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/02-观战席-玩家与观众公开交流.jpg"
+      ]
+    },
+    {
+      "requirement": "保留紧凑标签和小图标，桌面与横屏消息和输入没有裁切。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/01-玩家频道-双方交流与仅玩家可见提示.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/05-宽屏玩家频道-保留当前窗口设计.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/06-手机横屏观众频道-输入与发送可见.jpg"
+      ]
+    }
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/01-玩家频道-双方交流与仅玩家可见提示.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/02-观战席-玩家与观众公开交流.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/03-观众视角-默认可发言且无玩家频道.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/04-玩家频道-观战席未读绿点提示.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/05-宽屏玩家频道-保留当前窗口设计.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观众在现有聊天窗口切换玩家频道与观战席/06-手机横屏观众频道-输入与发送可见.jpg"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/chat_review_current"
+    },
+    "reviewFile": "match-chat-spectator-channel-20261016-visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "npx vitest run src/server/__tests__/matchChat.test.ts src/components/game/framework/widgets/__tests__/useMatchChat.test.tsx src/components/__tests__/GameHUDChatPreview.test.ts src/hooks/__tests__/useLobbyMatchPresence.test.ts"
+    ],
+    "evidence": [
+      ".tmp/match-chat-unit.log",
+      "42项通过；真实Socket.IO验证私有广播、历史和离座凭证隔离。"
+    ],
+    "note": "本轮服务端和hook未改，沿用未改行为的原四十二项单测记录；新命名和绿点出现清除由最终真实联机端到端验证，绿色外观由逐图审查验证。"
+  },
+  "outOfScopeMedia": [],
+  "limitations": [
+    "本地验证，未提交、推送或部署。",
+    "未验证竖屏、软键盘和长消息压力态。",
+    "全项目类型检查有其他模块错误，本轮相关文件无类型诊断。"
+  ],
+  "revisionReason": "用户后续要求两个频道统一数字角标，旧绿点图组只作历史证据，本轮改用新图。"
+}

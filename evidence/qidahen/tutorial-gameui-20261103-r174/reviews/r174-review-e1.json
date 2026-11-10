@@ -1,0 +1,51 @@
+{
+  "reviewer": "/root/r174_e1",
+  "status": "PASS",
+  "score": 93,
+  "issues": [],
+  "actualReadCount": 3,
+  "media": [
+    {
+      "id": "hire-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/31-hire-target.png",
+      "sha256": "01fec0cdd8f82824e42b3ca0f4cd0bb1f57517483700db0de89d7da2a874df5c",
+      "status": "PASS",
+      "score": 93,
+      "observation": "雇佣军建立区域请求标明大明归属，地图绿色候选边界与中央白边推荐区域清楚，未选择时确认按钮灰置，下一步是点击地图区域；教学文字与地图邻接，手牌仍可辨认，未见导航菜单或错误。",
+      "checks": [
+        "target-visible：雇佣区域候选本体完整可辨，白边推荐与绿色候选分开",
+        "interaction-ui：请求归属大明，未选前确认灰置，点击区域再确认的顺序可懂",
+        "layout-readable：教学卡在地图左邻，主目标未被右侧请求框遮住，手牌按约定半露",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ]
+    },
+    {
+      "id": "save-hand",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/32-save-hand.png",
+      "sha256": "0c774a24ad8748d7ca3f5123ea6925d1c93e9962aa660288429cb5600d305459",
+      "status": "PASS",
+      "score": 94,
+      "observation": "保留手牌的教学提示紧邻蓝边结束回合按钮，按钮明确写明放弃手牌行动并结束回合；下方其它手牌行动与底部半露手牌仍能辨认，玩家能理解本次应直接结束，未见导航菜单或错误。",
+      "checks": [
+        "target-visible：保留手牌提示与底部手牌同屏，结束回合入口完整可读",
+        "interaction-ui：蓝边按钮与提示紧邻，文案明确说明结束手牌行动和回合",
+        "layout-readable：说明、主按钮、手牌行动横排与手牌分层，主按钮无裁切遮挡",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ]
+    },
+    {
+      "id": "new-year",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/33-new-year.png",
+      "sha256": "a06ef60ca76a6e2c0e3fe6b34b97d71b57839777d66f03214a9b89d16839cf8c",
+      "status": "PASS",
+      "score": 93,
+      "observation": "新年教学卡的尖角贴合轮盘新年位置，下一步按钮直接承接教学正文；右侧正式请求清楚标明大明维护山海关，并与顶部蒙古当前回合区分。手牌、朝鲜牌库和弃牌堆仍在各自位置，未见导航菜单、遮挡当前教学操作或错误。",
+      "checks": [
+        "target-visible：新年轮盘标记、教学正文与下一步按钮同屏可辨",
+        "interaction-ui：教学下一步在正文下方，右侧维护请求标明阵营及城名，未混淆顶部回合身份",
+        "layout-readable：教学卡围绕轮盘新年位置，正文及按钮无裁切，正式维护请求与手牌未相互遮挡",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ]
+    }
+  ]
+}

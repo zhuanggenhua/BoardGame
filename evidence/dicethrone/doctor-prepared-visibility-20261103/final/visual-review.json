@@ -1,0 +1,251 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "status": "PASS",
+      "sha256": "c1ce856d4f5335f8e1f996077c4bb3be2a7ac4b3cbd66af8e23f4b51cae1e044",
+      "observation": "单牌显示，眼睛图标在插画左下可辨，不遮牌名及效果文字。",
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\01-桌面单张-法术显示.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面单张-法术显示.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "observation": "被动正文完整露出，恢复图标在文字下方可辨。",
+      "status": "PASS",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\02-桌面单张-露出被动.png",
+      "sha256": "866bef691461e6b14dbebbb76deb1c44a88342d784a2c5b2ea03ca5128e9bea2",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面单张-露出被动.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\04-桌面多张-法术显示.png",
+      "sha256": "190415ec4c46f9228cfea2c688c36fe3fa5d8a8750b56b2076f8ffbc77e4f381",
+      "status": "PASS",
+      "observation": "显示第 3/3 张法术牌，眼睛图标可辨，位于牌左侧图案边缘；准备、施放文字和相邻槽未被按钮遮挡。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面多张-法术显示.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-1.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\05-桌面多张-露出被动.png",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "多张隐藏态下维山帝之书被动文字完整露出，眼睛按钮位于文字下方；相邻星际侵入槽完整可见。",
+      "sha256": "233844a4a6be08fc18d209669a0e352432ac52f0a78937ecf3024e62dce0e0da",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面多张-露出被动.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-2.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\06-桌面多张-恢复法术.png",
+      "sha256": "41041508326bf5863dafe16d461ff2f346d21637c15a0bee1cc8137b6dd85580",
+      "status": "PASS",
+      "observation": "恢复后上层法术卡重新显示，3/3 页码、翻页箭头及隐藏按钮可辨，相邻星际侵入槽完整可见。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面多张-恢复法术.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-2.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\07-横屏单张-法术显示.png",
+      "sha256": "8fce59d26e188f667860a2f5e01d242854c901bad81c1bce61be6385d7962d53",
+      "status": "PASS",
+      "observation": "单张法术显示，斜杠眼睛可辨，准备和施放正文未被遮挡，邻槽正常。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏单张-法术显示.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-3.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\08-横屏单张-露出被动.png",
+      "sha256": "866f73d0cbbed4d0d1870c2a6d6041d4b6ad697e7ec56e2a042cdf6565ecfbfd",
+      "status": "PASS",
+      "observation": "单张法术隐藏，被动正文末行完整露出，眼睛按钮可辨，邻槽正常。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏单张-露出被动.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-3.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\10-横屏多张-法术显示.png",
+      "sha256": "002b6ba371189ab598768f4b686612e73f9f76a540c7a9bf87161b588eb1b908",
+      "status": "PASS",
+      "observation": "多张法术显示，眼睛、计数和翻牌箭头可辨，准备和施放正文未被遮挡。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏多张-法术显示.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-3.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\11-横屏多张-露出被动.png",
+      "sha256": "5d52bd70c8cc502241a33cc6bdb23a4059901931acecb394ee977fe9104ec0ce",
+      "status": "PASS",
+      "observation": "多张法术隐藏，被动正文末行完整露出，眼睛按钮可辨，邻槽正常。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏多张-露出被动.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-3.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\12-横屏多张-恢复法术.png",
+      "sha256": "ea25288fc91fafe60ddbd85c3c04fd10311ec1bffb8b433b8eb9bed7ef7f1db3",
+      "status": "PASS",
+      "observation": "多张法术恢复，卡面、正文、计数和翻牌箭头可见。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏多张-恢复法术.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-3.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\13-横屏触控三张.png",
+      "sha256": "dd8673ee5dad00f501dff457250e1dfbe396259cd17dfa743f186ec470a816c1",
+      "status": "carried-forward",
+      "observation": "1/3 序号和按钮可辨，眼睛位于插画区域，牌名、准备与施放文字未见遮挡，也未盖相邻槽。",
+      "hardFailures": [],
+      "unchangedEvidence": "触屏截图与已实际读取的前版逐字节一致，本次改动仅影响鼠标模式定位。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控三张.png"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控三张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\14-横屏触控末张.png",
+      "sha256": "f7563a3c5118e30f1de392c8f11e7e33af32e424d7e67f81cbd302c03828ac99",
+      "status": "carried-forward",
+      "observation": "3/3 序号和按钮可辨，眼睛位于插画区域，牌名、准备与施放文字未见遮挡，也未盖相邻槽。",
+      "hardFailures": [],
+      "unchangedEvidence": "触屏截图与已实际读取的前版逐字节一致，本次改动仅影响鼠标模式定位。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控末张.png"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控末张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\15-横屏触控露出被动.png",
+      "sha256": "c222c1b313a520ceaf9a561e5553b1b24ab5b9f325caebc1a2e1c5807f555ee0",
+      "status": "carried-forward",
+      "observation": "被动标题和两段正文露出，恢复眼睛位于正文下方背景，未见遮字或遮盖相邻槽。",
+      "hardFailures": [],
+      "unchangedEvidence": "触屏截图与已实际读取的前版逐字节一致，本次改动仅影响鼠标模式定位。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控露出被动.png"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控露出被动.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\16-横屏触控恢复法术.png",
+      "sha256": "0509ebf18e960c53494ea54aeddec793b4b85768858e6565878a675c44c2df9e",
+      "status": "carried-forward",
+      "observation": "恢复后 3/3、法术卡及按钮可见，眼睛位于插画区域，牌名、准备和施放文字未见遮挡。",
+      "hardFailures": [],
+      "unchangedEvidence": "触屏截图与已实际读取的前版逐字节一致，本次改动仅影响鼠标模式定位。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控恢复法术.png"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-touch-20261103\\横屏触控恢复法术.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-review-4.json",
+      "sourceReviewEntry": "/media/3"
+    }
+  ]
+}

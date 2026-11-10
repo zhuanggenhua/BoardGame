@@ -1,0 +1,176 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "inspect_betrayal_screenshots"
+  },
+  "media": [
+    {
+      "path": "吊死鬼-完整链路-01-探索前.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "探索前牌桌稳定可见，测试对象和持有区均无遮挡。"
+    },
+    {
+      "path": "吊死鬼-完整链路-02-选择未知房间.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "未知房间候选清楚显示，选择入口位于可读的牌桌区域。"
+    },
+    {
+      "path": "吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选房间保持高亮，底部确认栏可见且没有被候选区遮挡。"
+    },
+    {
+      "path": "吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "事件牌本体和四项属性候选同屏可见，未提前进入骰盘结果态。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-力量检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "力量骰子处于滚动中，画面没有提前显示总点数或结算按钮。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-力量检定停稳等待继续.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "力量骰子停稳后，稳定骰子、结果和唯一的继续按钮同时可见。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-速度检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "速度检定显示独立滚动状态，骰子没有复用上一项停稳画面。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-速度检定停稳等待继续.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "速度骰子停稳后，稳定骰子、结果和唯一的继续按钮同时可见。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-知识检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识检定显示第三次真实滚动过程，未被旧结果替代。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-知识检定停稳等待继续.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识骰子停稳后，稳定骰子、结果和唯一的继续按钮同时可见。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-神志检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "神志检定显示第四次真实滚动过程，结果尚未提前出现。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-神志检定停稳等待继续.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "神志骰子停稳后，稳定骰子、结果和唯一的继续按钮同时可见。"
+    },
+    {
+      "path": "吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "奖励候选位于主对象下方，底部只有一个确认动作且未出现右侧按钮。"
+    },
+    {
+      "path": "吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "奖励结算结果和唯一关闭动作同屏可见，上一项骰盘已退出。"
+    },
+    {
+      "path": "吊死鬼-完整链路-11-确认后回牌桌.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "临时窗口已关闭并回到稳定牌桌，未残留确认栏或事件结果层。"
+    }
+  ]
+}

@@ -1,0 +1,508 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-01-索尔正式角色板与卡牌.png",
+      "chainId": "companion-odin",
+      "chainStep": "1",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "记录场景载入后的首个可见决策态",
+      "description": "索尔正式角色板与卡牌",
+      "behaviorStepId": "companion-odin-01",
+      "uiStateId": "companion-odin-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "索尔正式角色板与卡牌",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-02-弃牌飞掷选择成本.png",
+      "chainId": "companion-odin",
+      "chainStep": "2",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "弃牌飞掷选择成本",
+      "description": "弃牌飞掷选择成本",
+      "behaviorStepId": "companion-odin-02",
+      "uiStateId": "companion-odin-02-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "弃牌飞掷选择成本",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-03-手动选择飞掷目标.png",
+      "chainId": "companion-odin",
+      "chainStep": "3",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "手动选择飞掷目标",
+      "description": "手动选择飞掷目标",
+      "behaviorStepId": "companion-odin-03",
+      "uiStateId": "companion-odin-03-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "手动选择飞掷目标",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-04-飞掷后独立伤害与锤子位置.png",
+      "chainId": "companion-odin",
+      "chainStep": "4",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "飞掷后独立伤害与锤子位置",
+      "description": "飞掷后独立伤害与锤子位置",
+      "behaviorStepId": "companion-odin-04",
+      "uiStateId": "companion-odin-04-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "飞掷后独立伤害与锤子位置",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-05-奥丁之力二级升级完成.png",
+      "chainId": "companion-odin",
+      "chainStep": "5",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "奥丁之力二级升级完成",
+      "description": "奥丁之力二级升级完成",
+      "behaviorStepId": "companion-odin-05",
+      "uiStateId": "companion-odin-05-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "奥丁之力二级升级完成",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-06-奥丁效果骰等待任选重掷.png",
+      "chainId": "companion-odin",
+      "chainStep": "6",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "奥丁效果骰等待任选重掷",
+      "description": "奥丁效果骰等待任选重掷",
+      "behaviorStepId": "companion-odin-06",
+      "uiStateId": "companion-odin-06-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "奥丁效果骰等待任选重掷",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-07-选择两颗骰子一起重掷.png",
+      "chainId": "companion-odin",
+      "chainStep": "7",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择两颗骰子一起重掷",
+      "description": "选择两颗骰子一起重掷",
+      "behaviorStepId": "companion-odin-07",
+      "uiStateId": "companion-odin-07-ui",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "选择两颗骰子一起重掷",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-08-整组重掷一次完成.png",
+      "chainId": "companion-odin",
+      "chainStep": "8",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "整组重掷一次完成",
+      "description": "整组重掷一次完成",
+      "behaviorStepId": "companion-odin-08",
+      "uiStateId": "companion-odin-08-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "整组重掷一次完成",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-09-效果骰收口后进入主攻击防御.png",
+      "chainId": "companion-odin",
+      "chainStep": "9",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "效果骰收口后进入主攻击防御",
+      "description": "效果骰收口后进入主攻击防御",
+      "behaviorStepId": "companion-odin-09",
+      "uiStateId": "companion-odin-09-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "效果骰收口后进入主攻击防御",
+      "requirements": [
+        "索尔正式素材、弃牌飞掷与奥丁整组重掷"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-01-手牌放大完整阅读挥锤时刻.png",
+      "chainId": "worthy",
+      "chainStep": "1",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "记录场景载入后的首个可见决策态",
+      "description": "手牌放大完整阅读挥锤时刻",
+      "behaviorStepId": "worthy-01",
+      "uiStateId": "worthy-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "手牌放大完整阅读挥锤时刻",
+      "requirements": [
+        "索尔手牌可完整放大并通过当之无愧选择自己的骰子"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-02-改骰前自己的五颗骰子.png",
+      "chainId": "worthy",
+      "chainStep": "2",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "改骰前自己的五颗骰子",
+      "description": "改骰前自己的五颗骰子",
+      "behaviorStepId": "worthy-02",
+      "uiStateId": "worthy-02-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "改骰前自己的五颗骰子",
+      "requirements": [
+        "索尔手牌可完整放大并通过当之无愧选择自己的骰子"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-03-当之无愧选择四或五.png",
+      "chainId": "worthy",
+      "chainStep": "3",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "当之无愧选择四或五",
+      "description": "当之无愧选择四或五",
+      "behaviorStepId": "worthy-03",
+      "uiStateId": "worthy-03-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "当之无愧选择四或五",
+      "requirements": [
+        "索尔手牌可完整放大并通过当之无愧选择自己的骰子"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-04-选择自己的一颗骰子.png",
+      "chainId": "worthy",
+      "chainStep": "4",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择自己的一颗骰子",
+      "description": "选择自己的一颗骰子",
+      "behaviorStepId": "worthy-04",
+      "uiStateId": "worthy-04-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "选择自己的一颗骰子",
+      "requirements": [
+        "索尔手牌可完整放大并通过当之无愧选择自己的骰子"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-05-改为四且其余骰子保持.png",
+      "chainId": "worthy",
+      "chainStep": "5",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "改为四且其余骰子保持",
+      "description": "改为四且其余骰子保持",
+      "behaviorStepId": "worthy-05",
+      "uiStateId": "worthy-05-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "改为四且其余骰子保持",
+      "requirements": [
+        "索尔手牌可完整放大并通过当之无愧选择自己的骰子"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-01-连锁闪电触发前.png",
+      "chainId": "chain",
+      "chainStep": "1",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "记录场景载入后的首个可见决策态",
+      "description": "连锁闪电触发前",
+      "behaviorStepId": "chain-01",
+      "uiStateId": "chain-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "连锁闪电触发前",
+      "requirements": [
+        "索尔连锁闪电逐段选择效果骰与附属目标"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-02-三颗效果骰等待确认.png",
+      "chainId": "chain",
+      "chainStep": "2",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "三颗效果骰等待确认",
+      "description": "三颗效果骰等待确认",
+      "behaviorStepId": "chain-02",
+      "uiStateId": "chain-02-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "三颗效果骰等待确认",
+      "requirements": [
+        "索尔连锁闪电逐段选择效果骰与附属目标"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-03-手动选择两颗效果骰.png",
+      "chainId": "chain",
+      "chainStep": "3",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "手动选择两颗效果骰",
+      "description": "手动选择两颗效果骰",
+      "behaviorStepId": "chain-03",
+      "uiStateId": "chain-03-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "手动选择两颗效果骰",
+      "requirements": [
+        "索尔连锁闪电逐段选择效果骰与附属目标"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-04-独立选择附属伤害目标.png",
+      "chainId": "chain",
+      "chainStep": "4",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "独立选择附属伤害目标",
+      "description": "独立选择附属伤害目标",
+      "behaviorStepId": "chain-04",
+      "uiStateId": "chain-04-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "独立选择附属伤害目标",
+      "requirements": [
+        "索尔连锁闪电逐段选择效果骰与附属目标"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-05-独立伤害完成且主攻击保留.png",
+      "chainId": "chain",
+      "chainStep": "5",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "独立伤害完成且主攻击保留",
+      "description": "独立伤害完成且主攻击保留",
+      "behaviorStepId": "chain-05",
+      "uiStateId": "chain-05-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "独立伤害完成且主攻击保留",
+      "requirements": [
+        "索尔连锁闪电逐段选择效果骰与附属目标"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-01-破防正式图标与消费入口.png",
+      "chainId": "guard",
+      "chainStep": "1",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "记录场景载入后的首个可见决策态",
+      "description": "破防正式图标与消费入口",
+      "behaviorStepId": "guard-01",
+      "uiStateId": "guard-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "破防正式图标与消费入口",
+      "requirements": [
+        "索尔破防连续消费失败后仍可再次使用"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-02-第一枚破防效果骰失败.png",
+      "chainId": "guard",
+      "chainStep": "2",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "第一枚破防效果骰失败",
+      "description": "第一枚破防效果骰失败",
+      "behaviorStepId": "guard-02",
+      "uiStateId": "guard-02-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "第一枚破防效果骰失败",
+      "requirements": [
+        "索尔破防连续消费失败后仍可再次使用"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-03-失败后仍可使用第二枚破防.png",
+      "chainId": "guard",
+      "chainStep": "3",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "失败后仍可使用第二枚破防",
+      "description": "失败后仍可使用第二枚破防",
+      "behaviorStepId": "guard-03",
+      "uiStateId": "guard-03-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "失败后仍可使用第二枚破防",
+      "requirements": [
+        "索尔破防连续消费失败后仍可再次使用"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-05-不可防御主攻击结算后收口.png",
+      "chainId": "guard",
+      "chainStep": "4",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "不可防御主攻击结算后收口",
+      "description": "不可防御主攻击结算后收口",
+      "behaviorStepId": "guard-05",
+      "uiStateId": "guard-05-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "不可防御主攻击结算后收口",
+      "requirements": [
+        "索尔破防连续消费失败后仍可再次使用"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/05-01-索尔真实双人选角与实施中标记.png",
+      "chainId": "online",
+      "chainStep": "1",
+      "sourceRun": "e2e-1792805482044-ty51qv",
+      "sourceRevision": "0bd7ef56bb5902f1b2b71824fdde563d1b1426717b8654e0d5b49a91c40ae554",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "记录场景载入后的首个可见决策态",
+      "description": "索尔真实双人选角与实施中标记",
+      "behaviorStepId": "online-01",
+      "uiStateId": "online-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "索尔真实双人选角与实施中标记",
+      "requirements": [
+        "索尔可在真实双人房间选择并以实施中状态开局"
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/05-02-索尔在线开局角色板九槽与手牌.png",
+      "chainId": "online",
+      "chainStep": "2",
+      "sourceRun": "e2e-1792805482044-ty51qv",
+      "sourceRevision": "0bd7ef56bb5902f1b2b71824fdde563d1b1426717b8654e0d5b49a91c40ae554",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "索尔在线开局角色板九槽与手牌",
+      "description": "索尔在线开局角色板九槽与手牌",
+      "behaviorStepId": "online-02",
+      "uiStateId": "online-02-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "索尔在线开局角色板九槽与手牌",
+      "requirements": [
+        "索尔可在真实双人房间选择并以实施中状态开局"
+      ]
+    }
+  ]
+}

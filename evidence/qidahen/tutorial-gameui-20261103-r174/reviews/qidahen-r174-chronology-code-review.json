@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "reviewId": "qidahen-r174-chronology-code-review",
+  "reviewer": {
+    "actualAgent": "/root/r172_five_fixes_code",
+    "role": "独立只读增量源码审查",
+    "independentOfImplementation": true
+  },
+  "scope": {
+    "object": "R173纪年领取与地图导航真实重叠后的三处最小增量",
+    "environment": "D:/gongzuo/webgame/BoardGame，PC正式年度教程",
+    "included": [
+      "Board.tsx的ChronologyZone children位置以及同一panel互斥挂载接线",
+      "qidahen-annual-tutorial.e2e.ts的claim-year牌旁距离断言",
+      "text-fill-diagnostic.tmp.e2e.ts的Sequence必填双方fixture参数"
+    ],
+    "excluded": [
+      "不重新审查整个Board/领域引擎/年度E2E文件",
+      "不运行浏览器或测试，不读取图片，不修改生产实现",
+      "不独立验证主线程R173存档恢复私诊或点击结果"
+    ]
+  },
+  "conclusion": {
+    "sourceVerdict": "PASS",
+    "blockingFindings": 0,
+    "definiteFindings": [],
+    "visualVerdict": "NOT_REVIEWED",
+    "runtimeVerdict": "NOT_RUN_BY_REVIEWER",
+    "summary": "三处增量源码可接受：纪年同一正式panel移至牌右；距离断言适配横向贴牌；旧诊断必填参数缺口已修正。不能据此证明实际无遮挡或整体UI通过。"
+  },
+  "items": [
+    {
+      "id": "chronology-placement",
+      "location": "src/games/qidahen/Board.tsx:3661",
+      "verdict": "SOURCE_ACCEPT",
+      "evidence": [
+        "ChronologyZone既有外层为absolute定位容器；children改为absolute left-full top-0 ml-3，参考物仍是同一纪年区，贴其右边并顶对齐。",
+        "children保留原width与data-testid，父层牌集合与Magnify接线未在此增量改动。",
+        "Board仍仅在active且step=chronology把唯一turnChoicePanel传入ChronologyZone；其他步骤由互斥分支挂在原dock。",
+        "未在此增量新增领取状态、候选复制或第二条提交入口；地图导航未由此代码修改。"
+      ],
+      "boundary": "源码可证明定位关系改变，不能证明当前视口中不再与导航、手牌或教程提示重叠；同屏点击命中仍需实际运行证据。"
+    },
+    {
+      "id": "chronology-distance-assertion",
+      "location": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:534-544",
+      "verdict": "SOURCE_ACCEPT",
+      "evidence": [
+        "仍先要求qidahen-chronology-choice内的qidahen-turn-choice可见，未把相邻或独立代理panel当成正式承载。",
+        "使用真实纪年牌矩形与决策矩形，分别计算X/Y轴分离距离再取hypot，取最近牌距离<32。",
+        "新计算允许右侧贴牌的合法布局，且没有删除真实panel或牌位置的消费。"
+      ],
+      "boundary": "两矩形重叠时距离为0，因此此断言仅证明接近，不证明无遮挡、不重叠或按钮可点击；主线真实click及中心命中证据须另外保留。"
+    },
+    {
+      "id": "diagnostic-caller-parameters",
+      "location": "e2e/qidahen/text-fill-diagnostic.tmp.e2e.ts:57",
+      "verdict": "SOURCE_ACCEPT",
+      "evidence": [
+        "直接React.createElement调用现已传attacker={name:大明}与defender={name:蒙古}，满足Sequence新增的双方必填合同。",
+        "不要求markerSrc，因其在QidahenBattleActor合同中为可选。",
+        "R172报告F1的缺参导致actors[side]为undefined这一确定源码缺口已消除；没有给生产Sequence加猜测身份fallback。"
+      ],
+      "boundary": "这是旧临时诊断的fixture兼容修复，不属于正式战斗参与方来源证据；未运行该诊断。"
+    }
+  ],
+  "parentReportedOnly": {
+    "status": "未独立验证",
+    "facts": [
+      "R173完整真实流程中的战斗和新文字断言已通过，但纪年领取被固定地图缩放按钮拦截。",
+      "从真实R173存档继续的私诊已通过按钮中心命中与实际click。",
+      "重复支付步骤有意不显示提示，主线程已改为检查正式tutorial.step与可见付款托盘；最终诊断尚在进行。"
+    ],
+    "meaning": "这些只保留为父线程报告，不冒称本reviewer已验证，也不据此宣布完整流程或视觉PASS。"
+  },
+  "retainedBoundaries": [
+    "沿用R172五项源码审查的既有范围；本报告只接受上列三处增量。",
+    "R171/R173未收口的UI与整条流程证据需当前实际复验，源码PASS不能取代。",
+    "唯一输出为本.tmp审查JSON；未改实现、测试、规范或外部状态。",
+    "sourceHashes是落盘时整文件字节SHA256，审查范围仅为声明的相关区段；不代表整文件所有内容均已审查。",
+    "后续文件改动不得沿用本哈希报告证明其新内容。"
+  ],
+  "sourceHashes": [
+    {
+      "sha256": "e443dc0fb5fa529966454a5fedce8d23017374cde5968a7cd484b15df9ce2da9",
+      "path": "src/games/qidahen/Board.tsx"
+    },
+    {
+      "sha256": "ef45f2fe40b9326faf3b26382b30ccd652428725921797758ed5c17e83789aa6",
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts"
+    },
+    {
+      "sha256": "42a2565bacc7f20c0144f9e265d2abc66b962a69963e583622dce6e6190e8384",
+      "path": "e2e/qidahen/text-fill-diagnostic.tmp.e2e.ts"
+    }
+  ],
+  "reviewedAt": "2026-11-03T03:51:00.3522106Z"
+}

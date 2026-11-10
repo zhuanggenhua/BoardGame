@@ -1,0 +1,108 @@
+{
+  "status": "FAIL",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-denied-action-real-browser\\2026-09-14T05-54-16-859Z",
+  "error": "page.waitForFunction: Timeout 5000ms exceeded.",
+  "failureScreenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-denied-action-real-browser\\2026-09-14T05-54-16-859Z\\00-failure-page.png",
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "at": "2026-09-14T05:54:18.100Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "at": "2026-09-14T05:54:18.115Z"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "at": "2026-09-14T05:54:18.226Z"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙",
+      "at": "2026-09-14T05:54:18.261Z"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token",
+      "at": "2026-09-14T05:54:18.875Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-14T05:54:19.423Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-14T05:54:19.432Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-14T05:54:19.425Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"timeoutMs\":120000}",
+      "at": "2026-09-14T05:54:19.432Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-14T05:54:19.433Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-14T05:54:19.461Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-14T05:54:19.436Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"mage-wars\"}",
+      "at": "2026-09-14T05:54:19.461Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-14T05:54:19.491Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":58}",
+      "at": "2026-09-14T05:54:19.527Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-14T05:54:19.659Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":234}",
+      "at": "2026-09-14T05:54:19.698Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-14T05:54:19.659Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":223}",
+      "at": "2026-09-14T05:54:19.698Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"reset\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-14T05:54:19.971Z"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}",
+      "at": "2026-09-14T05:54:19.971Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":2,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-14T05:54:19.974Z"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 2, activePhaseElapsedMs: null}",
+      "at": "2026-09-14T05:54:19.974Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"initiativeQuickcast\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-14T05:54:22.161Z"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}",
+      "at": "2026-09-14T05:54:22.164Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":1,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-14T05:54:22.164Z"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 1, activePhaseElapsedMs: null}",
+      "at": "2026-09-14T05:54:22.164Z"
+    }
+  ]
+}

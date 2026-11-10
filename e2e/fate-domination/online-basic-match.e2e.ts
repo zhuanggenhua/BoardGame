@@ -26,7 +26,7 @@ const choosePair = (state: State, playerId: string) => {
         if (FateDominationDomain.validate(state, {type: 'CONFIRM_ATTACK', playerId, payload}).valid) return payload;
     }
 };
-const destinationFor = (state: State, playerId: string) => (state.core.round === 1 ? ['workshop', 'miyama', 'shinto'] : ['miyama', 'shinto', 'workshop']).find(locationId =>
+const destinationFor = (state: State, playerId: string, preferWorkshop = false) => (state.core.round === 1 || preferWorkshop ? ['workshop', 'miyama', 'shinto'] : ['miyama', 'shinto', 'workshop']).find(locationId =>
     FateDominationDomain.validate(state, {type: 'DEPLOY_MASTER', playerId, payload: {locationId: locationId as LocationId}}).valid)!;
 
 test.use({actionTimeout: 15000, trace: 'retain-on-failure', viewport: {width: 1920, height: 1080}});
@@ -168,7 +168,8 @@ test('真实联网自然基础对局：浏览器主视角及两名正式传输�
                 continue;
             }
             if (core.phase === 'outpost' && !actor.locationId) {
-                const destination = destinationFor(state, id);
+                // 固有结界等事件可能让首轮无法进入深山町；移动验证完成前继续选择合法工房点位等待机会。
+                const destination = destinationFor(state, id, !usedMovement);
                 await record('主视角在印刷地图上部署', async () => {
                     await page.getByTestId(`fate-domination-location-${destination}`).click();
                     await expect.poll(async () => (await read()).core.players[id].locationId).toBe(destination);

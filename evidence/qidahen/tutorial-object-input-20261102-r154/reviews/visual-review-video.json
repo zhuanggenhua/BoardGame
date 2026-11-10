@@ -1,0 +1,458 @@
+{
+  "reviewer": "/root/r154_video_visual",
+  "status": "PASS",
+  "scope": "interaction-ui",
+  "score": 94,
+  "criteriaScores": {
+    "taskClarity": {
+      "score": 19,
+      "max": 20
+    },
+    "visualHierarchy": {
+      "score": 14,
+      "max": 15
+    },
+    "objectRecognition": {
+      "score": 14,
+      "max": 15
+    },
+    "stateAndActionCarrier": {
+      "score": 14,
+      "max": 15
+    },
+    "layoutIntegrity": {
+      "score": 14,
+      "max": 15
+    },
+    "assetIntegrity": {
+      "score": 10,
+      "max": 10
+    },
+    "operationErgonomics": {
+      "score": 9,
+      "max": 10
+    }
+  },
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "23fc2963e73ae04ae5dfdd5655e01c6c4a3641968e9f9d66e4eff85e001cf4e6",
+      "status": "PASS",
+      "observations": [
+        "原始1920×1080整屏已核读；辽北→叶赫部、炮兵阶段、攻方三个标签组成明确上下文。",
+        "白色骰子完整可见，未出现把候选菜单冒充骰盘的现象；地图主区域和手牌入口保留。",
+        "动作轮盘处于低对比背景层，无下一轮候选高亮抢焦点。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始1920×1080整屏已核读；辽北→叶赫部、炮兵阶段、攻方三个标签组成明确上下文。；白色骰子完整可见，未出现把候选菜单冒充骰盘的现象；地图主区域和手牌入口保留。；动作轮盘处于低对比背景层，无下一轮候选高亮抢焦点。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "6cd73b2de6b9b12217ec2adde0c2d9da8de75d343bb90b0a31baba16975728c2",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；白骰与合计/造成损伤文本同一组，阶段和攻方身份保留。",
+        "合计3、造成0损伤是图中显示事实，仅验可读，不裁决算术或规则正确性。",
+        "结果层覆盖少量低层地图，未盖住当前叶赫部区域和必要操作入口。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；白骰与合计/造成损伤文本同一组，阶段和攻方身份保留。；合计3、造成0损伤是图中显示事实，仅验可读，不裁决算术或规则正确性。；结果层覆盖少量低层地图，未盖住当前叶赫部区域和必要操作入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "7271571da0cda8c8f7e4b25de6fd293ad8b8643a91407438fc1bef8ad9ac4d77",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；骑兵阶段和守方标签明确，红色八面骰本体完整可见。",
+        "没有新增菜单、全屏遮罩或错误下一轮行动候选；当前战斗来源目标标签持续可读。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；骑兵阶段和守方标签明确，红色八面骰本体完整可见。；没有新增菜单、全屏遮罩或错误下一轮行动候选；当前战斗来源目标标签持续可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "5325298a44f11ae8e012e22dd981064cc90e04227f20a33b741cb02ee9cefe0b",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；红骰结果与合计1、造成0损伤文本同组，守方标签明确。",
+        "文本没有被牌堆、手牌或轮盘遮住；当前地图交战信息仍能读取。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；红骰结果与合计1、造成0损伤文本同组，守方标签明确。；文本没有被牌堆、手牌或轮盘遮住；当前地图交战信息仍能读取。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "78f552f26b5be19b9e371e11b95dbb6bd8a262a3161dff98a065febd6aec6f41",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；步兵阶段、攻方标签和两颗绿色骰子本体可见，前景运动区域与地图背景可区分。",
+        "骰子未越界裁切，无新增菜单或下一轮行动候选抢焦点。",
+        "不从本图推断规则应有骰数；实际显示数量只作为图面观察。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；步兵阶段、攻方标签和两颗绿色骰子本体可见，前景运动区域与地图背景可区分。；骰子未越界裁切，无新增菜单或下一轮行动候选抢焦点。；不从本图推断规则应有骰数；实际显示数量只作为图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "525043bd47e8f86f014ac664201e7cb49e05a13df7474dd2cbe50ccc6cf72a9a",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；两颗绿骰保持可见，合计20及造成2损伤结果可读，步兵/攻方上下文保留。",
+        "伤害文本盖住附近一处非当前决策黄数值的一部分，属于UI层覆盖低层地图，不遮死当前来源目标与必要输入，不构成本范围失败。",
+        "图面文字只证明呈现内容，不证明骰值解释或领域规则正确性。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；两颗绿骰保持可见，合计20及造成2损伤结果可读，步兵/攻方上下文保留。；伤害文本盖住附近一处非当前决策黄数值的一部分，属于界面层覆盖低层地图，不遮死当前来源目标与必要输入，不构成本范围失败。；图面文字只证明呈现内容，不证明骰值解释或领域规则正确性。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-real-time.webm",
+      "sha256": "90148f3d047b199e9af410ce60c6f94b8126e36e4bfa0757bed27c1524188a3e",
+      "status": "PASS",
+      "observations": [
+        "连续帧核读174/174；全部20张联系表均实际读取，未抽样跳帧。",
+        "炮兵白骰在14–38帧出现连续位置和朝向变化，38帧已停稳，39帧出现损伤结果；骑兵红骰68–91帧运动并停稳，92帧出现损伤结果；步兵绿骰122–145帧运动并分开停稳，146帧出现损伤结果。",
+        "39–66、92–119、146–170帧保留对应结果，不在运动中抢先切入下一轮候选。",
+        "171帧转到战后占领/撤回，172–174帧出现战后教程提示；提示未盖住占领/撤回按钮及叶赫部本体，当前操作可理解。",
+        "所有战斗帧均未出现新增菜单或下一轮盘候选抢焦点；轮盘为低对比背景。"
+      ],
+      "reviewMethod": "continuous-frame-review; no real-time playback claimed",
+      "methodDescription": "连续帧核读，不是实际播放。先按顺序将全部174张解码整帧组成20张连续联系表，每帧完整出现一次；逐张读取全部联系表。再从原视频以ffmpeg select按编码帧序号无裁切输出1920×1080原尺寸关键帧，实际读取38/39、91/92、145/146以及171/172，复核停稳→损伤和战后操作。6张最终原始JPG另行逐图读取。",
+      "frameCoverage": {
+        "reviewed": 174,
+        "total": 174,
+        "ratio": "174/174",
+        "skippedFrames": [],
+        "firstFrame": 1,
+        "lastFrame": 174,
+        "allContactSheetsActuallyRead": true
+      },
+      "contactSheets": [
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0001-0009.jpg",
+          "firstFrame": 1,
+          "lastFrame": 9
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0010-0018.jpg",
+          "firstFrame": 10,
+          "lastFrame": 18
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0019-0027.jpg",
+          "firstFrame": 19,
+          "lastFrame": 27
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0028-0036.jpg",
+          "firstFrame": 28,
+          "lastFrame": 36
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0037-0045.jpg",
+          "firstFrame": 37,
+          "lastFrame": 45
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0046-0054.jpg",
+          "firstFrame": 46,
+          "lastFrame": 54
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0055-0063.jpg",
+          "firstFrame": 55,
+          "lastFrame": 63
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0064-0072.jpg",
+          "firstFrame": 64,
+          "lastFrame": 72
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0073-0081.jpg",
+          "firstFrame": 73,
+          "lastFrame": 81
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0082-0090.jpg",
+          "firstFrame": 82,
+          "lastFrame": 90
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0091-0099.jpg",
+          "firstFrame": 91,
+          "lastFrame": 99
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0100-0108.jpg",
+          "firstFrame": 100,
+          "lastFrame": 108
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0109-0117.jpg",
+          "firstFrame": 109,
+          "lastFrame": 117
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0118-0126.jpg",
+          "firstFrame": 118,
+          "lastFrame": 126
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0127-0135.jpg",
+          "firstFrame": 127,
+          "lastFrame": 135
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0136-0144.jpg",
+          "firstFrame": 136,
+          "lastFrame": 144
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0145-0153.jpg",
+          "firstFrame": 145,
+          "lastFrame": 153
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0154-0162.jpg",
+          "firstFrame": 154,
+          "lastFrame": 162
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0163-0171.jpg",
+          "firstFrame": 163,
+          "lastFrame": 171
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0172-0174.jpg",
+          "firstFrame": 172,
+          "lastFrame": 174
+        }
+      ],
+      "keyOriginalFrameRechecks": [
+        {
+          "frame": 38,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0038.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "fa21fd93b219ed6c2769deff9193a846af954d43e62c90ebbe4637bd664691e1"
+        },
+        {
+          "frame": 39,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0039.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "5e31fba99c29322d6ec7c90e830efb11983b2ca153ab03c7e00c6df6b728f012"
+        },
+        {
+          "frame": 91,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0091.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "8df874068a566a1a79e84364f51b47d88fa3b3ca5819485ffac337545e19c10c"
+        },
+        {
+          "frame": 92,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0092.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "8e2529c8681f0909a7246c5190db0f53bdd5b180f627e0976684bdcd9e39ff50"
+        },
+        {
+          "frame": 145,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0145.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "68d27e079e6ad70a4334d0ac7175479986e573ccb88ff4c1f31f5deb740294f4"
+        },
+        {
+          "frame": 146,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0146.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "946b444c01e36169c598878b236e9a44b591c6a705b712363d1e3374bd89cf46"
+        },
+        {
+          "frame": 171,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0171.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "ec9f42318dda096e5d805aacb2f4a98bd006a1200ad081c116ece29680df030c"
+        },
+        {
+          "frame": 172,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0172.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "fb3afc6e477401c5e86debaf84b689952df60b7e0c8a38704a914bf2e32e816e"
+        }
+      ],
+      "decodeMetadata": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\decode-meta.json",
+      "boundaries": [
+        "仅验PC录制片段内的UI、动作可读性、遮挡与阶段连续性；不覆盖手机、真实联机或其它交战分支。",
+        "视频是同一真实页面的实际整屏采样合成，原采样存在时间间隔；本报告审完174个编码帧，不能证明未采样的浏览器中间帧，也不声称播放器真实时间播放流畅度。",
+        "battle-recording.states[].phase/state/dice已辅助核对炮兵→骑兵→步兵及rolling→damage，dice是组件类型容器，不用其长度推断结果骰数。未凭图片推断应有骰数或规则数值；领域正确性需由实际phase结果数组和领域测试另证。"
+      ],
+      "observation": "连续帧核读174/174；全部20张联系表均实际读取，未抽样跳帧。；炮兵白骰在14–38帧出现连续位置和朝向变化，38帧已停稳，39帧出现损伤结果；骑兵红骰68–91帧运动并停稳，92帧出现损伤结果；步兵绿骰122–145帧运动并分开停稳，146帧出现损伤结果。；39–66、92–119、146–170帧保留对应结果，不在运动中抢先切入下一轮候选。；171帧转到战后占领/撤回，172–174帧出现战后教程提示；提示未盖住占领/撤回按钮及叶赫部本体，当前操作可理解。；所有战斗帧均未出现新增菜单或下一轮盘候选抢焦点；轮盘为低对比背景。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "failures": [],
+  "layoutAudit": {
+    "spaceHierarchy": "PASS",
+    "alignment": "PASS",
+    "groupingAndDecoration": "PASS",
+    "observation": "战斗阶段/侧别标签、骰子本体、结果处于同一中心偏左动作组；当前来源目标使用连续中文标签连接，地图仍占主体。轮盘和底层地图允许被战斗UI覆盖；未将无关黄数值遮挡扩大为当前必要交战阅读失败。"
+  },
+  "negativeImpactChecks": [
+    {
+      "object": "轮盘",
+      "decision": "保留为低对比背景，战斗中无下一轮候选高亮",
+      "status": "PASS"
+    },
+    {
+      "object": "当前来源目标与地图",
+      "decision": "辽北→叶赫部标签持续可读；叶赫部本体未被骰子层封闭遮死",
+      "status": "PASS"
+    },
+    {
+      "object": "手牌、牌堆与资源",
+      "decision": "手牌行、抽弃牌入口和顶部席位资源保留；当前结算未把这些变成争夺焦点的候选菜单",
+      "status": "PASS"
+    },
+    {
+      "object": "战后占领/撤回",
+      "decision": "原尺寸171/172帧复核：按钮和结果摘要完整可读，教程提示位于其左侧且目标本体保留",
+      "status": "PASS"
+    }
+  ],
+  "mediaCount": 7
+}

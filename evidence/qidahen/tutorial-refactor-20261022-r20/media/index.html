@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>media</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>media</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"00-唯一入门入口-直接进入胜利条件.png","displayTitle":"00 · 唯一入门入口 · 直接进入胜利条件","description":"","kind":"image"},{"relativePath":"00a-继续后-进入行动流程说明.png","displayTitle":"00a · 继续后 · 进入行动流程说明","description":"","kind":"image"},{"relativePath":"02a-轮盘三格费用与落点说明.png","displayTitle":"02a · 轮盘三格费用与落点说明","description":"","kind":"image"},{"relativePath":"03-轮盘选择-三种走法均可选择.png","displayTitle":"03 · 轮盘选择 · 三种走法均可选择","description":"","kind":"image"},{"relativePath":"03a-轮盘两格-选择对手抽牌.png","displayTitle":"03a · 轮盘两格 · 选择对手抽牌","description":"","kind":"image"},{"relativePath":"03b-轮盘两格-进入军屯并结算.png","displayTitle":"03b · 轮盘两格 · 进入军屯并结算","description":"","kind":"image"},{"relativePath":"03c-轮盘三格-进入征兵训练弃牌窗口.png","displayTitle":"03c · 轮盘三格 · 进入征兵训练弃牌窗口","description":"","kind":"image"},{"relativePath":"03c-轮盘一格-进入开垦并结算.png","displayTitle":"03c · 轮盘一格 · 进入开垦并结算","description":"","kind":"image"},{"relativePath":"03d-一格开垦后退出教程并完成下一次轮盘行动.png","displayTitle":"03d · 一格开垦后退出教程并完成下一次轮盘行动","description":"","kind":"image"},{"relativePath":"03e-征兵训练选择行动前规则译文.png","displayTitle":"03e · 征兵训练选择行动前规则译文","description":"","kind":"image"},{"relativePath":"03f-训练目标选择与等级提示.png","displayTitle":"03f · 训练目标选择与等级提示","description":"","kind":"image"},{"relativePath":"03g-征兵训练结算结果.png","displayTitle":"03g · 征兵训练结算结果","description":"","kind":"image"},{"relativePath":"03h-征兵目标本土限制与候选区域.png","displayTitle":"03h · 征兵目标本土限制与候选区域","description":"","kind":"image"},{"relativePath":"03i-额外训练规则与弃牌.png","displayTitle":"03i · 额外训练规则与弃牌","description":"","kind":"image"},{"relativePath":"03j-额外训练目标与结果.png","displayTitle":"03j · 额外训练目标与结果","description":"","kind":"image"},{"relativePath":"03k-征兵训练结果与轮盘结算.png","displayTitle":"03k · 征兵训练结果与轮盘结算","description":"","kind":"image"},{"relativePath":"03l-教程退场后同局继续.png","displayTitle":"03l · 教程退场后同局继续","description":"","kind":"image"},{"relativePath":"05-选择征召军队并阅读规则.png","displayTitle":"05 · 选择征召军队并阅读规则","description":"","kind":"image"},{"relativePath":"07-支付1张手牌.png","displayTitle":"07 · 支付1张手牌","description":"","kind":"image"},{"relativePath":"08-选择宣府建军位置.png","displayTitle":"08 · 选择宣府建军位置","description":"","kind":"image"},{"relativePath":"09-选择建军方式.png","displayTitle":"09 · 选择建军方式","description":"","kind":"image"},{"relativePath":"10-征召结果-轮盘行动待完成.png","displayTitle":"10 · 征召结果 · 轮盘行动待完成","description":"","kind":"image"},{"relativePath":"11-教程结束后同局下一位玩家可操作.png","displayTitle":"11 · 教程结束后同局下一位玩家可操作","description":"","kind":"image"},{"relativePath":"移动-01-移动教程-手牌检视前.png","displayTitle":"移动 · 01 · 移动教程 · 手牌检视前","description":"","kind":"image"},{"relativePath":"移动-02-移动教程-长按手牌打开检视.png","displayTitle":"移动 · 02 · 移动教程 · 长按手牌打开检视","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

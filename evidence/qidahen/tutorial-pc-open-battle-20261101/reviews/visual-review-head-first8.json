@@ -1,0 +1,115 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r134_head_first"
+  },
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\00-frontier-goal.png",
+      "sha256": "78252187c7c6b5c48e8e20f6cf56145fc87e6918bf7fe81a87896680499a3541",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大明当前玩家标识清楚，辽北白色边界与扩充前线和获胜目标说明相呼应，下一步入口完整可见。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\01-opening-move.png",
+      "sha256": "e85125519e078898b1aedc2e3681900e74eccb42c4d432c4c5fda971393f0f90",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "免费前进一步和额外前进的支付说明可读，开垦军屯扇区清晰高亮，落点文字与轮盘本体吻合。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\02-prepare-hand.png",
+      "sha256": "49779c78d0b6bf0821e6bd7a561612aa7b3ae4c63cd47d91e9f3994ba661d8f8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "移动后的手牌行动及落点行动顺序说明清楚，先执行手牌行动与开垦军屯选项分工明确，当前选项描边可辨。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\03-recruit-payment.png",
+      "sha256": "ec0ac99437fd898a1ba1168b5f205c2c6cac0e4c54cfc9d00d65406ac27bb475",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召军队支付条显示尚需一张手牌，银两支付建议及放大镜入口清楚，半露手牌的类型与牌名可见，未遮挡支付操作。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\04-recruit-payment-inspect.png",
+      "sha256": "fb08035990b7dfb1e212eb88c912df9b0b5561c9f3d916b3e5caaf30f60542fe",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两共享放大牌面完整显示且比例正常，关闭按钮清楚，旁侧保留支付教学说明，未见破图或文字裁切。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\05-recruit-source.png",
+      "sha256": "3529ca85c38407556fb88c78e0b1c1a4660b9a65459f11ccc3fe0ec7c44c2ab6",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图缩小后各绿色建军候选区域边界可见，辽北以白色轮廓和名称突出，选择辽北的推荐说明与地图位置对应。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\06-recruit-troops.png",
+      "sha256": "1e1da35788734e6edcfbae6edafa22eaf296e3d9b012ae947e6061ede19701c8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北选中着色明确，两种建军方式的部队数量及等级文字可读，首项描边与建立六个等级二部队的引导一致。",
+      "failures": []
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\07-farm-action.png",
+      "sha256": "08e64281f68555b942dd61b1306ec6d605fac3456732ab6380b6e754a79f1f68",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召后辽北部队增加可见，当前轮盘落点继续亮起开垦军屯，军屯选项描边与补回手牌增加驻军的后续说明吻合。",
+      "failures": []
+    }
+  ]
+}

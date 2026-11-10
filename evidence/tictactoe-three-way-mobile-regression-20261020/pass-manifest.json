@@ -1,0 +1,83 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "tictactoe",
+  "evidenceCategory": "interaction-ui",
+  "generatedAt": "2026-10-20T09:16:01+08:00",
+  "targetObject": "井字棋 HUD、悬浮按钮与房间离开菜单在电脑网页、手机网页和安卓真机中的布局",
+  "scopeNote": "浏览器两张图来自同一端到端人机测试房，真机为最新版 OTA 的独立无保存测试房；玩家名和局面不同，比较对象仅为所示 HUD、悬浮按钮和离开菜单布局。证据索引的前态、中态、后态表示跨端采集顺序，不表示同一对局的时间进程。",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "360×800 竖屏井字棋 HUD 与展开的离开菜单可读，悬浮按钮和面板不遮挡比分或回合，也不产生横向溢出。",
+      "status": "PASS",
+      "evidence": [
+        "当前端到端日志的 pageOverflowX 为 0，HUD/FAB 与离开面板重叠列表均为空，FAB 命中区至少为 44×44。",
+        "本轮 360×800 真实浏览器截图逐图审计通过。"
+      ]
+    },
+    {
+      "requirement": "1920×1080 桌面网页保留完整 HUD 与离开菜单，桌面与手机来自同一人机测试房。",
+      "status": "PASS",
+      "evidence": [
+        "同一端到端页面从 360×800 切换到 1920×1080，玩家名和回合文字的 PC 布局断言通过，并在桌面视口补录整屏截图。"
+      ]
+    },
+    {
+      "requirement": "最新版安卓 App 真机显示相同层级的 HUD、悬浮按钮和离开菜单，且截图边界完整。",
+      "status": "PASS",
+      "evidence": [
+        "安卓官方 App OTA 显示版本 759，1080×2388 真机整屏中双方玩家、比分、回合和离开菜单均清楚可见，逐图审计通过。"
+      ]
+    },
+    {
+      "requirement": "最终只交付一张三方整屏对比图，三栏按比例完整显示并说明网页与真机状态差异。",
+      "status": "PASS",
+      "evidence": [
+        "最终合成图经逐栏复核，PC、手机网页和安卓真机均无裁切或拉伸，真机不同玩家名与测试房状态已标明。"
+      ]
+    }
+  ],
+  "media": [
+    "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources/电脑网页原图.jpg",
+    "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources/手机网页原图.jpg",
+    "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources/安卓真机原图.png",
+    "evidence/tictactoe-three-way-mobile-regression-20261020/井字棋-PC-手机网页-安卓真机三方整屏对比.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewFile": "visual-review.json",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/native_ttt_visual_luna"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/tictactoe/__tests__/flow.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "井字棋流程测试 14 项通过。"
+    ]
+  },
+  "e2eVerification": {
+    "command": "npm run test:e2e:file -- e2e/tictactoe/tictactoe-mobile-layout.e2e.ts",
+    "result": "3 passed",
+    "sourceRun": "2026-10-20 本地隔离浏览器运行，包含 360×800 与 1920×1080 同房验证。"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "notes": [
+    "根因属于井字棋 Board 自己的移动端 footer 布局，不在共享 MobileBoardShell 路径；共享修复未覆盖这个 owner。",
+    "本轮只证明 360×800 网页、1920×1080 网页和 1080×2388 安卓 App 的所示静态画面，不外推到全部游戏或其它分辨率。",
+    "安卓截图证明当前帧布局，不证明真机触控操作或其它设备尺寸。"
+  ]
+}

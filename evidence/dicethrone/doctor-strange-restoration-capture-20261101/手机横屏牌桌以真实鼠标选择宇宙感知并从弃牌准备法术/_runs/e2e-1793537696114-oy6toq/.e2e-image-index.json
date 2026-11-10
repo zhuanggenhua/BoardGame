@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "手机横屏-宇宙感知已选待结算.png",
+      "chainId": "奇异博士选择宇宙感知技能-mobile",
+      "chainStep": "技能已选待结算",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-mobile-awareness-selected",
+      "behaviorStepId": "internal-setup-select-awareness",
+      "description": "真实鼠标选择宇宙感知；技能待结算，法术效果尚未触发。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "选择满足四本魔法书骰面的宇宙感知。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择满足四本魔法书骰面的宇宙感知。",
+      "sourceRevision": "02ba590e9ac736222932b042bec9401566aac6be3e1f1b6740f53403603b8f1a",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793537752141-161336-db0e7876-2cee-4f37-9e57-50acf4c60ff2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793537696114-oy6toq"
+    },
+    {
+      "path": "手机横屏-弃牌准备选择态.png",
+      "chainId": "宇宙感知从弃牌堆选择法术-mobile",
+      "chainStep": "法术候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-mobile-spell-choice",
+      "behaviorStepId": "internal-setup-choose-spell-from-discard",
+      "description": "内部初始化场景；真实鼠标命中技能槽后显示弃牌准备选择。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家点击宇宙感知并打开法术选择",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家点击宇宙感知并打开法术选择",
+      "sourceRevision": "02ba590e9ac736222932b042bec9401566aac6be3e1f1b6740f53403603b8f1a",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793537752141-161336-db0e7876-2cee-4f37-9e57-50acf4c60ff2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793537696114-oy6toq"
+    },
+    {
+      "path": "手机横屏-弃牌候选原阅读界面.png",
+      "chainId": "宇宙感知从弃牌堆选择法术-mobile",
+      "chainStep": "原阅读界面",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-mobile-discard-reader",
+      "behaviorStepId": "discard-card-existing-reader",
+      "description": "弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "悬停候选并点击原放大镜。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "悬停候选并点击原放大镜。",
+      "sourceRevision": "02ba590e9ac736222932b042bec9401566aac6be3e1f1b6740f53403603b8f1a",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793537752141-161336-db0e7876-2cee-4f37-9e57-50acf4c60ff2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793537696114-oy6toq"
+    },
+    {
+      "path": "手机横屏-法术卡已选待确认.png",
+      "chainId": "宇宙感知从弃牌堆选择法术-mobile",
+      "chainStep": "已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-mobile-spell-choice-selected",
+      "behaviorStepId": "internal-setup-select-spell-card",
+      "description": "选中弃牌区的法瑞拉之牙后显示选中态，仍需通过现有确认按钮提交。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "在弃牌候选卡池点击法术卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在弃牌候选卡池点击法术卡。",
+      "sourceRevision": "02ba590e9ac736222932b042bec9401566aac6be3e1f1b6740f53403603b8f1a",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793537752141-161336-db0e7876-2cee-4f37-9e57-50acf4c60ff2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793537696114-oy6toq"
+    },
+    {
+      "path": "手机横屏-法术准备目标选择态.png",
+      "chainId": "法瑞拉之牙选择施法值目标-mobile",
+      "chainStep": "目标候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-mobile-spell-prepare-target-choice",
+      "behaviorStepId": "internal-setup-select-opponent-cp-target",
+      "description": "标题说明目标效果为失去1点施法值，候选只包含合法对手。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "点击法术卡并选择受影响的对手。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击法术卡并选择受影响的对手。",
+      "sourceRevision": "02ba590e9ac736222932b042bec9401566aac6be3e1f1b6740f53403603b8f1a",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793537752141-161336-db0e7876-2cee-4f37-9e57-50acf4c60ff2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793537696114-oy6toq"
+    },
+    {
+      "path": "手机横屏-目标玩家已选待确认.png",
+      "chainId": "法瑞拉之牙选择施法值目标-mobile",
+      "chainStep": "目标已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-mobile-spell-target-selected",
+      "behaviorStepId": "internal-setup-select-target-player",
+      "description": "选中失去施法值的对手后保留待确认态。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "在现有玩家选择面选中对手。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在现有玩家选择面选中对手。",
+      "sourceRevision": "02ba590e9ac736222932b042bec9401566aac6be3e1f1b6740f53403603b8f1a",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793537752141-161336-db0e7876-2cee-4f37-9e57-50acf4c60ff2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793537696114-oy6toq"
+    }
+  ]
+}

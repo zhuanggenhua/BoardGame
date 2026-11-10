@@ -1,0 +1,1203 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-diagnostic\\2026-09-09T23-27-31-460Z",
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-diagnostic\\2026-09-09T23-27-31-460Z\\final.png",
+  "samples": [
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 0/11"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 0/11"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 3/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "正在加载对局资源…加载素材 6/83"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": true,
+        "manifestId": "basic-setup-and-turn",
+        "manifestRevision": null,
+        "stepIndex": 1,
+        "stepId": "objective-and-turn",
+        "stepsLength": 44,
+        "allowedCommands": null,
+        "aiActions": null,
+        "stepAiActions": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%"
+    }
+  ],
+  "logs": [
+    {
+      "at": 1788996456753,
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": 1788996456787,
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": 1788996456851,
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": 1788996456879,
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": 1788996457313,
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": 1788996457850,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:27:37.849Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": 1788996457851,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:27:37.850Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": 1788996457853,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788996457854,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": 1788996458378,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:27:38.377Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": 1788996458378,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:27:38.378Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": 1788996459373,
+      "type": "warning",
+      "text": "🟡 [性能] 平均 40.0 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": 1788996461127,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:27:41.126Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":3276}"
+    },
+    {
+      "at": 1788996461127,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:27:41.126Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":2748}"
+    },
+    {
+      "at": 1788996462076,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:27:42.075Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":3698}"
+    },
+    {
+      "at": 1788996462116,
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": 1788996462132,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788996462133,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": 1788996462133,
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788996462133,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": 1788996462501,
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788996462501,
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": 1788996462893,
+      "type": "warning",
+      "text": "🟡 [性能] 平均 41.4 FPS | P95 帧时 33.2ms — 低于 60fps"
+    },
+    {
+      "at": 1788996477715,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996477715,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996477715,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996492548,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp"
+    },
+    {
+      "at": 1788996492548,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp"
+    },
+    {
+      "at": 1788996492548,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp"
+    },
+    {
+      "at": 1788996492548,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp"
+    },
+    {
+      "at": 1788996492997,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996492997,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996492998,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996496338,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp"
+    },
+    {
+      "at": 1788996496350,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/rooms/compressed/start-upper-landing.webp"
+    },
+    {
+      "at": 1788996497783,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/cards/compressed/back-traitor.webp"
+    },
+    {
+      "at": 1788996498821,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载超时（30000ms），跳过: /assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp"
+    },
+    {
+      "at": 1788996508226,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996508227,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": 1788996508227,
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    }
+  ]
+}

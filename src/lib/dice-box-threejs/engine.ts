@@ -47,6 +47,10 @@ export interface DiceBoxStyleProfile {
     projectedLayoutMargin?: number;
     projectedLayoutMinGap?: number;
     optimizeSettledFaceReadability?: boolean;
+    /** 可选的入场横向距离，单位为骰子尺寸；未设置时保持原有表现。 */
+    throwTravelDiceSizes?: number;
+    /** 可选的衰减弹跳高度，单位为骰子尺寸；不影响权威骰值。 */
+    throwBounceDiceSizes?: number;
 }
 
 export interface DiceBoxDieSkin {
@@ -2533,6 +2537,10 @@ export class DiceBoxThreeEngine {
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 64;
         const lift = Math.max(2.4, Math.min(5.2, baseScale * 0.06));
         const sideTravel = Math.max(2.4, Math.min(5.6, baseScale * 0.07));
+        const reducedMotion = typeof window.matchMedia === 'function'
+            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const throwTravel = reducedMotion ? 0 : baseScale * Math.max(0, Math.min(2.4, this.styleProfile.throwTravelDiceSizes ?? 0));
+        const throwBounce = reducedMotion ? 0 : baseScale * Math.max(0, Math.min(0.5, this.styleProfile.throwBounceDiceSizes ?? 0));
         const duration = Math.max(360, durationMs);
         const startedAt = performance.now();
         const canvas = this.box.renderer?.domElement;
@@ -2582,11 +2590,15 @@ export class DiceBoxThreeEngine {
 
                     for (const snapshot of snapshots) {
                         const direction = snapshot.order % 2 === 0 ? 1 : -1;
+                        const travelDirection = snapshots.length === 1 ? -1
+                            : (snapshot.order - (snapshots.length - 1) / 2) / ((snapshots.length - 1) / 2);
                         const wobble = Math.sin(progress * Math.PI * 2) * sideTravel * (1 - progress);
                         const nextPosition = {
-                            x: snapshot.startPosition.x + (snapshot.end.position.x - snapshot.startPosition.x) * eased + wobble * direction,
+                            x: snapshot.startPosition.x + (snapshot.end.position.x - snapshot.startPosition.x) * eased + wobble * direction
+                                + throwTravel * travelDirection * (1 - eased),
                             y: snapshot.startPosition.y + (snapshot.end.position.y - snapshot.startPosition.y) * eased + wobble * 0.42,
-                            z: snapshot.startPosition.z + (snapshot.end.position.z - snapshot.startPosition.z) * eased + lift * liftPulse,
+                            z: snapshot.startPosition.z + (snapshot.end.position.z - snapshot.startPosition.z) * eased + lift * liftPulse
+                                + throwBounce * Math.abs(Math.sin(progress * Math.PI * 3)) * (1 - progress),
                         };
                         this.setVector(snapshot.die.position, nextPosition);
                         const startQuaternion = new Quaternion(

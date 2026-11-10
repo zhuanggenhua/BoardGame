@@ -3,6 +3,7 @@ import {createInitialSystemState,createSeededRandom,executePipeline} from '../..
 import {applyPlayerViewToState} from '../../../engine/ai/playerView';
 import {FateDominationDomain} from '../domain';
 import {engineConfig} from '../game';
+import {FATE_ATTACK_BY_ID} from '../data';
 
 it('查看本人手牌不会经对手或观战者的日志和事件泄露私有牌实例',()=>{
  const ids=['0','1','2'],random=createSeededRandom('inspect-private-proof');
@@ -18,12 +19,16 @@ it('查看本人手牌不会经对手或观战者的日志和事件泄露私有�
   expect(JSON.stringify(view.sys.eventStream)).not.toContain(cardId);
  }
  const own=applyPlayerViewToState(engineConfig,inspected.state,'0');
- expect(JSON.stringify(own.sys.actionLog)).toContain(cardId);
+ expect(JSON.stringify(own.sys.actionLog)).toContain(FATE_ATTACK_BY_ID[state.core.players['0'].hand[0].definitionId].name);
  expect(JSON.stringify(own.sys.eventStream)).toContain(cardId);
+ const collision=structuredClone(inspected.state);
+ collision.core.situation.name=FATE_ATTACK_BY_ID[state.core.players['0'].hand[0].definitionId].name;
+ const collisionView=applyPlayerViewToState(engineConfig,collision,'1');
+ expect(JSON.stringify(collisionView.sys.actionLog)).not.toContain(collision.core.situation.name);
  const publicId=inspected.state.core.situation.id;
  const publicInspection=executePipeline({domain:FateDominationDomain,systems:engineConfig.systems},inspected.state,{type:'INSPECT_CARD',playerId:'0',payload:{cardId:publicId}},random,ids);
  expect(publicInspection.success).toBe(true);
  const publicView=applyPlayerViewToState(engineConfig,publicInspection.state,'1');
- expect(JSON.stringify(publicView.sys.actionLog)).toContain(publicId);
+ expect(JSON.stringify(publicView.sys.actionLog)).toContain(inspected.state.core.situation.name);
  expect(JSON.stringify(publicView.sys.eventStream)).toContain(publicId);
 });

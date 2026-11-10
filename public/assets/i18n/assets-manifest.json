@@ -18054,11 +18054,29 @@
         }
       }
     },
+    "zh-CN/qidahen/cards/atlases/compressed/jin-faction-deck-atlas-inspect": {
+      "variants": {
+        "webp": {
+          "sha256": "35121c59c3dcd4b263b8535dc74646dd43f0cb2130754f4ada7732d604bf61d0",
+          "bytes": 1674150,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/qidahen/cards/atlases/compressed/korea-special-deck-atlas": {
       "variants": {
         "webp": {
           "sha256": "5fb287afcf4593b9309e206a3ed45d6931cad08333d5ffb65f25fd29cf188418",
           "bytes": 106772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/korea-special-deck-atlas-inspect": {
+      "variants": {
+        "webp": {
+          "sha256": "d616396b01772ef9225c71d190a665976d610b84fa17ef0f59721e3931d26f6a",
+          "bytes": 1333224,
           "mime": "image/webp"
         }
       }
@@ -18072,6 +18090,15 @@
         }
       }
     },
+    "zh-CN/qidahen/cards/atlases/compressed/ming-faction-deck-atlas-inspect": {
+      "variants": {
+        "webp": {
+          "sha256": "961b6760f9d4f553c27b855de1ca92a9c55bd65907c7d22aa01418b3bc42b6cd",
+          "bytes": 1461524,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/qidahen/cards/atlases/compressed/mongol-faction-deck-atlas": {
       "variants": {
         "webp": {
@@ -18081,11 +18108,29 @@
         }
       }
     },
+    "zh-CN/qidahen/cards/atlases/compressed/mongol-faction-deck-atlas-inspect": {
+      "variants": {
+        "webp": {
+          "sha256": "36d68f95159fdb7d2d7200d954d5beae2e3409181c98cc2eb4f24a0cc20f0614",
+          "bytes": 1614122,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
       "variants": {
         "webp": {
           "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
           "bytes": 2640142,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05-inspect": {
+      "variants": {
+        "webp": {
+          "sha256": "75b775665d21a539d2fd8c94c7337ff0bfcc5f5464d2c728f50ca4731df5f10f",
+          "bytes": 4312606,
           "mime": "image/webp"
         }
       }
@@ -18312,6 +18357,1320 @@
           "sha256": "3a70bb1b5184b747efa494c96dc050df1262277a5b5005ecc234ee577d6da0a1",
           "bytes": 181264,
           "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-0": {
+      "variants": {
+        "webp": {
+          "sha256": "7920b561960492ffb509d4b59b327550efd6aa5088748a067152efa7ccc3cae2",
+          "bytes": 98564,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-1": {
+      "variants": {
+        "webp": {
+          "sha256": "6a2102211337c363808418013b23658a5a3a0167166d785809281dc9e041ab01",
+          "bytes": 97620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-10": {
+      "variants": {
+        "webp": {
+          "sha256": "2792590e69e468e514f635c34c7ba0b74f2009db65865ff4dfa374fe7d393273",
+          "bytes": 99248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-11": {
+      "variants": {
+        "webp": {
+          "sha256": "54c8549f69594f11c5fc0584ab44714dbed858890e38814e95f40a2458cd6362",
+          "bytes": 103454,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-12": {
+      "variants": {
+        "webp": {
+          "sha256": "8e99c06d8de3b8380b0bbe8a1bb8b055cb396aaa08e3cc2b468ca970c2160157",
+          "bytes": 104696,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-2": {
+      "variants": {
+        "webp": {
+          "sha256": "331cdc97c2ef9204be04f3000120341e6fb8a15cd8701dc28f622f2d17ad5f30",
+          "bytes": 99218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-3": {
+      "variants": {
+        "webp": {
+          "sha256": "bd99d098e69901a83309deed52af17eb3f81bbc60f12b5b2448fcdbc077bacd8",
+          "bytes": 89832,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-4": {
+      "variants": {
+        "webp": {
+          "sha256": "a9cd9c5224fc310738048b8a7dd4ab77237c9f69430baeedf68c46a6969f0d16",
+          "bytes": 98456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-5": {
+      "variants": {
+        "webp": {
+          "sha256": "b5137d5fe8a7a1a4dc3c11299d88043a911c7edbb3e961440bfb2b80788c9f90",
+          "bytes": 92128,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-6": {
+      "variants": {
+        "webp": {
+          "sha256": "b9c44e55afd4c1739eb6e4d1f350838a88b5cc9b05d0947fd72616bbe765aa12",
+          "bytes": 94176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-7": {
+      "variants": {
+        "webp": {
+          "sha256": "a116bac331cf0dfc3e4de559014babad8ba2cf23705d0a9cf254fd41608aa60a",
+          "bytes": 97794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-8": {
+      "variants": {
+        "webp": {
+          "sha256": "a4e9a4f26d26adb16b3fe2496c7f5115da488c477e5bef9de3e3a2614c48e565",
+          "bytes": 93372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/chronology-9": {
+      "variants": {
+        "webp": {
+          "sha256": "dfa5e1b1a8c3ed493a0727caae3a77d79bfb53e2f880c424fa0cb5cb37ed37a1",
+          "bytes": 98698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-0": {
+      "variants": {
+        "webp": {
+          "sha256": "f57aef6c6458b67ba415dc9a6720996df3cf7693ba2ad05ba2965f71512bead8",
+          "bytes": 95144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-1": {
+      "variants": {
+        "webp": {
+          "sha256": "90873fd62ade14fce0495c2b64c075646062ca7ebfb1c3cc9c2101ff79f676f4",
+          "bytes": 94026,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-10": {
+      "variants": {
+        "webp": {
+          "sha256": "f4fc2b402e874adf6d74bd4135f5039737ded1c170765be3fdd0d0da019dadb0",
+          "bytes": 105188,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-11": {
+      "variants": {
+        "webp": {
+          "sha256": "b7b31fc551e73f37edc4aa76b0f39730cb23a4bad1d8504550245cfe1738dcea",
+          "bytes": 105388,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-12": {
+      "variants": {
+        "webp": {
+          "sha256": "eaac6b57f34dd7cbd9fc5f6271339294091584ca401bd4852bb9a68d969296cf",
+          "bytes": 104414,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-13": {
+      "variants": {
+        "webp": {
+          "sha256": "7d3cac191b3227ffc727650ee02f079dd8c75342f23f2a1b1d871b019faf6d88",
+          "bytes": 106230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-14": {
+      "variants": {
+        "webp": {
+          "sha256": "35f50c71a678e32e9973a08e34e83c052f17f34249a588c016972ed0d428baec",
+          "bytes": 105880,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-15": {
+      "variants": {
+        "webp": {
+          "sha256": "ad98767630cc3ea32f8f33044df9e1633c5cf049545965b80f816688bd826c9a",
+          "bytes": 105576,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-2": {
+      "variants": {
+        "webp": {
+          "sha256": "ce55d523a68c5d8f08b1dccb16c273f92cb1a197dcc9efef1ef63ba087836ae9",
+          "bytes": 113704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-3": {
+      "variants": {
+        "webp": {
+          "sha256": "34d4b1ae069acb6d7b13c5bcc09f4af2d21ecd4d68a52127a38bf78dc3cc7715",
+          "bytes": 99904,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-4": {
+      "variants": {
+        "webp": {
+          "sha256": "a86989e0f42ea82e904448ad6d5279f2b0e4bab11ea5a203a6b46072e542238f",
+          "bytes": 102826,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-5": {
+      "variants": {
+        "webp": {
+          "sha256": "4fb394097ebf356de4ba8a4dbaa12bc0f27322483bd4505a17e0e2690781fc26",
+          "bytes": 97554,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-6": {
+      "variants": {
+        "webp": {
+          "sha256": "2316b0459be84bd102005f003bd68a9fcc9b6ff79baf36912373eed6d066dd1e",
+          "bytes": 103704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-7": {
+      "variants": {
+        "webp": {
+          "sha256": "2ed8e14674579c8743681d2714fa3303b05e9860a6bfa6998e9858946742407c",
+          "bytes": 107900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-8": {
+      "variants": {
+        "webp": {
+          "sha256": "be3d17a8a936872d2c322a2969ad712501e4c0f75ca82af464adedda2da34216",
+          "bytes": 101932,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/jin-9": {
+      "variants": {
+        "webp": {
+          "sha256": "fbc267bfe43fdd55a6435dde31b7453e2d2d8ecbc95d4ad5c4fe737c4065f84d",
+          "bytes": 88338,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-0": {
+      "variants": {
+        "webp": {
+          "sha256": "4653c68e10b048a0af0a37cf0f4ae07490f0fe0be9452f5c4badd8cee934d7c3",
+          "bytes": 95988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-1": {
+      "variants": {
+        "webp": {
+          "sha256": "477c691ddff0adaa6d202d6c22853c463ca2c67c5bd8e95d8df4504c051bf900",
+          "bytes": 98768,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-10": {
+      "variants": {
+        "webp": {
+          "sha256": "b4bea2c4fed80d342d8ecd826c8204ddb380f058767d72e8d657ea1e72f02dcd",
+          "bytes": 85390,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-11": {
+      "variants": {
+        "webp": {
+          "sha256": "de884f8fc78145d3f989f984c0628b867f978ebe716bd0d6dadcef42d78633e3",
+          "bytes": 87412,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-12": {
+      "variants": {
+        "webp": {
+          "sha256": "26646cf3efe0a4b88b76c34f326b3f7142906c71574fa4ff6747bc183c01252a",
+          "bytes": 88920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-13": {
+      "variants": {
+        "webp": {
+          "sha256": "6a3cd9d5589c7949ae6066c8365f6339dc5a6bfbed1cefea3ab13e5f43e7e3f7",
+          "bytes": 89304,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-14": {
+      "variants": {
+        "webp": {
+          "sha256": "0da139513fb1d2e3bfc8ab248ade3c1e78d091d10fbe9033877bc554e1fdcd35",
+          "bytes": 87430,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-2": {
+      "variants": {
+        "webp": {
+          "sha256": "ea33eb9d9e74265c0ef92f475cf92dce8a8ac9f31b4752d9b21741e24788e882",
+          "bytes": 71222,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-3": {
+      "variants": {
+        "webp": {
+          "sha256": "14e911f0ae693f6c47fb015888ced4ea62d39bda71473495a9be6b4b20bc02f4",
+          "bytes": 91758,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-4": {
+      "variants": {
+        "webp": {
+          "sha256": "160070e3757ae173e46558d5be465ca863ba275bc4dc0a7c4411d7ebf6bb8a63",
+          "bytes": 88160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-5": {
+      "variants": {
+        "webp": {
+          "sha256": "bd90e431c9bd2d8a6c18544efdd9bdb14507d325fe8805ae5d45688200f26607",
+          "bytes": 86940,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-6": {
+      "variants": {
+        "webp": {
+          "sha256": "55fe2c27b9a8f4d6cf62b03eb4c281af921129c226e8ca78b3b54828014a6a8a",
+          "bytes": 86584,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-7": {
+      "variants": {
+        "webp": {
+          "sha256": "351796f35874f9825cbfb6ac527ee801169c59bd7961d569de7416a46d6fbfbe",
+          "bytes": 87004,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-8": {
+      "variants": {
+        "webp": {
+          "sha256": "211275bd2934bf611a3aa08741e12472a08febc5f8f3933b92c08e6246a0a4a7",
+          "bytes": 84630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/korea-9": {
+      "variants": {
+        "webp": {
+          "sha256": "f92670dd6cd3d576767944c09dba253826ba56c87bff76f4fcc0a0054debbee4",
+          "bytes": 84720,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-0": {
+      "variants": {
+        "webp": {
+          "sha256": "61c3d39fe22800264ef2fe85f4a6b344b5c45f582a65d05dff98235e52639923",
+          "bytes": 98708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-1": {
+      "variants": {
+        "webp": {
+          "sha256": "1b7325fe53d2593e1579470122a7369ff6af218a7234e9f67b338f66b7f01630",
+          "bytes": 94360,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-10": {
+      "variants": {
+        "webp": {
+          "sha256": "9d783266fcec59095319f3b505f4fd6f27939a14df3c84534d6915fc792a1a3f",
+          "bytes": 80670,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-11": {
+      "variants": {
+        "webp": {
+          "sha256": "c8b3e1b1fdaf8f70af38fe1f7cd4813e6a5a48a9914c66da51a4da7f80458c34",
+          "bytes": 80320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-12": {
+      "variants": {
+        "webp": {
+          "sha256": "d6391619fbfaca3643de691e5a31227b3d27b9abef975f3901ba1a5113be13b0",
+          "bytes": 82312,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-13": {
+      "variants": {
+        "webp": {
+          "sha256": "c5bb13da383b24f67a0045c8302278a8812b3b6477d502d9d6635a6c759e0d30",
+          "bytes": 87532,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-14": {
+      "variants": {
+        "webp": {
+          "sha256": "478166b41b4bd059a2d7fd9414aa2ea898ff0ef3e1e8cabe25b18d5031037576",
+          "bytes": 87038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-15": {
+      "variants": {
+        "webp": {
+          "sha256": "d5ba7847650d78ff51fbe14efac5ee79414a38f85d648fa65fd9a970cea821e9",
+          "bytes": 86740,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-2": {
+      "variants": {
+        "webp": {
+          "sha256": "1b0a40a8751589c01be3fea5709dea779ef5ead61a14268712df9e18c30b6e72",
+          "bytes": 105040,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-3": {
+      "variants": {
+        "webp": {
+          "sha256": "d30f1dec256d443b4f029a8457be94ec41a8e21c484ead604ad6932d9963186b",
+          "bytes": 95468,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-4": {
+      "variants": {
+        "webp": {
+          "sha256": "d456530527dd49772fc99ffa61d9b4ca25c6d7a245e5eeedfeb4f7f9013a9214",
+          "bytes": 98468,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-5": {
+      "variants": {
+        "webp": {
+          "sha256": "071cf41fdfb01b2b3c1c892e43a65b9152d7929324522f304c858ad97eb15453",
+          "bytes": 106442,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-6": {
+      "variants": {
+        "webp": {
+          "sha256": "968fb8708e1ce7b962365f96912f8120f0ae415efce15a6dd96fc95ce887bd6b",
+          "bytes": 96826,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-7": {
+      "variants": {
+        "webp": {
+          "sha256": "9047db6cde5ddd5888087aeaf449c243633f87d6b5c19bd4656bf3742f0f8313",
+          "bytes": 87988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-8": {
+      "variants": {
+        "webp": {
+          "sha256": "84090fa77b02e45b658e40a099e179e13a961ebc432ed9f5ec91610928244721",
+          "bytes": 79956,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ming-9": {
+      "variants": {
+        "webp": {
+          "sha256": "6022b5ed9845a9b5b23eb523c281df8b112ca4b5c254b398eb56ac3f5250343e",
+          "bytes": 81040,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-0": {
+      "variants": {
+        "webp": {
+          "sha256": "7dcbbefaa9d4cc4c20cd9a959371d83ab0dffcb164777daba0e5178575c4e8ba",
+          "bytes": 114974,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-1": {
+      "variants": {
+        "webp": {
+          "sha256": "9fdfbdc8bb8098375776ff5dd0752d31b22dfa31d0c5debed0ce834f4161f8f6",
+          "bytes": 111502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-10": {
+      "variants": {
+        "webp": {
+          "sha256": "a116bac331cf0dfc3e4de559014babad8ba2cf23705d0a9cf254fd41608aa60a",
+          "bytes": 97794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-11": {
+      "variants": {
+        "webp": {
+          "sha256": "a4e9a4f26d26adb16b3fe2496c7f5115da488c477e5bef9de3e3a2614c48e565",
+          "bytes": 93372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-12": {
+      "variants": {
+        "webp": {
+          "sha256": "dfa5e1b1a8c3ed493a0727caae3a77d79bfb53e2f880c424fa0cb5cb37ed37a1",
+          "bytes": 98698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-13": {
+      "variants": {
+        "webp": {
+          "sha256": "2792590e69e468e514f635c34c7ba0b74f2009db65865ff4dfa374fe7d393273",
+          "bytes": 99248,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-14": {
+      "variants": {
+        "webp": {
+          "sha256": "54c8549f69594f11c5fc0584ab44714dbed858890e38814e95f40a2458cd6362",
+          "bytes": 103454,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-15": {
+      "variants": {
+        "webp": {
+          "sha256": "8e99c06d8de3b8380b0bbe8a1bb8b055cb396aaa08e3cc2b468ca970c2160157",
+          "bytes": 104696,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-2": {
+      "variants": {
+        "webp": {
+          "sha256": "6ca42297e8fe4a9be50d13d88227bdd42a287b2ea4313bc0bb143f177529111b",
+          "bytes": 113240,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-3": {
+      "variants": {
+        "webp": {
+          "sha256": "7920b561960492ffb509d4b59b327550efd6aa5088748a067152efa7ccc3cae2",
+          "bytes": 98564,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-4": {
+      "variants": {
+        "webp": {
+          "sha256": "6a2102211337c363808418013b23658a5a3a0167166d785809281dc9e041ab01",
+          "bytes": 97620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-5": {
+      "variants": {
+        "webp": {
+          "sha256": "331cdc97c2ef9204be04f3000120341e6fb8a15cd8701dc28f622f2d17ad5f30",
+          "bytes": 99218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-6": {
+      "variants": {
+        "webp": {
+          "sha256": "bd99d098e69901a83309deed52af17eb3f81bbc60f12b5b2448fcdbc077bacd8",
+          "bytes": 89832,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-7": {
+      "variants": {
+        "webp": {
+          "sha256": "a9cd9c5224fc310738048b8a7dd4ab77237c9f69430baeedf68c46a6969f0d16",
+          "bytes": 98456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-8": {
+      "variants": {
+        "webp": {
+          "sha256": "b5137d5fe8a7a1a4dc3c11299d88043a911c7edbb3e961440bfb2b80788c9f90",
+          "bytes": 92128,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/mongol-9": {
+      "variants": {
+        "webp": {
+          "sha256": "b9c44e55afd4c1739eb6e4d1f350838a88b5cc9b05d0947fd72616bbe765aa12",
+          "bytes": 94176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-0": {
+      "variants": {
+        "webp": {
+          "sha256": "d9330db3c08f32d0063fb6c157a7d66bf217d54120c578ad82ec45465b1e62e1",
+          "bytes": 95870,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-1": {
+      "variants": {
+        "webp": {
+          "sha256": "48fe6fda2fc745b203a0929cb2064c502525172d71d238bdead617ae8018af7e",
+          "bytes": 104428,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-10": {
+      "variants": {
+        "webp": {
+          "sha256": "1605e41af6c7e37cb21f118d56fcc8af95d457743d43aacf42919df4620aca32",
+          "bytes": 76678,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-11": {
+      "variants": {
+        "webp": {
+          "sha256": "f35e1e3d82f382406c8f2248c094e88bfff07e65111c94bde2730bf006150afa",
+          "bytes": 81834,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-12": {
+      "variants": {
+        "webp": {
+          "sha256": "5669b00972e13d0116a81ba26ce8201639e7ee4e665895c8b292757fd1355215",
+          "bytes": 82646,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-13": {
+      "variants": {
+        "webp": {
+          "sha256": "e2c2736bb353dfa5b253b835577ce28cefa620db2370c0ebf29d3294ec08dcf5",
+          "bytes": 92312,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-14": {
+      "variants": {
+        "webp": {
+          "sha256": "7dadd90077cef4350e0c6a57357dee99fb9c55272370161e97ce289d0395e358",
+          "bytes": 90218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-15": {
+      "variants": {
+        "webp": {
+          "sha256": "3d25f6d7bab6a37b30d83bc338e3063243414eb15b6621820fe704137c758332",
+          "bytes": 82136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-16": {
+      "variants": {
+        "webp": {
+          "sha256": "7cfde08e3d7edc11e3a570491d5f65b5996f691b652bab4aef055bff3808c4c3",
+          "bytes": 83592,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-17": {
+      "variants": {
+        "webp": {
+          "sha256": "878b089480c32534ce5d2474c15dbb62f4e2ea58ab08f6753bb24be5808a2a3c",
+          "bytes": 81572,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-18": {
+      "variants": {
+        "webp": {
+          "sha256": "f5fccf278d6e8ea5907c740faeadee8c005c04de57c0628e0f74ab939c43d4f3",
+          "bytes": 86080,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-19": {
+      "variants": {
+        "webp": {
+          "sha256": "ce6093df2899b890c4a30f30d5a286687411035099d7f241e90d5e3bb209e3bc",
+          "bytes": 83106,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-2": {
+      "variants": {
+        "webp": {
+          "sha256": "cb0be5a65219241cedf54d6995168eb7ade751f0fa390b0ccbb0d9a71539b85c",
+          "bytes": 89730,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-20": {
+      "variants": {
+        "webp": {
+          "sha256": "abd6f7e17a47755c3bdce7aa804cbfe2083b57e0e006229bbcd27f23c4ec97e2",
+          "bytes": 82810,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-21": {
+      "variants": {
+        "webp": {
+          "sha256": "55b58486bd240300dd99dd9496efedd7e0c53e25cef1b5dba3f3512a4aabab2a",
+          "bytes": 92078,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-22": {
+      "variants": {
+        "webp": {
+          "sha256": "cde912296d707ce490d0aa6a97c9c51ec054588545de03a742cfb73a00e80b67",
+          "bytes": 77846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-23": {
+      "variants": {
+        "webp": {
+          "sha256": "4ef769f911cf6baeedd01ec05718233ebfc94502cfcfb161859f2caccae24f17",
+          "bytes": 96400,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-24": {
+      "variants": {
+        "webp": {
+          "sha256": "54533cdeab974a282a1e362454b13733650ea2dae2e96efdadab21d2ae8a0802",
+          "bytes": 89584,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-25": {
+      "variants": {
+        "webp": {
+          "sha256": "9b5aa40ff4decb7e015925793af02a582638039470a102db59c85cd28a368c4f",
+          "bytes": 99594,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-26": {
+      "variants": {
+        "webp": {
+          "sha256": "e44aa8619121757a3cd746423c7de9a81f12e700735e5979965e27a0a0e93908",
+          "bytes": 81852,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-27": {
+      "variants": {
+        "webp": {
+          "sha256": "a146b6c694b6f9aa6f751a6e9fe30a50d351fec0d43abe9c8dc592ac3d8d2e78",
+          "bytes": 75092,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-28": {
+      "variants": {
+        "webp": {
+          "sha256": "5ee73c9fd0cca36077058dc2bbab58ba3ec3c3c5da69e23fd024d237b9e17608",
+          "bytes": 83466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-29": {
+      "variants": {
+        "webp": {
+          "sha256": "21382ccc27c698f299f7941e9d9a92aa9e2ee65108cbbcd39784a29a389cc6cc",
+          "bytes": 97674,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-3": {
+      "variants": {
+        "webp": {
+          "sha256": "db1bc558f11cecd73a3fd19c375ff5f5005fc45738bbd53659047698ba5f4483",
+          "bytes": 80196,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-30": {
+      "variants": {
+        "webp": {
+          "sha256": "291a42d60315564603568445c1d37e5bfcbbebcecf70bf8997c0ab4fe3621101",
+          "bytes": 101440,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-31": {
+      "variants": {
+        "webp": {
+          "sha256": "2e3394e18c6e561b593eaa2629cc8053aa1d9092f325492b567de99c20f068ea",
+          "bytes": 88668,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-32": {
+      "variants": {
+        "webp": {
+          "sha256": "9701432e26b293a7eb1418443a486148ad0862922c49d3ffa660662fd56a00b3",
+          "bytes": 85864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-33": {
+      "variants": {
+        "webp": {
+          "sha256": "e4fd67a4d66358910c6eeb975fd9020327bc88a4cb8bd9a445ab87b2513056e5",
+          "bytes": 83440,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-34": {
+      "variants": {
+        "webp": {
+          "sha256": "4ff92ddb9905bd0e7ae0f8d871fbf3e440def58ac68e34e61d247b6dfa7c25fc",
+          "bytes": 89732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-35": {
+      "variants": {
+        "webp": {
+          "sha256": "08b5c115aec351b02069296e1adc7bec77d5903b4846999c9dc33ad00f2385b5",
+          "bytes": 85228,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-36": {
+      "variants": {
+        "webp": {
+          "sha256": "2ff14645b3e0e7d39755d4b171ddf9a7381ebc7f3fed1a7201331027f6130e11",
+          "bytes": 89130,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-37": {
+      "variants": {
+        "webp": {
+          "sha256": "cc58a95ab3fa65752365c86f57f035c7ce9a9f9891b18581c6fb47873903ffff",
+          "bytes": 93806,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-38": {
+      "variants": {
+        "webp": {
+          "sha256": "8c31d84336f3d9d60835bec7c815679cc396819a5b4c770db515361cb0cc3371",
+          "bytes": 91976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-39": {
+      "variants": {
+        "webp": {
+          "sha256": "bb4142cb9ab72506207aa94846099324c79afaa9aacd0d546ad5b1ed89d6277f",
+          "bytes": 87380,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-4": {
+      "variants": {
+        "webp": {
+          "sha256": "3f8d58884b84ee04a4462e06c00fca5e94d3148e3d72e85cc4e623ffaca416f1",
+          "bytes": 100012,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-40": {
+      "variants": {
+        "webp": {
+          "sha256": "b78fc04e62fb586edf00817ea92e887ecff2c6be9446985a04ec21b60810419f",
+          "bytes": 82230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-41": {
+      "variants": {
+        "webp": {
+          "sha256": "56145639df320e519730545032b3c964f9a3cf628634731654e2a8bee7c11ae5",
+          "bytes": 75202,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-42": {
+      "variants": {
+        "webp": {
+          "sha256": "2735b3bdabe1908188868a721447c45f9b0e6fb3f5e99baf5dc16f4f1ef39bc4",
+          "bytes": 65882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-43": {
+      "variants": {
+        "webp": {
+          "sha256": "76ffecb39d5c31d6f2d8254ae3ea1729c2f4e27e51ff2c78ec7359f719c2fbde",
+          "bytes": 81934,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-44": {
+      "variants": {
+        "webp": {
+          "sha256": "585c63fcbb38f2cb1ede25f57bea2709f079e3d4a8edd822afb410652da49c83",
+          "bytes": 71220,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-45": {
+      "variants": {
+        "webp": {
+          "sha256": "72bba9df5064c401e83347d97844c0b26340e109727d7749271e7adaabb77567",
+          "bytes": 77406,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-46": {
+      "variants": {
+        "webp": {
+          "sha256": "7557a2d7d8026a7fa5f6165c045eea4b7dd512db542d26d762acacb65511ed20",
+          "bytes": 91768,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-47": {
+      "variants": {
+        "webp": {
+          "sha256": "1d3a47317a03ba6886dbbe0064b84208a21359eb51ce17427c15e7333531d6a4",
+          "bytes": 5276,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-48": {
+      "variants": {
+        "webp": {
+          "sha256": "513e603268ea53bb1a0110c3b27cda55e713b3dd593dee0e48e589d2afa36cd8",
+          "bytes": 644,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-49": {
+      "variants": {
+        "webp": {
+          "sha256": "9b2fb58cda6840dd934aae9fb636de8369778b0fa1cc6c177a92bd5d9ed130ee",
+          "bytes": 646,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-5": {
+      "variants": {
+        "webp": {
+          "sha256": "2b73f075eb43011914d0c8e55e20dd9b078bc17eb7cc9bc862a62de8a7acbe4f",
+          "bytes": 109594,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-50": {
+      "variants": {
+        "webp": {
+          "sha256": "49d15f1557d4a2fe01ab29c8b431412e930b0d1792aee0e9bed3361ee1149b13",
+          "bytes": 98038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-51": {
+      "variants": {
+        "webp": {
+          "sha256": "5b5564c3bbf4ed944ff615ebbb0f86cdc3be015dc06eb4bab0b0d6ec3fdfa7c5",
+          "bytes": 638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-52": {
+      "variants": {
+        "webp": {
+          "sha256": "5691b6765a9fd60733d6ac48ae2aaf15e693b57d06c7005684bb00e295443398",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-53": {
+      "variants": {
+        "webp": {
+          "sha256": "0ca4ca0bea32573ca04c1e5d75dd467330b8d1b82541de027d45bf4aecf0ac0f",
+          "bytes": 682,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-54": {
+      "variants": {
+        "webp": {
+          "sha256": "136cb1489cadae1fd5f5995b90fe9516178616845f01834a199eb03cd499a73a",
+          "bytes": 892,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-55": {
+      "variants": {
+        "webp": {
+          "sha256": "81c5d729ca68669519b973c3de55f95268b22a5cc2c63ea7fee264f9a2cd117a",
+          "bytes": 676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-56": {
+      "variants": {
+        "webp": {
+          "sha256": "5691b6765a9fd60733d6ac48ae2aaf15e693b57d06c7005684bb00e295443398",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-57": {
+      "variants": {
+        "webp": {
+          "sha256": "5691b6765a9fd60733d6ac48ae2aaf15e693b57d06c7005684bb00e295443398",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-58": {
+      "variants": {
+        "webp": {
+          "sha256": "5691b6765a9fd60733d6ac48ae2aaf15e693b57d06c7005684bb00e295443398",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-59": {
+      "variants": {
+        "webp": {
+          "sha256": "8a8c19300decdbc445054870748e062d9a1737ce167730f943d210b49d3614c7",
+          "bytes": 3304,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-6": {
+      "variants": {
+        "webp": {
+          "sha256": "41a1b1073b0fa4dd2039a0565252761e949b0787a8cd08c65d4115f9b1c98a2a",
+          "bytes": 104664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-60": {
+      "variants": {
+        "webp": {
+          "sha256": "ce4105678d145ad5938bd929752369df071d329e91a48a731d48c640ef62421a",
+          "bytes": 90982,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-61": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-62": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-63": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-64": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-65": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-66": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-67": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-68": {
+      "variants": {
+        "webp": {
+          "sha256": "5648ad61efc2967c8f1dc3b39253768901bdd1dd2897266f1cdb922ceaff4ce5",
+          "bytes": 634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-69": {
+      "variants": {
+        "webp": {
+          "sha256": "e76a8fa8ecd03d5735da9cf1f69b9e67e6b9c6f981a22935233d237a720f4bfb",
+          "bytes": 71292,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-7": {
+      "variants": {
+        "webp": {
+          "sha256": "f40bab2286f5e44b3c622e7e67a8aa32b4b706dd94ceb0d702555c7895267e97",
+          "bytes": 109754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-8": {
+      "variants": {
+        "webp": {
+          "sha256": "b18f12939e9218ef23f741389afb19b5cff3fca50909ae4d2cd4aafe07ad0a83",
+          "bytes": 100892,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/inspect/compressed/ordinary-9": {
+      "variants": {
+        "webp": {
+          "sha256": "6f853b707ce502bc865bde8b8c69a7d201a158889ee798d2c140f38ae187c8f4",
+          "bytes": 100168,
+          "mime": "image/webp"
         }
       }
     },

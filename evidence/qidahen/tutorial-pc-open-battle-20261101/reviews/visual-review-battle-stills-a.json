@@ -1,0 +1,89 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": "/root/r134_battle_resume",
+  "items": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-artillery-rolling.jpg",
+      "sha256": "1e66d6074ce4abb96f4e0428716e179025df93f7e325fa52faeae6e241371dda",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵阶段与攻方标记清楚，浅色六面骰悬在地图上，未见总盘或单骰盒；双方地图单位、顶部状态和底部手牌保留，无错误遮挡。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-artillery-damage.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵阶段攻方骰子与算式清楚，合计三和造成零损伤在骰子下方完整可读；地图单位、顶部状态和底部手牌保留，未见总盘或分盒。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-cavalry-rolling.jpg",
+      "sha256": "1eae9d1f234bd2f2ab95a89cc25bd07d64ce23dbe1858a363ea79da8a5f5c217",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑兵阶段与守方标记清楚，红色多面骰悬在地图上；舞台透明开放，双方地图单位、顶部状态和底部手牌保留，无错误遮挡。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-cavalry-damage.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑兵阶段守方红骰及合计一、造成零损伤完整可辨；骰子没有独立盒边，双方地图、顶部状态和手牌保持可见。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-infantry-rolling.jpg",
+      "sha256": "836831b9a56aebf07c6b57608c407faa7a25914fe6703c61c5ac820ccd60a07f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "步兵阶段与攻方标记清楚，两枚绿色多面骰位于地图上，未见总盘和分盒；双方地图单位、顶部状态和手牌保留。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-infantry-damage.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "步兵阶段攻方两枚绿色骰及零按十解释的两项算式可读，合计二十和造成二损伤完整显示；舞台无盘盒，地图、顶部状态和手牌保留。",
+      "failures": []
+    }
+  ],
+  "limitations": [
+    "仅证明六张静态图的界面表现，不据此推断规则数值正确性或录像完整通过。"
+  ]
+}

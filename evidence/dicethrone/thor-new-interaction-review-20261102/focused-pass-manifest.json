@@ -1,0 +1,81 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "refactor",
+  "subject": "thor-shared-dice-interactions",
+  "sourceBaseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "baselinePixelsAvailable": true,
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "acceptanceReason": "本组只验收用户点名的索尔新交互，并以旧流程整屏图核对复用；不把旧牌桌或未覆盖矩阵对象扩为通过。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\01-奥丁效果骰等待选骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\02-奥丁效果骰原重掷确认动作.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\03-奥丁效果骰重掷后原确认收口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\04-卡槽十一不愧是我重复选骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\05-卡槽十一重复进度和原双按钮.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\06-卡槽十一服务端重掷后关闭选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\07-技能槽二十七固定四或五.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\08-卡槽十二加减编辑预览确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-new-interaction-review-20261102\\media\\09-卡槽十二单骰修改后结果.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "奥丁效果骰在原骰盘完成选择、重掷和原确认收口",
+      "evidence": [
+        "media/01-奥丁效果骰等待选骰.png",
+        "media/02-奥丁效果骰原重掷确认动作.png",
+        "media/03-奥丁效果骰重掷后原确认收口.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "公共卡槽十一不愧是我保留同骰两次和原确认流程",
+      "evidence": [
+        "media/04-卡槽十一不愧是我重复选骰.png",
+        "media/05-卡槽十一重复进度和原双按钮.png",
+        "media/06-卡槽十一服务端重掷后关闭选择.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "索尔技能槽二十七当之无愧只提供固定四或五",
+      "evidence": [
+        "media/07-技能槽二十七固定四或五.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "公共卡槽十二惊不惊喜保留加减预览与手动确认",
+      "evidence": [
+        "media/08-卡槽十二加减编辑预览确认.png",
+        "media/09-卡槽十二单骰修改后结果.png"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "behavioralVerification": {
+    "status": "not-claimed",
+    "reason": "本清单只裁决九张当前整屏图的 UI；当前 E2E 与 Vitest 行为结果另记于 Thor 复审增补。"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

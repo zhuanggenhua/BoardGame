@@ -1,0 +1,116 @@
+{
+  "scope": "七大恨当前revision27连续年度教程的源码与中文教学内容审查",
+  "status": "PASS",
+  "meaning": "指定核心要求均有当前实现与教学落点，未发现确定的实现或教学缺口。本结论仅为当前源内容审查。",
+  "revision": 27,
+  "method": "逐项核对当前manifest、annual中文、当前年度E2E、生命周期E2E、正常年度管线断言与作者记录。未读取图片，未运行浏览器或测试，未采信历史PASS作为当前通过依据。",
+  "coverage": [
+    {
+      "requirement": "正常同一局与先设计因果",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:57-145",
+        "src/games/qidahen/tutorialSetup.ts:22-39",
+        "docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md"
+      ],
+      "finding": "正式萨尔浒开局固定合法牌序和骰序，首轮其他席位走正式命令。军屯补牌兵、开垦税赋、扩兵进攻、占领纪年资格、后勤预算、次年训练征兵相互承接。manifest没有中途数值注入。"
+    },
+    {
+      "requirement": "轮盘与手牌分别实操",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:66-78",
+        "src/games/qidahen/annualTutorial.ts:83-91",
+        "public/locales/zh-CN/game-qidahen.json:539-552"
+      ],
+      "finding": "首回合军屯开垦后征召，进攻回合先火炮军备再调度。中文明确两类额度和自由先后，课程固定合法示范。"
+    },
+    {
+      "requirement": "来源→兵牌→目标",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:89-91",
+        "public/locales/zh-CN/game-qidahen.json:553-554",
+        "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:729-756"
+      ],
+      "finding": "来源辽北、两支征召步兵和原炮兵、目标叶赫分别绑定正式输入。来源提示隐藏为自明输入，来源选择本身仍需玩家操作。"
+    },
+    {
+      "requirement": "实际战术及掷骰",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:92-95",
+        "public/locales/zh-CN/game-qidahen.json:555-558",
+        "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:763-783"
+      ],
+      "finding": "玩家PLAY_TACTIC_CARD并开始战斗，等待实际动画，中文解释临时骰种与永久等级区别、炮骑步序和损伤。E2E源码检查实际战斗显示与动画退出。"
+    },
+    {
+      "requirement": "年中收入与超限",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:79-82",
+        "public/locales/zh-CN/game-qidahen.json:546-547",
+        "src/games/qidahen/__tests__/annualTutorialFlow.test.ts:46-53"
+      ],
+      "finding": "其他席位正式推进年中，开垦收入兑现，玩家真实弃6张。人物判定仅说明时机，无触发实操承诺。"
+    },
+    {
+      "requirement": "新年朝贡、维护、耗损",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:107-121",
+        "public/locales/zh-CN/game-qidahen.json:566-574"
+      ],
+      "finding": "朝贡观察后玩家分别维护与弃牌、放弃防线，后勤分别涵盖撤旧兵、非汉人、朝鲜、超人口和撤朝鲜驻军。纯重复付款隐藏文案但保留实际输入。"
+    },
+    {
+      "requirement": "纪年、顺位、人物",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:122-128",
+        "public/locales/zh-CN/game-qidahen.json:575-577",
+        "src/games/qidahen/__tests__/annualTutorialFlow.test.ts:57-60",
+        "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:650-654"
+      ],
+      "finding": "实际领取并弃3张，杨镐由玩家选择。文案区分评分卡与领取卡，声明全体人物出完才公开再下一卡。测试源码覆盖显隐时序。杨镐10支能力是说明，未声称本课已应用。"
+    },
+    {
+      "requirement": "次年原部队训练与新建部队",
+      "status": "COVERED",
+      "evidence": [
+        "src/games/qidahen/annualTutorial.ts:129-144",
+        "public/locales/zh-CN/game-qidahen.json:578-586",
+        "src/games/qidahen/__tests__/annualTutorialFlow.test.ts:61-73"
+      ],
+      "finding": "同次支付三次训练原参战部队，再征兵辽东，真实对应新公开建军目标。文案明确训练不计新建，人口预算与税赋损益承接首次开垦。"
+    },
+    {
+      "requirement": "刷新继续、回退、重开、旧版失效、退出清理、普通房间",
+      "status": "COVERED_IN_TEST_SOURCE",
+      "evidence": [
+        "e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts:21-96",
+        "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:617-632",
+        "e2e/qidahen/tutorialPersistence.ts:4"
+      ],
+      "finding": "生命周期源码覆盖真实入口早段恢复、回退重做、重头开始、旧revision拒绝、菜单退出及普通入口。完整年度源码另在training-recruit-target晚期刷新并比较core/history/random策略与游标。当前未执行，不能确认运行结果。"
+    }
+  ],
+  "confirmedImplementationOrTeachingGaps": [],
+  "observations": [
+    {
+      "category": "历史文档漂移",
+      "evidence": [
+        "docs/games/qidahen/records/qidahen-tutorial-coverage-matrix.md:1-5",
+        "docs/games/qidahen/records/qidahen-annual-tutorial-design-20261030.md:3"
+      ],
+      "finding": "旧coverage-matrix仍描述短入门、不跨年及旧行动序列。年度设计已明确下文为revision22历史，重构记录明确revision23历史。当前应按revision27源码核对，旧coverage不足以作为当前覆盖缺口或当前通过依据。"
+    }
+  ],
+  "limits": [
+    "未独立重读规则PDF，不能据此审定全游戏规则正确性。",
+    "未读取当前截图或录屏，不能审定视觉质量。",
+    "未运行当前E2E或领域测试，不能把测试源码存在扩大成当前运行通过。",
+    "未修改生产源码或其他工作者文件，仅写入本临时审查JSON。"
+  ]
+}

@@ -1,0 +1,310 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "奇异博士在线角色选择界面",
+  "sourceRun": "1793535652155-162688-15f3995a-b33c-4276-8e95-e5e07bbfbc5b",
+  "sourceRevision": "9c15cb04603750f4ae1ab8856d1655dd44522a3ec7bf5d0b9ca5ac5fe7c36e39",
+  "e2eSourceRevision": "f3f44a5666a739fad7d6885d1624a2105113d8526704dd0e02a8f724b321a9af",
+  "status": "PASS",
+  "outcome": "索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。",
+  "steps": [
+    {
+      "id": "online-room-created-selection-visible",
+      "action": "确认创建房间并进入桌面选角界面",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "佚名",
+            "创建房间",
+            "收藏",
+            "教程模式",
+            "配置表",
+            "在线大厅大厅",
+            "更新更新",
+            "评价评价",
+            "排行榜排行"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "王权骰铸佚名这是一款快节奏且易上手的游戏。从众多英雄之中，挑选一位你最中意的角色。投掷你英雄专属的 5 颗骰子来攻击对手、激活能力。累积战斗点数，并用它们购买效果各异的卡牌，例如升级英雄、施展法术，或直接操控你、队友或对手的骰子。234支持人数 2–4创建房间收藏教程模式配置表在线大厅大厅更新更新评价评价排行榜排行暂无活跃房间",
+          "phaseControlText": null,
+          "headingTexts": [
+            "发现",
+            "王权骰铸",
+            "创建房间"
+          ],
+          "selectableHeroIds": [],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "真实选角目录显示可选奇异博士及实施中徽标",
+          "actual": {
+            "doctorStrangeVisible": true,
+            "implementationBadgeVisible": true,
+            "setupOptionStatus": "in_progress"
+          },
+          "expected": {
+            "doctorStrangeVisible": true,
+            "implementationBadgeVisible": true,
+            "setupOptionStatus": "in_progress"
+          }
+        }
+      ]
+    },
+    {
+      "id": "online-selection-mobile-viewport",
+      "action": "将同一真实联机选角页切换到手机横屏尺寸",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "窄屏选角仍显示奇异博士及实施中徽标",
+          "actual": {
+            "doctorStrangeVisible": true,
+            "implementationBadgeVisible": true,
+            "setupOptionStatus": "in_progress"
+          },
+          "expected": {
+            "doctorStrangeVisible": true,
+            "implementationBadgeVisible": true,
+            "setupOptionStatus": "in_progress"
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-available-desktop-selection",
+      "stepId": "online-room-created-selection-visible",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "cdf472b27670df08675fdaf9e59efe5698eb3e24c0327af958e0059fed1267d8"
+    },
+    {
+      "id": "doctor-strange-available-mobile-selection",
+      "stepId": "online-selection-mobile-viewport",
+      "change": "layout",
+      "viewport": "mobile",
+      "sha256": "69fecc38573c5a3b1cf55d4482cd45bae87dd90dfcbd003545ad0f5b186357c7"
+    }
+  ]
+}

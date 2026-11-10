@@ -1,0 +1,100 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-11T09:35:00.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "test": {
+    "file": "e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts",
+    "title": "阶段说明提示悬浮动效冷启动录制",
+    "entry": "/play/dicethrone",
+    "flowMode": "representative-state"
+  },
+  "run": {
+    "command": "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts",
+    "result": "1 passed",
+    "recording": "41 帧，约 2283 毫秒；分段 GIF 来自同一次冷启动运行",
+    "timingSource": "Chromium Page.screencastFrame 真实页面帧到达时间"
+  },
+  "requirements": [
+    {
+      "requirement": "媒体来自真实 Dice Throne 页面和真实鼠标悬浮阶段项。",
+      "status": "PASS",
+      "evidence": [
+        "正式 /play/dicethrone 入口",
+        "真实阶段项悬浮触发说明提示",
+        "同一次运行生成三段 GIF"
+      ]
+    },
+    {
+      "requirement": "验收对象是阶段指示旁解释阶段含义的提示，不是手牌或牌池卡牌。",
+      "status": "PASS",
+      "evidence": [
+        "阶段指示项右侧说明提示在三段 GIF 中保持可辨",
+        "子代理逐段确认目标对象和空间关系"
+      ]
+    },
+    {
+      "requirement": "提示保留透明度淡入，不发生从左上方或其它方向的飞入位移。",
+      "status": "PASS",
+      "evidence": [
+        "代码改为仅 transition-opacity，不再使用通用进场位移动画",
+        "冷启动采样显示矩形首帧即稳定，transform 为 none",
+        "子代理确认三段 GIF 均无位置跳变"
+      ]
+    }
+  ],
+  "media": [
+    "01-阶段说明tip-前态.gif",
+    "02-阶段说明tip-原位淡入.gif",
+    "03-阶段说明tip-移出收口.gif"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "visual_review"
+    },
+    "reviewFile": "visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/components/__tests__/InfoTooltipLayer.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts"
+    ],
+    "evidence": [
+      "InfoTooltipLayer 测试三项通过。",
+      "真实 Dice Throne E2E 一项通过，冷启动采样只有 opacity 变化。"
+    ]
+  },
+  "audit": {
+    "verdictReason": "阶段说明提示已收口为原位透明度淡入与淡出，GIF 逐段视觉复核全部通过。",
+    "targetObject": "Dice Throne 左侧阶段指示项悬浮后的阶段说明提示",
+    "excludedObjects": [
+      "手牌悬浮",
+      "牌池卡牌悬浮"
+    ],
+    "codeModified": true,
+    "changedFiles": [
+      "src/components/common/overlays/InfoTooltip.tsx",
+      "src/components/__tests__/InfoTooltipLayer.test.tsx",
+      "e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts"
+    ],
+    "similarTooltipAudit": [
+      "InfoTooltip 的全部调用点统一改为仅透明度过渡。",
+      "BreakdownTooltip 和功能说明提示未发现同类方向性飞入。",
+      "菜单、教程卡片、离线提示条保留各自空间语义动效。"
+    ]
+  }
+}

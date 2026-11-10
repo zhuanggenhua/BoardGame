@@ -1,0 +1,151 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "baseline": {
+    "revision": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+    "pixelsAvailable": true,
+    "policy": "逐项对照旧骰盘、旧按钮和旧值编辑流程；只核验本组四类索尔交互。"
+  },
+  "media": [
+    {
+      "path": "media/01-奥丁效果骰等待选骰.png",
+      "sha256": "17b0db0f892a9d874377d841d1c57866891b6d7964644394b1b2a5e163047e8a",
+      "status": "PASS",
+      "observation": "奥丁效果骰候选位于原骰盘旁，顶部显示本轮选择提示。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793561192758-l1ck01\\06-奥丁效果骰等待选择重掷骰子.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "media/02-奥丁效果骰原重掷确认动作.png",
+      "sha256": "cf4032f223f7450d848fb600b5818fe9d81e6902e45aa10035281532ad889fc7",
+      "status": "PASS",
+      "observation": "两颗效果骰已选中，原重掷和确认按钮都留在骰盘上。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793561192758-l1ck01\\07-使用原整组重掷动作提交两颗所选骰子.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "media/03-奥丁效果骰重掷后原确认收口.png",
+      "sha256": "244ee52889c89d28bf8ba624fbcc340be2286cbbcdbffbb0801850aaa24a2f45",
+      "status": "PASS",
+      "observation": "重掷后的骰面仍通过原确认入口结算，画面没有重置所选按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793561192758-l1ck01\\08-整组重掷一次完成并保留原确认收口.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "media/04-卡槽十一不愧是我重复选骰.png",
+      "sha256": "b3f5fb24769e61ded194cf751471875a664781c92735cf05fb94be6b64cbb208",
+      "status": "PASS",
+      "observation": "队友完成出牌后，索尔玩家直接在原骰盘选择本次重投骰子。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔2v2合法代表态：真实入口复用选骰、随机目标与队友护盾\\_runs\\e2e-1793560488114-y6dc0b\\01-不愧是我同骰两次\\03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "media/05-卡槽十一重复进度和原双按钮.png",
+      "sha256": "d09b101d2ed0ddafa2b2f6990b8e74173eaf24ea1e09bc806ccfdd1838c93fa8",
+      "status": "PASS",
+      "observation": "提示显示两次选择均已完成，原投掷和确认按钮仍然可用。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔2v2合法代表态：真实入口复用选骰、随机目标与队友护盾\\_runs\\e2e-1793560488114-y6dc0b\\01-不愧是我同骰两次\\04-合法代表态-不愧是我同骰两次-原有进度提示和双按钮确认.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "media/06-卡槽十一服务端重掷后关闭选择.png",
+      "sha256": "de1869b236341c8307787a112c74019da750f8cdf954c24f975c0c9716b4d08a",
+      "status": "PASS",
+      "observation": "完成的重投已写入结果，骰盘不再显示同骰选择模式。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔2v2合法代表态：真实入口复用选骰、随机目标与队友护盾\\_runs\\e2e-1793560488114-y6dc0b\\01-不愧是我同骰两次\\05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "media/07-技能槽二十七固定四或五.png",
+      "sha256": "6e19d245bc4a038702e15fe5f14b30c7014672c2f8c90b0b0e78d393c8c31db6",
+      "status": "PASS",
+      "observation": "目标值只有固定四和五两个选项，没有任意加减编辑控件。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793561192758-l1ck01\\03-当之无愧直接选择固定目标四或五.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "media/08-卡槽十二加减编辑预览确认.png",
+      "sha256": "ae1e130bb3eb2d0e23ab460dfb3ed1eeaa6f9c31f3e18f8c1dd4eae2e5f23112",
+      "status": "PASS",
+      "observation": "任意改值仍显示加减控件、预览结果、取消和手动确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793561955408-d2t7v5\\02-任意编辑保留原加减预览和手动确认.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "media/09-卡槽十二单骰修改后结果.png",
+      "sha256": "12954a8d6c6be2de22ee21258f7fe5fa607d0afa56743aca9a3a9e1fd1af4275",
+      "status": "PASS",
+      "observation": "提交结果只作用于目标骰，原任意改值交互已正常结束。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793561955408-d2t7v5\\03-旧流程提交后只修改一颗骰子.png",
+      "independentReviewFile": "visual-review-source.json",
+      "sourceReviewEntry": "/media/8"
+    }
+  ]
+}

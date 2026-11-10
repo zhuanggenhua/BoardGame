@@ -1,0 +1,902 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/doctor_reuse_final_b",
+  "claimScope": "interaction-ui",
+  "scope": "仅审计划中十八张当前原始截图及三项指定旧入口对照，不代表全组、规则数值、部署或产品人工验收。",
+  "privateOriginalRead": "首轮全部原图实读；第二轮八张变化图实读；本轮六张变化原图逐张重读，十二张同字节媒体继承真实原读图。",
+  "baselineScope": "修前七张原图均逐张读取；指定历史提交只核骰盘锚点和组件合同，不笼统认定全部界面正常。",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793587681387-h92bwx\\深红系带目标选择-桌面.png",
+      "sha256": "6fa028171894f8784719f7df875de71efb128a0b1949f68ca0e64c775f05cc74",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793586152139-4ntj43\\深红系带目标选择-桌面.png",
+      "entryPath": "05-深红系带玩家候选.png",
+      "status": "carried-forward",
+      "observation": "深红系带仅列出敌方玩家候选，标题与置灰确认清楚，背景保留阶段和资源。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的修前深红系带候选原图对照，完整玩家卡、敌方归属、中央弹窗和确认位置保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793586152139-4ntj43\\深红系带目标选择-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793587681387-h92bwx\\深红系带对手已选待确认-桌面.png",
+      "sha256": "84343b8795ccf4c769a036f6e97ad4dd8b822669e0acb3b030a915515726aa8f",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793586152139-4ntj43\\深红系带对手已选待确认-桌面.png",
+      "entryPath": "06-深红系带玩家已选.png",
+      "status": "carried-forward",
+      "observation": "敌方玩家卡出现贴合本体的金色选中边界，确认转亮且未遮挡候选。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "沿用深红系带候选的完整玩家选择器，新增同源金色选中反馈；未把候选缩成文字菜单。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793586152139-4ntj43\\深红系带对手已选待确认-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587681387-h92bwx\\瓦图姆之风-状态效果候选.png",
+      "sha256": "b59dd99dbc25cb91e7795770ac9bd1253dbc40f730fe1beccd79ad10e119d9e5",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587224079-vd19yy\\瓦图姆之风-状态效果候选.png",
+      "entryPath": "07-状态候选-桌面.png",
+      "status": "carried-forward",
+      "observation": "状态候选归属于敌方玩家，致盲说明在弹窗外侧完整显示且不遮住状态和确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "复用旧状态选择器的持有人卡和正式状态图标；本轮为博士单持有人采用获准的紧凑弹窗。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "incrementalObservation": "已实际读取当前冻结源码重拍的原始整屏图，目标组件、归属、说明与操作关系仍满足原验收要求。",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587224079-vd19yy\\瓦图姆之风-状态效果候选.png"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587681387-h92bwx\\瓦图姆之风-状态已选待确认.png",
+      "sha256": "eeac5be9b7b0da71c9041edc29ff9a98cacb2698c0d82a22220b33c318fb7683",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587224079-vd19yy\\瓦图姆之风-状态已选待确认.png",
+      "entryPath": "08-状态已选-桌面.png",
+      "status": "carried-forward",
+      "observation": "致盲本体出现绿色勾选而邻近状态未选，归属和确认动作清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "沿用同一状态候选布局，绿色勾选只落在实际状态本体，未另造选择摘要。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "incrementalObservation": "已实际读取当前冻结源码重拍的原始整屏图，目标组件、归属、说明与操作关系仍满足原验收要求。",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587224079-vd19yy\\瓦图姆之风-状态已选待确认.png"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587681387-h92bwx\\瓦图姆之风-横屏-状态效果候选.png",
+      "sha256": "c13dc3c4af2df80aa2ced4207443e2924e2ffde5f372c149494902c2a9959460",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587681387-h92bwx\\瓦图姆之风-横屏-状态效果候选.png",
+      "entryPath": "09-状态候选-横屏.png",
+      "status": "PASS",
+      "observation": "横屏单持有人弹窗居中紧凑，致盲说明避开两枚状态及底部跳过。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的修前横屏原图对照，紧凑弹窗、两枚正式状态、说明和底部动作保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求横屏紧凑及高对比；完整原选择器继续承接。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "private-original-reread",
+      "incrementalObservation": "已私有实际读取本次最终冻结源码重拍原始整屏图，状态归属与选中、说明避让或骰盘左中提示和下方动作仍满足原要求。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587681387-h92bwx\\瓦图姆之风-横屏-状态已选待确认.png",
+      "sha256": "60640221d0cd90388d6521a6459568f8ebccf13da70086e7265d8d494c0fdf17",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793587681387-h92bwx\\瓦图姆之风-横屏-状态已选待确认.png",
+      "entryPath": "10-状态已选-横屏.png",
+      "status": "PASS",
+      "observation": "横屏致盲已选反馈贴合本体，另一状态仍可见，底部确认完整可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "沿用横屏候选的完整组件和紧凑布局，选中反馈在同一状态本体出现。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求横屏紧凑及高对比；完整原选择器继续承接。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "private-original-reread",
+      "incrementalObservation": "已私有实际读取本次最终冻结源码重拍原始整屏图，状态归属与选中、说明避让或骰盘左中提示和下方动作仍满足原要求。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793587681387-h92bwx\\星际侵入奖励骰待确认-桌面.png",
+      "sha256": "fdcec6129b0543bede863f68a9b33f794c0f5f2796b494947434288b120a0665",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793587681387-h92bwx\\星际侵入奖励骰待确认-桌面.png",
+      "entryPath": "22-奖励骰待确认.png",
+      "status": "PASS",
+      "observation": "奖励骰提示位于骰盘左侧垂直中点，归属标签在上沿，确认仍在骰盘下方。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "沿用原骰盘和下方确认；仅把奖励结算提示接入用户要求的骰盘左中提示槽。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求骰盘左中提示且上方攻击修正独立；仅恢复原锚点和接入同源合同。"
+      },
+      "protectedSlots": [
+        "骰盘及骰子本体保留",
+        "提示在骰盘左中且不遮骰子",
+        "取消确认或奖励确认在骰盘下方",
+        "原上方攻击修正槽独立",
+        "玩家资源与阶段仍保留"
+      ],
+      "negativeImpactChecks": [
+        "提示移动仍锚定骰盘而非屏幕左侧",
+        "未挤出骰子和下方操作",
+        "攻击修正未迁入提示槽"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "private-original-reread",
+      "incrementalObservation": "已私有实际读取本次最终冻结源码重拍原始整屏图，状态归属与选中、说明避让或骰盘左中提示和下方动作仍满足原要求。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793587681387-h92bwx\\值得拥有-投掷者骰区目标态.png",
+      "sha256": "44fa6aa402956043157ae521fc8248f9f69c83d48c156c6537febcb1b6f3c774",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793587681387-h92bwx\\值得拥有-投掷者骰区目标态.png",
+      "entryPath": "23-值得拥有骰子候选.png",
+      "status": "PASS",
+      "observation": "重投候选提示贴骰盘左侧垂直中点，五颗骰子与下方取消确认均可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的修前重投候选图对照，原暗色提示气泡、骰盘左中锚点、骰子和下方动作保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求骰盘左中提示且上方攻击修正独立；仅恢复原锚点和接入同源合同。"
+      },
+      "protectedSlots": [
+        "骰盘及骰子本体保留",
+        "提示在骰盘左中且不遮骰子",
+        "取消确认或奖励确认在骰盘下方",
+        "原上方攻击修正槽独立",
+        "玩家资源与阶段仍保留"
+      ],
+      "negativeImpactChecks": [
+        "提示移动仍锚定骰盘而非屏幕左侧",
+        "未挤出骰子和下方操作",
+        "攻击修正未迁入提示槽"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "private-original-reread",
+      "incrementalObservation": "已私有实际读取本次最终冻结源码重拍原始整屏图，状态归属与选中、说明避让或骰盘左中提示和下方动作仍满足原要求。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793587681387-h92bwx\\值得拥有-同骰已选一次.png",
+      "sha256": "186f20a482196977a0af4234aee5d05f53555e40f827904a05318c19e149dfbd",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793587681387-h92bwx\\值得拥有-同骰已选一次.png",
+      "entryPath": "24-值得拥有骰子已选一次.png",
+      "status": "PASS",
+      "observation": "同一骰子出现勾选，左中提示显示已完成一次，候选和确认保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "沿用同一重投原入口、原骰子和下方动作，进度与选择反馈由共享合同更新。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求骰盘左中提示且上方攻击修正独立；仅恢复原锚点和接入同源合同。"
+      },
+      "protectedSlots": [
+        "骰盘及骰子本体保留",
+        "提示在骰盘左中且不遮骰子",
+        "取消确认或奖励确认在骰盘下方",
+        "原上方攻击修正槽独立",
+        "玩家资源与阶段仍保留"
+      ],
+      "negativeImpactChecks": [
+        "提示移动仍锚定骰盘而非屏幕左侧",
+        "未挤出骰子和下方操作",
+        "攻击修正未迁入提示槽"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "private-original-reread",
+      "incrementalObservation": "已私有实际读取本次最终冻结源码重拍原始整屏图，状态归属与选中、说明避让或骰盘左中提示和下方动作仍满足原要求。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793587681387-h92bwx\\值得拥有-投掷者同骰重选两次.png",
+      "sha256": "4f9300db4a8cc3f75c2d9441a00b06eba1463bb87c7c1642a8adca642e2b1733",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793587681387-h92bwx\\值得拥有-投掷者同骰重选两次.png",
+      "entryPath": "25-值得拥有骰子已选两次.png",
+      "status": "PASS",
+      "observation": "同一骰子仍有选中标记，左中提示转为完成，下方确认未被遮挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的修前完成图对照，左中完成气泡、同骰选中标记和下方确认保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求骰盘左中提示且上方攻击修正独立；仅恢复原锚点和接入同源合同。"
+      },
+      "protectedSlots": [
+        "骰盘及骰子本体保留",
+        "提示在骰盘左中且不遮骰子",
+        "取消确认或奖励确认在骰盘下方",
+        "原上方攻击修正槽独立",
+        "玩家资源与阶段仍保留"
+      ],
+      "negativeImpactChecks": [
+        "提示移动仍锚定骰盘而非屏幕左侧",
+        "未挤出骰子和下方操作",
+        "攻击修正未迁入提示槽"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "private-original-reread",
+      "incrementalObservation": "已私有实际读取本次最终冻结源码重拍原始整屏图，状态归属与选中、说明避让或骰盘左中提示和下方动作仍满足原要求。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793587681387-h92bwx\\所有玩家目标候选-桌面.png",
+      "sha256": "d962515a61b09a0f67ea88c5e3e980f2cabe93053ad7ac128669bf0b8dc229b7",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793586152139-4ntj43\\所有玩家目标候选-桌面.png",
+      "entryPath": "34-所有玩家目标候选-桌面.png",
+      "status": "carried-forward",
+      "observation": "自己敌方队友三类归属和四名玩家候选齐全，底部确认在未选时置灰。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "复用旧完整玩家选择器的玩家卡、座位归属和确认；候选来自当前规则，不以邻近入口像素推断历史。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793586152139-4ntj43\\所有玩家目标候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793587681387-h92bwx\\所有玩家队友已选-桌面.png",
+      "sha256": "aa568b67ebe8420432fb4bab94283fb6983b80c07eacbd387eeeedd8a59635d7",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793586152139-4ntj43\\所有玩家队友已选-桌面.png",
+      "entryPath": "35-所有玩家队友已选-桌面.png",
+      "status": "carried-forward",
+      "observation": "只有队友卡出现贴合的金色选中边界，其他玩家保持候选样式，确认可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "沿用旧玩家卡的贴体金色选中边界，保留自己敌方队友归属和其它候选。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793586152139-4ntj43\\所有玩家队友已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793587681387-h92bwx\\多持有人状态候选-桌面.png",
+      "sha256": "7a7352045b07ca89faa6b38328c32fd55e8c9c9a202a55203238689e84508bef",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793586152139-4ntj43\\多持有人状态候选-桌面.png",
+      "entryPath": "36-多持有人状态候选-桌面.png",
+      "status": "carried-forward",
+      "observation": "自己与敌方各自承载不同状态，右侧致盲说明避开两名持有人和跳过。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的修前多持有人桌面原图对照，双持有人状态、说明和底部跳过布局保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793586152139-4ntj43\\多持有人状态候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793587681387-h92bwx\\多持有人状态候选-横屏.png",
+      "sha256": "b1bf9c61f1a6411dd719796866182ed23dd2c08a3478790b1bfb49841c601c94",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793586152139-4ntj43\\多持有人状态候选-横屏.png",
+      "entryPath": "37-多持有人状态候选-横屏.png",
+      "status": "carried-forward",
+      "observation": "横屏两名持有人的状态和归属完整，左下说明不挡候选及底部跳过。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "复用同一完整状态选择器的双持有人结构；横屏仍显示归属和状态，不另造简化菜单。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793586152139-4ntj43\\多持有人状态候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793587681387-h92bwx\\无合法状态仅跳过-桌面.png",
+      "sha256": "9f84e4683e522f7820be7f24ac09292196f3717061dbc457006f8f8c294b46b4",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793586152139-4ntj43\\无合法状态仅跳过-桌面.png",
+      "entryPath": "38-无合法状态仅跳过-桌面.png",
+      "status": "carried-forward",
+      "observation": "无合法状态时只保留可读的跳过动作，没有伪造状态候选。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "无候选回到原平面选项承载，仅显示真实可选的跳过，不将空态伪装成状态选择器。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793586152139-4ntj43\\无合法状态仅跳过-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793587681387-h92bwx\\旧共有牌再见-状态候选.png",
+      "sha256": "a254a9ccd6d80c9b605d75fa9468e0ca7cce3afc058a1aaff70dc54ad5b72f5c",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793586384312-k77506\\旧共有牌再见-状态候选.png",
+      "entryPath": "51-旧共有牌再见-状态候选.png",
+      "status": "carried-forward",
+      "observation": "旧共有牌状态界面显示两名持有人的同名致盲，取消与置灰确认保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的旧共有牌候选原图对照，双持有人、同名状态、取消与确认保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793586384312-k77506\\旧共有牌再见-状态候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793587681387-h92bwx\\旧共有牌再见-实际持有人已选.png",
+      "sha256": "88533e431006db9b20c3ed501474474362d63736114b9a427f7b3d38e9ec47c2",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793586384312-k77506\\旧共有牌再见-实际持有人已选.png",
+      "entryPath": "52-旧共有牌再见-实际持有人已选.png",
+      "status": "carried-forward",
+      "observation": "只有敌方持有人的致盲出现绿勾，自己的同名状态保持未选，确认转亮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "与已逐张读取的旧共有牌已选原图对照，仅实际持有人状态出现绿勾，原取消确认保持。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "保留旧完整组件与动作合同，新增仅为规则候选或持有人语义适配，未观察到本范围未授权视觉改版。"
+      },
+      "protectedSlots": [
+        "当前候选本体和持有人归属保留",
+        "说明避开候选及确认",
+        "确认或跳过置于候选之后",
+        "模态层暂停背景决策，未删除背景资源和牌桌"
+      ],
+      "negativeImpactChecks": [
+        "沿用原模态层承载当前决策",
+        "可读说明没有接管候选或遮住提交",
+        "保留合法候选与原确认回调"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793586384312-k77506\\旧共有牌再见-实际持有人已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位\\_runs\\e2e-1793587681387-h92bwx\\重投左中与上方攻击修正同屏-桌面.png",
+      "sha256": "2b36c6ad828bb7de331a2fb0f0db6ed9f2f468a70d103de212c5269887d4ac16",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位\\_runs\\e2e-1793586384312-k77506\\重投左中与上方攻击修正同屏-桌面.png",
+      "entryPath": "54-重投左中与上方攻击修正同屏.png",
+      "status": "carried-forward",
+      "observation": "重投提示位于骰盘左侧垂直中点，原攻击修正在骰盘上方独立显示且二者不交叠。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "原源码的骰盘左中提示锚点和上方修正锚点均保留，当前同屏原图直接证明二者独立。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "reason": "用户明确要求骰盘左中提示且上方攻击修正独立；仅恢复原锚点和接入同源合同。"
+      },
+      "protectedSlots": [
+        "骰盘及骰子本体保留",
+        "提示在骰盘左中且不遮骰子",
+        "取消确认或奖励确认在骰盘下方",
+        "原上方攻击修正槽独立",
+        "玩家资源与阶段仍保留"
+      ],
+      "negativeImpactChecks": [
+        "提示移动仍锚定骰盘而非屏幕左侧",
+        "未挤出骰子和下方操作",
+        "攻击修正未迁入提示槽"
+      ],
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "reviewMode": "unchanged-byte-inheritance",
+      "unchangedEvidence": "当前冻结源码重拍文件与已实际读取的原图哈希一致，本屏所属组件及验收条件未变；保留原观察和实际读图路径，本轮未重读。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-b.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位\\_runs\\e2e-1793586384312-k77506\\重投左中与上方攻击修正同屏-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-b.json"
+      ]
+    }
+  ],
+  "baselineRequirements": [
+    {
+      "id": "ui-1",
+      "requirement": "重投提示复用原骰盘左侧垂直中点，攻击修正保留上方且二者同屏不重合",
+      "baselineSource": "c057cfe76原RightSidebar选骰锚点及用户本轮再次明确的骰盘左侧居中；修前23/25图是该锚点的实际历史帧。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\23-值得拥有骰子候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\25-值得拥有骰子已选两次.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\23-值得拥有骰子候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\24-值得拥有骰子已选一次.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\25-值得拥有骰子已选两次.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\54-重投左中与上方攻击修正同屏.png"
+      ],
+      "status": "PASS",
+      "preservedInformation": "保留骰盘、实际投掷者骰子、重投进度或完成提示和上方攻击修正。",
+      "preservedActions": "保留骰子选择及重选、取消、确认和奖励骰确认；截图只裁定可见承载，结算规则另验。",
+      "changes": "当前显式补足左中纵向变换并由共享合同提供提示；奖励提示复用同一槽，上方攻击修正保持原独立槽。",
+      "duplicateDecision": "骰盘左中仅承载当前交互提示，上方仅承载攻击修正，两个不同职责不合并也不互相替代。",
+      "changeAuthority": "用户多轮明确要求骰盘左侧垂直居中且上方攻击修正不得重合；原锚点由指定历史源码直接锁定，未认可该提交全部界面。"
+    },
+    {
+      "id": "ui-5",
+      "requirement": "状态和玩家选择复用旧完整组件，保留候选归属紧凑布局及说明检视",
+      "baselineSource": "c057cfe76状态及玩家选择完整合同；09紧凑与对比度为用户已点名要求，不能拿邻近入口替代。当前before是上一轮该入口真实帧，本轮绑定及owner未改。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\05-深红系带玩家候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\09-状态候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\36-多持有人状态候选-桌面.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\05-深红系带玩家候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\06-深红系带玩家已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\07-状态候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\08-状态已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\09-状态候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\10-状态已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\34-所有玩家目标候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\35-所有玩家队友已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\36-多持有人状态候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\37-多持有人状态候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\38-无合法状态仅跳过-桌面.png"
+      ],
+      "status": "PASS",
+      "preservedInformation": "保留玩家座位及自己敌方队友归属、各持有人正式状态本体、候选与选中反馈和说明。",
+      "preservedActions": "保留玩家选择、状态选择、说明检视、可选跳过和确认，规则候选通过原组件消费。",
+      "changes": "本轮状态与玩家的完整组件和绑定未改；博士单持有人紧凑布局和说明避让属于此前获准内容，同名状态按持有人限定选中反馈。",
+      "duplicateDecision": "候选本体承担选择，说明承担规则检视，确认承担提交，没有另造文字候选或重复选择摘要。",
+      "changeAuthority": "用户要求复用旧完整组件并明确要求横屏紧凑与高对比；修前原图只证明对应入口已存在的布局，不视为整体恢复已获认可。"
+    },
+    {
+      "id": "ui-8",
+      "requirement": "旧共有牌状态选择只选中实际持有人且原确认行为不变",
+      "baselineSource": "旧共有牌再见真实手牌入口→原状态选择器；状态/持有人反馈使用同一原合同，本轮未改其owner和绑定。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\51-旧共有牌再见-状态候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\52-旧共有牌再见-实际持有人已选.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\51-旧共有牌再见-状态候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\52-旧共有牌再见-实际持有人已选.png"
+      ],
+      "status": "PASS",
+      "preservedInformation": "保留旧共有牌双持有人及同名状态、实际持有人选中反馈、原取消和确认。",
+      "preservedActions": "原手牌触发状态选择，点击后只在实际持有人本体反馈，取消及确认仍由原回调承接。",
+      "changes": "当前旧共有牌入口及确认绑定未改；状态选择反馈依照玩家与状态二元组显示，避免同名状态跨持有人误亮。",
+      "duplicateDecision": "每名持有人各自展示自己实际拥有的状态，同名状态属于不同实体，不删除其一；仅实际选中实体出现绿勾。",
+      "changeAuthority": "用户要求旧共有牌复用完整旧界面且只选中实际持有人；本次原图与修前实际入口对照，不把历史提交中同名状态跨玩家误亮视为应恢复行为。"
+    }
+  ],
+  "sourceInspection": [
+    {
+      "path": "src/games/dicethrone/domain/customActions/common.ts",
+      "observation": "旧共有牌再见经移除状态动作创建原状态交互；值得拥有经重投动作创建原骰子交互。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "observation": "博士对象选项投影到原完整选择器；状态候选携带持有人及状态，确认回传原选项标识，未复制状态或玩家渲染。"
+    },
+    {
+      "path": "src/games/dicethrone/Board.tsx",
+      "observation": "旧状态入口经本地交互状态进入同一完整选择器；状态确认传实际玩家与状态，骰子合同在一次创建后传给提示、骰盘和操作消费者。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "observation": "原持有人卡、正式状态容器、玩家卡和确认继续承担渲染；选中状态同时核持有人，博士单持有人采用已授权紧凑宽度。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "observation": "当前提示使用原骰盘左中锚点并显式补纵向变换，攻击修正保留骰盘上方独立锚点；当前同屏图证实实际效果。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/diceInteractionContract.ts",
+      "observation": "提示、合法骰子、已完成骰子及动作来自同一骰子合同，原骰盘直接消费，不由旁路提示替代。"
+    }
+  ],
+  "protectedSlots": [
+    "当前交互候选与所属玩家",
+    "正式状态及骰子本体",
+    "说明检视和确认或跳过",
+    "骰盘左中提示槽",
+    "骰盘上方攻击修正槽",
+    "背景阶段资源与手牌上下文"
+  ],
+  "negativeImpactChecks": [
+    "三项指定旧入口的修前原图与当前原图逐张比较，未发现本范围信息或动作被删除。",
+    "单持有人紧凑弹窗与说明避让保留状态本体、归属和动作；多持有人仍各有独立承载。",
+    "奖励骰与重投提示只占骰盘左中原提示槽，未挤占上方修正或下方操作。",
+    "旧共有牌同名状态分属两名玩家，只有实际持有人的选中反馈变化，未影响另一候选。"
+  ],
+  "hardFailures": [],
+  "limitations": [
+    "本报告不以截图证明重投次数、伤害数字或状态结算规则正确性。",
+    "未把单测通过或链路通过作为图面通过理由。",
+    "仅覆盖指定桌面和横屏状态，不延伸认定竖屏及其它新交互。",
+    "无可见破图或错误提示仅是图面观察，不证明控制台或网络无错误。"
+  ],
+  "incrementalReview": {
+    "changedMediaRead": 6,
+    "unchangedByteInherited": 12,
+    "reviewer": "/root/doctor_reuse_final_b",
+    "evidenceScope": "本轮六张变化媒体私有逐张实读，十二张同字节媒体保留实际读取路径并继承前轮结论。",
+    "sourceE2eSha": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff"
+  }
+}

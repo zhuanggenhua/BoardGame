@@ -1,0 +1,138 @@
+{
+  "objective": "判断教程提示是否按层级保护当前对象，并在整屏第一眼自然承接辽北征召、战后占领和外喀尔喀外交目标",
+  "reviewer": "/root/semantic_anchor_private",
+  "mode": "private-original-image-review",
+  "status": "PASS",
+  "claimScope": "保存点恢复诊断，仅三张所示界面的视觉结论",
+  "fullChainClaimed": false,
+  "naturalFullChainVerified": false,
+  "captureProvenance": "主线程提供的合法正式命令管线保存点恢复诊断；本报告不将其冒充自然全链",
+  "criteria": [
+    "提示贴近真正的对象名或正式决策内容，第一眼能对应当前任务",
+    "当前正式操作面板、兵牌、人口及合法候选可辨且未被白色提示遮住",
+    "允许较高层的教程提示覆盖无关地图背景，不将整幅地图当作禁遮保护面"
+  ],
+  "summary": {
+    "total": 3,
+    "PASS": 3,
+    "REVISE": 0
+  },
+  "items": [
+    {
+      "id": "recruit-source",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147-fit\\recruit-source.png",
+      "sha256": "2b4a51925d665b7635c198a230602ea2bf9923ffe1681e2ad4fbe9e1a6b73280",
+      "status": "PASS",
+      "observations": [
+        "白色提示位于辽北地区名右侧，第一眼能将“这里征召”与带白色边界的辽北区域相连。",
+        "辽北地区名、兵牌、人口数字完整可见；右侧征召方式正式面板完整，提示未覆盖面板。",
+        "允许覆盖右上方与本步无关的底图和邻区背景，未为保全整幅地图而将提示移走。"
+      ],
+      "measurementPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147-fit\\recruit-source.json",
+      "anchor": {
+        "id": "qidahen-map-region-focus-name",
+        "bounds": {
+          "x": 1317.203125,
+          "y": 124.8125,
+          "width": 36,
+          "height": 20,
+          "top": 124.8125,
+          "right": 1353.203125,
+          "bottom": 144.8125,
+          "left": 1317.203125
+        }
+      },
+      "gap": 61.625,
+      "previous": {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r146-layering-pc-20261101\\desktop\\08-recruit-source.png",
+        "sha256": "5e90a220774a6b6c1d49d0dc484a40f0b445e410f1b03727602cdfb1d7effd4d",
+        "status": "REVISE",
+        "failureEliminated": true,
+        "comparison": "旧图白色提示遮住右侧征召面板且与辽北名不够贴近；当前图提示位于地区右侧，正式面板完整，该失败在此保存点已消除。"
+      }
+    },
+    {
+      "id": "occupy",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147\\occupy.png",
+      "sha256": "b706273f057d8b0e1f2def19d7c1cbc9b2219425b05fa59cd0d6c57e53cc0c20",
+      "status": "PASS",
+      "observations": [
+        "白色说明与右侧战后决策面板水平相邻，阅读后可直接转向占领或撤回按钮。",
+        "战后结果、占领与撤回按钮及战报入口完整可见，白色提示没有覆盖当前正式面板。",
+        "白提示跨在非当前操作对象的地图背景之上，不与兵牌、人口或当前决策争夺同一承载。"
+      ],
+      "measurementPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147\\occupy.json",
+      "anchor": {
+        "id": "qidahen-post-battle-selection",
+        "bounds": {
+          "x": 1490,
+          "y": 288,
+          "width": 358,
+          "height": 204,
+          "top": 288,
+          "right": 1848,
+          "bottom": 492,
+          "left": 1490
+        }
+      },
+      "gap": 20,
+      "previous": {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r146-layering-pc-20261101\\desktop\\26-occupy.png",
+        "sha256": "da99b8aa04f61e51477b8a3a6800a133aff36fd038ce16119ba83b8d11f1414a",
+        "status": "REVISE",
+        "failureEliminated": true,
+        "comparison": "旧图提示落在右下地图且远离右上决策面板，面板高亮还延伸出大片空白；当前提示贴邻真实决策内容，该失败在此保存点已消除。"
+      }
+    },
+    {
+      "id": "diplomacy-target",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147\\diplomacy-target.png",
+      "sha256": "9095d4a7483edff3569897020d62526391ae9e527c380709821396f117edd5b7",
+      "status": "PASS",
+      "observations": [
+        "提示位于外喀尔喀部标签下方，地区绿色边界与金色标记仍清楚，文中对象可自然对应到上方目标。",
+        "右侧外交次数、结束外交入口与确认按钮完整可见；当前候选标记及人口数字没有被白提示盖住。",
+        "提示覆盖左上无关轮盘底图与目标区域的一部分背景，不遮挡当前需要辨认的目标标签和标记。"
+      ],
+      "measurementPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147\\diplomacy-target.json",
+      "anchor": {
+        "id": "qidahen-map-region-focus-name",
+        "bounds": {
+          "x": 857.6875,
+          "y": 123.28125,
+          "width": 78,
+          "height": 20,
+          "top": 123.28125,
+          "right": 935.6875,
+          "bottom": 143.28125,
+          "left": 857.6875
+        }
+      },
+      "gap": 20,
+      "previous": {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r146-layering-pc-20261101\\desktop\\28-diplomacy-target.png",
+        "sha256": "e3331852be95bf14246d84680a6f5f1ef40d6bc8f8e77d5634f6abeec6de6ebe",
+        "status": "REVISE",
+        "failureEliminated": true,
+        "comparison": "旧图提示在地图右下，与左上外喀尔喀目标相距明显；当前提示移至目标标签下方，该失败在此保存点已消除。"
+      }
+    }
+  ],
+  "rejectedDiagnostic": {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\semantic-anchor-r147\\recruit-source.png",
+    "sha256": "51ad8c2f03a5d43a1ac70567d282f47b1a455e6a809d60f18a3c3b79b97627ea",
+    "status": "REVISE",
+    "hintWidth": 310,
+    "gap": 122.546875,
+    "observations": [
+      "提示停在地图中上方的其他区域上方，和辽北标签之间仍有明显空档；第一眼容易把说明归到错误地域。",
+      "右侧正式征召面板虽未被遮住，但仅无重叠不足以放行该图。"
+    ],
+    "retained": true
+  },
+  "limitations": [
+    "未由此诊断证明自然教程全链、其他教程步骤或其他视口通过",
+    "数值和规则正确性不从图片作判定",
+    "本报告没有打开用户可见查看器，也没有注册最终通过图集"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "title": "小黑屋兔脚教程最终验收图",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\direct-entry.png",
+      "label": "直接进入教程：没有选择角色页",
+      "transition": "起点：打开教程真实入口后直接看到牌桌和教程提示"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\stale-character-select-restore.png",
+      "label": "旧选角存档恢复：回到教程起点",
+      "transition": "从旧选择角色存档恢复后，不再显示选角界面"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-selection-highlight.png",
+      "label": "兔脚选骰：方框贴骰子且不遮骰面",
+      "transition": "使用兔脚后进入选骰状态，候选和选中高亮都围绕骰子边缘"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-reroll-motion.png",
+      "label": "兔脚重投过程：骰子移动且确认未开放",
+      "transition": "确认使用兔脚后，骰子在骰盘内重投，确认按钮保持灰态"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-before-confirm.png",
+      "label": "重投结果确认：看清骰面后确认 0/1",
+      "transition": "重投稳定后，教程停在兔脚结果，确认按钮可用"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-after-confirm.png",
+      "label": "确认后：进入伤害分配",
+      "transition": "点击确认后没有被教程白名单拒绝，进入后续伤害分配"
+    }
+  ]
+}

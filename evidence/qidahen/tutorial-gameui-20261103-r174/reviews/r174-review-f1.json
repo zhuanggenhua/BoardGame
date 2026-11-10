@@ -1,0 +1,54 @@
+{
+  "reviewer": "/root/r174_f1",
+  "status": "PASS",
+  "score": 92,
+  "issues": [],
+  "actualReadCount": 4,
+  "media": [
+    {
+      "id": "abandon-inner-wall",
+      "reviewer": "/root/r174_f1",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/36-abandon-inner-wall.png",
+      "sha256": "2152d9471f7f3d5810875dabb9fbbe0217a0c6bdaae48b3f54832c3caac6822a",
+      "status": "PASS",
+      "score": 94,
+      "observation": "内长城青线沿印刷墙体主轴转折，未切入内侧地面；名称位于兵牌及人口读数右侧，费用二处断线留空清楚，维护与放弃按钮和当前内长城对应。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "abandon-outer-wall",
+      "reviewer": "/root/r174_f1",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/37-abandon-outer-wall.png",
+      "sha256": "f77d2397d0fbab88b695365bc4e40874fd6254fc98f1bf93a3b18939e6d84c98",
+      "status": "PASS",
+      "score": 94,
+      "observation": "外长城青线沿印刷墙体蜿蜒主轴延伸，没有切入墙内地面；外长城名称与兵牌人口区分开，费用六处断线留空，右侧维护面板明确归属大明外长城。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "upkeep-yehe",
+      "reviewer": "/root/r174_f1",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/39-upkeep-yehe.png",
+      "sha256": "df9c3583ce55bf2c811def6c26d0becee226bf401ee581eb3fefe4fa67814037",
+      "status": "PASS",
+      "score": 92,
+      "observation": "叶赫部名称和绿色区域内三支大明部队可见，耗损说明指明非汉人地区的大明驻军，支付栏再次以叶赫部定位对象并承接手牌选择与确认；确认置灰和已选零张状态清楚，未从静态图推断人口或手牌变化。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/layering_opening_visual"
+  },
+  "scope": "仅审两个桌面视口的开局轮盘说明关联、当前绿色扇区及地图平移后的同层保护，不称整个教程链通过。",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\attached\\1362\\opening-move.png",
+      "sha256": "133d9bd83be074321407bd7b58475a23deef8e1b46d5e88496f2b9b4416d7076",
+      "status": "PASS",
+      "observation": "说明卡紧邻左上轮盘，正文中的本次前进一步与唯一明亮的开垦、军屯绿色扇区属于同一阅读操作组。轮盘文字与扇区边界完整可辨，读完即可回到旁边绿色扇区操作。说明、上一步和顶部玩家读数未裁断，同层牌区保留原承载；被覆盖的无关低层地图不阻断当前轮盘任务。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\attached\\1362\\opening-move-map-panned.png",
+      "sha256": "cae53fc3535dec3231b2a5d517e4cefbe9dc6b5439362907da73ccf91f82667e",
+      "status": "PASS",
+      "observation": "地图地名、河道与实体已经改变位置，前景轮盘与旁侧说明仍构成固定的一组。唯一明亮的绿色扇区未被说明遮挡，读完不必随地图重新找落点；上方玩家状态和底部牌区保持清楚。低层印刷轮盘部分露出，没有取代前景绿色操作载体。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\attached\\1920\\opening-move.png",
+      "sha256": "c3dcd1996175500463a5c70848ace434c41b271767094e817fe6a4c306d3641d",
+      "status": "PASS",
+      "observation": "大屏中说明在左上完整轮盘右侧，左侧箭头清楚归属于轮盘，不再滑到远处。正文讲本次前进一步，旁边唯一明亮的开垦、军屯扇区可直接识别；当前绿色扇区、上一步、顶部三方读数与底部手牌均未被说明侵占。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\attached\\1920\\opening-move-map-panned.png",
+      "sha256": "e63de68cf83dcc054b160944a50c71fb0ab8455d68c8106f7cd9f6f2d33f0ca3",
+      "status": "PASS",
+      "observation": "地图平移后，当前轮盘和说明的位置关系仍与平移前一致，绿色开垦、军屯扇区完整可读。说明所指仍是前景轮盘，读完可直接点同一绿色扇区；地图背景出现的印刷轮盘未改变前景任务归属，同层玩家状态、牌堆与手牌仍在原承载。"
+    }
+  ],
+  "limitations": [
+    "静态图只证明任务关联和可见布局，点击结果与真实平移另由对应行为证据证明。",
+    "未覆盖教程后续阶段和移动端。",
+    "四张新原始整屏均已重新私读，未复用旧图面裁决。"
+  ]
+}

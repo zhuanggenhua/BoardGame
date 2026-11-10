@@ -1,0 +1,187 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/inspect_betrayal_screenshots"
+  },
+  "media": [
+    {
+      "path": "吊死鬼-完整链路-01-探索前.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "探索前稳定牌桌，角色属性和当前回合可读，无错误残留。"
+    },
+    {
+      "path": "吊死鬼-完整链路-02-选择未知房间.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "未知房间候选与选择入口可读，按钮职责明确。"
+    },
+    {
+      "path": "吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选中房间状态明确，底部放置确认可见。"
+    },
+    {
+      "path": "吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式吊死鬼事件牌与四项检定候选同屏，未见遮挡。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-力量检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "力量骰子滚动中，无提前总点数、通过失败结果或下一步按钮。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "力量骰子稳定本体、结果和进行速度检定可读。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-速度检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "速度滚动状态清楚，无提前结算。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "速度骰子稳定本体、结果和进行知识检定可读。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-知识检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识滚动状态清楚，无提前结算。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识骰子稳定本体、结果和进行神志检定可读。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-神志检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "神志滚动状态清楚，无提前结算。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "神志骰子稳定本体、结果和选择奖励属性可读。"
+    },
+    {
+      "path": "吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四项奖励候选完整可见，选择区和底部动作栏未互相遮挡。"
+    },
+    {
+      "path": "吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识加一结算结果清楚，等待唯一确认。"
+    },
+    {
+      "path": "吊死鬼-完整链路-11-确认后回牌桌.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算层关闭，牌桌恢复稳定可操作。"
+    },
+    {
+      "path": "吊死鬼-完整链路-录屏.webm",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "同次运行录屏覆盖房间选择、放置确认、四次滚动停稳、逐项承接、奖励选择、结算确认和回牌桌完整顺序。"
+    }
+  ]
+}

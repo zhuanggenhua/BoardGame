@@ -1,0 +1,77 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-09T17:05:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "属性条按 OpenDesign 等宽格实现：金色当前格与竖线共用格边，不再叠下划线或浮层分隔线。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/traitTrackSurface.tsx 使用 equal-cell-borders：外框加格间左边框，当前格金色铺满，初始格深绿，金优先。",
+        "e2e/betrayal/trait-track-ui.e2e.ts 1 passed：首格内缩不超过两像素，当前格右边与下一格左边误差不超过一像素。",
+        "01 开局图四条属性当前格金色填满格子，竖线就是格边。",
+        "03 速度初始格深绿、当前格金色相邻共边，两种填充不落在同一格。"
+      ]
+    },
+    {
+      "requirement": "去掉「当前属性」那一排。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/playerStatusRailSurface.tsx 身份条只保留棋子、一次名字和房间名。",
+        "e2e/betrayal/trait-track-ui.e2e.ts 断言 betrayal-current-traits 不含「当前属性」。",
+        "01、02、03 原图左侧都没有「当前属性」标题。"
+      ]
+    },
+    {
+      "requirement": "头像旁不要重复名字；身份只出现一次。",
+      "status": "PASS",
+      "evidence": [
+        "身份条小棋子只作图，名字只在 betrayal-hud-identity-name 出现一次，房间名另起一行。",
+        "e2e/betrayal/trait-track-ui.e2e.ts 断言 currentTraits 不含玩家名。",
+        "01、02 原图左侧只有一次「伊莎·瓦伦西亚」，棋子上没有再写名字。"
+      ]
+    },
+    {
+      "requirement": "能力描述要换行，完整可见。",
+      "status": "PASS",
+      "evidence": [
+        "能力正文 whitespace-normal break-words，带 data-ability-description。",
+        "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts 2 passed：换行后 scrollHeight 不超过可视高度，维沃摘要高度四十五像素，与急救包重叠面积为零。",
+        "01 电脑能力说明折成三行，全文可见。",
+        "02 手机横屏能力说明折行，全文可见，未挡住急救包。"
+      ]
+    },
+    {
+      "requirement": "左侧大头像换成地图上的小棋子，并重做这一条身份栏。",
+      "status": "PASS",
+      "evidence": [
+        "ExplorerFigureToken size=panel 使用 tokenAsset，测试前缀 betrayal-hud-identity-token。",
+        "已去掉四枚属性棋子装饰。",
+        "01、02、03 原图左侧是与地图同形的小五边形棋子，地图上的探索者棋子仍在房间里。"
+      ]
+    },
+    {
+      "requirement": "楼层切换放到左下角，外观按回归保持原来的小箭头切层。",
+      "status": "PASS",
+      "evidence": [
+        "roomFloorSwitcherSurface.tsx 仍是上箭头、一层、下箭头，位置改为地图左下。",
+        "e2e/betrayal/floor-switcher-visual.e2e.ts 2 passed：切层钮贴在地图左下，未改成三层文字开关。",
+        "01、02、03 原图左下可见「一层」加上下箭头，未挡住急救包和行动栏。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-od-trait-hud-token-20261009/01-PC-1920x1080-属性条与HUD.jpg",
+    "evidence/betrayal-od-trait-hud-token-20261009/02-Vivo-796x360-属性条与HUD等比.jpg",
+    "evidence/betrayal-od-trait-hud-token-20261009/03-PC-1920x1080-当前值与初始值分离.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

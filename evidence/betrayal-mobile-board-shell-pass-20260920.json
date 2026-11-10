@@ -1,0 +1,30 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "手机横屏下完整游戏内容可见，UI 不再全部消失",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程移动入口.png",
+        "移动端真实入口 E2E 已通过"
+      ]
+    },
+    {
+      "requirement": "主地图、玩家状态、右侧牌堆状态和底部动作入口保持同一等比画布",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/betrayal/山屋惊魂-教程移动端横屏验收/01-手机横屏-教程移动入口.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\山屋惊魂-教程移动端横屏验收\\01-手机横屏-教程移动入口.png"
+  ]
+}

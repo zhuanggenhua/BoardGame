@@ -1,0 +1,70 @@
+{
+  "reviewer": "/root/r174_d1",
+  "status": "PASS",
+  "score": 93,
+  "issues": [],
+  "actualReadCount": 3,
+  "media": [
+    {
+      "id": "upgrade-card",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/12-upgrade-card.png",
+      "sha256": "840591d319cf9900696e5e1da600884c69d28d146c28bd5fb1ab39bcd32f7f19",
+      "status": "PASS",
+      "score": 92,
+      "observation": "军备火炮技术以真实牌面出现在大明手牌托盘中，类别与标题能辨认；教学说明指出辽北炮兵和先研发后进攻的关系，行动轮盘及手牌区分明确，半露手牌按本轮合同保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "occupy",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/26-occupy.png",
+      "sha256": "776702b4c29fa9f240d25a830ebd7104d3333f9c1f29fb996f689a5bd81432fd",
+      "status": "PASS",
+      "score": 94,
+      "observation": "战后选择明确显示辽北进攻叶赫部，攻方损失与幸存结果仅在摘要各出现一次；占领和撤回按钮紧接结果，战报折叠入口归在同一战后面板，教学箭头贴此面板，目标叶赫区域仍可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "occupy-report",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/27-occupy-report.png",
+      "sha256": "25d2978ded0da037fb985af151ec6a65c81beafe2bdd6fd84f76b4dc0880521e",
+      "status": "PASS",
+      "score": 94,
+      "observation": "展开战报保留辽北至叶赫部的战后标题与占领撤回按钮，炮兵骑兵步兵阶段依次排列，攻守方行文和结果清楚可读；幸存结果只保留在顶部摘要，展开内容未再次显示幸存结果，没有叠加第二套结果包装。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "scope": "仅当前军备卡、战后占领选择、展开战报三张原始整屏；数值与规则正确性归行为测试。",
+  "layoutAudit": [
+    {
+      "criterion": "空间主次",
+      "status": "PASS",
+      "observation": "军备卡位于手牌主承载区；战后决策与战报同属右侧唯一面板，教学提示不替代真实操作。"
+    },
+    {
+      "criterion": "对齐栅格",
+      "status": "PASS",
+      "observation": "占领撤回按钮在结果摘要后同排，展开战报按阶段沿面板左侧连续排列。"
+    },
+    {
+      "criterion": "分组与装饰",
+      "status": "PASS",
+      "observation": "军备与战术类别清楚，战后摘要和展开明细职责分开，未出现重复幸存结果或竞争决策面板。"
+    }
+  ],
+  "hard_failures": []
+}

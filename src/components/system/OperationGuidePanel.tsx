@@ -11,8 +11,8 @@ export type OperationGuideSurface = 'web' | 'app';
 type OperationGuideButtonVariant = 'classic' | 'book';
 
 const operationGuideScreenshots = {
-    web: { src: '/images/operation-guide/home-web-fab-annotated.png', width: 1920, height: 1080 },
-    app: { src: '/images/operation-guide/home-app-fab-annotated.png', width: 390, height: 844 },
+    web: { src: '/images/operation-guide/home-web-fab-annotated.png', width: 2160, height: 1080 },
+    app: { src: '/images/operation-guide/home-app-fab-annotated.png', width: 540, height: 844 },
     game: { src: '/images/operation-guide/game-fab-annotated.png', width: 1920, height: 1080 },
     opponentPublicInfo: { src: '/images/operation-guide/opponent-public-info-annotated.png', width: 1920, height: 1080 },
     longPress: { src: '/images/operation-guide/mobile-long-press-annotated.png', width: 812, height: 375 },

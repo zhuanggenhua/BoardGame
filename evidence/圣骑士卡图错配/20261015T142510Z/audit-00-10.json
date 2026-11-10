@@ -1,0 +1,437 @@
+{
+  "scope": "圣骑士图集frame 0至10完整单卡读图审计",
+  "agentId": "/root/audit_frames_00_10",
+  "sourceAuthority": "inventory.json指定的原PNG依正式atlas裁出的完整单卡sourceCrop；全部11张已通过view_image实际读取",
+  "comparisonSources": [
+    "inventory.json expected",
+    "runtime-cards.json",
+    "src/games/dicethrone/domain/customActions/paladin.ts"
+  ],
+  "disposition": "reference",
+  "statusDefinition": "passed表示当前图片身份及已比对规则相符；failed表示有明确标题、规则或索引差异，不代表所有failed都是索引错配；未执行游戏行为验证。",
+  "summary": {
+    "total": 11,
+    "indexMismatchFrames": [
+      8,
+      10
+    ],
+    "sameCardDifferencesFrames": [
+      1,
+      2,
+      3,
+      4,
+      6
+    ],
+    "unresolvedFrames": [],
+    "passedFrames": [
+      0,
+      5,
+      6,
+      7,
+      9
+    ]
+  },
+  "items": [
+    {
+      "frame": 0,
+      "actualTitle": "神圣防御 III",
+      "actualCpCost": 4,
+      "actualTimingColor": "绿色边框，英雄升级；左侧升级箭头4CP及M主要阶段标志",
+      "bodyText": "防御投掷4[骰子]。造成[伤害1]×[剑]伤害。防止[护盾1]×[头盔]+[护盾2]×[红心]伤害。获得[1CP]×[祈祷]。如果投出[头盔][头盔][祈祷]，获得守护[白色盾形守护图标]。",
+      "identifiedRuntimeCardId": "card-holy-defense-3",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "upgradeTargets": [
+        {
+          "abilityId": "holy-defense",
+          "level": 3,
+          "defenseDice": 4,
+          "swordDamage": 1,
+          "helmPrevent": 1,
+          "heartPrevent": 2,
+          "prayCp": 1,
+          "protectCondition": {
+            "helm": 2,
+            "pray": 1
+          }
+        }
+      ],
+      "graphicElements": "上方四个绿色空骰槽；正文数字分别置于伤害/护盾/CP图标内，条件栏连续两个头盔加一个祈祷。底部盾牌插画为reference。",
+      "comparisonNote": "expected卡牌升级对象及4骰条件吻合，customActions/paladin.ts中handleHolyDefenseRoll3/handleHolyDefenseRoll的数值和III级守护条件吻合。",
+      "sourceNumber": 28,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-00-source.png",
+      "sourceCropSha256": "66e7c404557cef7f2cb67a3276f711bd00fd4f485184c477291daea1f898862f",
+      "expectedCardId": "card-holy-defense-3",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 1,
+      "actualTitle": "威势！",
+      "actualCpCost": 1,
+      "actualTimingColor": "蓝色边框，主要阶段行动；蓝星1CP及M标志",
+      "bodyText": "1名玩家获得暴击[青色放射状暴击图标]。",
+      "identifiedRuntimeCardId": "card-might",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "same-card-title",
+          "detail": "卡图标题威势！，expected标题神力！；费用和获得暴击的效果指向同一张牌，无图序错配证据。"
+        },
+        {
+          "kind": "same-card-target-definition",
+          "detail": "图面目标为1名玩家；expected描述省略目标，effects.action.target为self。只登记定义差异，未运行交互或修改规则。"
+        }
+      ],
+      "status": "failed",
+      "graphicElements": "上半部刀剑碰撞插画为reference；下半部唯一效果句及暴击图标。",
+      "sourceNumber": 29,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-01-source.png",
+      "sourceCropSha256": "f3e4d018089f7f664ead139aa052b279b5d0b7c2b8aef8b4702811d420688863",
+      "expectedCardId": "card-might",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 2,
+      "actualTitle": "祝圣！",
+      "actualCpCost": 4,
+      "actualTimingColor": "蓝色边框，主要阶段行动；蓝星4CP及M标志",
+      "bodyText": "1名玩家获得守护[白色盾形图标]、弹反[红色反向箭头图标]、暴击[青色放射状图标]和精准[蓝色靶心图标]。",
+      "identifiedRuntimeCardId": "card-consecrate",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "same-card-title",
+          "detail": "卡图为祝圣！，expected为神圣祝圣！；同卡命名差异。"
+        },
+        {
+          "kind": "same-card-description-vocabulary",
+          "detail": "图面用弹反，expected.description用神罚；handleConsecrate给任意1名玩家PROTECT/RETRIBUTION/CRIT/ACCURACY各1，结构及图示四类一致。图面显式1名玩家，expected描述省略目标，但handler有selectPlayer。"
+        }
+      ],
+      "status": "failed",
+      "graphicElements": "下半区四状态名称均与紧随图标对应；上半部举剑受光插画为reference。",
+      "sourceNumber": 30,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-02-source.png",
+      "sourceCropSha256": "d2f3c03738ef32bb3f85e82a1aebec2a906a782e812e43b81f391bae9763691e",
+      "expectedCardId": "card-consecrate",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 3,
+      "actualTitle": "神佑！",
+      "actualCpCost": 1,
+      "actualTimingColor": "蓝色边框，主要阶段行动；蓝星1CP及M标志",
+      "bodyText": "投掷1[骰子]：如果投出[剑]，抽取[牌2]。如果投出[头盔]，治疗[绿色生命3]。如果投出[红心]，治疗[绿色生命4]。如果投出[祈祷]，获得[3CP]。",
+      "identifiedRuntimeCardId": "card-divine-favor",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "same-card-title",
+          "detail": "图面神佑！，expected为神恩！；四分支2牌/治疗3/治疗4/3CP及费用1明确匹配card-divine-favor。不能因为runtime另有名为神佑！的card-gods-grace就改配到它：后者费用0且效果为祈祷4CP/其它1牌，与本图不符。"
+        }
+      ],
+      "status": "failed",
+      "graphicElements": "正文四个如果分支纵向排列，与剑、头盔、红心、祈祷四骰面一一对应；上部金色头盔插画为reference。",
+      "sourceNumber": 31,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-03-source.png",
+      "sourceCropSha256": "d460eea435fccf248af46355e8130ee9acb0f930f9b3b96e3af62677c95e9cdd",
+      "expectedCardId": "card-divine-favor",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 4,
+      "actualTitle": "赦免！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色边框，投掷阶段行动；橙星1CP及骰子标志",
+      "bodyText": "仅能在被攻击后打出。投掷1[骰子]：如果投出[剑]，造成[伤害3]伤害。如果投出[头盔]，防止[护盾3]伤害。如果投出[红心]，防止[护盾5]伤害。如果投出[祈祷]，防止[护盾2]伤害且获得[2CP]。",
+      "identifiedRuntimeCardId": "card-absolution",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "same-card-description-values",
+          "detail": "卡图为剑伤害3/头盔防3/心防5/祈祷防2且2CP。expected.description却为剑1不可防御/头盔防1/心防2/祈祷1CP；expected.effects的3/3/5/2+2CP数值与图面一致。"
+        },
+        {
+          "kind": "same-card-timing",
+          "detail": "图为橙色投掷阶段行动且显式仅能在被攻击后打出；expected.timing是instant。仅登记定义对照，未审查全部可用性校验和伤害处理链。"
+        }
+      ],
+      "status": "failed",
+      "graphicElements": "限制句位于插画下、投骰效果前；四分支分别含剑、头盔、红心、祈祷骰面。持头盔插画为reference。",
+      "sourceNumber": 32,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-04-source.png",
+      "sourceCropSha256": "ddb31040bfa33d3865b0390ae3510a107a0692652297c02b507ac68e27488bf6",
+      "expectedCardId": "card-absolution",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 5,
+      "actualTitle": "神圣防御 II",
+      "actualCpCost": 3,
+      "actualTimingColor": "绿色边框，英雄升级；左侧升级箭头3CP及M标志",
+      "bodyText": "防御投掷4[骰子]。造成[伤害1]×[剑]伤害。防止[护盾1]×[头盔]+[护盾2]×[红心]伤害。获得[1CP]×[祈祷]。",
+      "identifiedRuntimeCardId": "card-holy-defense-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "upgradeTargets": [
+        {
+          "abilityId": "holy-defense",
+          "level": 2,
+          "defenseDice": 4,
+          "swordDamage": 1,
+          "helmPrevent": 1,
+          "heartPrevent": 2,
+          "prayCp": 1
+        }
+      ],
+      "graphicElements": "上方四个绿色空骰槽；II级正文结束于获得CP，没有III级的两盔一祈祷守护段。底部盾牌插画为reference。",
+      "comparisonNote": "expected升级目标及4骰吻合；handleHolyDefenseRoll2调用isLevel3=false与本图无守护附加段相符。",
+      "sourceNumber": 27,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-05-source.png",
+      "sourceCropSha256": "7477b910b6e7ef8d43d611ebf9a56834f23cf41b0439699ca5558ffe5055881d",
+      "expectedCardId": "card-holy-defense-2",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 6,
+      "actualTitle": "教会税 II",
+      "actualCpCost": 3,
+      "actualTimingColor": "紫色边框，英雄升级/被动；左侧升级箭头3CP及M标志",
+      "bodyText": "被动。你可以在任何时候花费[1CP]以重掷1颗你的骰子。你可以在任何时候花费[2CP]以抽取[牌1]。每当你在自己的进攻投掷阶段成功地激活1个能力，且该能力使用至少1个[祈祷]时，获得[1CP]。",
+      "identifiedRuntimeCardId": "card-tithes-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "same-card-description-typo",
+          "detail": "expected.description称教皇税，标题与图面均为教会税；重掷1CP、抽牌2CP及自己进攻阶段含祈祷能力获1CP的结构化effects一致。"
+        }
+      ],
+      "status": "passed",
+      "upgradeTargets": [
+        {
+          "abilityId": "tithes",
+          "level": 2,
+          "rerollCostCp": 1,
+          "rerollOwnDice": 1,
+          "drawCostCp": 2,
+          "drawCards": 1,
+          "trigger": "自己的进攻投掷阶段成功激活至少使用1祈祷的能力",
+          "triggerCp": 1
+        }
+      ],
+      "graphicElements": "标题下独立被动椭圆标签；三段被动正文；底部手、器物与紫色棋子插画为reference。",
+      "sourceNumber": 19,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-06-source.png",
+      "sourceCropSha256": "71bd038b8e92262f8943f4087fbdeb6c63efd92a434ded39456f35ee3a802c43",
+      "expectedCardId": "card-tithes-2",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 7,
+      "actualTitle": "圣光术 II",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头2CP及M标志",
+      "bodyText": "[红心][红心]。治疗[绿色生命1]×[红心]并投掷3[骰子]：如果投出[剑]，获得暴击[青色放射状图标]。如果投出[头盔]，获得守护[白色盾形图标]。抽取[牌1]×[红心]。获得[2CP]×[祈祷]。",
+      "identifiedRuntimeCardId": "card-holy-light-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "upgradeTargets": [
+        {
+          "abilityId": "holy-light",
+          "level": 2,
+          "trigger": {
+            "heart": 2
+          },
+          "initialHealPerHeart": 1,
+          "bonusDice": 3,
+          "sword": "暴击",
+          "helm": "守护",
+          "drawPerHeart": 1,
+          "cpPerPray": 2
+        }
+      ],
+      "graphicElements": "上方两个红心骰槽为主技能门槛；先治疗后投3骰，心抽牌及祈祷CP用乘号；剑和头盔用如果投出。底部发光胸甲人物插画为reference。",
+      "comparisonNote": "expected触发2心、治疗custom、3骰分支与图面相符；customActions中圣光治疗按已投心面数量×1。此项只核对卡牌定义层，未执行额外骰解析行为。",
+      "sourceNumber": 26,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-07-source.png",
+      "sourceCropSha256": "8eb19f6b5f42eab266f67c5dc98a24c945eb75611d36b050da869f62811e7428",
+      "expectedCardId": "card-holy-light-2",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 8,
+      "actualTitle": "正义战法 II",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头2CP及M标志",
+      "bodyText": "[剑][剑][剑][头盔][头盔]。造成[伤害5]伤害并投掷3[骰子]：增加[伤害1]×[头盔]+[伤害2]×[剑]伤害。治疗[绿色生命2]×[红心]。获得[1CP]×[祈祷]。",
+      "identifiedRuntimeCardId": "card-righteous-combat-2",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "当前expected是card-righteous-combat-3/正义战法III/4CP/主伤害6/副技能执着；完整卡面实际II/2CP/主伤害5且没有副技能。与runtime-cards.json中card-righteous-combat-2的完整定义相符，后者现配frame10。"
+        }
+      ],
+      "status": "failed",
+      "upgradeTargets": [
+        {
+          "abilityId": "righteous-combat",
+          "level": 2,
+          "trigger": {
+            "sword": 3,
+            "helm": 2
+          },
+          "baseDamage": 5,
+          "bonusDice": 3,
+          "bonusDamagePerHelm": 1,
+          "bonusDamagePerSword": 2,
+          "healPerHeart": 2,
+          "cpPerPray": 1
+        }
+      ],
+      "graphicElements": "整张只有一个技能标题和一个技能区；上方3剑2盔骰面；底部持剑骑士插画为reference。",
+      "sourceNumber": 23,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-08-source.png",
+      "sourceCropSha256": "0ed7c3c61fb59578149cf727af849df35e4568c15012a14d36b84aecd61cd663",
+      "expectedCardId": "card-righteous-combat-3",
+      "disposition": "reference",
+      "indexMatchesExpected": false
+    },
+    {
+      "frame": 9,
+      "actualTitle": "神力信徒 II / 进攻姿态",
+      "actualTitles": [
+        "神力信徒 II",
+        "进攻姿态"
+      ],
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头2CP及M标志",
+      "bodyText": "神力信徒 II：[剑][剑][剑][祈祷]。造成[伤害4]不可防御伤害。然后获得暴击[青色放射状图标]和精准[蓝色靶心图标]。进攻姿态：[剑][剑][祈祷]。造成[伤害2]不可防御伤害。然后获得暴击[青色放射状图标]或精准[蓝色靶心图标]。",
+      "identifiedRuntimeCardId": "card-blessing-of-might-2",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "upgradeTargets": [
+        {
+          "abilityId": "blessing-of-might",
+          "level": 2,
+          "main": {
+            "title": "神力信徒 II",
+            "trigger": {
+              "sword": 3,
+              "pray": 1
+            },
+            "unblockableDamage": 4,
+            "tokens": [
+              "暴击",
+              "精准"
+            ],
+            "relationship": "和"
+          },
+          "variant": {
+            "title": "进攻姿态",
+            "trigger": {
+              "sword": 2,
+              "pray": 1
+            },
+            "unblockableDamage": 2,
+            "tokenChoice": [
+              "暴击",
+              "精准"
+            ],
+            "relationship": "或"
+          }
+        }
+      ],
+      "graphicElements": "白色横向分隔将上方主技能与下方进攻姿态分为两个区域；上区效果使用和，下区使用或；共享同一2CP升级对象。中部举剑人物插画为reference。",
+      "comparisonNote": "titleMatchesExpected对主标题比较；副标题为同一卡variant而非独立卡。expected两个variants的骰面、4/2不可防御伤害和双标记/二选一关系完全对应。",
+      "sourceNumber": 25,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-09-source.png",
+      "sourceCropSha256": "113e0a5b7bc75d712a213cd104a9f11c8c77a3708ca7c7a726d00873f9c6db70",
+      "expectedCardId": "card-blessing-of-might-2",
+      "disposition": "reference",
+      "indexMatchesExpected": true
+    },
+    {
+      "frame": 10,
+      "actualTitle": "正义战法 III / 执着",
+      "actualTitles": [
+        "正义战法 III",
+        "执着"
+      ],
+      "actualCpCost": 4,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头4CP及M标志",
+      "bodyText": "正义战法 III：[剑][剑][剑][头盔][头盔]。造成[伤害6]伤害并投掷3[骰子]：增加[伤害1]×[头盔]+[伤害2]×[剑]伤害。治疗[绿色生命2]×[红心]。获得[1CP]×[祈祷]。执着：[剑][剑][头盔]。治疗[绿色生命2]。造成[伤害2]不可防御伤害。",
+      "identifiedRuntimeCardId": "card-righteous-combat-3",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "当前expected是card-righteous-combat-2/II/2CP/主伤害5/无副技能；卡面实际III/4CP/主伤害6并含执着（2剑1盔，治疗2后不可防御伤害2）。与runtime-cards.json中card-righteous-combat-3完整定义相符，后者现配frame8。"
+        }
+      ],
+      "status": "failed",
+      "upgradeTargets": [
+        {
+          "abilityId": "righteous-combat",
+          "level": 3,
+          "main": {
+            "title": "正义战法 III",
+            "trigger": {
+              "sword": 3,
+              "helm": 2
+            },
+            "baseDamage": 6,
+            "bonusDice": 3,
+            "bonusDamagePerHelm": 1,
+            "bonusDamagePerSword": 2,
+            "healPerHeart": 2,
+            "cpPerPray": 1
+          },
+          "variant": {
+            "title": "执着",
+            "trigger": {
+              "sword": 2,
+              "helm": 1
+            },
+            "heal": 2,
+            "unblockableDamage": 2,
+            "order": [
+              "治疗",
+              "伤害"
+            ]
+          }
+        }
+      ],
+      "graphicElements": "白色横向分隔将上方主技能和下方执着分为两区；主区3剑2盔、副区2剑1盔。共享4CP升级对象。主区骑士插画为reference。",
+      "sourceNumber": 24,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-10-source.png",
+      "sourceCropSha256": "1f6041f07bf69620cf40a441fb406c07b58c2dd129a50e7f8f9032e90bed9def",
+      "expectedCardId": "card-righteous-combat-2",
+      "disposition": "reference",
+      "indexMatchesExpected": false
+    }
+  ]
+}

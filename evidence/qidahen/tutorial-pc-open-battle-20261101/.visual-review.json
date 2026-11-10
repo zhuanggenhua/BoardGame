@@ -1,0 +1,917 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/01-PC-辽北前线与当前目标.png",
+      "sha256": "78252187c7c6b5c48e8e20f6cf56145fc87e6918bf7fe81a87896680499a3541",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大明当前玩家标识清楚，辽北白色边界与扩充前线和获胜目标说明相呼应，下一步入口完整可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\00-frontier-goal.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/02-PC-轮盘免费前进一步.png",
+      "sha256": "e85125519e078898b1aedc2e3681900e74eccb42c4d432c4c5fda971393f0f90",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "免费前进一步和额外前进的支付说明可读，开垦军屯扇区清晰高亮，落点文字与轮盘本体吻合。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\01-opening-move.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/03-PC-到达开垦军屯与先征召.png",
+      "sha256": "49779c78d0b6bf0821e6bd7a561612aa7b3ae4c63cd47d91e9f3994ba661d8f8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "移动后的手牌行动及落点行动顺序说明清楚，先执行手牌行动与开垦军屯选项分工明确，当前选项描边可辨。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\02-prepare-hand.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/04-PC-征召弃牌支付.png",
+      "sha256": "ec0ac99437fd898a1ba1168b5f205c2c6cac0e4c54cfc9d00d65406ac27bb475",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召军队支付条显示尚需一张手牌，银两支付建议及放大镜入口清楚，半露手牌的类型与牌名可见，未遮挡支付操作。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\03-recruit-payment.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/05-PC-共享放大镜检视征召手牌.png",
+      "sha256": "fb08035990b7dfb1e212eb88c912df9b0b5561c9f3d916b3e5caaf30f60542fe",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两共享放大牌面完整显示且比例正常，关闭按钮清楚，旁侧保留支付教学说明，未见破图或文字裁切。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\04-recruit-payment-inspect.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/06-PC-全部合法征兵地区与辽北引导.png",
+      "sha256": "3529ca85c38407556fb88c78e0b1c1a4660b9a65459f11ccc3fe0ec7c44c2ab6",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图缩小后各绿色建军候选区域边界可见，辽北以白色轮廓和名称突出，选择辽北的推荐说明与地图位置对应。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\05-recruit-source.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/07-PC-辽北完整地区与建军选项.png",
+      "sha256": "1e1da35788734e6edcfbae6edafa22eaf296e3d9b012ae947e6061ede19701c8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北选中着色明确，两种建军方式的部队数量及等级文字可读，首项描边与建立六个等级二部队的引导一致。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\06-recruit-troops.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/08-PC-征召后执行同格军屯.png",
+      "sha256": "08e64281f68555b942dd61b1306ec6d605fac3456732ab6380b6e754a79f1f68",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召后辽北部队增加可见，当前轮盘落点继续亮起开垦军屯，军屯选项描边与补回手牌增加驻军的后续说明吻合。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\07-farm-action.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-first8.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/09-PC-军屯后继续同格开垦.png",
+      "sha256": "61a04a092f254f0c187b3bf8eb6641957c220a3072ae525c51bf2a502f8a263e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘当前行动与开垦入口清楚，教程说明开垦数量与人口上限，操作区和确认状态未被遮挡。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\08-reclaim-action.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/10-PC-开垦地区选择.png",
+      "sha256": "e340a0da689e98123967a35eed7847aa410a5ae69ad3390e5d73a8c09238452b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "合法开垦区域以绿色边界显示，辽东区域与人口部队本体可见，推荐文字和确认入口分区清楚。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\09-reclaim-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/11-PC-年中税赋与漕运.png",
+      "sha256": "c083a39c50f15aaf7cd0454c3b95654baf521649e2615f2de1b72c0a673d87e5",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "年中轮盘位置可见，教程说明停顿和结算，手牌上限摘要与确认弃牌入口清楚，半露手牌保留横向查看入口。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\10-midyear.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+      "sha256": "f460078b0c3af1b1b108e2600d1606a6a3e41c742cf34af50685051a236b7db2",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌教程要求与高亮手牌候选对应，保留牌名和弃牌数量均可读，确认按钮与横向翻页入口没有遮挡。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\11-hand-limit.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/13-PC-军备升级卡牌.png",
+      "sha256": "a0086cbabb65f6a5034fad28f2910004fbb734dfa8a1f66c84336fa20c744383",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "火炮技术手牌以绿色边框提示，教程位于手牌上方，手牌类型和标题可辨，轮盘与右侧行动入口保持可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\12-upgrade-card.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/14-PC-先选出兵来源.png",
+      "sha256": "6aa1ccef55cc9fe6dff17c6f4d6a24141da2170684e761c414181afc68e0e1c4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择出兵来源标题清楚，绿色合法区域完整呈现，辽北区域和部队本体可见，确认未选择状态可辨。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\13-dispatch-source.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/15-PC-地图兵牌选择出兵.png",
+      "sha256": "eee42ea28fdad9db40dd53aab6abc56028d8f6b9f625eb5b298e01049fcf6abf",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北来源区域放大居中，兵牌本体和绿色候选边框清楚，教程对应步兵与炮兵选择，已选数量和确认入口可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\14-dispatch-troops.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/16-PC-已选部队与确认出兵.png",
+      "sha256": "5256ea298b067e952dfca24139bae0a8584ca5858a64a2f6853939fdb992efd0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选中的两支步兵和一支炮兵以黄色边框及抬升反馈区分，已选三支摘要与启用的确认按钮一致可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\15-dispatch-troops-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+      "sha256": "6f0f0a0b7860563147817650ec3e03eae44423f62904f6a1f2ded9008e70125c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部目标区域及守军本体完整可见，教程明确点名该区域，合法目标边界和重新选择部队入口均清楚。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\16-dispatch-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/18-PC-战术牌使用前.png",
+      "sha256": "7830539faf7a874c843888715261e2dd5f43834ccae06c12bf58cb9aa0671627",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北至叶赫部的出兵方向与战场摘要清楚，鸳鸯阵手牌候选以绿色边框呈现，教程说明选择后确认打出，开始战斗入口可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\17-tactic-card.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+      "sha256": "4954b85ee34aab6dafa2ee38de48a6a67e63319c2a2241d6e17478dbc258e9f9",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "鸳鸯阵选中后抬升显示完整卡面和已选标记，当前战术牌摘要及打出战术牌与取消入口清楚，教程和地图对象没有互相遮挡。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\18-tactic-card-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+      "sha256": "1e66d6074ce4abb96f4e0428716e179025df93f7e325fa52faeae6e241371dda",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵阶段与攻方标记清楚，浅色六面骰悬在地图上，未见总盘或单骰盒；双方地图单位、顶部状态和底部手牌保留，无错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/0/observation"
+      },
+      "validationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/0"
+      },
+      "inheritanceNote": "继承原审图者对本张原图的裁决，合成人未重读该原图。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/21-PC-炮兵停稳与结果.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵阶段攻方骰子与算式清楚，合计三和造成零损伤在骰子下方完整可读；地图单位、顶部状态和底部手牌保留，未见总盘或分盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/1/observation"
+      },
+      "validationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/1"
+      },
+      "inheritanceNote": "继承原审图者对本张原图的裁决，合成人未重读该原图。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+      "sha256": "1eae9d1f234bd2f2ab95a89cc25bd07d64ce23dbe1858a363ea79da8a5f5c217",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑兵阶段与守方标记清楚，红色多面骰悬在地图上；舞台透明开放，双方地图单位、顶部状态和底部手牌保留，无错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/2/observation"
+      },
+      "validationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/2"
+      },
+      "inheritanceNote": "继承原审图者对本张原图的裁决，合成人未重读该原图。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-cavalry-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/23-PC-骑兵停稳与结果.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骑兵阶段守方红骰及合计一、造成零损伤完整可辨；骰子没有独立盒边，双方地图、顶部状态和手牌保持可见。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/3/observation"
+      },
+      "validationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/3"
+      },
+      "inheritanceNote": "继承原审图者对本张原图的裁决，合成人未重读该原图。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-cavalry-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+      "sha256": "836831b9a56aebf07c6b57608c407faa7a25914fe6703c61c5ac820ccd60a07f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "步兵阶段与攻方标记清楚，两枚绿色多面骰位于地图上，未见总盘和分盒；双方地图单位、顶部状态和手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/4/observation"
+      },
+      "validationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/4"
+      },
+      "inheritanceNote": "继承原审图者对本张原图的裁决，合成人未重读该原图。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-infantry-rolling.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/25-PC-步兵停稳与结果.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "步兵阶段攻方两枚绿色骰及零按十解释的两项算式可读，合计二十和造成二损伤完整显示；舞台无盘盒，地图、顶部状态和手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/5/observation"
+      },
+      "validationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json",
+        "pointer": "/items/5"
+      },
+      "inheritanceNote": "继承原审图者对本张原图的裁决，合成人未重读该原图。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-infantry-damage.jpg",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+      "sha256": "558feaf903d055f327a33997b15df2d597e8a056f011431111053101c28cc033",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四位读图者合计实际覆盖全部一百零五原帧，索引连续无缺漏；炮兵、骑兵和步兵阶段的侧别、骰子动作与停稳结果已有逐帧观察。舞台开放，无总骰盘或单骰盒，地图单位、顶部状态和手牌保留；战后选择入口已有原帧观察，未记录错误或遮挡。仅判定界面表现与可读性，不核验数值规则。",
+      "failures": [],
+      "reviewedFrameCount": 105,
+      "frameReviewSources": [
+        {
+          "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-final-review.json",
+          "sha256": "207dcddca7b3104cd786236532bdc352289846b54efcb4f82897b2dc740558e5",
+          "range": [
+            1,
+            55
+          ],
+          "framePointer": "/frames"
+        },
+        {
+          "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-b-final-review.json",
+          "sha256": "6c9bb02e18697a5a7022db31acd37fd19c10319c32d53e9b8b4a364f4bdb12ec",
+          "range": [
+            56,
+            105
+          ],
+          "framePointer": "/frames"
+        }
+      ],
+      "contributors": [
+        {
+          "reviewer": "/root/r134_battle_resume",
+          "range": [
+            1,
+            50
+          ],
+          "reviewedFrameCount": 50,
+          "sourceReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+          "sourceReportSha256": "2f65ef8ac20118efd967e8bd3f1d12abc87e7574a78aba3dce1e6a061008afe4",
+          "sourceReportStatus": "PARTIAL"
+        },
+        {
+          "reviewer": "/root/r134_battle_last_five",
+          "range": [
+            51,
+            55
+          ],
+          "reviewedFrameCount": 5,
+          "sourceReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+          "sourceReportSha256": "007a15032f5010be8378daf08e7eba175f622a138483dcb404c00b465e4edf07"
+        },
+        {
+          "reviewer": "/root/r134_battle_b",
+          "range": [
+            56,
+            104
+          ],
+          "reviewedFrameCount": 49,
+          "sourceReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-b-review.json",
+          "sourceReportSha256": "3b7dd260dac45a854031a3fcd28aefeed914668a2595f3666b3c520ea57f2a2d",
+          "sourceReportStatus": "PARTIAL"
+        },
+        {
+          "reviewer": "/root/r134_battle_last_frame",
+          "range": [
+            105,
+            105
+          ],
+          "reviewedFrameCount": 1,
+          "sourceReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-b-last-frame.json",
+          "sourceReportSha256": "6db6f5470a718d79a2bdee8907206abe9eb25c911b8e04c907ce930409948940"
+        }
+      ],
+      "inheritanceNote": "本媒体裁决机械汇集四位真实读图者的逐帧记录；合成人仅亲读第五十一至第五十五帧。",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-real-time.webm",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-battle.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/27-PC-战后占领选择.png",
+      "sha256": "c298488452c441776a4689c5bf0e34ad2f1e0b5772aa20696bd1c3fe9bbc77d0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战后摘要与占领及撤回按钮清楚，默认只呈现折叠的战报入口，没有嵌套骰盘或结果种类提示，教程不遮挡主操作。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/11"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/28-PC-主动展开只读战报.png",
+      "sha256": "4b716cfa2c8972492fe2a33f2822f9dc417d4b1dd46e2f888e1830f46d6ea2c4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战报已实际展开，炮兵骑兵步兵阶段的点数合计与损伤明细可读，内容为只读文本，占领及撤回仍清楚位于上方，折叠入口可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\27-occupy-report.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-head-remaining.json",
+      "sourceReviewEntry": "/media/12"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/29-PC-对手推进轮盘后回到大明.png",
+      "sha256": "fa03aca756300099221c8e4d74f6160d29eb2bc764acc78a8b3d840c7560911a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手回合说明与轮盘蓝框对应，下一步入口清楚，顶部势力读数和牌堆入口保留，教程文字完整，无报错或乱码。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\28-opponent-round.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/30-PC-外交友好标记选择.png",
+      "sha256": "04e55ce010800ffcb6e8e0bb7cf2001ed2645fae35f3dddca5a9656656870533",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "外交候选区域以轮廓高亮呈现，外喀尔喀部名称与教程说明可辨，右侧结束外交入口完整，教程未遮住当前候选。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\29-diplomacy-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/31-PC-外交结果与落点继续.png",
+      "sha256": "d2061e0d2f7ca051c02063431e74cf5fdc13d8eea4673dfa950d95621bf1f722",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "外交结束选项具有焦点描边，教程说明友好标记移除后的下一步，选项和说明各自完整，未见遮挡裁切或错误。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\30-diplomacy-finish.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/32-PC-外交后继续同格雇佣.png",
+      "sha256": "a372ebd8db3f3954fb54e86e908bd325a462c5873a1bac8f15844b670fdb48c8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "雇佣动作选项具有清楚焦点，右侧行动列表与下方教程相邻分离，底部手牌入口保留，玩家可辨本步行动。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\31-hire-action.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/33-PC-雇佣部队目标.png",
+      "sha256": "a18efe3663aa7c95cb1792a46fa15dbd6af8896df7b9533b2b96d6cbdaa81e72",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "雇佣军建立区域以地图轮廓高亮，辽东名称可见，右侧选择标题与确认入口完整，教程位于候选之外。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\32-hire-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/34-PC-新年朝贡与结算顺序.png",
+      "sha256": "342c54ba0b37eaa31eb22f504f41332f712f189baea8f1772e57bbadbe99db91",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新年说明位于轮盘旁且文字完整，下一步按钮清楚，右侧维护山海关选项仍可辨，顶部读数与牌堆入口保留。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\33-new-year.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/35-PC-山海关维护选择.png",
+      "sha256": "6c7ab0936bf847eba79507cfbd322384ac85f90c9772cceb38ca516fc8c4a71f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "维护山海关的弃牌维护与放弃维护选项完整，当前选项描边清楚，教程说明位于面板下方，未压住真实操作控件。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\34-maintain-shanhai.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/36-PC-叶赫部队维持费用.png",
+      "sha256": "76a8507bb93907ef513699af234cceea933d7a7784bfa901410e2078acd09a47",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部区域与三支部队候选可见，右侧耗损标题和确认入口完整，手牌候选具有边界与放大入口，教程未覆盖候选部队。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\35-upkeep-yehe.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/37-PC-三张费用牌分别选中.png",
+      "sha256": "836cf77cc623e2264a4ac9d22d3f40fbf8909369f9d2b6380a3b9f5d0c26ab7c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张选中手牌抬升显示并带已选标识，卡牌主体可辨，右侧确认按钮明亮，叶赫部候选与教程保持可见。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\36-upkeep-yehe-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/38-PC-手牌末端与翻看入口.png",
+      "sha256": "9e4d31f627cb4c141ccd43f04832e24d7a5cb64b9b302ca5f37801386898f78d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌横向滚动末端呈现新的牌面与左侧返回入口，叶赫部候选和右侧确认仍完整，教程文字无裁切，未见错误。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\37-hand-scroll-end.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/39-PC-平壤雇佣军耗损选择.png",
+      "sha256": "60d5f8c28dec872cc876e75b2ed3387c05d03f3b767f08c1817f2addba9aa916",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "平壤区域和雇佣军候选居中可辨，部队绿色描边贴合主体，右侧耗损控件与上方教程分离，文字完整且没有遮挡候选。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\38-upkeep-pyongyang.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-a.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/40-PC-选中平壤耗损部队.png",
+      "sha256": "354f1b0c6b9cd82ee87103ab61b3cb7db7621fe18b605a25692b04f8b81e7c73",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "平壤部队带有贴合本体的绿色边界与勾选，耗损面板显示已选部队并提供确认按钮，教程位于上方且未遮住目标，文字完整可读。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\39-upkeep-pyongyang-selected.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/41-PC-领取纪年卡的费用.png",
+      "sha256": "0e2efb88b64d2f7a7c651624ebe650010402981916577893a4ff83f68cdc1755",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "纪年卡本体与教程并列，领取及放弃选项完整，支付张数直接呈现在领取选项上，未选择时确认入口呈禁用态，操作归属清楚。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\40-claim-year.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/42-PC-新年顺位与纪年.png",
+      "sha256": "26cf079f820c348107017ffc3b30e552ecbc87f4bc857e2ed5088bdd20a65b33",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新顺位教程明确说明纪年领取后的顺序，纪年卡组被突出显示，右侧人物候选与放大入口仍可辨，下一步按钮完整。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\41-new-order.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/43-PC-新年度人物选择.png",
+      "sha256": "2221a33ed903513fb9fdfa4bc66ac640389be86ff78a971bd0893c59297d3cc0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "人物候选名称及对应卡面缩略图排列清晰，杨镐候选受到蓝色边界强调，教程说明点击放大镜，放大入口与候选对应且未被提示遮挡。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\42-year-character.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/44-PC-共享放大镜检视人物.png",
+      "sha256": "713f6b6dad44a0a582a74d9c6c1603f93bd831ede0228e2adb538923e76fab20",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "杨镐整张放大卡面完整且可读，右上关闭入口清楚，右侧人物候选仍能辨认。放大卡右缘覆盖了右下底层教程左侧约七十像素，多行行首被遮住；依既有上层阅读阻塞层合同，这是下层提示被覆盖，当前读卡及关闭操作未受影响。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\43-year-character-inspect.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/45-PC-新顺位首回合后回到大明.png",
+      "sha256": "62d6262f9f971486238d2bc3cab028ecc3e16557973069500c0db4488a2c3eb5",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "次年当前玩家与顺位信息在顶栏突出，轮盘位置可辨，教程说明从既有位置继续，下一步入口完整，未见遮挡或乱码。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\44-year-ready.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/46-PC-次年炮兵训练选择.png",
+      "sha256": "9e8efd7a7e3848afa860a3cc2850ed0eb52503509c24c9f999d408542daec0d4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练面板列出部队候选，叶赫部炮兵候选被清楚强调，已完成次数与当前选项均可读，教程紧邻面板且未覆盖候选或操作区域。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\45-training-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/47-PC-剩余基础训练与前线步兵.png",
+      "sha256": "d6176ef978bc9b76e0e2073dcc87e361a95768eef44cb4a587dd1b6ec4e7c7ba",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵训练后的完成次数与结果文字可读，下一支步兵候选受到清楚强调，教程说明后续训练对象，候选列表与提示分别完整呈现。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\46-training-second-target.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/48-PC-四次基础训练完成与保留手牌.png",
+      "sha256": "54f8e8b866d2f094c08fb5e31e0c13198153bc2f0cae05494f7a5b37d36c0a37",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四次基础训练完成的计数清楚，额外训练与完成训练两个决策分开，结束训练选项受强调，教程明确保留手牌并结束，文字及按钮未被遮挡。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\47-training-finish.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-pc-open-battle-20261101/media/49-PC-完整年度教程结束并继续对局.png",
+      "sha256": "ea58b2edd49854af21d7508684122c03bea05a43902d28233f8612050bb75df4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完成教程提示与完成并返回按钮完整可读，主棋盘及顶栏保持可辨，底部半露手牌符合既定呈现要求，未见错误提示或乱码。",
+      "failures": [],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\48-finish.png",
+      "independentReviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/visual-review-tail-b.json",
+      "sourceReviewEntry": "/media/9"
+    }
+  ]
+}

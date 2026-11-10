@@ -1,0 +1,503 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-recruit-chuanbing",
+  "sourceRun": "codex-tutorial-20261026-r14-final",
+  "sourceRevision": "sha256:8e396240178173146b98b9862d306643381b9b55f0097c4b56eaaf5aa8100c65",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 7 个行为检查点与 1 个独特界面状态。",
+  "steps": [
+    {
+      "id": "basic-opening-recruit-chuanbing-input-001",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "每回合各执行 1 次手牌行动和轮盘行动，先后由你决定。 轮盘由所有人共用，停下处执行对应行动：前进 1 格免费；前进 2 格让 1 名对手抽 2 张；前进 3 格让所有对手各抽 2 张。 先点右侧“征召军队”，或选一种轮盘走法。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-input-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-opening-action",
+          "expected": "choose-opening-action"
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-001-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-recruit-chuanbing-input-002",
+      "action": "点击：qidahen-action-recruit",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "每回合各执行 1 次手牌行动和轮盘行动，先后由你决定。 轮盘由所有人共用，停下处执行对应行动：前进 1 格免费；前进 2 格让 1 名对手抽 2 张；前进 3 格让所有对手各抽 2 张。 先点右侧“征召军队”，或选一种轮盘走法。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-input-002-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-002-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-002-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-002-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-action-recruit"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-recruit-chuanbing-input-003",
+      "action": "点击：qidahen-hand-card-hand-1",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-recruit-payment",
+          "tutorialText": "这张手牌将在确认后弃置。确认支付。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-recruit-payment",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-input-003-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-003-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-003-visible-tutorial-step-matches-authoritative-step",
+          "actual": "confirm-recruit-payment",
+          "expected": "confirm-recruit-payment"
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-003-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-hand-card-hand-1"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-recruit-chuanbing-input-004",
+      "action": "点击：qidahen-action-payment-confirm",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-recruit-payment",
+          "tutorialText": "这张手牌将在确认后弃置。确认支付。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-recruit-payment",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-target",
+          "tutorialText": "正规军只能在本土(深色)区域建立。宣府已高亮，点击它选择建军位置。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-target",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-input-004-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-004-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-004-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-recruit-target",
+          "expected": "choose-recruit-target"
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-004-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-action-payment-confirm"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-recruit-chuanbing-input-005",
+      "action": "点击：qidahen-map-guide-hit-target-city-region-24",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-target",
+          "tutorialText": "正规军只能在本土(深色)区域建立。宣府已高亮，点击它选择建军位置。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-target",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-formation",
+          "tutorialText": "右侧列出当前可选的部队编制及其数量、等级和兵种。选择一项建立在宣府。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-formation",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-input-005-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-005-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-005-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-recruit-formation",
+          "expected": "choose-recruit-formation"
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-005-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-map-guide-hit-target-city-region-24"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-recruit-chuanbing-input-006",
+      "action": "点击：qidahen-recruit-choice-level-4-chuanbing",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-formation",
+          "tutorialText": "右侧列出当前可选的部队编制及其数量、等级和兵种。选择一项建立在宣府。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-formation",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "action-result",
+          "tutorialText": "征召军队已结算。查看地图与右侧行动摘要；轮盘行动还未执行。上一步下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "action-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-input-006-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-006-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-006-visible-tutorial-step-matches-authoritative-step",
+          "actual": "action-result",
+          "expected": "action-result"
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-input-006-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-recruit-choice-level-4-chuanbing"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-recruit-chuanbing-capture-007",
+      "action": "记录实际输入后的稳定界面：09a-选择川兵后的实际结果",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "action-result",
+          "tutorialText": "征召军队已结算。查看地图与右侧行动摘要；轮盘行动还未执行。上一步下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "action-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "action-result",
+          "tutorialText": "征召军队已结算。查看地图与右侧行动摘要；轮盘行动还未执行。上一步下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "action-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-recruit-chuanbing-capture-007-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-capture-007-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-recruit-chuanbing-capture-007-visible-tutorial-step-matches-authoritative-step",
+          "actual": "action-result",
+          "expected": "action-result"
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "basic-opening-recruit-chuanbing-ui-01",
+      "stepId": "basic-opening-recruit-chuanbing-capture-007",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "a0e09d0a47d48737b9a6537526a04b788be86f8036e35c4681f0b31398f63dd1",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final\\09a-选择川兵后的实际结果.png",
+      "reason": "玩家完成当前输入后，教程界面呈现09a，选择川兵后的实际结果状态。"
+    }
+  ],
+  "skippedDuplicateScreenshots": []
+}

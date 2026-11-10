@@ -13,7 +13,8 @@ import {
 import {
     resolveQidahenTurnActionInteractionEvent,
 } from './turnActionInteractionEventHandlers';
-import type { QidahenCore } from './types';
+import type { QidahenBattleRolls, QidahenCore, QidahenPendingTargetAction, QidahenPublicBattleReport } from './types';
+import { buildPublicBattleReport, QIDAHEN_BATTLE_ROLLED, type QidahenBattleRolledEvent } from './battleVisualEvent';
 import { recordQidahenChronologyStatistics } from './chronologyStatistics';
 import {
     clearQidahenRuntimeInteractionCurrent,
@@ -29,16 +30,25 @@ const QIDAHEN_INTERACTION_EVENT_RESOLVERS: readonly QidahenInteractionEventResol
     resolveQidahenPendingBattleInteractionEvent,
 ];
 
+function retainBattleReport(core: QidahenCore, report: QidahenPublicBattleReport): QidahenCore {
+    if (core.pendingTargetAction) return { ...core, pendingTargetAction: { ...core.pendingTargetAction, battleReport: report } };
+    if (core.postBattleSelection) return { ...core, postBattleSelection: { ...core.postBattleSelection, battleReport: report } };
+    if (core.lastSeasonSummary) return { ...core, lastSeasonSummary: { ...core.lastSeasonSummary, battleReport: report } };
+    return core;
+}
+
 const resolveQidahenInteractionEvent = (
     state: MatchState<QidahenCore>,
     event: GameEvent,
     random: RandomFn,
+    onBattleRolled: NonNullable<QidahenInteractionResolutionContext['onBattleRolled']>,
 ): QidahenCore | null | undefined => {
     const context: QidahenInteractionResolutionContext = {
         state,
         payload: readQidahenResolvedPayload(event),
         event,
         random,
+        onBattleRolled,
     };
     for (const resolver of QIDAHEN_INTERACTION_EVENT_RESOLVERS) {
         const resolvedCore = resolver(context);
@@ -69,8 +79,16 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
         afterEvents: ({ state, events, random }): HookResult<QidahenCore> | void => {
             let nextState = state;
             let shouldClearRuntimeInteractionCurrent = false;
+            const visualEvents: QidahenBattleRolledEvent[] = [];
 
             for (const event of events) {
+                if (event.type === 'PENDING_ACTION_RESOLVED') {
+                    const report = (event.payload as { battleVisualReport?: QidahenPublicBattleReport }).battleVisualReport;
+                    if (report && !nextState.core.feignedRetreatSelection) {
+                        visualEvents.push({ type: QIDAHEN_BATTLE_ROLLED, timestamp: event.timestamp, payload: { report } });
+                        nextState = { ...nextState, core: retainBattleReport(nextState.core, report) };
+                    }
+                }
                 if (
                     event.type === 'PENDING_ACTION_RESOLVED'
                     || event.type === 'TACTIC_CARD_PLAYED'
@@ -82,8 +100,17 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
                 if (event.type !== INTERACTION_EVENTS.RESOLVED) {
                     continue;
                 }
-                const resolvedCore = resolveQidahenInteractionEvent(nextState, event, random);
+                let rolled: { pending: QidahenPendingTargetAction; rolls: QidahenBattleRolls } | undefined;
+                let resolvedCore = resolveQidahenInteractionEvent(nextState, event, random, (pending, rolls) => { rolled = { pending, rolls }; });
                 if (resolvedCore !== undefined && resolvedCore != null) {
+                    if (rolled) {
+                        const { pending, rolls } = rolled;
+                        const interactionId = (event.payload as { interactionId?: string } | undefined)?.interactionId ?? '';
+                        const report = buildPublicBattleReport(nextState.core, pending, rolls,
+                            `${state.sys.matchId ?? ''}:${state.sys.revision ?? 0}:${interactionId}:${pending.battleMode ?? 'field'}`);
+                        visualEvents.push({ type: QIDAHEN_BATTLE_ROLLED, timestamp: event.timestamp, payload: { report } });
+                        resolvedCore = retainBattleReport(resolvedCore, report);
+                    }
                     nextState = {
                         ...nextState,
                         core: recordQidahenChronologyStatistics(nextState.core, resolvedCore),
@@ -95,10 +122,10 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
                 ? clearQidahenRuntimeInteractionCurrent(nextState)
                 : nextState;
             const syncedState = syncQidahenRuntimeInteractionState(stateReadyForSync);
-            if (syncedState === state) {
+            if (syncedState === state && visualEvents.length === 0) {
                 return;
             }
-            return { state: syncedState };
+            return { state: syncedState, ...(visualEvents.length ? { events: visualEvents } : {}) };
         },
     };
 }

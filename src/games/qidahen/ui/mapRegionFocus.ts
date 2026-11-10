@@ -60,14 +60,21 @@ export const focusQidahenMapRegion = (options: {
             panX: frame.left + frame.width / 2 - mapOrigin.x - (region.left + region.width / 2) * mapScale * zoom,
             panY: frame.top + labelHeight + (frame.height - labelHeight) / 2 - mapOrigin.y - (region.top + region.height / 2) * mapScale * zoom });
         if (options.mapSize) {
-            // 自动战斗镜头保持原地图覆盖视口，不能为排骰子露出地图外空白。
+            // 同时满足对象留在可见空位及地图覆盖视口，不能先居中再简单夹取。
             const width = options.mapSize.width * mapScale * viewport.zoom;
             const height = options.mapSize.height * mapScale * viewport.zoom;
             if (width < visibleRect.width || height < visibleRect.height) return [];
-            viewport.panX = Math.max(visibleRect.left + visibleRect.width - mapOrigin.x - width,
-                Math.min(visibleRect.left - mapOrigin.x, viewport.panX));
-            viewport.panY = Math.max(visibleRect.top + visibleRect.height - mapOrigin.y - height,
-                Math.min(visibleRect.top - mapOrigin.y, viewport.panY));
+            const left = Math.max(visibleRect.left + visibleRect.width - mapOrigin.x - width,
+                frame.left - mapOrigin.x - region.left * mapScale * zoom);
+            const right = Math.min(visibleRect.left - mapOrigin.x,
+                frame.left + frame.width - mapOrigin.x - (region.left + region.width) * mapScale * zoom);
+            const top = Math.max(visibleRect.top + visibleRect.height - mapOrigin.y - height,
+                frame.top + labelHeight - mapOrigin.y - region.top * mapScale * zoom);
+            const bottom = Math.min(visibleRect.top - mapOrigin.y,
+                frame.top + frame.height - mapOrigin.y - (region.top + region.height) * mapScale * zoom);
+            if (left > right + 1e-6 || top > bottom + 1e-6) return [];
+            viewport.panX = Math.max(left, Math.min(right, viewport.panX));
+            viewport.panY = Math.max(top, Math.min(bottom, viewport.panY));
         }
         const projected = { left: mapOrigin.x + viewport.panX + region.left * mapScale * viewport.zoom,
             top: mapOrigin.y + viewport.panY + region.top * mapScale * viewport.zoom,
@@ -80,3 +87,59 @@ export const focusQidahenMapRegion = (options: {
     candidates.sort((a, b) => b.viewport.zoom - a.viewport.zoom || a.distance - b.distance);
     return candidates[0]?.viewport ?? null;
 };
+
+/** 按墙线本身避开当前可见控件；墙线外接矩形中的空地图不应被当作墙体。 */
+export function focusQidahenMapPolyline(options: {
+    points: readonly (readonly [number, number])[];
+    visibleRect: Rect;
+    mapOrigin: { x: number; y: number };
+    mapScale: number;
+    mapSize: { width: number; height: number };
+    protectedRects: readonly Rect[];
+    preferredZoom: number;
+    padding: number;
+    mapPadding?: { x: number; y: number };
+}): QidahenMapViewport | null {
+    const { points, visibleRect: screen, mapOrigin, mapScale, mapSize, padding } = options;
+    if (points.length < 2) return null;
+    const obstacles = options.protectedRects.map(rect => ({ left: rect.left - padding, top: rect.top - padding,
+        width: rect.width + 2 * padding, height: rect.height + 2 * padding }));
+    // 保留整张底图覆盖视口；墙线采用实际线段采样，避免矩形中的空白误判。
+    const samples = points.flatMap((point, index) => {
+        const next = points[index + 1];
+        if (!next) return [point];
+        const count = Math.max(1, Math.ceil(Math.hypot(next[0] - point[0], next[1] - point[1]) / 4));
+        return Array.from({ length: count }, (_, i) => [point[0] + (next[0] - point[0]) * i / count,
+            point[1] + (next[1] - point[1]) * i / count] as const);
+    });
+    const minimumZoom = Math.max(QIDAHEN_MAP_MIN_ZOOM, screen.width / (mapSize.width * mapScale), screen.height / (mapSize.height * mapScale));
+    const maxZoom = Math.min(QIDAHEN_MAP_MAX_ZOOM, options.preferredZoom);
+    const zooms: number[] = [];
+    for (let zoom = maxZoom; zoom > minimumZoom; zoom -= 0.08) zooms.push(zoom);
+    if (minimumZoom <= maxZoom) zooms.push(Math.min(maxZoom, minimumZoom + 1e-6));
+    for (const zoom of zooms) {
+        const factor = mapScale * zoom;
+        const minX = screen.left + screen.width - mapOrigin.x - mapSize.width * factor;
+        const maxX = screen.left - mapOrigin.x;
+        const minY = screen.top + screen.height - mapOrigin.y - mapSize.height * factor;
+        const maxY = screen.top - mapOrigin.y;
+        let best: { viewport: QidahenMapViewport; distance: number } | null = null;
+        for (let x = minX; x <= maxX + 0.001; x += 24) for (let y = minY; y <= maxY + 0.001; y += 24) {
+            const valid = samples.every(point => {
+                const px = mapOrigin.x + x + point[0] * factor, py = mapOrigin.y + y + point[1] * factor;
+                const padX = padding + (options.mapPadding?.x ?? 0) * factor;
+                const padY = padding + (options.mapPadding?.y ?? 0) * factor;
+                return px >= screen.left + padX && px <= screen.left + screen.width - padX
+                    && py >= screen.top + padY && py <= screen.top + screen.height - padY
+                    && !obstacles.some(rect => px >= rect.left && px <= rect.left + rect.width && py >= rect.top && py <= rect.top + rect.height);
+            });
+            if (!valid) continue;
+            const center = samples[Math.floor(samples.length / 2)];
+            const distance = Math.hypot(mapOrigin.x + x + center[0] * factor - screen.left - screen.width / 2,
+                mapOrigin.y + y + center[1] * factor - screen.top - screen.height / 2);
+            if (!best || distance < best.distance) best = { viewport: { zoom, panX: x, panY: y }, distance };
+        }
+        if (best) return best.viewport;
+    }
+    return null;
+}

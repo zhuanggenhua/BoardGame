@@ -1,0 +1,82 @@
+{
+  "unit": {
+    "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/handInteractionTray.test.tsx src/games/qidahen/__tests__/recruitTrainMapInput.test.ts src/games/qidahen/__tests__/tutorialTurnInput.test.tsx src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/seasonChoiceBranches.test.ts src/games/qidahen/__tests__/battleRollPlacement.test.tsx src/games/qidahen/__tests__/mapRegionFocus.test.ts src/games/qidahen/__tests__/battleRollProjection.test.tsx --configLoader native --maxWorkers 1",
+    "exitCode": 0,
+    "evidence": "checks/unit.log",
+    "tests": 65,
+    "files": 12
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "exitCode": 0,
+    "evidence": "checks/typecheck.log"
+  },
+  "spec": {
+    "command": "npm run spec:lint",
+    "exitCode": 0,
+    "evidence": "checks/spec.log"
+  },
+  "i18n": {
+    "command": "npm run i18n:check",
+    "exitCode": 0,
+    "evidence": "checks/i18n.log",
+    "warnings": 7,
+    "warningsScope": "范围外动态键，详见原日志；未修改校验器或豁免。"
+  },
+  "openspec": {
+    "command": "openspec validate refactor-qidahen-continuous-annual-tutorial --strict",
+    "exitCode": 0,
+    "evidence": "checks/openspec.log"
+  },
+  "diff": {
+    "command": "git diff --check -- <本轮七大恨源码、语言包、E2E、专项记录、OpenSpec与safe-image-reading>",
+    "exitCode": 0,
+    "evidence": "checks/diff.log"
+  },
+  "mapRecoveryDiagnostic": {
+    "command": "npm run test:e2e:file -- e2e/qidahen/map-candidate-recovery.tmp.e2e.ts --retries=0",
+    "exitCode": 0,
+    "evidence": "checks/mapRecoveryDiagnostic.log",
+    "scope": "从R170实际失败存档通过正式“从上次继续”恢复；只证明慢速真实平移，不代替完整主线；诊断源已移出自动收集目录。"
+  },
+  "main": {
+    "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-annual-tutorial.e2e.ts --grep=desktop --retries=0",
+    "exitCode": 0,
+    "evidence": "checks/main.log",
+    "steps": 74,
+    "media": 55
+  },
+  "lifecycle": {
+    "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts --retries=0",
+    "exitCode": 0,
+    "evidence": "checks/lifecycle.log"
+  },
+  "chronologyPlacementDiagnostic": {
+    "command": "npm run test:e2e:file -- e2e/qidahen/chronology-placement-diagnostic.tmp.e2e.ts --retries=0",
+    "exitCode": 0,
+    "evidence": "checks/chronologyPlacementDiagnostic.log",
+    "scope": "正式纪年保存点恢复，真实点击邻近领取按钮进入支付；不代替完整主线。"
+  },
+  "videoFrameCoverage": {
+    "command": "python .tmp/prepare-qidahen-r174-video-review.py；五个短上下文子代理按连续区间私审，主线程核并集",
+    "exitCode": 0,
+    "evidence": "checks/video-frame-coverage.json",
+    "decodedFrames": 127,
+    "coveredFrames": 127
+  },
+  "viewerHealth": {
+    "command": "node .tmp/check-qidahen-r174-viewer.mjs <script-returned VIEWER_URL>",
+    "exitCode": 0,
+    "evidence": "checks/viewer-health.json"
+  },
+  "viewerBrowser": {
+    "command": "node .tmp/probe-qidahen-r174-viewer.mjs <script-returned VIEWER_URL>",
+    "exitCode": 0,
+    "evidence": "checks/viewer-browser-probe.json"
+  },
+  "sourceIdentity": {
+    "command": "node .tmp/check-qidahen-r174-source.mjs",
+    "exitCode": 0,
+    "evidence": "checks/source-identity.json"
+  }
+}

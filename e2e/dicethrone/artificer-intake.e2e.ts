@@ -571,7 +571,7 @@ test.describe('DiceThrone 工匠真实入口', () => {
 
             await saveEvidenceScreenshot(match.guestPage, testInfo, '07-防御方正式防御掷骰后');
 
-            const skippedDefenseResponse = await maybePassResponse(match.guestPage, 3000);
+            const skippedDefenseResponse = await maybePassResponse(match.hostPage, 3000);
             if (skippedDefenseResponse) {
                 await expect.poll(async () => {
                     const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
@@ -582,6 +582,49 @@ test.describe('DiceThrone 工匠真实入口', () => {
 
             const endDefenseButton = match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').first();
             await expect(endDefenseButton).toBeVisible({ timeout: 10000 });
+            if (!(await endDefenseButton.isEnabled().catch(() => false))) {
+                const [guestLatest, hostLatest, guestUi] = await Promise.all([
+                    getMatchState(match.matchId, match.guestPage) as Promise<JsonRecord>,
+                    getMatchState(match.matchId, match.hostPage) as Promise<JsonRecord>,
+                    match.guestPage.evaluate(() => ({
+                        attackShowcaseVisible: Array.from(document.querySelectorAll('[data-testid="attack-showcase-overlay"]'))
+                            .some((element) => element.getClientRects().length > 0),
+                        responsePassVisible: Array.from(document.querySelectorAll('[data-testid="dicethrone-response-pass-button"]'))
+                            .some((element) => element.getClientRects().length > 0),
+                        advanceDisabled: (document.querySelector('[data-tutorial-id="advance-phase-button"]') as HTMLButtonElement | null)?.disabled ?? null,
+                        openDialogs: Array.from(document.querySelectorAll('[role="dialog"]'))
+                            .filter((element) => element.getClientRects().length > 0)
+                            .map((element) => element.textContent?.trim().slice(0, 300) ?? ''),
+                    })),
+                ]);
+                const summarizeState = (snapshot: JsonRecord) => {
+                    const root = asRecord(snapshot.G ?? snapshot);
+                    const core = asRecord(root.core);
+                    const sys = asRecord(root.sys);
+                    return {
+                        phase: sys.phase ?? core.phase ?? null,
+                        activePlayerId: core.activePlayerId ?? null,
+                        rollCount: core.rollCount ?? null,
+                        rollConfirmed: core.rollConfirmed ?? null,
+                        pendingAttack: core.pendingAttack ?? null,
+                        pendingDamage: core.pendingDamage ?? null,
+                        pendingBonusDiceSettlement: core.pendingBonusDiceSettlement ?? null,
+                        currentRollContext: core.currentRollContext ?? null,
+                        interaction: sys.interaction ?? null,
+                        responseWindow: sys.responseWindow ?? null,
+                    };
+                };
+                const blockerSnapshot = {
+                    guest: summarizeState(guestLatest),
+                    host: summarizeState(hostLatest),
+                    guestUi,
+                };
+                console.log('[artificer-defense-advance-blocker]', JSON.stringify(blockerSnapshot));
+                await testInfo.attach('防御掷骰后阶段推进阻塞现场.json', {
+                    body: JSON.stringify(blockerSnapshot, null, 2),
+                    contentType: 'application/json',
+                });
+            }
             await expect(endDefenseButton).toBeEnabled({ timeout: 10000 });
             await endDefenseButton.click();
 

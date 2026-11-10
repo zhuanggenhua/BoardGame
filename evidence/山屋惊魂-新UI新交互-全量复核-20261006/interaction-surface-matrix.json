@@ -1,0 +1,106 @@
+{
+  "gameId": "betrayal",
+  "evidenceCategory": "golden",
+  "scope": "玩家可见的新 UI / 新交互截图，不以单卡效果截图替代",
+  "generatedAt": "2026-10-06",
+  "status": "REVISE",
+  "rule": "每一项都要有出现、真实操作、结果、稳定收口；物品效果只作为该交互链中的附证。",
+  "surfaces": [
+    {
+      "id": "scenario-entry",
+      "label": "剧本入口与分阵营阅读",
+      "requiredScreens": ["候选剧本/确认", "公开揭示", "分阵营阅读", "开局牌桌"],
+      "sourceTests": ["e2e/betrayal/scenario-flow-new-rules.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "当前复核视图未把入口 UI 放在主序列中。"
+    },
+    {
+      "id": "room-placement",
+      "label": "未知房间放置与朝向确认",
+      "requiredScreens": ["未知房间可探索", "放置预览", "旋转/入口选择", "确认后落桌"],
+      "sourceTests": ["e2e/betrayal/room-placement-orientation.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "需要当前工作区重跑后的直接截图。"
+    },
+    {
+      "id": "event-discovery",
+      "label": "事件牌翻出与事件选择",
+      "requiredScreens": ["事件牌本体", "选择候选", "真实提交", "结果确认/关闭"],
+      "sourceTests": ["e2e/betrayal/event-choice-coverage.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "本轮 50 条事件覆盖仅 18 passed，不能收口。"
+    },
+    {
+      "id": "dice-settle",
+      "label": "投掷、停稳、结果确认与返回牌桌",
+      "requiredScreens": ["滚动中", "骰盘停稳", "结果可读", "确认/返回牌桌", "临时层关闭"],
+      "sourceTests": ["e2e/betrayal/event-choice-coverage.e2e.ts", "e2e/betrayal/action-log-undo-screenshots.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "当前失败集中在结果可读时机和确认入口。"
+    },
+    {
+      "id": "trait-damage",
+      "label": "属性选择与伤害分配",
+      "requiredScreens": ["属性候选本体", "增减控件", "分配前值", "确认后稳定差分"],
+      "sourceTests": ["e2e/betrayal/event-choice-coverage.e2e.ts", "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "脑状食品通用伤害按钮高度当前为 28px，未达可读可点门槛。"
+    },
+    {
+      "id": "inventory-confirm",
+      "label": "物品/预兆展示、逐人确认与飞入持有区",
+      "requiredScreens": ["卡面展示", "确认进度", "最后确认", "飞行动画", "最终落位"],
+      "sourceTests": ["e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "旧证据存在，但用户新增验收口径后必须当前运行重拍。"
+    },
+    {
+      "id": "possession-use",
+      "label": "主动持有物真实使用",
+      "requiredScreens": ["持有区可选", "物品本体选中", "目标候选", "提交使用", "使用后差分"],
+      "sourceTests": ["e2e/betrayal/first-scenario-use-possession.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "四件物品效果只能放在这里作为局部附证。"
+    },
+    {
+      "id": "trade",
+      "label": "交易目标、给出/拿取与双方同意",
+      "requiredScreens": ["交易入口", "同房目标", "双方卡牌选择", "等待同意", "结算后归属"],
+      "sourceTests": ["e2e/betrayal/first-scenario-trade-interaction.e2e.ts", "e2e/betrayal/trade-multi-give.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "需要当前工作区直接截图，不用旧交易图替代。"
+    },
+    {
+      "id": "omen-haunt",
+      "label": "预兆触发、作祟揭示与承接",
+      "requiredScreens": ["预兆卡面", "作祟检定", "作祟揭示", "剧本阅读", "回到牌桌"],
+      "sourceTests": ["e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts", "e2e/betrayal/mummy-rampage-forced-omen-draw.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "女孩必须作为预兆/单位的真实承接出现，不应只显示在房间里。"
+    },
+    {
+      "id": "monster",
+      "label": "木乃伊移动、攻击、偷取、防护与伤害",
+      "requiredScreens": ["怪物动作槽", "移动目标", "攻击目标", "奖励选择", "偷取/伤害分配", "收口"],
+      "sourceTests": ["e2e/betrayal/mummy-rampage-monster-actions.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "木乃伊偷取对象必须与其持有区和攻击奖励规则一致。"
+    },
+    {
+      "id": "endgame",
+      "label": "找真名、驱逐、叛徒交付与胜负终局",
+      "requiredScreens": ["寻找真名", "驱逐/交付", "英雄胜利", "叛徒胜利", "终局结果页"],
+      "sourceTests": ["e2e/betrayal/mummy-rampage-hero-actions.e2e.ts", "e2e/betrayal/mummy-rampage-traitor-actions.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "两条终局都必须有玩家动作和终局页，不用结果状态注入冒充。"
+    },
+    {
+      "id": "support-ui",
+      "label": "日志、撤回、楼层/参考入口等新 UI",
+      "requiredScreens": ["入口出现", "玩家操作", "结果/状态", "关闭后恢复"],
+      "sourceTests": ["e2e/betrayal/action-log-undo-screenshots.e2e.ts", "e2e/betrayal/floor-switcher-visual.e2e.ts"],
+      "status": "current-scope-gap",
+      "note": "作为新 UI 交互面单独验收，不混进效果截图。"
+    }
+  ]
+}

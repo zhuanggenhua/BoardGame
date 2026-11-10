@@ -1,0 +1,284 @@
+{
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "chainId": "fate-online-post-battle-10",
+  "sourceRun": "1793798898443-570888-9d5654af-bc0a-4f6a-a83c-947dd05c2548",
+  "sourceRevision": "8134eb0f637b9512d8194a09d538378209a56c39+tree-sha256:03e3dec87ab933f6e259f645d80c7a024429bcd36a57e8e14fa40184a92ebf5a",
+  "status": "PASS",
+  "outcome": "中文事件战后选择经真实浏览器和正式网络第二席完成；选择前不提前清场、淘汰或终局，最后一项响应后才收口。",
+  "fixtureBoundary": {
+    "kind": "pipeline-generated-post-battle-representative-fixture",
+    "injectedBeforeBrowserConnection": true,
+    "naturalFlowClaim": false,
+    "round": 10,
+    "history": "分数、资源和无地利的在场起点为代表态前提；未声称此前十轮自然形成。高潮局势、地点限制、初始手牌和事件区域守恒显式构造，第三席为无士郎免淘汰能力的韦伯；第十一轮起点第三席已在上一轮淘汰。"
+  },
+  "steps": [
+    {
+      "id": "open-choice",
+      "action": "从正式联网页面进入预置的战后选择起点",
+      "before": {
+        "visible": {
+          "url": "about:blank",
+          "choiceVisible": false,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 10,
+          "phase": "battle",
+          "gameOver": false,
+          "interactionId": "fate:post-battle-seal:10:0",
+          "interactionPlayer": "0",
+          "seals": 2,
+          "thirdEliminated": false
+        }
+      },
+      "after": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": true,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 10,
+          "phase": "battle",
+          "gameOver": false,
+          "interactionId": "fate:post-battle-seal:10:0",
+          "interactionPlayer": "0",
+          "seals": 2,
+          "thirdEliminated": false
+        }
+      },
+      "assertions": [
+        {
+          "name": "open-choice",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "confirm-own-choice",
+      "action": "主视角实际确认恢复令咒，仍等待下一席",
+      "before": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": true,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 10,
+          "phase": "battle",
+          "gameOver": false,
+          "interactionId": "fate:post-battle-seal:10:0",
+          "interactionPlayer": "0",
+          "seals": 2,
+          "thirdEliminated": false
+        }
+      },
+      "after": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": false,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 10,
+          "phase": "battle",
+          "gameOver": false,
+          "interactionId": "fate:post-battle-seal:10:1",
+          "interactionPlayer": "1",
+          "seals": 3,
+          "thirdEliminated": false
+        }
+      },
+      "assertions": [
+        {
+          "name": "confirm-own-choice",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "complete-peer-choice",
+      "action": "第二席经正式传输确认放弃，最后选择完成才进入淘汰或终局",
+      "before": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": false,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 10,
+          "phase": "battle",
+          "gameOver": false,
+          "interactionId": "fate:post-battle-seal:10:1",
+          "interactionPlayer": "1",
+          "seals": 3,
+          "thirdEliminated": false
+        }
+      },
+      "after": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": false,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "gameOver": false,
+          "interactionId": null,
+          "interactionPlayer": null,
+          "seals": 3,
+          "thirdEliminated": true
+        }
+      },
+      "assertions": [
+        {
+          "name": "complete-peer-choice",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "inspect-eliminated",
+      "action": "从淘汰席位打开详情核对状态",
+      "before": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": false,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "gameOver": false,
+          "interactionId": null,
+          "interactionPlayer": null,
+          "seals": 3,
+          "thirdEliminated": true
+        }
+      },
+      "after": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": false,
+          "eliminatedLabels": [
+            "已淘汰"
+          ],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "gameOver": false,
+          "interactionId": null,
+          "interactionPlayer": null,
+          "seals": 3,
+          "thirdEliminated": true
+        }
+      },
+      "assertions": [
+        {
+          "name": "inspect-eliminated",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "observe-eliminated",
+      "action": "用该席真实凭证进入淘汰后的本人观战视角",
+      "before": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=0",
+          "choiceVisible": false,
+          "eliminatedLabels": [
+            "已淘汰"
+          ],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "gameOver": false,
+          "interactionId": null,
+          "interactionPlayer": null,
+          "seals": 3,
+          "thirdEliminated": true
+        }
+      },
+      "after": {
+        "visible": {
+          "url": "http://127.0.0.1:7273/play/fate-domination/match/mYbtHLokDyg?playerID=2",
+          "choiceVisible": false,
+          "eliminatedLabels": [],
+          "gameOver": false
+        },
+        "authoritative": {
+          "round": 11,
+          "phase": "preparation",
+          "gameOver": false,
+          "interactionId": null,
+          "interactionPlayer": null,
+          "seals": 3,
+          "thirdEliminated": true
+        }
+      },
+      "assertions": [
+        {
+          "name": "observe-eliminated",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "fate-online-post-battle-10-open-choice",
+      "stepId": "open-choice",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "54d443ff8205a09286e65e96ca237b6b8743fa3e06d55d2c865e3898d19c4a29"
+    },
+    {
+      "id": "fate-online-post-battle-10-confirm-own-choice",
+      "stepId": "confirm-own-choice",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "387c8d7ae8786c9d73d11a030997e031c956c6be93d5388acd31f18604f75b77"
+    },
+    {
+      "id": "fate-online-post-battle-10-complete-peer-choice",
+      "stepId": "complete-peer-choice",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "5a9d8499cb46062c71f2bb2cd404ff23e3dff1fe325516bf7528a774f4588d63"
+    },
+    {
+      "id": "fate-online-post-battle-10-inspect-eliminated",
+      "stepId": "inspect-eliminated",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "c69673ab72c60da6e7ef4e30c915369bd4626138124a73a33eae14fe146fe008"
+    },
+    {
+      "id": "fate-online-post-battle-10-observe-eliminated",
+      "stepId": "observe-eliminated",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "96e4c8ab3ed75c7fa6918c6d7f5e5d7037d70516b743114a33bfacd85014706f"
+    }
+  ]
+}

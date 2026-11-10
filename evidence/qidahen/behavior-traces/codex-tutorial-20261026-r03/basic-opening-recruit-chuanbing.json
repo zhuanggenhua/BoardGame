@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-recruit-chuanbing",
+  "sourceRun": "codex-tutorial-20261026-r03",
+  "sourceRevision": "sha256:23053b1ae9f44921fa0452d4be17603935dda3388fbb9cb699c77f0698c0645a",
+  "status": "FAIL",
+  "outcome": "教程 E2E 未通过；本行为链不得用于最终 PASS。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

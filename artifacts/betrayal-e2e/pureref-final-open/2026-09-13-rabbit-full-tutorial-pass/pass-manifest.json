@@ -1,0 +1,105 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-13T07:54:27.987Z",
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "使用用户指定的 4274 真实教程入口，从头走到第一次英雄目标行动，不用内部派发冒充玩家点击。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\result.json",
+        "full-tutorial-real-browser-repro PASS; 14 个真实页面截图点; failures=[]"
+      ]
+    },
+    {
+      "requirement": "兔脚改骰可选框清晰贴边，不遮挡骰子；选中后高亮清楚，不和骰子产生大间隙。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\result.json",
+        "shader shell outline; outlineGap=0.00; visualLayer=transparent-hitbox-only; selected shell ShaderMaterial visible"
+      ]
+    },
+    {
+      "requirement": "第一次投骰和兔脚重投都有可见过程帧；重投不是原地打转或闪现。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\result.json",
+        "firstRoll diceMotionType=roll unsettled; reroll diceMotionType=reroll unsettled; motionDelta=37.1px; finalDelta=44.1px; afterInsideCanvas=true"
+      ]
+    },
+    {
+      "requirement": "兔脚重投后仍保留确认骰面步骤，玩家看清结果后再确认。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\result.json",
+        "rabbit-before-confirm.png shows rabbit-foot-result with enabled readable confirmation; after confirm advances to damage allocation"
+      ]
+    },
+    {
+      "requirement": "狗和面具的队友确认必须有玩家提示，不出现无提示卡死或 tutorial_command_blocked。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\result.json",
+        "02 dog waiting, 03 dog handoff, 04 mask waiting, 05 hero reader; no command-rejected/tutorial_command_blocked logs"
+      ]
+    },
+    {
+      "requirement": "英雄读本必须能继续到目标页、关闭、回到英雄回合、移动进图书馆、寻找木乃伊真名、确认结果并收口。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\result.json",
+        "05-14 screenshots cover reader opening, goal page, close, hero turn, library move, study roll result, closeout"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\first-roll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\01-after-rabbit-damage-end-turn.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\02-dog-waiting-confirmation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\03-after-dog-confirmation-handoff.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\04-mask-waiting-confirmation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\05-hero-reader-opening.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\06-hero-reader-turn-page.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\07-hero-reader-goal.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\08-hero-reader-close.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\09-back-to-hero-turn-after-reader.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\10-open-library-move-action.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\11-library-target-visible.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\12-hero-study-name-action.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\13-hero-study-name-result-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\14-hero-study-name-closeout.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\01-labeled-first-roll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\02-labeled-rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\03-labeled-rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\04-labeled-rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\05-labeled-rabbit-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\06-labeled-01-after-rabbit-damage-end-turn.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\07-labeled-02-dog-waiting-confirmation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\08-labeled-03-after-dog-confirmation-handoff.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\09-labeled-04-mask-waiting-confirmation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\10-labeled-05-hero-reader-opening.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\11-labeled-06-hero-reader-turn-page.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\12-labeled-07-hero-reader-goal.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\13-labeled-08-hero-reader-close.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\14-labeled-09-back-to-hero-turn-after-reader.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\15-labeled-10-open-library-move-action.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\16-labeled-11-library-target-visible.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\17-labeled-12-hero-study-name-action.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\18-labeled-13-hero-study-name-result-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-full-tutorial-pass\\labeled\\19-labeled-14-hero-study-name-closeout.png"
+  ]
+}

@@ -1,0 +1,999 @@
+{
+  "label": "stale-character-select-restore",
+  "snapshot": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "objective-and-turn",
+    "overlayText": "现在是你的回合。先从“移动”开始，移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索。下一步",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAllowedCommands": null,
+      "stepInfoStep": true,
+      "stepRequireAction": null
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": null,
+      "usedCardIdsThisTurn": [],
+      "pendingDamageAllocation": null
+    },
+    "continueButton": null,
+    "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"numPlayers\":3,\"randomCursor\":228,\"savedAt\":1788997093382,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[{\"id\":1,\"event\":{\"type\":\"SYS_TUTORIAL_STARTED\",\"payload\":{\"manifestId\":\"basic-setup-and-turn\",\"stepId\":\"setup-runtime\",\"stepIndex\":0},\"timestamp\":1788997093038}},{\"id\""
+      }
+    ]
+  },
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-09T23-37-07-918Z\\stale-character-select-restore.png",
+  "logs": [
+    {
+      "at": "2026-09-09T23:37:54.764Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T23:37:54.780Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T23:37:54.822Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T23:37:54.847Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T23:37:58.154Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T23:37:58.391Z",
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…"
+    },
+    {
+      "at": "2026-09-09T23:37:58.394Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)"
+    },
+    {
+      "at": "2026-09-09T23:37:58.398Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已停止"
+    },
+    {
+      "at": "2026-09-09T23:37:58.398Z",
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:4274/lobby-socket/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "at": "2026-09-09T23:37:58.404Z",
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…"
+    },
+    {
+      "at": "2026-09-09T23:37:58.405Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)"
+    },
+    {
+      "at": "2026-09-09T23:37:58.475Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/admin-api/stats net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:58.518Z",
+      "type": "log",
+      "text": "[LobbySocket] ✅ 连接成功"
+    },
+    {
+      "at": "2026-09-09T23:37:59.044Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.044Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.045Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/admin-api/stats net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-400-italic-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.046Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.048Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.049Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-400-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.049Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.049Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-700-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.049Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:37:59.049Z",
+      "type": "warning",
+      "text": "[Lobby] 加载游戏热度失败，回退固定排序 TypeError: Failed to fetch\n    at fetchAdminStats (http://127.0.0.1:4274/src/api/admin-stats.ts:25:26)\n    at http://127.0.0.1:4274/src/hooks/useGamePopularityRanking.ts:49:10\n    at Object.react_stack_bottom_frame (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:18567:20)\n    at runWithFiberInDEV (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:997:72)\n    at commitHookEffectListMount (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:9411:163)\n    at commitHookPassiveMountEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:9465:60)\n    at reconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11273:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11240:11)\n    at reconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11265:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11240:11)"
+    },
+    {
+      "at": "2026-09-09T23:37:59.072Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T23:37:59.078Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T23:37:59.085Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T23:37:59.110Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T23:37:59.339Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T23:37:59.907Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:37:59.907Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:37:59.908Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:37:59.909Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T23:37:59.910Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:37:59.910Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T23:37:59.943Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:37:59.944Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:37:59.943Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:37:59.944Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T23:38:00.418Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:38:00.418Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":510}"
+    },
+    {
+      "at": "2026-09-09T23:38:00.418Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:38:00.419Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":475}"
+    },
+    {
+      "at": "2026-09-09T23:38:03.105Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:38:03.105Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":3161}"
+    },
+    {
+      "at": "2026-09-09T23:38:03.139Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T23:38:03.154Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:03.154Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:38:03.155Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:03.155Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T23:38:03.473Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:03.473Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:38:04.366Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 43.9 FPS | P95 帧时 16.7ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/mage-wars/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/dan-nguyen-md.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/knowledge.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/stephanie-richter.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.823Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/michelle-monroe.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.825Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.825Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/michelle-monroe.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.825Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.825Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/stephanie-richter.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/sanity.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/speed.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/betrayal/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/splendor/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/fantasyrealms/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/smashup/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/michelle-monroe.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/dan-nguyen-md.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/dan-nguyen-md.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/title-banner.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/dicethrone/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/the-gang/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/qidahen/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/jade-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/tictactoe/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/summonerwars/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/stephanie-richter.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.826Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/dan-nguyen-md.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/jade-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/stephanie-richter.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/title-banner.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/cardia/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/jade-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/jade-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/michelle-monroe.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/might.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/michelle-monroe.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/stephanie-richter.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-upper-landing.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/speed.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/jade-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/dan-nguyen-md.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-traitor.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.827Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/knowledge.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.828Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.828Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/might.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.828Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/sanity.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.829Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.829Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.829Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.829Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.829Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.829Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/title-banner.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:38:11.852Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T23:38:11.857Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T23:38:11.866Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T23:38:11.885Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T23:38:12.080Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T23:38:12.652Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:38:12.652Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.653Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:38:12.652Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.655Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:12.655Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.684Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:38:12.684Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.685Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:38:12.684Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.718Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:38:12.718Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":34}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.942Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:38:12.941Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":289}"
+    },
+    {
+      "at": "2026-09-09T23:38:12.942Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:38:12.941Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":257}"
+    },
+    {
+      "at": "2026-09-09T23:38:13.039Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T23:38:13.051Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:13.052Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:38:13.052Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:13.052Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T23:38:13.328Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:38:13.328Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:38:14.052Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 42.9 FPS | P95 帧时 33.3ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T23:38:28.594Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T23:38:28.594Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T23:38:28.594Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T23:38:33.617Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 38.3 FPS | P95 帧时 66.7ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T23:38:33.670Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    }
+  ]
+}

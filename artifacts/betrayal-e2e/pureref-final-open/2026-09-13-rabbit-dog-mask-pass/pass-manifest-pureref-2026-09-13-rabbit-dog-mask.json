@@ -1,0 +1,58 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "兔脚选择框与选中高亮清晰可见，贴近骰子且不遮挡骰面",
+      "status": "PASS",
+      "evidence": [
+        "AI 图面自检通过：rabbit-selection-highlight.png 候选框贴近骰面且不遮挡骰子",
+        "真实入口专项 PASS：BG_REPRO_SCENARIOS=rabbit-confirm,rabbit-immediate-confirm,rabbit-confirm-after-reload"
+      ]
+    },
+    {
+      "requirement": "兔脚重投和首次投掷有可见动画，不再只是闪现或原地打转",
+      "status": "PASS",
+      "evidence": [
+        "AI 图面自检通过：rabbit-reroll-motion.png 能看到重投位移",
+        "骰子引擎专项测试通过：指定值首次投骰使用受控低抛向量，不再调用第三方默认高抛 roll"
+      ]
+    },
+    {
+      "requirement": "兔脚、狗牌、面具的确认步骤和刷新恢复不会被教程误跳过或误拦截",
+      "status": "PASS",
+      "evidence": [
+        "兔脚真实入口专项 PASS：rabbit-foot-result 点击确认后进入 finish，刷新恢复后 logBlocked=false",
+        "狗/面具真实入口专项 PASS：failures=[]，dogResumePromptVisible=true，hasTutorialCommandBlocked=false",
+        "标准 Playwright E2E 通过：主线教程自然推进到第一次英雄目标行动，作祟后英雄读本链路通过"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\01-labeled-rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\02-labeled-rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\03-labeled-rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\04-labeled-rabbit-after-reload-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\05-labeled-02-dog-confirm-before-click.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\06-labeled-03-dog-confirm-after-reload-resume.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\07-labeled-06-after-player-end-turn-mask-revealed.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\pureref-final-open\\2026-09-13-rabbit-dog-mask-pass\\08-labeled-07-after-mask-confirm-hero-reader.png"
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-12T16-47-18-824Z\\rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-12T16-47-18-824Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-12T16-47-18-824Z\\rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-12T16-47-18-824Z\\rabbit-after-reload-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\dog-confirm-real-browser-repro\\2026-09-12T16-52-16-952Z\\02-dog-confirm-before-click.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\dog-confirm-real-browser-repro\\2026-09-12T16-52-16-952Z\\03-dog-confirm-after-reload-resume.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\dog-confirm-real-browser-repro\\2026-09-12T16-52-16-952Z\\06-after-player-end-turn-mask-revealed.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\dog-confirm-real-browser-repro\\2026-09-12T16-52-16-952Z\\07-after-mask-confirm-hero-reader.png"
+  ]
+}

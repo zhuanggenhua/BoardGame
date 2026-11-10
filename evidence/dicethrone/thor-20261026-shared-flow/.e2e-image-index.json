@@ -1,0 +1,528 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/01-索尔正式角色板与卡牌.png",
+      "chainId": "companion-odin",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "正式夹具预置索尔/武僧主阶段后读取角色板、正式素材和四张手牌",
+      "description": "索尔正式角色板与卡牌",
+      "behaviorStepId": "companion-odin-01",
+      "uiStateId": "companion-odin-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "正式夹具预置索尔/武僧主阶段后读取角色板、正式素材和四张手牌",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/02-弃牌飞掷选择成本.png",
+      "chainId": "companion-odin",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击姆乔尔尼尔主动入口，在原手牌区选择弃牌成本",
+      "description": "弃牌飞掷选择成本",
+      "behaviorStepId": "companion-odin-02",
+      "uiStateId": "companion-odin-02-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击姆乔尔尼尔主动入口，在原手牌区选择弃牌成本",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/03-手牌区弃置成本后飞掷结算.png",
+      "chainId": "companion-odin",
+      "chainStep": "3",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "再次打开主动入口并在原手牌区点击雷霆万钧支付飞掷成本",
+      "description": "手牌区弃置成本后飞掷结算",
+      "behaviorStepId": "companion-odin-04",
+      "uiStateId": "companion-odin-04-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "再次打开主动入口并在原手牌区点击雷霆万钧支付飞掷成本",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/04-奥丁之力二级升级完成.png",
+      "chainId": "companion-odin",
+      "chainStep": "4",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实拖出奥丁之力II升级卡，读取升级牌面和费用",
+      "description": "奥丁之力二级升级完成",
+      "behaviorStepId": "companion-odin-05",
+      "uiStateId": "companion-odin-05-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "真实拖出奥丁之力II升级卡，读取升级牌面和费用",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/05-奥丁效果骰等待选择重掷骰子.png",
+      "chainId": "companion-odin",
+      "chainStep": "5",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "推进攻击、掷骰、选奥丁并进入五颗效果骰窗口",
+      "description": "奥丁效果骰等待选择重掷骰子",
+      "behaviorStepId": "companion-odin-06",
+      "uiStateId": "companion-odin-06-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "推进攻击、掷骰、选奥丁并进入五颗效果骰窗口",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/06-使用原掷骰操作提交两颗所选骰子.png",
+      "chainId": "companion-odin",
+      "chainStep": "6",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击第1及第3颗效果骰选中子集，同槽重掷操作可用",
+      "description": "使用原掷骰操作提交两颗所选骰子",
+      "behaviorStepId": "companion-odin-07",
+      "uiStateId": "companion-odin-07-ui",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "点击第1及第3颗效果骰选中子集，同槽重掷操作可用",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/07-整组重掷一次完成.png",
+      "chainId": "companion-odin",
+      "chainStep": "7",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击原重掷动作槽一次提交两颗所选骰子",
+      "description": "整组重掷一次完成",
+      "behaviorStepId": "companion-odin-08",
+      "uiStateId": "companion-odin-08-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击原重掷动作槽一次提交两颗所选骰子",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/08-效果骰收口后进入主攻击防御.png",
+      "chainId": "companion-odin",
+      "chainStep": "8",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击原效果骰确认，处理规则分支并回到主攻击防御",
+      "description": "效果骰收口后进入主攻击防御",
+      "behaviorStepId": "companion-odin-09",
+      "uiStateId": "companion-odin-09-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "点击原效果骰确认，处理规则分支并回到主攻击防御",
+      "requirements": [
+        "原手牌单张弃牌成本、取消、奥丁II一次子集重掷与原结算确认"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/09-手牌放大完整阅读挥锤时刻.png",
+      "chainId": "worthy",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实鼠标命中并点击挥锤时刻手牌，打开完整牌面检视",
+      "description": "手牌放大完整阅读挥锤时刻",
+      "behaviorStepId": "worthy-01",
+      "uiStateId": "worthy-01-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "真实鼠标命中并点击挥锤时刻手牌，打开完整牌面检视",
+      "requirements": [
+        "当之无愧共用任意改一骰构造、原骰盘加减预览与手动确认；手牌完整检视"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/10-改骰前自己的五颗骰子.png",
+      "chainId": "worthy",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "关闭检视，推进进攻阶段并通过原投骰按钮掷五骰",
+      "description": "改骰前自己的五颗骰子",
+      "behaviorStepId": "worthy-02",
+      "uiStateId": "worthy-02-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "关闭检视，推进进攻阶段并通过原投骰按钮掷五骰",
+      "requirements": [
+        "当之无愧共用任意改一骰构造、原骰盘加减预览与手动确认；手牌完整检视"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/11-当之无愧复用骰盘原有加减改面交互.png",
+      "chainId": "worthy",
+      "chainStep": "3",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实拖出当之无愧，进入共用任意改骰加减预览",
+      "description": "当之无愧复用骰盘原有加减改面交互",
+      "behaviorStepId": "worthy-03",
+      "uiStateId": "worthy-03-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "真实拖出当之无愧，进入共用任意改骰加减预览",
+      "requirements": [
+        "当之无愧共用任意改一骰构造、原骰盘加减预览与手动确认；手牌完整检视"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/12-骰盘预览到允许的四点后可确认.png",
+      "chainId": "worthy",
+      "chainStep": "4",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击第1骰加号三次，预览4；2/3时不可确认，4时原确认入口可用",
+      "description": "骰盘预览到允许的四点后可确认",
+      "behaviorStepId": "worthy-04",
+      "uiStateId": "worthy-04-ui",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "点击第1骰加号三次，预览4；2/3时不可确认，4时原确认入口可用",
+      "requirements": [
+        "当之无愧共用任意改一骰构造、原骰盘加减预览与手动确认；手牌完整检视"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/13-改为四且其余骰子保持.png",
+      "chainId": "worthy",
+      "chainStep": "5",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击原改骰确认，只提交首骰为4且其余四骰保持",
+      "description": "改为四且其余骰子保持",
+      "behaviorStepId": "worthy-05",
+      "uiStateId": "worthy-05-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击原改骰确认，只提交首骰为4且其余四骰保持",
+      "requirements": [
+        "当之无愧共用任意改一骰构造、原骰盘加减预览与手动确认；手牌完整检视"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/14-当之无愧取消前的四点预览.png",
+      "chainId": "worthy-cancel",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实拖出当之无愧并用原加号预览首骰4",
+      "description": "当之无愧取消前的四点预览",
+      "behaviorStepId": "worthy-cancel-01",
+      "uiStateId": "worthy-cancel-01-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "真实拖出当之无愧并用原加号预览首骰4",
+      "requirements": [
+        "当之无愧原取消路径不提交预览并退牌退CP"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/15-取消改骰后骰面保持且卡牌资源退回.png",
+      "chainId": "worthy-cancel",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击原取消入口，退出预览并退还手牌与CP",
+      "description": "取消改骰后骰面保持且卡牌资源退回",
+      "behaviorStepId": "worthy-cancel-02",
+      "uiStateId": "worthy-cancel-02-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击原取消入口，退出预览并退还手牌与CP",
+      "requirements": [
+        "当之无愧原取消路径不提交预览并退牌退CP"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/16-连锁闪电触发前.png",
+      "chainId": "chain-lightning",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实投骰并确认主骰，读取连锁闪电触发前状态",
+      "description": "连锁闪电触发前",
+      "behaviorStepId": "chain-lightning-01",
+      "uiStateId": "chain-lightning-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "真实投骰并确认主骰，读取连锁闪电触发前状态",
+      "requirements": [
+        "连锁闪电共用技能结果比较选择，独立附属目标与主攻击分别结算"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/17-三颗效果骰等待确认.png",
+      "chainId": "chain-lightning",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击连锁闪电并进入三颗效果骰原确认窗口",
+      "description": "三颗效果骰等待确认",
+      "behaviorStepId": "chain-lightning-02",
+      "uiStateId": "chain-lightning-02-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击连锁闪电并进入三颗效果骰原确认窗口",
+      "requirements": [
+        "连锁闪电共用技能结果比较选择，独立附属目标与主攻击分别结算"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/18-选择两颗效果骰组合.png",
+      "chainId": "chain-lightning",
+      "chainStep": "3",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击效果骰确认，在既有技能结算框比较两骰组合及伤害",
+      "description": "选择两颗效果骰组合",
+      "behaviorStepId": "chain-lightning-03",
+      "uiStateId": "chain-lightning-03-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "点击效果骰确认，在既有技能结算框比较两骰组合及伤害",
+      "requirements": [
+        "连锁闪电共用技能结果比较选择，独立附属目标与主攻击分别结算"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/19-附属伤害自动命中唯一对手并保留主攻击.png",
+      "chainId": "chain-lightning",
+      "chainStep": "4",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实点击4+6组合，唯一附属目标自动结算并保留主攻击",
+      "description": "附属伤害自动命中唯一对手并保留主攻击",
+      "behaviorStepId": "chain-lightning-04",
+      "uiStateId": "chain-lightning-04-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "真实点击4+6组合，唯一附属目标自动结算并保留主攻击",
+      "requirements": [
+        "连锁闪电共用技能结果比较选择，独立附属目标与主攻击分别结算"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/20-破防正式图标与消费入口.png",
+      "chainId": "guard-break",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "正式夹具后真实掷骰、选技能，进入有两枚破防的响应窗口",
+      "description": "破防正式图标与消费入口",
+      "behaviorStepId": "guard-break-01",
+      "uiStateId": "guard-break-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "正式夹具后真实掷骰、选技能，进入有两枚破防的响应窗口",
+      "requirements": [
+        "破防共用响应入口与效果骰确认，失败后可继续消费且主攻击收口"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/21-第一枚破防效果骰失败.png",
+      "chainId": "guard-break",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击原破防响应入口，第一枚效果骰为1",
+      "description": "第一枚破防效果骰失败",
+      "behaviorStepId": "guard-break-02",
+      "uiStateId": "guard-break-02-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "点击原破防响应入口，第一枚效果骰为1",
+      "requirements": [
+        "破防共用响应入口与效果骰确认，失败后可继续消费且主攻击收口"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/22-失败后仍可使用第二枚破防.png",
+      "chainId": "guard-break",
+      "chainStep": "3",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "确认失败骰面，回到仍可响应的主攻击窗口",
+      "description": "失败后仍可使用第二枚破防",
+      "behaviorStepId": "guard-break-03",
+      "uiStateId": "guard-break-03-ui",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "确认失败骰面，回到仍可响应的主攻击窗口",
+      "requirements": [
+        "破防共用响应入口与效果骰确认，失败后可继续消费且主攻击收口"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/23-第二枚破防效果骰成功.png",
+      "chainId": "guard-break",
+      "chainStep": "4",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "再次点击破防原响应入口，第二枚效果骰为4",
+      "description": "第二枚破防效果骰成功",
+      "behaviorStepId": "guard-break-04",
+      "uiStateId": "guard-break-04-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "再次点击破防原响应入口，第二枚效果骰为4",
+      "requirements": [
+        "破防共用响应入口与效果骰确认，失败后可继续消费且主攻击收口"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/24-不可防御主攻击结算后收口.png",
+      "chainId": "guard-break",
+      "chainStep": "5",
+      "sourceRun": "e2e-1793036760545-ahqi4o",
+      "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "确认成功骰面，完成不可防御主攻击并回主要阶段2",
+      "description": "不可防御主攻击结算后收口",
+      "behaviorStepId": "guard-break-05",
+      "uiStateId": "guard-break-05-ui",
+      "uiChange": "panel",
+      "uiChangeReason": "确认成功骰面，完成不可防御主攻击并回主要阶段2",
+      "requirements": [
+        "破防共用响应入口与效果骰确认，失败后可继续消费且主攻击收口"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/25-索尔真实双人选角与实施中标记.png",
+      "chainId": "online-entry",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793038085138-is2r0u",
+      "sourceRevision": "50e0906c84d06b937d5864fb6c410e4587e111c7decb3a202f3c36cd48fcb869",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实双人房间分别选索尔和武僧",
+      "description": "索尔真实双人选角与实施中标记",
+      "behaviorStepId": "online-entry-01",
+      "uiStateId": "online-entry-01-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "真实双人房间分别选索尔和武僧",
+      "requirements": [
+        "真实在线双人房间选择索尔，显示实施中状态并开局加载九槽和四张手牌"
+      ]
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261026-shared-flow/26-索尔在线开局角色板九槽与手牌.png",
+      "chainId": "online-entry",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793038085138-is2r0u",
+      "sourceRevision": "50e0906c84d06b937d5864fb6c410e4587e111c7decb3a202f3c36cd48fcb869",
+      "sourceDir": "evidence/dicethrone/thor-20261026-shared-flow",
+      "stage": "独特界面状态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "双方通过自己的页面准备并由主持人开局",
+      "description": "索尔在线开局角色板九槽与手牌",
+      "behaviorStepId": "online-entry-02",
+      "uiStateId": "online-entry-02-ui",
+      "uiChange": "layout",
+      "uiChangeReason": "双方通过自己的页面准备并由主持人开局",
+      "requirements": [
+        "真实在线双人房间选择索尔，显示实施中状态并开局加载九槽和四张手牌"
+      ]
+    }
+  ]
+}

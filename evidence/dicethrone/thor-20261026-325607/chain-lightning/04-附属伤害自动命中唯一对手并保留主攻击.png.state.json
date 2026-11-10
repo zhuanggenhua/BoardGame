@@ -1,0 +1,75 @@
+{
+  "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+  "visible": {
+    "text": "🛠️\nP2\n武僧\n48\n2\n0\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n2\n手动响应\n牌堆\n29\n<\n总\n伤\n害\n0\n↓\n10\n投掷\n确认\n结束防御\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n弃牌堆\nP2\n正在思考中\n·\n·\n·\n-2",
+    "handCards": []
+  },
+  "authoritative": {
+    "phase": "defensiveRoll",
+    "players": {
+      "0": {
+        "characterId": "thor",
+        "hp": 50,
+        "cp": 2,
+        "tokens": {
+          "guard_break": 0,
+          "electrokinesis": 0,
+          "mjolnir": 1
+        },
+        "hand": []
+      },
+      "1": {
+        "characterId": "monk",
+        "hp": 48,
+        "cp": 2,
+        "tokens": {
+          "taiji": 0,
+          "evasive": 0,
+          "purify": 0,
+          "knockdown": 0
+        },
+        "hand": []
+      }
+    },
+    "pendingAttack": {
+      "attackerId": "0",
+      "defenderId": "1",
+      "settlementStage": "preDamage",
+      "isDefendable": true,
+      "sourceAbilityId": "thor-chain-lightning",
+      "isUltimate": false,
+      "damageResolved": false,
+      "resolvedDamage": 0,
+      "statusEffectsAppliedThisAttack": {},
+      "attackDiceFaceCounts": {
+        "fist": 0,
+        "palm": 0,
+        "taiji": 0,
+        "lotus": 0,
+        "sword": 0,
+        "heart": 0,
+        "strength": 0,
+        "branch": 0,
+        "leaf": 0,
+        "spirit": 0,
+        "ninja_katana": 0,
+        "shuriken": 0,
+        "mask": 0,
+        "thor_hammer": 3,
+        "thor_thunder": 2
+      },
+      "attackDiceValues": [
+        1,
+        1,
+        1,
+        6,
+        6
+      ],
+      "bonusDamage": 10,
+      "attackModifierBonusDamage": 0,
+      "preDefenseResolved": true,
+      "bonusDiceResolved": true,
+      "defenseAbilityId": "meditation"
+    }
+  }
+}

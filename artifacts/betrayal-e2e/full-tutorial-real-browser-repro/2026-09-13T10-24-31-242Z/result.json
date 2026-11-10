@@ -1,0 +1,124 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T10-24-31-242Z",
+  "points": [],
+  "logs": [
+    {
+      "at": "2026-09-13T10:25:21.310Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-13T10:25:21.315Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-13T10:26:01.583Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-13T10:26:01.613Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-13T10:26:07.045Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-13T10:26:07.049Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-13T10:26:07.059Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-13T10:26:07.083Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-13T10:27:05.155Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-13T10:27:05.194Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "at": "2026-09-13T10:28:37.068Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T10:28:37.067Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-13T10:28:37.070Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T10:28:37.069Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-13T10:28:37.074Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-13T10:28:37.074Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-13T10:28:37.225Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T10:28:37.224Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-13T10:28:37.226Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T10:28:37.225Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-13T10:28:42.565Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T10:28:42.564Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":5340}"
+    }
+  ],
+  "failures": [
+    {
+      "message": "real player flow script threw before completing",
+      "error": "page.waitForFunction: Timeout 180000ms exceeded.",
+      "stack": "page.waitForFunction: Timeout 180000ms exceeded.\n    at waitForStep (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:253:14)\n    at playRabbitAndEndTurn (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:349:9)\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:681:11)",
+      "lastPoint": null,
+      "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T10-24-31-242Z\\failure.png",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "正在准备对局…加载游戏模块…",
+        "boardVisible": false,
+        "characterSelectVisible": false,
+        "loadingVisible": true,
+        "activeStepDom": null,
+        "overlay": null,
+        "tutorialNext": null,
+        "highlight": {
+          "target": null,
+          "found": false,
+          "visible": false,
+          "rect": null
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": null,
+        "core": null
+      }
+    }
+  ]
+}

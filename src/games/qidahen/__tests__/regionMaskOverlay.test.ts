@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { QIDAHEN_MASK_REGION_BY_ID, qidahenRegionColorKey } from '../ui/mapGraph';
-import { buildRegionMaskOverlayPixels } from '../ui/regionMaskOverlay';
+import { buildRegionMaskOverlayPixels, buildRegionOwnershipOverlayPixels, REGION_MASK_OVERLAY_TONES } from '../ui/regionMaskOverlay';
+import { buildQidahenRuntimeRegionIdByPixel } from '../ui/runtimeRegionOwnership';
+import sharp from 'sharp';
 
 const parseHexColor = (hex: string): readonly [number, number, number] => {
     const normalized = hex.replace('#', '');
@@ -67,6 +69,33 @@ const readAlphaAt = (pixels: Uint8ClampedArray, width: number, x: number, y: num
 );
 
 describe('Qidahen region mask overlay', () => {
+    it('印刷说明不显示选中光晕或候选描边，紧邻的土地仍用普通填色', async () => {
+        const { data, info } = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+        const owners = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), info.width, info.height);
+        const pixel = (pixels: Uint8ClampedArray, x: number, y: number) => [...pixels.subarray((y * info.width + x) * 4, (y * info.width + x) * 4 + 4)];
+        for (const tone of ['candidate', 'selected'] as const) {
+            const pixels = buildRegionOwnershipOverlayPixels(owners, info.width, info.height, new Map([['city-region-8', tone]]));
+            for (const [x, y] of [[14, 130], [50, 100], [90, 130], [165, 20], [40, 300]]) {
+                expect(pixel(pixels, x, y)[3], `${tone} 说明像素 (${x},${y})`).toBe(0);
+            }
+            for (const [x, y] of [[13, 130], [91, 130], [92, 300], [164, 20]]) {
+                expect(pixel(pixels, x, y), `${tone} 说明旁土地 (${x},${y})`).toEqual([...REGION_MASK_OVERLAY_TONES[tone].fill]);
+            }
+        }
+    });
+    it('印刷轮盘挖空不会产生巴林候选或选中圆形描边，真实地区边缘仍有描边', () => {
+        const width = 1265, height = 893;
+        const owners: Array<string | null> = Array(width * height).fill(null);
+        for (let y = 210; y <= 218; y++) for (let x = 381; x <= 400; x++) owners[y * width + x] = 'city-region-8';
+        const pixel = (pixels: Uint8ClampedArray, x: number, y: number) => [...pixels.subarray((y * width + x) * 4, (y * width + x) * 4 + 4)];
+        const candidate = buildRegionOwnershipOverlayPixels(owners, width, height, new Map([['city-region-8', 'candidate']]));
+        expect(pixel(candidate, 381, 214)).toEqual([...REGION_MASK_OVERLAY_TONES.candidate.fill]);
+        expect(pixel(candidate, 400, 214)).toEqual([...REGION_MASK_OVERLAY_TONES.candidate.stroke]);
+        const selected = buildRegionOwnershipOverlayPixels(owners, width, height, new Map([['city-region-8', 'selected']]));
+        expect(pixel(selected, 380, 214)[3]).toBe(0);
+        expect(pixel(selected, 381, 214)).toEqual([...REGION_MASK_OVERLAY_TONES.selected.fill]);
+        expect(owners[214 * width + 380]).toBeNull();
+    });
     it('选中态会沿真实轮廓两侧出线，避免视觉上只剩内缩边框', () => {
         const width = 7;
         const height = 7;

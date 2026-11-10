@@ -1,0 +1,48 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "viewport": "936x432",
+  "requirements": [
+    {
+      "requirement": "用户原始问题：手机横屏点击或触控放大后，放大内容必须完整可见且不溢出",
+      "status": "PASS",
+      "evidence": [
+        "FantasyRealms：真实入口点击放大层，卡牌 264.95x367.98，边界 x=335.52..600.47，y=32..399.98，页面 936x432",
+        "Smash Up：真实入口长按随从，放大内容 x=351..585，y=52.14..379.86，页面 936x432",
+        "Summoner Wars：真实入口点击手牌放大，放大内容 x=236..700，y=53.59..378.39，页面 936x432",
+        "Cardia：真实入口触控长按手牌放大，放大内容 x=20..234.64，y=88..412，页面 936x432，关闭按钮可见",
+        "Mage Wars：真实入口触控长按检视测试通过",
+        "Dice Throne：真实入口玩家面板放大预览测试通过"
+      ]
+    },
+    {
+      "requirement": "未确认的同类入口必须实际端到端执行，不能用静态扫描替代",
+      "status": "PASS",
+      "evidence": [
+        "Smash Up、Summoner Wars 使用真实场景长按/点击并取放大态截图",
+        "Mage Wars、Dice Throne 使用真实入口 Playwright E2E",
+        "Cardia 使用真实对局状态和触控长按完成放大层复核"
+      ]
+    }
+  ],
+  "results": [
+    {"game":"FantasyRealms","classification":"PASS_AFTER_FIX","reason":"已确认并修复放大层超出移动横屏视口"},
+    {"game":"Smash Up","classification":"PASS_NOT_REPRODUCED","reason":"真实长按随从放大内容完整在视口内，无页面溢出"},
+    {"game":"Summoner Wars","classification":"PASS_NOT_REPRODUCED","reason":"真实点击手牌放大内容完整在视口内，无页面溢出"},
+    {"game":"Mage Wars","classification":"PASS_NOT_REPRODUCED","reason":"真实入口触控长按检视测试通过"},
+    {"game":"Dice Throne","classification":"PASS_NOT_REPRODUCED","reason":"真实入口放大预览测试通过"},
+    {"game":"Cardia","classification":"PASS_NOT_REPRODUCED","reason":"真实触控长按放大内容完整在视口内，关闭按钮可见，无页面溢出"}
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mobile-audit-20260930\\fantasyrealms-clicked-magnify.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mobile-audit-20260930\\smashup-minion-long-press.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mobile-audit-20260930\\summonerwars-hand-magnify.png"
+    ,"D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mobile-audit-20260930\\cardia-clicked-magnify.png"
+  ]
+}

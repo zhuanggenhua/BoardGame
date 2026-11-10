@@ -1,0 +1,93 @@
+{
+  "gameId": "dicethrone",
+  "status": "scope-evidence-only",
+  "fullWorkspaceStable": false,
+  "batchRunSourceChanges": [
+    "public\\locales\\en\\game-qidahen.json",
+    "public\\locales\\zh-CN\\game-qidahen.json",
+    "src\\api\\external-games.ts",
+    "src\\components\\external\\useExternalPlay.ts",
+    "src\\components\\home\\CreatorCenter.tsx",
+    "src\\components\\home\\PlatformHomeSurface.tsx",
+    "src\\components\\home\\PlatformProfile.tsx",
+    "src\\games\\mage-wars\\domain\\objectAbilityRuntime.ts",
+    "src\\games\\qidahen\\domain\\commands.ts",
+    "src\\games\\qidahen\\domain\\pendingTargetActionBuilder.ts",
+    "src\\games\\qidahen\\domain\\previewActionReducer.ts",
+    "src\\games\\qidahen\\domain\\selectedActionFollowUp.ts",
+    "src\\games\\qidahen\\tutorial.ts",
+    "src\\games\\qidahen\\ui\\handInteractionView.ts",
+    "src\\pages\\ExternalGamePage.tsx",
+    "src\\pages\\admin\\CreatorReview.tsx",
+    "src\\shared\\externalGames.ts"
+  ],
+  "currentSourceChangesSinceBatch": [
+    "src\\components\\home\\PlatformGameCard.tsx",
+    "src\\components\\home\\PlatformGameCatalog.tsx",
+    "src\\components\\home\\PlatformUploadWorkspace.tsx",
+    "src\\components\\home\\platform-upload.css",
+    "src\\games\\dicethrone\\ui\\clientDiceMultistepInteraction.ts",
+    "src\\games\\mage-wars\\ui\\fxRenderers.tsx",
+    "src\\games\\qidahen\\Board.tsx",
+    "src\\games\\qidahen\\QidahenBoardShell.tsx",
+    "src\\games\\qidahen\\qidahen-board.css",
+    "src\\games\\qidahen\\tutorial.ts",
+    "src\\pages\\ExternalGamePage.tsx",
+    "src\\pages\\admin\\CreatorReview.tsx",
+    "src\\pages\\admin\\creator-review.css"
+  ],
+  "batchTargetSourceChanges": [],
+  "currentTargetSourceChanges": [
+    "src\\games\\dicethrone\\ui\\clientDiceMultistepInteraction.ts"
+  ],
+  "typeOnlyEquivalence": {
+    "source": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+    "snapshotSourceHash": "dd23ba9f40c3ea0d933fe1bb345f4431c5acfe0e569c46ed1b0a17f659ec962c",
+    "reconstructedSourceHash": "dd23ba9f40c3ea0d933fe1bb345f4431c5acfe0e569c46ed1b0a17f659ec962c",
+    "snapshotMatch": true,
+    "previousEmittedHash": "516daf2af5b549f89434c2da48a020ff9d62b45bcde2f0161627693fade1f4c4",
+    "currentEmittedHash": "516daf2af5b549f89434c2da48a020ff9d62b45bcde2f0161627693fade1f4c4",
+    "emittedEqual": true
+  },
+  "inputBoundaryNotes": [
+    "期间其它文件改动属于主页、投稿、魔法战争和七大恨；externalGames仅被投稿页面/类型引用，未检索到DiceThrone消费者。",
+    "DiceThrone唯一批次后变更为clientDiceMultistepInteraction类型声明；已还原并匹配批次后源码哈希，TypeScript转译结果逐字相同。",
+    "截图元数据保留托管运行时身份与每次采集时磁盘摘要；不称全部工作区哈希稳定。"
+  ],
+  "runs": {
+    "e2e-1793072168808-u11lt8": {
+      "mediaCount": 80,
+      "runtimeRevisions": {
+        "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588": 80
+      },
+      "observedDiskRevisions": {
+        "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588": 20,
+        "e739b67fdb14c7d9ffca7a327023c34406854235804d979ba14bffe90f029c6b": 5,
+        "f261a71e03edfd366563014a9e787a9758b6e0b0a923b9e0cfce62b9803f3d63": 13,
+        "f13653252f98dbe461bfd58f5ae97102dedcad5a00d5d69342a2c801a7b325ab": 4,
+        "81622198af13daec1e30e788f74363594a45ec36d1f5cdef596486c344a754f0": 12,
+        "3ed6bf4b2b345e78f22ef6cbdc9bbd3ce4f4e0cdaa56ff88d75bb9bebce20e92": 2,
+        "0b8dde26042d9cb880fa345f6994c4960ad1ca19b7f782de134de9275f1a2f3a": 12,
+        "46cbcee4d9f8b07a85d22895e309349c9119185f00217229ae83388bc7a14f98": 5,
+        "1845cd4a7b6920080bb83425b3ab165e43f253ca9c03368900e947525461219c": 7
+      },
+      "diskMismatches": 60
+    },
+    "e2e-1793072738337-8lyin0": {
+      "mediaCount": 3,
+      "runtimeRevisions": {
+        "fe86092671de0d03ede4fb966fc2a5b9f9359cf6476784dfdff1149526aa7f4e": 3
+      },
+      "observedDiskRevisions": {
+        "fe86092671de0d03ede4fb966fc2a5b9f9359cf6476784dfdff1149526aa7f4e": 3
+      },
+      "diskMismatches": 0
+    }
+  },
+  "snapshots": {
+    "batchBefore": "evidence/dicethrone/thor-interaction-source-snapshots-20261027/final22-source-before.json",
+    "batchAfter": "evidence/dicethrone/thor-interaction-source-snapshots-20261027/final22-source-after.json",
+    "current": "evidence/dicethrone/thor-interaction-source-snapshots-20261027/final-current-source.json"
+  },
+  "typeOnlyEquivalenceEvidence": "evidence/dicethrone/thor-interaction-source-snapshots-20261027/client-type-only-equivalence-20261027.json"
+}

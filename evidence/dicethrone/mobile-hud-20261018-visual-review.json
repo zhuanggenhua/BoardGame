@@ -1,0 +1,223 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/hud_media_audit"
+  },
+  "scope": "DiceThrone 左上阶段栏字号、七阶段名称完整性、屏幕锚点及相邻资源和状态槽位，逐张读取原始整屏截图；不审核其他游戏或未改 HUD 字号。",
+  "beforeReference": {
+    "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-手机横屏-阶段栏.png",
+    "sha256": "CEE40EDFB32A4E3E749F973C2FCCEC280AFA387EC071C978E6D0213B77A9F8A7",
+    "status": "REVISE",
+    "productVerdict": "REVISE",
+    "comparisonVerdict": "PASS",
+    "observation": "原始整屏真实展示了左上阶段文字过小的缺陷，七行存在但难以直接阅读，可作为修复前对比证据，不代表产品界面通过。",
+    "evidenceRole": "known-bad-before-reference"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-手机横屏-阶段栏.png",
+      "sha256": "CEE40EDFB32A4E3E749F973C2FCCEC280AFA387EC071C978E6D0213B77A9F8A7",
+      "status": "PASS",
+      "role": "known-bad-before-reference",
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "observation": "修前手机整屏真实展示左上阶段文字过小的问题，是有效对比基线，其产品可读性失败并未改判为通过。",
+      "reviewMethod": "previous-original-review-retained-same-sha256"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/02-修复后-手机横屏常态.png",
+      "sha256": "749F41D557D3F8543211CC37DF9E307F0B7FCA919DB8E730E1F73E9EC97DC794",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "手机横屏七阶段名称及两次主要阶段序号均完整可读，字号较修前明显增大，左上锚点与中央主板、资源和牌堆位置保持。",
+      "productVerdict": "REVISE",
+      "reviewMethod": "fresh-original-fullscreen-review",
+      "role": "repaired-product",
+      "previousStatus": "PASS",
+      "invalidatedReason": "用户否决当前外观；未以最后正常比例作恢复验收。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/03-修复后-较窄手机横屏常态.png",
+      "sha256": "DFCDACF9558055CA96F3CCA9CB3CAF2358E31DDD83D101ABCFDA55AAC19BB971",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "较窄横屏七阶段名称及序号均无省略或裁切，阶段栏扩宽后仍与中央玩家板分离，资源、牌堆及手牌没有被挤走。",
+      "productVerdict": "REVISE",
+      "reviewMethod": "fresh-original-fullscreen-review",
+      "role": "repaired-product",
+      "previousStatus": "PASS",
+      "invalidatedReason": "用户否决当前外观；未以最后正常比例作恢复验收。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/04-修复后-手机横屏状态齐全.png",
+      "sha256": "184996450ADD8EB9B6193DD573D8FFAB387257CE8F998287E31FD035B0B9CD76",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "手机横屏状态齐全时七阶段完整可读，阶段栏与下方状态图标和资源条保持分离，中央玩家板、提示板和手牌未被覆盖。",
+      "productVerdict": "REVISE",
+      "reviewMethod": "fresh-original-fullscreen-review",
+      "role": "repaired-product",
+      "previousStatus": "PASS",
+      "invalidatedReason": "用户否决当前外观；未以最后正常比例作恢复验收。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/05-修复后-较窄手机横屏状态齐全.png",
+      "sha256": "714BC75A20778B341A45DE26E4205E95009EB90C59B487EE305425146DC315A0",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "较窄横屏状态齐全时七阶段完整且字号可读，阶段栏下缘与状态图标仍分离，资源条、牌堆和手牌槽位保留。",
+      "productVerdict": "REVISE",
+      "reviewMethod": "fresh-original-fullscreen-review",
+      "role": "repaired-product",
+      "previousStatus": "PASS",
+      "invalidatedReason": "用户否决当前外观；未以最后正常比例作恢复验收。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/06-桌面对照-常态.png",
+      "sha256": "5D8F72F6906D60B2A4F66F54ED7FC052D636FAAE323BD5D4E63A1589973BFC0F",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面常态七阶段名称完整可读，与修前桌面原图的阶段栏字高、宽高比例及左上锚点目视一致，中央素材及相邻槽位未见变化。",
+      "productVerdict": "PASS",
+      "reviewMethod": "fresh-original-fullscreen-review",
+      "role": "repaired-product"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/07-桌面对照-状态齐全.png",
+      "sha256": "05E3BABA152EA1C8BEFE39D39F17875387D0A2B0ABB9DE1A7849F21A8A8D3E08",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面状态齐全时七阶段名称完整，状态图标与阶段栏、资源条分离，中央素材及牌堆和手牌槽位未受影响。",
+      "productVerdict": "PASS",
+      "reviewMethod": "fresh-original-fullscreen-review",
+      "role": "repaired-product"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/08-修复前-桌面常态.png",
+      "sha256": "F771A5A29C66AB72008467E5F4C84FA3BED295DE1B4B8B76BFE5C76D5522EDCA",
+      "status": "PASS",
+      "role": "desktop-before-reference",
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "修前桌面七阶段名称完整可读，与修后桌面常态的阶段栏位置、字高及宽高比例目视一致，可作为保持桌面表现的对照基线。",
+      "reviewMethod": "fresh-original-fullscreen-review"
+    }
+  ],
+  "hardFailures": [],
+  "nextAction": "本轮目标范围已通过，可交付明确标注修前缺陷与修后结果的有序对比图集。",
+  "limitations": [
+    "通过范围仅为左上阶段信息及其相邻区域，修前手机已知缺陷仍保留产品失败裁决。",
+    "截图不能证明实际触控热区尺寸或操作行为，相关事实需结合真实输入和几何检查。",
+    "较窄横屏状态齐全时纵向间距较紧，本次图面没有重叠，但不代表更多状态或其他尺寸同样通过。",
+    "未覆盖手机竖屏、其他视口、其他英雄、其他游戏或未改 HUD 的字号。",
+    "桌面常态前后图可支持本轮阶段栏比例与锚点一致，不能据此声称整屏所有动画像素完全相同。"
+  ],
+  "verdictScope": "顶层通过仅指用户要求的修复前后对比契约与修后界面范围；不代表修前手机界面通过，修前手机图的可读性检查和产品裁决均保留失败。",
+  "comparisonVerdict": "PASS",
+  "repairedProductVerdict": "PASS",
+  "score": 96,
+  "checksSemantics": "每条媒体的 checks 仅列出已执行检查，不表示检查通过；具体检查结果以 checkResults 为准，产品裁决以 productVerdict 为准，对比证据裁决以 comparisonVerdict 为准。",
+  "userOverride": {
+    "date": "2026-10-19",
+    "reason": "用户否决当前候选视觉外观；原独立审查记录保留作历史，不能继续作为通过结论。",
+    "invalidatedMediaPrefixes": [
+      "02-",
+      "03-",
+      "04-",
+      "05-"
+    ]
+  }
+}

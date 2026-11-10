@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "无合法状态仅跳过-桌面.png",
+      "chainId": "无状态跳过",
+      "chainStep": "1440",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-status-empty-1440",
+      "behaviorStepId": "status-empty-1440",
+      "description": "没有合法可移除状态时只提供跳过，不显示虚假状态。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "通过真实手牌准备瓦图姆之风。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "通过真实手牌准备瓦图姆之风。",
+      "sourceRevision": "048fcdf325bcbced88bcd23d0b04755e09a2573a062272389dbb7993735952a0",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "无合法状态的正式跳过"
+      ],
+      "sourceRun": "1793609103501-289884-b96899e7-a3db-4bad-8ec2-f48ea950d1f9",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793608899966-80c5g9"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ function createHarness(playerId: string | null = '0', authorized = true) {
     const socket = { id: 'socket', on: (name: string, handler: (...args: any[]) => unknown) => handlers.set(name, handler),
         emit: vi.fn(), to: () => ({ emit: vi.fn() }) };
     const match = { matchID: 'm1', state: { core: { hiddenHand: ['private-card'] }, sys: {} } } as any;
-    const capture = vi.fn(async () => ({ accepted: true, captureId: 'opaque-id' }));
+    const capture = vi.fn(async () => ({ accepted: true, captureId: 'opaque-id', triggerCaptured: true }));
     const hooks: GameSocketRouteHooks<any> = {
         getSocketInfo: () => ({ matchID: 'm1', playerID: playerId, credentials: 'seat-secret' }),
         getMatch: id => id === 'm1' ? match : undefined,
@@ -25,9 +25,10 @@ describe('用户反馈权威现场连接权限', () => {
     it('已认证座位可请求服务器内部保存现场，响应不含隐藏状态', async () => {
         const h = createHarness();
         const ack = vi.fn();
-        await h.handlers.get('feedback:capture')?.('m1', { phase: 'prepare' }, 'seat-secret', ack);
-        expect(h.capture).toHaveBeenCalledWith(h.match, '0', { phase: 'prepare' });
-        expect(ack).toHaveBeenCalledWith({ accepted: true, captureId: 'opaque-id' });
+        const trigger = { commandType: 'RESOLVE_INTERACTION', playerId: '0', stateIdBefore: 4, randomCursorBefore: 8, requestId: 'choice-1' };
+        await h.handlers.get('feedback:capture')?.('m1', { phase: 'prepare', trigger }, 'seat-secret', ack);
+        expect(h.capture).toHaveBeenCalledWith(h.match, '0', { phase: 'prepare', trigger });
+        expect(ack).toHaveBeenCalledWith({ accepted: true, captureId: 'opaque-id', triggerCaptured: true });
         expect(JSON.stringify(ack.mock.calls)).not.toContain('private-card');
     });
     it.each([[null, true], ['0', false]] as const)('旁观者或无效座位凭证不得采集', async (playerId, authorized) => {

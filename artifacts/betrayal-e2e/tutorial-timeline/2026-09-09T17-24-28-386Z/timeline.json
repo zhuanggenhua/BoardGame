@@ -1,0 +1,250 @@
+{
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-timeline\\2026-09-09T17-24-28-386Z",
+  "shot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-timeline\\2026-09-09T17-24-28-386Z\\timeline-final.png",
+  "state": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": false,
+    "activeStepDom": null,
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": false,
+      "manifestId": null,
+      "stepIndex": 0,
+      "stepId": null,
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": false,
+      "stepIndex": 0,
+      "stepId": null,
+      "aiActions": null,
+      "stepAiActions": null
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0"
+    },
+    "timeline": [
+      {
+        "at": 1673.699999988079,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 1,
+        "events": [],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0"
+      },
+      {
+        "at": 1681.8999999761581,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 1,
+        "events": [],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0"
+      },
+      {
+        "at": 1795,
+        "active": true,
+        "stepIndex": 0,
+        "stepId": "setup-runtime",
+        "aiActions": 1,
+        "stepAiActions": 1,
+        "eventNextId": 2,
+        "events": [
+          "SYS_TUTORIAL_STARTED"
+        ],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0"
+      },
+      {
+        "at": 1816.2999999821186,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 1,
+        "events": [],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0"
+      },
+      {
+        "at": 1878.5999999940395,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 2,
+        "events": [
+          "SYS_TUTORIAL_AI_CONSUMED"
+        ],
+        "corePhase": "preHaunt",
+        "currentPlayer": "0"
+      }
+    ]
+  },
+  "logs": [
+    {
+      "at": "2026-09-09T17:24:29.180Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T17:24:29.188Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T17:24:29.220Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T17:24:29.240Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T17:24:29.571Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T17:24:29.815Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T17:24:29.814Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T17:24:29.816Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:24:29.815Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T17:24:29.819Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:24:29.819Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.235Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T17:24:30.233Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.235Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:24:30.234Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.263Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T17:24:30.262Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":29}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.577Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:24:30.576Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":761}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.577Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:24:30.576Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":342}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.698Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.712Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:24:30.712Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.712Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:24:30.712Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T17:24:30.880Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||1|0|||||||0|\",\"markerAfter\":\"0||1|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:24:30.880Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T17:24:34.748Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg"
+    },
+    {
+      "at": "2026-09-09T17:24:34.776Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg"
+    },
+    {
+      "at": "2026-09-09T17:24:38.715Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg"
+    },
+    {
+      "at": "2026-09-09T17:24:38.715Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg"
+    },
+    {
+      "at": "2026-09-09T17:24:38.717Z",
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 7804ms（83 张）"
+    },
+    {
+      "at": "2026-09-09T17:24:38.717Z",
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 8014ms（83 张）"
+    },
+    {
+      "at": "2026-09-09T17:24:39.174Z",
+      "type": "warning",
+      "text": "The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio"
+    },
+    {
+      "at": "2026-09-09T17:24:39.176Z",
+      "type": "warning",
+      "text": "HTML5 Audio pool exhausted, returning potentially locked audio object."
+    },
+    {
+      "at": "2026-09-09T17:24:39.375Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 31.9 FPS | P95 帧时 183.4ms — 低于 60fps"
+    }
+  ]
+}

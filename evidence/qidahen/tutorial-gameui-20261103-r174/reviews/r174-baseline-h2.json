@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_e1",
+  "requirements": [
+    {
+      "requirement": "教学视角与结束后续局",
+      "status": "PASS",
+      "baselineSource": "已实际读取指定旧版收尾整图与当前收尾整图，旧版顶部后金为当前阵营且底部展示后金牌库与手牌；此处仅对照图面，不继承旧版通过结论。",
+      "preservedInformation": "保留地图、行动轮盘、三阵营公开状态、教学总结、胜利条件说明与当前回合信息；当前牌库和手牌明确属于大明，后金当前回合不再改变教学玩家视角。",
+      "preservedActions": "保留教学上一步和完成并返回按钮，返回入口仍在总结正文下方，当前截图可证明点击返回前的收尾操作可发现。",
+      "changes": "顶部当前标记改为当前回合，底部从后金私有手牌切回大明最后手牌；大明兵牌正面可辨，收尾卡与返回按钮位置保持一致。",
+      "duplicateDecision": "未见额外收尾菜单或重复返回入口，教学总结卡独立承接完成并返回动作，公开回合状态与私有大明手牌分别承担不同职责。",
+      "changeAuthority": "依本轮指定教学视角与结束后续局要求检查；图面只判固定玩家视角与返回前收尾，返回后续局必须由主线程行为断言验证，本报告不宣称图片已证明续局。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/52-finish.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/54-finish.png"
+      ]
+    }
+  ]
+}

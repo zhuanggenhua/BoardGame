@@ -331,6 +331,10 @@
     "manageWorks": "管理我的作品"
   },
   "packageManager": {
+    "desktopFgoDownload": "下载战斗素材",
+    "desktopFgoProgress": "下载中 {{done}}/{{total}}",
+    "desktopFgoComplete": "战斗素材已下载",
+    "desktopFgoRetry": "重试下载战斗素材",
     "cardLabel": "{{game}} 移动端包管理",
     "eyebrow": "移动端包",
     "mode": "按需下载",

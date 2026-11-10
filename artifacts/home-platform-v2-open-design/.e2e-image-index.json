@@ -1,0 +1,34 @@
+{
+  "title": "易桌游平台首页风格确认：发现页浏览",
+  "media": [
+    {
+      "path": "exports/01-全部游戏.png",
+      "chainId": "home-discover-browse",
+      "chainStep": "一",
+      "sourceRun": "home-platform-v2-ink-copper",
+      "sourceDir": "artifacts/home-platform-v2-open-design/exports",
+      "stage": "前态",
+      "description": "已登录玩家进入发现页，精选幻想国度大封面，右侧继续大杀四方，游戏库十二格铺满。"
+    },
+    {
+      "path": "exports/02-卡牌分类.png",
+      "chainId": "home-discover-browse",
+      "chainStep": "二",
+      "sourceRun": "home-platform-v2-ink-copper",
+      "sourceDir": "artifacts/home-platform-v2-open-design/exports",
+      "stage": "中态",
+      "transition": "点选卡牌分类",
+      "description": "玩家点选卡牌分类后，该钮呈浅色选中，游戏库只留七张卡牌封面。"
+    },
+    {
+      "path": "exports/03-战棋分类.png",
+      "chainId": "home-discover-browse",
+      "chainStep": "三",
+      "sourceRun": "home-platform-v2-ink-copper",
+      "sourceDir": "artifacts/home-platform-v2-open-design/exports",
+      "stage": "后态",
+      "transition": "点选战棋分类",
+      "description": "玩家点选战棋分类后，游戏库只剩七大恨、法师战争与召唤师战争三格。"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "手电筒真实页面：事件牌投掷入口、物品加骰、物理骰盘、自动结算与关闭",
+      "status": "PASS",
+      "evidence": [
+        "E2E：手电筒真实链路从外星几何翻牌到事件检定额外加骰结算关闭 1 passed"
+      ]
+    },
+    {
+      "requirement": "灯笼真实页面：事件牌投掷入口、物品加骰、物理骰盘、自动结算与关闭",
+      "status": "PASS",
+      "evidence": [
+        "E2E：灯笼真实链路从外星几何翻牌到事件检定额外加骰结算关闭 1 passed"
+      ]
+    },
+    {
+      "requirement": "魔法相机真实页面：知识检定替代、物理骰盘、自动结算与关闭",
+      "status": "PASS",
+      "evidence": [
+        "E2E：魔法相机真实链路从外星几何翻牌到知识检定改用神志结算关闭 1 passed"
+      ]
+    },
+    {
+      "requirement": "书本真实页面：本体选中、支付神志、非战斗检定替代、自动结算与关闭",
+      "status": "PASS",
+      "evidence": [
+        "E2E：书本真实链路从本体使用到小丑房间非战斗检定替代结算关闭 1 passed"
+      ]
+    },
+    {
+      "requirement": "当前43张事件牌进入统一发现面板并由当前玩家真实确认收口",
+      "status": "PASS",
+      "evidence": [
+        "E2E：当前43张事件牌都能进入同一发现面板并由当前玩家真实确认收口 1 passed"
+      ]
+    },
+    {
+      "requirement": "事件牌新 UI / 新交互截图覆盖投掷入口、属性选择、分配选择、结算与回牌桌",
+      "status": "PASS",
+      "evidence": [
+        "同一轮生成 57 张截图；包含外星几何、肉质苔癣、一瓶微尘、夜幕众星、上古旧宅、吊死鬼等当前证据"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/001-手电筒-01-手电筒加骰前牌桌可操作.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/002-手电筒-02-选择未知房间前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/003-手电筒-03-外星几何翻出等待投掷.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/004-手电筒-04-5骰事件检定骰盘停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/005-手电筒-05-加骰结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/006-手电筒-06-关闭后回牌桌状态清空.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/007-灯笼-01-灯笼加骰前牌桌可操作.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/008-灯笼-02-选择未知房间前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/009-灯笼-03-外星几何翻出等待投掷.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/010-灯笼-04-5骰事件检定骰盘停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/011-灯笼-05-加骰结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/012-灯笼-06-关闭后回牌桌状态清空.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/013-魔法相机-01-魔法相机替代前牌桌可操作.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/014-魔法相机-02-选择未知房间前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/015-魔法相机-03-外星几何翻出等待投掷.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/016-魔法相机-04-5骰相机替代检定骰盘停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/017-魔法相机-05-魔法相机替代检定结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/018-魔法相机-06-关闭后回牌桌状态清空.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/019-书本-01-书本使用前牌桌可操作.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/020-书本-02-书本本体已选中准备使用.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/021-书本-03-书本已使用并选择未知房间前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/022-书本-04-小丑房间5骰神志检定停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/023-书本-05-书本替代检定结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/024-书本-06-关闭后回牌桌状态清空.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/025-事件-上古旧宅-完整链路-03-事件牌翻出选择前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/026-事件-上古旧宅-完整链路-04-选择目标后待选伤害.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/027-事件-上古旧宅-完整链路-05-结算后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/028-事件-上古旧宅-完整链路-06-关闭后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/029-事件-肉质苔癣-完整链路-03-事件牌翻出可选择吸入.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/030-事件-肉质苔癣-完整链路-04-吸入后投骰结果待确认.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/031-事件-肉质苔癣-完整链路-04-选择吸入后骰盘停稳并出现属性选项.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/032-事件-肉质苔癣-完整链路-05-选择知识奖励后结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/033-事件-肉质苔癣-完整链路-06-关闭后回牌桌.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/034-事件-一瓶微尘-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/035-事件-一瓶微尘-完整链路-04-选择作祟检定后骰盘停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/036-事件-一瓶微尘-完整链路-05-神志奖励结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/037-事件-一瓶微尘-完整链路-06-关闭后回牌桌.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/038-事件-大宅饿了-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/039-事件-大宅饿了-完整链路-04-选择知识奖励后准备跳过作祟.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/040-事件-夜幕众星-完整链路-03-事件牌翻出选择前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/041-事件-夜幕众星-完整链路-05-结算后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/042-事件-夜幕众星-完整链路-06-关闭后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/043-事件-一抹鲜红-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/044-事件-一抹鲜红-完整链路-04-选择作祟检定后骰盘停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/045-事件-吊死鬼-完整链路-03-事件牌翻出四项检定全过.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/046-事件-吊死鬼-完整链路-05-知识奖励结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/047-事件-吊死鬼-完整链路-06-关闭后回牌桌.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/048-事件-外星几何-完整链路-03-事件牌翻出投掷入口.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/049-事件-外星几何-完整链路-04-投掷后描述不重复检定结果.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/050-事件-外星几何-完整链路-05-骰盘停稳直接结算.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/051-事件-外星几何-完整链路-06-结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/052-事件-外星几何-完整链路-07-关闭后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/053-事件-说茄子-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/054-事件-说茄子-完整链路-04-选择作祟检定后骰盘停稳.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/055-事件-移动端横屏-事件检定复核保留牌桌-01-事件检定复核.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/056-事件-移动端横屏-事件检定复核保留牌桌-02-PC对照.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-新UI新交互-20261004-run2/057-事件-一瓶微尘-跳过作祟-多人确认-01-发起者确认前.jpg"
+  ]
+}

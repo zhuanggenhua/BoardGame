@@ -1,0 +1,52 @@
+[
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/01-桌面常态.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/01-桌面常态.png",
+    "sha256": "80ea191a2b010b1ec8c798476ee7005cc7f6d221d755acb472ebafeca64443c7"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/02-手机常态.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/02-手机常态.png",
+    "sha256": "4f4909b35d8ae5f355a2fc6294387fabd84749aff7f2d21bf0de448e70b70249"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/03-桌面支付.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/03-桌面支付.png",
+    "sha256": "274720d0036d363778c2ca06c71ebbd4aa6163afbd39cc6a0172e4de47670a3e"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/04-手机支付.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+    "sha256": "7df0106c1c9353ac89d48b51daec2f2d09b8c8875c7987e141c0a8175ac03111"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/05-手机八张支付压力态.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/05-手机八张支付压力态.png",
+    "sha256": "8bca0f737cdb9d1b15c4ef3efacd17921103c2c2f4c9db847aeabec6f5b11283"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/06-宽屏桌面常态.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/06-宽屏桌面常态.png",
+    "sha256": "d7cb91d23297f303f250d24858616c92526df0a9b0f3faf25fe1b9f97e0987d2"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/07-小屏手机常态.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/07-小屏手机常态.png",
+    "sha256": "4c9b2abf53ba21a6ed4af36b2d22f86837248daad812c6b13d995bda9fc30f30"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/08-桌面八张支付压力态.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/08-桌面八张支付压力态.png",
+    "sha256": "37ffcde3f0bbfd7dd1b8f1cc14286090f381f62fd851ad0fe5072dcde51fc728"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/09-手机地图浏览前.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/09-手机地图浏览前.png",
+    "sha256": "f035dc8056a8d010cd04b0f153b6f148800c67f84f8665feb1a5e46497f75078"
+  },
+  {
+    "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/10-手机地图平移检视后.png",
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png",
+    "sha256": "5e4e47bad6197656940f05b571f75eacb5c836312584ff4ced8a5aa6c085e347"
+  }
+]

@@ -1,0 +1,215 @@
+[
+  {
+    "id": "full-player-board-lossless",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-player-board-lossless.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\player-board.png",
+    "args": [
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-lossless"
+    ],
+    "bytes": 9326170,
+    "seconds": 87.36,
+    "alphaExactBeforeRepair": true,
+    "alphaMaxErrorBeforeRepair": 0,
+    "asset": "player-board",
+    "kind": "lossless",
+    "alphaExact": true,
+    "visibleRgbMaxError": 0,
+    "visibleRgbMae": 0.0,
+    "visibleRgbP99MaxChannelError": 0,
+    "dimensions": [
+      4005,
+      2476
+    ],
+    "sha256": "8fb6647bae4366b608f4a229ce36292e1b73da392a1f510172c4fd3d9fa8e016"
+  },
+  {
+    "id": "full-tip-lossless",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-tip-lossless.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\tip.png",
+    "args": [
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-lossless"
+    ],
+    "bytes": 2407528,
+    "seconds": 21.7,
+    "alphaExactBeforeRepair": true,
+    "alphaMaxErrorBeforeRepair": 0,
+    "asset": "tip",
+    "kind": "lossless",
+    "alphaExact": true,
+    "visibleRgbMaxError": 0,
+    "visibleRgbMae": 0.0,
+    "visibleRgbP99MaxChannelError": 0,
+    "dimensions": [
+      967,
+      1804
+    ],
+    "sha256": "b48018106dc9777d4937ec0ea06d6862c3ee82522afd785108ce522a2b579122"
+  },
+  {
+    "id": "full-ability-cards-lossless",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-ability-cards-lossless.webp",
+    "source": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\generated\\ability-cards.png",
+    "args": [
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-lossless"
+    ],
+    "bytes": 20366030,
+    "seconds": 181.05,
+    "alphaExactBeforeRepair": true,
+    "alphaMaxErrorBeforeRepair": 0,
+    "asset": "ability-cards",
+    "kind": "lossless",
+    "alphaExact": true,
+    "visibleRgbMaxError": 0,
+    "visibleRgbMae": 0.0,
+    "visibleRgbP99MaxChannelError": 0,
+    "dimensions": [
+      7380,
+      4720
+    ],
+    "sha256": "61a4a3b9d8e4c97b763c5cfd754a7b6a8e7ed289a6903022c6281de18380ffbc"
+  },
+  {
+    "id": "full-player-board-near60-alpha-fixed",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-player-board-near60-alpha-fixed.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-player-board-near60-alpha-fixed.png",
+    "args": [
+      "-lossless",
+      "-q",
+      "100",
+      "-m",
+      "6"
+    ],
+    "bytes": 6243404,
+    "seconds": 99.99,
+    "alphaExactBeforeRepair": false,
+    "alphaMaxErrorBeforeRepair": 2,
+    "firstEncode": {
+      "id": "full-player-board-near60",
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-player-board-near60.webp",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\player-board.png",
+      "args": [
+        "-q",
+        "100",
+        "-m",
+        "6",
+        "-near_lossless",
+        "60"
+      ],
+      "bytes": 6224060,
+      "seconds": 89.68,
+      "alphaExactBeforeRepair": false,
+      "alphaMaxErrorBeforeRepair": 2
+    },
+    "asset": "player-board",
+    "kind": "near60",
+    "alphaExact": true,
+    "visibleRgbMaxError": 255,
+    "visibleRgbMae": 0.90047,
+    "visibleRgbP99MaxChannelError": 2,
+    "dimensions": [
+      4005,
+      2476
+    ],
+    "sha256": "0913834fbba4da10729ab6b1102f5aa12e075747757fff695183fe7c8a493cf3"
+  },
+  {
+    "id": "full-tip-near60-alpha-fixed",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-tip-near60-alpha-fixed.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-tip-near60-alpha-fixed.png",
+    "args": [
+      "-lossless",
+      "-q",
+      "100",
+      "-m",
+      "6"
+    ],
+    "bytes": 1540168,
+    "seconds": 27.13,
+    "alphaExactBeforeRepair": false,
+    "alphaMaxErrorBeforeRepair": 2,
+    "firstEncode": {
+      "id": "full-tip-near60",
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-tip-near60.webp",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\tip.png",
+      "args": [
+        "-q",
+        "100",
+        "-m",
+        "6",
+        "-near_lossless",
+        "60"
+      ],
+      "bytes": 1539712,
+      "seconds": 25.24,
+      "alphaExactBeforeRepair": false,
+      "alphaMaxErrorBeforeRepair": 2
+    },
+    "asset": "tip",
+    "kind": "near60",
+    "alphaExact": true,
+    "visibleRgbMaxError": 2,
+    "visibleRgbMae": 0.89015,
+    "visibleRgbP99MaxChannelError": 2,
+    "dimensions": [
+      967,
+      1804
+    ],
+    "sha256": "187c85dd4a881d3da480e0c81aa418014fb8313a93d49732c72f095134ab863d"
+  },
+  {
+    "id": "full-ability-cards-near60-alpha-fixed",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-ability-cards-near60-alpha-fixed.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-ability-cards-near60-alpha-fixed.png",
+    "args": [
+      "-lossless",
+      "-q",
+      "100",
+      "-m",
+      "6"
+    ],
+    "bytes": 15137192,
+    "seconds": 140.8,
+    "alphaExactBeforeRepair": false,
+    "alphaMaxErrorBeforeRepair": 2,
+    "firstEncode": {
+      "id": "full-ability-cards-near60",
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\full-ability-cards-near60.webp",
+      "source": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\generated\\ability-cards.png",
+      "args": [
+        "-q",
+        "100",
+        "-m",
+        "6",
+        "-near_lossless",
+        "60"
+      ],
+      "bytes": 15129718,
+      "seconds": 223.28,
+      "alphaExactBeforeRepair": false,
+      "alphaMaxErrorBeforeRepair": 2
+    },
+    "asset": "ability-cards",
+    "kind": "near60",
+    "alphaExact": true,
+    "visibleRgbMaxError": 2,
+    "visibleRgbMae": 0.71259,
+    "visibleRgbP99MaxChannelError": 2,
+    "dimensions": [
+      7380,
+      4720
+    ],
+    "sha256": "06d121d9c2dfe20ff077a8883b0251e5ef90976bd33e5194ebce1f8651927f10"
+  }
+]

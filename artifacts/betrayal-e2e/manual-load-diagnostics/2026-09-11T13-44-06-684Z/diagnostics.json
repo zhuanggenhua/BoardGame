@@ -1,0 +1,66 @@
+{
+  "snap": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "title": "易桌游 - 桌游教学与在线联机平台 | 王权骰铸、大杀四方、召唤师战争",
+    "bodyText": "正在准备对局…加载游戏模块…",
+    "hasBoard": false,
+    "hasSelect": false,
+    "hasLoading": true,
+    "hasOverlay": false,
+    "rootHtml": "\n  <div id=\"root\"><div class=\"fixed top-[calc(env(safe-area-inset-top)+1rem)] right-[calc(env(safe-area-inset-right)+1rem)] flex flex-col gap-3 pointer-events-none\" style=\"z-index: 2250;\"></div><div data-rht-toaster=\"\" style=\"position: fixed; z-index: 9999; inset: 16px; pointer-events: none;\"></div></div>\n  <div id=\"hud-root\"><div data-testid=\"loading-screen\" data-loading-anchor=\"viewport\" class=\"bg-black overflow-hidden fixed inset-0 h-[var(--runtime-viewport-height,100vh)] w-[var(--runtime-viewport-width,100vw)]\" style=\"z-index: 1500; opacity: 1;\"><div class=\"absolute inset-0 flex items-center justify-center\"><div class=\"relative transform scale-75 md:scale-100\"><div class=\"relative w-64 h-64 flex items-center justify-center\"><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(42.8981px) scale(0.875359);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-0.87701px) translateY(-0.489241px) scale(0.508787);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(10.6184px) translateY(17.1995px) scale(0.676866);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-3.24035px) translateY(-73.1937px) scale(1.14107);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-0.752822px) translateY(1.50203px) scale(0.514701);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(0.435485px) translateY(-0.296231px) scale(0.504609);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-15.1057px) translateY(1.34011px) scale(0.632694);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(63.5432px) translateY(28.4047px) scale(1.10903);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-32.4482px) translateY(-43.4381px) scale(0.974421);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(5.65379px) translateY(42.347px) scale(0.873824);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(13.6282px) translateY(-34.5083px) scale(0.824641);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-42.5985px) translateY(34.8597px) scale(0.981635);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(51.456px) translateY(-9.20235px) scale(0.957384);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-42.9274px) translateY(-14.7941px) scale(0.897295);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(20"
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-11T13:44:21.142Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-11T13:44:21.144Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-11T13:44:21.516Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-11T13:44:21.516Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 43.4 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-11T13:44:40.673Z\",\"stage\":\"load-http-fallback-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":19157}"
+    }
+  ]
+}

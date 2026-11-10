@@ -1,0 +1,73 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-23T11:27:14+08:00",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "sections": [
+      "原始问题直接证据闭环",
+      "流程截图",
+      "随机、骰子与可介入结果"
+    ],
+    "semanticRule": "未来可能改写骰子结果的能力，只决定能力使用时机；只有当前存在真实共同观看、响应、选择或授权窗口时，才扩大确认参与者。"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "evidence/山屋惊魂-物品确认语义修正-20260923"
+  },
+  "tests": [
+    {
+      "command": "npm run test:e2e:file -- e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts --grep \"普通物品停留三秒\"",
+      "result": "1 passed",
+      "scope": "真实 Betrayal 页面：急救包与幸运硬币都从确认 0/1 等待到自动关闭并进入持有区"
+    },
+    {
+      "command": "npx vitest run src/games/betrayal/__tests__/betrayal-possessions-and-recent-roll-rerolls.test.ts",
+      "result": "1 file passed; 51 tests passed",
+      "scope": "物品发现确认名单、最近投骰重掷和持有物规则回归"
+    },
+    {
+      "command": "npm run spec:lint",
+      "result": "spec-lint: OK",
+      "scope": "项目规范结构"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "普通物品默认停留约三秒后自动进入实际持有区。",
+      "status": "PASS",
+      "evidence": [
+        "急救包在确认 0/1 时仍可见，继续等待后展示关闭并进入急救包持有区。",
+        "同一真实页面运行同时保留三秒等待帧和收口落位帧。"
+      ],
+      "images": [
+        "01-急救包-三秒等待中.jpg",
+        "02-急救包-三秒后进入持有区.jpg"
+      ],
+      "uncovered": "本项使用急救包代表普通单步物品，不外推其它物品效果实现。"
+    },
+    {
+      "requirement": "未来可以改写骰子结果的幸运硬币不因能力类型自动升级为全员确认。",
+      "status": "PASS",
+      "evidence": [
+        "幸运硬币由同一确认解析入口生成确认名单，页面显示确认 0/1，而不是确认 0/3。",
+        "等待约三秒后展示自动关闭，幸运硬币进入实际持有区，无需其它玩家确认。",
+        "领域测试同时覆盖兔脚、天使之羽和幸运硬币均回到获得者单人确认。"
+      ],
+      "images": [
+        "03-幸运硬币-三秒等待中.jpg",
+        "04-幸运硬币-三秒后进入持有区.jpg"
+      ],
+      "uncovered": "本项只证明发现展示的确认语义；幸运硬币实际重掷骰子链路由独立 lucky-coin E2E 覆盖。"
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品确认语义修正-20260923\\01-急救包-三秒等待中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品确认语义修正-20260923\\02-急救包-三秒后进入持有区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品确认语义修正-20260923\\03-幸运硬币-三秒等待中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品确认语义修正-20260923\\04-幸运硬币-三秒后进入持有区.jpg"
+  ]
+}

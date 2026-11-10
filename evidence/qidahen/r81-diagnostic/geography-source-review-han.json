@@ -1,0 +1,426 @@
+{
+  "status": "PASS",
+  "mode": "source-map-geometry-13-red-land-regions",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r80_visual_review"
+  },
+  "source": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e"
+  },
+  "candidate": {
+    "overlay": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部地区按印刷边线校准候选五.png",
+    "overlaySha256": "2139c3d0765e6c273d15766bbc5863ce87289f5f81861484dddf5e1efc1b143a",
+    "mask": "evidence/qidahen/r81-diagnostic/geography-candidate/region-mask-boundary-normalized-v5.png",
+    "maskSha256": "2776b14fd011dae389a5a65ee7072b8db8db8cbbf774b7db208e9c1b63698136",
+    "identity": "evidence/qidahen/r81-diagnostic/geography-candidate/region-mask-regions.json"
+  },
+  "inspection": "实际读取v3完整整图，并以原图/候选并排放大核对全部13个红字土地；随后实际读取v5完整图与延绥标题遮挡局部。逐区域像素比对只用于确定v3到v5改动范围，没有用算法或内部点检查替代视觉判断。",
+  "previousCandidateHardFailures": {
+    "candidate": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部土地与朝鲜点位候选叠加.png",
+    "status": "REVISE",
+    "observations": [
+      "巴林南缘在约(412,248)至(495,268)出现约10至18像素内部收缩，不贴真实棕线；此项不属于本报告13红区的最终裁决范围。",
+      "西南约y753的假横切以及后续v3沿恨字字形闭合均不是真实地区边界；v5在延绥相关窄段改为明确近似连接。"
+    ]
+  },
+  "entries": [
+    {
+      "id": "city-region-15",
+      "name": "辽北",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "原图北侧河岸、东西棕线和辽北/辽东共界均保持原先核准轮廓；没有恢复为旧合并色块或水平内切。",
+      "reviewedAnchors": [
+        [
+          820,
+          379
+        ],
+        [
+          886,
+          394
+        ],
+        [
+          957,
+          362
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-15-liaodong",
+      "name": "辽东",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "东北接建州棕线、东岸约y410至511段和南侧棕线完整；此前东岸20px内缩、南缘截短未复发。",
+      "reviewedAnchors": [
+        [
+          1001,
+          410
+        ],
+        [
+          962,
+          450
+        ],
+        [
+          928,
+          490
+        ],
+        [
+          924,
+          511
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-19-liaoxi",
+      "name": "辽西",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北侧贴河岸，西侧沿已核山脊西支接长城，东南沿真实岸线；宁远位于辽西侧，没有用旧敖汉父区距离拆分。",
+      "reviewedAnchors": [
+        [
+          682,
+          418
+        ],
+        [
+          653,
+          468
+        ],
+        [
+          626,
+          492
+        ],
+        [
+          694,
+          504
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-22",
+      "name": "东江",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北侧与辽东分界、两侧海岸及西南狭长沿海土地均可辨；没有把两岸之间大片深蓝海浪区当成本地区。",
+      "reviewedAnchors": [
+        [
+          830,
+          550
+        ],
+        [
+          798,
+          467
+        ],
+        [
+          917,
+          511
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "xuan-fu",
+      "name": "宣府",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北东侧跟随长城，西南与大同共用真实棕色弯线，原候选大幅内缩留下的土色缝已消除。",
+      "reviewedAnchors": [
+        [
+          301,
+          537
+        ],
+        [
+          350,
+          596
+        ],
+        [
+          410,
+          629
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-1",
+      "name": "大同",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北部和南部沿长城形状，东侧沿宣府棕线；边界没有把宣府红字土地吞入或横截大同内部。",
+      "reviewedAnchors": [
+        [
+          301,
+          537
+        ],
+        [
+          302,
+          657
+        ],
+        [
+          410,
+          629
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-28-jizhen",
+      "name": "蓟镇",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "长城南侧区域与顺天之间的棕线相接，东侧跟随山海关附近海岸；城牌为子对象，没有独立土地色块。",
+      "reviewedAnchors": [
+        [
+          450,
+          560
+        ],
+        [
+          520,
+          595
+        ],
+        [
+          557,
+          623
+        ],
+        [
+          637,
+          516
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-28",
+      "name": "顺天",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北界贴蓟镇/顺天棕线，西侧沿长城，南侧沿保定分界；北京城牌仍位于顺天区域。",
+      "reviewedAnchors": [
+        [
+          450,
+          560
+        ],
+        [
+          485,
+          640
+        ],
+        [
+          510,
+          682
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-27",
+      "name": "保定",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北侧贴顺天南部棕线，西侧跟随山西/保定的山脊走势，东侧跟随河道；大名仍处于本区域内。",
+      "reviewedAnchors": [
+        [
+          510,
+          682
+        ],
+        [
+          390,
+          748
+        ],
+        [
+          456,
+          790
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-30",
+      "name": "山西",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "西侧沿延绥一侧河道，东侧沿山脊与保定分开；太原位于本区域，没有跨河归到延绥。",
+      "reviewedAnchors": [
+        [
+          160,
+          700
+        ],
+        [
+          269,
+          776
+        ],
+        [
+          390,
+          748
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-31",
+      "name": "延绥",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "东侧河岸和可见西北长城对齐；v3沿恨字字形闭合的问题在v5已消除。标题遮挡处用明确近似窄直段连接，不冒称原图可见实线。",
+      "reviewedAnchors": [
+        [
+          79,
+          753
+        ],
+        [
+          9,
+          790
+        ],
+        [
+          107,
+          815
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 1109,
+      "approximate": {
+        "segment": [
+          [
+            79,
+            753
+          ],
+          [
+            9,
+            790
+          ]
+        ],
+        "rect": [
+          9,
+          753,
+          79,
+          790
+        ],
+        "reason": "可见长城末端至图缘的标题遮挡段，后者为明确标注的近似锚；未沿恨字字形分割。",
+        "scope": "仅此窄段不声称具有原图可见实线。"
+      }
+    },
+    {
+      "id": "city-region-32",
+      "name": "登莱",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "北东侧沿海岸，西侧沿山东/登莱的真实棕色分界；没有继续用原大片海域作为父区域，底部流程表覆盖部分不推造隐藏地形。",
+      "reviewedAnchors": [
+        [
+          756,
+          746
+        ],
+        [
+          675,
+          740
+        ],
+        [
+          690,
+          829
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    },
+    {
+      "id": "city-region-33",
+      "name": "山东",
+      "status": "PASS",
+      "checks": [
+        "printed-border-or-terrain-following",
+        "no-obvious-cross-region-boundary",
+        "no-large-sea-territory-leak"
+      ],
+      "observation": "西侧河道、东北与登莱的棕线和可见沿海轮廓相符；济南仍位于山东，未跨河并入保定。",
+      "reviewedAnchors": [
+        [
+          596,
+          830
+        ],
+        [
+          675,
+          740
+        ],
+        [
+          690,
+          829
+        ]
+      ],
+      "remainingHardFailures": [],
+      "v3ToV5ChangedPixelsForThisRegion": 0
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "revise": 0,
+    "withDeclaredApproximateSegment": 1
+  },
+  "scopeLimits": [
+    "只判这13个红字土地的原图可辨几何边界，其他22个对象由别的审查者负责。",
+    "粗印刷线、城名牌/图符及标题遮挡处不声称逐像素唯一轮廓。",
+    "底部纪年轨和战斗流程表是印刷UI覆盖，不据其边框创造新的地区身份或推断隐藏边界。",
+    "不证明应用运行时命中、邻接/城市规则、游戏数值或最终教程UI通过。"
+  ],
+  "formalFilesChangedByReviewer": false
+}

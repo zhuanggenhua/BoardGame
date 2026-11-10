@@ -1,0 +1,2362 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "changeType": "refactor",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-11-01",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": false,
+    "visualReview": "当前PC整屏与录屏由子代理私有逐项审查；内容、实际操作、规则数值分别验证。"
+  },
+  "humanAcceptance": {
+    "status": "rejected",
+    "platform": "PC",
+    "mobileWork": "not-started"
+  },
+  "encodingCompatibility": "六张全屏JPEG是既有真实时间录制协议保留的阶段关键帧，不替代45张无损PNG界面截图或原WebM；无转码伪装及局部特写。",
+  "implementationRecord": "docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md",
+  "contentReview": "evidence/qidahen/tutorial-full-causal-20261101/reviews/content-review-final.json",
+  "completeTutorialReference": "evidence/qidahen/tutorial-full-causal-20261101/references/bga-getonboard/reference-review.json",
+  "media": [
+    "evidence/qidahen/tutorial-full-causal-20261101/media/01-PC-公开纪年与年度扩张目标.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/02-PC-轮盘免费前进一步.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/03-PC-先军屯补充手牌与部队.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/04-PC-军屯后继续同格开垦.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/05-PC-开垦地区选择.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/06-PC-完成落点建设后转入手牌动员.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/07-PC-征召弃牌支付.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/08-PC-共享放大镜检视征召手牌.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/09-PC-征召建军地区与辽北引导.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/10-PC-辽北建军方式与完整候选.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/11-PC-年中税赋与漕运.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/13-PC-火炮技术研发.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/14-PC-先选出兵来源.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/15-PC-地图兵牌选择出兵.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/16-PC-已选部队与确认出兵.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/18-PC-战术牌使用前.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/21-PC-炮兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/23-PC-骑兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/25-PC-步兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/28-PC-主动展开只读战报.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/29-PC-外交友好标记选择.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/30-PC-外交结果与落点继续.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/31-PC-为大同换防选择雇佣.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/32-PC-在大同建立新守军.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/33-PC-新年朝贡与结算顺序.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/36-PC-长城破败与边界宽度.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/37-PC-大同撤旧兵保留新守军.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/38-PC-叶赫部队维持费用.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/39-PC-三张费用牌分别选中.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/40-PC-手牌末端与翻看入口.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/41-PC-平壤雇佣军耗损选择.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/42-PC-选中平壤耗损部队.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/44-PC-新纪年顺位与人物出场.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/45-PC-按当前纪年选择人物.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/46-PC-共享放大镜检视杨镐.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/47-PC-同次付费的征兵与训练选项.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/48-PC-征兵训练选择原炮兵.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/49-PC-继续训练原参战步兵.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/51-PC-四次基础行动完成并保留手牌.png",
+    "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "完整教程的目标与行动因果",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/01-PC-公开纪年与年度扩张目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/03-PC-先军屯补充手牌与部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/04-PC-军屯后继续同格开垦.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/06-PC-完成落点建设后转入手牌动员.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/07-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/08-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/10-PC-辽北建军方式与完整候选.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/13-PC-火炮技术研发.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/30-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/31-PC-为大同换防选择雇佣.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/32-PC-在大同建立新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/33-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/36-PC-长城破败与边界宽度.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/39-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/40-PC-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/41-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/42-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/44-PC-新纪年顺位与人物出场.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/45-PC-按当前纪年选择人物.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/46-PC-共享放大镜检视杨镐.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/47-PC-同次付费的征兵与训练选项.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/48-PC-征兵训练选择原炮兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/49-PC-继续训练原参战步兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/51-PC-四次基础行动完成并保留手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "核心操作与年度结算",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/01-PC-公开纪年与年度扩张目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/03-PC-先军屯补充手牌与部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/04-PC-军屯后继续同格开垦.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/06-PC-完成落点建设后转入手牌动员.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/07-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/08-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/10-PC-辽北建军方式与完整候选.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/13-PC-火炮技术研发.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/30-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/31-PC-为大同换防选择雇佣.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/32-PC-在大同建立新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/33-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/36-PC-长城破败与边界宽度.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/39-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/40-PC-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/41-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/42-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/44-PC-新纪年顺位与人物出场.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/45-PC-按当前纪年选择人物.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/46-PC-共享放大镜检视杨镐.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/47-PC-同次付费的征兵与训练选项.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/48-PC-征兵训练选择原炮兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/49-PC-继续训练原参战步兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/51-PC-四次基础行动完成并保留手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "合法候选与提示可读性",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/01-PC-公开纪年与年度扩张目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/03-PC-先军屯补充手牌与部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/04-PC-军屯后继续同格开垦.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/06-PC-完成落点建设后转入手牌动员.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/07-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/08-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/10-PC-辽北建军方式与完整候选.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/13-PC-火炮技术研发.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/30-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/31-PC-为大同换防选择雇佣.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/32-PC-在大同建立新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/33-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/36-PC-长城破败与边界宽度.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/39-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/40-PC-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/41-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/42-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/44-PC-新纪年顺位与人物出场.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/45-PC-按当前纪年选择人物.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/46-PC-共享放大镜检视杨镐.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/47-PC-同次付费的征兵与训练选项.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/48-PC-征兵训练选择原炮兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/49-PC-继续训练原参战步兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/51-PC-四次基础行动完成并保留手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "PC完整流程与正常续局",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/01-PC-公开纪年与年度扩张目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/03-PC-先军屯补充手牌与部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/04-PC-军屯后继续同格开垦.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/06-PC-完成落点建设后转入手牌动员.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/07-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/08-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/10-PC-辽北建军方式与完整候选.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/13-PC-火炮技术研发.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/30-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/31-PC-为大同换防选择雇佣.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/32-PC-在大同建立新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/33-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/36-PC-长城破败与边界宽度.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/39-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/40-PC-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/41-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/42-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/44-PC-新纪年顺位与人物出场.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/45-PC-按当前纪年选择人物.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/46-PC-共享放大镜检视杨镐.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/47-PC-同次付费的征兵与训练选项.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/48-PC-征兵训练选择原炮兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/49-PC-继续训练原参战步兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/51-PC-四次基础行动完成并保留手牌.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop.json"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "qidahen-annual-desktop",
+      "sourceRun": "annual-r144-causal-pc-20261101",
+      "sourceRevision": "sha256:a045717826203f0c029bf3d3a6dfe6249b61a90d4aebdeabab39493e8a863a12",
+      "evidence": "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop.json",
+      "requiredSteps": [
+        "frontier-goal",
+        "opening-move",
+        "farm-action",
+        "farm-alternative-checkpoint",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "prepare-hand",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "opening-finish",
+        "midyear",
+        "hand-limit",
+        "battle-move",
+        "upgrade-first",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand",
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall",
+        "upkeep-datong",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong",
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-second-kind",
+        "training-second-target",
+        "training-third-kind",
+        "training-third-target",
+        "training-recruit-kind",
+        "training-recruit-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "REVISE",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/r144_visual_early + /root/r144_visual_middle + /root/r144_visual_late + /root/r144_visual_early + /root/r144_visual_late"
+    },
+    "reviewFile": "../.visual-review.json",
+    "baselineReviewFile": "../.baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/turnContextRegions.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/battleRollProjection.test.tsx src/games/qidahen/__tests__/battleRollPlacement.test.tsx src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/chronologyDeck.test.ts src/games/qidahen/__tests__/qidahen-midyear-resolution.test.ts src/games/qidahen/__tests__/seasonChoiceBranches.test.ts --configLoader native --maxWorkers 1"
+    ],
+    "evidence": [
+      "test-results/qidahen-full-rebuild-unit-final.log"
+    ]
+  },
+  "additionalChecks": {
+    "typecheck": "test-results/qidahen-full-rebuild-typecheck-r144.log",
+    "sharedTutorialAndStorage": {
+      "passed": 95,
+      "files": 7,
+      "evidence": "test-results/qidahen-full-rebuild-shared-and-storage-r144.log",
+      "boundary": "自动步骤、可见性、回退、等待、完整存档与旧格式合同；包含布局几何失效回归，不冒充其它游戏UI实测。"
+    },
+    "layoutPerformance": "evidence/qidahen/tutorial-full-causal-20261101/reviews/layout-performance-review.json",
+    "lifecycle": "evidence/qidahen/tutorial-full-causal-20261101/traces/lifecycle.json",
+    "lateProgress": "evidence/qidahen/tutorial-full-causal-20261101/traces/late-progress.json",
+    "storageReview": "evidence/qidahen/tutorial-full-causal-20261101/reviews/storage-review-final.json",
+    "lifecycleSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/lifecycle/lifecycle-verification.json",
+    "e2e": "test-results/qidahen-full-rebuild-pc-r144.log",
+    "fullI18n": {
+      "status": "FAIL-unrelated-eight-warnings",
+      "evidence": "test-results/qidahen-full-rebuild-i18n.log"
+    }
+  },
+  "boundaries": [
+    "仅当前PC完整教程主线，用户人工认可前不进入移动端；未提交、推送、切换分支或发布。",
+    "核心动作、年中、新年及次年行动实际操作；防守方避战仅观察、杨镐十支指挥仅规则说明，不宣称所有势力/人物/城战/水路/全部选择分支已实操。",
+    "全局国际化仍有其它模块八条告警，不宣称全项目全绿。",
+    "大历史存档无损压缩解决本课程实测容量问题；同步编码/解码仍有晚期长任务开销，不宣称任意存储空间或性能问题均已解决。"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\00-frontier-goal.png",
+      "sha256": "1796ac269beb9115801846bf692a1cfd445c8fd36709dcfc59769eebc3640b62",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\01-opening-move.png",
+      "sha256": "6ba594c95e1cf36dcc24c3f1eea0ca13149db7a74f730b99a71a794b9102ffc0",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\02-farm-action.png",
+      "sha256": "67edfa417ca145e66a8fce6a829238cdf8c443659f01030cfdfb3a645dc67804",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\03-reclaim-action.png",
+      "sha256": "a2fb43b5b879d8f36744a8c2968f48114f4e16b8f3951cbbc4b0738d37ee989c",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\04-reclaim-target.png",
+      "sha256": "79e4765cc204290e01e5ca87e1dc716422f380f117aed3035d78753f4f460161",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\05-prepare-hand.png",
+      "sha256": "aa7a631f183fc76e3159c913536d0c271221975cc63be3b3ca929bfa25311757",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\06-recruit-payment.png",
+      "sha256": "088332db03c63bd3aa0a91ac3a006ac8a30bab5db2fe3df0ec8f561cee2b31da",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\07-recruit-payment-inspect.png",
+      "sha256": "b1c679554a02c533141c4b8a1e3825ce79ed56623a64a239edba8ceaffb22dc1",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\08-recruit-source.png",
+      "sha256": "d36eff8a58a3d9afd1740dec3511b3b855fbae5e9d2c1b48fe4d1a9ab0e029b5",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\09-recruit-troops.png",
+      "sha256": "734bec6052ed88bdb687ed2dfff4d8e879b6b7c54fb4050eb22151ea793ea814",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\10-midyear.png",
+      "sha256": "ff7d6f9c6eea13e287be52a6e709abe4ddebe86e145983bf4ce4307949d22bb5",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\11-hand-limit.png",
+      "sha256": "90f157ecca99b64f64a7cb602ba402bb5b25fe181b9ceb5d40103e3be1c52564",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\12-upgrade-card.png",
+      "sha256": "e0914c72404cd39a496a887ea7c23326628220bce23f613339ba284e37b3c1d8",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\13-dispatch-source.png",
+      "sha256": "4f1fa23f4b36313d7d138c64fd7ac92bfc8f97b7f471e7bf076064f47e1e9cb3",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\14-dispatch-troops.png",
+      "sha256": "a226c67e2f5869f84ff5d31e2bda46a5053cadc11e3befe782af3293bb0bef29",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\15-dispatch-troops-selected.png",
+      "sha256": "1f589d5879e18a037c0ea0855221bfedbbcf8e24af53c0ea50ebc9f54ecd0e31",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\16-dispatch-target.png",
+      "sha256": "07ee7d95435018214ed5d90d967cb08f0dbe4f98ba1006ca87a7c8739161fa1f",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\17-tactic-card.png",
+      "sha256": "c6d07f5f41c95da8f6f48a8bb5444c5100e3c97e1ee196203d4c3a04202fd628",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\18-tactic-card-selected.png",
+      "sha256": "a407d3aa2d3764c6e40262eb39d2c92db2f0c8d9c2fc2cd743492c4eedb24100",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\26-occupy.png",
+      "sha256": "1db9bbf04881fc190794b6d2b6e2a5ebe6a27b5738bf5a3cac3fed036d066d36",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\27-occupy-report.png",
+      "sha256": "77aa1a1934aeac1f6544ab67e3ef34d66dc2feae3de4e6f3ac7736206b38f17b",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\28-diplomacy-target.png",
+      "sha256": "5a85fb0683f50d15d22dbca32855f84ae2a48247df6b184839ad308bed5a898b",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\29-diplomacy-finish.png",
+      "sha256": "e76fe7676e77ee5a1a334d2310e03e9f3dfc4c6c4d0fe6b5b9a4759e3d691d51",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\30-hire-action.png",
+      "sha256": "fe4171915addbd2d2abad31fd708328c53180cdbdc3db4b2e9d6f25201821506",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\31-hire-target.png",
+      "sha256": "cddbb03e24e4e3f914ab42332d81c418df969390c729a07c03044a1ab137f0ba",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\32-new-year.png",
+      "sha256": "af1e787e64327eb51e2a5de7eed8938aa88c733036888130f42fb46049823079",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\33-maintain-shanhai.png",
+      "sha256": "447f9705c14b5e9ef0162cca084345b8f25609b49cd2a2e0810ba6537754b7b8",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\34-abandon-jinzhou.png",
+      "sha256": "91cde1e1a60459350cc1badc333fff802f3b469746be841c45c1c7b15df7990f",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\35-abandon-inner-wall.png",
+      "sha256": "8da775808a873d9ff63f8faedbcf6c34f81331451107481db47949a885f22a95",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\36-upkeep-datong.png",
+      "sha256": "2f924fe059dd2ef9fe2bfb5d96c280333e3c5f6970f11550757ae9bfe5a7c35e",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\37-upkeep-yehe.png",
+      "sha256": "60e9394221857fb5b17139b3e36004f16f28e77594c4724676782ec3b9ead04b",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\38-upkeep-yehe-selected.png",
+      "sha256": "2066632a8a212194fd3fc0692fc208b98b182e500e3e931bcb77d57fd606769c",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\39-hand-scroll-end.png",
+      "sha256": "356fc4011a10db99796c7ebdb51054ec4b8cc9f4892bf6a56c342fd8f1f4495a",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\40-upkeep-pyongyang.png",
+      "sha256": "ca80f5bbe7dbb249023726dc78e6584b84544f68533d0c20b2ebc4239f293643",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\41-upkeep-pyongyang-selected.png",
+      "sha256": "fdbee225876ee123fc623015bc6da195cb5acaf52cb923d928f2f26cadd125ed",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\42-claim-year.png",
+      "sha256": "a3c5fbce12540ed25ee9bb4f5781de1346ebdbd1643c29f15656b1c8490bf5d2",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\43-new-order.png",
+      "sha256": "dc3b2faeeecbedac0d7a58d69ea7145f0efe224991c139c2244ee7bb0adf9b9d",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\44-year-character.png",
+      "sha256": "bba62080bcb6ec55bbe1a65a7a3f77fccbe11c8704bfeb046e8036aff68eaf28",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\45-year-character-inspect.png",
+      "sha256": "76b71d3590386304a2f21cfab1e6e79b738c3e99ff79ed7ae75524aa5b9d31d7",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\46-training-kind.png",
+      "sha256": "e7b80d61bd5400acfc5848e522f30985086a8ba6801ef7be3bb7d2f23c36af8a",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\47-training-target.png",
+      "sha256": "c0a9169236008a7a89b74d306ad123cac54b4feeb453390ce7069f03a5cc9cf6",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\48-training-second-target.png",
+      "sha256": "7f8b624414036517b8b6c3e8f05769b5b37f805a8c07e2e1890273d2cca2ace7",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\49-training-recruit-target.png",
+      "sha256": "b39fabac7740099f77e45df12e5396668bcd5575b6d01e5437d3c1772bbc07a3",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\50-training-finish.png",
+      "sha256": "d6106bb32b8feb56ebb45e3a6571456368c6dd37e13f62fd85fd47bb7ed5a532",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\51-finish.png",
+      "sha256": "ac31511e70fdfa1b405939bd6f767121a87920075e3175f301433aed767b52bd",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "a5518482b4fce790a1c31f218605ebbff170009ed0b25d914e13495dca43661f",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "d0a2b8c4fb2d7b38ae06895b7af8cd7b5f9135825f372a9580fc431cd10b630e",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00000.jpg",
+      "sha256": "fe1a880ad1f2df5e693954f2f5e802894c47b1aa785d3c179389eb92f4d4d8ab",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00001.jpg",
+      "sha256": "fe1a880ad1f2df5e693954f2f5e802894c47b1aa785d3c179389eb92f4d4d8ab",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00002.jpg",
+      "sha256": "fe1a880ad1f2df5e693954f2f5e802894c47b1aa785d3c179389eb92f4d4d8ab",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00003.jpg",
+      "sha256": "21cc38236f7a9ed6ad3ddfab80c487110b89d65208f29082cf435c50079afaa9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00004.jpg",
+      "sha256": "bd7e8050f34119260c03f1b37e4b61a48f255e53b460ebeed00ddfd0b41c64b5",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00005.jpg",
+      "sha256": "bd7e8050f34119260c03f1b37e4b61a48f255e53b460ebeed00ddfd0b41c64b5",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00006.jpg",
+      "sha256": "bd7e8050f34119260c03f1b37e4b61a48f255e53b460ebeed00ddfd0b41c64b5",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00007.jpg",
+      "sha256": "bd7e8050f34119260c03f1b37e4b61a48f255e53b460ebeed00ddfd0b41c64b5",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00008.jpg",
+      "sha256": "662e9661d8b903e1790130a45223623c1effaff5d117813a68349c4b75cc80df",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00009.jpg",
+      "sha256": "01c5632ce93c33842102b427351fa0844557ca760c63b7fdd890e10945d0f8b2",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00010.jpg",
+      "sha256": "6b3d84bf30012a71a89dfa25adeef8ac971175295c5d1340e699fb8d0f92295d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00011.jpg",
+      "sha256": "730d6f22aed28512ca37114b39c90e310db0db9e98936344987b4de5b439684d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00012.jpg",
+      "sha256": "c29d8e118f9b87cf914404edf9f273f51168659ac621ef024afb3dd51cc545cf",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00013.jpg",
+      "sha256": "3200b1415f9ac5706c1bdff3184b143e8b0cc85e2a86b6d43fb3f99dda5044b8",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00014.jpg",
+      "sha256": "6f823a02c037be1735a2b3a5aad6a4971fd804bb61bd36e9cc48cba85c38c9c6",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00015.jpg",
+      "sha256": "feafd66c11f06503f2329ef4442afd04d685e77a8a4f396a9637155fa5407234",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00016.jpg",
+      "sha256": "5fd962e8427a476a09cbb667da79baaf0ff015f7cff6e0582f6a709e3be83a4f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00017.jpg",
+      "sha256": "881a978f681efccba2a5769560e09fecf615aa89e81864beb8b48587a742428e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00018.jpg",
+      "sha256": "a5518482b4fce790a1c31f218605ebbff170009ed0b25d914e13495dca43661f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00019.jpg",
+      "sha256": "82428d64c7c5c8be1268aaf4e5aa3eae3705cefadf4757a02a949c802fc88892",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00020.jpg",
+      "sha256": "4a56a5ce329b72a7987825ca1069fa3069b8f3d7112c301ef03c50cc329f7c02",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00021.jpg",
+      "sha256": "9ea9e2c2e3b121e1b8cc9ff2e1414c9a8ec7174bcc0e8bf3defc0e4e0e9227c0",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00022.jpg",
+      "sha256": "21d8d8493e02ce2e5a7350a445599a2c4488c906a8cc8fa3d0ca2cffec0b20bc",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00023.jpg",
+      "sha256": "f19641fe2fb545bad59cf3c17cf44ac5309f34a2a5f2e6a0b54e30bf72531b49",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00024.jpg",
+      "sha256": "ae931dc41eab9d19d26e72728bd2b3d1e25af3603913d5f17267992d01661bbe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00025.jpg",
+      "sha256": "a52680a2fe6153be04e397da1b7d5f161770e704e2d3760c69bb7e1fe9f532b1",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00026.jpg",
+      "sha256": "26532109b003055abe1cdedf2896886f32b363811d4efcea34f83c4317c7337f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00027.jpg",
+      "sha256": "db45ed0111beb69e42a2b5b6d90e422f97476ba1887bb87ad573803430a1240a",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00028.jpg",
+      "sha256": "dc78739a9175f0299f7972e59029c09161aba7086a1ab58cb6bcef930e6902f0",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00029.jpg",
+      "sha256": "97a1f6375972cca3726644f84c28c75de7bb35cb0623fc5014370f85be202e9a",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00030.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00031.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00032.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00033.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00034.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00035.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00036.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00037.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00038.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00039.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00040.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00041.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00042.jpg",
+      "sha256": "9bdbc60e925769f46bef831c5810a857a28a38a78aa49c4bb09ad022079154fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00043.jpg",
+      "sha256": "a621cae1eb98c9d2bcb893806af4972d78975c6113ef81fce61574497e254385",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00044.jpg",
+      "sha256": "d0a2b8c4fb2d7b38ae06895b7af8cd7b5f9135825f372a9580fc431cd10b630e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00045.jpg",
+      "sha256": "badf56276398db3fe1c46335141a91c87e0179cea19f34f48f5a719620498ecd",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00046.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00047.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00048.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00049.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00050.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00051.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00052.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00053.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00054.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00055.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00056.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00057.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00058.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00059.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00060.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00061.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00062.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00063.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00064.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00065.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00066.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00067.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00068.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00069.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00070.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00071.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00072.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00073.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00074.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00075.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00076.jpg",
+      "sha256": "1d44bf0e89e3da4c09a9536902ace81bef5687d1a89847e939a31ea9c599ad09",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00077.jpg",
+      "sha256": "d0b76f2d57cbc02a361d44f2cd4817795a24c1149c574fec416cb3ba1806ed40",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00078.jpg",
+      "sha256": "183a49131e78fb8ffbb39974c8c29c80a728dd0afc92f82fc3307a155233ff87",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00079.jpg",
+      "sha256": "e872d6130bdbeafbc1eb2d62990d729aa267ff000e95ee412692cbb9ca79ddd9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00080.jpg",
+      "sha256": "0de152c87ea66f99e3d563255e4eff15616a331d52bd85bb37fc7bb15fe69266",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00081.jpg",
+      "sha256": "7240a7528bd74b573700d603baae5c11beea0e89b55bb040578389e8e226ff54",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00082.jpg",
+      "sha256": "91921e2fb62098022eae0e0cc3e8a637dcad1deb4392bb4a01fa584f1f1f7a8e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00083.jpg",
+      "sha256": "3ae346041f511052e5b7a712397c812432ae6f555d2ba8c02014f14740e984d8",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00084.jpg",
+      "sha256": "1dacb0ba85542d1d4325bfe2d1d578210b394688018a75a3671f1977f168152f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00085.jpg",
+      "sha256": "edd4e072f4dd6a575bbb88c4736e8102b479d0df6d481c41a2c97763e069c898",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00086.jpg",
+      "sha256": "041a41fb12fefad1c16c0d7e852da5305a470fcc8358a830075358388dc4dc2e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00087.jpg",
+      "sha256": "d616c21833f00a5d53bcf026605566c1352f63f55a9d632a291cbafdd0ed2206",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00088.jpg",
+      "sha256": "d325a831babe8415b200e26756671b6bc137057479c2dfa1c132928ced4025b9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00089.jpg",
+      "sha256": "0450847fb207ce9bb87fbdfa0ff9028ee20f3237b80580dc7ebe383ac63f30b2",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00090.jpg",
+      "sha256": "0f0b636d23620ed1f44e3a4227d06d761d51262790575fc84894c11779c5e9d0",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00091.jpg",
+      "sha256": "b683be4baa3e1b22b6945ad915ada38d801d90e36e35bc3d31ad6cf431907dad",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00092.jpg",
+      "sha256": "893c8f3f909f4a2581708e2465c51a87a279183b9e8308aaa5a044493b4a244c",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00093.jpg",
+      "sha256": "f129522d804d2d90368921ee240f1bf15a24753ffd54842ad7c44dd7a20f4fec",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00094.jpg",
+      "sha256": "4b9a85553aa3a2ed20cef566a5d4b59facb3fd0b1ae5a159854a6a88e1656953",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00095.jpg",
+      "sha256": "95663bad0345b42752374cc48e560583d7fffe19c94beedbd52c681e43581599",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00096.jpg",
+      "sha256": "baba6df5efcc1666b06c9dd349c50ecc590a2440ef0f9eeb3d5669f641e0c29a",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00097.jpg",
+      "sha256": "58ea2d8e47e71137214a35da19d57d2ab1fdfb216f69c77fec55d1a9b033505b",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00098.jpg",
+      "sha256": "529b96ded1ab43b64d5f9b95e396608e832646ded9389951a7491e98123b83f9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00099.jpg",
+      "sha256": "bf12fb86a60a75b5a9eb3ff66ecd8d6bc64600c9e644741db78653f7aff867b8",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00100.jpg",
+      "sha256": "b2170ca644b39e70a352c863cab4fe7a44cbbe96cb835fbcb27fcf2d7567739d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00101.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00102.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00103.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00104.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00105.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00106.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00107.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00108.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00109.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00110.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00111.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00112.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00113.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00114.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00115.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00116.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00117.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00118.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00119.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00120.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00121.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00122.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00123.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00124.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00125.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00126.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00127.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00128.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00129.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00130.jpg",
+      "sha256": "f528307f2603f1dcd66779183e8f359124485061290dd8a7336d510907f1b9f6",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00131.jpg",
+      "sha256": "837406ee99a08253b9cda84caf5bbd67849d1328df4311573c48df38a8745f77",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-frames\\00132.jpg",
+      "sha256": "837406ee99a08253b9cda84caf5bbd67849d1328df4311573c48df38a8745f77",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "d325a831babe8415b200e26756671b6bc137057479c2dfa1c132928ced4025b9",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-real-time.webm",
+      "sha256": "2e63b874d65825529b25cef98b57bf22ff001c934ac30262d831002e618df643",
+      "contract": "source-original-byte-copy",
+      "reason": "同源原媒体的字节一致归档只展示一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0001.png",
+      "sha256": "400bd83ee202815dc5758eade21a6ea8cec6b44d29c182f678bb4e19546daaae",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0002.png",
+      "sha256": "bcb7eb3f744e402ad46b6f2afc62489eea7cfbba657021923eef3bd565288cfb",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0003.png",
+      "sha256": "bcb7eb3f744e402ad46b6f2afc62489eea7cfbba657021923eef3bd565288cfb",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0004.png",
+      "sha256": "5223bcd2535658036e04eb11020dca9879dc4be8ae517d9cb3997439040ea72a",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0005.png",
+      "sha256": "06328d4a509560d2f304d391ea904fa33d2dd22f156ff76cf1373bb776204bd2",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0006.png",
+      "sha256": "9bb3d9479d8c5e9988d4a735d8bbbca75304dea564be799e42470c66156a193a",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0007.png",
+      "sha256": "c264c1c5b2ff1ecc972d095b435e0d63ae80c8f0117994812a3dece100341cf3",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0008.png",
+      "sha256": "6367f433ea45e48c8ca9c6630381899f1b4e632c8def73559a278dcf1ad0f379",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0009.png",
+      "sha256": "10d8b1588f6cd7ad2a6aa3b72e869a0fd01603dde0c2d446149382a3fdb06572",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0010.png",
+      "sha256": "b8effda30bbdca95116f01d213c2d492b66a4bedfa2b36b750c9b98b29065b32",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0011.png",
+      "sha256": "a4aca15d42fb5f59528626d4ead2e618046362bf567969f899a5ee9b2db680cd",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0012.png",
+      "sha256": "d8c0d72ff7b646a408a4a905f818ec705b7bde217c1b581826706cb9a8da4188",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0013.png",
+      "sha256": "8aefb92ee7a407e2db126e0fce220b91582faa75e41e7c68e0e8e1fa78f0d12f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0014.png",
+      "sha256": "8d9c1e84696263625ca9227dbc0b25f748caaa123e53b1a30f0017ccf708a7be",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0015.png",
+      "sha256": "cdf534a5703d49830cfab040f904573e024933f0511aae9a519f2ec26282c37d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0016.png",
+      "sha256": "e81192697029f3c7091ca41bc5fef4dddd10a06afae6422fddf234dff5306759",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0017.png",
+      "sha256": "06341d149223fb78240a29af5649767bc195bf37c5de29814e10f77889d18878",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0018.png",
+      "sha256": "2f6b5497027a22ad3c3b6e231b564d87440a96bdbfd535a769ee72f303b10772",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0019.png",
+      "sha256": "a90c792daea10763a33632b1de3f6e4b1225aed1e5020e99e9042cea9d90c854",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0020.png",
+      "sha256": "f317190495a1efbef48566b1bc0b7d11c72f45dcd0751ad7f065a55a063c2ef3",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0021.png",
+      "sha256": "e096148501c065b3d1c14097eb96dd59c754ee06fb38b664cc2d83efb6499eda",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0022.png",
+      "sha256": "902132df26232e8e1eab9636ee738b4d5cea367b535eac7436b50e098313f836",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0023.png",
+      "sha256": "aaf43d7a3e9ab2bb49415a7cf3a92bfaf0e3f8a38868ef09731b07aed88cff30",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0024.png",
+      "sha256": "1346bff448b5636edce20a7f651937717e7510c983132485e37c0e2ffcadac1d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0025.png",
+      "sha256": "f295b4f8efb8eb8f566136d8d3e56453480583c0b595d5af43eeb23f1dd35954",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0026.png",
+      "sha256": "b2f2a478ee7e70b9bcebf766079c39f41861cf42a959366905757e04b14e40d4",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0027.png",
+      "sha256": "e417416513b5d66db195253fb1bfdca4283a074b730f8169f2c727b00f8443eb",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0028.png",
+      "sha256": "bf7b093753ebe0ed15dbaa3be9c619b2a7b1e48b249f9310172b8766a4c298fd",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0029.png",
+      "sha256": "e764e6d650557f58c19ade548d0df9be892010f33acca6e14989e08afa5b1273",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0030.png",
+      "sha256": "58dfd28677f331f189a7b19e92eba00fd7e13886101c4d829906d2a0c39f2652",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0031.png",
+      "sha256": "435959fa87a859922e73c9a36b3d14d37ed5c0f8b3625ccbd22fcc242de794b2",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0032.png",
+      "sha256": "435959fa87a859922e73c9a36b3d14d37ed5c0f8b3625ccbd22fcc242de794b2",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0033.png",
+      "sha256": "92818fb37af04bdf5dc9114d5a2a83e220c8d0f381c22811aca0b1cdf1dbddf9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0034.png",
+      "sha256": "92818fb37af04bdf5dc9114d5a2a83e220c8d0f381c22811aca0b1cdf1dbddf9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0035.png",
+      "sha256": "92818fb37af04bdf5dc9114d5a2a83e220c8d0f381c22811aca0b1cdf1dbddf9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0036.png",
+      "sha256": "92818fb37af04bdf5dc9114d5a2a83e220c8d0f381c22811aca0b1cdf1dbddf9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0037.png",
+      "sha256": "09150b5cc4b3db2ae8b8b60f957d4ac2a25cf5a951901c794e9c6a74d6cbb2af",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0038.png",
+      "sha256": "09150b5cc4b3db2ae8b8b60f957d4ac2a25cf5a951901c794e9c6a74d6cbb2af",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0039.png",
+      "sha256": "09150b5cc4b3db2ae8b8b60f957d4ac2a25cf5a951901c794e9c6a74d6cbb2af",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0040.png",
+      "sha256": "09150b5cc4b3db2ae8b8b60f957d4ac2a25cf5a951901c794e9c6a74d6cbb2af",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0041.png",
+      "sha256": "c713422cd1056917360f34553f07b57d2e48ac9fdb110f1bc210b9ebc22e908d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0042.png",
+      "sha256": "c713422cd1056917360f34553f07b57d2e48ac9fdb110f1bc210b9ebc22e908d",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0043.png",
+      "sha256": "ea236e088278f2bc21e32a91f8b8c6a018458e72dcf97916b15f958287c48725",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0044.png",
+      "sha256": "84390c694ca45947b9a5f73ec99c5f62bccb710165670848ecdd1667511eea35",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0045.png",
+      "sha256": "d9f131d304043917a933d1f9b5ce988cb65132220bc05d67cafe747a9b8179e5",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0046.png",
+      "sha256": "fc5ed8c9cf34ba1906966cf91dddb87b30b456c05074f84a3aa949afca11d03f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0047.png",
+      "sha256": "d5e5a52016fd6a68906b302fddd5906fb060aafd1117fa410a02462c7a96b804",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0048.png",
+      "sha256": "d5e5a52016fd6a68906b302fddd5906fb060aafd1117fa410a02462c7a96b804",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0049.png",
+      "sha256": "c4e3496b4ce4f50e3cb7d0dabccdf881496b72a65257d9ccd771a579700fc45f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0050.png",
+      "sha256": "e4ca5f21085d26927144edf5d08de207c7406ac6e945f0e7f394f7813b357be3",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0051.png",
+      "sha256": "91aae0a6e198c3f49e6473afc527c00afb546799fc1dcd81b34597468ff79332",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0052.png",
+      "sha256": "91aae0a6e198c3f49e6473afc527c00afb546799fc1dcd81b34597468ff79332",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0053.png",
+      "sha256": "674d3ecd21dd0f54f9053800e0f8c7cc453a47a13eee1a6bf4294f0dc8598785",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0054.png",
+      "sha256": "674d3ecd21dd0f54f9053800e0f8c7cc453a47a13eee1a6bf4294f0dc8598785",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0055.png",
+      "sha256": "674d3ecd21dd0f54f9053800e0f8c7cc453a47a13eee1a6bf4294f0dc8598785",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0056.png",
+      "sha256": "674d3ecd21dd0f54f9053800e0f8c7cc453a47a13eee1a6bf4294f0dc8598785",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0057.png",
+      "sha256": "6d4bc89c428e84d078afd4f25d713677353bebc9fcf45277e6c985c7d169112c",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0058.png",
+      "sha256": "6d4bc89c428e84d078afd4f25d713677353bebc9fcf45277e6c985c7d169112c",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0059.png",
+      "sha256": "6d4bc89c428e84d078afd4f25d713677353bebc9fcf45277e6c985c7d169112c",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0060.png",
+      "sha256": "6d4bc89c428e84d078afd4f25d713677353bebc9fcf45277e6c985c7d169112c",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0061.png",
+      "sha256": "770f4be7bb2bbcc17765f9009debb2384a1798f7f0ed963d31d695a4c1d2bdf4",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0062.png",
+      "sha256": "770f4be7bb2bbcc17765f9009debb2384a1798f7f0ed963d31d695a4c1d2bdf4",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0063.png",
+      "sha256": "770f4be7bb2bbcc17765f9009debb2384a1798f7f0ed963d31d695a4c1d2bdf4",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0064.png",
+      "sha256": "770f4be7bb2bbcc17765f9009debb2384a1798f7f0ed963d31d695a4c1d2bdf4",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0065.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0066.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0067.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0068.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0069.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0070.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0071.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0072.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0073.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0074.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0075.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0076.png",
+      "sha256": "5fe019378e64fe3ed1bc1f8842fa9bbd870a7c6d29037047beadd80253c8873e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0077.png",
+      "sha256": "c15dd2b7934e484f0e46e16029b39c90292d5e88a29d34cfd870880f3b065cf9",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0078.png",
+      "sha256": "d56363bf3a21a73ffd8066a2b7687c60a5c960311a7b3383adfd216b609bf95e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0079.png",
+      "sha256": "e0631521048677fcb0452f21cc054109fa9f68f67eb8d9c36e82a20bf2f92424",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0080.png",
+      "sha256": "c885ea5a90f456a2585216a7e1985a751b2786502a68d27c6e7bf7368c490999",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0081.png",
+      "sha256": "739b291782d4f94b5c54fa558850122b8b27a5ff1db6a90237904531217e88de",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0082.png",
+      "sha256": "19cf8be57f45c4bc16cf48e5ccfdea8582602654ad2d12e95dc81ae5a1e2609e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0083.png",
+      "sha256": "8cd9a6728ceba63fbc138112f826c9854e98248e9ca01e912865f92942ca6b48",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0084.png",
+      "sha256": "4dca55a32aafd05691e667cb57746c2356dde7113a17463422c54d58efb79f88",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0085.png",
+      "sha256": "0373faa1fde0d0ac08367dcd3b72591a1228761e423124ecaaafd86a45cfc5e0",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0086.png",
+      "sha256": "678b9f154b5bfd86ea833968bf2eb88662936bef502e829cb346153b01c9a068",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0087.png",
+      "sha256": "de638ecf2b16b7eed694ce2cf264fc9eba0df29103c90580c756622cb88c9fd8",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0088.png",
+      "sha256": "b6a1f1f34f067a00ec2c6866b94021e52e7e88a09a5f76455e72420d8cfed9a2",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0089.png",
+      "sha256": "456399f82bf4f9aaa06a7aff317a342dadbb342c8358edeaf5139806f95e2b5b",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0090.png",
+      "sha256": "6069357b6797b8769f68b0bf4a51d4027e69fb71cd638a8a9f73e380f697cf76",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0091.png",
+      "sha256": "1a10f2adc5d93ac2fa397c140f3b252d76041869ded3c63fc94177769975bfba",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0092.png",
+      "sha256": "16fe00947334034269ff2be193b3b68a348d3bdee219f680c8b27f8e7d1aa72c",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0093.png",
+      "sha256": "ad3a369fd6abf4adf6cc0d6dc2e7ddea02d39d08f27c599cdf81b303cb363865",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0094.png",
+      "sha256": "18631b6ec2a5a86662a05f1200a197efff6d9e08a780ca6e55a84da80bef048a",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0095.png",
+      "sha256": "bda741066e952b1f5e8d11c2702d33d918cec8b09e7e4fbe21fd8f1f6553b55f",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0096.png",
+      "sha256": "5815694f8c3c9295e744b421021b6b6e0b7c5bbe591f1b064991f66f3a39b693",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0097.png",
+      "sha256": "ff7c4c1e91c0f5cc2490e2d3bef3d19a2f3130019bc7d04f92bc5f1df50ac5a0",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0098.png",
+      "sha256": "893ed56acd2bb877665ba164ce2cc9c51f0c1d0f6e6b818b1d12fa06c2b4e1aa",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0099.png",
+      "sha256": "16dbc1281dbef5591050f014a2aeb72ddc8841dd3c3bae2b87b39be6a706aece",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0100.png",
+      "sha256": "31f7cd5782c1eb174c1db89586688d6c5633890e52201127ea0e93e5cc056121",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0101.png",
+      "sha256": "ab0910c816185b63d8ecbda368ddc6d2dc517dee59a1975743d8e4d1f39e7b8e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0102.png",
+      "sha256": "ebcd106918f134a36dd93bd763a78547544bf892d6c9ebc96869e857dff9e58e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0103.png",
+      "sha256": "769a7b5b157076fcbbaed76a1d80ed2b9c55829c92f724102b2f5ab8a09d0b95",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0104.png",
+      "sha256": "0fb6631c9ec17f2562def457e94c4a2c253c812f8871c0422d00e9f9016d0869",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0105.png",
+      "sha256": "1b4edf6cec53aa0c7c11629c782cdebf68896b89538fc299d49134834c775e05",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0106.png",
+      "sha256": "1b4edf6cec53aa0c7c11629c782cdebf68896b89538fc299d49134834c775e05",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0107.png",
+      "sha256": "1b4edf6cec53aa0c7c11629c782cdebf68896b89538fc299d49134834c775e05",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0108.png",
+      "sha256": "1b4edf6cec53aa0c7c11629c782cdebf68896b89538fc299d49134834c775e05",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0109.png",
+      "sha256": "1b4edf6cec53aa0c7c11629c782cdebf68896b89538fc299d49134834c775e05",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0110.png",
+      "sha256": "1b4edf6cec53aa0c7c11629c782cdebf68896b89538fc299d49134834c775e05",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0111.png",
+      "sha256": "82abb8a7f24663c96b4762cae4750f77e36eb11533487dae8ff8317d03b6f679",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0112.png",
+      "sha256": "82abb8a7f24663c96b4762cae4750f77e36eb11533487dae8ff8317d03b6f679",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0113.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0114.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0115.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0116.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0117.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0118.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0119.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0120.png",
+      "sha256": "3b7cc6a61c8d289515b11b05aa2b4f2c936b4ef5897bd487bfc6f72df1787251",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0121.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0122.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0123.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0124.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0125.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0126.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0127.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0128.png",
+      "sha256": "e6012eba37880ab4ff4638b3d5426c3898d0f43d80c321e829f8f6e0167ce81e",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0129.png",
+      "sha256": "921181d5bba055fab146ef447800fbb77ffb0181f20ded66fa18b75e24c31469",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0130.png",
+      "sha256": "49929ffd89067eefb2a5ff6572dafd343666e1e0b27f048f4a52da098eaaadc1",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0131.png",
+      "sha256": "a90bd9dbb0454aa43f5a95a9ad642e21b4e2ec4f71c85a6d9537c61a62faf714",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0132.png",
+      "sha256": "4bba000b1de0fa09a7246609bf55424ae2ff99d7b5e3fb2b58c6d3bad636f8ee",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\video-private-review\\frames\\frame-0133.png",
+      "sha256": "7a56268217d790a7fdacf690b62853fd12326f776099249141c96ecbb45d92af",
+      "contract": "internal-animation-audit",
+      "reason": "实际录制源帧和私有视频分析材料不进入用户展示目录。"
+    }
+  ],
+  "userRejection": "轮盘介绍说明远离轮盘；原平面避让及可理解性验收被用户否定。后续修复R145。"
+}

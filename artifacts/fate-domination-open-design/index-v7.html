@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1920">
+  <title>Fate/Domination 设计稿 v7 · 第5日行动</title>
+  <style>
+    :root {
+      --table: #241c16;
+      --ink: #f3ebe0;
+      --muted: #b7a894;
+      --gold: #d7b56a;
+      --you: #e08a3c;
+      --rin: #c45c5c;
+      --kirei: #8b3d4a;
+      --shinji: #6b6ecf;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #140f0c;
+      color: var(--ink);
+    }
+    button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+    .stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      background:
+        radial-gradient(1200px 700px at 46% 38%, #3a2f26 0%, transparent 72%),
+        #241c16;
+    }
+
+    .status { display: none; }
+
+    .board {
+      position: absolute;
+      top: 10px;
+      left: 16px;
+      width: 1320px;
+      height: 791px;
+    }
+    .board > img {
+      display: block;
+      width: 1320px;
+      height: 791px;
+      object-fit: fill;
+    }
+    .layer { position: absolute; inset: 0; }
+
+    .zh {
+      position: absolute;
+      z-index: 3;
+      padding: 1px 6px;
+      background: rgba(12, 9, 7, .72);
+      color: var(--gold);
+      font-size: 12px;
+      letter-spacing: .08em;
+      pointer-events: none;
+    }
+    .zh-a1 { left: 1.6%; top: 1.6%; }
+    .zh-a2 { left: 18.8%; top: 1.6%; }
+    .zh-c { left: 51.2%; top: 1.6%; }
+    .zh-h { left: 81.2%; top: 1.6%; }
+    .zh-b1 { left: 1.6%; top: 33.4%; }
+    .zh-b2 { left: 18.8%; top: 33.4%; }
+    .zh-miyama { left: 51.2%; top: 33.4%; }
+    .zh-g { left: 1.6%; top: 67.2%; }
+    .zh-b3 { left: 18.8%; top: 67.2%; }
+    .zh-shinto { left: 51.2%; top: 67.2%; }
+
+    .pile, .on-board {
+      position: absolute;
+      overflow: hidden;
+      padding: 0;
+      box-shadow: 0 10px 18px rgba(0,0,0,.45);
+    }
+    .pile img, .on-board img, .face img, .standee img, .seat-face img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .a1 { left: 2.4%; top: 5.2%; width: 13.2%; height: 25.8%; }
+    .a2 { left: 20.2%; top: 5%; width: 13.6%; height: 26.2%; }
+    .b1 { left: 2.4%; top: 37.2%; width: 13.2%; height: 26.4%; }
+    .b2a { left: 19.4%; top: 36.6%; width: 10.4%; height: 27.6%; }
+    .b2b { left: 30.6%; top: 36.6%; width: 10.4%; height: 27.6%; }
+    .b3a { left: 19.4%; top: 69.4%; width: 14.2%; height: 27.4%; }
+    .b3b { left: 34.4%; top: 69.4%; width: 14.2%; height: 27.4%; }
+
+    .standee {
+      position: absolute;
+      z-index: 4;
+      width: 46px;
+      height: 64px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0,0,0,.55);
+    }
+    .standee.you { outline: 2px solid var(--you); }
+    .standee.rin { outline: 2px solid var(--rin); }
+    .standee.kirei { outline: 2px solid var(--kirei); }
+    .standee.shinji { outline: 2px solid var(--shinji); }
+    .c-kirei { left: 56.6%; top: 8.5%; }
+    .d-you { left: 55.8%; top: 41.2%; }
+    .d-rin { left: 64.8%; top: 44.6%; }
+    .d-shinji { left: 56.4%; top: 73.8%; }
+
+    .fight {
+      position: absolute;
+      left: 50.8%;
+      top: 53.6%;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      background: rgba(16, 10, 8, .82);
+      box-shadow: 0 8px 20px rgba(0,0,0,.4);
+      pointer-events: none;
+    }
+    .fight b { color: var(--you); font-size: 15px; }
+    .fight span { color: var(--muted); font-size: 12px; }
+
+    .vp {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 2px rgba(0,0,0,.55);
+      z-index: 4;
+    }
+    .vp.you { background: var(--you); }
+    .vp.rin { background: var(--rin); }
+    .vp.kirei { background: var(--kirei); }
+    .vp.shinji { background: var(--shinji); }
+    .vp-9 { left: 78.3%; top: 6.9%; }
+    .vp-8 { left: 78.3%; top: 16.8%; }
+    .vp-6 { left: 78.3%; top: 35.9%; }
+    .vp-11 { left: 84.1%; top: 83.3%; }
+
+    .loc {
+      position: absolute;
+      background: transparent;
+    }
+    .loc-c { left: 51%; top: 4%; width: 27%; height: 28%; }
+    .loc-miyama { left: 51%; top: 34%; width: 27%; height: 31%; }
+    .loc-shinto { left: 51%; top: 67%; width: 27%; height: 30%; }
+    .loc-recon { left: 1.5%; top: 68%; width: 16%; height: 29%; }
+    .loc.is-engaged { cursor: not-allowed; }
+
+    .seats {
+      position: absolute;
+      top: 16px;
+      left: 1352px;
+      width: 552px;
+      display: grid;
+      gap: 12px;
+    }
+    .seats-head {
+      color: var(--gold);
+      font-size: 14px;
+      letter-spacing: .06em;
+    }
+    .seat {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      min-height: 96px;
+      padding: 8px 10px;
+      background: rgba(12, 9, 7, .35);
+    }
+    .seat-face { width: 72px; height: 102px; overflow: hidden; }
+    .seat b { display: block; font-size: 16px; }
+    .seat small { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .seat .nums { display: flex; gap: 14px; margin-top: 8px; font-size: 13px; }
+    .seat .nums em { color: var(--gold); font-style: normal; font-size: 16px; font-weight: 700; }
+    .seat.rin { box-shadow: inset 3px 0 0 var(--rin); }
+    .seat.kirei { box-shadow: inset 3px 0 0 var(--kirei); }
+    .seat.shinji { box-shadow: inset 3px 0 0 var(--shinji); }
+
+    .you-zone {
+      position: absolute;
+      top: 808px;
+      left: 16px;
+      width: 1888px;
+      height: 260px;
+      display: flex;
+      align-items: flex-end;
+      gap: 22px;
+    }
+    .id-col, .skill-col, .atk-col, .hand-col { display: flex; align-items: flex-end; gap: 10px; min-width: 0; }
+    .id-meta { display: flex; flex-direction: column; gap: 6px; padding-bottom: 4px; width: 126px; flex: 0 0 126px; }
+    .id-meta b { font-size: 16px; }
+    .id-meta small { color: var(--muted); font-size: 12px; }
+    .mana { font-size: 20px; color: var(--gold); }
+    .mana span { font-size: 12px; color: var(--muted); margin-right: 6px; }
+    .seals { display: flex; gap: 6px; }
+    .seal {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ff7a6b, #8a1c24 70%);
+      box-shadow: 0 0 0 1px #4a1010;
+    }
+    .archives { color: var(--muted); font-size: 12px; }
+    .archives b { color: var(--ink); font-weight: 600; }
+
+    .face {
+      position: relative;
+      overflow: hidden;
+      flex: 0 0 auto;
+      box-shadow: 0 12px 22px rgba(0,0,0,.42);
+      transition: transform .16s ease, filter .16s ease;
+    }
+    .face:hover, .face.is-up { transform: translateY(-14px); filter: brightness(1.06); z-index: 3; }
+    .id { width: 118px; height: 168px; }
+    .skill { width: 104px; height: 148px; }
+    .atk { width: 122px; height: 172px; }
+    .hand { width: 128px; height: 180px; }
+    .slot {
+      width: 122px;
+      height: 172px;
+      background: rgba(255,255,255,.04);
+      box-shadow: inset 0 0 0 1px rgba(215,181,106,.28);
+    }
+    .slot.is-target { box-shadow: inset 0 0 0 2px var(--you); background: rgba(224,138,60,.12); }
+    .slot .face { width: 100%; height: 100%; box-shadow: none; }
+
+    .end {
+      align-self: center;
+      margin-left: 8px;
+      padding: 10px 16px;
+      background: #6d2b24;
+      color: #f7ece4;
+      font-size: 14px;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+    .end:hover { filter: brightness(1.08); }
+
+    .toast {
+      position: absolute;
+      top: 58px;
+      left: 20px;
+      z-index: 8;
+      display: none;
+      padding: 6px 10px;
+      background: rgba(12,9,7,.9);
+      color: var(--gold);
+      font-size: 13px;
+    }
+    .toast.is-on { display: block; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="toast" id="toast"></div>
+
+    <main class="board" aria-label="冬木市棋盘">
+      <img src="assets/v7/board-fuyuki.png" alt="冬木市印刷棋盘">
+      <div class="layer">
+        <span class="zh zh-a1">局势库</span>
+        <span class="zh zh-a2">局势</span>
+        <span class="zh zh-c">工房</span>
+        <span class="zh zh-h">战果</span>
+        <span class="zh zh-b1">事件库</span>
+        <span class="zh zh-b2">深山事件</span>
+        <span class="zh zh-miyama">深山町</span>
+        <span class="zh zh-g">侦察</span>
+        <span class="zh zh-b3">新都事件</span>
+        <span class="zh zh-shinto">新都</span>
+
+        <button class="pile a1" title="局势库"><img src="assets/v7/situation-back.webp" alt="局势牌背"></button>
+        <button class="on-board a2" title="转机"><img src="assets/v7/situation-turning.png" alt="局势 转机"></button>
+        <button class="pile b1" title="事件库"><img src="assets/v7/event-back.webp" alt="事件牌背"></button>
+        <button class="on-board b2a" title="命运之战"><img src="assets/v7/event-fate-battle.png" alt="深山事件 命运之战"></button>
+        <button class="on-board b2b" title="强度测验"><img src="assets/v7/event-strength-test.png" alt="深山事件 强度测验"></button>
+        <button class="on-board b3a" title="火力压制"><img src="assets/v7/event-suppression.png" alt="新都事件 火力压制"></button>
+        <button class="on-board b3b" title="圣地"><img src="assets/v7/event-sanctuary.png" alt="新都事件 圣地"></button>
+
+        <div class="standee kirei c-kirei"><img src="assets/v7/master-kirei.png" alt="言峰绮礼立牌"></div>
+        <div class="standee you d-you"><img src="assets/v7/master-shirou.png" alt="卫宫士郎立牌"></div>
+        <div class="standee rin d-rin"><img src="assets/v7/master-rin.png" alt="远坂凛立牌"></div>
+        <div class="standee shinji d-shinji"><img src="assets/v7/master-shinji.png" alt="间桐慎二立牌"></div>
+
+        <div class="fight"><b>交战</b><span>士郎 地利+3 · 凛</span></div>
+        <i class="vp you vp-9" title="士郎 9"></i>
+        <i class="vp kirei vp-8" title="绮礼 8"></i>
+        <i class="vp shinji vp-6" title="慎二 6"></i>
+        <i class="vp rin vp-11" title="凛 11"></i>
+
+        <button class="loc loc-c" data-loc="工房"></button>
+        <button class="loc loc-miyama is-engaged" data-loc="深山町" data-blocked="交战中无法常规移动"></button>
+        <button class="loc loc-shinto" data-loc="新都" data-blocked="交战中无法常规移动"></button>
+        <button class="loc loc-recon" data-loc="侦察" data-blocked="交战中无法常规移动"></button>
+      </div>
+    </main>
+
+    <aside class="seats" aria-label="其他御主">
+      <div class="seats-head">第5日 · 行动 · 你</div>
+      <article class="seat rin">
+        <div class="seat-face"><img src="assets/v7/master-rin.png" alt="远坂凛"></div>
+        <div>
+          <b>远坂凛</b>
+          <small>深山町 · 从者未公开</small>
+          <div class="nums"><span>战果 <em>11</em></span><span>魔力 <em>7</em></span><span>令咒 <em>3</em></span></div>
+        </div>
+      </article>
+      <article class="seat kirei">
+        <div class="seat-face"><img src="assets/v7/master-kirei.png" alt="言峰绮礼"></div>
+        <div>
+          <b>言峰绮礼</b>
+          <small>工房 · 从者未公开</small>
+          <div class="nums"><span>战果 <em>8</em></span><span>魔力 <em>5</em></span><span>令咒 <em>3</em></span></div>
+        </div>
+      </article>
+      <article class="seat shinji">
+        <div class="seat-face"><img src="assets/v7/master-shinji.png" alt="间桐慎二"></div>
+        <div>
+          <b>间桐慎二</b>
+          <small>新都 · 从者未公开</small>
+          <div class="nums"><span>战果 <em>6</em></span><span>魔力 <em>3</em></span><span>令咒 <em>2</em></span></div>
+        </div>
+      </article>
+    </aside>
+
+    <section class="you-zone" aria-label="当前玩家">
+      <div class="id-col">
+        <button class="face id" title="卫宫士郎"><img src="assets/v7/master-shirou.png" alt="卫宫士郎身份"></button>
+        <button class="face id" title="阿尔托莉雅·潘德拉贡"><img src="assets/v7/servant-arturia.png" alt="从者概览 阿尔托莉雅"></button>
+        <div class="id-meta">
+          <b>卫宫士郎</b>
+          <small>阿尔托莉雅 · 深山町</small>
+          <div class="mana"><span>魔力</span>8</div>
+          <div class="seals" aria-label="令咒 3">
+            <button class="seal" title="令咒"></button>
+            <button class="seal" title="令咒"></button>
+            <button class="seal" title="令咒"></button>
+          </div>
+          <div class="archives">牌库 <b>8</b> · 弃牌 <b>4</b></div>
+        </div>
+      </div>
+      <div class="skill-col">
+        <button class="face skill" title="都牟刈村正"><img src="assets/v7/skill-excalibur.png" alt="技能 都牟刈村正"></button>
+        <button class="face skill" title="幸运"><img src="assets/v7/skill-luck.png" alt="技能 幸运"></button>
+        <button class="face skill" title="干将·莫邪"><img src="assets/v7/skill-kanshou.png" alt="技能 干将·莫邪"></button>
+      </div>
+      <div class="hand-col" id="hand">
+        <button class="face hand is-up" data-card="magic" title="低位魔術"><img src="assets/v7/attack-magic.webp" alt="手牌 低位魔術"></button>
+        <button class="face hand" data-card="agility" title="刹那の一撃"><img src="assets/v7/attack-agility.webp" alt="手牌 刹那の一撃"></button>
+      </div>
+      <div class="atk-col">
+        <div class="slot" id="slot-1">
+          <button class="face atk" data-card="strength" title="浑身の一撃"><img src="assets/v7/attack-strength.webp" alt="攻击 浑身の一撃"></button>
+        </div>
+        <div class="slot is-target" id="slot-2"></div>
+        <button class="end" id="end">结束行动</button>
+      </div>
+    </section>
+  </div>
+  <script>
+    const toast = document.querySelector('#toast');
+    const show = (m) => { toast.textContent = m; toast.classList.add('is-on'); clearTimeout(window.tt); window.tt = setTimeout(() => toast.classList.remove('is-on'), 1400); };
+    document.querySelectorAll('.loc').forEach((el) => el.addEventListener('click', () => show(el.dataset.blocked || el.dataset.loc)));
+    document.querySelectorAll('#hand .face').forEach((card) => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('#hand .face').forEach((c) => c.classList.remove('is-up'));
+        card.classList.add('is-up');
+      });
+    });
+    document.querySelector('#slot-2').addEventListener('click', () => {
+      const up = document.querySelector('#hand .is-up');
+      if (!up) return;
+      const slot = document.querySelector('#slot-2');
+      slot.classList.remove('is-target');
+      slot.appendChild(up);
+      up.classList.remove('is-up', 'hand');
+      up.classList.add('atk');
+    });
+    document.querySelector('#end').addEventListener('click', () => show('出牌结束'));
+    document.querySelectorAll('.seal').forEach((el) => el.addEventListener('click', () => show('令咒')));
+  </script>
+</body>
+</html>

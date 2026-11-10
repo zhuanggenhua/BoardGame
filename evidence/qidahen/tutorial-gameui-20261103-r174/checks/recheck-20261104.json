@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-04",
+  "scope": "七大恨PC收口复核",
+  "checkedSources": 725,
+  "unchangedSources": 724,
+  "changed": [
+    "src/games/qidahen/game.ts"
+  ],
+  "gameSource": {
+    "capturedSha256": "5be2879574e9b992ba8deb1082307b9a42dbead0b26ae6d9c422a955ff776172",
+    "currentSha256": "8715eae2c9a568a7446b72151e68059c5f5e6ecbcf5c46f5e2fe379de8c8f485",
+    "headLfSha256": "c142c31da0afed06fe50ee234c01fcb8d72c74ec8ca6fecbbf6edbd47f2cd7ae",
+    "headCrlfSha256": "a181b965d667333561e1c87514021c2c392bceea15de765f35eeb8dd705b3641"
+  },
+  "media": {
+    "checked": 55,
+    "changed": []
+  },
+  "sourceVerdict": "SOURCE_DELTA_PRESENT",
+  "regression": {
+    "status": "reported-passed-in-other-chat",
+    "source": "本轮委托明确提供席位优先级定向回归通过结论，依指令复用；本会话未重跑。"
+  },
+  "humanAcceptance": "pending",
+  "mobile": "not-started",
+  "releaseActions": "none"
+}

@@ -1,0 +1,47 @@
+{
+  "media": [
+    {
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\横屏单张-法术显示.png",
+      "status": "PASS",
+      "sha256": "d46c9cf3e825a8c73b69c3c6122dd63b2d56d1eef029ae87c6ad1360e4ad7f52",
+      "observation": "法术显示，划线眼睛清楚，控制片贴近槽位且无明显遮挡。"
+    },
+    {
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\横屏单张-恢复法术.png",
+      "status": "PASS",
+      "sha256": "f495402014622a1d8976fd50ffe27d226c6030eeb36c30d09c09386c4aa8de1c",
+      "observation": "法术恢复显示，控制片归属清楚，无明显遮挡。"
+    },
+    {
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\横屏单张-露出被动.png",
+      "status": "PASS",
+      "sha256": "0cc4014c8be895e0fcc08cee5fb9c9e3bc769b0d8043fb6e701d0c45e6241419",
+      "observation": "被动露出，眼睛清楚，控制片未遮挡相邻内容。"
+    },
+    {
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\横屏多张-法术显示.png",
+      "status": "PASS",
+      "sha256": "8ee31daa1cae73ca5aa5df401d8a5eb88e464381eb6b553b7a664cf381daa8aa",
+      "observation": "法术与 3/3 可见，翻页箭头位于图边缘，控制片归属清楚。"
+    },
+    {
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\横屏多张-恢复法术.png",
+      "status": "PASS",
+      "sha256": "80189b29b505c516999d1b9d0a3da924c8c442f5540131ea7325467cce05ff47",
+      "observation": "法术及 3/3 恢复显示，控制片未遮挡相邻内容。"
+    },
+    {
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\横屏多张-露出被动.png",
+      "status": "PASS",
+      "sha256": "8648b961d5814052d920c75b872d503427f2ce0121c07a92f2d55427feb166ae",
+      "observation": "被动露出，眼睛清楚，控制片未遮挡相邻内容。"
+    }
+  ],
+  "status": "PASS"
+}

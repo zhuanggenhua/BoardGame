@@ -282,12 +282,12 @@ function runDoctorStrangeCard(
     return current;
 }
 
-describe('奇异博士完成态与开局卡区', () => {
-    it('完成态允许真人选择且不显示实施中标记', () => {
+describe('奇异博士实施中状态与开局卡区', () => {
+    it('实施中允许真人选择并显示实施中标记', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(candidate => candidate.id === 'doctor_strange');
-        expect(character?.setupOptionStatus).toBeUndefined();
-        expect(character?.setupOptionStatusReason).toBeUndefined();
-        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(false);
+        expect(character?.setupOptionStatus).toBe('in_progress');
+        expect(character?.setupOptionStatusReason).toContain('真人确认');
+        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(true);
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.some(candidate => candidate.id === 'doctor_strange')).toBe(true);
 
         const playerIds = ['0', '1'];

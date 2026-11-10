@@ -93,7 +93,8 @@ it('真实网络查看本人手牌不向其他席位泄露牌实例或日志内�
             expect(JSON.stringify(view.sys.actionLog)).not.toContain(privateId);
             expect(JSON.stringify(view.sys.eventStream)).not.toContain(privateId);
         }
-        expect(JSON.stringify((clients[0].latestState as State).sys.actionLog)).toContain(privateId);
+        const ownCard=(await state()).core.players['0'].hand.find(card=>card.id===privateId)!;
+        expect(JSON.stringify((clients[0].latestState as State).sys.actionLog)).toContain(FATE_ATTACK_BY_ID[ownCard.definitionId].name);
     });
 },30000);
 

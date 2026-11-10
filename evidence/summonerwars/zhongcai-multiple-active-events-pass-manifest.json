@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "title": "仲裁多个持续事件同屏 E2E",
+  "requirements": [
+    {
+      "requirement": "真实棋盘入口同时显示两张持续事件卡，且卡面完整可读、互不重叠或裁切。",
+      "status": "PASS",
+      "evidence": [
+        "真实联机 E2E 断言 sw-player-active-event-zhongcai-holy-decree-0-0 与 sw-player-active-event-zhongcai-loyalty-decree-0-0 均可见。",
+        "真实截图显示左侧同时存在两张持续事件卡，名称条和卡面均完整可见。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/多个持续事件同时存在时真实棋盘按放大尺寸完整显示/仲裁多个持续事件同时显示.jpg"
+  ]
+}

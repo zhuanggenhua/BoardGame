@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "reviewer": {
+    "id": "/root/final_code_small",
+    "identitySource": "本独立子代理canonical task name",
+    "independence": "只读审查，未实现源码修改"
+  },
+  "reviewedAtUtc": "2026-11-02T17:18:38.0434031Z",
+  "target": "R164增量：战前显示快照的守军翻面身份保留；dispatch-troops教程推荐兵牌识别",
+  "conclusion": "通过（仅限定源码范围）",
+  "sourceHashes": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "7d468de1ca91744621c2e8fa1743c24b460c9841a7928353b06e71c3352f756a"
+    },
+    {
+      "path": "src/games/qidahen/ui/useQidahenBattlePresentation.ts",
+      "sha256": "2499cec6d0a00dc80601c37821338df5d22d215e81d0b4c9e1f3d359361184cb"
+    },
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "6d6e79a47074daf08039161fd223a668f6956fef9b5478b59a3d789107c3b449"
+    },
+    {
+      "path": "e2e/qidahen/battleRecording.ts",
+      "sha256": "7acf0a57bd3ef2f5cc6550a519dfd37dba40fc7b5c591d487ee79fe9db54af16"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "5a5c427c38af051755ce968c3537658df9a3d997955292aac4e1191b5d8518a6"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "6100bb3d6238349e585aedaf171fb81550b086a01081f9ef23b733dbf2ff9b35"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "5842921ca1204fd1a0dc8d4842c272dabf45dbba61347a4575b45e0ca14642b2"
+    }
+  ],
+  "findings": [],
+  "checks": [
+    {
+      "name": "defender-face-root-cause",
+      "result": "useQidahenBattlePresentation保留战前core，而Board:5871-5883覆写当前pendingTargetAction；因此战后postBattleSelection不在战前快照中时，旧翻面集合确可能为空。此根因与主代理转述一致。"
+    },
+    {
+      "name": "reveal-identity-scope",
+      "result": "Board:2415-2418保留buildRevealedBattleRegionIds原字段并合并battleProtectedRegionIds；后者仅从当前正式core.pendingTargetAction或postBattleSelection的source/target构建。普通地图浏览不会凭新状态或教程白名单额外揭露第三地区。原targetRuntimeRegionId和attackerPositionRegionId逻辑未删除。"
+    },
+    {
+      "name": "reveal-lifecycle",
+      "result": "memo依赖pendingTargetAction、core.postBattleSelection和battleRegionIdsKey；当前战斗退出后key清空即重新计算，不会把旧双方身份永久保留。未写规则状态。"
+    },
+    {
+      "name": "recommended-input-contract",
+      "result": "Board:2748推荐条件先要求formalPieceSelectable，再按真实pieceId匹配教程allowedTargets投影；非教程传空数组。新标记只影响dataset与边线，未改变正式候选、点击处理或确认逻辑。"
+    },
+    {
+      "name": "recommended-selected-priority",
+      "result": "Board:1392边线优先级为已选金色、教程推荐白色、其余正式候选绿色；推荐不会盖掉选中金边。教程训练train:前缀只去除命令前缀后匹配真实piece。"
+    },
+    {
+      "name": "copy",
+      "result": "中英dispatch-troops均改为一支/one level-1 artillery，不再用原有炮兵描述多个同级候选。教程仍以真实allowedTargets推荐具体piece，不生成额外选择分支。"
+    },
+    {
+      "name": "assertion-coverage",
+      "result": "battleRecording:99-106对artillery/cavalry/infantry的rolling与damage六个阶段观测点逐个检查初始battle地区army ID存在且face=front；annual-tutorial:382在dispatch取证分支检查推荐数等于allowedTargets数。未执行这些断言。"
+    }
+  ],
+  "limits": [
+    "未读图、未启动浏览器、未跑测试；本审查不能证明R164运行已通过或视觉合格。",
+    "front断言覆盖六个选定阶段观测点，不能单独证明连续每一帧均翻面。",
+    "推荐计数断言证明数量，不单独证明每个推荐ID；源码条件直接由allowedTargets和正式候选交集计算。",
+    "本次只复核所述两个delta，不扩审其它模块或生产状态。"
+  ],
+  "verificationCommands": [
+    "Get-Content/rg：限定源码及直接消费点",
+    "Get-FileHash -Algorithm SHA256：七个源码/测试/语言文件"
+  ],
+  "filesModifiedByReviewer": [
+    ".tmp/qidahen-final-code-review-r164.json"
+  ],
+  "remainingRisk": "限定源码范围无已知确定缺陷；同入口运行及视觉验收由主代理承担。"
+}

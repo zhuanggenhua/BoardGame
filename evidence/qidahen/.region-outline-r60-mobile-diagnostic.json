@@ -1,0 +1,121 @@
+{
+  "kind": "private-stable-candidate-diagnostic",
+  "reviewer": "/root/qidahen_first_frame_rejection",
+  "objective": "实际检查R60手机四张原始整屏图，区分地区圆形替身已消失、地区名称/语境/边界可读性，以及支付和卡牌检视布局残留。",
+  "userWords": "地区什么时候是圆形选择了",
+  "verdict": "REVISE",
+  "finalPass": false,
+  "publishEligible": false,
+  "inspection": {
+    "method": "逐张实际读取全部四张844×390原图；00另以内存裁切放大辅助核对印刷名称，未落盘裁图，整屏仍为主要证据。",
+    "sourceOrTestSubstitution": false,
+    "scope": "稳定候选前私有诊断；不是完整三链最终验收，不生成用户链接/PASS清单。"
+  },
+  "summary": {
+    "total": 4,
+    "items": 4,
+    "regionCircleOrRectangleSubstituteObserved": 0,
+    "targetRegionWholePerimeterVisibleIn00": true,
+    "targetRegionPrintedNameFullyReadableIn00": false,
+    "mapContextLostIn00": false,
+    "remainingIssues": 3,
+    "conclusion": "00地区已经以真实不规则地图面完整显示，R52的上下操作层截断问题在本帧未见；地名上端被兵槽覆盖、支付面板压在顶部玩家信息上且摘要被裁切，仍不可判整组视觉通过。"
+  },
+  "items": [
+    {
+      "id": "00-region-target",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-mobile-outline-r60-mobile/移动-00-叶赫部地图目标避开支付托盘.png",
+      "sha256": "dddf53ceda95fe53def37a88beffbba347e31a7e248846ab2be430cdc4bd79d6",
+      "viewport": { "width": 844, "height": 390 },
+      "diagnosticStatus": "region-perimeter-visible-name-partial",
+      "visualFacts": [
+        "屏幕右侧约x740..836、y162..284是一整片南北向不规则绿色地图面。白色轮廓可绕外围连续追踪，没有被屏幕右缘、支付托盘或手牌截断，距离右缘仍有约8px。",
+        "没有旧点状绿色圆圈、浅蓝色地区方框或目标角框。地区内的蒙古圆形控制标是正常控制标记；它不替代地区边界。",
+        "绿色区周围仍可见灰色河流/道路、山脉、邻区金色兵槽/数字、下方明控制标和红色驻军；地图地形覆盖主要右侧视野，没有因移动到右侧而变成孤立悬空地区或失去邻区语境。顶部少量纯底色是HUD底区，不是围绕该目标出现的空白。",
+        "目标区内蒙古控制标、金色兵槽、数字2均在轮廓/填色之上可见，没有因相机移动而丢失。高亮没有压住左侧手牌或顶部支付按钮。",
+        "原图局部放大后，印刷纵向地名上端被金色兵槽覆盖；可见其下部“赫/山/城”等笔画，但首字/上端不能完整阅读。白色轮廓在地名末端附近经过，不能把它描述为完整地名已无遮挡。",
+        "教程卡要求点击叶赫部，并说明与辽东相邻、有蒙古驻军。该图可以把提示对应到整片绿色区域及蒙古控制标，但完整印刷名称仍不能独立读出。"
+      ],
+      "printContourComparison": "完整边界是地形之间的长形地图区域，宏观身份与印刷地图一致，未见选成圆或相邻另一片区域。白色mask边与黑色印刷线/灰色河道有间距，且地名牌末端超出或贴近mask边，不能据源码正式mask宣称逐像素印刷一致。",
+      "wholePerimeterVisible": true,
+      "printedNameFullyReadable": false,
+      "contextPreserved": true,
+      "troopMarkersPreserved": true,
+      "issues": ["printed-name-covered-by-troop-slot", "payment-panel-over-player-readouts", "payment-summary-clipped"]
+    },
+    {
+      "id": "01-payment",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-mobile-outline-r60-mobile/移动-01-突袭支付与手牌.png",
+      "sha256": "35159ea2ff183bc7bb6f5df90ae040c70271345fcc996f164eaa08f1f78f1948",
+      "viewport": { "width": 844, "height": 390 },
+      "diagnosticStatus": "payment-action-visible-layout-residual",
+      "visualFacts": [
+        "教程横条显示选择银两支付、保留鸳鸯阵、触屏长按看卡的说明。下方三张手牌分别为东北大旱、鸳鸯阵、银两，牌面及类别可辨，银两没有被其它牌遮住。",
+        "红色突袭支付面板位于约x184..524、y21..157，确认执行/取消本次行动可见；已选0/1张可读。",
+        "面板上缘直接叠在顶部大明、蒙古玩家信息栏上，名称/VP/资源读数透过红色层成为低对比背景。",
+        "面板左侧目标摘要因窄列换行，底部“平原3/出兵…”行在面板下缘被裁切；面板没有完整承接全部可见摘要。"
+      ],
+      "issues": ["payment-panel-over-player-readouts", "payment-summary-clipped"]
+    },
+    {
+      "id": "02-long-press-inspection",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-mobile-outline-r60-mobile/移动-02-长按银两检视卡面.png",
+      "sha256": "3c8b753303085013a4e6306c65991a3700a122476e6ae16a35fbb287269bf098",
+      "viewport": { "width": 844, "height": 390 },
+      "diagnosticStatus": "inspection-card-visible",
+      "visualFacts": [
+        "银两大卡约x289..555、y12..378完整出现在屏幕内；“明”“银两”和银锭图案可辨，没有裁掉牌边或被教程横条盖住。",
+        "大卡右上黑色圆形X明确可见，背景变暗、特写成为当前主焦点。圆形X是关闭按钮，不是地图选区残留。",
+        "此静态图只证明检视卡及关闭入口可见，不能独自证明长按时长、持续显示、关闭点击和返回状态等行为；这些需关联真实动作链。"
+      ],
+      "issues": []
+    },
+    {
+      "id": "03-return-select-confirm",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-mobile-outline-r60-mobile/移动-03-检视返回后轻点银两选择支付.png",
+      "sha256": "acb74d2ca221443ff6aa0b75d3849425312b7acdc553e80cae960af95c154e86",
+      "viewport": { "width": 844, "height": 390 },
+      "diagnosticStatus": "selected-payment-visible-layout-residual",
+      "visualFacts": [
+        "银两大卡检视已退场，手牌区银两呈金色选择态，底部“已选”标可读；其它两张手牌仍在。",
+        "支付面板可读“已选1/1张”“已选牌：银两”，确认执行按钮在面板内呈清楚的亮色/蓝边；教程横条要求确认弃掉选中的银两。当前对象、选择态和下一步一致。",
+        "确认按钮上的矩形焦点框属于真实按钮反馈，不是地区被方框代替。未见地区圆/方替身。",
+        "支付面板仍叠在大明/蒙古读数上，左侧目标摘要仍在底缘裁切；选中支付卡并未解决这两个布局问题。"
+      ],
+      "issues": ["payment-panel-over-player-readouts", "payment-summary-clipped"]
+    }
+  ],
+  "issues": [
+    {
+      "id": "printed-name-covered-by-troop-slot",
+      "status": "confirmed",
+      "scope": "00目标地区名称可读性",
+      "evidence": "目标绿色区域内的金色兵槽盖住纵向印刷地名上端；辅助放大仍无法完整读取首字/上端。",
+      "impact": "玩家可以辨认整片候选地区，但不能从原印刷名称完整核对这是提示中的叶赫部；不能声称名称完整可读。",
+      "nextCheck": "在同一地图身份/轮廓内处理兵槽与印刷名称的空间关系，再拍同状态整屏；不得以额外测试解释标签代替地区本体。"
+    },
+    {
+      "id": "payment-panel-over-player-readouts",
+      "status": "confirmed",
+      "scope": "支付面板和持续玩家信息",
+      "evidence": "00/01/03红色支付层约从y21开始，覆盖顶部大明/蒙古栏的名称、VP/资源行。",
+      "impact": "支付操作有可见入口，但玩家持续读取的信息与操作面板抢同一空间槽位，读数变成低对比背景。",
+      "nextCheck": "检查支付面板与顶部玩家栏的独立可读空间，保持当前可见手牌和确认动作。"
+    },
+    {
+      "id": "payment-summary-clipped",
+      "status": "confirmed",
+      "scope": "支付面板内目标摘要",
+      "evidence": "01目标摘要在左侧窄列多行折行，最后平原/出兵信息到y157面板下缘后被截断；03亦有下缘裁切。",
+      "impact": "确认按钮可按，但确认前的目标/兵力摘要不是完整可读，不能用按钮可点击替代。",
+      "nextCheck": "以真实文本长度安排面板列宽/高度或信息布局，重新验证0/1张和1/1张两态。"
+    }
+  ],
+  "limits": [
+    "用户点名的地区圆形替身在这四张图中未见，00整片轮廓也已摆脱R52的上下遮挡；这是局部改善事实，非最终PASS。",
+    "本报告未运行浏览器，不以1/1E2E或10项测试通过证明UI通过。",
+    "静态图不证明自由平移实现、命中mask、相机所有边界或完整三链结果。",
+    "没有为这四张诊断图生成任何用户链接或PASS清单。"
+  ],
+  "mutationScope": "只新增本诊断JSON，不修改源码、原图或历史报告。"
+}

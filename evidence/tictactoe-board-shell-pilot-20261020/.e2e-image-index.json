@@ -1,0 +1,54 @@
+{
+  "media": [
+    {
+      "path": "evidence/tictactoe-board-shell-pilot-20261020/01-井字棋-PC-1920x1080-初始棋局.jpg",
+      "chainId": "tictactoe-board-shell-pilot-20261020",
+      "chainStep": "1",
+      "sourceRun": "20261020-0957-tictactoe-mobile-layout-e2e",
+      "sourceDir": "evidence/tictactoe-board-shell-pilot-20261020",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "桌面网页打开井字棋新对局，作为参考画布基准。",
+      "description": "电脑整屏保留井字棋标题、完整棋盘和双方比分回合。"
+    },
+    {
+      "path": "evidence/tictactoe-board-shell-pilot-20261020/02-井字棋-手机横屏936x432-初始棋局.jpg",
+      "chainId": "tictactoe-board-shell-pilot-20261020",
+      "chainStep": "2",
+      "sourceRun": "20261020-0957-tictactoe-mobile-layout-e2e",
+      "sourceDir": "evidence/tictactoe-board-shell-pilot-20261020",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "同一页面切换至手机横屏视口，参考画布居中等比缩放。",
+      "description": "手机横屏显示等比例缩放后的标题、棋盘和双方 双方玩家信息。"
+    },
+    {
+      "path": "evidence/tictactoe-board-shell-pilot-20261020/03-井字棋-手机横屏936x432-真实落子后.jpg",
+      "chainId": "tictactoe-board-shell-pilot-20261020",
+      "chainStep": "3",
+      "sourceRun": "20261020-0957-tictactoe-mobile-layout-e2e",
+      "sourceDir": "evidence/tictactoe-board-shell-pilot-20261020",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家真实点击中心格后，棋子标记完成绘制。",
+      "description": "中心格出现真实落子结果，完整棋盘仍在画布内。"
+    },
+    {
+      "path": "evidence/tictactoe-board-shell-pilot-20261020/04-井字棋-手机横屏936x432-FAB展开菜单.jpg",
+      "chainId": "tictactoe-board-shell-pilot-20261020",
+      "chainStep": "4",
+      "sourceRun": "20261020-0957-tictactoe-mobile-layout-e2e",
+      "sourceDir": "evidence/tictactoe-board-shell-pilot-20261020",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家真实展开悬浮菜单，所有菜单按钮保持在参考画布边界内。",
+      "description": "手机横屏展示完整悬浮菜单和未被遮挡的井字棋棋盘。"
+    }
+  ]
+}
+
+

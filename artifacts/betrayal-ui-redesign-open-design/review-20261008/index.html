@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>review · 20261008</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>review · 20261008</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-PC-主界面.png","displayTitle":"01 · PC · 主界面","description":"","kind":"image"},{"relativePath":"02-手机-主界面-DPR3.png","displayTitle":"02 · 手机 · 主界面 · DPR3","description":"","kind":"image"},{"relativePath":"03-PC-属性轨.png","displayTitle":"03 · PC · 属性轨","description":"","kind":"image"},{"relativePath":"04-手机-属性轨-DPR3.png","displayTitle":"04 · 手机 · 属性轨 · DPR3","description":"","kind":"image"},{"relativePath":"05-PC-物品列表.png","displayTitle":"05 · PC · 物品列表","description":"","kind":"image"},{"relativePath":"06-手机-物品列表-DPR3.png","displayTitle":"06 · 手机 · 物品列表 · DPR3","description":"","kind":"image"},{"relativePath":"07-手机-点击物品后阅读-DPR3.png","displayTitle":"07 · 手机 · 点击物品后阅读 · DPR3","description":"","kind":"image"},{"relativePath":"08-PC-能力详情.png","displayTitle":"08 · PC · 能力详情","description":"","kind":"image"},{"relativePath":"09-手机-能力详情-DPR3.png","displayTitle":"09 · 手机 · 能力详情 · DPR3","description":"","kind":"image"},{"relativePath":"10-PC-剧本书.png","displayTitle":"10 · PC · 剧本书","description":"","kind":"image"},{"relativePath":"11-手机-剧本书-DPR3.png","displayTitle":"11 · 手机 · 剧本书 · DPR3","description":"","kind":"image"},{"relativePath":"12-PC-移动目标.png","displayTitle":"12 · PC · 移动目标","description":"","kind":"image"},{"relativePath":"13-手机-移动目标-DPR3.png","displayTitle":"13 · 手机 · 移动目标 · DPR3","description":"","kind":"image"},{"relativePath":"14-手机-剧本选择-待补卡面.png","displayTitle":"14 · 手机 · 剧本选择 · 待补卡面","description":"","kind":"image"},{"relativePath":"15-PC-终局.png","displayTitle":"15 · PC · 终局","description":"","kind":"image"},{"relativePath":"16-手机-终局-DPR3.png","displayTitle":"16 · 手机 · 终局 · DPR3","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

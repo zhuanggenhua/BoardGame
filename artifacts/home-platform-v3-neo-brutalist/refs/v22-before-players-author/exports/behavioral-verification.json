@@ -1,0 +1,92 @@
+{
+  "status": "PASS",
+  "sourceSnapshot": {
+    "index.html": "82bad76b85e89f14be84871aca945e9cc7cbb6304af05c987f377090fd320a9a",
+    "mobile.css": "7c37ed73d24b0207fe7dca9fea06b42709c5ebfbb8a79042ad98bb123ccb4a4d",
+    "capture.mjs": "efe03c5ae2842f4663baef504a296897bab78f80691cba581d610ff9e865d859",
+    "mobile-capture.mjs": "e61448abd98110af060bd6b95ee1e935e627cd77689f8b1a1cd84580d3fd9d02",
+    "details-layout.mjs": "1530631d6a58c7bb2af27ffa027a5fddc2a709acb2ebe6d9162905dbb156c1a4",
+    "details-actions.behavior.test.ts": "c507750b24d8a3a297b990e35f5b9f5cff109002b76713c9cd0bf5cff8dd5fe3",
+    "library-tasks.mjs": "e8f3c111e90795bc81bfc85e9cbfa3a265803711a495c6b03be685a2c519a8b0",
+    "library-task.behavior.test.ts": "d3b1635532679ecec567237f937fb962a18d370598b080def475a347c7367e1a",
+    "vitest.config.ts": "9a2ae93ae87da3514bf4972ae42d17a2ea14e7b8700a5356c9438cebf3beffde"
+  },
+  "originalIssue": "用户指出详情没有足够空间浏览房间列表，头部存在大量可回收空隙；此前只验按钮整齐不足以放行整屏",
+  "before": {
+    "desktop": {
+      "heroHeight": 385,
+      "firstRoomTop": 598,
+      "listHeight": 322
+    },
+    "mobile": {
+      "heroHeight": 402.5625,
+      "firstRoomTop": 472.5625,
+      "listHeight": 342
+    },
+    "evidence": "../refs/v22-before-room-space/exports"
+  },
+  "after": {
+    "desktop": {
+      "heroHeight": 236.78125,
+      "firstRoomTop": 449.78125,
+      "listHeight": 470.21875
+    },
+    "mobile": {
+      "heroHeight": 346,
+      "firstRoomTop": 406,
+      "listHeight": 398
+    },
+    "evidence": "details-room-space-after.log",
+    "note": "诊断为当前现场几何读数；最终整屏以独立审图及捕获链路为准"
+  },
+  "priorBehaviorEvidence": {
+    "red": "details-actions-red.log",
+    "hoverIteration": "details-actions-vitest-initial.log",
+    "note": "历史操作分组批次证据，本轮未覆盖或删除"
+  },
+  "vitest": {
+    "status": "PASS",
+    "files": 3,
+    "tests": 4,
+    "log": "details-room-vitest.log",
+    "checks": [
+      "大厅获得超过半幅空间",
+      "默认四房完整可见",
+      "短屏真实滚轮抵达末房且按钮可命中",
+      "桌面手机主辅分区间距",
+      "三个辅助入口同排且有触控区域",
+      "作者位于署名区且保持可点",
+      "只读人数不再呈现选择控件",
+      "收藏切换恢复",
+      "教程配置原有示意反馈",
+      "作者打开关闭",
+      "满房按钮禁用",
+      "收藏库主任务回归"
+    ]
+  },
+  "browser": {
+    "status": "PASS",
+    "log": "details-room-capture.log",
+    "freshMedia": 11,
+    "checks": [
+      "详情整屏空间及四房完整",
+      "作者弹窗",
+      "销毁确认",
+      "创建表单",
+      "规则页签",
+      "电脑展开",
+      "创建按钮滚动可达"
+    ]
+  },
+  "visual": {
+    "fresh": 11,
+    "carriedForward": 32,
+    "total": 43,
+    "reviewFile": ".visual-review.json"
+  },
+  "limitations": [
+    "操作入口仍为现有设计稿示意行为，不代表真实教程配置或联机功能",
+    "移动新图为三百七十五竖屏；没有真机键盘或安全区验收",
+    "只修当前设计稿，未提交推送或部署"
+  ]
+}

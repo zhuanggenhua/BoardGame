@@ -1,0 +1,170 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-26T02:41:03.824Z",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-动态流畅性证据"
+  },
+  "test": {
+    "file": "e2e/betrayal/event-choice-coverage.e2e.ts",
+    "title": "外星几何真实链路从探索翻牌到投掷事件结算关闭",
+    "entry": "/play/betrayal",
+    "flowMode": "representative-state"
+  },
+  "stateInjection": "createRuntimeCore + pinGroundNorthToEventRoom + injectCore + scripted random queue",
+  "playerActions": [
+    "点击移动并选择门厅",
+    "点击探索并选择未知房间",
+    "点击投掷事件骰",
+    "等待物理骰子运动到停稳结果",
+    "确认并关闭事件特写",
+    "从房间本体拖拽地图",
+    "点击普通房间打开预览并关闭预览"
+  ],
+  "timingSource": "Chromium Page.screencastFrame 真实页面帧到达时间",
+  "markers": [
+    {
+      "label": "卡牌特写开始",
+      "atMs": 1790390386392,
+      "frameCount": 32
+    },
+    {
+      "label": "卡牌特写交互入口可见",
+      "atMs": 1790390386979,
+      "frameCount": 46
+    },
+    {
+      "label": "物理骰子开始",
+      "atMs": 1790390387184,
+      "frameCount": 51
+    },
+    {
+      "label": "物理骰子结束",
+      "atMs": 1790390389192,
+      "frameCount": 83
+    },
+    {
+      "label": "卡牌特写稳定退场",
+      "atMs": 1790390389741,
+      "frameCount": 94
+    },
+    {
+      "label": "房间拖拽开始",
+      "atMs": 1790390389884,
+      "frameCount": 94
+    },
+    {
+      "label": "房间拖拽稳定收口",
+      "atMs": 1790390390299,
+      "frameCount": 107
+    }
+  ],
+  "tests": [
+    {
+      "command": "BETRAYAL_RECORD_DYNAMIC_EVIDENCE=1 node scripts/infra/run-e2e-single.mjs default e2e/betrayal/event-choice-coverage.e2e.ts 外星几何真实链路从探索翻牌到投掷事件结算关闭 --config=playwright.golden-video.config.ts",
+      "result": "1 passed",
+      "scope": "外星几何真实页面链路的卡牌特写、物理骰子和房间拖拽动态证据"
+    }
+  ],
+  "segments": [
+    {
+      "key": "card-spotlight",
+      "gifPath": "外星几何-卡牌特写完整过程.gif",
+      "frameCount": 71,
+      "durationMs": 4710,
+      "startMarker": "卡牌特写开始",
+      "endMarker": "卡牌特写稳定退场"
+    },
+    {
+      "key": "physical-dice",
+      "gifPath": "外星几何-物理骰子完整过程.gif",
+      "frameCount": 41,
+      "durationMs": 2838,
+      "startMarker": "物理骰子开始",
+      "endMarker": "物理骰子结束"
+    },
+    {
+      "key": "room-drag",
+      "gifPath": "外星几何-房间本体拖拽完整过程.gif",
+      "frameCount": 17,
+      "durationMs": 895,
+      "startMarker": "房间拖拽开始",
+      "endMarker": "房间拖拽稳定收口"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "事件卡特写出现、投掷交互、结果承接、稳定退场",
+      "status": "PASS",
+      "evidence": [
+        "71 帧真实页面过程帧",
+        "真实时间跨度 4710ms",
+        "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-03-事件牌翻出投掷入口.jpg",
+        "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-06-结算结果可见.jpg",
+        "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-07-关闭后.jpg"
+      ],
+      "media": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件牌页面承接E2E\\外星几何-动态流畅性证据\\外星几何-卡牌特写完整过程.gif"
+      ]
+    },
+    {
+      "requirement": "物理骰子从运动中到停稳结果",
+      "status": "PASS",
+      "evidence": [
+        "41 帧真实页面过程帧",
+        "真实时间跨度 2838ms",
+        "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-05-骰盘停稳直接结算.jpg"
+      ],
+      "media": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件牌页面承接E2E\\外星几何-动态流畅性证据\\外星几何-物理骰子完整过程.gif"
+      ]
+    },
+    {
+      "requirement": "房间本体起点拖拽、地图移动、稳定收口",
+      "status": "PASS",
+      "evidence": [
+        "17 帧真实页面过程帧",
+        "真实时间跨度 895ms",
+        "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-08-房间本体拖拽.jpg",
+        "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-09-房间点击放大.jpg"
+      ],
+      "media": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件牌页面承接E2E\\外星几何-动态流畅性证据\\外星几何-房间本体拖拽完整过程.gif"
+      ]
+    }
+  ],
+  "screenshots": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-03-事件牌翻出投掷入口.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-05-骰盘停稳直接结算.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-06-结算结果可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-07-关闭后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-08-房间本体拖拽.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-09-房间点击放大.jpg"
+  ],
+  "assertions": [
+    "发现特写存在时地图点击不穿透",
+    "事件牌特写出现投掷入口且结果层不重复描述检定过程",
+    "物理骰子可见、分离且最终停稳",
+    "事件特写关闭后地图恢复可交互",
+    "房间本体作为拖拽起点时地图 transform 真实改变",
+    "拖拽完成不误开预览，普通房间点击可打开预览"
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-动态流畅性证据/外星几何-卡牌特写完整过程.gif",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-动态流畅性证据/外星几何-物理骰子完整过程.gif",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/外星几何-动态流畅性证据/外星几何-房间本体拖拽完整过程.gif"
+  ],
+  "limitations": [
+    "本组从正式 Betrayal 页面开始，但使用合法代表态注入事件牌与骰子前置状态。",
+    "GIF 证明同次真实浏览器运行中的时间连续性与状态切换；素材审美仍需单独 UI 图面复核。"
+  ]
+}

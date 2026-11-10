@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-10-19",
+  "scope": "read-only stable OTA delivery audit; no deployment or device-state claim",
+  "manifest": {
+    "version": "6.0.0-ota-2026-10-16T06-53-08-183Z",
+    "displayVersion": "754",
+    "productVersion": "0.6.47",
+    "url": "http://8.148.71.102/official/app-updates/android/stable/bundles/6.0.0-ota-2026-10-16T06-53-08-183Z.zip",
+    "checksum": "c8f4c5d9491a839affff909547e38a1a7ce4c6a454f286e5c2e5029f53bd9f79",
+    "channel": "stable",
+    "forceUpdate": true,
+    "forceUpdateTitle": "正在更新",
+    "forceUpdateMessage": "正在下载必要更新，请稍候",
+    "publishedAt": "2026-10-16T06:54:32.278Z",
+    "size": 14541972,
+    "notes": "GitHub Actions manual OTA publish 9ab21e24331fb431e5c5a66c60cd62e33236ef6f@9ab21e2"
+  },
+  "primaryUrl": "https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json",
+  "primaryStatus": 200,
+  "preflightStatus": 204,
+  "originEqualsPrimary": true,
+  "bundleChecksumVerified": true,
+  "bundleSizeVerified": true,
+  "publishedSourceContainsOldFabInverseScaleFix": true,
+  "publishedSourceContainsCurrentLocalFix": false,
+  "sourceEvidence": ".tmp/dt-ota-live-audit/bundle-code-matches.json",
+  "limitation": "Initial urllib 403 was not reproduced by curl; not evidence of OTA publish failure. User reports latest force-updated App still has SVG issue; no device logs collected. No native APK verification or publish performed."
+}

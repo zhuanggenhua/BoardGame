@@ -10,21 +10,23 @@ interface Props {
     viewport: QidahenMapViewport;
     regionId: string;
     name: string;
+    testId?: string;
     objects: readonly { x: number; y: number }[];
 }
 
 /** 教程注释跟随真实地区的屏幕位置，阅读尺寸独立于地图与正式HUD的等比缩放。 */
-export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewport, regionId, name, objects }) => {
+export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewport, regionId, name, objects, testId = 'qidahen-map-region-focus-name' }) => {
     const labelRef = React.useRef<HTMLSpanElement>(null);
     const [position, setPosition] = React.useState<{ left: number; top: number } | null>(null);
-    React.useLayoutEffect(() => {
+    React.useEffect(() => {
         const anchor = anchorRef.current;
         if (!anchor) return;
         let resizeFrame = 0;
         const place = () => {
-            const marker = document.querySelector<HTMLElement>(`[data-qidahen-map-token-region="${regionId}"][data-qidahen-map-token-type="control"]`);
+            const mapContent = anchor.closest<HTMLElement>('[data-testid="qidahen-map-content"]');
+            const marker = mapContent?.querySelector<HTMLElement>(`[data-qidahen-map-token-region="${regionId}"][data-qidahen-map-token-type="control"]`);
             const rect = marker?.getBoundingClientRect();
-            const map = anchor.closest('[data-testid="qidahen-map-content"]')?.getBoundingClientRect();
+            const map = mapContent?.getBoundingClientRect();
             const point = getQidahenRuntimeRegionAnchorTargetPoint(regionId);
             // 地区名属于真实地图标记，不能放在仅供镜头取景的外接矩形角落。
             const preferred = rect && rect.width > 0 && rect.height > 0
@@ -36,7 +38,7 @@ export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewpor
             if (!preferred) { setPosition(null); return; }
             const width = labelRef.current?.offsetWidth ?? name.length * 14 + 8;
             const height = labelRef.current?.offsetHeight ?? 20;
-            const mapObjects = [...document.querySelectorAll('[data-qidahen-map-token-type="army"], [data-qidahen-map-token-type="control"]')];
+            const mapObjects = [...(mapContent?.querySelectorAll('[data-qidahen-map-token-type="army"], [data-qidahen-map-token-type="control"]') ?? [])];
             const regionObjects = mapObjects.filter(element => element.getAttribute('data-qidahen-map-token-region') === regionId)
                 .map(element => element.getBoundingClientRect());
             const obstacles = [...mapObjects.map(element => element.getBoundingClientRect()),
@@ -55,8 +57,13 @@ export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewpor
                 && point.left + width <= innerWidth - 4 && point.top <= innerHeight - 4
                 && obstacles.every(box => point.left + width + 4 <= box.left || point.left - 4 >= box.right
                     || point.top + 4 <= box.top || point.top - height - 4 >= box.bottom));
-            candidates.sort((a, b) => Math.hypot(a.left - preferred.left, a.top - preferred.top)
-                - Math.hypot(b.left - preferred.left, b.top - preferred.top));
+            const distanceToRegionObject = (point: { left: number; top: number }) => regionObjects.length
+                ? Math.min(...regionObjects.map(box => Math.hypot(
+                    Math.max(0, point.left - box.right, box.left - point.left - width),
+                    Math.max(0, point.top - height - box.bottom, box.top - point.top),
+                ))) : 0;
+            candidates.sort((a, b) => distanceToRegionObject(a) - distanceToRegionObject(b)
+                || Math.hypot(a.left - preferred.left, a.top - preferred.top) - Math.hypot(b.left - preferred.left, b.top - preferred.top));
             const next = candidates[0] ?? null;
             if (!next) { setPosition(null); return; }
             setPosition(current => current?.left === next.left && current.top === next.top ? current : next);
@@ -83,7 +90,7 @@ export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewpor
     return position ? createPortal(
         <span
             ref={labelRef}
-            data-testid="qidahen-map-region-focus-name"
+            data-testid={testId}
             data-region-id={regionId}
             className="pointer-events-none fixed whitespace-nowrap font-bold"
             style={{

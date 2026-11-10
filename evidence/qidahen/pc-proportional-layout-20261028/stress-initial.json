@@ -1,0 +1,20 @@
+{
+  "injectedRepresentativeState": true,
+  "initial": {
+    "left": 0,
+    "width": 1310,
+    "scrollWidth": 1472
+  },
+  "zone": {
+    "x": 206,
+    "y": 304.3999938964844,
+    "width": 524,
+    "height": 120.4000244140625
+  },
+  "first": {
+    "x": 209.20001220703125,
+    "y": 324.3999938964844,
+    "width": 72.79998779296875,
+    "height": 100.4000244140625
+  }
+}

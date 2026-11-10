@@ -1,0 +1,58 @@
+[
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp?v=68d0df8a",
+    "status": 200,
+    "bytes": 2040596,
+    "sha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "totalMs": 13476,
+    "dimensions": [
+      7380,
+      4720
+    ],
+    "matches": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp?v=df14a9fd",
+    "status": 200,
+    "bytes": 2040596,
+    "sha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "totalMs": 13809,
+    "dimensions": [
+      7380,
+      4720
+    ],
+    "matches": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp?v=1c1b45a4",
+    "status": 200,
+    "bytes": 2040596,
+    "sha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "totalMs": 15973,
+    "dimensions": [
+      7380,
+      4720
+    ],
+    "matches": true
+  },
+  {
+    "url": "http://8.148.71.102/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp",
+    "status": 200,
+    "bytes": 2040596,
+    "sha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "totalMs": 3845,
+    "dimensions": [
+      7380,
+      4720
+    ],
+    "matches": true
+  }
+]

@@ -1,0 +1,69 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "auditSubject": "Mage Wars 法师魔杖真实黄金端到端录屏",
+  "generatedAt": "2026-09-24T23:34:55+08:00",
+  "recording": {
+    "mediaType": "video/webm",
+    "flow": "真实浏览器页面点击：法师魔杖目标选择、绑定法术、支付、快速重绑、AI 继续推进",
+    "resolution": "1600x900",
+    "note": "录屏来自本轮正式页面 E2E 运行；前置联机房间由测试夹具建立，关键施法与承接动作由真实页面点击完成。"
+  },
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "test-results/video-capture/golden-flow-20260924"
+  },
+  "tests": [
+    {
+      "command": "MAGE_WARS_GOLDEN_VIDEO_DIR=test-results/video-capture/golden-flow-20260924 node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/online-runtime.e2e.ts \"正式页面法师魔杖施放和快速重绑覆盖法术选择 UI\" --config=playwright.golden-video.config.ts",
+      "result": "1 passed",
+      "scope": "真实页面法师魔杖目标选择、绑定法术支付、快速重绑、AI 继续推进"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "点击法师魔杖后只把己方法师作为合法目标，不把无效棋盘区域当作可选目标。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面法师魔杖施放和快速重绑覆盖法术选择-UI/01-法师魔杖-施放前-准备区卡牌与己方法师合法目标.jpg",
+        "录屏覆盖真实点击法师魔杖并进入己方法师目标承接。"
+      ]
+    },
+    {
+      "requirement": "选择己方法师后进入绑定法术列表，并能完成绑定法术选择。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面法师魔杖施放和快速重绑覆盖法术选择-UI/02-法师魔杖-绑定选择-法师魔杖选择复原术.jpg",
+        "录屏覆盖绑定法术列表和玩家选择。"
+      ]
+    },
+    {
+      "requirement": "绑定法术支付成功，法力和弃牌结果发生变化，流程不进入卡死状态。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面法师魔杖施放和快速重绑覆盖法术选择-UI/03-法师魔杖-施放结算-附着卡显示绑定法术.jpg",
+        "录屏覆盖支付后的法力、弃牌和附着卡结果。"
+      ]
+    },
+    {
+      "requirement": "施法结束后 AI 继续推进，玩家可以进入快速重绑入口并完成第二次绑定。",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面法师魔杖施放和快速重绑覆盖法术选择-UI/04-法师魔杖-快速重绑入口-来源卡下方能力按钮.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面法师魔杖施放和快速重绑覆盖法术选择-UI/05-法师魔杖-快速重绑选择-候选法术牌可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面法师魔杖施放和快速重绑覆盖法术选择-UI/06-法师魔杖-快速重绑结算-新绑定和法力消耗可见.jpg",
+        "录屏结尾覆盖 AI 继续推进以及快速重绑结算。"
+      ]
+    }
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/test-results/video-capture/golden-flow-20260924/81b7ec411b04437f51861d8cef204514.webm"
+  ]
+}

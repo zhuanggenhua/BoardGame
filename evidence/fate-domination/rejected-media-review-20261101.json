@@ -1,0 +1,19 @@
+{
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "sourceRevision": "6b245d220cc4365ca425ea6a4ae9e0ab0178135809745398afb7cdaa3690889c",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793521700002-3l6qiu/36-回合收牌后检视弃牌堆，只说明当前查看动作.png",
+      "sha256": "7b74f84d3e151e4a0d726a8923f6e779c2f26c5404fe7dae18aab879a784f551",
+      "status": "REVISE",
+      "observation": "弃牌窗口计数4及关闭入口可见，但卡面区域全空，不能证明弃牌浏览可读。",
+      "cause": "采集仅等dialog可见，没有验证每张CardPreview已解码和真实高度。",
+      "repair": "补截图前的正式按钮数量、图面解码、非shimmer及可读高度检查；完整教程重新采集后另作图审，不修改该原图。",
+      "mediaAvailability": "原图已受临时输出目录误清理影响，当前只保留当时实际观察、路径及SHA；不能冒称仍可回读。"
+    }
+  ]
+}

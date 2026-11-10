@@ -1,0 +1,41 @@
+{
+  "title": "阶段说明提示原位淡入动效证据",
+  "media": [
+    {
+      "path": "01-阶段说明tip-前态.gif",
+      "chainId": "phase-tooltip-motion-20261011",
+      "chainStep": "1",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts 冷启动运行",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-motion-20261011/final-gif-only",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "阶段项静止未悬浮",
+      "description": "阶段列表稳定显示，说明提示尚未出现。"
+    },
+    {
+      "path": "02-阶段说明tip-原位淡入.gif",
+      "chainId": "phase-tooltip-motion-20261011",
+      "chainStep": "2",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts 冷启动运行",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-motion-20261011/final-gif-only",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "说明提示原位透明度淡入",
+      "description": "说明提示从最终锚点位置淡入并稳定贴在阶段项右侧。"
+    },
+    {
+      "path": "03-阶段说明tip-移出收口.gif",
+      "chainId": "phase-tooltip-motion-20261011",
+      "chainStep": "3",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-motion.tmp.e2e.ts 冷启动运行",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-motion-20261011/final-gif-only",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "移出后透明度收口",
+      "description": "鼠标移出阶段项后说明提示消失，位置没有飞出。"
+    }
+  ]
+}

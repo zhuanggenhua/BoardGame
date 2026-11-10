@@ -2,6 +2,7 @@ import { verifyQidahenMapCandidateRecovery } from './mapCandidateRecovery';
 import { dragQidahenMap } from './mapPointer';
 import { trackQidahenBlobUrls } from './blobUrlDiagnostics';
 import { createHash } from 'node:crypto';
+import sharp from 'sharp';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
@@ -25,8 +26,8 @@ const captureContractBytes = readFileSync(captureContractPath);
 const captureContract = JSON.parse(captureContractBytes.toString('utf8')) as {
     requiredStates: Array<{ chainId: string; uiStateId: string; viewport: string }>;
 };
-const KEY_STATES = new Set(['frontier-goal', 'opening-move', 'recruit-action', 'recruit-source', 'recruit-payment', 'recruit-troops', 'farm-action', 'reclaim-action', 'reclaim-target',
-    'midyear', 'hand-limit', 'upgrade-card', 'dispatch-source', 'dispatch-troops', 'dispatch-target', 'tactic-card', 'occupy',
+const KEY_STATES = new Set(['frontier-goal', 'frontier-target', 'opening-move', 'recruit-action', 'recruit-source', 'recruit-payment', 'recruit-troops', 'farm-action', 'reclaim-action', 'reclaim-target',
+    'recruit-confirm', 'midyear', 'hand-limit', 'upgrade-card', 'dispatch-source', 'dispatch-troops', 'dispatch-target', 'tactic-card', 'occupy', 'battle-finish',
     'diplomacy-target', 'diplomacy-finish', 'hire-action', 'hire-target', 'save-hand', 'new-year', 'maintain-shanhai', 'abandon-jinzhou', 'abandon-inner-wall', 'abandon-outer-wall', 'upkeep-datong', 'upkeep-yehe', 'upkeep-pyongyang', 'claim-year',
     'new-order', 'year-character', 'training-kind', 'training-target', 'training-second-target', 'training-recruit-target', 'training-finish', 'finish']);
 const MOBILE_STATES = new Set(['frontier-goal', 'recruit-payment', 'reclaim-target', 'midyear', 'hand-limit', 'dispatch-troops', 'occupy', 'maintain-shanhai', 'year-character', 'finish', 'diplomacy-target', 'diplomacy-finish', 'hire-target', 'training-target', 'training-second-target', 'training-finish']);
@@ -34,7 +35,7 @@ const MOBILE_STATES = new Set(['frontier-goal', 'recruit-payment', 'reclaim-targ
 type Snapshot = {
     core: QidahenCore;
     tutorial: { active: boolean; step: TutorialStepSnapshot; pendingAnimationAdvance: boolean };
-    interaction: { id: string; playerId: string; data: { sourceId?: string; multi?: { min: number; max: number }; options: Array<{ id: string }> } } | null;
+    interaction: { id: string; playerId: string; data: { sourceId?: string; multi?: { min: number; max: number }; options: Array<{ id: string; disabled?: boolean }> } } | null;
 };
 const read = (page: Page): Promise<Snapshot> => page.evaluate(() => {
     const state = (window as unknown as { __BG_TEST_HARNESS__: { state: { get(): { core: QidahenCore; sys: Record<string, unknown> } } } }).__BG_TEST_HARNESS__.state.get();
@@ -43,6 +44,65 @@ const read = (page: Page): Promise<Snapshot> => page.evaluate(() => {
 });
 const stepId = (page: Page): Promise<string | undefined> => page.evaluate(() =>
     (window as any).__BG_TEST_HARNESS__.state.get().sys.tutorial.step?.id);
+
+/** 同一正式外交选择状态逐候选用鼠标探测；不点击或改写局面。 */
+async function probeDiplomacyCandidates(page: Page, ids: string[], selectId?: string) {
+    const positions = await page.evaluate(async ids => {
+        const ownerPath = '/src/games/qidahen/ui/runtimeRegionOwnership.ts';
+        const { buildQidahenRuntimeRegionIdByPixel } = await import(ownerPath);
+        const image = new Image(); image.src = '/src/games/qidahen/data/region-mask.png'; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d')!; context.drawImage(image, 0, 0);
+        const owners = buildQidahenRuntimeRegionIdByPixel(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+        const result: Record<string, Array<{ x: number; y: number }>> = Object.fromEntries(ids.map(id => [id, []]));
+        for (let y = 2; y < canvas.height; y += 4) for (let x = 2; x < canvas.width; x += 4) {
+            const id = owners[y * canvas.width + x];
+            if (id && result[id]) result[id].push({ x, y });
+        }
+        return result;
+    }, ids);
+    const view = () => page.getByTestId('qidahen-map-layer').evaluate(node => ({ x: Number(node.getAttribute('data-map-pan-x')), y: Number(node.getAttribute('data-map-pan-y')) }));
+    const initialView = await view();
+    const observations: Array<{ id: string; point: { x: number; y: number }; title: string }> = [];
+    for (const id of ids) {
+        expect(positions[id]?.length, `外交候选 ${id} 有正式地区命中像素`).toBeGreaterThan(0);
+        let hit: { x: number; y: number } | null = null;
+        for (let attempt = 0; attempt < 6 && !hit; attempt++) {
+            const geometry = await page.evaluate(points => {
+                const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="qidahen-map-hitmap-canvas"]')!;
+                const rect = canvas.getBoundingClientRect();
+                const screen = points.map(point => ({ x: rect.left + (point.x + .5) / 1265 * rect.width, y: rect.top + (point.y + .5) / 893 * rect.height }));
+                const visible = screen.find(point => point.x > 12 && point.x < innerWidth - 12 && point.y > 90 && point.y < innerHeight - 120
+                    && document.elementFromPoint(point.x, point.y) === canvas);
+                const nearest = screen.reduce((best, point) => Math.hypot(point.x - innerWidth / 2, point.y - innerHeight / 2)
+                    < Math.hypot(best.x - innerWidth / 2, best.y - innerHeight / 2) ? point : best);
+                return { visible: visible ?? null, nearest };
+            }, positions[id]);
+            hit = geometry.visible;
+            if (!hit) await dragQidahenMap(page, Math.max(-200, Math.min(200, 960 - geometry.nearest.x)), Math.max(-150, Math.min(150, 540 - geometry.nearest.y)));
+        }
+        expect(hit, `外交候选 ${id} 须有可见且未被 UI 覆盖的地图输入点`).not.toBeNull();
+        await page.mouse.move(hit!.x, hit!.y);
+        const name = (await read(page)).core.regions.find(region => region.id === id)?.name;
+        expect(name, `外交候选 ${id} 的真实地区名称`).toBeTruthy();
+        await expect(page.getByTestId('qidahen-map-hitmap-canvas'), `外交候选 ${id} 鼠标悬停地区`).toHaveAttribute('title', new RegExp(name!));
+        observations.push({ id, point: hit!, title: (await page.getByTestId('qidahen-map-hitmap-canvas').getAttribute('title'))! });
+        console.info('DIPLOMACY_HOVER', JSON.stringify(observations[observations.length - 1]));
+        if (id === selectId) {
+            await page.mouse.click(hit!.x, hit!.y);
+            return observations;
+        }
+    }
+    for (let attempt = 0; attempt < 20; attempt++) {
+        const currentView = await view();
+        const dx = initialView.x - currentView.x, dy = initialView.y - currentView.y;
+        if (Math.abs(dx) < 2 && Math.abs(dy) < 2) break;
+        await dragQidahenMap(page, Math.max(-200, Math.min(200, dx)), Math.max(-150, Math.min(150, dy)));
+    }
+    await expect.poll(async () => Math.abs((await view()).x - initialView.x)).toBeLessThan(2);
+    await expect.poll(async () => Math.abs((await view()).y - initialView.y)).toBeLessThan(2);
+    return observations;
+}
 
 
 
@@ -199,7 +259,10 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
             await button.hover();
             await expect.poll(async () => Math.abs((await button.boundingBox())!.x - beforeHover.x), { message: 'hand action hover must not inherit the parent horizontal centering transform' }).toBeLessThan(2);
             await button.click();
-        } else await page.getByTestId(`qidahen-turn-option-${targets[0]}`).click();
+        } else {
+            // 该按钮只推进本局状态，不需要等待浏览器导航；后续仍断言正式事件和下一节点。
+            await page.getByTestId(`qidahen-turn-option-${targets[0]}`).click({ noWaitAfter: targets[0] === 'skip-hand' });
+        }
         await onSelected?.();
         return;
     }
@@ -218,6 +281,23 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
     await onSelected?.();
     await expect(page.getByTestId('qidahen-turn-confirm')).toBeEnabled();
     await page.getByTestId('qidahen-turn-confirm').click();
+}
+
+function annualDynamicTargets(snapshot: Snapshot): string[] {
+    const step = snapshot.tutorial.step;
+    const valid = snapshot.interaction?.data.options.filter(option => !option.disabled).map(option => option.id) ?? [];
+    if (step.id === 'season-chronology-payment') return valid.slice(0, 1);
+    if (!step.id.startsWith('season-upkeep-player-')) return step.allowedTargets ?? [];
+    const regionId = step.highlightTarget?.replace('qidahen-map-region-focus-', '') ?? '';
+    const special: Record<string, string> = {
+        'city-region-1': 'ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1',
+        'city-region-18': 'ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1',
+        'city-region-29': 'ming-post-sarhu-1619-hanseong-mercenary-infantry-lv2__compat__1',
+    };
+    if (special[regionId] && valid.includes(special[regionId])) return [special[regionId]];
+    const cards = valid.filter(id => snapshot.core.handCards.some(card => card.id === id));
+    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1');
+    return [cards.length && snapshot.core.factions.ming.handCount > 3 ? cards[0] : pieces[0]];
 }
 
 
@@ -239,11 +319,26 @@ function assertOutcome(id: string, before: Snapshot, after: Snapshot) {
     if (id === 'training-target') result.push(assertEqual('selected-artillery-trained', summarize(after).artillery, 2));
     if (/^training-(second|third)-target$/.test(id)) {
         const pieceId = before.tutorial.step.allowedTargets![0].slice('train:'.length);
-        result.push(assertEqual('same-earlier-recruited-infantry-trained', after.core.pieces.find(piece => piece.id === pieceId)?.level, 3),
+        result.push(assertEqual('selected-piece-trained-one-level', after.core.pieces.find(piece => piece.id === pieceId)?.level, (before.core.pieces.find(piece => piece.id === pieceId)?.level ?? 0) + 1),
             assertEqual('base-training-does-not-spend-another-card', after.core.factions.ming.handCount, before.core.factions.ming.handCount));
     }
     if (id === 'hire-target') result.push(assertEqual('reinforce-western-datong', region(after, 'city-region-1').troops - region(before, 'city-region-1').troops, 2));
-    if (id === 'training-recruit-target') result.push(assertEqual('new-regular-at-reclaimed-liaodong', region(after, 'city-region-15-liaodong').troops - region(before, 'city-region-15-liaodong').troops, 1), assertEqual('new-year-recruitment-condition-applied', after.core.chronology.yearStats.ming.builtTroops, 1));
+    if (id === 'training-practice') {
+        const choice = before.tutorial.step.allowedTargets?.[0];
+        if (choice?.startsWith('train:')) {
+            const pieceId = choice.slice('train:'.length);
+            const old = before.core.pieces.find(piece => piece.id === pieceId);
+            if (old) result.push(assertEqual('chosen-training-level-increased', after.core.pieces.find(piece => piece.id === pieceId)?.level, old.level + 1));
+        } else if (choice?.startsWith('recruit:') && !process.env.QIDAHEN_ALT_TRAIN_REGION) {
+            const regionId = choice.slice('recruit:'.length);
+            result.push(assertEqual('chosen-region-recruited', region(after, regionId).troops - region(before, regionId).troops, 1));
+        }
+    }
+    if (id === 'training-recruit-target') {
+        const changed = after.core.regions.filter(next => !next.isLogicalRegion && next.troops - (before.core.regions.find(old => old.id === next.id)?.troops ?? next.troops) === 1).map(next => next.id);
+        result.push(assertEqual('exactly-one-real-region-recruited', changed.length, 1), assertEqual('new-year-recruitment-condition-applied', after.core.chronology.yearStats.ming.builtTroops, 1));
+        if (!process.env.QIDAHEN_ALT_TRAIN_REGION) result.push(assertEqual('recommended-recruit-region', changed[0], 'city-region-15-liaodong'));
+    }
     if (id === 'training-finish') result.push(assertEqual('four-paid-base-actions-used', before.core.wheelRecruitTrainProgress?.actionsCompleted, 4), assertEqual('last-card-retained', after.core.factions.ming.handCount, 1));
     return result;
 }
@@ -282,11 +377,18 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             };
             const pendingRequests = new Set<string>();
             let progress = 'entry';
+            let dynamicTargets: string[] = [];
+            const capturedUpkeepRegions = new Set<string>();
+            const capturedPracticeStates = new Set<string>();
             page.on('request', request => pendingRequests.add(request.url()));
             page.on('requestfinished', request => pendingRequests.delete(request.url()));
             page.on('requestfailed', request => pendingRequests.delete(request.url()));
             const heartbeat = setInterval(() => console.info('ANNUAL_WAIT', JSON.stringify({ progress, pending: [...pendingRequests].slice(-12) })), 15_000);
-            const verifySourceIdentity = trackQidahenSourceIdentity(page, 'e2e/qidahen/qidahen-annual-tutorial.e2e.ts', ['e2e/qidahen/sourceIdentity.ts'], QIDAHEN_VISUAL_SOURCE_PATHS);
+            const verifySourceIdentity = trackQidahenSourceIdentity(page, 'e2e/qidahen/qidahen-annual-tutorial.e2e.ts', [
+                'e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', 'e2e/qidahen/mapCandidateRecovery.ts',
+                'e2e/qidahen/mapPointer.ts', 'e2e/qidahen/blobUrlDiagnostics.ts', 'e2e/qidahen/tutorialPointer.ts',
+                'e2e/qidahen/visualReady.ts', 'e2e/qidahen/tutorialPersistence.ts', 'e2e/helpers/common.ts',
+            ], [...QIDAHEN_VISUAL_SOURCE_PATHS, 'public/assets/i18n/zh-CN/qidahen/cards/inspect/compressed/ming-4.webp']);
             const dir = resolve(root, viewport.name); mkdirSync(dir, { recursive: true });
             const saveBlobDiagnostics = await trackQidahenBlobUrls(page, resolve(dir, 'blob-url-diagnostics.json'));
             writeFileSync(resolve(dir, 'browser-renderer.json'), JSON.stringify(rendererInfo.gpu, null, 2));
@@ -311,13 +413,25 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         const targetId = element.getAttribute('data-tutorial-anchor');
                         const target = document.querySelector(`[data-testid="${targetId}"]`);
                         if (!target) throw new Error(`Missing hand tutorial anchor: ${targetId}`);
-                        const tip = element.getBoundingClientRect(), card = target.getBoundingClientRect();
+                        const cardElement = target.closest('[data-qidahen-hand-recommended="true"]') ?? target;
+                        const tip = element.getBoundingClientRect(), card = cardElement.getBoundingClientRect();
                         const dx = Math.max(0, tip.left - card.right, card.left - tip.right);
                         const dy = Math.max(0, tip.top - card.bottom, card.top - tip.bottom);
-                        return { targetId, distance: Math.hypot(dx, dy), tip: tip.toJSON(), card: card.toJSON() };
+                        const marker = target.getBoundingClientRect();
+                        const arrow = document.querySelector<SVGPolygonElement>('[data-testid="tutorial-anchor-arrow"] polygon');
+                        if (!arrow) throw new Error('Missing arrow pointing to hand guidance marker');
+                        const points = arrow.getAttribute('points')!.trim().split(/\s+/).map(point => point.split(',').map(Number));
+                        const svg = arrow.ownerSVGElement!.getBoundingClientRect();
+                        const [tipX, tipY] = points[2];
+                        const toMarker = Math.hypot(marker.left + marker.width / 2 - (svg.left + tipX), marker.top + marker.height / 2 - (svg.top + tipY));
+                        const baseX = svg.left + (points[0][0] + points[1][0]) / 2;
+                        const baseY = svg.top + (points[0][1] + points[1][1]) / 2;
+                        const baseToMarker = Math.hypot(marker.left + marker.width / 2 - baseX, marker.top + marker.height / 2 - baseY);
+                        return { targetId, distance: Math.hypot(dx, dy), arrowPointsTowardMarker: toMarker < baseToMarker, tip: tip.toJSON(), card: card.toJSON(), marker: marker.toJSON() };
                     });
                     await expect.poll(async () => (await attachment()).distance,
                         { message: 'hand instruction must stay attached to the explained card' }).toBeLessThanOrEqual(32);
+                    expect((await attachment()).arrowPointsTowardMarker, 'hand guidance arrow points toward the actual recommended marker').toBe(true);
                     writeFileSync(resolve(dir, `${id}-attachment.json`), JSON.stringify(await attachment(), null, 2));
                 }
                 if (['recruit-troops', 'tactic-card', 'occupy'].includes(id)) {
@@ -341,10 +455,34 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     });
                     const anchorId = await hintCard.getAttribute('data-tutorial-anchor');
                     if (anchorId === 'qidahen-map-region-focus-name') {
-                        const a = (await page.getByTestId(anchorId).boundingBox())!; const h = geometry.hint;
-                        const dx = Math.max(0, h.x - a.x - a.width, a.x - h.x - h.width);
-                        const dy = Math.max(0, h.y - a.y - a.height, a.y - h.y - h.height);
-                        expect(Math.hypot(dx, dy), 'map explanation stays adjacent to its real reading object').toBeLessThanOrEqual(64);
+                        const h = geometry.hint;
+                        const regionId = await page.getByTestId(anchorId).getAttribute('data-region-id');
+                        const regionDefinitions = JSON.parse(readFileSync('src/games/qidahen/data/runtime-region-mask-regions.json', 'utf8')) as {
+                            regions: Array<{ id: string; color?: string }>;
+                        };
+                        const color = regionDefinitions.regions.find(region => region.id === regionId)?.color;
+                        if (color && /^#[0-9a-f]{6}$/i.test(color)) {
+                            // 地区名称只是区域内文字；面积型目标以正式蒙版的实际像素为阅读对象。
+                            const rgb = [1, 3, 5].map(offset => parseInt(color.slice(offset, offset + 2), 16));
+                            const map = (await page.getByTestId('qidahen-map-content').boundingBox())!;
+                            const mask = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+                            let distance = Infinity;
+                            for (let y = 0; y < mask.info.height; y++) for (let x = 0; x < mask.info.width; x++) {
+                                const offset = (y * mask.info.width + x) * 4;
+                                if (mask.data[offset] !== rgb[0] || mask.data[offset + 1] !== rgb[1] || mask.data[offset + 2] !== rgb[2] || !mask.data[offset + 3]) continue;
+                                const px = map.x + (x + 0.5) * map.width / mask.info.width;
+                                const py = map.y + (y + 0.5) * map.height / mask.info.height;
+                                const dx = Math.max(0, h.x - px, px - h.x - h.width);
+                                const dy = Math.max(0, h.y - py, py - h.y - h.height);
+                                distance = Math.min(distance, Math.hypot(dx, dy));
+                            }
+                            expect(distance, `map explanation stays adjacent to actual ${regionId} region pixels`).toBeLessThanOrEqual(64);
+                        } else {
+                            const a = (await page.getByTestId(anchorId).boundingBox())!;
+                            const dx = Math.max(0, h.x - a.x - a.width, a.x - h.x - h.width);
+                            const dy = Math.max(0, h.y - a.y - a.height, a.y - h.y - h.height);
+                            expect(Math.hypot(dx, dy), 'map explanation stays adjacent to its real reading object').toBeLessThanOrEqual(64);
+                        }
                     }
                     const hint = geometry.hint;
                     for (const surface of geometry.surfaces) {
@@ -443,7 +581,14 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 if (id === 'abandon-inner-wall' || id === 'abandon-outer-wall') {
                     await expect(page.getByTestId('qidahen-fortification-highlight')).toHaveAttribute('data-fortification-id', id === 'abandon-inner-wall' ? 'inner-wall' : 'outer-wall');
                     await expect(page.getByTestId('qidahen-fortification-highlight').locator('text')).toHaveText(id === 'abandon-inner-wall' ? '内长城' : '外长城');
-                    await expect(page.getByTestId('qidahen-fortification-context')).toBeInViewport({ ratio: 1 });
+                    const wallContext = await page.getByTestId('qidahen-fortification-context').boundingBox();
+                    const viewSize = page.viewportSize()!;
+                    expect(wallContext).not.toBeNull();
+                    // Chromium 在恰好贴边时可能返回 0.99999988；允许四分之一像素误差，仍要求整条墙的范围入屏。
+                    expect(wallContext!.x).toBeGreaterThanOrEqual(-0.25);
+                    expect(wallContext!.y).toBeGreaterThanOrEqual(-0.25);
+                    expect(wallContext!.x + wallContext!.width).toBeLessThanOrEqual(viewSize.width + 0.25);
+                    expect(wallContext!.y + wallContext!.height).toBeLessThanOrEqual(viewSize.height + 0.25);
                     const obscured = await page.getByTestId('qidahen-fortification-highlight').locator('text').evaluate(label => {
                         const rect = label.getBoundingClientRect();
                         return [...document.querySelectorAll('[data-qidahen-map-token-region], [data-testid^="qidahen-map-population-"]')]
@@ -502,7 +647,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const snapshot = await read(page);
                     const summary = page.getByTestId('qidahen-turn-selected-card-summary');
                     await expect(summary).toBeVisible();
-                    for (const cardId of snapshot.tutorial.step.allowedTargets!) {
+                    for (const cardId of dynamicTargets) {
                         await expect(summary).toContainText(snapshot.core.handCards.find(card => card.id === cardId)!.label);
                     }
                     await expect(page.getByTestId('qidahen-turn-choice')).toHaveCount(0);
@@ -512,7 +657,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     await expect(page.getByTestId('qidahen-discard-pile')).toContainText('大明弃牌');
                 }
                 if (id === 'upkeep-yehe' && suffix === '-selected') {
-                    const ids = (await read(page)).tutorial.step.allowedTargets!;
+                    const ids = dynamicTargets;
                     mkdirSync(testInfo.outputDir, { recursive: true });
                     writeFileSync(resolve(testInfo.outputDir, 'selected-render.json'), JSON.stringify(await page.evaluate(() => {
                         const dock = document.querySelector<HTMLElement>('[data-testid="qidahen-hand-zone"]')!;
@@ -644,6 +789,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         expect((await read(page)).core, 'thinking before discard cannot advance or mutate the game').toEqual(thinkingCore);
                     }
                     const before = await read(page);
+                    dynamicTargets = annualDynamicTargets(before);
                     const beforeVisible = await page.locator('body').innerText();
                     if (step.id === 'new-order' || step.id === 'year-character') {
                         await expect(page.getByTestId('qidahen-player-float')).toContainText('本年先手');
@@ -702,7 +848,29 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const finishBattleRecording = step.id === 'battle-roll' ? await beginBattleRecording(page, dir) : undefined;
                     if (step.id === 'recruit-troops') await assertWholeRegionVisible(page, 'city-region-15');
                     if ((viewport.name === 'desktop' ? KEY_STATES : MOBILE_STATES).has(step.id)) await capture(step.id);
-                    if (step.id === 'training-target' && viewport.name === 'desktop') {
+                    const practice = step.id === 'training-practice' ? before.core.wheelRecruitTrainProgress : null;
+                    const practiceCaptureId = practice?.phase === 'choose-action' && practice.actionsCompleted === 0 ? 'training-kind'
+                        : practice?.phase === 'choose-training-target' && practice.actionsCompleted === 0 ? 'training-target'
+                        : practice?.phase === 'choose-training-target' && practice.actionsCompleted === 1 ? 'training-second-target'
+                        : practice?.phase === 'choose-recruit-target' ? 'training-recruit-target'
+                        : practice?.phase === 'choose-action' && practice.actionsCompleted === 4 ? 'training-finish' : undefined;
+                    if (practiceCaptureId && !capturedPracticeStates.has(practiceCaptureId)) {
+                        capturedPracticeStates.add(practiceCaptureId); await capture(practiceCaptureId, '', step.id);
+                    }
+                    const upkeepRegion = step.id.startsWith('season-upkeep-player-') ? step.highlightTarget?.replace('qidahen-map-region-focus-', '') : undefined;
+                    const upkeepCaptureId = upkeepRegion === 'city-region-1' ? 'upkeep-datong' : upkeepRegion === 'city-region-7' ? 'upkeep-yehe'
+                        : upkeepRegion === 'city-region-18' ? 'upkeep-pyongyang' : undefined;
+                    const firstUpkeepCapture = Boolean(upkeepCaptureId && !capturedUpkeepRegions.has(upkeepCaptureId));
+                    if (firstUpkeepCapture && viewport.name === 'desktop') { capturedUpkeepRegions.add(upkeepCaptureId!); await capture(upkeepCaptureId!, '', step.id); }
+                    if (step.id === 'diplomacy-target' && viewport.name === 'desktop') {
+                        const ids = before.interaction!.data.options.map(option => option.id)
+                            .filter(id => before.core.regions.some(region => region.id === id && !region.isLogicalRegion));
+                        const observed = await probeDiplomacyCandidates(page, ids);
+                        expect(observed.map(item => item.id), '所有正式外交地区均有真实鼠标悬停点').toEqual(ids);
+                        expect((await read(page)).core, '逐候选悬停不能改变对局').toEqual(before.core);
+                        writeFileSync(resolve(dir, 'diplomacy-candidate-hover.json'), JSON.stringify(observed, null, 2));
+                    }
+                    if (practiceCaptureId === 'training-target' && viewport.name === 'desktop') {
                         const recovered = await verifyQidahenMapCandidateRecovery(page, () => capture('training-pan', '', step.id));
                         uiAssertions.set(step.id, [assertEqual(recovered ? 'real-pan-recovers-other-candidate-without-state-change' : 'no-onscreen-candidate-overlaps-visible-hand-cards', true, true)]);
                     }
@@ -732,7 +900,18 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                             await page.waitForTimeout(650);
                             await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
                             await session.detach();
-                        } else await page.getByTestId('qidahen-hand-card-magnify-hand-3').click();
+                        } else {
+                            await page.mouse.move(10, 10);
+                            const shell = page.getByTestId('qidahen-hand-card-shell-hand-3');
+                            const atRest = (await shell.boundingBox())!;
+                            await page.getByTestId('qidahen-hand-card-magnify-hand-3').hover();
+                            await expect.poll(async () => (await shell.boundingBox())!.y, { timeout: 5_000 }).toBeLessThan(atRest.y - atRest.height * 0.4);
+                            await expect.poll(async () => { const raised = (await shell.boundingBox())!; return raised.y + raised.height; },
+                                { timeout: 5_000 }).toBeLessThanOrEqual(viewport.height + 1);
+                            expect((await read(page)).core.selectedPaymentCardIds).toEqual([]);
+                            await capture(step.id, '-hover');
+                            await page.getByTestId('qidahen-hand-card-magnify-hand-3').click();
+                        }
                         await waitMagnifyReady(page);
                         await capture(step.id, '-inspect');
                         expect((await read(page)).core.factions.ming.handCount).toBe(handBefore);
@@ -742,6 +921,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     if (step.id === 'year-character') {
                         await page.getByTestId(`qidahen-turn-inspect-${step.allowedTargets![0]}`).click();
                         await waitMagnifyReady(page);
+                        await expect.poll(() => page.getByTestId('qidahen-high-resolution-card').locator('img').evaluate(element => (element as HTMLImageElement).naturalWidth),
+                            { message: '杨镐完整牌面使用原分辨率单卡' }).toBe(487);
                         await capture(step.id, '-inspect');
                         await page.getByTestId('qidahen-card-magnify-overlay').getByRole('button', { name: /关闭/ }).click();
                     }
@@ -749,10 +930,12 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await clickVisibleButton(page, 'tutorial-next-button');
                     } else {
                         const command = step.allowedCommands![0];
-                        const targets = step.allowedTargets ?? [];
+                        const targets = dynamicTargets;
                         if (command === 'SYS_INTERACTION_RESPOND') {
                             if (before.interaction?.data.sourceId === 'qidahen:turn-resolution-choice') await submitTurnChoice(page, before, targets,
-                                ['dispatch-troops', 'upkeep-yehe', 'upkeep-pyongyang'].includes(step.id) ? async () => { await capture(step.id, '-selected'); if (step.id === 'upkeep-yehe') await browseHand(); } : undefined);
+                                ['reclaim-target', 'dispatch-troops'].includes(step.id) ? async () => { await capture(step.id, '-selected'); }
+                                    : firstUpkeepCapture && viewport.name === 'desktop' && (upkeepCaptureId === 'upkeep-yehe' || upkeepCaptureId === 'upkeep-pyongyang')
+                                        ? async () => { await capture(upkeepCaptureId!, '-selected', step.id); if (upkeepCaptureId === 'upkeep-yehe') await browseHand(); } : undefined);
                             else if (step.id === 'hand-limit') {
                                 for (const id of targets) await clickCard(page, id);
                                 await page.getByTestId('qidahen-resolve-hand-limit-discard').click();
@@ -786,7 +969,16 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         } else if (command === 'CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT') await page.getByTestId('qidahen-wheel-recruit-train-payment-confirm').click();
                         else if (command === 'RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE') {
                             if (targets[0].startsWith('train:')) await clickPiece(page, snapshot, targets[0].slice('train:'.length));
-                            else if (targets[0].startsWith('recruit:')) await clickRegion(page, targets[0].slice('recruit:'.length));
+                            else if (targets[0].startsWith('recruit:')) {
+                                if (process.env.QIDAHEN_ALT_TRAIN_REGION && practiceCaptureId === 'training-recruit-target') {
+                                    const ids = (await page.getByTestId('qidahen-map-region-mask-overlay').getAttribute('data-qidahen-candidate-region-ids'))!.split('|').filter(id => id && id !== targets[0].slice('recruit:'.length));
+                                    expect(ids.length, '真实建军局面存在推荐地区以外的合法候选').toBeGreaterThan(0);
+                                    const alt = ids[ids.length - 1];
+                                    await dragQidahenMap(page, -180, -120);
+                                    const observed = await probeDiplomacyCandidates(page, [alt], alt);
+                                    writeFileSync(resolve(dir, 'alternative-recruit-click.json'), JSON.stringify({ alt, observed }, null, 2));
+                                } else await clickRegion(page, targets[0].slice('recruit:'.length));
+                            }
                             else await page.getByTestId(`qidahen-wheel-recruit-train-choice-${encodeURIComponent(targets[0])}`).click();
                         }
                         else throw new Error(`Missing real input ${command}`);
@@ -818,12 +1010,17 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         trace.uiStates.push({ id: 'battle-real-time', stepId: step.id, path: recording.video, viewport: viewport.name,
                             frameCount: recording.frameCount, durationSeconds: recording.durationSeconds, sha256: createHash('sha256').update(readFileSync(recording.video)).digest('hex') });
                     }
-                    await expect.poll(() => stepId(page), { timeout: 60_000, message: `${step.id} should advance through its real event` }).not.toBe(step.id);
+                    const dynamicPayment = step.id.startsWith('season-upkeep-player-') || step.id === 'season-chronology-payment';
+                    if (step.id === 'training-practice') await expect.poll(async () => JSON.stringify((await read(page)).core.wheelRecruitTrainProgress),
+                        { timeout: 60_000, message: 'training choice must change the real training progress' }).not.toBe(JSON.stringify(before.core.wheelRecruitTrainProgress));
+                    else if (dynamicPayment) await expect.poll(async () => ({ step: await stepId(page), interaction: (await read(page)).interaction?.id }),
+                        { timeout: 60_000, message: `${step.id} must advance its formal payment interaction` }).not.toEqual({ step: step.id, interaction: before.interaction?.id });
+                    else await expect.poll(() => stepId(page), { timeout: 60_000, message: `${step.id} should advance through its real event` }).not.toBe(step.id);
                     const after = await read(page);
                     trace.steps.push({ id: step.id, action: step.infoStep ? 'manual-next' : step.allowedCommands![0], targetIds: step.allowedTargets,
                         before: { visible: { text: beforeVisible }, authoritative: summarize(before) },
                         after: { visible: { text: await page.locator('body').innerText() }, authoritative: summarize(after) },
-                        assertions: [assertEqual('formal-event-advanced-step', after.tutorial.step?.id !== step.id, true), ...assertOutcome(step.id, before, after), ...(uiAssertions.get(step.id) ?? [])],
+                        assertions: [assertEqual('formal-event-advanced-input', after.tutorial.step?.id !== step.id || dynamicPayment && after.interaction?.id !== before.interaction?.id || step.id === 'training-practice' && JSON.stringify(after.core.wheelRecruitTrainProgress) !== JSON.stringify(before.core.wheelRecruitTrainProgress), true), ...assertOutcome(step.id, before, after), ...(uiAssertions.get(step.id) ?? [])],
                     });
                     writeFileSync(resolve(dir, 'behavior-trace.json'), JSON.stringify(trace, null, 2));
                 }
@@ -833,10 +1030,9 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 expect(final.core.chronology.claimedCardIds.ming).toEqual([1301]);
                 expect(final.core.regions.find(region => region.id === 'city-region-7')?.controller).toBe('ming');
                 expect(final.core.pieces.find(piece => piece.id === 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1')?.level).toBe(2);
-                expect(trace.steps.filter(step => 'id' in step && step.id !== 'farm-alternative-checkpoint')
-                    .map(step => 'id' in step ? step.id : undefined), '真实节点顺序与当前正式课程一致').toEqual(
-                    QIDAHEN_ANNUAL_TUTORIAL.steps.filter(step => !step.hiddenAutomation).map(step => step.id),
-                );
+                const played = trace.steps.filter(step => 'id' in step && step.id !== 'farm-alternative-checkpoint').map(step => 'id' in step ? step.id : undefined);
+                const indices = played.map(id => QIDAHEN_ANNUAL_TUTORIAL.steps.findIndex(step => step.id === id));
+                expect(indices.every((index, i) => index >= 0 && (i === 0 || index >= indices[i - 1])), '真实节点按课程顺序进行，同一动态步骤可分次支付').toBe(true);
                 await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
                 const beforeContinueText = viewport.name === 'desktop' ? await page.locator('body').innerText() : '';
                 await page.getByTestId('qidahen-wheel-move-target-move-1-free').click();

@@ -1,0 +1,2522 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": "/root/doctor_final_visual_a2",
+  "verdict": "PASS",
+  "scope": "仅当前最终计划中分配的十七张原图可见交互界面；不放行完整截图包、不生成最终通过清单。",
+  "baselineCommit": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "historicalPixelComparison": false,
+  "oldRejected49Reused": 0,
+  "sourceHashesVerified": true,
+  "summary": {
+    "total": 17,
+    "PASS": 17,
+    "REVISE": 0,
+    "uniqueSources": 17,
+    "newOriginalsReread": 9,
+    "sameByteCarriedForwardWithinCurrentRestoration": 8
+  },
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-弃牌准备选择态.png",
+      "sha256": "767e2b127cd0188221d4e7c4201fa4397a67004fcf3e961aead4078d318fe8e3",
+      "entryPath": "01-弃牌法术候选-桌面.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "contract": "旧clamp(88px,min(7.2vw,12.5vh),132px)、居中多行纵滚40vh、上标题下动作、选中抬升及贴边ring",
+        "actualDifference": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。",
+        "authorization": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。"
+      },
+      "observations": [
+        "顶部标题、单张法瑞拉之牙和灰色确认按原选择器上下排列，候选卡面与底部文字完整。",
+        "原卡池尺度保留，没有侧栏、大卡横轨、额外勾选标记或新增底部检视行。"
+      ],
+      "playerNextStep": "先点候选牌；需要读细字时使用原阅读入口。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原牌面承担对象信息，贴边选中轮廓与下方确认分工明确，无额外勾选标记/检视行。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原卡池尺寸及纵滚恢复",
+          "assessment": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-弃牌准备选择态.png",
+      "actualReadSha256": "767e2b127cd0188221d4e7c4201fa4397a67004fcf3e961aead4078d318fe8e3",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "标题下方的单张法术候选以原比例完整居中显示，候选下方的确认按钮保持灰色。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-法术卡已选待确认.png",
+      "sha256": "45ba5fa6f98fa31dfbd955d1b8fbc637083230dd526569edb0e0d3973ed91f24",
+      "entryPath": "02-弃牌法术已选-桌面.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "contract": "旧clamp(88px,min(7.2vw,12.5vh),132px)、居中多行纵滚40vh、上标题下动作、选中抬升及贴边ring",
+        "actualDifference": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。",
+        "authorization": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。"
+      },
+      "observations": [
+        "同一法术出现贴边金色选中边界，完整卡面下方为橙色确认按钮。",
+        "原卡池尺度保留，没有候选特写遮挡、卡底裁切或新增检视行。"
+      ],
+      "playerNextStep": "点击候选下方确认。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原牌面承担对象信息，贴边选中轮廓与下方确认分工明确，无额外勾选标记/检视行。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原卡池尺寸及纵滚恢复",
+          "assessment": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-法术卡已选待确认.png",
+      "actualReadSha256": "45ba5fa6f98fa31dfbd955d1b8fbc637083230dd526569edb0e0d3973ed91f24",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "法术候选的金色选中轮廓贴合卡面，卡底完整且下方确认按钮已点亮。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-弃牌准备选择态.png",
+      "sha256": "ca4afee9d7d3b956c52b144cd582279e9d673944057bf86bb079761af29ec1aa",
+      "entryPath": "03-弃牌法术候选-横屏.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "contract": "旧clamp(88px,min(7.2vw,12.5vh),132px)、居中多行纵滚40vh、上标题下动作、选中抬升及贴边ring",
+        "actualDifference": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。",
+        "authorization": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。"
+      },
+      "observations": [
+        "横屏原卡池内单张法术完整可见，卡底末行没有被容器下缘裁掉。",
+        "原居中上下布局保留，灰色确认按钮没有遮住候选。"
+      ],
+      "playerNextStep": "点选法术；需要细读时长按进入原阅读器。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原牌面承担对象信息，贴边选中轮廓与下方确认分工明确，无额外勾选标记/检视行。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原卡池尺寸及纵滚恢复",
+          "assessment": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-弃牌准备选择态.png",
+      "actualReadSha256": "ca4afee9d7d3b956c52b144cd582279e9d673944057bf86bb079761af29ec1aa",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏法术候选的卡底完整可见，标题与灰色确认按钮分居候选上下。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-法术卡已选待确认.png",
+      "sha256": "91a0bdde503ab6036e3ad7dce2324ff04ea0042b6cd505fb3f47d8ae51cd7c69",
+      "entryPath": "04-弃牌法术已选-横屏.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "contract": "旧clamp(88px,min(7.2vw,12.5vh),132px)、居中多行纵滚40vh、上标题下动作、选中抬升及贴边ring",
+        "actualDifference": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。",
+        "authorization": "恢复未经授权改版；padding修正仅恢复卡底可见，不改卡尺寸。"
+      },
+      "observations": [
+        "横屏法术候选的金色选中边界贴合原比例卡面，卡底完整。",
+        "下方橙色确认按钮保留独立槽位，没有新增侧栏或底部检视行。"
+      ],
+      "playerNextStep": "点击橙色确认。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原牌面承担对象信息，贴边选中轮廓与下方确认分工明确，无额外勾选标记/检视行。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原卡池尺寸及纵滚恢复",
+          "assessment": "可见构图符合旧源码合同；仅box-content修正原padding裁切，以及用户明确保留的源比例/高对比/去底框；未出现侧栏、大卡横轨、Check或底部inspect行。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:22,345-348,426-431,458-470",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-法术卡已选待确认.png",
+      "actualReadSha256": "91a0bdde503ab6036e3ad7dce2324ff04ea0042b6cd505fb3f47d8ae51cd7c69",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏已选法术的金色轮廓贴合卡边，完整卡底与下方确认按钮保持间隔。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793537707962-ge7xsw\\深红系带目标选择-桌面.png",
+      "sha256": "6fa028171894f8784719f7df875de71efb128a0b1949f68ca0e64c775f05cc74",
+      "entryPath": "05-深红系带玩家候选.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复原owner；状态身份以持有人卡片及本体选中表达。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "contract": "原完整GameModal、玩家卡片或持有人内状态本体、下方动作",
+        "actualDifference": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。",
+        "authorization": "恢复原owner；状态身份以持有人卡片及本体选中表达。"
+      },
+      "observations": [
+        "完整深色玩家选择弹窗居中；标题“选择施加深红系带的对手”，中间P2敌方卡片，底部确认灰色。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "点击P2敌方卡片。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原完整弹窗或原技能槽承担既有职责，未增加竞争装饰。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原完整玩家/状态或牌桌owner恢复",
+          "assessment": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793535584519-bm3cup\\深红系带目标选择-桌面.png",
+      "actualReadSha256": "6fa028171894f8784719f7df875de71efb128a0b1949f68ca0e64c775f05cc74",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793536182905-mck9dx\\深红系带目标选择-桌面.png",
+        "sha256": "6fa028171894f8784719f7df875de71efb128a0b1949f68ca0e64c775f05cc74",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793535584519-bm3cup\\深红系带目标选择-桌面.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完整玩家选择弹窗内的敌方玩家卡片清楚可见，确认按钮位于候选下方。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793537707962-ge7xsw\\深红系带对手已选待确认-桌面.png",
+      "sha256": "84343b8795ccf4c769a036f6e97ad4dd8b822669e0acb3b030a915515726aa8f",
+      "entryPath": "06-深红系带玩家已选.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复原owner；状态身份以持有人卡片及本体选中表达。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "contract": "原完整GameModal、玩家卡片或持有人内状态本体、下方动作",
+        "actualDifference": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。",
+        "authorization": "恢复原owner；状态身份以持有人卡片及本体选中表达。"
+      },
+      "observations": [
+        "P2敌方卡片出现贴边黄色轮廓，确认变橙；标题、玩家名和敌方关系可见。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "点击确认向已选对手施放。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原完整弹窗或原技能槽承担既有职责，未增加竞争装饰。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原完整玩家/状态或牌桌owner恢复",
+          "assessment": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793535584519-bm3cup\\深红系带对手已选待确认-桌面.png",
+      "actualReadSha256": "84343b8795ccf4c769a036f6e97ad4dd8b822669e0acb3b030a915515726aa8f",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793536182905-mck9dx\\深红系带对手已选待确认-桌面.png",
+        "sha256": "84343b8795ccf4c769a036f6e97ad4dd8b822669e0acb3b030a915515726aa8f",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793535584519-bm3cup\\深红系带对手已选待确认-桌面.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "敌方玩家卡片出现贴边选中轮廓，标题与下方确认按钮清楚可见。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793537696114-oy6toq\\瓦图姆之风-状态效果候选.png",
+      "sha256": "8a099f449cec25a272ac6df8ac6a87b0f811664145402595abc1ac578b93f37b",
+      "entryPath": "07-状态候选-桌面.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "contract": "原完整GameModal与持有人卡片/状态本体选择",
+        "actualDifference": "保留原完整深色状态选择器及持有人内候选，仅单持有人采用用户允许的紧凑尺寸；当前按钮实际为确认，没有新增侧栏或检视行。",
+        "authorization": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。"
+      },
+      "observations": [
+        "完整深色紧凑弹窗保留标题、敌方持有人卡片、两枚金色状态候选及下方确认。",
+        "致盲说明浮层位于候选右侧，没有压住状态本体；当前图实际按钮文案为确认。"
+      ],
+      "playerNextStep": "点击敌方持有人卡片内要移除的状态后确认。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "持有人卡片承接状态本体；金色候选/绿色选中只强化同一本体，说明浮层未盖候选。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "单持有人compact",
+          "assessment": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793537696114-oy6toq\\瓦图姆之风-状态效果候选.png",
+      "actualReadSha256": "8a099f449cec25a272ac6df8ac6a87b0f811664145402595abc1ac578b93f37b",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两枚状态候选位于敌方持有人卡片内，右侧致盲说明没有遮住候选且下方确认按钮可见。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793537696114-oy6toq\\瓦图姆之风-状态已选待确认.png",
+      "sha256": "e4ecb653e8e361f671dca8708aa802a1d19bb65309cd71b44fda5f4ba5bda6a3",
+      "entryPath": "08-状态已选-桌面.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "contract": "原完整GameModal与持有人卡片/状态本体选择",
+        "actualDifference": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。",
+        "authorization": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。"
+      },
+      "observations": [
+        "致盲本体显示绿色贴边选中边界和原有小勾，旁边另一状态仍保持金色候选边界。",
+        "持有人归属清楚，下方确认完整可见且没有新增检视行。"
+      ],
+      "playerNextStep": "确认移除所选状态。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "持有人卡片承接状态本体；金色候选/绿色选中只强化同一本体，说明浮层未盖候选。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "单持有人compact",
+          "assessment": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793537696114-oy6toq\\瓦图姆之风-状态已选待确认.png",
+      "actualReadSha256": "e4ecb653e8e361f671dca8708aa802a1d19bb65309cd71b44fda5f4ba5bda6a3",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "敌方持有人的致盲图标呈绿色选中轮廓，另一状态仍为金色候选且下方确认按钮完整可见。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793537696114-oy6toq\\瓦图姆之风-横屏-状态效果候选.png",
+      "sha256": "faeae9950e325b9079e7c4e269a060aa5cb89816c882f16e13b3b2d255161426",
+      "entryPath": "09-状态候选-横屏.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "contract": "原完整GameModal与持有人卡片/状态本体选择",
+        "actualDifference": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。",
+        "authorization": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。"
+      },
+      "observations": [
+        "横屏compact弹窗中P2持有人及两枚状态可见；左侧致盲说明浮层停在图标左侧，没有遮住候选；底部跳过可见。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "点选状态图标，或跳过。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "持有人卡片承接状态本体；金色候选/绿色选中只强化同一本体，说明浮层未盖候选。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "单持有人compact",
+          "assessment": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793535576313-o5sd7x\\瓦图姆之风-横屏-状态效果候选.png",
+      "actualReadSha256": "faeae9950e325b9079e7c4e269a060aa5cb89816c882f16e13b3b2d255161426",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793536172336-r1j5h2\\瓦图姆之风-横屏-状态效果候选.png",
+        "sha256": "faeae9950e325b9079e7c4e269a060aa5cb89816c882f16e13b3b2d255161426",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793535576313-o5sd7x\\瓦图姆之风-横屏-状态效果候选.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏紧凑状态弹窗保留持有人与两枚状态图标，左侧说明浮层没有挡住候选。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793537696114-oy6toq\\瓦图姆之风-横屏-状态已选待确认.png",
+      "sha256": "0dd6bcb88a49ba8ef9d511bad697507b0d01c349d37195cfb75cc4799a63880d",
+      "entryPath": "10-状态已选-横屏.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "contract": "原完整GameModal与持有人卡片/状态本体选择",
+        "actualDifference": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。",
+        "authorization": "父线程锁定的09单持有人compact授权；无新增侧栏或候选重排。"
+      },
+      "observations": [
+        "横屏P2卡内仅致盲显示绿色选中轮廓/勾；另一状态保持候选边界；下方橙色确认清楚。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "点击确认。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "持有人卡片承接状态本体；金色候选/绿色选中只强化同一本体，说明浮层未盖候选。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "单持有人compact",
+          "assessment": "单持有人使用用户明确允许的compact尺寸；仍有完整深色背景、标题、持有人、状态候选和下方动作。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,607-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793535576313-o5sd7x\\瓦图姆之风-横屏-状态已选待确认.png",
+      "actualReadSha256": "0dd6bcb88a49ba8ef9d511bad697507b0d01c349d37195cfb75cc4799a63880d",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793536172336-r1j5h2\\瓦图姆之风-横屏-状态已选待确认.png",
+        "sha256": "0dd6bcb88a49ba8ef9d511bad697507b0d01c349d37195cfb75cc4799a63880d",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793535576313-o5sd7x\\瓦图姆之风-横屏-状态已选待确认.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏致盲图标的绿色选中轮廓清楚，下方确认按钮完整可见。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793537696114-oy6toq\\本次抽牌复用放大阅读-桌面.png",
+      "sha256": "4d0d9bdef7d735982a3fab35f42350a707ccffb6e6c49d11b2bd31d611f79155",
+      "entryPath": "29-卡牌候选复用放大阅读.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "用户明确保留源比例/高对比；复用原reader。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:443-474（候选源）; 原卡阅读器复用合同",
+        "contract": "候选选择与原卡阅读分开，原reader提供完整卡面与显式关闭",
+        "actualDifference": "完整源比例原卡与关闭入口可见，无inspect底行；图只能证明阅读器可见，长按/右键触发及关闭不选牌由行为证据另外验证。",
+        "authorization": "用户明确保留源比例/高对比；复用原reader。"
+      },
+      "observations": [
+        "“玩得六啊！”原卡完整居中放大，卡名、费用、骰子图像及完整效果文字可见；右上关闭叉可见；底层仍是“选择放回牌库的牌”。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "关闭阅读器，返回候选再选择；此图本身不证明关闭后的选择状态。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "原卡阅读为最前层，关闭入口依附卡片；底层选择被压暗。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "阅读卡面竖直居中，关闭叉锚定右上。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "正式卡面承担阅读信息，只有关闭入口，无额外说明壳。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "阅读层按规则暂时覆盖中部内容，关闭叉为明确返回入口；底层槽位保留。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原阅读器复用",
+          "assessment": "完整源比例原卡与关闭入口可见，无inspect底行；图只能证明阅读器可见，长按/右键触发及关闭不选牌由行为证据另外验证。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "阅读层按规则暂时覆盖中部内容，关闭叉为明确返回入口；底层槽位保留。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:443-474（候选源）; 原卡阅读器复用合同",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793535576313-o5sd7x\\本次抽牌复用放大阅读-桌面.png",
+      "actualReadSha256": "4d0d9bdef7d735982a3fab35f42350a707ccffb6e6c49d11b2bd31d611f79155",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793536172336-r1j5h2\\本次抽牌复用放大阅读-桌面.png",
+        "sha256": "4d0d9bdef7d735982a3fab35f42350a707ccffb6e6c49d11b2bd31d611f79155",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793535576313-o5sd7x\\本次抽牌复用放大阅读-桌面.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完整原卡居中放大显示，卡名与效果文字可读且右上关闭入口清楚可见。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-弃牌候选原阅读界面.png",
+      "sha256": "c62fdb631a68996d72cd5e9ea9d6076f45f7290a9284a072ef0a9fddea5f1da8",
+      "entryPath": "44-手机横屏-弃牌候选原阅读界面.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "用户明确保留源比例/高对比；复用原reader。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:443-474（候选源）; 原卡阅读器复用合同",
+        "contract": "候选选择与原卡阅读分开，原reader提供完整卡面与显式关闭",
+        "actualDifference": "完整源比例原卡与原关闭入口清楚，没有新增底部检视行；静态图只证明阅读状态，触发与关闭行为由独立行为证据验证。",
+        "authorization": "用户明确保留源比例/高对比；复用原reader。"
+      },
+      "observations": [
+        "横屏原阅读器完整呈现法瑞拉之牙的卡名、准备效果及施放效果。",
+        "右上关闭叉清楚，底层原选择器压暗保留；静态图只证明当前阅读状态。"
+      ],
+      "playerNextStep": "点关闭叉返回选择；此图本身不证明关闭不选牌。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "原卡阅读为最前层，关闭入口依附卡片；底层选择被压暗。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "阅读卡面竖直居中，关闭叉锚定右上。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "正式卡面承担阅读信息，只有关闭入口，无额外说明壳。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "阅读层按规则暂时覆盖中部内容，关闭叉为明确返回入口；底层槽位保留。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原阅读器复用",
+          "assessment": "完整源比例原卡与关闭入口可见，无inspect底行；图只能证明阅读器可见，长按/右键触发及关闭不选牌由行为证据另外验证。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "阅读层按规则暂时覆盖中部内容，关闭叉为明确返回入口；底层槽位保留。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:443-474（候选源）; 原卡阅读器复用合同",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-弃牌候选原阅读界面.png",
+      "actualReadSha256": "c62fdb631a68996d72cd5e9ea9d6076f45f7290a9284a072ef0a9fddea5f1da8",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏原阅读界面完整显示法术卡面与两段效果，右上关闭入口清楚且没有遮住卡名。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-弃牌候选原阅读界面.png",
+      "sha256": "1257d43d73458b952d142e891eb2b0f69f190514cf530635c46739c879506b18",
+      "entryPath": "46-桌面-弃牌候选原阅读界面.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "用户明确保留源比例/高对比；复用原reader。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:443-474（候选源）; 原卡阅读器复用合同",
+        "contract": "候选选择与原卡阅读分开，原reader提供完整卡面与显式关闭",
+        "actualDifference": "完整源比例原卡与原关闭入口清楚，没有新增底部检视行；静态图只证明阅读状态，触发与关闭行为由独立行为证据验证。",
+        "authorization": "用户明确保留源比例/高对比；复用原reader。"
+      },
+      "observations": [
+        "桌面原阅读器以完整源比例显示法瑞拉之牙，卡名及两段效果均清楚。",
+        "右上关闭叉未遮住卡名或正文，底层保留原选择器而没有新增检视行。"
+      ],
+      "playerNextStep": "关闭阅读器，再选择法术；此图本身不证明关闭不选牌。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "原卡阅读为最前层，关闭入口依附卡片；底层选择被压暗。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "阅读卡面竖直居中，关闭叉锚定右上。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "正式卡面承担阅读信息，只有关闭入口，无额外说明壳。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "阅读层按规则暂时覆盖中部内容，关闭叉为明确返回入口；底层槽位保留。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原阅读器复用",
+          "assessment": "完整源比例原卡与关闭入口可见，无inspect底行；图只能证明阅读器可见，长按/右键触发及关闭不选牌由行为证据另外验证。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "阅读层按规则暂时覆盖中部内容，关闭叉为明确返回入口；底层槽位保留。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:443-474（候选源）; 原卡阅读器复用合同",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-弃牌候选原阅读界面.png",
+      "actualReadSha256": "1257d43d73458b952d142e891eb2b0f69f190514cf530635c46739c879506b18",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面原阅读界面的完整法术卡面居中显示，卡名与两段效果可读且右上关闭入口没有压住正文。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\手机横屏-宇宙感知已选待结算.png",
+      "sha256": "f246e1326563db3ce6b51e0ca000a27e0e893fd46b56a0ad4676886d1db71aab",
+      "entryPath": "50-手机横屏-宇宙感知已选待结算.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复原牌桌构图；不把等比缩放当成缺陷。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90::原牌桌技能槽/HandArea/RightSidebar合同",
+        "contract": "真实牌桌上的技能槽选择与原右侧结算入口",
+        "actualDifference": "当前宇宙感知选中通过原技能槽边界表达，动作在原右侧；未新增选择面板。",
+        "authorization": "恢复原牌桌构图；不把等比缩放当成缺陷。"
+      },
+      "observations": [
+        "横屏牌桌宇宙感知技能槽红色选中轮廓可见；右侧锁定骰与橙色结算攻击入口可见，弃牌区法瑞拉之牙仍在原位置。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "点击结算攻击进入技能结算。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "所选技能与右侧结算入口建立当前动作，主板保持旧构图。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原完整弹窗或原技能槽承担既有职责，未增加竞争装饰。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前未打开模态交互，原牌桌槽位可见。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "原右侧橙色结算攻击可见。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原完整玩家/状态或牌桌owner恢复",
+          "assessment": "当前宇宙感知选中通过原技能槽边界表达，动作在原右侧；未新增选择面板。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前未打开模态交互，原牌桌槽位可见。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90::原牌桌技能槽/HandArea/RightSidebar合同",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793535576313-o5sd7x\\手机横屏-宇宙感知已选待结算.png",
+      "actualReadSha256": "f246e1326563db3ce6b51e0ca000a27e0e893fd46b56a0ad4676886d1db71aab",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793536172336-r1j5h2\\手机横屏-宇宙感知已选待结算.png",
+        "sha256": "f246e1326563db3ce6b51e0ca000a27e0e893fd46b56a0ad4676886d1db71aab",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793535576313-o5sd7x\\手机横屏-宇宙感知已选待结算.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏牌桌的宇宙感知技能选中轮廓可见，右侧结算攻击入口清楚。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793537696114-oy6toq\\旧共有牌再见-状态候选.png",
+      "sha256": "a254a9ccd6d80c9b605d75fa9468e0ca7cce3afc058a1aaff70dc54ad5b72f5c",
+      "entryPath": "51-旧共有牌再见-状态候选.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复原owner；状态身份以持有人卡片及本体选中表达。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "contract": "原完整GameModal、玩家卡片或持有人内状态本体、下方动作",
+        "actualDifference": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。",
+        "authorization": "恢复原owner；状态身份以持有人卡片及本体选中表达。"
+      },
+      "observations": [
+        "原完整状态弹窗中P1自己与P2敌方并列，各自卡片内都有致盲图标；两图标均为金色候选边界，底部取消及灰色确认。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "在对应持有人卡片中点选状态图标。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "自己/对手卡片同排对齐，状态本体属于各自持有人；底部动作共轴。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "持有人卡片承接状态本体；金色候选/绿色选中只强化同一本体，说明浮层未盖候选。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原完整玩家/状态或牌桌owner恢复",
+          "assessment": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793535576313-o5sd7x\\旧共有牌再见-状态候选.png",
+      "actualReadSha256": "a254a9ccd6d80c9b605d75fa9468e0ca7cce3afc058a1aaff70dc54ad5b72f5c",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793536172336-r1j5h2\\旧共有牌再见-状态候选.png",
+        "sha256": "a254a9ccd6d80c9b605d75fa9468e0ca7cce3afc058a1aaff70dc54ad5b72f5c",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793535576313-o5sd7x\\旧共有牌再见-状态候选.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "自己与敌方的持有人卡片并列，各自状态图标完整可见且尚未选中。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793537696114-oy6toq\\旧共有牌再见-实际持有人已选.png",
+      "sha256": "88533e431006db9b20c3ed501474474362d63736114b9a427f7b3d38e9ec47c2",
+      "entryPath": "52-旧共有牌再见-实际持有人已选.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_rejected_three_readonly",
+      "reviewMode": "same-byte-carried-forward-private-original-review",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复原owner；状态身份以持有人卡片及本体选中表达。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "contract": "原完整GameModal、玩家卡片或持有人内状态本体、下方动作",
+        "actualDifference": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。",
+        "authorization": "恢复原owner；状态身份以持有人卡片及本体选中表达。"
+      },
+      "observations": [
+        "P2敌方卡片内的致盲图标出现绿色选中边界/勾；P1自己卡片内致盲仍为金色未选候选；确认变橙。实际持有人由卡片归属和本体高亮直接识别。",
+        "未见本轮候选被预览误遮、关键图像破损、明显比例变形或内部ID泄漏。"
+      ],
+      "playerNextStep": "点击确认移除P2持有的所选状态。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、现实候选、下方动作形成单一选择任务，背景按阻塞合同保留。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "自己/对手卡片同排对齐，状态本体属于各自持有人；底部动作共轴。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "持有人卡片承接状态本体；金色候选/绿色选中只强化同一本体，说明浮层未盖候选。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "本轮当前动作位于前景候选下方；背景动作禁用/压暗符合阻塞层合同。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原完整玩家/状态或牌桌owner恢复",
+          "assessment": "当前仍为完整深色背景及原玩家/状态选择结构；51/52双持有人保持两卡并列，选中只落在实际持有人图标。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前阻塞选择层覆盖中部，背景保留/压暗；决策候选与动作在前景，按原弹窗合同恢复后返回牌桌。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx:514-547,549-648",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793535576313-o5sd7x\\旧共有牌再见-实际持有人已选.png",
+      "actualReadSha256": "88533e431006db9b20c3ed501474474362d63736114b9a427f7b3d38e9ec47c2",
+      "readDisposition": "carried-forward-same-bytes-within-current-restoration",
+      "carriedForward": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-visual-a.json",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793536172336-r1j5h2\\旧共有牌再见-实际持有人已选.png",
+        "sha256": "88533e431006db9b20c3ed501474474362d63736114b9a427f7b3d38e9ec47c2",
+        "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793535576313-o5sd7x\\旧共有牌再见-实际持有人已选.png",
+        "reviewer": "/root/doctor_rejected_three_readonly"
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "只有敌方持有人卡片内的致盲图标呈绿色选中轮廓，自己的同类图标仍未选中。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-宇宙感知已选待结算.png",
+      "sha256": "c2490845c677e5ea98d53c46dfdde5ad02d74e06344fa0238d8e3285037d0ddf",
+      "entryPath": "53-桌面-宇宙感知已选待结算.png",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_a2",
+      "reviewMode": "private-original-image",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "恢复原牌桌构图；不把等比缩放当成缺陷。",
+        "scope": "只判本图恢复旧UI/明确授权差异的可见结果；不以个人偏好重开设计"
+      },
+      "oldUiComparison": {
+        "reference": "c057cfe76afab5c2078c129183a02d6f1fb21a90::原牌桌技能槽/HandArea/RightSidebar合同",
+        "contract": "真实牌桌上的技能槽选择与原右侧结算入口",
+        "actualDifference": "技能仍通过原牌桌槽位红色边界表达选中，右侧原结算入口和底部单张手牌保留，没有新增选择面板。",
+        "authorization": "恢复原牌桌构图；不把等比缩放当成缺陷。"
+      },
+      "observations": [
+        "宇宙感知技能槽以原红色边界显示已选，右侧结算攻击按钮为橙色。",
+        "底部单张手牌、左下牌库、右下弃牌与法术准备区均留在原牌桌槽位。"
+      ],
+      "playerNextStep": "点击结算攻击。",
+      "layoutAudit": {
+        "scopeSource": "父线程锁定的用户恢复未经授权Doctor UI要求及c057旧源码合同",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "所选技能与右侧结算入口建立当前动作，主板保持旧构图。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "observation": "标题、候选与动作共享中轴；未见越界或同层裁切。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "observation": "原完整弹窗或原技能槽承担既有职责，未增加竞争装饰。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActionCarrier": 15,
+        "layoutIntegrity": 15,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "score": 96,
+      "protectedSlots": [
+        {
+          "slot": "token/状态/资源",
+          "result": "preserved-or-modal-background",
+          "observation": "当前未打开模态交互，原牌桌槽位可见。"
+        },
+        {
+          "slot": "玩家面板",
+          "result": "preserved",
+          "observation": "顶部对手面板仍在原位置；选择态持有人/玩家由前景卡片表达。"
+        },
+        {
+          "slot": "阶段条",
+          "result": "preserved",
+          "observation": "左侧原阶段条仍可见。"
+        },
+        {
+          "slot": "骰盘",
+          "result": "preserved",
+          "observation": "右侧原竖骰盘仍可见，未被新增侧栏替换。"
+        },
+        {
+          "slot": "牌库/弃牌堆",
+          "result": "preserved",
+          "observation": "原左下牌库与右下弃牌堆槽位保留；阅读层仅临时置顶。"
+        },
+        {
+          "slot": "手牌/持有物",
+          "result": "preserved-or-rule-empty",
+          "observation": "有牌截图保留原底部手牌；05/06无可见手牌，不能凭图反推隐藏了可用牌；本轮未改手牌占位。"
+        },
+        {
+          "slot": "主动作入口",
+          "result": "preserved",
+          "observation": "原右侧橙色结算攻击可见。"
+        },
+        {
+          "slot": "当前prompt",
+          "result": "preserved",
+          "observation": "顶部中文标题或所选技能可直接识别当前任务。"
+        },
+        {
+          "slot": "日志/目标摘要",
+          "result": "not-competing",
+          "observation": "没有展开日志遮挡；当前标题、持有人卡或所选技能承担本步目标摘要。"
+        },
+        {
+          "slot": "来源法术/准备区",
+          "result": "preserved-or-modal-background",
+          "observation": "博士法术区、准备区、提示板仍在原牌桌位置；当前选择/阅读层暂时覆盖中部属于既有阻塞合同。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "change": "删除未经授权大卡、侧栏、inspect行、Check",
+          "ruleObject": "原牌候选/阅读/选择态",
+          "assessment": "对象仍由正式牌面、原reader与原选中边界承接，未把对象替换为文字。"
+        },
+        {
+          "change": "原完整玩家/状态或牌桌owner恢复",
+          "assessment": "当前宇宙感知选中通过原技能槽边界表达，动作在原右侧；未新增选择面板。"
+        },
+        {
+          "change": "背景对象暂时被交互层遮挡",
+          "assessment": "当前未打开模态交互，原牌桌槽位可见。"
+        }
+      ],
+      "hardFailures": [],
+      "issues": [],
+      "elementResponsibilityAudit": {
+        "ledger": "本图职责表：prompt=标题或原技能；对象=原牌/玩家卡/持有人内状态；动作=原确认/取消/跳过或结算；阅读=原reader。对照c057cfe76afab5c2078c129183a02d6f1fb21a90::原牌桌技能槽/HandArea/RightSidebar合同",
+        "uncoveredElements": [],
+        "decisions": "保留正式对象及既有动作承载，只有明确授权差异；不新增替代UI。"
+      },
+      "evidenceLimits": [
+        "像素旧图已丢失；这里只对照实际读取的c057源码合同，不声称像素一致。",
+        "静态图只证明可见状态；规则数值、长按/右键触发、关闭不选牌和最终结算另由真实行为证据验证。"
+      ],
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793537696114-oy6toq\\桌面-宇宙感知已选待结算.png",
+      "actualReadSha256": "c2490845c677e5ea98d53c46dfdde5ad02d74e06344fa0238d8e3285037d0ddf",
+      "readDisposition": "reread-final-current-original",
+      "carriedForward": false,
+      "carriedForwardFrom": null,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面宇宙感知技能槽的红色选中轮廓清楚，右侧橙色结算入口与原手牌及牌库槽位保持可见。"
+    }
+  ],
+  "refreshBasis": "搜索修复后最终plan逐SHA对照；9张变化原图逐张实际重读，8张同字节保留本轮实际已读路径；旧被否决49图0沿用。",
+  "currentPlan": "temp/doctor-restoration-plan.json",
+  "sourcePlan": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-plan.json",
+  "sourcePlanSha256": "08b080e303007453bb840d067bba1c0c9acaeddb5ec8d51fc3d1802bb6511345",
+  "run": "e2e-1793537696114-oy6toq,e2e-1793537707962-ge7xsw"
+}

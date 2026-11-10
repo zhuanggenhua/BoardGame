@@ -868,7 +868,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
         expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");
         expect(boardSource).toContain("const focusedRegion = compactRegionTip || battleProtectedRegionIds.length > 0 ? undefined : displayHoveredRegion ?? displaySelectedRegion;");
-        expect(boardSource).toContain('if (compactRegionTip && core.explicitRegionId) {');
+        expect(boardSource).toContain('const selectedRegionId = turnSelectedRegionId ?? (compactRegionTip ? core.explicitRegionId : null) ?? null;');
+        expect(boardSource).toContain("if (selectedRegionId) applyTone(selectedRegionId, 'selected');");
         expect(boardSource).toContain('const selectedRegion = core.explicitRegionId');
         expect(boardSource).toContain("'data-map-selected': core.explicitRegionId ?? '',");
         expect(boardSource).not.toContain('activePassageSummary');
@@ -1050,12 +1051,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("filter: 'brightness(1.12) saturate(1.12)'");
         expect(boardSource).toContain("filter: 'brightness(1.04) saturate(1.05)'");
         expect(boardSource).toContain('data-testid={`qidahen-pending-committed-highlight-${token.id}`}');
-        expect(boardSource).toContain("className={`pointer-events-none absolute inset-0 ${tokenShapeClass}`}");
-        expect(boardSource).toContain("border: pendingCommittedSelected ? '2px solid #ffe191' : tutorialRecommended ? '2px solid #fff8dc' : '1.5px solid #69d873'");
         expect(boardSource).toContain('data-testid="qidahen-committed-troop-check"');
         expect(boardSource).toContain('const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable || Boolean(regionChoice?.allowed);');
         expect(boardSource).toContain('const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;');
-        expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : undefined');
+        expect(boardSource).toContain('zIndex: tutorialResultArtilleryFocus ? 72 : tokenSelectable ? 64 : inArmyGroup ? 16 : 14');
         expect(boardSource).toContain('className="pointer-events-auto absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"');
         expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip && !pendingCommittedSelectionActive ? selectedRegion : undefined;");
         expect(boardSource).toContain("const displayHoveredRegion = pendingCommittedSelectionActive ? undefined : hoveredRegion;");

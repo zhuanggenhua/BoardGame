@@ -1,0 +1,164 @@
+[
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp?v=68d0df8a",
+    "status": 200,
+    "bytes": 2039890,
+    "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+    "ttfbMs": 2326,
+    "totalMs": 4874,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": "primary-cloud-server",
+    "size": [
+      7380,
+      4720
+    ],
+    "asset": "ability-cards",
+    "requestVersion": "current-client-old-version",
+    "matchesSelected": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp?v=df14a9fd",
+    "status": 200,
+    "bytes": 2039890,
+    "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+    "ttfbMs": 2213,
+    "totalMs": 28279,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": "primary-cloud-server",
+    "size": [
+      7380,
+      4720
+    ],
+    "asset": "ability-cards",
+    "requestVersion": "new-version",
+    "matchesSelected": true
+  },
+  {
+    "url": "http://8.148.71.102/official/i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp",
+    "status": 200,
+    "bytes": 2039890,
+    "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+    "ttfbMs": 170,
+    "totalMs": 1796,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": null,
+    "size": [
+      7380,
+      4720
+    ],
+    "asset": "ability-cards",
+    "requestVersion": "android-direct-origin",
+    "matchesSelected": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=11b4c2e5",
+    "status": 200,
+    "bytes": 859280,
+    "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+    "ttfbMs": 1736,
+    "totalMs": 3563,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": "primary-cloud-server",
+    "size": [
+      4005,
+      2476
+    ],
+    "asset": "player-board",
+    "requestVersion": "current-client-old-version",
+    "matchesSelected": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=cc31558a",
+    "status": 200,
+    "bytes": 859280,
+    "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+    "ttfbMs": 2711,
+    "totalMs": 18369,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": "primary-cloud-server",
+    "size": [
+      4005,
+      2476
+    ],
+    "asset": "player-board",
+    "requestVersion": "new-version",
+    "matchesSelected": true
+  },
+  {
+    "url": "http://8.148.71.102/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp",
+    "status": 200,
+    "bytes": 859280,
+    "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+    "ttfbMs": 137,
+    "totalMs": 1143,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": null,
+    "size": [
+      4005,
+      2476
+    ],
+    "asset": "player-board",
+    "requestVersion": "android-direct-origin",
+    "matchesSelected": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp?v=30e1b620",
+    "status": 200,
+    "bytes": 186676,
+    "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+    "ttfbMs": 1383,
+    "totalMs": 2227,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": "primary-cloud-server",
+    "size": [
+      967,
+      1804
+    ],
+    "asset": "tip",
+    "requestVersion": "current-client-old-version",
+    "matchesSelected": true
+  },
+  {
+    "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp?v=5299d4ee",
+    "status": 200,
+    "bytes": 186676,
+    "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+    "ttfbMs": 1481,
+    "totalMs": 2395,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": "primary-cloud-server",
+    "size": [
+      967,
+      1804
+    ],
+    "asset": "tip",
+    "requestVersion": "new-version",
+    "matchesSelected": true
+  },
+  {
+    "url": "http://8.148.71.102/official/i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp",
+    "status": 200,
+    "bytes": 186676,
+    "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+    "ttfbMs": 148,
+    "totalMs": 356,
+    "contentType": "image/webp",
+    "cacheControl": "public, max-age=31536000, immutable",
+    "originRoute": null,
+    "size": [
+      967,
+      1804
+    ],
+    "asset": "tip",
+    "requestVersion": "android-direct-origin",
+    "matchesSelected": true
+  }
+]

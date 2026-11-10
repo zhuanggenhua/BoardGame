@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-25T02:02:00.000Z",
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "从正式山屋惊魂教程入口开始，由真实浏览器完成移动、探索、事件骰、兔脚重掷、确认、队友预兆确认和作祟触发。",
+      "status": "PASS",
+      "evidence": [
+        "result.json",
+        "同一次运行 failures=[]；包含 rabbit-foot-result、队友回合交接和 haunt-hero-reader"
+      ]
+    },
+    {
+      "requirement": "视频中保留真实物理骰子的滚动过程、停稳结果和结果确认步骤。",
+      "status": "PASS",
+      "evidence": [
+        "result.json boundaries.before-finalize-event-roll",
+        "00-rabbit-foot-result-confirm.png；确认按钮在骰子停稳后可操作"
+      ]
+    },
+    {
+      "requirement": "视频覆盖作祟公开后英雄剧本书的开场、翻页、目标页、关闭，并回到稳定可操作牌桌。",
+      "status": "PASS",
+      "evidence": [
+        "result.json points 05-hero-reader-opening 至 09-main-path-tutorial-closeout",
+        "09-main-path-tutorial-closeout.png；tutorial inactive、phase=haunt、currentPlayer=0、currentExplorerRoomId=upper-landing"
+      ]
+    },
+    {
+      "requirement": "最终交付视频来自本次 PASS 运行，文件非空且不是失败诊断媒体。",
+      "status": "PASS",
+      "evidence": [
+        "video/408aecdffee17a20b9122f45d202b078.webm",
+        "文件大小 15760684 bytes；与 result.json 同目录同次运行"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-25T01-56-53-500Z\\video\\408aecdffee17a20b9122f45d202b078.webm"
+  ]
+}

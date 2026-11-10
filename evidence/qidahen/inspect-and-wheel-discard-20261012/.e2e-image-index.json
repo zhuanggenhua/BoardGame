@@ -1,0 +1,43 @@
+{
+  "title": "七大恨地点军备详情与轮盘进攻调度弃牌",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "media/前态-地图地点与军备悬浮提示可见.png",
+      "chainId": "qidahen-inspect-and-wheel-discard",
+      "chainStep": "1",
+      "sourceRun": "e2e/qidahen/inspect-and-wheel-discard.e2e.ts:地图地点与军备弃牌可查看且轮盘进攻调度先弃牌",
+      "sourceDir": "evidence/qidahen/inspect-and-wheel-discard-20261012/media",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "悬浮显示",
+      "description": "玩家悬浮地图皮岛后出现地点详情浮层，同时大明条旁出现查看军备与弃牌堆的悬浮提示。"
+    },
+    {
+      "path": "media/中态-详情弹窗显示军备与弃牌堆.png",
+      "chainId": "qidahen-inspect-and-wheel-discard",
+      "chainStep": "2",
+      "sourceRun": "e2e/qidahen/inspect-and-wheel-discard.e2e.ts:地图地点与军备弃牌可查看且轮盘进攻调度先弃牌",
+      "sourceDir": "evidence/qidahen/inspect-and-wheel-discard-20261012/media",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击悬浮窗打开详情",
+      "description": "玩家点击悬浮窗后弹出势力详情，完整军备和弃牌堆都在弹窗里，地图镜头没有切换。"
+    },
+    {
+      "path": "media/后态-轮盘进攻调度弃牌提示可用.png",
+      "chainId": "qidahen-inspect-and-wheel-discard",
+      "chainStep": "3",
+      "sourceRun": "e2e/qidahen/inspect-and-wheel-discard.e2e.ts:地图地点与军备弃牌可查看且轮盘进攻调度先弃牌",
+      "sourceDir": "evidence/qidahen/inspect-and-wheel-discard-20261012/media",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击轮盘走三格进入弃牌",
+      "description": "玩家点击轮盘走三格落到进攻调度后，先出现需弃一张手牌的提示和确认弃牌，还没有进入选部队。"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import { cloneSpecialTroopStacksAsPieces } from './troopCompat';
 import { QIDAHEN_RUNTIME_REGION_BY_ID } from '../ui/mapGraph';
 import type { QidahenCore, QidahenScenarioId, QidahenSpecialTroopStack } from './types';
 
-type QidahenScenarioRuntimeRegionPreset = Partial<Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'population' | 'note'>> & {
+type QidahenScenarioRuntimeRegionPreset = Partial<Pick<QidahenCore['regions'][number], 'controller' | 'diplomacyMarkerFaction' | 'diplomacyMarkerSide' | 'troops' | 'population' | 'note'>> & {
     specialTroops?: QidahenSpecialTroopStack[];
 };
 
@@ -16,6 +16,8 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
     'post-sarhu-1619': {
         duoyan: {
             controller: 'ming',
+            diplomacyMarkerFaction: 'ming',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('ming', 'post-sarhu-1619-duoyan', 1, 2, 'cavalry')],
@@ -46,36 +48,48 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
         },
         'city-region-5': {
             controller: 'jin',
+            diplomacyMarkerFaction: 'jin',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildRegularTroopStack('jin', 'post-sarhu-1619-huifa', 1, 2)],
         },
         'city-region-6': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('mongol', 'post-sarhu-1619-zhalute', 1, 2, 'cavalry')],
         },
         'city-region-7': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 2,
             specialTroops: [buildRegularTroopStack('mongol', 'post-sarhu-1619-yehe', 1, 2)],
         },
         'city-region-8': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('mongol', 'post-sarhu-1619-balin', 1, 2, 'cavalry')],
         },
         'city-region-9': {
             controller: 'jin',
+            diplomacyMarkerFaction: 'jin',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildRegularTroopStack('jin', 'post-sarhu-1619-hada', 1, 2)],
         },
         'city-region-10': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('mongol', 'post-sarhu-1619-neikalkha', 1, 2, 'cavalry')],
@@ -88,6 +102,8 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
         },
         'xian-xing': {
             controller: 'ming',
+            diplomacyMarkerFaction: 'ming',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 0,
             specialTroops: [buildMercenaryTroopStack('ming', 'post-sarhu-1619-hamheung', 1, 2)],
@@ -129,24 +145,32 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
         },
         'city-region-16': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('mongol', 'post-sarhu-1619-keshiketeng', 1, 2, 'cavalry')],
         },
         'city-region-17': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('mongol', 'post-sarhu-1619-naiman', 1, 2, 'cavalry')],
         },
         'city-region-18': {
             controller: 'ming',
+            diplomacyMarkerFaction: 'ming',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 0,
             specialTroops: [buildMercenaryTroopStack('ming', 'post-sarhu-1619-pyongyang', 1, 2)],
         },
         'city-region-19': {
             controller: 'mongol',
+            diplomacyMarkerFaction: 'mongol',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 1,
             specialTroops: [buildMercenaryTroopStack('mongol', 'post-sarhu-1619-aohanbu', 1, 2, 'cavalry')],
@@ -209,6 +233,8 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
         },
         'city-region-29': {
             controller: 'ming',
+            diplomacyMarkerFaction: 'ming',
+            diplomacyMarkerSide: 'vassal',
             troops: 1,
             population: 0,
             specialTroops: [buildMercenaryTroopStack('ming', 'post-sarhu-1619-hanseong', 1, 2)],
@@ -708,6 +734,8 @@ export const applyQidahenScenarioRuntimeRegionPreset = (
         return {
             ...region,
             controller: override.controller ?? region.controller,
+            diplomacyMarkerFaction: override.diplomacyMarkerFaction ?? region.diplomacyMarkerFaction,
+            diplomacyMarkerSide: override.diplomacyMarkerSide ?? region.diplomacyMarkerSide,
             troops: override.troops ?? region.troops,
             population: override.population ?? region.population,
             note: override.note ?? region.note,

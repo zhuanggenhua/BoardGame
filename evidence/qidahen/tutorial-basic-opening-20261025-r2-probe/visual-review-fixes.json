@@ -1,0 +1,35 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_visual_final_b"
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r2-probe/media/03f-训练目标选择与等级提示.png",
+      "sha256": "157EC917894E1ACA58DE3D67D5A611021C411E3C67BF8E4EFBCBBAC1F8E9FFC9",
+      "status": "REVISE",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "REVISE"
+      },
+      "observation": "右侧列表已将两条“辽北·骑兵 1级→2级”分别标成“野战部队目标1”和“目标2”，不再重名；但面板最底部“皮岛·步兵 1级→2级·野战部队目标2”一行的说明文字被下边框截断，未完整显示。未见乱码，教程提示与列表没有互相遮挡。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r2-probe/media/03j-额外训练目标与结果.png",
+      "sha256": "15A98280F42FFF5A73682C9F2D6FE53437A9DD1767D5AE746651FD299565934E",
+      "status": "REVISE",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "REVISE"
+      },
+      "observation": "右侧面板中的“征兵训练”、已完成进度和结果文字均清楚可见，浅黄色结果浮层已不再遮挡标题或进度；但候选列表最底一行只露出上沿并被面板下边框截断，整行不可读。未见乱码。"
+    }
+  ]
+}

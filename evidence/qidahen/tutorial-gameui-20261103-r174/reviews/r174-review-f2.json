@@ -1,0 +1,51 @@
+{
+  "reviewer": "/root/r174_f2",
+  "status": "PASS",
+  "score": 94,
+  "issues": [],
+  "actualReadCount": 4,
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/40-upkeep-yehe-selected.png",
+      "sha256": "a07d022b44bba37175d44a207b10fad7d3e0bde5e9c5a8c66ba63d4afe73f02c",
+      "status": "PASS",
+      "observation": "叶赫部维护条位于手牌上方，已选牌名列出露营阵、火炮技术和银两；三张已选实牌抬起并以金边及已选标记区分，牌名和确认按钮完整可读。",
+      "checks": [
+        "target-visible：叶赫部与三张支付手牌身份明确",
+        "interaction-ui：金边与已选标记贴合实牌，确认按钮承接支付条",
+        "layout-readable：支付提示、牌名和已选实牌近邻且未裁切",
+        "no-error：目标区域未见破图或错误覆盖"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/41-hand-scroll-end.png",
+      "sha256": "2a8f650e3cd24ad79c54727bbaf2bc9bd18a6753d2adb98308b6cf1563e6bc9f",
+      "status": "PASS",
+      "observation": "手牌横向翻至末端后，最右翻页箭头置灰且末端牌面仍能识别；叶赫部支付条继续明确列出露营阵、火炮技术、银两，已选实牌离开可视窗口后仍可复核支付身份并确认。",
+      "checks": [
+        "target-visible：手牌末端和已选牌名摘要均可见",
+        "interaction-ui：左翻页可返回，末端右箭头置灰，确认入口仍清楚",
+        "layout-readable：已选牌名未随手牌滚动消失，支付条无遮挡",
+        "no-error：末端手牌素材正常且未见错误提示"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/42-upkeep-pyongyang.png",
+      "sha256": "da5f1394bd61462a5711002a49249697ac66717d1237269b6dc71d73ac3c67d0",
+      "status": "PASS",
+      "observation": "平壤城名与明军控制标记清楚，当前步兵本体以白边突出且未被提示遮挡；提示紧邻平壤，明确先撤平壤再撤汉城雇佣军，支付条标明平壤尚待支持且确认置灰，移除主体与支付对象可区分。",
+      "checks": [
+        "target-visible：平壤城名、控制标记及步兵主体完整可辨",
+        "interaction-ui：撤去平壤再撤汉城的提示紧邻当前主体，支付确认置灰可辨",
+        "layout-readable：提示、平壤主体和支付条无遮挡裁切，白边贴合兵牌",
+        "no-error：兵牌与地图正常渲染，未见目标错误覆盖"
+      ]
+    }
+  ],
+  "baselineRead": {
+    "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/39-upkeep-yehe-selected.png",
+    "sha256": "bab503a9aaddbf0d4dd70418929bbf666ae8d979628c8486a522179722c156f4",
+    "observation": "旧图以右侧独立面板显示叶赫部维护与确认，三张支付手牌金边抬起并显示已选；面板只列数量，没有列出已选牌名。"
+  },
+  "scopeBoundary": "仅裁决三张当前原图中的年度支付身份、末端牌名复核及平壤提示关系；支付数值、规则正确性和实际移除结果由行为测试验证。"
+}

@@ -1,0 +1,887 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_practice_visual"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/01-response-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "独立练习明确当前对手主要阶段、起始资源及红橙两牌；阶段条、两张正式卡和手动响应入口可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/02-instant-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "红牌本体与蓝色聚焦框同屏，规则卡解释即时行动与中断边界，正文及下一步完整可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/03-instant-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示要求在对手阶段点红牌，与下方高亮老板大气卡一致；完成当前操作提示清楚。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/04-instant-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "资源区高亮显示四点战力，已用红牌进入弃牌区，仍为对手主要阶段；结果提示与可见状态一致。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/05-opponent-declares.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧骰盘仍呈翻滚叠面，五阴阳与六莲花同时露出，正文已宣称五个莲花且确认；应待正式骰子停稳再拍公开结果。",
+      "score": 65
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/06-ultimate-prevention.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "高亮骰盘清楚呈现五个六点莲花，取消终极启动的改骰说明完整，橙牌与响应入口仍可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/07-interference-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "抬一手正式橙牌完整高亮，原文说明选择对手一骰重掷，右侧五莲花与当前掷骰阶段同屏。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/08-interference-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "操作提示明确点击高亮橙牌并支付一点战力，正式卡牌、四点战力及已确认骰面均可辨认。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/09-interference-target.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手五颗骰子为真实候选，高亮与提示箭头指向骰盘；确认灰置、取消可见，选择前后边界清楚。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/10-interference-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第一颗莲花骰带黄色选中勾，确认按钮转亮，与教程‘目标已选好’一致，候选本体无遮挡。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/11-interference-result.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "改骰仍显示悬浮翻滚立方体并露出二拳和三掌，正文已宣称变拳；应等待正式重掷停稳，再验证稳定面与结果一致。",
+      "score": 65
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/独立机制练习：dicethrone-response/12-response-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手改用花开见佛的正式技能特写完整可读，教学结语位于其下且完成返回按钮完整；自动跳过提示解释未出现的放弃步骤。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/01-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜负目标与操作角色说明完整，双方生命和主要阶段可见，下一步入口清楚。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/02-stats.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "蓝框贴合左侧资源区，五十生命与两点战力可读，起始值和上限说明无裁切。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/03-phases.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "七段阶段顺序完整高亮，先手跳收入说明与当前主要阶段一致，提示未压住阶段文字。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/04-player-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "整块玩家板外框高亮，技能槽正式素材完整；说明位于右侧并指向棋盘，按钮可读。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/05-tip-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧提示板完整高亮，标记图案与时机上限说明同屏；教学正文指明展开检视入口用途。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/06-card-types.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌三类时机正文完整，手牌费用角标、橙红边框与时机图标同屏可辨；正文未截断。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/07-hand.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "高亮手牌区包含四张正式手牌，费用、卡名和部分效果可见；点击出牌与费用时机限制解释清楚。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/08-discard.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "蓝框准确圈出右侧弃牌堆，拖拽卖牌说明及每张增加战力可读；手牌和弃牌目的地同屏。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/09-response-control.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧绿色手动响应开关明确高亮，正文解释手动等待与自动放弃，下一步入口清楚；正文字号较小但原图可读。",
+      "score": 86
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/10-main-actions-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主要阶段三类行动分项清楚，手牌区高亮，出售、蓝牌、升级说明完整。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/11-sell-card-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "沉思正式卡片高亮，正文指定拖到右侧弃牌堆，原卡费用三与统一出售一点战力形成明确对照。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/12-sell-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧战力显示三且右侧出现沉思弃牌，手牌少一张；结果提示与可见资源和去向一致。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/13-undo-sell-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "刚出售沉思在右侧蓝框中，撤回说明与可点击目标一致，下一步按钮完整。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/14-undo-sell.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求点击真实弃牌堆撤回，目标卡高亮且无遮挡，等待玩家操作的反馈可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/15-undo-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "沉思回到四张手牌中，右侧弃牌堆清空、战力回两点；正文解释扣回卖牌收益。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/16-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧下一阶段按钮高亮且为黄色可用态，教学明确先进入掷骰，阶段条仍在主要阶段。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/17-dice-tray.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骰盘整体蓝框与五颗稳定拳面清楚，正文说明图标数字及投掷次数，投掷和确认入口同屏。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/18-roll-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五骰与最多两次重掷的规则完整可读，骰盘高亮与规则对象一致。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/19-dice-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "首次投掷按钮蓝框清楚，三枚次数指示可见，确认灰置符合动作前状态。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/20-dice-lock.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已掷五颗拳面稳定显示，骰盘高亮；教程要求点击一骰锁定并解释再次点击解锁。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/21-dice-reroll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第一颗骰子显示已锁定，投掷按钮与剩余次数可辨；提示明确只重掷未锁骰。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/22-dice-symbols.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骰面数值与拳图标稳定，提示将数字与符号用途分开，锁定标记和剩余次数同屏。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/23-play-six-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩得六啊正式手牌高亮，改一骰为六的原文完整；骰盘仍为改骰前五拳。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/24-play-six.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "橙牌名称与高亮目标一致，费用一点战力显示清楚，操作等待反馈完整。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/25-play-six-modify.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "改骰选择态明确显示五颗真实候选及取消确认控件，教程说明先选骰再确认，确认当前灰置。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/26-dice-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第一骰已稳定为六莲花且锁定，其余四拳；普通确认入口高亮，与确认后才能选技能说明对应。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/27-ability-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "长技能规则卡位于左下，覆盖生命和战力栏右端数值，并侵入资源持续读取槽位；需调整该步浮层位置。",
+      "score": 66
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/28-abilities.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "点击冲拳的操作卡同样位于左下，覆盖生命和战力栏右端数值；冲拳本体清楚但资源保护槽位被侵占。",
+      "score": 66
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/29-attack-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选冲拳金框、右侧总伤害六与普通伤害规则同屏，正文完整，当前攻击来源明确。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/30-resolve-attack.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算攻击按钮亮起并高亮，冲拳选择框与总伤害六仍可见，操作对象与提示一致。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/31-opponent-defense.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "公开结果说明清修反击，自身体力四十六和双方伤害飘字可见，下一步仍由玩家继续阅读。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/32-main2-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "阶段条切到第二主要阶段，双方稳定体力显示四十六和四十四，三张剩余手牌高亮。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/33-enlightenment-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟正式手牌与原文高亮同屏，莲花分支获得标记和否则抽牌规则完整可读。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/34-enlightenment-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟手牌具体高亮，提示明确点击并投一骰，资源和其它手牌仍可辨。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/35-enlightenment-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧单颗奖励骰停稳为六莲花，普通确认按钮亮起高亮；顿悟弃牌仍可见，未使用旧弹层。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/36-enlightenment-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "状态区首次出现太极二、闪避一、净化一，结果卡逐项解释持有数量，生命战力未遮挡。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/37-status-tokens.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已有三类真实标记区高亮，图标与当前数量可读，使用时机及击倒支付说明完整。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/38-inner-peace-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心正式手牌高亮，获得两气原文简短清楚；按钮虽窄但文字完整。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/39-inner-peace.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心卡名与当前操作对应，已有太极二枚可见，为随后产出提供清楚前态。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/40-ai-turn-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心后太极持有量四枚、静心弃牌可见；正文解释进入弃牌再交回合，自动略过提示不遮关键资源。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/41-discard-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "仅一张剩余沉思手牌高亮，弃牌阶段上限与统一出售收益说明完整。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/42-end-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮高亮，教程明确未超六会自动交接，当前一张手牌与阶段条可核对。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/43-ai-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对方冲拳正式特写、开始防御按钮完整，正文说明掌击击倒及自己进入防御，攻击来源清楚。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/44-defense-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实开始防御按钮蓝框高亮，提示明确只是关闭特写进入操作；冲拳技能大图未被遮挡。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/45-defense-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "阶段条进入防御，骰盘四骰及一次投掷指示同屏，清修槽金框、总伤害八与防御规则完整。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/46-defense-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御投掷按钮可用并蓝框聚焦，四颗防御骰和一次机会指示可见，教程说明不是进攻三掷。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/47-defense-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四个拳面稳定显示，普通确认按钮高亮，待确认清修结果的说明与界面一致。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/48-defense-resolve.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骰面已确认、结束防御按钮亮起，提示明确进入受伤前响应窗口。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/49-token-response-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "太极四枚与标记区蓝框清楚，响应条跳过按钮可见；太极每枚减一点伤害原文完整。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/50-token-response-use.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实太极候选与响应跳过入口同屏，提示同时解释使用或保留标记的两种决策，生命仍四十六。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/51-damage-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "直接跳过后进入第二主要阶段，生命三十八、太极仍四枚完整可见；结果卡说明伤害已经结算。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/52-opponent-end-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手结束后阶段条回己方主要阶段，战力两点且新增清修升级卡进入手牌，结果说明完整。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/53-income-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "资源区蓝框显示新增战力，手牌清修二与牌库二十八可见；收入阶段自动抽牌说明清楚。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/54-knockdown-explain.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒图标仍在状态区，当前两点战力可见，付费或跳攻击的规则说明与对象对应。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/55-purify-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化、击倒及其它标记同屏，净化原文完整可读，未遮生命和战力。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/56-purify-use.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "净化蓝色标记可见，教程明确点击净化再选击倒确认，说明与当前合法对象一致。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/57-purify-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "击倒和净化从标记区移除，仅余太极与闪避；原状态位置高亮，正文说明移除后的进攻权利。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/58-upgrade-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "升级时机、永久性、不能出售和差价规则完整可读；两张手牌及当前战力同屏。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/59-meditation-2.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "清修二正式手牌具体高亮，费用两点与当前两点战力可见，点击或拖到技能槽说明清楚。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/60-upgrade-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "清修槽显示绿色清修二升级卡、手牌少一张、战力零；永久保留结论有对应可见承载。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/响应分支：直接放弃后仍可结算并完成后续教学/61-finish.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结语完整总结本链动作，升级卡和剩余标记仍在牌桌，完成并返回主按钮完整可读。",
+      "score": 92
+    }
+  ]
+}

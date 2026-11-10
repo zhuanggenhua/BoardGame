@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createHomeVisualFixture, installHomeVisualData } from './helpers/homeVisualFixture.mjs';
+import { capture } from './helpers/homeAcceptance';
 
 // 使用正式首页与详情入口；仅房间和接口数据隔离，不写开发数据库。
 async function openDetails(page: Page, roomCount = 5, library = false) {
@@ -97,6 +98,7 @@ test('手机详情触控可滚到末条房间及更新底部，关闭回到收�
         });
         expect(heading.delta).toBeLessThanOrEqual(2);
         expect(heading.authorHeight).toBeGreaterThanOrEqual(44);
+        await capture(page, '手机-收藏库选中游戏详情');
         const client = await context.newCDPSession(page);
         const swipe = async () => {
             await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 180, y: 730 }] });
@@ -127,6 +129,7 @@ test('桌面收藏库详情更新为主栏，页面滚动到底可达', async ({
         const rooms = page.locator('.platform-details-content > .custom-scrollbar');
         const left = await updates.boundingBox(), right = await rooms.boundingBox();
         expect(left!.width / right!.width).toBeGreaterThan(1.8);
+        await capture(page, '桌面-收藏库选中游戏更新');
         await page.mouse.move(left!.x + 60, left!.y + 60);
         await page.mouse.wheel(0, 1200);
         await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);

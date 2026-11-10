@@ -1,0 +1,2013 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-15T05-37-53-891Z",
+  "points": [
+    {
+      "label": "01-after-rabbit-damage-end-turn",
+      "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-15T05-37-53-891Z\\01-after-rabbit-damage-end-turn.png",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "watch-teammate-one-omen-turn",
+        "overlay": {
+          "visible": true,
+          "text": "现在不是你的回合。队友 1 先移动回入口大厅旁，探索一层预兆房间并翻出指环；这次作祟检定未触发。上一步下一步",
+          "rect": {
+            "x": 974,
+            "y": 38,
+            "width": 384,
+            "height": 180
+          }
+        },
+        "tutorialNext": {
+          "visible": true,
+          "disabled": true,
+          "text": "下一步",
+          "rect": {
+            "x": 1072,
+            "y": 162,
+            "width": 266,
+            "height": 36
+          }
+        },
+        "highlight": {
+          "target": "betrayal-haunt-risk-status",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 1152,
+            "y": 230,
+            "width": 198,
+            "height": 99
+          }
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 23,
+          "stepId": "watch-teammate-one-omen-turn",
+          "infoStep": true,
+          "requireAction": null,
+          "allowedCommands": null,
+          "aiActions": [
+            {
+              "commandType": "MOVE_TO_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "entrance-hall"
+              }
+            },
+            {
+              "commandType": "EXPLORE_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "ground-east"
+              }
+            }
+          ],
+          "storedAiActions": [
+            {
+              "commandType": "MOVE_TO_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "entrance-hall"
+              }
+            },
+            {
+              "commandType": "EXPLORE_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "ground-east"
+              }
+            }
+          ]
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 23,
+          "stepId": "watch-teammate-one-omen-turn",
+          "stepAiActionCount": 2,
+          "aiActionCount": 2
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "1",
+          "activePlayerId": null,
+          "activeRoomId": "hallway",
+          "currentExplorerRoomId": "hallway",
+          "recommendedAction": "move",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": null,
+          "pendingDamageAllocation": null,
+          "recentRoll": null
+        }
+      }
+    },
+    {
+      "label": "02-dog-waiting-confirmation",
+      "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-15T05-37-53-891Z\\02-dog-waiting-confirmation.png",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "watch-teammate-two-omen-turn",
+        "overlay": {
+          "visible": true,
+          "text": "队友 2 移动到刚发现的一层房间，继续探索相邻预兆房间并翻出狗；这次作祟检定仍未触发。确认按钮显示等待，因为这张狗由队友 2 确认；点“下一步”让他确认后交回你的回合。上一步下一步",
+          "rect": {
+            "x": 761,
+            "y": 440,
+            "width": 384,
+            "height": 238
+          }
+        },
+        "tutorialNext": {
+          "visible": true,
+          "disabled": false,
+          "text": "下一步",
+          "rect": {
+            "x": 859,
+            "y": 622,
+            "width": 266,
+            "height": 36
+          }
+        },
+        "highlight": {
+          "target": "betrayal-discovery-continue",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 617,
+            "y": 642,
+            "width": 132,
+            "height": 62
+          }
+        },
+        "discoveryPanel": {
+          "visible": true,
+          "text": "预兆牌 狗 已加入持有区 按卡面规则持有；抽到预兆后进行作祟检定：总点数 0（3 颗骰子，未触发）已加入持有区：狗（按卡面规则持有）抽到预兆后进行作祟检定：总点数 0（3 颗骰子，未触发）000000由 神父 梁沃伦 触发未触发作祟总点数 0骰面合计 0｜加值 0｜总点数 0骰面合计 0/加值 0骰面合计 0｜加值 0｜总点数 0无加值由 神父 梁沃伦 触发作祟检定无加值骰面合计 0｜加值 0｜总点数 0总点数 0未触发作祟等待确认 0/1",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 1366,
+            "height": 768
+          }
+        },
+        "discoveryConfirm": {
+          "visible": true,
+          "disabled": true,
+          "text": "等待确认 0/1",
+          "rect": {
+            "x": 617,
+            "y": 642,
+            "width": 132,
+            "height": 62
+          },
+          "pendingCardResolutionId": "2-frontier-ground-east-east-1789450819380-drawn-card-dog-2-with-haunt-roll-dog-2",
+          "cardConfirmed": "0",
+          "cardRequired": "1",
+          "eventConfirmed": null,
+          "eventRequired": null,
+          "eventReadable": null
+        },
+        "rollContinue": null,
+        "recentRollPanel": {
+          "visible": true,
+          "text": "000000由 神父 梁沃伦 触发未触发作祟总点数 0骰面合计 0｜加值 0｜总点数 0骰面合计 0/加值 0骰面合计 0｜加值 0｜总点数 0无加值由 神父 梁沃伦 触发作祟检定无加值骰面合计 0｜加值 0｜总点数 0总点数 0未触发作祟",
+          "rect": {
+            "x": 563,
+            "y": 166,
+            "width": 560,
+            "height": 353
+          }
+        },
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 25,
+          "stepId": "watch-teammate-two-omen-turn",
+          "infoStep": true,
+          "requireAction": null,
+          "allowedCommands": null,
+          "aiActions": null,
+          "storedAiActions": null
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 25,
+          "stepId": "watch-teammate-two-omen-turn",
+          "stepAiActionCount": 0,
+          "aiActionCount": 0
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "2",
+          "activePlayerId": null,
+          "activeRoomId": "frontier-ground-east-east",
+          "currentExplorerRoomId": "frontier-ground-east-east",
+          "recommendedAction": "endTurn",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": {
+            "id": "2-frontier-ground-east-east-1789450819380-drawn-card-dog-2-with-haunt-roll-dog-2",
+            "playerId": "2",
+            "cardId": "dog-2",
+            "cardName": "狗",
+            "deckKind": "omen",
+            "requiredPlayerIds": [
+              "2"
+            ],
+            "acknowledgedPlayerIds": [],
+            "index": 1,
+            "total": 1
+          },
+          "pendingCardResolutionQueueLength": 1,
+          "pendingEventRollResolution": null,
+          "pendingDamageAllocation": null,
+          "recentRoll": {
+            "id": "2-frontier-ground-east-east-haunt-1789450819380",
+            "kind": "hauntRoll",
+            "playerId": "2",
+            "dice": [
+              0,
+              0,
+              0
+            ],
+            "sourceTitle": "狗",
+            "label": null,
+            "latestLabel": "未触发作祟",
+            "acknowledgedPlayerIds": null,
+            "requiredPlayerIds": null
+          }
+        }
+      }
+    }
+  ],
+  "boundaries": [
+    {
+      "label": "before-finalize-event-roll",
+      "at": "2026-09-15T05:40:06.480Z",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "rabbit-foot-result",
+        "overlay": {
+          "visible": true,
+          "text": "兔脚重掷完成。先看清新的骰面和总点数，再点“确认”确认结果；确认后如果仍失败，游戏会进入伤害分配。上一步完成当前操作继续",
+          "rect": {
+            "x": 491,
+            "y": 442,
+            "width": 384,
+            "height": 180
+          }
+        },
+        "tutorialNext": null,
+        "highlight": {
+          "target": "betrayal-discovery-continue",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 617,
+            "y": 642,
+            "width": 132,
+            "height": 62
+          }
+        },
+        "discoveryPanel": {
+          "visible": true,
+          "text": "事件牌 标本剥制 结果已公开 知识检定 1：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物事件效果：力量检定 2：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物00000000受到 1 点物理伤害；放置障碍物总点数 1骰面合计 0｜加值 +1｜总点数 1骰面合计 0/加值 +1骰面合计 0｜加值 +1｜总点数 1加值 +1知识检定加值 +1骰面合计 0｜加值 +1｜总点数 1总点数 1受到 1 点物理伤害；放置障碍物确认 0/1",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 1366,
+            "height": 768
+          }
+        },
+        "discoveryConfirm": {
+          "visible": true,
+          "disabled": false,
+          "text": "确认 0/1",
+          "rect": {
+            "x": 617,
+            "y": 642,
+            "width": 132,
+            "height": 62
+          },
+          "pendingCardResolutionId": null,
+          "cardConfirmed": null,
+          "cardRequired": null,
+          "eventConfirmed": "0",
+          "eventRequired": "1",
+          "eventReadable": "true"
+        },
+        "rollContinue": null,
+        "recentRollPanel": {
+          "visible": true,
+          "text": "00000000受到 1 点物理伤害；放置障碍物总点数 1骰面合计 0｜加值 +1｜总点数 1骰面合计 0/加值 +1骰面合计 0｜加值 +1｜总点数 1加值 +1知识检定加值 +1骰面合计 0｜加值 +1｜总点数 1总点数 1受到 1 点物理伤害；放置障碍物",
+          "rect": {
+            "x": 563,
+            "y": 166,
+            "width": 560,
+            "height": 353
+          }
+        },
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 20,
+          "stepId": "rabbit-foot-result",
+          "infoStep": null,
+          "requireAction": true,
+          "allowedCommands": [
+            "FINALIZE_EVENT_ROLL"
+          ],
+          "aiActions": null,
+          "storedAiActions": null
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 20,
+          "stepId": "rabbit-foot-result",
+          "stepAiActionCount": 0,
+          "aiActionCount": 0
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "0",
+          "activePlayerId": null,
+          "activeRoomId": "ground-north",
+          "currentExplorerRoomId": "ground-north",
+          "recommendedAction": "endTurn",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": {
+            "rollId": "0-标本剥制-1789450735096",
+            "playerId": "0",
+            "requiredPlayerIds": [
+              "0"
+            ],
+            "acknowledgedPlayerIds": [],
+            "requiresAcknowledgement": true
+          },
+          "pendingDamageAllocation": null,
+          "recentRoll": {
+            "id": "0-标本剥制-1789450735096",
+            "kind": "eventTraitCheck",
+            "playerId": "0",
+            "dice": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sourceTitle": "标本剥制",
+            "label": null,
+            "latestLabel": "受到 1 点物理伤害；放置障碍物",
+            "acknowledgedPlayerIds": null,
+            "requiredPlayerIds": null
+          }
+        }
+      }
+    },
+    {
+      "label": "after-finalize-event-roll",
+      "at": "2026-09-15T05:40:07.191Z",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "finish",
+        "overlay": {
+          "visible": true,
+          "text": "这里选择承受 1 点物理伤害的属性，再点确认完成分配。上一步完成当前操作继续",
+          "rect": {
+            "x": 499,
+            "y": 65,
+            "width": 384,
+            "height": 151
+          }
+        },
+        "tutorialNext": null,
+        "highlight": {
+          "target": "betrayal-damage-allocation-panel",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 331,
+            "y": 236,
+            "width": 720,
+            "height": 293
+          }
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 21,
+          "stepId": "finish",
+          "infoStep": null,
+          "requireAction": true,
+          "allowedCommands": [
+            "RESOLVE_DAMAGE_ALLOCATION"
+          ],
+          "aiActions": null,
+          "storedAiActions": null
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 21,
+          "stepId": "finish",
+          "stepAiActionCount": 0,
+          "aiActionCount": 0
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "0",
+          "activePlayerId": "0",
+          "activeRoomId": "ground-north",
+          "currentExplorerRoomId": "ground-north",
+          "recommendedAction": "endTurn",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": null,
+          "pendingDamageAllocation": {
+            "playerId": "0"
+          },
+          "recentRoll": {
+            "id": "0-标本剥制-1789450735096",
+            "kind": "eventTraitCheck",
+            "playerId": "0",
+            "dice": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sourceTitle": "标本剥制",
+            "label": null,
+            "latestLabel": "受到 1 点物理伤害；放置障碍物",
+            "acknowledgedPlayerIds": null,
+            "requiredPlayerIds": null
+          }
+        }
+      }
+    },
+    {
+      "label": "before-end-turn",
+      "at": "2026-09-15T05:40:07.897Z",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "return-to-table-after-damage",
+        "overlay": {
+          "visible": true,
+          "text": "伤害已经分配到属性轨。事件房探索已经结束你的回合；点“结束回合”，把轮序交给队友。上一步完成当前操作继续",
+          "rect": {
+            "x": 239,
+            "y": 440,
+            "width": 384,
+            "height": 180
+          }
+        },
+        "tutorialNext": null,
+        "highlight": {
+          "target": "betrayal-action-endTurn",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 643,
+            "y": 715,
+            "width": 80,
+            "height": 50
+          }
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 22,
+          "stepId": "return-to-table-after-damage",
+          "infoStep": null,
+          "requireAction": true,
+          "allowedCommands": [
+            "END_TURN"
+          ],
+          "aiActions": null,
+          "storedAiActions": null
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 22,
+          "stepId": "return-to-table-after-damage",
+          "stepAiActionCount": 0,
+          "aiActionCount": 0
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "0",
+          "activePlayerId": null,
+          "activeRoomId": "ground-north",
+          "currentExplorerRoomId": "ground-north",
+          "recommendedAction": "endTurn",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": null,
+          "pendingDamageAllocation": null,
+          "recentRoll": {
+            "id": "0-标本剥制-1789450735096",
+            "kind": "eventTraitCheck",
+            "playerId": "0",
+            "dice": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sourceTitle": "标本剥制",
+            "label": null,
+            "latestLabel": "受到 1 点物理伤害；放置障碍物",
+            "acknowledgedPlayerIds": null,
+            "requiredPlayerIds": null
+          }
+        }
+      }
+    },
+    {
+      "label": "after-end-turn",
+      "at": "2026-09-15T05:40:08.436Z",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "watch-teammate-one-omen-turn",
+        "overlay": {
+          "visible": true,
+          "text": "现在不是你的回合。队友 1 先移动回入口大厅旁，探索一层预兆房间并翻出指环；这次作祟检定未触发。上一步下一步",
+          "rect": {
+            "x": 974,
+            "y": 38,
+            "width": 384,
+            "height": 180
+          }
+        },
+        "tutorialNext": {
+          "visible": true,
+          "disabled": true,
+          "text": "下一步",
+          "rect": {
+            "x": 1072,
+            "y": 162,
+            "width": 266,
+            "height": 36
+          }
+        },
+        "highlight": {
+          "target": "betrayal-haunt-risk-status",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 1152,
+            "y": 230,
+            "width": 198,
+            "height": 99
+          }
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 23,
+          "stepId": "watch-teammate-one-omen-turn",
+          "infoStep": true,
+          "requireAction": null,
+          "allowedCommands": null,
+          "aiActions": [
+            {
+              "commandType": "MOVE_TO_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "entrance-hall"
+              }
+            },
+            {
+              "commandType": "EXPLORE_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "ground-east"
+              }
+            }
+          ],
+          "storedAiActions": [
+            {
+              "commandType": "MOVE_TO_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "entrance-hall"
+              }
+            },
+            {
+              "commandType": "EXPLORE_ROOM",
+              "playerId": "1",
+              "payload": {
+                "roomId": "ground-east"
+              }
+            }
+          ]
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 23,
+          "stepId": "watch-teammate-one-omen-turn",
+          "stepAiActionCount": 2,
+          "aiActionCount": 2
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "1",
+          "activePlayerId": null,
+          "activeRoomId": "hallway",
+          "currentExplorerRoomId": "hallway",
+          "recommendedAction": "move",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": null,
+          "pendingDamageAllocation": null,
+          "recentRoll": null
+        }
+      }
+    }
+  ],
+  "logs": [
+    {
+      "at": "2026-09-15T05:38:03.578Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-15T05:38:03.607Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-15T05:38:26.670Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-15T05:38:26.716Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-15T05:38:27.480Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-15T05:38:27.496Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "at": "2026-09-15T05:38:27.499Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/auth/refresh net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:38:28.051Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-15T05:38:28.049Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-15T05:38:28.053Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T05:38:28.052Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-15T05:38:28.057Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:38:28.058Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-15T05:38:28.617Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-15T05:38:28.616Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-15T05:38:28.617Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T05:38:28.617Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-15T05:38:29.611Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 38.3 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-15T05:38:33.438Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T05:38:33.432Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":5381}"
+    },
+    {
+      "at": "2026-09-15T05:38:33.438Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T05:38:33.432Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":4815}"
+    },
+    {
+      "at": "2026-09-15T05:38:34.801Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-15T05:38:34.801Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":6185}"
+    },
+    {
+      "at": "2026-09-15T05:38:41.588Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 43, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-15T05:38:41.597Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:38:41.597Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:41.598Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:38:41.598Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-15T05:38:41.638Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 43, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-15T05:38:41.709Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:38:41.710Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:42.722Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:38:42.852Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 26.9 FPS | P95 帧时 83.4ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:38:43.268Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:38:43.309Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:38:43.350Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:38:43.350Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:38:47.963Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 25.7 FPS | P95 帧时 183.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:38:49.804Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:38:49.804Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:49.909Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:50.446Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:38:53.227Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:38:53.234Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:53.333Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:53.632Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 22.2 FPS | P95 帧时 116.8ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:38:53.652Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:38:54.408Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:38:54.409Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:54.531Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:38:55.099Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:38:55.240Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:38:55.245Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:38:55.246Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:38:55.361Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:38:55.363Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-start {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll}"
+    },
+    {
+      "at": "2026-09-15T05:38:57.651Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 14.9 FPS | P95 帧时 249.9ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:00.935Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 18.3 FPS | P95 帧时 100.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:02.090Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/xia"
+    },
+    {
+      "at": "2026-09-15T05:39:02.090Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-15T05:39:02.090Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-15T05:39:02.090Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-15T05:39:02.105Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-15T05:39:02.105Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/might"
+    },
+    {
+      "at": "2026-09-15T05:39:02.105Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/speed"
+    },
+    {
+      "at": "2026-09-15T05:39:02.105Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/knowledge"
+    },
+    {
+      "at": "2026-09-15T05:39:02.105Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/sanity"
+    },
+    {
+      "at": "2026-09-15T05:39:02.105Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/anita-hernandez"
+    },
+    {
+      "at": "2026-09-15T05:39:02.106Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/father-warren-leung"
+    },
+    {
+      "at": "2026-09-15T05:39:02.106Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/item-front-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:02.106Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/omen-front-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:02.106Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "at": "2026-09-15T05:39:02.106Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "at": "2026-09-15T05:39:02.106Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/tokens/explorers/anita-hernandez"
+    },
+    {
+      "at": "2026-09-15T05:39:02.119Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "at": "2026-09-15T05:39:02.119Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/tokens/explorers/father-warren-leung"
+    },
+    {
+      "at": "2026-09-15T05:39:02.123Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:02.203Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:02.203Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-omen"
+    },
+    {
+      "at": "2026-09-15T05:39:02.203Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-item"
+    },
+    {
+      "at": "2026-09-15T05:39:02.211Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-event"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/ui/trait-track-0-9"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-omen"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-item"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-event"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/anita-hernandez"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/father-warren-leung"
+    },
+    {
+      "at": "2026-09-15T05:39:02.212Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/player-reference-zh-front"
+    },
+    {
+      "at": "2026-09-15T05:39:02.352Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:02.498Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/knowledge.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:02.499Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/might.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:02.558Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/sanity.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:02.558Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/speed.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:03.424Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:04.085Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:04.097Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:04.154Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 18.8 FPS | P95 帧时 83.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:04.403Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:04.515Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:05.035Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:05.110Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:05.816Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:05.818Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:06.027Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:06.027Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:06.615Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:06.886Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-front.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:07.226Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 19.5 FPS | P95 帧时 100.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:11.166Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 28.6 FPS | P95 帧时 83.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:13.844Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-front-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:13.844Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/event-front-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:13.844Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/tokens/explorers/isa-valencia"
+    },
+    {
+      "at": "2026-09-15T05:39:13.844Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "at": "2026-09-15T05:39:15.020Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:15.253Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 31.6 FPS | P95 帧时 100.0ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-15T05:39:19.003Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 33.6 FPS | P95 帧时 66.7ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-15T05:39:19.690Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:19.859Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/event-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:39:35.926Z",
+      "type": "warning",
+      "text": "WARNING: Multiple instances of Three.js being imported."
+    },
+    {
+      "at": "2026-09-15T05:39:36.047Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] create-resolved {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll, cancelled: false}"
+    },
+    {
+      "at": "2026-09-15T05:39:36.048Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] engine-ready {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 3, motionType: roll}"
+    },
+    {
+      "at": "2026-09-15T05:39:36.131Z",
+      "type": "warning",
+      "text": "[.WebGL-0x42e421829b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-15T05:39:36.136Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-start"
+    },
+    {
+      "at": "2026-09-15T05:39:36.137Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-start"
+    },
+    {
+      "at": "2026-09-15T05:39:36.181Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:37.085Z",
+      "type": "warning",
+      "text": "[.WebGL-0x42e421829b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-15T05:39:37.218Z",
+      "type": "warning",
+      "text": "[.WebGL-0x42e421829b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-15T05:39:37.355Z",
+      "type": "warning",
+      "text": "[.WebGL-0x42e421829b00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    },
+    {
+      "at": "2026-09-15T05:39:41.184Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-visible-animation-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:41.269Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:41.270Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-apply-final-values"
+    },
+    {
+      "at": "2026-09-15T05:39:41.362Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:41.881Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 9.4 FPS | P95 帧时 250.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:42.251Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:39:42.251Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:42.356Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:43.633Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:39:43.633Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:39:43.633Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:43.863Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-start"
+    },
+    {
+      "at": "2026-09-15T05:39:43.864Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-start"
+    },
+    {
+      "at": "2026-09-15T05:39:43.894Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:51.610Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 6.2 FPS | P95 帧时 450.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:39:52.562Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-visible-animation-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:52.841Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:52.841Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-apply-final-values"
+    },
+    {
+      "at": "2026-09-15T05:39:53.025Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-complete"
+    },
+    {
+      "at": "2026-09-15T05:39:53.659Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:39:53.659Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:53.860Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:56.491Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:39:56.492Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:39:56.492Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:56.588Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:39:57.527Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] reroll-start"
+    },
+    {
+      "at": "2026-09-15T05:40:03.422Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] reroll-final-values-applied"
+    },
+    {
+      "at": "2026-09-15T05:40:03.870Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] reroll-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:04.539Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:04.539Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:40:04.744Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.571Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.572Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.572Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.733Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.733Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 4, motionType: settled, hadEngine: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.778Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 4, motionType: reroll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.782Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 4, motionType: reroll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.782Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 4, motionType: reroll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:06.905Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1789450735096, diceLength: 4, motionType: reroll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:07.054Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 3.9 FPS | P95 帧时 1250.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:40:07.501Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:07.502Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: return-to-table-after-damage, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:07.503Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: return-to-table-after-damage, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:40:07.596Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: return-to-table-after-damage, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-15T05:40:08.027Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: return-to-table-after-damage, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:08.151Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"1\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:08.151Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:08.151Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:08.151Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.301Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"MOVE_TO_ROOM\",\"playerId\":\"1\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||37|0|||||||1|\",\"markerAfter\":\"0||38|0|||||||1|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:09.301Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: MOVE_TO_ROOM, playerId: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.558Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"EXPLORE_ROOM\",\"playerId\":\"1\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||38|0|||||||1|\",\"markerAfter\":\"0||39|0|||||||1|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:09.559Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: EXPLORE_ROOM, playerId: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.707Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.707Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.707Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.854Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.855Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-start {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.912Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] create-resolved {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll, cancelled: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:09.914Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] engine-ready {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll}"
+    },
+    {
+      "at": "2026-09-15T05:40:10.015Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-start"
+    },
+    {
+      "at": "2026-09-15T05:40:10.016Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-start"
+    },
+    {
+      "at": "2026-09-15T05:40:10.047Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:16.482Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"ACKNOWLEDGE_CARD_RESOLUTION\",\"playerId\":\"1\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||41|0|||||||1|\",\"markerAfter\":\"0||42|0|||||||1|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:16.483Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: ACKNOWLEDGE_CARD_RESOLUTION, playerId: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:17.109Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-1-ground-east-haunt-1789450809551, diceLength: 2, motionType: roll, hadEngine: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:17.481Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"END_TURN\",\"playerId\":\"1\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||42|0|||||||1|\",\"markerAfter\":\"0||43|0|||||||2|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:17.482Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: END_TURN, playerId: 1}"
+    },
+    {
+      "at": "2026-09-15T05:40:17.629Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"2\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:17.630Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 2}"
+    },
+    {
+      "at": "2026-09-15T05:40:17.630Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:17.630Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-15T05:40:17.806Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 6.6 FPS | P95 帧时 700.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-15T05:40:18.176Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-visible-animation-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:18.176Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:18.176Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-apply-final-values"
+    },
+    {
+      "at": "2026-09-15T05:40:18.177Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:19.102Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"MOVE_TO_ROOM\",\"playerId\":\"2\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||45|0|||||||2|\",\"markerAfter\":\"0||46|0|||||||2|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:19.102Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: MOVE_TO_ROOM, playerId: 2}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.388Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"EXPLORE_ROOM\",\"playerId\":\"2\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||46|0|||||||2|\",\"markerAfter\":\"0||47|0|||||||2|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:19.389Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: EXPLORE_ROOM, playerId: 2}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.536Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.537Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.537Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.671Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.672Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-start {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.699Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] create-resolved {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll, cancelled: false}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.699Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] engine-ready {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll}"
+    },
+    {
+      "at": "2026-09-15T05:40:19.806Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-start"
+    },
+    {
+      "at": "2026-09-15T05:40:19.806Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-start"
+    },
+    {
+      "at": "2026-09-15T05:40:19.812Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:28.004Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/obstacle"
+    },
+    {
+      "at": "2026-09-15T05:40:28.737Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3\",\"commandType\":\"ACKNOWLEDGE_CARD_RESOLUTION\",\"playerId\":\"2\",\"progressed\":true,\"hasStateDelta\":true,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||49|0|||||||2|\",\"markerAfter\":\"0||50|0|||||||2|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-15T05:40:28.737Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r3, commandType: ACKNOWLEDGE_CARD_RESOLUTION, playerId: 2}"
+    },
+    {
+      "at": "2026-09-15T05:40:28.922Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/obstacle.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-15T05:40:30.116Z",
+      "type": "warning",
+      "text": "[TutorialContext] AI 命令后未观察到教程签名同步，暂停后续 AI 动作 {stepId: teammate-two-omen-results, commandType: ACKNOWLEDGE_CARD_RESOLUTION}"
+    },
+    {
+      "at": "2026-09-15T05:40:30.435Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-2-frontier-ground-east-east-haunt-1789450819380, diceLength: 3, motionType: roll, hadEngine: true}"
+    },
+    {
+      "at": "2026-09-15T05:40:30.832Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-visible-animation-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:30.833Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:30.833Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-apply-final-values"
+    },
+    {
+      "at": "2026-09-15T05:40:30.833Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-complete"
+    },
+    {
+      "at": "2026-09-15T05:40:31.213Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 4.9 FPS | P95 帧时 833.3ms — 严重掉帧"
+    }
+  ],
+  "failures": [
+    {
+      "message": "real player flow script threw before completing",
+      "error": "page.waitForFunction: Timeout 60000ms exceeded.",
+      "stack": "page.waitForFunction: Timeout 60000ms exceeded.\n    at waitForAiActionsConsumed (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:273:14)\n    at resolveDogConfirmation (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:487:9)\n    at async run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:709:5)",
+      "lastPoint": "02-dog-waiting-confirmation",
+      "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-15T05-37-53-891Z\\failure.png",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "teammate-two-omen-results",
+        "overlay": {
+          "visible": true,
+          "text": "狗确认后，回合回到你。你仍在厨房；这一回合先移动到上层平台，图书馆就在旁边，等作祟目标出现后再决定是否进去。上一步下一步",
+          "rect": {
+            "x": 974,
+            "y": 38,
+            "width": 384,
+            "height": 180
+          }
+        },
+        "tutorialNext": {
+          "visible": true,
+          "disabled": true,
+          "text": "下一步",
+          "rect": {
+            "x": 1072,
+            "y": 162,
+            "width": 266,
+            "height": 36
+          }
+        },
+        "highlight": {
+          "target": "betrayal-haunt-risk-status",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 1152,
+            "y": 230,
+            "width": 198,
+            "height": 99
+          }
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 3,
+          "stepIndex": 26,
+          "stepId": "teammate-two-omen-results",
+          "infoStep": true,
+          "requireAction": null,
+          "allowedCommands": null,
+          "aiActions": [
+            {
+              "commandType": "ACKNOWLEDGE_CARD_RESOLUTION",
+              "playerId": "2"
+            },
+            {
+              "commandType": "END_TURN",
+              "playerId": "2"
+            }
+          ],
+          "storedAiActions": [
+            {
+              "commandType": "ACKNOWLEDGE_CARD_RESOLUTION",
+              "playerId": "2"
+            },
+            {
+              "commandType": "END_TURN",
+              "playerId": "2"
+            }
+          ]
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 26,
+          "stepId": "teammate-two-omen-results",
+          "stepAiActionCount": 2,
+          "aiActionCount": 2
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "2",
+          "activePlayerId": null,
+          "activeRoomId": "frontier-ground-east-east",
+          "currentExplorerRoomId": "frontier-ground-east-east",
+          "recommendedAction": "endTurn",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": null,
+          "pendingDamageAllocation": null,
+          "recentRoll": {
+            "id": "2-frontier-ground-east-east-haunt-1789450819380",
+            "kind": "hauntRoll",
+            "playerId": "2",
+            "dice": [
+              0,
+              0,
+              0
+            ],
+            "sourceTitle": "狗",
+            "label": null,
+            "latestLabel": "未触发作祟",
+            "acknowledgedPlayerIds": null,
+            "requiredPlayerIds": null
+          }
+        }
+      }
+    }
+  ]
+}

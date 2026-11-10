@@ -1,0 +1,304 @@
+{
+  "mode": "after",
+  "method": "原生整卡RGB缩至96x154后与33个已人工核对源图比对；不替代原图读字",
+  "rows": [
+    {
+      "frame": 0,
+      "cardId": "card-holy-defense-3",
+      "expectedSourceNumber": 28,
+      "closestSourceNumber": 28,
+      "closestMse": 1.5289276838302612,
+      "runnerUpMse": 263.1728820800781,
+      "matches": true
+    },
+    {
+      "frame": 1,
+      "cardId": "card-might",
+      "expectedSourceNumber": 29,
+      "closestSourceNumber": 29,
+      "closestMse": 1.4528769254684448,
+      "runnerUpMse": 2201.300048828125,
+      "matches": true
+    },
+    {
+      "frame": 2,
+      "cardId": "card-consecrate",
+      "expectedSourceNumber": 30,
+      "closestSourceNumber": 30,
+      "closestMse": 1.3701750040054321,
+      "runnerUpMse": 1772.6121826171875,
+      "matches": true
+    },
+    {
+      "frame": 3,
+      "cardId": "card-divine-favor",
+      "expectedSourceNumber": 31,
+      "closestSourceNumber": 31,
+      "closestMse": 1.730722427368164,
+      "runnerUpMse": 2333.143798828125,
+      "matches": true
+    },
+    {
+      "frame": 4,
+      "cardId": "card-absolution",
+      "expectedSourceNumber": 32,
+      "closestSourceNumber": 32,
+      "closestMse": 1.8248556852340698,
+      "runnerUpMse": 2040.273681640625,
+      "matches": true
+    },
+    {
+      "frame": 5,
+      "cardId": "card-holy-defense-2",
+      "expectedSourceNumber": 27,
+      "closestSourceNumber": 27,
+      "closestMse": 1.5197285413742065,
+      "runnerUpMse": 264.1808166503906,
+      "matches": true
+    },
+    {
+      "frame": 6,
+      "cardId": "card-tithes-2",
+      "expectedSourceNumber": 19,
+      "closestSourceNumber": 19,
+      "closestMse": 1.668199896812439,
+      "runnerUpMse": 2361.85888671875,
+      "matches": true
+    },
+    {
+      "frame": 7,
+      "cardId": "card-holy-light-2",
+      "expectedSourceNumber": 26,
+      "closestSourceNumber": 26,
+      "closestMse": 1.5911120176315308,
+      "runnerUpMse": 1358.07177734375,
+      "matches": true
+    },
+    {
+      "frame": 8,
+      "cardId": "card-righteous-combat-3",
+      "expectedSourceNumber": 24,
+      "closestSourceNumber": 24,
+      "closestMse": 1.6421130895614624,
+      "runnerUpMse": 1141.164794921875,
+      "matches": true
+    },
+    {
+      "frame": 9,
+      "cardId": "card-blessing-of-might-2",
+      "expectedSourceNumber": 25,
+      "closestSourceNumber": 25,
+      "closestMse": 1.7303390502929688,
+      "runnerUpMse": 1231.5228271484375,
+      "matches": true
+    },
+    {
+      "frame": 10,
+      "cardId": "card-righteous-combat-2",
+      "expectedSourceNumber": 23,
+      "closestSourceNumber": 23,
+      "closestMse": 1.6396104097366333,
+      "runnerUpMse": 1730.13525390625,
+      "matches": true
+    },
+    {
+      "frame": 11,
+      "cardId": "card-gods-grace",
+      "expectedSourceNumber": 33,
+      "closestSourceNumber": 33,
+      "closestMse": 1.5946969985961914,
+      "runnerUpMse": 1823.6114501953125,
+      "matches": true
+    },
+    {
+      "frame": 12,
+      "cardId": "card-vengeance-2",
+      "expectedSourceNumber": 20,
+      "closestSourceNumber": 20,
+      "closestMse": 1.4825937747955322,
+      "runnerUpMse": 1142.7119140625,
+      "matches": true
+    },
+    {
+      "frame": 13,
+      "cardId": "card-holy-strike-2",
+      "expectedSourceNumber": 21,
+      "closestSourceNumber": 21,
+      "closestMse": 1.5079139471054077,
+      "runnerUpMse": 1360.3057861328125,
+      "matches": true
+    },
+    {
+      "frame": 14,
+      "cardId": "card-righteous-prayer-2",
+      "expectedSourceNumber": 22,
+      "closestSourceNumber": 22,
+      "closestMse": 1.5781700611114502,
+      "runnerUpMse": 1234.5416259765625,
+      "matches": true
+    },
+    {
+      "frame": 15,
+      "cardId": "card-play-six",
+      "expectedSourceNumber": 18,
+      "closestSourceNumber": 18,
+      "closestMse": 1.3118236064910889,
+      "runnerUpMse": 946.825927734375,
+      "matches": true
+    },
+    {
+      "frame": 16,
+      "cardId": "card-just-this",
+      "expectedSourceNumber": 17,
+      "closestSourceNumber": 17,
+      "closestMse": 1.436440348625183,
+      "runnerUpMse": 1007.9118041992188,
+      "matches": true
+    },
+    {
+      "frame": 17,
+      "cardId": "card-give-hand",
+      "expectedSourceNumber": 16,
+      "closestSourceNumber": 16,
+      "closestMse": 1.4778589010238647,
+      "runnerUpMse": 883.0043334960938,
+      "matches": true
+    },
+    {
+      "frame": 18,
+      "cardId": "card-i-can-again",
+      "expectedSourceNumber": 15,
+      "closestSourceNumber": 15,
+      "closestMse": 1.4926948547363281,
+      "runnerUpMse": 1284.8973388671875,
+      "matches": true
+    },
+    {
+      "frame": 19,
+      "cardId": "card-me-too",
+      "expectedSourceNumber": 14,
+      "closestSourceNumber": 14,
+      "closestMse": 1.4436101913452148,
+      "runnerUpMse": 1080.783203125,
+      "matches": true
+    },
+    {
+      "frame": 20,
+      "cardId": "card-surprise",
+      "expectedSourceNumber": 13,
+      "closestSourceNumber": 13,
+      "closestMse": 1.3829139471054077,
+      "runnerUpMse": 1101.7818603515625,
+      "matches": true
+    },
+    {
+      "frame": 21,
+      "cardId": "card-worthy-of-me",
+      "expectedSourceNumber": 12,
+      "closestSourceNumber": 12,
+      "closestMse": 1.4166215658187866,
+      "runnerUpMse": 1100.457763671875,
+      "matches": true
+    },
+    {
+      "frame": 22,
+      "cardId": "card-unexpected",
+      "expectedSourceNumber": 11,
+      "closestSourceNumber": 11,
+      "closestMse": 1.406994104385376,
+      "runnerUpMse": 1174.7816162109375,
+      "matches": true
+    },
+    {
+      "frame": 23,
+      "cardId": "card-next-time",
+      "expectedSourceNumber": 10,
+      "closestSourceNumber": 10,
+      "closestMse": 1.2990394830703735,
+      "runnerUpMse": 883.3707885742188,
+      "matches": true
+    },
+    {
+      "frame": 24,
+      "cardId": "card-boss-generous",
+      "expectedSourceNumber": 9,
+      "closestSourceNumber": 9,
+      "closestMse": 1.3781790733337402,
+      "runnerUpMse": 1062.68505859375,
+      "matches": true
+    },
+    {
+      "frame": 25,
+      "cardId": "card-flick",
+      "expectedSourceNumber": 8,
+      "closestSourceNumber": 8,
+      "closestMse": 1.528792381286621,
+      "runnerUpMse": 901.6947021484375,
+      "matches": true
+    },
+    {
+      "frame": 26,
+      "cardId": "card-bye-bye",
+      "expectedSourceNumber": 7,
+      "closestSourceNumber": 7,
+      "closestMse": 1.3103129863739014,
+      "runnerUpMse": 1188.7952880859375,
+      "matches": true
+    },
+    {
+      "frame": 27,
+      "cardId": "card-double",
+      "expectedSourceNumber": 6,
+      "closestSourceNumber": 6,
+      "closestMse": 1.388685941696167,
+      "runnerUpMse": 1265.35498046875,
+      "matches": true
+    },
+    {
+      "frame": 28,
+      "cardId": "card-super-double",
+      "expectedSourceNumber": 5,
+      "closestSourceNumber": 5,
+      "closestMse": 1.3809748888015747,
+      "runnerUpMse": 1159.4837646484375,
+      "matches": true
+    },
+    {
+      "frame": 29,
+      "cardId": "card-get-away",
+      "expectedSourceNumber": 4,
+      "closestSourceNumber": 4,
+      "closestMse": 1.3277868032455444,
+      "runnerUpMse": 2220.201171875,
+      "matches": true
+    },
+    {
+      "frame": 30,
+      "cardId": "card-one-throw-fortune",
+      "expectedSourceNumber": 3,
+      "closestSourceNumber": 3,
+      "closestMse": 1.2572150230407715,
+      "runnerUpMse": 1718.05810546875,
+      "matches": true
+    },
+    {
+      "frame": 31,
+      "cardId": "card-what-status",
+      "expectedSourceNumber": 2,
+      "closestSourceNumber": 2,
+      "closestMse": 1.4480068683624268,
+      "runnerUpMse": 2067.9140625,
+      "matches": true
+    },
+    {
+      "frame": 32,
+      "cardId": "card-transfer-status",
+      "expectedSourceNumber": 1,
+      "closestSourceNumber": 1,
+      "closestMse": 1.4632936716079712,
+      "runnerUpMse": 1757.3607177734375,
+      "matches": true
+    }
+  ],
+  "mismatchFrames": []
+}

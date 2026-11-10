@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { parse as parseDotEnv } from 'dotenv';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
 import { createDevRuntimeEnv } from './dev-port-runtime.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
@@ -13,6 +15,8 @@ import {
   spawnTsxEntry,
 } from './e2e-server-launcher.js';
 import { startRuntimeHeartbeat } from './e2e-runtime-registry.js';
+import { prepareSnapshotDependencies } from './e2e-snapshot-dependencies.mjs';
+import { prepareSnapshotRuntimeData } from './e2e-snapshot-runtime-data.mjs';
 
 function resolvePort(value, fallback) {
   const port = Number.parseInt(String(value ?? '').trim(), 10);
@@ -81,7 +85,7 @@ export function resolveSingleWorkerRuntimeContext(env = process.env, overrides =
   const target = overrides.target ?? env.PW_TEST_TARGET ?? '';
   const targetLabel = overrides.targetLabel ?? env.PW_E2E_TARGET?.trim() ?? target;
   const requestedRuntimeMode = overrides.runtimeMode ?? env.PW_E2E_DAEMON?.trim() ?? '';
-  const runtimeMode = requestedRuntimeMode === 'shared-single' || requestedRuntimeMode === 'isolated-single'
+  const runtimeMode = ['shared-single', 'shared-version', 'isolated-single'].includes(requestedRuntimeMode)
     ? requestedRuntimeMode
     : (useDevServers ? 'shared-dev' : 'shared-single-run');
   const runtimeMetadata = {
@@ -116,6 +120,8 @@ export async function startSingleWorkerRuntime(options = {}) {
   const logger = options.logger ?? console;
   const logFile = options.logFile?.trim() || '';
   const childStdio = options.childStdio ?? (logFile ? ['ignore', 'pipe', 'pipe'] : 'inherit');
+  const sourceRoot = options.sourceRoot ? path.resolve(options.sourceRoot) : '';
+  if (sourceRoot) throw new Error('快照服务尚未完成租约、共享状态隔离和真实入口验证，暂不允许启动');
   const context = resolveSingleWorkerRuntimeContext(env, {
     runtimeMode: options.runtimeMode,
     runtimeScope: options.runtimeScope,
@@ -139,7 +145,17 @@ export async function startSingleWorkerRuntime(options = {}) {
     useTsLoaderRuntime,
     useTsxRuntime,
   } = context;
-  const scopedBundleRoot = getScopedBundleRoot(runtimeScope);
+  const bundleScope = options.bundleScope || runtimeScope;
+  const scopedBundleRoot = sourceRoot
+    ? path.resolve(getScopedBundleRoot(bundleScope))
+    : getScopedBundleRoot(bundleScope);
+  if (sourceRoot && selectedRuntime !== 'bundle') {
+    throw new Error('固定源码根暂只支持 bundle；其他运行方式尚未完成可写状态隔离。');
+  }
+  if (sourceRoot && !useTsxRuntime && !useTsLoaderRuntime) {
+    prepareSnapshotDependencies(sourceRoot, scopedBundleRoot);
+  }
+  const childOptions = { stdio: childStdio, ...(sourceRoot ? { cwd: sourceRoot } : {}) };
 
   await assertChildProcessSupport('single worker E2E 启动', {
     probeEsbuild: !(usePrebuiltRuntime || useTsLoaderRuntime),
@@ -183,9 +199,45 @@ export async function startSingleWorkerRuntime(options = {}) {
     );
   }
 
+  const isolatedPathKeys = ['UGC_LOCAL_PATH', 'LAYOUT_DATA_DIR', 'DICETHRONE_ABILITY_LAYOUT_PATH', 'UI_SCENE_ROOT_PATH',
+    'LOCALES_DIR', 'LOG_DIR', 'TRAINING_DATA_DIR', 'TRAINING_DATA_RAW_DIR', 'TRAINING_DATA_ARCHIVE_DIR',
+    'TRAINING_DATA_PENDING_DIR', 'TRAINING_DATA_COMPLETED_DIR'];
+  if (sourceRoot) {
+    const configured = { ...env };
+    for (const file of ['.env', '.env.local', '.env.example']) {
+      const envFile = path.join(sourceRoot, file);
+      if (fs.existsSync(envFile)) {
+        for (const [name, value] of Object.entries(parseDotEnv(fs.readFileSync(envFile)))) {
+          if (!configured[name]?.trim() && value.trim()) configured[name] = value;
+        }
+      }
+    }
+    const external = isolatedPathKeys.find(name => configured[name]?.trim());
+    if (external) throw new Error(`固定源码根暂不支持外部 ${external}；需要先固定其初始数据和写入位置。`);
+  }
+  const runtimeDataRoot = sourceRoot
+    ? prepareSnapshotRuntimeData(sourceRoot, path.resolve('.tmp', 'e2e-runtime-data', normalizeScopeSegment(bundleScope)))
+    : '';
+  const testApiTokenFile = sourceRoot ? path.join(runtimeDataRoot, 'test-api-token.txt') : '';
+  if (testApiTokenFile) {
+    fs.writeFileSync(testApiTokenFile, env.TEST_API_TOKEN?.trim() || randomBytes(24).toString('hex'), { flag: 'wx', mode: 0o600 });
+  }
+
   const runtimeEnv = createDevRuntimeEnv(ports, {
     ...env,
     E2E_PROXY_QUIET: 'true',
+    ...(sourceRoot ? {
+      VITE_CACHE_DIR: path.resolve('.tmp', 'e2e-vite-cache', normalizeScopeSegment(runtimeScope)),
+      BG_E2E_LOG_DIR: path.resolve('.tmp', 'e2e-vite-logs', normalizeScopeSegment(runtimeScope)),
+      PW_E2E_RUNTIME_CWD: runtimeDataRoot,
+      UGC_LOCAL_PATH: path.join(runtimeDataRoot, 'uploads'),
+      TEST_API_TOKEN_FILE: testApiTokenFile,
+      LAYOUT_DATA_DIR: path.join(runtimeDataRoot, 'layout-data'),
+      DICETHRONE_ABILITY_LAYOUT_PATH: path.join(runtimeDataRoot, 'src', 'games', 'dicethrone', 'ui', 'abilitySlotLayout.ts'),
+      UI_SCENE_ROOT_PATH: path.join(runtimeDataRoot, 'src', 'ui-scenes'),
+      LOCALES_DIR: path.join(sourceRoot, 'public', 'locales'),
+      LOG_DIR: path.join(runtimeDataRoot, 'logs'),
+    } : {}),
   });
 
   const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', runtimeEnv, [
@@ -195,14 +247,13 @@ export async function startSingleWorkerRuntime(options = {}) {
     String(ports.frontend),
     '--configLoader',
     env.VITE_CONFIG_LOADER || 'native',
-  ], {
-    stdio: childStdio,
-  });
+  ], childOptions);
 
   const gameServerEnv = {
     ...runtimeEnv,
     NODE_ENV: 'test',
     USE_PERSISTENT_STORAGE: env.USE_PERSISTENT_STORAGE === 'true' ? 'true' : 'false',
+    ...(sourceRoot ? { NODE_OPTIONS: [env.NODE_OPTIONS, '--preserve-symlinks', '--preserve-symlinks-main'].filter(Boolean).join(' ') } : {}),
   };
 
   const gameServer = useTsxRuntime
@@ -210,19 +261,17 @@ export async function startSingleWorkerRuntime(options = {}) {
       entry: 'server.ts',
       tsconfig: 'tsconfig.server.json',
       env: gameServerEnv,
-      spawnOptions: { stdio: childStdio },
+      spawnOptions: childOptions,
     })
     : useTsLoaderRuntime
       ? spawnTsLoaderEntry({
         entry: 'server.ts',
         tsconfig: 'tsconfig.server.json',
         env: gameServerEnv,
-        spawnOptions: { stdio: childStdio },
+        spawnOptions: childOptions,
       })
       : usePrebuiltRuntime
-        ? spawnNodeScript(prebuiltGameEntry, gameServerEnv, [], {
-          stdio: childStdio,
-        })
+        ? spawnNodeScript(prebuiltGameEntry, gameServerEnv, [], childOptions)
         : spawnBundleRunner({
           label: 'e2e-game-single',
           entry: 'server.ts',
@@ -230,12 +279,13 @@ export async function startSingleWorkerRuntime(options = {}) {
           tsconfig: 'tsconfig.server.json',
           watch: bundleWatchEnabled,
           env: gameServerEnv,
-          spawnOptions: { stdio: childStdio },
+          spawnOptions: childOptions,
         });
 
   const apiServerEnv = {
     ...runtimeEnv,
     NODE_ENV: 'test',
+    ...(sourceRoot ? { NODE_OPTIONS: [env.NODE_OPTIONS, '--preserve-symlinks', '--preserve-symlinks-main'].filter(Boolean).join(' ') } : {}),
   };
 
   const apiServer = useTsxRuntime
@@ -243,19 +293,17 @@ export async function startSingleWorkerRuntime(options = {}) {
       entry: 'apps/api/src/main.ts',
       tsconfig: 'apps/api/tsconfig.json',
       env: apiServerEnv,
-      spawnOptions: { stdio: childStdio },
+      spawnOptions: childOptions,
     })
     : useTsLoaderRuntime
       ? spawnTsLoaderEntry({
         entry: 'apps/api/src/main.ts',
         tsconfig: 'apps/api/tsconfig.json',
         env: apiServerEnv,
-        spawnOptions: { stdio: childStdio },
+        spawnOptions: childOptions,
       })
       : usePrebuiltRuntime
-        ? spawnNodeScript(prebuiltApiEntry, apiServerEnv, [], {
-          stdio: childStdio,
-        })
+        ? spawnNodeScript(prebuiltApiEntry, apiServerEnv, [], childOptions)
         : spawnBundleRunner({
           label: 'e2e-api-single',
           entry: 'apps/api/src/main.ts',
@@ -263,7 +311,7 @@ export async function startSingleWorkerRuntime(options = {}) {
           tsconfig: 'apps/api/tsconfig.json',
           watch: bundleWatchEnabled,
           env: apiServerEnv,
-          spawnOptions: { stdio: childStdio },
+          spawnOptions: childOptions,
         });
 
   const managedServices = [
@@ -344,6 +392,8 @@ export async function startSingleWorkerRuntime(options = {}) {
     ports,
     runtimeMode,
     runtimeScope,
+    runtimeDataRoot,
+    testApiTokenFile,
     logFile,
     managedServices,
     failurePromise,

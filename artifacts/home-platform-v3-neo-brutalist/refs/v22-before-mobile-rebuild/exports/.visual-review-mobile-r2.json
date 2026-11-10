@@ -1,0 +1,24 @@
+{
+  "reviewer": { "kind": "subagent" },
+  "status": "PASS",
+  "media": [
+    {
+      "path": "m02-收藏库游戏页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "封面下纵向四键「重连进入 / 教程模式 / 移出收藏 / 配置表」彼此有空隙；四键下方可见「当前房间」通栏标题且未被底部对局条完全挡住；房间下方另有白底区块被对局条裁切，符合「玩过的好友可部分出屏、房间标题必须可读」；底栏在且收藏库高亮；主栏是游戏详情不是列表。"
+    },
+    {
+      "path": "m07-上传页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "分类下是「人数」左右两个下拉、中间写「至」（2 至 4），人数独占一行，未叠在规则文档上；规则文档在更下方被对局条裁出屏；链接框下可见「粘贴后自动检测能否打开」；底栏「上传」高亮。"
+    },
+    {
+      "path": "m08-个人主页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "身份「衡 / 在线」后纵向叠「编辑个人资料、游玩时长 11.7 小时、局数 30、收藏 8」；最新动态「大杀四方」行「局数 17 · 排行 #1 · 分数 8.412」在对局条上方可读；统计区无排行/评分；资料区无「当前正在游戏」字段；底部对局条为全站悬浮，不判失败。"
+    }
+  ]
+}

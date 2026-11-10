@@ -1,0 +1,80 @@
+{
+  "status": "PASS",
+  "baselineSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "requirements": [
+    {
+      "requirement": "奥丁效果骰在原骰盘完成选择、重掷和原确认收口",
+      "status": "PASS",
+      "baselineSource": "旧索尔效果骰流程：e2e-1793539933248-w3ijl2 的奥丁效果骰截图。",
+      "preservedInformation": "保留效果骰候选、选择进度以及当前是重掷或结束结算的提示。",
+      "preservedActions": "继续使用原骰盘选择、原重掷动作和原确认动作，空选仍由原确认收口。",
+      "changes": "当前共享交互合同统一投影必需提示、候选、进度与动作职责；各对象仍显示自己的旧流程，不新增第二套骰盘或动作按钮。",
+      "duplicateDecision": "不复制骰盘或确认控件；由既有骰盘、手牌区与动作入口承接对应流程。",
+      "changeAuthority": "用户要求补好共享交互合同并全面重审索尔，同时明确非必要不改旧界面。",
+      "before": [
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/03-奥丁II效果骰选择.png",
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/04-奥丁II选择两骰保留原动作.png"
+      ],
+      "after": [
+        "media/01-奥丁效果骰等待选骰.png",
+        "media/02-奥丁效果骰原重掷确认动作.png",
+        "media/03-奥丁效果骰重掷后原确认收口.png"
+      ]
+    },
+    {
+      "requirement": "公共卡槽十一不愧是我保留同骰两次和原确认流程",
+      "status": "PASS",
+      "baselineSource": "旧二对二队友卡流程：e2e-1793539933248-w3ijl2 的不愧是我截图。",
+      "preservedInformation": "保留可重复选择同一颗骰子的规则、完成次数和当前骰主提示。",
+      "preservedActions": "队友出牌后仍由索尔骰主在原骰盘操作，并沿原投掷与确认入口提交。",
+      "changes": "当前共享交互合同统一投影必需提示、候选、进度与动作职责；各对象仍显示自己的旧流程，不新增第二套骰盘或动作按钮。",
+      "duplicateDecision": "不复制骰盘或确认控件；由既有骰盘、手牌区与动作入口承接对应流程。",
+      "changeAuthority": "用户要求补好共享交互合同并全面重审索尔，同时明确非必要不改旧界面。",
+      "before": [
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/15-队友不愧是我同骰两次.png"
+      ],
+      "after": [
+        "media/04-卡槽十一不愧是我重复选骰.png",
+        "media/05-卡槽十一重复进度和原双按钮.png",
+        "media/06-卡槽十一服务端重掷后关闭选择.png"
+      ]
+    },
+    {
+      "requirement": "索尔技能槽二十七当之无愧只提供固定四或五",
+      "status": "PASS",
+      "baselineSource": "旧索尔技能流程：e2e-1793539933248-w3ijl2 的固定四或五截图。",
+      "preservedInformation": "保留当之无愧的两个固定结果四和五及随后选择目标骰的语义。",
+      "preservedActions": "仍先选固定值，再沿原骰盘点选目标骰；不使用任意加减编辑器。",
+      "changes": "当前共享交互合同统一投影必需提示、候选、进度与动作职责；各对象仍显示自己的旧流程，不新增第二套骰盘或动作按钮。",
+      "duplicateDecision": "不复制骰盘或确认控件；由既有骰盘、手牌区与动作入口承接对应流程。",
+      "changeAuthority": "用户要求补好共享交互合同并全面重审索尔，同时明确非必要不改旧界面。",
+      "before": [
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/06-当之无愧选择固定四或五.png",
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/07-当之无愧固定四选择目标骰.png",
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/08-当之无愧固定四提交结果.png"
+      ],
+      "after": [
+        "media/07-技能槽二十七固定四或五.png"
+      ]
+    },
+    {
+      "requirement": "公共卡槽十二惊不惊喜保留加减预览与手动确认",
+      "status": "PASS",
+      "baselineSource": "旧公共任意改值流程：e2e-1793539933248-w3ijl2 的惊不惊喜截图。",
+      "preservedInformation": "保留任意改值候选、数值预览、取消和手动确认提示。",
+      "preservedActions": "继续使用原加减控件和手动确认，不与固定四或五流程合并。",
+      "changes": "当前共享交互合同统一投影必需提示、候选、进度与动作职责；各对象仍显示自己的旧流程，不新增第二套骰盘或动作按钮。",
+      "duplicateDecision": "不复制骰盘或确认控件；由既有骰盘、手牌区与动作入口承接对应流程。",
+      "changeAuthority": "用户要求补好共享交互合同并全面重审索尔，同时明确非必要不改旧界面。",
+      "before": [
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/22-原任意改值选择骰和加减控件.png",
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/23-原任意改值预览和手动确认.png",
+        "evidence/dicethrone/thor-interaction-reaudit-e2e-1793539933248-w3ijl2/24-原任意改值提交结果.png"
+      ],
+      "after": [
+        "media/08-卡槽十二加减编辑预览确认.png",
+        "media/09-卡槽十二单骰修改后结果.png"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,316 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_a + /root/r174_a_resume",
+  "completionReviewer": "/root/r174_a_resume",
+  "score": 94,
+  "scoreProvenance": "原代理当前六图记录总分九十四；接续仅实读指定旧图及当前征兵图，后者独立判定九十四，不冒称原代理已完成整批。",
+  "issues": [],
+  "actualReadCount": 2,
+  "actualCurrentReadCount": 1,
+  "actualBaselineReadCount": 1,
+  "carriedForwardCount": 5,
+  "actualReads": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/05-prepare-hand.png",
+      "sha256": "65ac50c5ed49696a25d5b9b2cac557f4f0c75c2a6a8c4e8874e138a353d707fd",
+      "reviewer": "/root/r174_a_resume",
+      "readSource": "tools.view_image，完整原图，detail=original"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png",
+      "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313",
+      "reviewer": "/root/r174_a_resume",
+      "readSource": "tools.view_image，完整原图，detail=original"
+    }
+  ],
+  "originalReview": {
+    "path": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+    "sha256": "09fa6ee2e654d4381e38b72b2e076649696730cf7f0179a3d27a77320cb4743d",
+    "reviewer": "/root/r174_a",
+    "status": "RUNNING",
+    "actualReadCount": 6,
+    "score": 94
+  },
+  "continuation": {
+    "interruption": "根据主线程交接，原代理在六张当前图和轮盘旧基线读完后遭遇 provider 403，尚未补完手牌旧基线。",
+    "method": "新短上下文代理只补读指定手牌旧图与当前征兵完整原图；逐项验证原六图路径、哈希、通过状态和四项检查，再沿用其中五张当前图与原轮盘基线。",
+    "originalAgentClaimedComplete": false,
+    "providerErrorIndependentlyReproduced": false
+  },
+  "coverage": {
+    "group": "a",
+    "requiredIds": [
+      "frontier-goal",
+      "opening-move",
+      "farm-action",
+      "reclaim-action",
+      "reclaim-target",
+      "recruit-action"
+    ],
+    "coveredIds": [
+      "frontier-goal",
+      "opening-move",
+      "farm-action",
+      "reclaim-action",
+      "reclaim-target",
+      "recruit-action"
+    ],
+    "complete": true,
+    "verification": [
+      {
+        "id": "frontier-goal",
+        "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/00-frontier-goal.png",
+        "sha256": "81313d0ed23165cad87318f8732dda3f666f487c07c3e6b3a7bda0e7507cabda",
+        "hashMatches": true,
+        "originalStatus": "PASS",
+        "checksVerified": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ]
+      },
+      {
+        "id": "opening-move",
+        "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/01-opening-move.png",
+        "sha256": "3226f31e660213a4fa97e2d29900749303e192bc859ef0017827c50d3a462f39",
+        "hashMatches": true,
+        "originalStatus": "PASS",
+        "checksVerified": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ]
+      },
+      {
+        "id": "farm-action",
+        "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/02-farm-action.png",
+        "sha256": "d1b28df2dcc16c386e1f9bb0e147cd14a91435c2ed3635d7ad6827f4b1e52541",
+        "hashMatches": true,
+        "originalStatus": "PASS",
+        "checksVerified": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ]
+      },
+      {
+        "id": "reclaim-action",
+        "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/03-reclaim-action.png",
+        "sha256": "7daa3b09ab6e061dbe9ee25ea5c27cedf3c62f42cee738bbe7f40904b0b297dd",
+        "hashMatches": true,
+        "originalStatus": "PASS",
+        "checksVerified": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ]
+      },
+      {
+        "id": "reclaim-target",
+        "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/04-reclaim-target.png",
+        "sha256": "24008a3873884af8f321d45b74cf1b6995509aa387c51decd7d7cdaa96cdc423",
+        "hashMatches": true,
+        "originalStatus": "PASS",
+        "checksVerified": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ]
+      },
+      {
+        "id": "recruit-action",
+        "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png",
+        "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313",
+        "hashMatches": true,
+        "originalStatus": "PASS",
+        "checksVerified": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ]
+      }
+    ]
+  },
+  "layoutAudit": {
+    "scopeSource": ".tmp/qidahen-final-visual-contract-r174-20261103.md",
+    "readScope": "本接续只重读征兵图；其余五图沿用原代理记录。",
+    "checks": [
+      {
+        "criterion": "空间主次",
+        "status": "PASS",
+        "evidence": [
+          "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png"
+        ],
+        "observation": "当前手牌动作集中在底部卡排上方，征兵教学提示直接承接征兵按钮，轮盘位于左上独立区域。"
+      },
+      {
+        "criterion": "对齐栅格",
+        "status": "PASS",
+        "evidence": [
+          "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png"
+        ],
+        "observation": "四个势力行动按钮同高同列，征兵按钮与上方提示共轴，手牌等高排列。"
+      },
+      {
+        "criterion": "分组与装饰",
+        "status": "PASS",
+        "evidence": [
+          "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png"
+        ],
+        "observation": "手牌、行动按钮、准备牌与轮盘各自分组；提示箭头指向征兵入口，未以第二套列表复刻牌面。"
+      }
+    ]
+  },
+  "element_responsibility_audit": {
+    "ledger": ".tmp/r174-baseline-a.json",
+    "uncovered_elements": [],
+    "decisions": "轮盘行动由轮盘承接；势力行动由手牌上方按钮承接；准备牌、抽弃牌堆与半露手牌保留本体。"
+  },
+  "negative_impact_checks": [
+    {
+      "object": "手牌与准备牌",
+      "status": "PASS",
+      "evidence": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/05-prepare-hand.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png"
+      ],
+      "observation": "两图均可见五张半露手牌、两张准备牌以及抽牌堆和弃牌堆，保留卡排检视标记；静态图不证明悬停展开。"
+    },
+    {
+      "object": "完成轮盘行动",
+      "status": "PASS",
+      "evidence": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png"
+      ],
+      "observation": "入口仍在轮盘下方，不与四个势力行动按钮混同。"
+    }
+  ],
+  "hard_failures": [],
+  "claimScope": "interaction-ui",
+  "limitations": [
+    "仅覆盖分配组甲的六个桌面状态与两项指定基线；不证明其它组、移动端、动态展开、规则数值或生产部署。"
+  ],
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/00-frontier-goal.png",
+      "sha256": "81313d0ed23165cad87318f8732dda3f666f487c07c3e6b3a7bda0e7507cabda",
+      "status": "PASS",
+      "score": 94,
+      "observation": "胜利目标说明与下一步按钮同处纪年牌旁，顶部大明当前回合标记可读，轮盘和地图本体保持可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "frontier-goal",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/01-opening-move.png",
+      "sha256": "3226f31e660213a4fa97e2d29900749303e192bc859ef0017827c50d3a462f39",
+      "status": "PASS",
+      "score": 94,
+      "observation": "轮盘右侧提示紧贴轮盘并明确本次前进一格，开垦军屯扇区白边突出，其他可达扇区绿色较弱，当前回合标记清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "opening-move",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/02-farm-action.png",
+      "sha256": "d1b28df2dcc16c386e1f9bb0e147cd14a91435c2ed3635d7ad6827f4b1e52541",
+      "status": "PASS",
+      "score": 92,
+      "observation": "军屯文字按钮位于当前绿色轮盘扇区内，提示箭头贴近军屯入口，轮盘下放弃按钮和底部势力行动分区明确，未遮住本步操作目标。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "farm-action",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/03-reclaim-action.png",
+      "sha256": "7daa3b09ab6e061dbe9ee25ea5c27cedf3c62f42cee738bbe7f40904b0b297dd",
+      "status": "PASS",
+      "score": 92,
+      "observation": "开垦入口在轮盘当前扇区内以独立边界显示，人口说明紧邻该入口，放大地图与固定轮盘保持层级区分，手牌和征召军队入口仍可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "reclaim-action",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/04-reclaim-target.png",
+      "sha256": "24008a3873884af8f321d45b74cf1b6995509aa387c51decd7d7cdaa96cdc423",
+      "status": "PASS",
+      "score": 91,
+      "observation": "合法开垦区域沿地图本体绿边显示，辽东推荐区域以白色主边界区别于其他候选，辽东名称和人口标记可读，邻近提示与右侧大明确认面板共同说明当前对象和下一步。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "reclaim-target",
+      "reviewer": "/root/r174_a",
+      "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+      "reviewMode": "carried-forward",
+      "carriedForward": true
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png",
+      "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313",
+      "status": "PASS",
+      "score": 94,
+      "observation": "征召军队提示在按钮上方并同轴承接，四个势力行动按钮位于半露手牌正上方，轮盘完成入口独立，抽弃牌堆及准备牌仍可辨认，未见本步目标裁切或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-action",
+      "reviewer": "/root/r174_a_resume",
+      "readSource": "tools.view_image，完整原图，detail=original",
+      "reviewMode": "actual-read",
+      "carriedForward": false,
+      "priorReview": {
+        "reviewer": "/root/r174_a",
+        "readSource": "D:/gongzuo/webgame/BoardGame/.tmp/r174-review-a-interrupted.json",
+        "status": "PASS",
+        "score": 94,
+        "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313"
+      }
+    }
+  ]
+}

@@ -1,0 +1,456 @@
+{
+  "purpose": "完整实际观察的步骤索引，保留原始私有记录的哈希；不再分发第三方完整提示正文。",
+  "source": "C:/Users/zhuagenbao/AppData/Local/Temp/ck3-tutorial-research-20261101/bga-getonboard-967-stable/states.json",
+  "originalSha256": "e49496ab7b038069e3c3bbd9841bff06989816dbbf5a4753d9381a529e12ce2e",
+  "records": 56,
+  "states": [
+    {
+      "number": 0,
+      "action": "正式入口开场",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:10.747Z",
+      "promptSha256": "9faef213ffb3edacfafb460f806f9628d81f2bbb66c5835f2c52873964dce080",
+      "screenshotSource": "C:/Users/zhuagenbao/AppData/Local/Temp/ck3-tutorial-research-20261101/bga-getonboard-967-stable/000.png"
+    },
+    {
+      "number": 1,
+      "action": "点击Start",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:10.979Z",
+      "promptSha256": "af563e13931a9eb40f44e73097615a04769e140dbc7091cc421297b7ccd2090e",
+      "screenshotSource": null
+    },
+    {
+      "number": 2,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:11.315Z",
+      "promptSha256": "4bf42ccae95d699221c15b197f0958301b923504e10599d4535470f68e348f38",
+      "screenshotSource": null
+    },
+    {
+      "number": 3,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:11.882Z",
+      "promptSha256": "76e49c869d69276b0ceae67ab8334112a21ab2a85ed734adf85265a32269e16e",
+      "screenshotSource": null
+    },
+    {
+      "number": 4,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:12.313Z",
+      "promptSha256": "1221fa4da3ad78db6cc463de16bfc1240d70ad8be6c92b8b7a43bf150d945fdb",
+      "screenshotSource": null
+    },
+    {
+      "number": 5,
+      "action": "正式按钮选起点1",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:20.116Z",
+      "promptSha256": "ea83477969b4335ce02c9b1acc685926dc27f66f5722817407933d33904e41a0",
+      "screenshotSource": null
+    },
+    {
+      "number": 6,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:20.299Z",
+      "promptSha256": "011681f88e58051aa324e72515cb7df6651048e4e2c9337449fad5131bffa401",
+      "screenshotSource": null
+    },
+    {
+      "number": 7,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:27.463Z",
+      "promptSha256": "94da2c6a09ac874a4ce46c816de82cf1e7a58521ba46f1f87cb99b91d00ef441",
+      "screenshotSource": null
+    },
+    {
+      "number": 8,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:27.659Z",
+      "promptSha256": "0d6bab9a4158222156578cd33f3c25b87649c7e35d689d9aa78906e990b84246",
+      "screenshotSource": null
+    },
+    {
+      "number": 9,
+      "action": "点正式首段13-23",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:34.957Z",
+      "promptSha256": "129eeaa303e6d74e5b183c0e18b0b71c260665d6ae7130be86daf23345ecdc25",
+      "screenshotSource": null
+    },
+    {
+      "number": 10,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:35.161Z",
+      "promptSha256": "f4843ed1d910e4a7aca367cbacb9fb4c17a4ad47efd9308fe3d84501e7be3584",
+      "screenshotSource": null
+    },
+    {
+      "number": 11,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:35.364Z",
+      "promptSha256": "3f7c139fb871288122414628c7f9f6d3fd3258e44267485097fb0f200ec68ad3",
+      "screenshotSource": null
+    },
+    {
+      "number": 12,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:35.558Z",
+      "promptSha256": "d889be370d0a805c6b3ef09ba09c1b91bf81928855d7b6cca870f731e693d7c0",
+      "screenshotSource": null
+    },
+    {
+      "number": 13,
+      "action": "点第二段12-13完成票面所需垂直转弯",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:41.431Z",
+      "promptSha256": "f4b19b47535efafc5cb23f628081c17fae3c9e1cfbddf056a4f6ecf2b31f0246",
+      "screenshotSource": null
+    },
+    {
+      "number": 14,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:41.614Z",
+      "promptSha256": "ceb50d1ef167b4176b2fe8715f3ab416715d276dae8927cb42cfe8941eb1123f",
+      "screenshotSource": null
+    },
+    {
+      "number": 15,
+      "action": "使用刚到绿灯产生的额外一段11-12",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:49.140Z",
+      "promptSha256": "eb640c29c425ca6e4595102fdb44c35108230ced452bee9267462799a7f9dd22",
+      "screenshotSource": null
+    },
+    {
+      "number": 16,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:49.322Z",
+      "promptSha256": "e0516a3644ff7e7730699f875c8e4d24f92e8a14862d34114bc0a152ce3d52de",
+      "screenshotSource": null
+    },
+    {
+      "number": 17,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:49:50.335Z",
+      "promptSha256": "6a8aaa4784384ed0a7bb79b795c2bc29a4322944e01128752c6852b8706ac9d2",
+      "screenshotSource": null
+    },
+    {
+      "number": 18,
+      "action": "按当前第2轮票面从路线末端延伸11-21",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:06.892Z",
+      "promptSha256": "daa39a5c9bbeea53ffbec363b78fd9148ce97144c7412426be404de539672dc9",
+      "screenshotSource": null
+    },
+    {
+      "number": 19,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:07.077Z",
+      "promptSha256": "a6d3bbec7bc4544a56b81c3f8c12e1c9e65ff6b2a90eb13165d86ff5d437531c",
+      "screenshotSource": null
+    },
+    {
+      "number": 20,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:07.266Z",
+      "promptSha256": "7de570917d42e961a44b3604e906e84a379cd8ad7da732dbbcfbb3f2ac10b144",
+      "screenshotSource": null
+    },
+    {
+      "number": 21,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:07.453Z",
+      "promptSha256": "51313400e1fff9d9277cce4e10c14b2e86b05544c57ce623e9838074b388a44d",
+      "screenshotSource": null
+    },
+    {
+      "number": 22,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:07.650Z",
+      "promptSha256": "fa2677a84a9bf4c3827284524fce05043125739b36aa4414df5cb25741f6745d",
+      "screenshotSource": null
+    },
+    {
+      "number": 23,
+      "action": "完成第2轮剩余一段21-31",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:18.487Z",
+      "promptSha256": "07c5e9de6f29c2f7b57a42c60c640aa5b720ff33360d2fb0945df226327cb5ed",
+      "screenshotSource": null
+    },
+    {
+      "number": 24,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:18.693Z",
+      "promptSha256": "53b262c11b4a0439df675b80272a9ab79abb60282d99183a9b115f0abda2a123",
+      "screenshotSource": null
+    },
+    {
+      "number": 25,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:18.892Z",
+      "promptSha256": "73eb4c9a721fbe612804daecdc39d99aeb7eb9978f2fa86b197f1776f0abbc5b",
+      "screenshotSource": null
+    },
+    {
+      "number": 26,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:35.230Z",
+      "promptSha256": "d7e5902d8d1d9ab893729853612580a7b5f5b3ba8a78ec693521776d218d3641",
+      "screenshotSource": null
+    },
+    {
+      "number": 27,
+      "action": "第3轮目标已因前两轮路线而接近",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:50:56.883Z",
+      "promptSha256": "d7e5902d8d1d9ab893729853612580a7b5f5b3ba8a78ec693521776d218d3641",
+      "screenshotSource": "C:/Users/zhuagenbao/AppData/Local/Temp/ck3-tutorial-research-20261101/bga-getonboard-967-stable/027.png"
+    },
+    {
+      "number": 28,
+      "action": "按先前公共目标提示实际悬停第一目标",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:05.931Z",
+      "promptSha256": "d7e5902d8d1d9ab893729853612580a7b5f5b3ba8a78ec693521776d218d3641",
+      "screenshotSource": null
+    },
+    {
+      "number": 29,
+      "action": "第3轮先到已接近的个人目标红灯31-41",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:08.009Z",
+      "promptSha256": "9de25d0e7d7dfbcf307249d1bb5c1beaf9daf5e89c990c2f84ba073e7d29938a",
+      "screenshotSource": null
+    },
+    {
+      "number": 30,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:08.347Z",
+      "promptSha256": "9399649fe18e001433b0b0c65e5a256c953e958d918f31a05aab8e0915396508",
+      "screenshotSource": null
+    },
+    {
+      "number": 31,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:08.545Z",
+      "promptSha256": "1562f6c12f61e5f813e3e504af0cc99964e811082b7109fc03f01c7ae0a45772",
+      "screenshotSource": null
+    },
+    {
+      "number": 32,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:08.757Z",
+      "promptSha256": "f5a8e3173fe8309ce284a44f00031a66a4ed8574ba75fdcea1345d6ee5974644",
+      "screenshotSource": null
+    },
+    {
+      "number": 33,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:08.971Z",
+      "promptSha256": "f024a73422e967f20791da9f9e5eb5937eaa76df748d194ee7b1b7ce0fcbaa86",
+      "screenshotSource": null
+    },
+    {
+      "number": 34,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:23.022Z",
+      "promptSha256": "148afb1f4e54f4d84ce361e36a727de51e5a8bcbcf702bcd7de4cd1d4551f523",
+      "screenshotSource": null
+    },
+    {
+      "number": 35,
+      "action": "选择和对手重叠的41-42，观察正式拥堵罚分",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:28.580Z",
+      "promptSha256": "17603494e02485a8e17a138fbd1df939c05c722333904b526a9818e9e38f9e58",
+      "screenshotSource": null
+    },
+    {
+      "number": 36,
+      "action": "完成第3轮末段42-52",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:36.914Z",
+      "promptSha256": "a8672c247e3a796d562095ede40c427b21e966e48f6c762a6f9f305f8fa1f357",
+      "screenshotSource": null
+    },
+    {
+      "number": 37,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:37.026Z",
+      "promptSha256": "cacb18531c70490b68c944c0602844c4f2185c730815e2f7b47a1879f7c062d1",
+      "screenshotSource": null
+    },
+    {
+      "number": 38,
+      "action": "第4轮沿原路线52-62接长者",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:43.289Z",
+      "promptSha256": "f0be7c64d3da11d6cdd4b1db7702eec81bbe7d99f2f4a0887aa51daae51e3c54",
+      "screenshotSource": null
+    },
+    {
+      "number": 39,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:43.486Z",
+      "promptSha256": "71ba025a16bd23e050fd07e15e0de7baeaaf975e1361e7928bafe4e493ff66bd",
+      "screenshotSource": null
+    },
+    {
+      "number": 40,
+      "action": "当前学生靠近公共目标，偏离票面有可见罚分的真实取舍",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:50.754Z",
+      "promptSha256": "71ba025a16bd23e050fd07e15e0de7baeaaf975e1361e7928bafe4e493ff66bd",
+      "screenshotSource": "C:/Users/zhuagenbao/AppData/Local/Temp/ck3-tutorial-research-20261101/bga-getonboard-967-stable/040.png"
+    },
+    {
+      "number": 41,
+      "action": "为接到目标所需学生而选62-72，承担偏离票面罚分",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:52.532Z",
+      "promptSha256": "c5f82f0fda14696cf00ad0e41e77ab219df8ea6c5af405ab70b6325411082526",
+      "screenshotSource": null
+    },
+    {
+      "number": 42,
+      "action": "延伸72-73接当前下一类乘客",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:59.193Z",
+      "promptSha256": "710ecbb41a4d1e3019b1217c7dad58cb55907cc11009379422083928dc314e9d",
+      "screenshotSource": null
+    },
+    {
+      "number": 43,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:59.392Z",
+      "promptSha256": "a52b0eb7d81c9f2778a2e10f357e7467fcda94acb3294f9c163f20c33c911f0f",
+      "screenshotSource": null
+    },
+    {
+      "number": 44,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:51:59.596Z",
+      "promptSha256": "199acc6fca707077b260204948a994f19b6dd3c714b544cf813dffcb5fd0f164",
+      "screenshotSource": null
+    },
+    {
+      "number": 45,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:52:20.625Z",
+      "promptSha256": "4cfbf3522fd11b82f8ef49c86a43344d0bfbbc2e3e28274d2ef159d85ea899ae",
+      "screenshotSource": null
+    },
+    {
+      "number": 46,
+      "action": "按教程第6轮延伸82-83",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:52:40.632Z",
+      "promptSha256": "1dce0abf5ee5a31b26f5dfe40ac07e33ed8ede4d45745c65b7c89c1a989d9d29",
+      "screenshotSource": null
+    },
+    {
+      "number": 47,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:52:40.856Z",
+      "promptSha256": "e8882310bf8139d00728594f6d64e70837a9347a1e67a6d82809cc271a8ab9f6",
+      "screenshotSource": null
+    },
+    {
+      "number": 48,
+      "action": "避开刚出现的回到旧交点黑路，选81-82",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:52:47.532Z",
+      "promptSha256": "d2903aa02e2c95eea4d97f3b659d8201e76b03ccd7283479808e66b3c25c081a",
+      "screenshotSource": null
+    },
+    {
+      "number": 49,
+      "action": "复用已教绿灯额外段81-91",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:52:54.557Z",
+      "promptSha256": "61311ba2c1e72ac58e29ce2f11c870842bb7611c4d9a6e3acee1d6a000a08bcb",
+      "screenshotSource": null
+    },
+    {
+      "number": 50,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:53:14.058Z",
+      "promptSha256": "589f6fd3436370e036c59877986b980bd75b82838da22cf942a62822dd238535",
+      "screenshotSource": null
+    },
+    {
+      "number": 51,
+      "action": "到办公楼91-101送下当前已接职业乘客",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:53:20.555Z",
+      "promptSha256": "a485fcee0b6beefafcfee56045fb43e7a783a87e2496012946c69388eb51c745",
+      "screenshotSource": null
+    },
+    {
+      "number": 52,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:53:20.760Z",
+      "promptSha256": "229bd6419e52efe584267629aaa52cc3c0688e0d1a108e8b65bf54bab89b9f36",
+      "screenshotSource": null
+    },
+    {
+      "number": 53,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:53:21.176Z",
+      "promptSha256": "a8bf15d7a9654d27501b41e5ed28d7295a7321ea1ff578ffe94b3aebd733c2e3",
+      "screenshotSource": null
+    },
+    {
+      "number": 54,
+      "action": "点击Continue，等新提示",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:53:21.590Z",
+      "promptSha256": "0360bf21495eec15b735780dd7229dbf76d7a883555433548ddc3949fea4bf96",
+      "screenshotSource": null
+    },
+    {
+      "number": 55,
+      "action": "已看到平台教程完成态，未点击注册或开新对局",
+      "url": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "timestamp": "2026-11-01T04:53:53.194Z",
+      "promptSha256": "0360bf21495eec15b735780dd7229dbf76d7a883555433548ddc3949fea4bf96",
+      "screenshotSource": "C:/Users/zhuagenbao/AppData/Local/Temp/ck3-tutorial-research-20261101/bga-getonboard-967-stable/055.png"
+    }
+  ]
+}

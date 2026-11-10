@@ -1,0 +1,82 @@
+{
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/01-原版基线-PC-主牌桌.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/02-原版基线-手机-主牌桌.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/03-原版基线-PC-能力与物品.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/04-原版基线-手机-能力入口.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/05-原版基线-手机-能力详情.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/06-原版基线-PC-剧本书.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/07-原版基线-手机-剧本书.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/08-原版基线-PC-剧本三按钮.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/09-原版基线-手机-剧本三按钮.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/10-原版基线-手机-过场.jpg",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/11-否定候选-PC-主界面.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/12-否定候选-手机-主界面.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/13-否定候选-手机-能力详情.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/14-否定候选-手机-属性轨.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/20-新候选-PC-主态.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/21-新候选-手机-主态.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/22-新候选-PC-能力详情.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/23-新候选-手机-能力详情.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/24-新候选-PC-物品阅读.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/25-新候选-手机-物品阅读.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/26-新候选-PC-剧本书.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/27-新候选-手机-剧本书.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/28-新候选-PC-过场.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/29-新候选-手机-过场.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/30-新候选-PC-剧本选择-REVISE.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/31-新候选-手机-剧本选择-REVISE.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/32-新候选-PC-移动.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/33-新候选-手机-移动.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/34-新候选-PC-骰盘.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/35-新候选-手机-骰盘.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/36-新候选-PC-终局.png",
+    "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/37-新候选-手机-终局.png"
+  ],
+  "requirements": [
+    {
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/01-原版基线-PC-主牌桌.jpg",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/02-原版基线-手机-主牌桌.jpg",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/04-原版基线-手机-能力入口.jpg",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/05-原版基线-手机-能力详情.jpg",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/06-原版基线-PC-剧本书.jpg",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/08-原版基线-PC-剧本三按钮.jpg"
+      ],
+      "requirement": "打开原版 PC/手机真实截图作为基线",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/11-否定候选-PC-主界面.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/12-否定候选-手机-主界面.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/13-否定候选-手机-能力详情.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/14-否定候选-手机-属性轨.png"
+      ],
+      "requirement": "打开被否定的 OpenDesign 候选并标 REVISE",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/20-新候选-PC-主态.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/21-新候选-手机-主态.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/23-新候选-手机-能力详情.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/27-新候选-手机-剧本书.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/29-新候选-手机-过场.png",
+        "D:/gongzuo/webgame/BoardGame/artifacts/betrayal-ui-redesign-open-design/review-v2-20261009/31-新候选-手机-剧本选择-REVISE.png"
+      ],
+      "requirement": "以原版为基线重做 OpenDesign，PC/手机成对出图，待用户确认",
+      "status": "PASS"
+    }
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "verdict": "PASS",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "scope": "current-user-request",
+  "notes": "本清单只证明设计对照与 v2 OpenDesign 出图。不是 Board.tsx 实现 PASS。"
+}

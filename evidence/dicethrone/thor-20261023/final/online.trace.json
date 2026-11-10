@@ -1,0 +1,176 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "online",
+  "sourceRun": "e2e-1792805482044-ty51qv",
+  "sourceRevision": "0bd7ef56bb5902f1b2b71824fdde563d1b1426717b8654e0d5b49a91c40ae554",
+  "status": "PASS",
+  "outcome": "索尔在线开局角色板九槽与手牌",
+  "steps": [
+    {
+      "id": "online-01",
+      "action": "记录场景载入后的首个可见决策态",
+      "before": {
+        "visible": {
+          "text": "选择你的英雄\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792805508137(你)\nP2\n武僧\nGuest-1792805508849\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "选择你的英雄\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792805508137(你)\nP2\n武僧\nGuest-1792805508849\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "host-character",
+          "actual": "thor",
+          "expected": "thor"
+        },
+        {
+          "name": "guest-character",
+          "actual": "monk",
+          "expected": "monk"
+        },
+        {
+          "name": "host-started",
+          "actual": false,
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "online-02",
+      "action": "索尔在线开局角色板九槽与手牌",
+      "before": {
+        "visible": {
+          "text": "选择你的英雄\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792805508137(你)\nP2\n武僧\nGuest-1792805508849\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "🛠️\nGuest-1792805508849\n武僧\n50\n2\n4\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n2\n手动响应\n牌堆\n29\n<\n投掷\n确认\n下一阶段\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n弃牌堆\n2\n1\n1\n0"
+        },
+        "authoritative": {
+          "phase": "main1",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": true,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": [
+                "card-surprise",
+                "card-thor-thunderous",
+                "card-next-time",
+                "card-one-throw-fortune"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": [
+                "card-thrust-punch-3",
+                "card-bye-bye",
+                "card-get-away",
+                "card-zen-fist-2"
+              ]
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "host-character",
+          "actual": "thor",
+          "expected": "thor"
+        },
+        {
+          "name": "guest-character",
+          "actual": "monk",
+          "expected": "monk"
+        },
+        {
+          "name": "host-started",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "starting-hand",
+          "actual": 4,
+          "expected": 4
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "online-01-ui",
+      "stepId": "online-01",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "8aa44f65112763700cb6088eeaaea85dd2dd17fa3f941cea2b57c140f0029d26"
+    },
+    {
+      "id": "online-02-ui",
+      "stepId": "online-02",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "9380df0e970e199bbf7feea596658353e6455663e772e44388927e6d75f1cb7a"
+    }
+  ]
+}

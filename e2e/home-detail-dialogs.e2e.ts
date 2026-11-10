@@ -127,9 +127,16 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             await activate(authorButton);
             const author = page.getByTestId('game-details-author-modal');
             await modernDialog(author);
+            await expect(author.getByRole('button', { name: '申请认领', exact: true })).toBeVisible();
             await capture(page, `${label}-作者说明`);
             await activate(author.locator('.platform-dialog-close'));
             await expect(author).toHaveCount(0); await expect(details).toBeVisible();
+            await activate(authorButton);
+            await activate(author.getByRole('button', { name: '申请认领', exact: true }));
+            const claim = page.getByTestId('creator-claim-panel');
+            await expect(claim).toContainText('请先登录后再申请认领这款游戏');
+            await activate(claim.getByRole('button', { name: /返回游戏详情/ }));
+            await expect(claim).toHaveCount(0); await expect(details).toBeVisible();
             await activate(details.getByRole('button', { name: '创建房间', exact: true }));
             const create = page.locator('.platform-room-dialog');
             await expect(create).toBeVisible();

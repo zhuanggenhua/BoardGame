@@ -1,0 +1,69 @@
+{
+  "verdict": "PASS",
+  "score": 95,
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-03",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "problemChain": {
+    "problemOriginal": "四个大明同层势力行动被塞进一张过长总览卡，连费用、目标和结算都提前讲完，导致教程层级和规则先后关系混乱。",
+    "understanding": "父层只负责说明当前进入手牌行动、可选一项、与轮盘没有固定先后、四个同层入口和本次示范项；每个子项的费用、目标、限制和结果在进入该子项后再教。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "同一真实入口：/play/qidahen/tutorial/basic-opening。",
+        "同一真实测试入口：e2e/qidahen/qidahen-closeout.e2e.ts。",
+        "05 与 06 连续截图直接覆盖总览层与赐印招安子项层。"
+      ]
+    },
+    "currentSolution": "新增 action-overview 父层步骤，压缩总览文案；保留四个真实按钮与下一步示范；将赐印招安的弃牌费用、指定对手、部队移动和阵营转换留到 pick-action / pay-cards / target / result 子步骤。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "总览文案长度约 70 字，不包含“弃 3 张手牌”。",
+        "下一张截图进入赐印招安细节，子步骤继续解释费用和效果。",
+        "真实 Chromium E2E：17 passed。",
+        "教程定向单测：24 passed；类型检查和规范 lint 通过。"
+      ]
+    }
+  },
+  "requirements": [
+    {
+      "requirement": "父层总览只讲集合、可选数量、顺序关系和示范入口",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-03-qidahen-action-overview-v3/05-手牌行动总览-四个势力行动.png"
+      ]
+    },
+    {
+      "requirement": "子步骤承接赐印招安的具体规则，而不是在总览重复展开",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-03-qidahen-action-overview-v3/06-手牌行动-赐印招安规则.png"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-03-qidahen-action-overview-v3/05-手牌行动总览-四个势力行动.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-03-qidahen-action-overview-v3/06-手牌行动-赐印招安规则.png"
+  ],
+  "verification": {
+    "e2e": "node scripts/infra/run-e2e-single.mjs default e2e/qidahen/qidahen-closeout.e2e.ts",
+    "e2eResult": "17 passed",
+    "unit": "npx vitest run src/games/qidahen/__tests__/tutorialFlow.test.ts",
+    "unitResult": "24 passed",
+    "typecheck": "npm run typecheck",
+    "typecheckResult": "passed",
+    "specLint": "npm run spec:lint",
+    "specLintResult": "passed",
+    "screenshotRunId": "2026-10-03-qidahen-action-overview-v3",
+    "desktopPngCount": 60,
+    "mobilePngCount": 3,
+    "totalPngCount": 63,
+    "badPngCount": 0
+  }
+}

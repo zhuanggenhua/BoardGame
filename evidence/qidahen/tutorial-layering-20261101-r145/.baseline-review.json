@@ -1,0 +1,247 @@
+{
+  "status": "PASS",
+  "claimScope": "独立基线对照与指定当前整屏抽审，以及主线程真实运行记录的完整流程及恢复续局交叉核查。只覆盖下列四项，不代填其它代理的全媒体或视频审查，不代表用户人工认可、移动端、普通对局全部分支、提交或发布。",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r148_pan_and_baseline"
+  },
+  "requirements": [
+    {
+      "requirement": "提示与教学对象易于对应",
+      "status": "PASS",
+      "baselineSource": "实际读取用户指出失败的原始截图及已退回的开垦、征兵、维持部队旧图；这些旧图用于定位失败关系，不作为用户批准的设计。",
+      "preservedInformation": "行动轮盘规则、开垦人口条件、征兵本土限制、外交标记语义、维持补给和征兵训练说明均有承载；真实地区名称、阵营标记、部队和人口仍在图中。",
+      "preservedActions": "轮盘推进、点击地区征召、开垦确认、外交结束、维持部队选择、征兵训练列表与完成返回均保留真实入口。",
+      "changes": "行动轮盘说明移到轮盘右侧；辽东、辽北、大同和叶赫部说明靠近各自真实地区标记与部队；列表征兵说明紧邻辽东候选行；战斗画面明确写出辽北到叶赫部。",
+      "duplicateDecision": "保留必要的规则解释与执行控件分工，没有用第二个教程按钮替代地图或列表输入；地区名牌只识别真实地区，不把名牌自身当作军队或候选。",
+      "changeAuthority": "依据用户要求提示跟教学对象对应、保留原始语义和对象层级进行基线核查；不把退回旧图追认为已批准方案。",
+      "before": [
+        "C:/Users/ZHUAGE~1/AppData/Local/Temp/codex-clipboard-4f3fc7a3-61ac-48e4-8204-329a506f851b.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/04-reclaim-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/36-upkeep-datong.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/37-upkeep-yehe.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r146-layering-pc-20261101/desktop/08-recruit-source.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/52-PC-首点威望与下一年度目标.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/21-PC-炮兵停稳与结果.jpg"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "界面与场景分层避让",
+      "status": "PASS",
+      "baselineSource": "用户失败原图显示轮盘在左上而轮盘说明落在右下；旧开垦图说明与辽东分离，旧大同和叶赫部图把地区名牌放在远离真实部队的位置。",
+      "preservedInformation": "场景层保留真实地图、部队、人口和阵营；界面层保留玩家状态、牌堆、手牌、轮盘、教程说明与当前操作。",
+      "preservedActions": "地图缩放、复位、当前确认、支付选牌、部队选择及列表选择没有因注释移动而失去入口。",
+      "changes": "当前轮盘说明邻接轮盘；地图解释围绕真实标记而非远处名牌定位；大同和叶赫部的部队保持可见，说明位于其上侧或右侧；列表阶段的说明按列表输入关系避让。",
+      "duplicateDecision": "地图与固定界面允许按层覆盖，审查未用整屏零交叠代替关联判断；不要求其它合法候选的每枚军队和人口同时无遮挡。",
+      "changeAuthority": "依据用户要求按界面层级判断避让并审查整屏第一眼关联；没有为了清空画面而授权删除仍参与决策的对象。",
+      "before": [
+        "C:/Users/ZHUAGE~1/AppData/Local/Temp/codex-clipboard-4f3fc7a3-61ac-48e4-8204-329a506f851b.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/04-reclaim-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/36-upkeep-datong.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/37-upkeep-yehe.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r146-layering-pc-20261101/desktop/08-recruit-source.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/21-PC-炮兵停稳与结果.jpg"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "当前候选与操作完整可用",
+      "status": "PASS",
+      "baselineSource": "实际读取旧开垦与征兵来源图，对照当前开垦、征兵、外交、维持和训练目标；另沿用本人此前实读的原生拖图三图及回执作为镜头外候选恢复诊断。",
+      "preservedInformation": "当前白边教学地区、绿色合法候选地区、真实阵营标记、部队、人口及列表中的地区名称均保留；镜头外对象不被当成已删除。",
+      "preservedActions": "原地图平移、缩放和复位可恢复查看其它地区；当前地区输入、候选列表、确认、选牌与选择部队入口仍有明确承载。",
+      "changes": "地图按当前教学焦点展示更可读的地区与标记，部分其它候选因此在镜头外；征兵训练使用原有列表，辽东候选身份和真实按钮可辨。",
+      "duplicateDecision": "没有增设假候选或说明按钮取代真实输入；不把图面聚焦误判为候选集合缩减；原生拖图诊断只证明其实际覆盖的恢复查看样本。",
+      "changeAuthority": "依据用户要求保留合法候选身份与真实输入并允许分层避让；镜头聚焦不能授权改变原候选集合或地图命中区域。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/04-reclaim-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r146-layering-pc-20261101/desktop/08-recruit-source.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/36-upkeep-datong.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/37-upkeep-yehe.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/38-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/50-PC-辽东征兵与新年度目标.png"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "完整PC流程及恢复续局",
+      "status": "PASS",
+      "baselineSource": "旧图只作为已退回的视觉基线，不证明完整流程或存档；本项流程事实交叉核对主线程本轮真实连续运行记录、末段刷新记录及生命周期六项记录。",
+      "preservedInformation": "年度主链记录包含从开局到结束的步骤、规则状态、领取纪年结果和退场后的下一输入；刷新前后核心状态、历史、检查点及随机进度一致。",
+      "preservedActions": "真实运行记录覆盖正式动作推进、上一步重做、刷新续局、重新开始、旧进度隔离、从真实菜单退出和退出后普通房间继续操作。",
+      "changes": "当前末段训练征兵界面与结束界面已经实际读图；流程与恢复通过来自主线程真实运行记录交叉核查，本审查者没有亲自操作或从静图推断存档。",
+      "duplicateDecision": "没有将生命周期六项事实说成六条独立浏览器测试，也不将旧保存点拖图诊断替代当前自然整链；恢复沿用同一权威对局，不另设教程影子状态。",
+      "changeAuthority": "依据用户要求完整桌面流程及恢复续局进行核查；用户桌面人工验收仍待进行，移动端未做，提交推送和部署不在本项放行范围。",
+      "before": [
+        "C:/Users/ZHUAGE~1/AppData/Local/Temp/codex-clipboard-4f3fc7a3-61ac-48e4-8204-329a506f851b.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/04-reclaim-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/36-upkeep-datong.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/37-upkeep-yehe.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r146-layering-pc-20261101/desktop/08-recruit-source.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-layering-20261101-r145/media/52-PC-首点威望与下一年度目标.png"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/3"
+    }
+  ],
+  "visualObservations": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/01-opening-move.png",
+      "observation": "轮盘说明紧邻轮盘右侧，高亮行动格与本次前进一格的说明可直接对应，修正用户失败原图中的左上轮盘与右下说明分离。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/04-reclaim-target.png",
+      "observation": "辽东名牌、明标记、三支部队及人口三可见，注释在其上侧，白边地区和绿色其它候选均保持；不以必须同时展开所有地区兵口作为本层条件。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/08-recruit-source.png",
+      "observation": "辽北名牌在真实明标记附近，右侧注释对准该地区，三支部队与人口三可见，征召军队原操作提示仍在。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/28-diplomacy-target.png",
+      "observation": "外喀尔喀部的白边、蒙古反面标记、人口和名称在说明下方相邻可辨，右侧结束外交与确认保持。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/36-upkeep-datong.png",
+      "observation": "大同真实标记、三枚部队和人口二位于同一高亮地区，注释靠近其上侧，不再仅在远处放大同名牌；部队可选边界保留。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/37-upkeep-yehe.png",
+      "observation": "叶赫部名牌和明标记、三支部队及人口二相邻，注释在其右侧，支付手牌与右侧维持操作区分层保留。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/49-training-recruit-target.png",
+      "observation": "当前交互载体是征兵训练列表，辽东行有可见名称和焦点边界，注释邻接该行；不要求把列表教学错误地重新锚到地图上。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/51-finish.png",
+      "observation": "结束说明、完成并返回与上一步入口可读，保留轮盘、地图、玩家状态和牌区；本图仅证明结束界面，退场和下一输入由运行记录支持。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/battle-artillery-damage.jpg",
+      "observation": "辽北到叶赫部、炮兵阶段和攻方文字明确当前战斗归属，战斗骰面与合计结果可见，目标地区用红色边界和填色承载；不以本帧代替连续视频动效验收。"
+    }
+  ],
+  "behaviorCrosscheck": {
+    "source": "主线程真实运行记录的独立读取与交叉核对；本审查者未亲自执行浏览器动作。",
+    "trace": {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/behavior-trace.json",
+      "status": "PASS",
+      "steps": 76,
+      "uiStates": 52,
+      "assertions": 105,
+      "unequalAssertions": 0,
+      "outcome": {
+        "tutorialActive": false,
+        "year": 1,
+        "claimed": [
+          1301
+        ],
+        "nextInputAccepted": true
+      }
+    },
+    "lateRefresh": {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/late-progress.json",
+      "status": "PASS",
+      "beforeAfterExactlyEqual": true,
+      "storedStep": "training-recruit-target",
+      "coreHash": "1b2d4a13dbeeaea16c63b678ef044e6315d9a68a381f5a9f47b54d91224ed0be",
+      "historyHash": "91f7408b3693f366799ece2d80832574085674841f17653b5016efe287384199",
+      "checkpoints": 71,
+      "randomCursor": 106,
+      "randomPolicy": {
+        "mode": "sequence",
+        "values": [
+          1,
+          1,
+          10,
+          10
+        ],
+        "cursor": 4
+      }
+    },
+    "lifecycle": {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/lifecycle/lifecycle-verification.json",
+      "status": "PASS",
+      "records": [
+        "reload-continue",
+        "previous-and-redo",
+        "restart",
+        "outdated-progress",
+        "exit-through-real-menu",
+        "ordinary-room-after-exit"
+      ],
+      "allSixAssertionsTrue": true,
+      "note": "一个浏览器测试内的六项记录。"
+    },
+    "contentDependency": {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/reviews/dependency-content-review.json",
+      "status": "引用独立内容与依赖审查",
+      "observation": "已读取其当前绑定、内容与正式动作语义保持及指定运行依赖结论；单元测试三百四十三项、地图聚焦六项和类型检查来自其绑定记录，本审查者未重跑或代替其静态职责。"
+    },
+    "candidateRecovery": {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/reviews/map-pan-visual-r148.json",
+      "status": "PASS-diagnostic-only",
+      "observation": "本人此前实际私读三张原生拖图图及回执，镜头外候选可移回中央并返回辽东；候选守恒按运行回执交叉，不把这组三图放进本轮主链后图数组。"
+    }
+  },
+  "reviewedMedia": {
+    "before": [
+      "C:/Users/ZHUAGE~1/AppData/Local/Temp/codex-clipboard-4f3fc7a3-61ac-48e4-8204-329a506f851b.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/04-reclaim-target.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/36-upkeep-datong.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/37-upkeep-yehe.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r146-layering-pc-20261101/desktop/08-recruit-source.png"
+    ],
+    "after": [
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/01-opening-move.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/04-reclaim-target.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/08-recruit-source.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/28-diplomacy-target.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/36-upkeep-datong.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/37-upkeep-yehe.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/49-training-recruit-target.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/51-finish.png",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/battle-artillery-damage.jpg"
+    ]
+  },
+  "hardFailures": [],
+  "pending": [
+    "用户桌面人工验收仍待进行。",
+    "移动端未做。",
+    "没有提交、推送或部署。",
+    "全量媒体及连续视频结论由负责代理分别产出，本报告不代填。"
+  ]
+}

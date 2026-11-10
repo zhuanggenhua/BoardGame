@@ -1,0 +1,119 @@
+{
+  "text": "选择要施放的法术",
+  "rows": [
+    {
+      "testId": "dt-card-pool-title",
+      "tag": "H2",
+      "top": 45.75,
+      "bottom": 73.75,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "18px",
+      "lineHeight": "28px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-surface",
+      "tag": "DIV",
+      "top": 33.75,
+      "bottom": 359,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-panel",
+      "tag": "DIV",
+      "top": 33.75,
+      "bottom": 359,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-overlay",
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 375,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 0,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 375,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 375,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 375,
+      "bottom": 375,
+      "scrollTop": 0,
+      "overflowY": "auto",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "BODY",
+      "top": 0,
+      "bottom": 375,
+      "scrollTop": 0,
+      "overflowY": "hidden",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "HTML",
+      "top": 0,
+      "bottom": 375,
+      "scrollTop": 0,
+      "overflowY": "hidden",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    }
+  ]
+}

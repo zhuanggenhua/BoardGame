@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "owner": "vitest",
+  "scope": "规则流程、征召分支、征兵训练、事件推进及实际部队结果由行为测试断言；截图不承担规则或数值正确性。",
+  "command": "node_modules/.bin/vitest run src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-faction-action-effects.test.ts",
+  "testFiles": [
+    {
+      "path": "src/games/qidahen/__tests__/tutorialFlow.test.ts",
+      "status": "PASS",
+      "tests": 29
+    },
+    {
+      "path": "src/games/qidahen/__tests__/qidahen-faction-action-effects.test.ts",
+      "status": "PASS",
+      "tests": 50
+    }
+  ],
+  "total": {
+    "passed": 79,
+    "failed": 0
+  }
+}

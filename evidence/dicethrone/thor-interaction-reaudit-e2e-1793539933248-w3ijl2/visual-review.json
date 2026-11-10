@@ -1,0 +1,2757 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "baseline": {
+    "revision": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+    "pixelsAvailable": false,
+    "policy": "恢复旧顶部居中提示并复用旧骰盘、手牌区与确认动作；新增交互只在本轮点名区域验收。"
+  },
+  "sameScreenImpact": {
+    "角色板和玩家状态": {
+      "decision": "保留",
+      "finding": "索尔棋盘、角色技能槽和玩家状态继续留在原位。",
+      "evidence": [
+        "01-索尔在线角色板九槽.png",
+        "19-队友就这防御骰重投.png"
+      ]
+    },
+    "阶段栏和玩家栏": {
+      "decision": "保留并避让",
+      "finding": "当前阶段与玩家栏继续可读；提示位置避开顶部玩家栏。",
+      "evidence": [
+        "15-队友不愧是我同骰两次.png",
+        "16-队友我又行了任选两骰.png",
+        "19-队友就这防御骰重投.png"
+      ]
+    },
+    "骰盘候选和历史进度": {
+      "decision": "保留",
+      "finding": "候选骰、选中标记和已选进度均由原骰盘表达。",
+      "evidence": [
+        "04-奥丁II选择两骰保留原动作.png",
+        "07-当之无愧固定四选择目标骰.png",
+        "19-队友就这防御骰重投.png",
+        "20-连锁闪电二级四骰选择.png",
+        "21-连锁闪电二级选择两骰确认.png",
+        "22-原任意改值选择骰和加减控件.png",
+        "23-原任意改值预览和手动确认.png",
+        "24-原任意改值提交结果.png"
+      ]
+    },
+    "牌库与弃牌堆入口": {
+      "decision": "保留",
+      "finding": "弃牌成本仍在手牌区完成，没有替代牌库或弃牌堆入口。",
+      "evidence": [
+        "02-弃牌飞掷手牌区成本.png",
+        "13-弃牌召回成本.png"
+      ]
+    },
+    "手牌成本和可读性": {
+      "decision": "保留",
+      "finding": "弃牌目标仍显示在原手牌区；少数旧手牌边缘贴近视口底部已单独列为范围外备注。",
+      "evidence": [
+        "02-弃牌飞掷手牌区成本.png",
+        "13-弃牌召回成本.png"
+      ]
+    },
+    "主动作入口和当前提示": {
+      "decision": "保留并避让",
+      "finding": "当前提示沿旧顶部居中位置显示，卡牌出牌和响应入口保持原宿主。",
+      "evidence": [
+        "03-奥丁II效果骰选择.png",
+        "17-队友下次一定伤害响应前.png",
+        "19-队友就这防御骰重投.png",
+        "20-连锁闪电二级四骰选择.png",
+        "22-原任意改值选择骰和加减控件.png",
+        "23-原任意改值预览和手动确认.png"
+      ]
+    },
+    "取消、重掷和确认": {
+      "decision": "保留",
+      "finding": "继续使用旧取消、重掷和确认动作，没有新增重置按钮。",
+      "evidence": [
+        "04-奥丁II选择两骰保留原动作.png",
+        "12-连锁闪电基础选择两骰确认.png",
+        "19-队友就这防御骰重投.png"
+      ]
+    },
+    "变体选择模态层": {
+      "decision": "保留并复用",
+      "finding": "同一升级能力多条件命中时，通用选择模态层列出不同规则分支与不发动出口。",
+      "evidence": [
+        "25-索尔升级技能变体选择.png"
+      ]
+    },
+    "锤子移动模态层": {
+      "decision": "保留并复用",
+      "finding": "飞掷/召回目标随当前持有者变化，停止入口在每一步保留；原 ChoiceModal 承接角色选择。",
+      "evidence": [
+        "26-瓶中闪电II锤子移动选择目标与停止.png",
+        "27-飞掷后保留继续或停止.png"
+      ]
+    },
+    "移动结束与攻击后续": {
+      "decision": "正确收口",
+      "finding": "达到次数上限或主动停止后关闭移动窗口并恢复原攻击响应入口。",
+      "evidence": [
+        "28-移动次数用尽后进入攻击响应.png",
+        "29-零次停止后进入攻击响应.png"
+      ]
+    },
+    "不屈意志效果骰确认": {
+      "decision": "复用原骰区",
+      "finding": "致死响应后的效果骰结果沿共享右侧骰区确认，不增设第二套投掷或确认入口。",
+      "evidence": [
+        "30-不屈意志防御效果骰原确认.png"
+      ]
+    },
+    "中途停止后的状态收口": {
+      "decision": "正确收口",
+      "finding": "停止仅结束后续移动，已完成的飞掷伤害和神锤持有者状态保留，原攻击响应继续。",
+      "evidence": [
+        "31-飞掷一次后主动停止并保留攻击响应.png"
+      ]
+    }
+  },
+  "outOfScopeNotes": [
+    "少数整屏截图中未修改的旧手牌区贴近视口下缘；目标提示、骰盘动作和候选选择均保持可见，本组不据此声明基础手牌布局整体通过。",
+    "本组只覆盖桌面端；移动端仍待独立验收。",
+    "二对二伤害响应以合法待受伤害代表态注入，不证明自然攻击链创建该响应窗口。",
+    "62 项对象矩阵仍有未覆盖的真实入口和图面状态；本组不代表全部索尔规则完成验收。",
+    "本次增加的变体选择和神锤移动截图只验收通用选择模态层的选项、停止入口及收口时机；模糊或未修改的牌桌背景仅作上下文。",
+    "不屈意志效果骰图由合法待伤害代表态进入；该图只验交互面板，不证明自然攻击链自动创建响应窗口。",
+    "中途停止图来自单独隔离运行；只证明飞掷一次后停止这一代表状态，不替代其它能力次数上限与移动端验收。"
+  ],
+  "media": [
+    {
+      "path": "01-索尔在线角色板九槽.png",
+      "sha256": "8f86d8ca11c162f00328ca2324882e1b89b0630b5fee5c37a18117e266aecd21",
+      "label": "01-索尔在线角色板九槽.png",
+      "status": "PASS",
+      "observation": "索尔正式角色板九槽与手牌同屏可见，素材加载正常；本图只证明新增角色内容在真实入口呈现。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-online-entry.e2e\\索尔可在真实双人房间选择并以实施中状态开局\\_runs\\e2e-1793539933248-w3ijl2\\02-索尔在线开局角色板九槽与手牌.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "索尔角色板作为新增派系内容独立核验；手牌、骰盘与牌桌只作真实入口上下文。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-online-entry.e2e\\索尔可在真实双人房间选择并以实施中状态开局\\_runs\\e2e-1793539933248-w3ijl2\\02-索尔在线开局角色板九槽与手牌.png",
+            "observation": "索尔正式角色板九槽与手牌同屏可见，素材加载正常；本图只证明新增角色内容在真实入口呈现。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-online-entry.e2e\\索尔可在真实双人房间选择并以实施中状态开局\\_runs\\e2e-1793539933248-w3ijl2\\02-索尔在线开局角色板九槽与手牌.png",
+            "observation": "索尔角色板作为新增派系内容独立核验；手牌、骰盘与牌桌只作真实入口上下文。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "02-弃牌飞掷手牌区成本.png",
+      "sha256": "02ea21a8e774dbb0766af68a7d2121dd522e2a1b6cec0328bc18ca13c9304ea0",
+      "label": "02-弃牌飞掷手牌区成本.png",
+      "status": "PASS",
+      "observation": "弃牌成本提示和候选手牌留在原手牌区，骰盘保持原位，没有另开弃牌弹窗。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\02-弃牌飞掷选择成本.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "沿用旧 HandArea 成本选择与原取消动作；本轮只核验索尔成本交互。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\02-弃牌飞掷选择成本.png",
+            "observation": "弃牌成本提示和候选手牌留在原手牌区，骰盘保持原位，没有另开弃牌弹窗。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\02-弃牌飞掷选择成本.png",
+            "observation": "沿用旧 HandArea 成本选择与原取消动作；本轮只核验索尔成本交互。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "03-奥丁II效果骰选择.png",
+      "sha256": "804adb54237fde3708f2d1a1412e867e5258d977eb23fca81eede5f9e95ac1a8",
+      "label": "03-奥丁II效果骰选择.png",
+      "status": "PASS",
+      "observation": "提示锚定在旧骰盘上沿，五颗效果骰及原取消和确认入口都可见，没有新弹窗。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\06-奥丁效果骰等待选择重掷骰子.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "旧骰盘仍承接效果骰点击与双动作；普通提示按旧版顶部位置呈现。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\06-奥丁效果骰等待选择重掷骰子.png",
+            "observation": "提示锚定在旧骰盘上沿，五颗效果骰及原取消和确认入口都可见，没有新弹窗。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\06-奥丁效果骰等待选择重掷骰子.png",
+            "observation": "旧骰盘仍承接效果骰点击与双动作；普通提示按旧版顶部位置呈现。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "04-奥丁II选择两骰保留原动作.png",
+      "sha256": "00f1063babc22bc05f805bc604faff1e717f7cd6d927e78d939f114c25dfd646",
+      "label": "04-奥丁II选择两骰保留原动作.png",
+      "status": "PASS",
+      "observation": "两颗骰子的原选中标记、重掷动作和确认动作同时清楚可见，没有增加重置所选按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\07-使用原整组重掷动作提交两颗所选骰子.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "组选重掷继续使用旧骰盘的左侧重掷动作与右侧确认动作。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\07-使用原整组重掷动作提交两颗所选骰子.png",
+            "observation": "两颗骰子的原选中标记、重掷动作和确认动作同时清楚可见，没有增加重置所选按钮。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793539933248-w3ijl2\\07-使用原整组重掷动作提交两颗所选骰子.png",
+            "observation": "组选重掷继续使用旧骰盘的左侧重掷动作与右侧确认动作。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "05-奥丁II空选原确认.png",
+      "sha256": "bd4fcbeaa00537e8a4beb59ca01089bc5081d4ccd4f485513b4d7787c675fdea",
+      "label": "05-奥丁II空选原确认.png",
+      "status": "PASS",
+      "observation": "空选提示、骰盘与原确认入口同时可见；界面没有要求玩家先选择骰子。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔奥丁之力II可用原确认入口跳过额外重掷\\_runs\\e2e-1793539933248-w3ijl2\\01-奥丁效果骰空选时沿用原确认入口.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "保留旧确认路径，空选时不显示无效的重掷所选动作。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔奥丁之力II可用原确认入口跳过额外重掷\\_runs\\e2e-1793539933248-w3ijl2\\01-奥丁效果骰空选时沿用原确认入口.png",
+            "observation": "空选提示、骰盘与原确认入口同时可见；界面没有要求玩家先选择骰子。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔奥丁之力II可用原确认入口跳过额外重掷\\_runs\\e2e-1793539933248-w3ijl2\\01-奥丁效果骰空选时沿用原确认入口.png",
+            "observation": "保留旧确认路径，空选时不显示无效的重掷所选动作。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "06-当之无愧选择固定四或五.png",
+      "sha256": "f1356ecefa933f44a7bc1042b0da83b3d9fefaeca378731da5b197e74f219d8c",
+      "label": "06-当之无愧选择固定四或五.png",
+      "status": "PASS",
+      "observation": "选择器只提供固定四和五，卡面与旧骰盘仍留在操作上下文中，没有加减控件。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\03-当之无愧直接选择固定目标四或五.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "新增固定结果选择后继续进入旧 mode:set 点骰流程，没有另造任意加减交互。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\03-当之无愧直接选择固定目标四或五.png",
+            "observation": "选择器只提供固定四和五，卡面与旧骰盘仍留在操作上下文中，没有加减控件。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\03-当之无愧直接选择固定目标四或五.png",
+            "observation": "新增固定结果选择后继续进入旧 mode:set 点骰流程，没有另造任意加减交互。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "07-当之无愧固定四选择目标骰.png",
+      "sha256": "69ed2484b7da2acb028ef7ae627d3632ac7c954c0804d12bab2aa70abbcda2a4",
+      "label": "07-当之无愧固定四选择目标骰.png",
+      "status": "PASS",
+      "observation": "顶部提示写明点选目标骰，所选骰子在旧骰盘高亮，取消与确认仍使用原按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\04-选择四后沿原固定值流程点选骰子.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "固定值结果沿用旧骰盘点选、取消和确认动作。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\04-选择四后沿原固定值流程点选骰子.png",
+            "observation": "顶部提示写明点选目标骰，所选骰子在旧骰盘高亮，取消与确认仍使用原按钮。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\04-选择四后沿原固定值流程点选骰子.png",
+            "observation": "固定值结果沿用旧骰盘点选、取消和确认动作。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "08-当之无愧固定四提交结果.png",
+      "sha256": "07538f64ca018d7c67d38d4d7968815f95578f4d878b14157195bff49a880012",
+      "label": "08-当之无愧固定四提交结果.png",
+      "status": "PASS",
+      "observation": "目标骰显示四，其余骰面未变化；结果回到原骰盘，没有出现第二套改骰控件。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\05-改为四且其余骰子保持.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "提交后回到旧骰盘结果与原结算流程。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\05-改为四且其余骰子保持.png",
+            "observation": "目标骰显示四，其余骰面未变化；结果回到原骰盘，没有出现第二套改骰控件。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793539933248-w3ijl2\\05-改为四且其余骰子保持.png",
+            "observation": "提交后回到旧骰盘结果与原结算流程。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "09-当之无愧固定五取消前.png",
+      "sha256": "501c4b37908935dd4e0e8f7c0c203ead449eb589a81e195f625aca1feb9a7a86",
+      "label": "09-当之无愧固定五取消前.png",
+      "status": "PASS",
+      "observation": "目标五和未修改的骰面同时可见，取消动作仍在原骰盘区域。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793539933248-w3ijl2\\01-当之无愧取消前选择五但尚未改骰.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "取消沿用旧手牌和骰盘返回链，不提前改变骰面。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793539933248-w3ijl2\\01-当之无愧取消前选择五但尚未改骰.png",
+            "observation": "目标五和未修改的骰面同时可见，取消动作仍在原骰盘区域。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793539933248-w3ijl2\\01-当之无愧取消前选择五但尚未改骰.png",
+            "observation": "取消沿用旧手牌和骰盘返回链，不提前改变骰面。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "10-当之无愧取消退回费用.png",
+      "sha256": "ddc6bf9207e2cd356343e6e82e73e2a1eafbb81f1a34930209f87ce8fde95c1d",
+      "label": "10-当之无愧取消退回费用.png",
+      "status": "PASS",
+      "observation": "骰面保持原值，卡牌和资源恢复；旧取消路径正常关闭当前交互。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793539933248-w3ijl2\\02-取消改骰后骰面保持且卡牌资源退回.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "取消语义与旧流程一致，没有留下未完成的选择状态。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793539933248-w3ijl2\\02-取消改骰后骰面保持且卡牌资源退回.png",
+            "observation": "骰面保持原值，卡牌和资源恢复；旧取消路径正常关闭当前交互。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793539933248-w3ijl2\\02-取消改骰后骰面保持且卡牌资源退回.png",
+            "observation": "取消语义与旧流程一致，没有留下未完成的选择状态。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "11-连锁闪电基础效果骰选择.png",
+      "sha256": "bcd851441d5178ba1f77a0646892ad80e54d8909551fe9123a38b6a348a8fb89",
+      "label": "11-连锁闪电基础效果骰选择.png",
+      "status": "PASS",
+      "observation": "效果骰投影在旧骰盘中，提示位于顶部可读位置，原确认入口保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793539933248-w3ijl2\\03-效果骰投影到旧骰盘并显示选择提示.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "继续复用旧骰盘、提示宿主和确认动作，没有建立新的效果骰面板。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793539933248-w3ijl2\\03-效果骰投影到旧骰盘并显示选择提示.png",
+            "observation": "效果骰投影在旧骰盘中，提示位于顶部可读位置，原确认入口保留。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793539933248-w3ijl2\\03-效果骰投影到旧骰盘并显示选择提示.png",
+            "observation": "继续复用旧骰盘、提示宿主和确认动作，没有建立新的效果骰面板。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "12-连锁闪电基础选择两骰确认.png",
+      "sha256": "571e36bb6e6f094a534e71ddec6a0659814c9db827150438ea5cfbd6d08fc49c",
+      "label": "12-连锁闪电基础选择两骰确认.png",
+      "status": "PASS",
+      "observation": "两颗选中骰子、提示和原确认动作同屏可见，未新增另一种提交按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793539933248-w3ijl2\\04-两颗骰子选中后启用原确认动作.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "选中结果继续交给原确认动作结算。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793539933248-w3ijl2\\04-两颗骰子选中后启用原确认动作.png",
+            "observation": "两颗选中骰子、提示和原确认动作同屏可见，未新增另一种提交按钮。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793539933248-w3ijl2\\04-两颗骰子选中后启用原确认动作.png",
+            "observation": "选中结果继续交给原确认动作结算。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "13-弃牌召回成本.png",
+      "sha256": "3d35883d31c8129807815f89c3c3223841f2410e50044b7f2c6eb2756678bf91",
+      "label": "13-弃牌召回成本.png",
+      "status": "PASS",
+      "observation": "提示与候选卡仍处于既有手牌区域，牌桌与骰盘保持原位。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793539933248-w3ijl2\\02-召回成本复用手牌区与当前提示.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "成本选择沿用旧手牌区和现有取消路径。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793539933248-w3ijl2\\02-召回成本复用手牌区与当前提示.png",
+            "observation": "提示与候选卡仍处于既有手牌区域，牌桌与骰盘保持原位。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793539933248-w3ijl2\\02-召回成本复用手牌区与当前提示.png",
+            "observation": "成本选择沿用旧手牌区和现有取消路径。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "14-破防失败后剩余标记.png",
+      "sha256": "d73b3bdd12e6b9462d6cf5c69b0940282da6e7a79ee5a90ce92f4f98f008f6a4",
+      "label": "14-破防失败后剩余标记.png",
+      "status": "PASS",
+      "observation": "第一次尝试失败后第二枚破防标记仍可操作，结果反馈未锁死旧动作。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793539933248-w3ijl2\\03-失败后仍可使用第二枚破防.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "继续使用原破防标记操作与失败后续动作。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793539933248-w3ijl2\\03-失败后仍可使用第二枚破防.png",
+            "observation": "第一次尝试失败后第二枚破防标记仍可操作，结果反馈未锁死旧动作。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793539933248-w3ijl2\\03-失败后仍可使用第二枚破防.png",
+            "observation": "继续使用原破防标记操作与失败后续动作。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "15-队友不愧是我同骰两次.png",
+      "sha256": "4023bf9250bbdb915c4e0562fd30b3434eb24ce4a01941951920021329c14a49",
+      "label": "15-队友不愧是我同骰两次.png",
+      "status": "PASS",
+      "observation": "顶部提示显示重复选骰进度，原取消与确认按钮可见，选中标记仍在骰盘上。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\01-不愧是我同骰两次-原有进度提示和双按钮确认.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "队友卡仍交由当前骰主的旧骰盘和原双按钮流程处理。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\01-不愧是我同骰两次-原有进度提示和双按钮确认.png",
+            "observation": "顶部提示显示重复选骰进度，原取消与确认按钮可见，选中标记仍在骰盘上。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\01-不愧是我同骰两次-原有进度提示和双按钮确认.png",
+            "observation": "队友卡仍交由当前骰主的旧骰盘和原双按钮流程处理。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "16-队友我又行了任选两骰.png",
+      "sha256": "50328e9780663e44d0c02e29ee87a72d1fcc0ff7b02f2409e3d5d4f56d49c2b1",
+      "label": "16-队友我又行了任选两骰.png",
+      "status": "PASS",
+      "observation": "顶部提示和原取消、确认按钮可见，骰盘承接队友给予的任选骰交互。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\02-我又行了任选两骰-原有进度提示和双按钮确认.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "保持旧骰盘双按钮与队友卡对当前骰主的授权流程。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\02-我又行了任选两骰-原有进度提示和双按钮确认.png",
+            "observation": "顶部提示和原取消、确认按钮可见，骰盘承接队友给予的任选骰交互。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\02-我又行了任选两骰-原有进度提示和双按钮确认.png",
+            "observation": "保持旧骰盘双按钮与队友卡对当前骰主的授权流程。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "17-队友下次一定伤害响应前.png",
+      "sha256": "f76e92931acd735d727ba68e181b6376e4c625335aa75712b2453e0af7c0caa7",
+      "label": "17-队友下次一定伤害响应前.png",
+      "status": "PASS",
+      "observation": "索尔当前待受伤害为八，既有响应入口显示可响应或跳过。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\04-下次一定触发前索尔本人处于八点受伤响应.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "响应使用旧伤害响应入口；本图由合法代表态准备，不代表自然攻击链。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\04-下次一定触发前索尔本人处于八点受伤响应.png",
+            "observation": "索尔当前待受伤害为八，既有响应入口显示可响应或跳过。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\04-下次一定触发前索尔本人处于八点受伤响应.png",
+            "observation": "响应使用旧伤害响应入口；本图由合法代表态准备，不代表自然攻击链。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "18-队友下次一定伤害减少结果.png",
+      "sha256": "1f0acbb0bf3c59702e2fa21f43f875ca897abea4c194bfb1e2eba3b9a275e36f",
+      "label": "18-队友下次一定伤害减少结果.png",
+      "status": "PASS",
+      "observation": "结算后待受伤害显示二，索尔仍处于后续响应流程；受伤前态与结果均可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\05-队友打出下次一定后索尔待结算伤害从八降至二.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "队友牌沿用旧手牌出牌与伤害响应链，没有创建替代响应弹窗。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\05-队友打出下次一定后索尔待结算伤害从八降至二.png",
+            "observation": "结算后待受伤害显示二，索尔仍处于后续响应流程；受伤前态与结果均可见。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\05-队友打出下次一定后索尔待结算伤害从八降至二.png",
+            "observation": "队友牌沿用旧手牌出牌与伤害响应链，没有创建替代响应弹窗。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "19-队友就这防御骰重投.png",
+      "sha256": "fc83624106ffb1d672879e5d53237ed28bec2abe938638db7e44b8510519356d",
+      "label": "19-队友就这防御骰重投.png",
+      "status": "PASS",
+      "observation": "防御阶段提示位于顶部且与玩家栏、提示板、骰盘均不相交，进度显示二比五，原取消和确认按钮保持可用。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\03-就这防御骰重掷-原有进度提示和双按钮确认.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "防御重投继续使用旧骰盘的进度提示、骰子候选、取消和确认动作，没有新增二次选择弹窗。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\03-就这防御骰重掷-原有进度提示和双按钮确认.png",
+            "observation": "顶部进度提示和右侧防御骰盘可同时识别，卡牌原文没有盖住骰子候选。"
+          },
+          {
+            "criterion": "保护槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\03-就这防御骰重掷-原有进度提示和双按钮确认.png.state.json",
+            "observation": "提示几何位于视口内，且与提示板、玩家栏和骰盘不相交。"
+          },
+          {
+            "criterion": "旧交互槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793539933248-w3ijl2\\03-就这防御骰重掷-原有进度提示和双按钮确认.png",
+            "observation": "原取消和确认按钮保留，没有添加新动作或新弹窗。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "20-连锁闪电二级四骰选择.png",
+      "sha256": "dbdc5f6e3625573a9dd3bcf47d84d6bc9fdac4cd9d49e958f19e7aec5aa53b3c",
+      "label": "20-连锁闪电二级四骰选择.png",
+      "status": "PASS",
+      "observation": "四颗效果骰、二选提示和骰盘确认入口同屏可辨，提示说明当前已选数量和下一步动作。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\03-原骰盘直接展示四骰与组合选择提示.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "四颗效果骰仍投射到旧骰盘；选骰和后续确认沿用原动作，没有独立选择弹窗。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\03-原骰盘直接展示四骰与组合选择提示.png",
+            "observation": "四颗效果骰、二选提示和骰盘确认入口同屏可辨，提示说明当前已选数量和下一步动作。"
+          },
+          {
+            "criterion": "提示保护槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\03-原骰盘直接展示四骰与组合选择提示.png.state.json",
+            "observation": "提示位于视口内，且与提示板、玩家栏和骰盘不相交。"
+          },
+          {
+            "criterion": "原骰盘动作",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\03-原骰盘直接展示四骰与组合选择提示.png",
+            "observation": "四颗效果骰仍投射到旧骰盘；选骰和后续确认沿用原动作，没有独立选择弹窗。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "21-连锁闪电二级选择两骰确认.png",
+      "sha256": "9d999d271b00a32a6c3b438ebc0aa41a925f76e63ff942bffbc016e495e2f74e",
+      "label": "21-连锁闪电二级选择两骰确认.png",
+      "status": "PASS",
+      "observation": "两颗选中标记、二选完成提示和原确认按钮清楚可见，四颗候选仍按原骰盘排列。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\04-选中两颗后原确认动作启用.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "完成选择后仍通过旧确认按钮收口，未增加第二种提交方式。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\04-选中两颗后原确认动作启用.png",
+            "observation": "两颗选中标记、二选完成提示和原确认按钮清楚可见，四颗候选仍按原骰盘排列。"
+          },
+          {
+            "criterion": "提示保护槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\04-选中两颗后原确认动作启用.png.state.json",
+            "observation": "提示位于视口内，且与提示板、玩家栏和骰盘不相交。"
+          },
+          {
+            "criterion": "原骰盘动作",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793539933248-w3ijl2\\04-选中两颗后原确认动作启用.png",
+            "observation": "完成选择后仍通过旧确认按钮收口，未增加第二种提交方式。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "22-原任意改值选择骰和加减控件.png",
+      "sha256": "e67b81c6deb08494a6c1ca7b5e3f40d140860b4cc7282a82ef2f05b9b41ab470",
+      "label": "22-原任意改值选择骰和加减控件.png",
+      "status": "PASS",
+      "observation": "旧骰盘五颗候选都有原减号和加号，提示只要求选择骰子；当前卡牌效果仍可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\01-旧固定值和任意编辑各自提示与控件.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "此为旧任意改值卡操作，保留原骰盘候选与每骰加减控件，不与固定四或五的能力混用。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\01-旧固定值和任意编辑各自提示与控件.png",
+            "observation": "旧骰盘五颗候选都有原减号和加号，提示只要求选择骰子；当前卡牌效果仍可读。"
+          },
+          {
+            "criterion": "旧控件和保护槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\01-旧固定值和任意编辑各自提示与控件.png.state.json",
+            "observation": "提示位于顶部居中且不与提示板、玩家栏和骰盘相交。"
+          },
+          {
+            "criterion": "旧流程动作",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\01-旧固定值和任意编辑各自提示与控件.png",
+            "observation": "此为旧任意改值卡操作，保留原骰盘候选与每骰加减控件，不与固定四或五的能力混用。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "23-原任意改值预览和手动确认.png",
+      "sha256": "f2359eccb581db392551f568fb9524ef5bb5a72c241add6e8664663e9e6c2149",
+      "label": "23-原任意改值预览和手动确认.png",
+      "status": "PASS",
+      "observation": "选中骰子显示预览值，原减号、加号、投掷提交与确认按钮清楚可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\02-任意编辑保留原加减预览和手动确认.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "任意编辑继续沿用旧预览、手动提交和确认动作。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\02-任意编辑保留原加减预览和手动确认.png",
+            "observation": "选中骰子显示预览值，原减号、加号、投掷提交与确认按钮清楚可见。"
+          },
+          {
+            "criterion": "旧控件和保护槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\02-任意编辑保留原加减预览和手动确认.png.state.json",
+            "observation": "提示位于顶部居中且不与提示板、玩家栏和骰盘相交。"
+          },
+          {
+            "criterion": "旧流程动作",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\02-任意编辑保留原加减预览和手动确认.png",
+            "observation": "任意编辑继续沿用旧预览、手动提交和确认动作。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "24-原任意改值提交结果.png",
+      "sha256": "0767d5445dc65c5bcccb028b6992c89c93e1e761839f2f96683ae4d5c0f1c5f6",
+      "label": "24-原任意改值提交结果.png",
+      "status": "PASS",
+      "observation": "只有目标骰从一点变为二点，其余四颗骰面未变化，界面返回原骰盘动作。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\03-旧流程提交后只修改一颗骰子.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "GameHints",
+          "RightSidebar",
+          "DiceTray",
+          "HandArea",
+          "InteractionOverlay"
+        ],
+        "comparison": "结算后沿旧掷骰与确认流程继续，不创建另一套改骰控制。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\03-旧流程提交后只修改一颗骰子.png",
+            "observation": "只有目标骰从一点变为二点，其余四颗骰面未变化，界面返回原骰盘动作。"
+          },
+          {
+            "criterion": "旧控件和保护槽位",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\03-旧流程提交后只修改一颗骰子.png",
+            "observation": "提交后原骰盘仍完整可见。"
+          },
+          {
+            "criterion": "旧流程动作",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793539933248-w3ijl2\\03-旧流程提交后只修改一颗骰子.png",
+            "observation": "结算后沿旧掷骰与确认流程继续，不创建另一套改骰控制。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "25-索尔升级技能变体选择.png",
+      "sha256": "1445daa046614a3f8fd2e9d340a7b3fa9919d21f1e6fbb2204ee493368191a14",
+      "label": "25-索尔升级技能变体选择.png",
+      "status": "PASS",
+      "observation": "居中弹层明确列出瓶中闪电二级、连锁锤击与不发动技能；选项文案和各自效果可辨，背景牌桌只作上下文。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\00-同张升级的两个变体以真实规则供选择.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "ChoiceModal"
+        ],
+        "comparison": "新增的技能分支选择复用通用 ChoiceModal；只审变体选择项、规则说明和不发动入口，不把模糊背景牌桌算作新 UI。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 17,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 94,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "选项辨识",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\00-同张升级的两个变体以真实规则供选择.png",
+            "observation": "两个合法变体和不发动出口同时可见，规则文案与选项对应。"
+          },
+          {
+            "criterion": "交互焦点",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\00-同张升级的两个变体以真实规则供选择.png",
+            "observation": "遮罩把注意力集中在当前选择上，模态内容无遮挡。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "26-瓶中闪电II锤子移动选择目标与停止.png",
+      "sha256": "cf6f2ccd1116a4d39996f2f7acf1378f3a0c2bfe338774560e2da680b831b6fa",
+      "label": "26-瓶中闪电II锤子移动选择目标与停止.png",
+      "status": "PASS",
+      "observation": "模态层标题说明飞掷或召回姆乔尔尼尔，单一合法目标和停止移动按钮都可见；没有新增骰盘或弃牌控件。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\02-可选移动窗口保留立即停止入口.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "ChoiceModal",
+          "InteractionOverlay"
+        ],
+        "comparison": "复用既有 ChoiceModal 处理角色目标与可选停止；牌桌背景只用于辨认当前阶段，不审其旧布局。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "目标和停止入口",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\02-可选移动窗口保留立即停止入口.png",
+            "observation": "合法飞掷目标与停止移动并列出现，操作出口清楚。"
+          },
+          {
+            "criterion": "旧组件复用",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\02-可选移动窗口保留立即停止入口.png",
+            "observation": "选项使用通用技能结算模态层，没有派生独立组件。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "27-飞掷后保留继续或停止.png",
+      "sha256": "33fb5d51f0382ee81e6a75a3b3454d3370bd85d16996e0c5c46b50f594171184",
+      "label": "27-飞掷后保留继续或停止.png",
+      "status": "PASS",
+      "observation": "玩家栏显示目标生命从 50 降至 49；模态层下一动作从飞掷更新为召回，并继续保留停止入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\03-一次飞掷独立扣一生命后可继续或停止.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "ChoiceModal",
+          "InteractionOverlay",
+          "RightSidebar"
+        ],
+        "comparison": "本图只审移动窗口内容和飞掷后的可见状态；半透明背景中的角色板与阶段栏作为上下文，不作旧布局改版验收。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 17,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 13,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 8,
+            "max": 10
+          }
+        ],
+        "total": 92,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "持有者变化",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\03-一次飞掷独立扣一生命后可继续或停止.png",
+            "observation": "下一动作由飞掷改为召回，目标与当前持锤位置一致。"
+          },
+          {
+            "criterion": "独立伤害状态",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\03-一次飞掷独立扣一生命后可继续或停止.png",
+            "observation": "玩家栏显示目标生命降低 1，停止入口仍可用。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "28-移动次数用尽后进入攻击响应.png",
+      "sha256": "fadd3cb4f4c160e02217d56943f44304a23a50b529b0ba6591dba9a6c7d3c473",
+      "label": "28-移动次数用尽后进入攻击响应.png",
+      "status": "PASS",
+      "observation": "神锤移动弹层已收口；牌桌显示主攻击待响应入口及当前伤害状态，表明流程返回原攻击事务。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\04-达到次数上限或停止后回原结算.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "ChoiceModal",
+          "InteractionOverlay",
+          "DiceTray"
+        ],
+        "comparison": "只核对新移动交互的收口以及原攻击响应重新可操作；背景牌桌布局仍属于既有 UI。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 17,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 13,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 8,
+            "max": 10
+          }
+        ],
+        "total": 92,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "模态收口",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\04-达到次数上限或停止后回原结算.png",
+            "observation": "移动选择完成后弹层消失，没有残留或重复选择控件。"
+          },
+          {
+            "criterion": "原事务恢复",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\04-达到次数上限或停止后回原结算.png",
+            "observation": "主攻击响应与跳过入口恢复，移动结算没有替代原攻击流程。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "29-零次停止后进入攻击响应.png",
+      "sha256": "e2ae72c4ba269334f5f1f103737650f8d3b387b17712d53f26a769b07e4e62b6",
+      "label": "29-零次停止后进入攻击响应.png",
+      "status": "PASS",
+      "observation": "零次停止路径中移动模态层已关闭，玩家栏仍显示索尔持锤，原攻击待响应与跳过入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\04-达到次数上限或停止后回原结算.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "ChoiceModal",
+          "GameHints",
+          "DiceTray"
+        ],
+        "comparison": "本图只核对停止后的收口和攻击响应入口；角色板、牌桌和玩家栏均是既有背景，不作基础 UI 整体通过声明。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 17,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 13,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 8,
+            "max": 10
+          }
+        ],
+        "total": 92,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "零次停止收口",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\04-达到次数上限或停止后回原结算.png",
+            "observation": "移动未执行，模态层关闭且没有多余移动状态。"
+          },
+          {
+            "criterion": "原攻击响应",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793539933248-w3ijl2\\04-达到次数上限或停止后回原结算.png",
+            "observation": "原攻击响应入口在停止后出现，后续事务仍可继续。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "30-不屈意志防御效果骰原确认.png",
+      "sha256": "0baa881ee8730c0503171b1b2634599ff042886f9e591bd2802fda5d01ba406b",
+      "label": "30-不屈意志防御效果骰原确认.png",
+      "status": "PASS",
+      "observation": "右侧效果骰区显示一颗防御效果骰、结果说明与确认按钮；左侧生命和牌费状态可见，仍处于原伤害响应。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命0\\_runs\\e2e-1793539933248-w3ijl2\\02-不屈效果骰在原骰盘待玩家确认.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "RightSidebar",
+          "DiceTray",
+          "InteractionOverlay",
+          "GameHints"
+        ],
+        "comparison": "不屈意志在合法伤害响应中使用共享效果骰区与原确认动作；本图只审这组交互，不据代表态注入声明自然响应窗口已验收。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 13,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 94,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "效果骰与提示",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命0\\_runs\\e2e-1793539933248-w3ijl2\\02-不屈效果骰在原骰盘待玩家确认.png",
+            "observation": "效果骰、结果说明和确认入口同屏可读。"
+          },
+          {
+            "criterion": "响应资源状态",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命0\\_runs\\e2e-1793539933248-w3ijl2\\02-不屈效果骰在原骰盘待玩家确认.png",
+            "observation": "剩余生命、已付牌费和待处理伤害状态可见。"
+          }
+        ]
+      }
+    },
+    {
+      "path": "31-飞掷一次后主动停止并保留攻击响应.png",
+      "sha256": "642f9930822b98d37ccb80c32dd4a7aaa34402709ea5ed281fd8134b9c489200",
+      "label": "31-飞掷一次后主动停止并保留攻击响应.png",
+      "status": "PASS",
+      "observation": "停止后移动弹层已关闭，目标仍持有神锤且生命为 49；原攻击响应入口出现，已完成的一次飞掷结果保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级飞掷一次后主动停止沿既有选择窗口逐次移动\\_runs\\e2e-1793547487647-sl2mt0\\05-飞掷一次后主动停止并进入攻击响应.png",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\visual-review.json",
+      "oldUiComparison": {
+        "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+        "pixelsAvailable": false,
+        "components": [
+          "ChoiceModal",
+          "GameHints",
+          "InteractionOverlay",
+          "RightSidebar"
+        ],
+        "comparison": "本图只核对新增的中途停止交互完成后弹层收口、状态保留与原攻击响应恢复；既有牌桌只作上下文。"
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体工学",
+            "score": 8,
+            "max": 10
+          }
+        ],
+        "total": 94,
+        "max": 100
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "中途停止后收口",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级飞掷一次后主动停止沿既有选择窗口逐次移动\\_runs\\e2e-1793547487647-sl2mt0\\05-飞掷一次后主动停止并进入攻击响应.png",
+            "observation": "移动弹层关闭，攻击响应入口恢复。"
+          },
+          {
+            "criterion": "已完成状态保留",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级飞掷一次后主动停止沿既有选择窗口逐次移动\\_runs\\e2e-1793547487647-sl2mt0\\05-飞掷一次后主动停止并进入攻击响应.png",
+            "observation": "目标生命保持 49 且仍持有神锤，第一次飞掷结果没有回滚。"
+          }
+        ]
+      }
+    }
+  ]
+}

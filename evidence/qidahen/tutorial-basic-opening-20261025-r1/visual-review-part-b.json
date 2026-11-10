@@ -1,0 +1,155 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_visual_final_b"
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "sha256": "A6FB7F7000CA01F57D9AEEF38878171898BC7F8B7229897C8E1D9970CA3772F6",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "征兵训练弃牌提示、中央确认栏和底部手牌同时可见，提示与可点确认区域没有互相遮挡。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03e-征兵训练选择行动前规则译文.png",
+      "sha256": "3271D9FB71E0D0FA2E99F0234AE633A89B9E8BE26427E5983B4BD5395142B89D",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "规则译文框位于中央，右侧征兵、训练、额外训练和完成选项分区清楚，操作选项没有被译文框盖住。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03f-训练目标选择与等级提示.png",
+      "sha256": "C5F20441CDC390F1B346516AF2D2AF6FD41284B740CAE5DDFA473A408B412C19",
+      "status": "REVISE",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "REVISE"
+      },
+      "observation": "右侧竖向候选面板中“辽北·骑兵 1级→2级”连续重复两次且无区分标记；面板底部最后一项贴着下边框被截断，玩家难以判断目标差异或列表是否还能继续。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03g-征兵训练结算结果.png",
+      "sha256": "A467BD378B7FC6EB66E223D9EB58A77B4F3B84B4D8E86E299BA82534A9FEF2C8",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "结算说明框与右侧后续操作面板各自成块，当前结果说明和可继续选择的操作都能直接辨认。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03h-征兵目标本土限制与候选区域.png",
+      "sha256": "837C7F0CFD227DCD1F487896EE2DD94F46829F7AC342625DE3C4B1F8F1132791",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "本土限制说明在地图中央，右侧候选区域列表完整显示多项地点，说明框没有遮住候选选择区。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03i-额外训练规则与弃牌.png",
+      "sha256": "CFFFA2AD59BB22655436910E6E8DAC5FDFCE23239034D08E560E4A0740D69C57",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "额外训练说明、中央弃牌确认栏和底部手牌各自可见，确认按钮没有被教学提示或牌面遮住。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03j-额外训练目标与结果.png",
+      "sha256": "454EDB9DF773AC7B069EA3D853EECC5AA3AD7189AF2F7E8EDA9BDB4D79F0787B",
+      "status": "REVISE",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "REVISE"
+      },
+      "observation": "画面右上候选面板顶栏（约 x=1575–1845、y=220–355）被浅黄色“轮盘征兵/训练”结果浮层压住；浮层覆盖“征兵训练”标题和已完成状态区，候选列表虽显示但当前面板状态上下文被遮。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03k-征兵训练结果与轮盘结算.png",
+      "sha256": "96A2C79651EF15810500D16691297D734B7A41254C1EF15554E0D07F7515285D",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "轮盘结算的绿色扇区高亮清楚，右上说明框及完成并返回按钮可见，底部手牌没有被提示层覆盖。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/03l-教程退场后同局继续.png",
+      "sha256": "DC74596B77BCBFE2006188C8FB49A816B5D561882FED33E9D5CED337AE4688EF",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程层已退场，轮盘、地图、玩家状态栏和右侧牌区仍完整显示，同局界面没有残留遮罩或悬浮提示。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/02b-先轮盘后手牌-轮盘结算结果.png",
+      "sha256": "2544470CD06DDE2BDBF6D5C55AD09AD0A444A9A584F8A1085DED0443897E7CCE",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "教程明确提示轮盘行动已完成并展示下一步，轮盘效果摘要和右侧手牌行动按钮均可见且互不遮挡。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/02d-轮盘后选择手牌行动.png",
+      "sha256": "92DDCFA95E2C699CF2046DFD06CF36853B38C487A6CB899C6BFFAD46B5260C75",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "背景遮罩下右侧“征召军队”选项仍有清楚高亮，教程说明框指向该选项，当前应点击的位置易于辨认。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r1/media/02e-两种行动完成-征召结果.png",
+      "sha256": "15F66A21B294B00EBF64F4E7C8C9B8A28A7841D32362AA9658D77C27F26362DE",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "轮盘高亮和右侧结果摘要可见，完成提示与底部手牌分开，征召结果状态容易定位。"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>索尔重点交互当前整屏截图</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>索尔重点交互当前整屏截图</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-02-弃牌飞掷选择成本.png","displayTitle":"01 · 02 · 弃牌飞掷选择成本","description":"手牌区显示弃牌提示和取消入口","kind":"image"},{"relativePath":"02-03-取消弃牌支付且资源未扣.png","displayTitle":"02 · 03 · 取消弃牌支付且资源未扣","description":"取消后手牌与原牌桌操作恢复","kind":"image"},{"relativePath":"03-04-手牌区弃置成本后飞掷结算.png","displayTitle":"03 · 04 · 手牌区弃置成本后飞掷结算","description":"支付后手牌移除且对手持锤","kind":"image"},{"relativePath":"04-06-奥丁效果骰等待选择重掷骰子.png","displayTitle":"04 · 06 · 奥丁效果骰等待选择重掷骰子","description":"骰盘等待选择并提示可重掷或确认","kind":"image"},{"relativePath":"05-07-使用原整组重掷动作提交两颗所选骰子.png","displayTitle":"05 · 07 · 使用原整组重掷动作提交两颗所选骰子","description":"两颗骰子选中且重掷与确认按钮可见","kind":"image"},{"relativePath":"06-08-整组重掷一次完成并保留原确认收口.png","displayTitle":"06 · 08 · 整组重掷一次完成并保留原确认收口","description":"重掷后显示新骰面及原确认入口","kind":"image"},{"relativePath":"07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png","displayTitle":"07 · 03 · 合法代表态 · 不愧是我同骰两次 · 队友出牌后索尔本人操作旧骰盘选骰","description":"索尔本人在原骰盘选择重投骰子","kind":"image"},{"relativePath":"08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png","displayTitle":"08 · 04 · 合法代表态 · 不愧是我同骰两次 · 原有提示和双按钮确认","description":"选满后显示完成提示和确认按钮","kind":"image"},{"relativePath":"09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png","displayTitle":"09 · 05 · 合法代表态 · 不愧是我同骰两次 · 服务端记录对应骰子重掷并关闭选骰交互","description":"确认后返回骰盘并显示重掷结果","kind":"image"},{"relativePath":"10-03-当之无愧直接选择固定目标四或五.png","displayTitle":"10 · 03 · 当之无愧直接选择固定目标四或五","description":"骰盘上方显示四和五两个固定候选","kind":"image"},{"relativePath":"11-04-选择四后沿原固定值流程点选骰子.png","displayTitle":"11 · 04 · 选择四后沿原固定值流程点选骰子","description":"选择四后提示继续点击目标骰子","kind":"image"},{"relativePath":"12-05-改为四且其余骰子保持.png","displayTitle":"12 · 05 · 改为四且其余骰子保持","description":"目标骰子显示四且其他骰子保持原样","kind":"image"},{"relativePath":"13-01-旧固定值和任意编辑各自提示与控件.png","displayTitle":"13 · 01 · 旧固定值和任意编辑各自提示与控件","description":"原骰盘每颗骰子旁显示加减入口","kind":"image"},{"relativePath":"14-02-任意编辑保留原加减预览和手动确认.png","displayTitle":"14 · 02 · 任意编辑保留原加减预览和手动确认","description":"修改后显示骰面预览和原确认按钮","kind":"image"},{"relativePath":"15-03-旧流程提交后只修改一颗骰子.png","displayTitle":"15 · 03 · 旧流程提交后只修改一颗骰子","description":"确认后原骰盘显示已修改的骰面","kind":"image"},{"relativePath":"16-01-原骰盘选择复制来源.png","displayTitle":"16 · 01 · 原骰盘选择复制来源","description":"原骰盘提示选择来源骰","kind":"image"},{"relativePath":"17-02-来源骰选定后选择目标骰.png","displayTitle":"17 · 02 · 来源骰选定后选择目标骰","description":"来源选定后提示选择目标骰","kind":"image"},{"relativePath":"18-03-复制完成且锁定骰点数更新.png","displayTitle":"18 · 03 · 复制完成且锁定骰点数更新","description":"复制完成并显示新的锁定骰面","kind":"image"},{"relativePath":"19-03-原骰盘直接展示四骰与组合选择提示.png","displayTitle":"19 · 03 · 原骰盘直接展示四骰与组合选择提示","description":"原骰盘显示四颗效果骰及选择提示","kind":"image"},{"relativePath":"20-04-选中两颗后原确认动作启用.png","displayTitle":"20 · 04 · 选中两颗后原确认动作启用","description":"选中两颗后原确认入口可用","kind":"image"},{"relativePath":"21-05-玩家选低值组合后三附属伤害与主攻击分别保留.png","displayTitle":"21 · 05 · 玩家选低值组合后三附属伤害与主攻击分别保留","description":"选择后进入主攻击后续流程","kind":"image"},{"relativePath":"22-02-可选移动窗口保留立即停止入口.png","displayTitle":"22 · 02 · 可选移动窗口保留立即停止入口","description":"选择窗口显示移动和停止","kind":"image"},{"relativePath":"23-03-一次飞掷独立扣一生命后可继续或停止.png","displayTitle":"23 · 03 · 一次飞掷独立扣一生命后可继续或停止","description":"飞掷后保留继续或停止","kind":"image"},{"relativePath":"24-05-飞掷一次后主动停止并进入攻击响应.png","displayTitle":"24 · 05 · 飞掷一次后主动停止并进入攻击响应","description":"停止后进入攻击响应","kind":"image"},{"relativePath":"25-03-合法代表态-我又行了任选两骰-队友出牌后索尔本人操作旧骰盘选骰.png","displayTitle":"25 · 03 · 合法代表态 · 我又行了任选两骰 · 队友出牌后索尔本人操作旧骰盘选骰","description":"队友出牌后索尔在原骰盘选骰","kind":"image"},{"relativePath":"26-04-合法代表态-我又行了任选两骰-原有提示和双按钮确认.png","displayTitle":"26 · 04 · 合法代表态 · 我又行了任选两骰 · 原有提示和双按钮确认","description":"选满后原提示和确认按钮可见","kind":"image"},{"relativePath":"27-05-合法代表态-我又行了任选两骰-服务端记录对应骰子重掷并关闭选骰交互.png","displayTitle":"27 · 05 · 合法代表态 · 我又行了任选两骰 · 服务端记录对应骰子重掷并关闭选骰交互","description":"确认后回到原骰盘","kind":"image"},{"relativePath":"28-03-合法代表态-就这防御骰重掷-队友出牌后索尔本人操作旧骰盘选骰.png","displayTitle":"28 · 03 · 合法代表态 · 就这防御骰重掷 · 队友出牌后索尔本人操作旧骰盘选骰","description":"队友出牌后在原防御骰盘选骰","kind":"image"},{"relativePath":"29-04-合法代表态-就这防御骰重掷-原有提示和双按钮确认.png","displayTitle":"29 · 04 · 合法代表态 · 就这防御骰重掷 · 原有提示和双按钮确认","description":"选满后原提示和确认按钮可见","kind":"image"},{"relativePath":"30-05-合法代表态-就这防御骰重掷-服务端记录对应骰子重掷并关闭选骰交互.png","displayTitle":"30 · 05 · 合法代表态 · 就这防御骰重掷 · 服务端记录对应骰子重掷并关闭选骰交互","description":"确认后回到原防御骰盘","kind":"image"},{"relativePath":"31-08-合法代表态-莲花掌五点伤害到达索尔或队友的响应窗口.png","displayTitle":"31 · 08 · 合法代表态 · 莲花掌五点伤害到达索尔或队友的响应窗口","description":"受伤时出现原响应入口","kind":"image"},{"relativePath":"32-10-合法代表态-退出卡牌特写后仍可从旧响应界面继续结算.png","displayTitle":"32 · 10 · 合法代表态 · 退出卡牌特写后仍可从旧响应界面继续结算","description":"队友出牌后仍可继续响应","kind":"image"},{"relativePath":"33-11-合法代表态-确认继续后五点伤害均被防止且索尔生命保持五十.png","displayTitle":"33 · 11 · 合法代表态 · 确认继续后五点伤害均被防止且索尔生命保持五十","description":"结算后显示角色生命和下一阶段","kind":"image"},{"relativePath":"34-01-敌方八伤攻击前态与防御原入口.png","displayTitle":"34 · 01 · 敌方八伤攻击前态与防御原入口","description":"敌方进攻后显示原防御入口","kind":"image"},{"relativePath":"35-02-实际投出对应数量防御骰.png","displayTitle":"35 · 02 · 实际投出对应数量防御骰","description":"原骰盘显示三颗防御骰","kind":"image"},{"relativePath":"36-03-防御减伤和每组神锤移动后结算生命.png","displayTitle":"36 · 03 · 防御减伤和每组神锤移动后结算生命","description":"防御后显示生命及下一阶段","kind":"image"},{"relativePath":"37-01-原骰盘显示两骰调整入口.png","displayTitle":"37 · 01 · 原骰盘显示两骰调整入口","description":"出牌后在原骰盘显示两骰调整入口","kind":"image"},{"relativePath":"38-02-两颗骰子预览后沿原按钮确认.png","displayTitle":"38 · 02 · 两颗骰子预览后沿原按钮确认","description":"两颗骰子显示预览及原确认按钮","kind":"image"},{"relativePath":"39-03-确认后仅两颗骰子改变.png","displayTitle":"39 · 03 · 确认后仅两颗骰子改变","description":"确认后返回原骰盘","kind":"image"},{"relativePath":"40-01-效果骰结果在原骰盘待确认.png","displayTitle":"40 · 01 · 效果骰结果在原骰盘待确认","description":"效果骰及原确认按钮可见","kind":"image"},{"relativePath":"41-02-确认后获得对应CP.png","displayTitle":"41 · 02 · 确认后获得对应CP","description":"确认后回到主要阶段","kind":"image"},{"relativePath":"42-01-效果骰结果在原骰盘待确认.png","displayTitle":"42 · 01 · 效果骰结果在原骰盘待确认","description":"效果骰及原确认按钮可见","kind":"image"},{"relativePath":"43-02-确认后获得对应CP.png","displayTitle":"43 · 02 · 确认后获得对应CP","description":"确认后回到主要阶段","kind":"image"},{"relativePath":"44-01-起开沿原状态选择入口显示对手气.png","displayTitle":"44 · 01 · 起开沿原状态选择入口显示对手气","description":"原状态入口显示对手可选状态","kind":"image"},{"relativePath":"45-02-选中对手气后原确认入口可用.png","displayTitle":"45 · 02 · 选中对手气后原确认入口可用","description":"选中后原确认按钮可用","kind":"image"},{"relativePath":"46-03-确认后只移除一层气并完成出牌.png","displayTitle":"46 · 03 · 确认后只移除一层气并完成出牌","description":"确认后回到牌桌","kind":"image"},{"relativePath":"47-01-选择转移来源且神锤不可转移.png","displayTitle":"47 · 01 · 选择转移来源且神锤不可转移","description":"选择转移来源状态","kind":"image"},{"relativePath":"48-02-来源锁定后选择索尔为目标.png","displayTitle":"48 · 02 · 来源锁定后选择索尔为目标","description":"选择状态接收者","kind":"image"},{"relativePath":"49-03-选中目标后原确认入口可用.png","displayTitle":"49 · 03 · 选中目标后原确认入口可用","description":"目标选中后原确认按钮可用","kind":"image"},{"relativePath":"50-04-转移一层后神锤仍归索尔.png","displayTitle":"50 · 04 · 转移一层后神锤仍归索尔","description":"确认后回到牌桌","kind":"image"},{"relativePath":"51-01-原玩家选择入口显示有状态的对手.png","displayTitle":"51 · 01 · 原玩家选择入口显示有状态的对手","description":"原入口显示可选的玩家和状态","kind":"image"},{"relativePath":"52-02-选中对手后原确认入口可用.png","displayTitle":"52 · 02 · 选中对手后原确认入口可用","description":"选中玩家后原确认按钮可用","kind":"image"},{"relativePath":"53-03-确认后对手状态清除且神锤仍在.png","displayTitle":"53 · 03 · 确认后对手状态清除且神锤仍在","description":"确认后回到牌桌","kind":"image"},{"relativePath":"54-01-对手已确认骰面后原骰盘选择目标.png","displayTitle":"54 · 01 · 对手已确认骰面后原骰盘选择目标","description":"对手确认后原骰盘提示选择对手骰","kind":"image"},{"relativePath":"55-02-选中对手骰后原确认入口可用.png","displayTitle":"55 · 02 · 选中对手骰后原确认入口可用","description":"选中后原确认按钮可用","kind":"image"},{"relativePath":"56-03-确认后仅选中对手骰重投.png","displayTitle":"56 · 03 · 确认后仅选中对手骰重投","description":"确认后原骰盘显示重投结果","kind":"image"},{"relativePath":"57-01-对手已确认后原骰盘允许修改.png","displayTitle":"57 · 01 · 对手已确认后原骰盘允许修改","description":"对手确认后原骰盘显示修改入口","kind":"image"},{"relativePath":"58-02-两颗对手骰预览后原确认可用.png","displayTitle":"58 · 02 · 两颗对手骰预览后原确认可用","description":"两颗对手骰显示预览及原确认按钮","kind":"image"},{"relativePath":"59-03-确认后仅两颗对手骰改变.png","displayTitle":"59 · 03 · 确认后仅两颗对手骰改变","description":"确认后回到原骰盘","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

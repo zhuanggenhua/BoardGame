@@ -1,0 +1,42 @@
+{
+  "hint": {
+    "x": 582,
+    "y": 163.28125,
+    "width": 310,
+    "height": 238.25,
+    "top": 163.28125,
+    "right": 892,
+    "bottom": 401.53125,
+    "left": 582
+  },
+  "anchor": {
+    "id": "qidahen-map-region-focus-name",
+    "bounds": {
+      "x": 857.6875,
+      "y": 123.28125,
+      "width": 78,
+      "height": 20,
+      "top": 123.28125,
+      "right": 935.6875,
+      "bottom": 143.28125,
+      "left": 857.6875
+    }
+  },
+  "surfaces": [
+    {
+      "id": "qidahen-map-region-focus-name",
+      "bounds": {
+        "x": 857.6875,
+        "y": 123.28125,
+        "width": 78,
+        "height": 20,
+        "top": 123.28125,
+        "right": 935.6875,
+        "bottom": 143.28125,
+        "left": 857.6875
+      }
+    }
+  ],
+  "gap": 20,
+  "fullChainClaimed": false
+}

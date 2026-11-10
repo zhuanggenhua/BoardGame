@@ -1,0 +1,35 @@
+[
+  {
+    "asset": "ability-cards",
+    "bytes": 2039890,
+    "size": [
+      7380,
+      4720
+    ],
+    "alphaExact": true,
+    "edgeLumaRmse": 4.7089,
+    "protectedEdgesExactBeforeEncoding": true
+  },
+  {
+    "asset": "player-board",
+    "bytes": 859280,
+    "size": [
+      4005,
+      2476
+    ],
+    "alphaExact": true,
+    "edgeLumaRmse": 4.7701,
+    "protectedEdgesExactBeforeEncoding": true
+  },
+  {
+    "asset": "tip",
+    "bytes": 186676,
+    "size": [
+      967,
+      1804
+    ],
+    "alphaExact": true,
+    "edgeLumaRmse": 5.1856,
+    "protectedEdgesExactBeforeEncoding": true
+  }
+]

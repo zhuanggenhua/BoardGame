@@ -398,7 +398,8 @@ export const QIDAHEN_RUNTIME_REGION_DEFINITIONS: QidahenRuntimeRegionDefinition[
     }
     return {
         ...region,
-        center: graphNode?.center ?? graphNode?.seed ?? region.seed,
+        // 巴林质心落在印刷轮盘空洞内；运行时位置使用正式地区 seed，graph 保留真实算术质心。
+        center: region.id === 'city-region-8' ? region.seed : graphNode?.center ?? graphNode?.seed ?? region.seed,
         pixelCount: graphNode?.pixelCount ?? 0,
         adjacentRegionIds,
         travelCostByRegionId,
@@ -409,6 +410,8 @@ export const QIDAHEN_RUNTIME_REGION_DEFINITIONS: QidahenRuntimeRegionDefinition[
 export const QIDAHEN_RUNTIME_REGION_BY_ID = new Map(QIDAHEN_RUNTIME_REGION_DEFINITIONS.map((region) => [region.id, region]));
 export const QIDAHEN_MAP_NAMEPLATE_BOUNDS = QIDAHEN_RUNTIME_REGION_DEFINITIONS.flatMap(definition =>
     [definition.markerBounds, definition.labelBounds].flatMap(bounds => bounds ? [bounds] : []));
+// 原始地图上印刷的竖牌，坐标按 1265×893 底图测量。
+export const QIDAHEN_PRINTED_NAMEPLATE_BOUNDS = [{ left: 865, top: 198, width: 24, height: 78 }] as const;
 export const QIDAHEN_MAP_NAMEPLATE_OBSTACLES = QIDAHEN_MAP_NAMEPLATE_BOUNDS.map(bounds => ({
     x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2,
     size: Math.max(bounds.width, bounds.height) + 4,

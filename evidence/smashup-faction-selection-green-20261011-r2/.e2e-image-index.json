@@ -1,0 +1,32 @@
+{
+  "title": "大杀四方派系选择：单层绿色选中边界",
+  "media": [
+    {
+      "path": "01-random-faction-before.png",
+      "chainId": "smashup-faction-selection-green-20261011-r2",
+      "chainStep": "一",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "前态",
+      "description": "随机派系卡位于列表首位，玩家尚未选择真实派系。"
+    },
+    {
+      "path": "02-action-heroes-selected-green-single-border.png",
+      "chainId": "smashup-faction-selection-green-20261011-r2",
+      "chainStep": "二",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "中态",
+      "description": "随机结果落地为动作英雄，目标卡显示单层绿色选中边界并完整可读。"
+    },
+    {
+      "path": "03-after-scroll-selected-visible.png",
+      "chainId": "smashup-faction-selection-green-20261011-r2",
+      "chainStep": "三",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "后态",
+      "description": "列表发生滚动后动作英雄仍在当前视口中，绿色选中边界保持且未被遮挡。"
+    }
+  ]
+}

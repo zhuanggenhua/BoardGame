@@ -5,6 +5,7 @@ import { buildGameFeedbackActionLog, buildGameFeedbackStateSnapshot } from './ga
 import {
     getCurrentGameFeedbackContext,
     getCurrentGameFeedbackDiagnosticContext,
+    getCurrentGameFeedbackReplayTriggerReference,
 } from './gameFeedbackContext';
 import { setLastErrorContext } from './errorContext';
 import { deliverFeedbackWithRetry, FeedbackDeliveryHttpError } from './feedbackDelivery';
@@ -377,29 +378,32 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     const state = diagnosticContext.state ?? gameFeedbackContext?.state;
     const playerId = payload.playerId ?? gameFeedbackContext?.playerId ?? undefined;
     const clientContext = buildFeedbackClientContext({ mode, matchId, playerId, gameId });
+    const privateReplayRequired = mode === 'online' && Boolean(matchId && playerId);
     const actionLog = state
         ? buildGameFeedbackActionLog(state)
         : undefined;
     const stateSnapshot = state
         ? buildGameFeedbackStateSnapshot(state)
         : undefined;
-    const diagnostic = buildFeedbackDiagnosticPacket({
-        ...diagnosticContext,
-        state,
-        clientContext,
-        source: 'client-auto',
-        chainId: 'auto-' + signature,
-    });
+    const replayTrigger = privateReplayRequired ? getCurrentGameFeedbackReplayTriggerReference() : undefined;
 
     inFlightReports.add(signature);
 
     try {
-        const captureId = mode === 'online' && matchId && playerId
-            ? await prepareFeedbackReplayCapture(matchId, playerId) : undefined;
-        if (mode === 'online' && matchId && playerId && !captureId) {
-            diagnostic.collectionStatus = 'partial';
-            diagnostic.collectionErrors = [...(diagnostic.collectionErrors ?? []), 'private_replay_prepare_failed'];
-        }
+        const replayCapture = privateReplayRequired && matchId && playerId
+            ? await prepareFeedbackReplayCapture(matchId, playerId, replayTrigger) : undefined;
+        const diagnostic = buildFeedbackDiagnosticPacket({
+            ...diagnosticContext,
+            state,
+            clientContext,
+            source: 'client-auto',
+            chainId: 'auto-' + signature,
+            privateReplayRequired,
+            privateReplayTriggerCaptured: replayCapture?.triggerCaptured === true,
+            collectionErrors: privateReplayRequired
+                ? [replayCapture ? 'private_replay_pending_attachment' : 'private_replay_prepare_failed']
+                : undefined,
+        });
         const diagnosticPacket = serializeFeedbackDiagnosticPacket(diagnostic);
         const body = JSON.stringify({
                 content: payload.content,
@@ -433,8 +437,10 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 if (typeof responseBody._id === 'string') feedbackId = responseBody._id;
             }
         });
-        if (mode === 'online' && matchId && playerId) {
-            const captured = feedbackId && captureId ? await requestFeedbackReplayCapture(matchId, playerId, feedbackId, captureId) : false;
+        if (privateReplayRequired && matchId && playerId) {
+            const captured = feedbackId && replayCapture
+                ? await requestFeedbackReplayCapture(matchId, playerId, feedbackId, replayCapture.captureId)
+                : false;
             if (!captured) console.warn('[client-auto-report] authoritative feedback capture failed', { matchId, feedbackId });
         }
         markRecentReport(signature);

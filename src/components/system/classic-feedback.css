@@ -1,0 +1,5 @@
+@media (max-width: 767px) {
+    html[data-home-entry-style="classic"] [data-testid="feedback-mobile-fields-grid"] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

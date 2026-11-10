@@ -192,6 +192,8 @@ describe('OperationGuideButton', () => {
             'src',
             '/images/operation-guide/home-app-fab-annotated.png',
         );
+        expect(screen.getByTestId('operation-guide-real-screenshot-home-fab')).toHaveAttribute('width', '540');
+        expect(screen.getByTestId('operation-guide-real-screenshot-home-fab')).toHaveAttribute('height', '844');
         expect(screen.getByTestId('operation-guide-real-screenshot-game-fab')).toHaveAttribute(
             'src',
             '/images/operation-guide/game-fab-annotated.png',
@@ -213,6 +215,8 @@ it('指南图片在解码前按真实原图尺寸预留空间，避免懒加载�
  expect(longPress.getAttribute('width')).toBe('812');expect(longPress.getAttribute('height')).toBe('375');
  const opponent=screen.getByTestId('operation-guide-real-screenshot-opponent-public-info');
  expect(opponent.getAttribute('width')).toBe('1920');expect(opponent.getAttribute('height')).toBe('1080');
+ const home=screen.getByTestId('operation-guide-real-screenshot-home-fab');
+ expect(home.getAttribute('width')).toBe('2160');expect(home.getAttribute('height')).toBe('1080');
 });
 it('新版首页指南不继续展示旧版首页截图，局内指南仍保留原教学图', () => {
  render(<OperationGuideButton surface="web" visualStyle="platform" dataTestId="guide-platform-copy-entry"/>);

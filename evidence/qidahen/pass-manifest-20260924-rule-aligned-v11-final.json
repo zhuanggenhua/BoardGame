@@ -1,0 +1,151 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "problemChain": {
+    "problemOriginal": "重构全部教程吧。第一都被挡住了，第二棋子大小怎么不一样。结算不要靠文字提示，结果要回正式地图、玩家条、军备条、战后面板和当前行动人 UI。",
+    "understanding": "教程要按玩家真实因果链重构；提示卡只讲当前动作，不挡目标；结果回正式 UI；地图新增兵牌复用原兵牌尺寸并淡出；不能用结算摘要或自动跳过冒充教学。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "同一真实入口：/play/qidahen/tutorial/<tutorialId>。",
+        "同一真实测试入口：e2e/qidahen/qidahen-closeout.e2e.ts。",
+        "全量覆盖 17 个教程 E2E：基础、轮盘、军备、事件、野战、撤退、攻城、外交、跨年、朝鲜与移动端检视。"
+      ]
+    },
+    "currentSolution": "教程结果步骤回正式 UI：地图区域闪烁与兵牌淡出，玩家条承接资源/战败，军备条承接军备，战后面板承接围城/占领/撤回，顶部行动条承接年份与当前行动人；隐藏教程模式下的结算摘要主承接；删除外交 hire-only 假步骤。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "真实浏览器全量 E2E：17 passed，使用 60 秒验证超时避免环境建页慢造成假失败。",
+        "教程单测与 Board 测试：228 passed。",
+        "TypeScript 类型检查：npm run typecheck，通过。",
+        "最新截图：桌面 60 张、移动 3 张，共 63 张有效 PNG，来自 2026-09-24-rule-aligned-v11。",
+        "征兵训练 E2E 直接断言地图反馈区域、2 个淡出兵牌、原兵牌尺寸一致、旧结算摘要与旧 +2 文字节点不存在。",
+        "跨年 E2E 直接断言教程顶部正式行动条显示天命五年 1620。",
+        "外交 E2E 真实走完轮盘、友好标记、外交结算与雇佣，不再进入 hire-only 自动跳过。"
+      ]
+    }
+  },
+  "requirements": [
+    {
+      "requirement": "教程提示卡可见且不挡住当前目标",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 断言教程卡在视口内，并对地图反馈安全区、战后选择、攻城入口做不重叠校验。",
+        "最新截图覆盖基础、支付、战斗、攻城和地图结果压力态。"
+      ]
+    },
+    {
+      "requirement": "结果回正式 UI，不用结算摘要和文字加兵提示代替",
+      "status": "PASS",
+      "evidence": [
+        "教程模式隐藏 qidahen-season-summary 主承接。",
+        "征兵训练结果回 qidahen-map-result-feedback；军备回 qidahen-armaments-ming；战败回 qidahen-player-float；战后回 qidahen-post-battle-selection；朝鲜/纪年回各自正式区域。"
+      ]
+    },
+    {
+      "requirement": "新增兵牌和地图原兵牌同尺寸，并在真实区域闪烁后淡出",
+      "status": "PASS",
+      "evidence": [
+        "E2E 读取新增兵牌与同区域地图原兵牌计算宽高，差值不超过 0.01px。",
+        "E2E 断言 city-region-24、兵力增量 2、2 个淡出兵牌和地图反馈画布存在。"
+      ]
+    },
+    {
+      "requirement": "教程不再出现当前局面无关的 hire-only 自动跳过",
+      "status": "PASS",
+      "evidence": [
+        "tutorial.ts 删除 hire-only 教程步骤和自动跳过分支。",
+        "外交真实浏览器 E2E 通过，未出现‘当前局面不需要 1 个步骤，已自动跳过。’。"
+      ]
+    },
+    {
+      "requirement": "当前行动人和当前年份由正式顶部 UI 承接",
+      "status": "PASS",
+      "evidence": [
+        "教程顶部 qidahen-turn-banner 保留当前阵营/行动窗口，并新增正式 qidahen-turn-year 显示当前年份。",
+        "跨年教程 E2E 通过并断言天命五年 1620。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/00-教程目录-先选择章节.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/01-开场-阅读三种胜利条件.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/02-开局检查-3张手牌未超过15张不弃牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/03-轮盘选择-1格2格3格规则.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/04-轮盘结算-征兵训练建立部队并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/05-手牌行动-赐印招安规则.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/06-赐印招安-支付3张手牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/07-赐印招安-锦州部队移入山海关.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/08-赐印招安-部队位置与阵营变化.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/09-首回合-规则链完成.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/14a-轮盘第2a步-先选择参与进攻的部队.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15-轮盘第3步-进入进攻调度落点.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15a-开垦第1步-先把轮盘推进到开垦.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15b-开垦第2步-看己方控制区人口增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15c-军屯第1步-先把轮盘推进到军屯.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15d-军屯第2步-看补牌并建立正规军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15e-征兵训练第1步-先把轮盘推进到征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15f-征兵训练第2步-地图区域闪烁与兵牌淡出特写.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/15f-征兵训练第2步-看加兵并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/16-军备第1步-先点升级军备.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/17-军备第2步-点击底部手牌支付2张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/18-军备第3步-看火炮技术升到2级.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/19-事件第1步-先点大汗令箭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/20-事件第2步-点击底部手牌支付1张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/21-事件第3步-选择征兵训练效果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/22-事件第4步-看蒙古兵力增加到4.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/23-进攻第1步-点击突袭作战入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/24-进攻第2步-弃1张手牌支付突袭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/25-进攻第3步-支付后进入察哈尔野战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/26a-进攻第4a步-看断后后的战后处理.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/27-进攻第5步-看战败标记与战后选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/27a-进攻第6步-看占领结果摘要.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/28-撤退第1步-先看断后和溃退入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/30-攻城第1步-真实守城宣告入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/30a-攻城第1a步-右侧断后结算城战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/31-攻城第2步-选择围城该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/31a-攻城第3步-同章选择占领该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/32-外交第1步-从轮盘进入外交雇佣.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/33-外交第2步-先放置友好标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/33a-外交第2a步-翻为附庸.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/33b-外交第2b步-移除他方控制标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/34-外交第3步-结束并结算雇佣军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/35-外交第4步-看完外交与雇佣的合并收益.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/36-跨年第1步-推进到年中并查看税赋与人物.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/37-跨年第2步-先看新年朝鲜朝贡.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/38-跨年第3步-进入新年防线维护.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/39-跨年第4步-看纪年卡与争分结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/40-跨年第5步-看新顺位与人物刷新.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/41-跨年第6步-看到新年结算与新年份.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/44-朝鲜第3步-看海路与船锚区域关系.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11-mobile/移动-01-移动教程-手牌检视前.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11-mobile/移动-02-移动教程-长按手牌打开检视.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-24-rule-aligned-v11-mobile/移动-03-移动教程-关闭检视回到牌桌.png"
+  ],
+  "verification": {
+    "e2e": "node scripts/infra/run-e2e-single.mjs ci e2e/qidahen/qidahen-closeout.e2e.ts --timeout=60000",
+    "unit": "npx vitest run src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/Board.test.ts",
+    "typecheck": "npm run typecheck",
+    "screenshotRunId": "2026-09-24-rule-aligned-v11",
+    "desktopPngCount": 60,
+    "mobilePngCount": 3,
+    "totalPngCount": 63
+  }
+}

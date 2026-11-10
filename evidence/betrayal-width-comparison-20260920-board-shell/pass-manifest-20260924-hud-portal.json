@@ -1,0 +1,50 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-24T12:35:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "手机端主牌桌 HUD 与 PC 保持同一信息层级，不再只显示底部按钮。",
+      "status": "PASS",
+      "evidence": [
+        "主牌桌常态 PC/手机截图同时看到阶段提示、左侧角色状态、当前持有区、右侧状态栏和底部动作栏。",
+        "手机端五个 HUD 一级区域均通过 Portal 脱离 MobileBoardShell 的 0.4 transform。",
+        "手机端矩形读取：左栏 171.6px、右栏 129.6px、阶段提示 126px、动作栏 29.7px 高，均按统一 HUD 比例 0.6 映射；右侧状态栏实际可见高度扩展到 408px。"
+      ]
+    },
+    {
+      "requirement": "HUD 不因壳层缩放或通用悬浮菜单抢坐标而出屏、错位或再次缩小。",
+      "status": "PASS",
+      "evidence": [
+        "手机端 HUD placement 全部为 portal；fab placement=portal，inShell=false。",
+        "手机端 FAB 矩形为 44×44，左右边界位于 0..936 视口内。",
+        "document/body/root scrollWidth 均为 936，不发生横向溢出。"
+      ]
+    },
+    {
+      "requirement": "主牌桌常态、驱魔目标提示和结算页的 HUD 在状态切换后仍保持可见。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts 的 5 个 PC/手机同状态用例全部通过。",
+        "驱魔目标提示和结算页截图仍保留左右 HUD、弃牌区、队友区和底部动作入口，没有退化成单按钮页面。",
+        "截图来自当前工作树 2026-09-24 12:17-12:19 的最新运行结果。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\03-pc-1920x1080-驱魔目标提示.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\04-phone-936x432-驱魔目标提示.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\05-pc-1920x1080-结算页.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\06-phone-936x432-结算页.jpg"
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+    "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\before\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+    "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+    "bytes": 2039890
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\assets-manifest.json",
+    "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\before\\public\\assets\\i18n\\zh-CN\\dicethrone\\assets-manifest.json",
+    "sha256": "67ba21b6a3e8e754a0c7ec5ffe571ca9b6b45db4ddc32275c6c7913af242052d",
+    "bytes": 101977
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\assets-manifest.json",
+    "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\before\\public\\assets\\i18n\\assets-manifest.json",
+    "sha256": "8b338eabd0f5b38adb46e3bc7bdb6683fb89d0a668ce36ae61839cfb16223f7f",
+    "bytes": 555714
+  }
+]

@@ -1,0 +1,1552 @@
+{
+  "reviewer": "/root/doctor_final_visual_c",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "COMPLETE",
+  "scope": "仅审查最终计划中二十一至二十八、三十至三十八、四十三和四十五共十九张；不生成整组最终通过清单，不证明数值、规则、持续可见时长或实际点击行为。",
+  "authorizationFirst": true,
+  "oldBaseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90；旧正常像素未保留，仅采用已锁定旧源码合同。",
+  "baselineReviewFile": "temp/doctor-restoration-visual-c.json",
+  "planFile": "temp/doctor-restoration-plan.json",
+  "planSha256": "08b080e303007453bb840d067bba1c0c9acaeddb5ec8d51fc3d1802bb6511345",
+  "run": "e2e-1793537696114-oy6toq,e2e-1793537707962-ge7xsw",
+  "actualReadCount": 12,
+  "carriedForwardCount": 7,
+  "pendingCurrentSourceComparison": false,
+  "pendingOriginalNumbers": [],
+  "items": [
+    {
+      "entryPath": "21-星际侵入技能已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793537707962-ge7xsw\\星际侵入已选-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793537707962-ge7xsw\\星际侵入已选-桌面.png",
+      "sha256": "1cdda58cb1e4b84bc083109cec40160bc84e727af35d6265e240d8db99d22bc3",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:AbilityOverlays.tsx/CenterBoard.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "星际侵入原边界贴合印刷物理槽，槽右上没有新勾；生命50、CP3、准备卡、五颗锁骰和手牌在原槽位同屏。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "星际侵入原边界贴合印刷物理槽，槽右上没有新勾；生命50、CP3、准备卡、五颗锁骰和手牌在原槽位同屏。"
+      ],
+      "playerNextAction": "确认当前攻击后继续原奖励骰流程。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "中央博士板为主体，右侧骰盘与底部手牌位置未迁移。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "技能槽描边贴合印刷框；左右技能列与终极槽没有错位。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "只保留旧技能槽边界，没添加独立勾牌或额外候选底板。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "只保留旧技能槽边界，没添加独立勾牌或额外候选底板。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793537707962-ge7xsw\\星际侵入已选-桌面.png",
+      "sourceRevision": "e950a86596408a5c8a5ac6c5b53d93c5e5cc3893a3e39b9c3d37bb0dc3dc36ca",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入沿物理技能槽显示原边界且没有新增勾记，生命、资源、准备卡、锁骰与手牌仍在原位。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/0",
+      "baselineSha256": "57ec0c0b0267d8ad9f477c415f6f8c4143fc954879a36e1a05732b9e4a528b7d"
+    },
+    {
+      "entryPath": "22-奖励骰待确认.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793537707962-ge7xsw\\星际侵入奖励骰待确认-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793537707962-ge7xsw\\星际侵入奖励骰待确认-桌面.png",
+      "sha256": "02d639dfff42a7e7e6fd48a3aea8584578c1d133c0ee8e20d30976d7f093c409",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:RightSidebar.tsx/DiceTray.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "奖励骰在原右侧骰盘内呈现，当前帧骰面带有倾斜；上方暗色提示要求确认奖励骰结果并继续结算，下方原黄色确认完整，未新增中央骰盘。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "奖励骰在原右侧骰盘内呈现，当前帧骰面带有倾斜；上方暗色提示要求确认奖励骰结果并继续结算，下方原黄色确认完整，未新增中央骰盘。"
+      ],
+      "playerNextAction": "点击骰盘下方确认。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "新奖励骰由旧右侧骰盘承接，中央技能板与生命CP不让位。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "奖励骰仍约束在原骰盘内，当前倾斜骰面没有侵占下方确认按钮。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "提示和确认各有职责；无第二个中央骰盘。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 18,
+        "视觉层级": 14,
+        "对象可识别性": 13,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 92
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "提示和确认各有职责；无第二个中央骰盘。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793537707962-ge7xsw\\星际侵入奖励骰待确认-桌面.png",
+      "sourceRevision": "e950a86596408a5c8a5ac6c5b53d93c5e5cc3893a3e39b9c3d37bb0dc3dc36ca",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "奖励骰在右侧原骰盘中呈现，暗色确认提示与骰盘下方黄色确认入口清楚可见。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/1",
+      "baselineSha256": "6237fd7997301e0dd9510631c758c491abcd0ce42dabf8bfdbdfa40ecd98680f"
+    },
+    {
+      "entryPath": "23-值得拥有骰子候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-投掷者骰区目标态.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-投掷者骰区目标态.png",
+      "sha256": "d4c2eda99899f601f5d6e4a0c901c2e487f87ccee12aa71735118d5d01d077a3",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:RightSidebar.tsx/DiceTray.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "普通重投使用骰盘外框左侧中部的暗琥珀色指针小气泡，显示选择重投骰子0/2；骰子本体与原取消、确认双按钮完整，无屏幕左侧橙条。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "普通重投使用骰盘外框左侧中部的暗琥珀色指针小气泡，显示选择重投骰子0/2；骰子本体与原取消、确认双按钮完整，无屏幕左侧橙条。"
+      ],
+      "playerNextAction": "在右骰盘点击合法骰子。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "操作对象仍右侧原骰子，气泡贴骰盘而非屏幕左缘。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "气泡垂直中心约与原骰盘中心一致，按钮沿原两列排列。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "无浅橙长条、额外说明行或新增操作面板。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "无浅橙长条、额外说明行或新增操作面板。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-投掷者骰区目标态.png",
+      "sourceRevision": "d62336001496de8ff1f4a443df1c31e929693e45abe4b06a3f6bad1909bf1f40",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "暗琥珀色指针气泡位于骰盘外侧左中并显示尚未选择，骰子本体与原取消确认按钮完整可见。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/2",
+      "baselineSha256": "110baa73a2615002fe580b1f5e546239eafd014ae30f30d0bd8428aba3703190"
+    },
+    {
+      "entryPath": "24-值得拥有骰子已选一次.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-同骰已选一次.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-同骰已选一次.png",
+      "sha256": "436e887072220b315d60dffa08c976cceb53cdd6ecaeb8b93f39026ade08ede4",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:RightSidebar.tsx/DiceTray.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "首颗骰子有原黄色边界及小勾，暗色指针气泡显示1/2；没有数字徽，原取消、确认位置未变。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "首颗骰子有原黄色边界及小勾，暗色指针气泡显示1/2；没有数字徽，原取消、确认位置未变。"
+      ],
+      "playerNextAction": "继续选骰或用原确认提交。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "选中由原骰本体承接；手牌和中央旧武僧板保留原位置。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "提示保持骰盘左中锚点，取消/确认没有移动。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "选中只用旧ring和Check，没有新数字徽或额外队列面板。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "选中只用旧ring和Check，没有新数字徽或额外队列面板。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-同骰已选一次.png",
+      "sourceRevision": "d62336001496de8ff1f4a443df1c31e929693e45abe4b06a3f6bad1909bf1f40",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "首颗骰子保留原黄色边界与小勾，气泡显示已选一次，其余骰子仍可直接比较。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/3",
+      "baselineSha256": "1f0a65da7bf7af7ccf947244a1f19c59b0e0c18372db544323bac68a4e97d835"
+    },
+    {
+      "entryPath": "25-值得拥有骰子已选两次.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-投掷者同骰重选两次.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-投掷者同骰重选两次.png",
+      "sha256": "90f3e43765c6c08d38a97b72f281ea49956b2131ef7ef48a2d38b732f73bb572",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:RightSidebar.tsx/DiceTray.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "同骰已选两次后原气泡显示完成，骰子保留旧小勾并统一压暗为不可操作明度；无数字2徽，原确认仍名为确认。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "同骰已选两次后原气泡显示完成，骰子保留旧小勾并统一压暗为不可操作明度；无数字2徽，原确认仍名为确认。"
+      ],
+      "playerNextAction": "点击原确认。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "完成态依然由原骰盘及下方确认承接，不增新HUD。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "完成小气泡仍位于骰盘左侧中部，两按钮基线未变。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "没有数字2徽、重投已就绪长句或确认重投改名。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "没有数字2徽、重投已就绪长句或确认重投改名。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-投掷者同骰重选两次.png",
+      "sourceRevision": "d62336001496de8ff1f4a443df1c31e929693e45abe4b06a3f6bad1909bf1f40",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "同骰选择两次后气泡显示完成，原小勾保留且五骰按旧不可操作明度压暗。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/4",
+      "baselineSha256": "e41ccad578d8d694dfd8f93bfb59b3d66bacb048ebaf15fa72a37854cfbe7bf4"
+    },
+    {
+      "entryPath": "26-即视感悬停说明.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793537696114-oy6toq\\即视感悬停说明态-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793537696114-oy6toq\\即视感悬停说明态-桌面.png",
+      "sha256": "8548012984ffac293fcfd5c3f97de32d6f1982bb593db9c6c13fc193e22063dc",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新token说明通过原可选参数避让，同组标记和旧HUD不动。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:LeftSidebar.tsx/statusEffects.tsx/InfoTooltip.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "即视感说明位于左侧状态组上方，标题与规则可读；三枚状态标记、生命50及CP3没有被说明遮盖。",
+        "necessity": "新token说明通过原可选参数避让，同组标记和旧HUD不动。"
+      },
+      "observations": [
+        "即视感说明位于左侧状态组上方，标题与规则可读；三枚状态标记、生命50及CP3没有被说明遮盖。"
+      ],
+      "playerNextAction": "阅读后点击即视感标记触发原动作。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "说明只作为token的二级信息，中央板、右骰盘不移动。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "说明在同组标记之外，生命/CP仍与原左侧读数对齐。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "说明沿原InfoTooltip皮肤，未新增永久解释条。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "说明沿原InfoTooltip皮肤，未新增永久解释条。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793537696114-oy6toq\\即视感悬停说明态-桌面.png",
+      "sourceRevision": "b9b1f22f220c93bcfe2026eaf0c46ed3f354c58c3be5c04a8c1136f551f88a27",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感说明位于左侧状态组上方，规则、三枚状态标记以及生命资源读数均清楚可见。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/5",
+      "baselineSha256": "406a133d10b9ab02ed47d5322f5485b709de3b617a31ab5da5462fa2f65f7f6b"
+    },
+    {
+      "entryPath": "27-角色排序-已完成角色前段.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793537707962-ge7xsw\\真实选角入口-奇异博士可选-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793537707962-ge7xsw\\真实选角入口-奇异博士可选-桌面.png",
+      "sha256": "ccabdff5e07b7b833f49914b09c919a3b62214fb4fcadd84c2ab8ee3af929f2e",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "实施中后置为用户明确授权。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:CharacterSelection原目录与实施状态排序",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "旧左侧双列目录前段可见武僧、狂战士、烈火术士和暗影刺客等，前段无实施中黄条；中央武僧棋盘与右提示板完整。",
+        "necessity": "实施中后置为用户明确授权。"
+      },
+      "observations": [
+        "旧左侧双列目录前段可见武僧、狂战士、烈火术士和暗影刺客等，前段无实施中黄条；中央武僧棋盘与右提示板完整。"
+      ],
+      "playerNextAction": "滚动原角色列表并选择角色。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "角色列表、棋盘预览、底部席位各沿原区域。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "角色缩略图两列对齐，右侧提示板和棋盘不争同槽。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "没有新选角页面或额外完成态展示。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "没有新选角页面或额外完成态展示。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793537707962-ge7xsw\\真实选角入口-奇异博士可选-桌面.png",
+      "sourceRevision": "d2f9014a9b3e14ce1259cb94d2400c98a03117c0cb5466ab8401f8ae16123d44",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "旧双列角色目录前段呈现已完成角色，中央棋盘预览与右侧提示板保持原构图。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/6",
+      "baselineSha256": "cdf472b27670df08675fdaf9e59efe5698eb3e24c0327af958e0059fed1267d8"
+    },
+    {
+      "entryPath": "28-角色排序-实施中角色后段.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793537707962-ge7xsw\\房主真实选择奇异博士.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793537707962-ge7xsw\\房主真实选择奇异博士.png",
+      "sha256": "a9ecabe1a7d5d658b5d3de8c2c39127b774093636686509fd984632130e3d43f",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "实施中后置为用户明确授权。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:CharacterSelection原目录与实施状态排序",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "旧目录后段奇异博士、索尔等带实施中黄条，博士的P1选中标记和底部博士席位同屏，中央博士板与右提示板保持原构图。",
+        "necessity": "实施中后置为用户明确授权。"
+      },
+      "observations": [
+        "旧目录后段奇异博士、索尔等带实施中黄条，博士的P1选中标记和底部博士席位同屏，中央博士板与右提示板保持原构图。"
+      ],
+      "playerNextAction": "等待其他玩家选择并就绪。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "仍是原列表/预览/席位构图；实施状态只在后段原卡片体现。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "后段角色两列边缘对齐，选中P1与原席位对照清楚。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "黄条仅表示实施中，没有移除标记或伪称角色完成。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "黄条仅表示实施中，没有移除标记或伪称角色完成。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793537707962-ge7xsw\\房主真实选择奇异博士.png",
+      "sourceRevision": "d2f9014a9b3e14ce1259cb94d2400c98a03117c0cb5466ab8401f8ae16123d44",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "实施中角色位于旧目录后段，博士选中标记、底部席位与中央博士预览对应清楚。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/7",
+      "baselineSha256": "707c371a45bdd3b905026c85d36671644517fa2714aed075ff157d263a6f1a84"
+    },
+    {
+      "entryPath": "30-公开准备区三张法术-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区三张法术-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区三张法术-桌面.png",
+      "sha256": "e0900f378c44c1d59bfa315f90891c611df5c66fb2c94c97efa7a9cad359c440",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:AbilityOverlays.tsx/CenterBoard.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "维山帝之书3张公开区位于博士板左下印刷物理槽，当前红蓝两张缩略卡等比可见，总数3仍显示以承接横向找后卡；无额外白框。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "维山帝之书3张公开区位于博士板左下印刷物理槽，当前红蓝两张缩略卡等比可见，总数3仍显示以承接横向找后卡；无额外白框。"
+      ],
+      "playerNextAction": "横滚公开区找到第三张并点击原卡阅读。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "新准备物件只占Vishanti原物理区，左生命CP、右骰盘和手牌未迁移。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "准备卡上缘对齐，保持竖卡外形，无满高拉伸。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "新区域为规则上真实公开卡，未借它改旧HUD。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "新区域为规则上真实公开卡，未借它改旧HUD。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区三张法术-桌面.png",
+      "sourceRevision": "c23fee3b430086aa29f634044e00df0423e20ca959de2cbe706b660c47246989",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张公开准备法术承接在印刷书籍物理槽内，当前两张卡面等比呈现并保留总数提示。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/8",
+      "baselineSha256": "06092157c445e773c362a7785eb1554867678a45c866ff6e3ef53eb928b5cafd"
+    },
+    {
+      "entryPath": "31-公开准备区原卡阅读-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区原卡阅读-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区原卡阅读-桌面.png",
+      "sha256": "10e0ab32552dfcc88a1fcd69e87ce25fc39e2541094f838b6a3f9f4aad0ed2dd",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:BoardOverlays.tsx/CardSpotlightOverlay.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "瓦尔托尔之汽在原中央阅读层完整显示，标题、准备效果、施放效果和底部弃置语句均可读，右上关闭入口在卡面边界内。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "瓦尔托尔之汽在原中央阅读层完整显示，标题、准备效果、施放效果和底部弃置语句均可读，右上关闭入口在卡面边界内。"
+      ],
+      "playerNextAction": "读完点原右上关闭，回准备区。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "阅读作为独立浮层覆盖中央，底层板和HUD没有腾挪。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "卡面直立无压扁，底部完整留于屏内。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "保留原印刷边界，没有金色套框或额外说明面板。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "保留原印刷边界，没有金色套框或额外说明面板。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区原卡阅读-桌面.png",
+      "sourceRevision": "c23fee3b430086aa29f634044e00df0423e20ca959de2cbe706b660c47246989",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原阅读层完整呈现瓦尔托尔之汽的标题与两段效果，右上关闭入口和底部弃置语句均未裁切。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/9",
+      "baselineSha256": "dd1fa94955e6ddc45c2fda2bd2e3af5d87b6b2152a7d55d61a3a4d5be41fbc0c"
+    },
+    {
+      "entryPath": "32-公开准备区横向找到第三张-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区横向找到第三张-横屏.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793535584519-bm3cup\\公开准备区横向找到第三张-横屏.png",
+      "sha256": "460934643d188fb06e0d85255e2ea8f8e3c475c6392127aaf3cc865bb99b1173",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:AbilityOverlays.tsx/CenterBoard.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "横屏仍为PC同构缩放；准备区显示蓝卡与绿色第三张，数量3仍在原左下Vishanti槽，旧生命CP和右骰盘原位。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "横屏仍为PC同构缩放；准备区显示蓝卡与绿色第三张，数量3仍在原左下Vishanti槽，旧生命CP和右骰盘原位。"
+      ],
+      "playerNextAction": "点击绿色第三张，打开原阅读。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "没有把准备区移到侧栏或挤动主板。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "卡片按原槽横排滚动，不出现新短屏分栏。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "无新增白框；缩略卡只作识别，正文由原reader承接。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "无新增白框；缩略卡只作识别，正文由原reader承接。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区横向找到第三张-横屏.png",
+      "sourceRevision": "c23fee3b430086aa29f634044e00df0423e20ca959de2cbe706b660c47246989",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏公开准备区横向显示第三张绿色法术，原生命资源与右侧骰盘位置保持不变。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/10",
+      "baselineSha256": "460934643d188fb06e0d85255e2ea8f8e3c475c6392127aaf3cc865bb99b1173",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793535584519-bm3cup\\公开准备区横向找到第三张-横屏.png"
+      ]
+    },
+    {
+      "entryPath": "33-公开准备区原卡阅读-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区原卡阅读-横屏.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793535584519-bm3cup\\公开准备区原卡阅读-横屏.png",
+      "sha256": "8862205bc8aa2e4b38550281d4270e480e939a99c6cc88cbdc76cddf56dd3779",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:BoardOverlays.tsx/CardSpotlightOverlay.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "横屏原reader中瓦尔托尔之汽整卡可见；标题、两段效果及底部弃置行完整；原右上关闭在卡内，未被裁掉。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "横屏原reader中瓦尔托尔之汽整卡可见；标题、两段效果及底部弃置行完整；原右上关闭在卡内，未被裁掉。"
+      ],
+      "playerNextAction": "点原关闭回准备区。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "放大层保持独立overlay，缩放牌桌仍原构图。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "竖卡约居中，上下留有边距，不强塞满高变形。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "无额外卡框，原卡印刷边界清楚。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "无额外卡框，原卡印刷边界清楚。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\公开准备区原卡阅读-横屏.png",
+      "sourceRevision": "c23fee3b430086aa29f634044e00df0423e20ca959de2cbe706b660c47246989",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏原阅读层完整呈现整张法术和右上关闭入口，标题效果与底部语句均可读。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/11",
+      "baselineSha256": "8862205bc8aa2e4b38550281d4270e480e939a99c6cc88cbdc76cddf56dd3779",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793535584519-bm3cup\\公开准备区原卡阅读-横屏.png"
+      ]
+    },
+    {
+      "entryPath": "34-所有玩家目标候选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\所有玩家目标候选-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793535584519-bm3cup\\所有玩家目标候选-桌面.png",
+      "sha256": "d962515a61b09a0f67ea88c5e3e980f2cabe93053ad7ac128669bf0b8dc229b7",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:InteractionOverlay.tsx/ChoiceModal.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "选择获得即视感的玩家原窗口显示P1自己、P2敌方、P3队友和P4敌方；四候选均可辨，确认灰色。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "选择获得即视感的玩家原窗口显示P1自己、P2敌方、P3队友和P4敌方；四候选均可辨，确认灰色。"
+      ],
+      "playerNextAction": "直接点目标玩家卡，再确认。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "玩家候选是主焦点，背景资源与准备区仍可作为上下文。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "三张上排、一张下排居中，确认位于同组下方。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "复用原PlayerCardShell，未增加先选阵营等步骤。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "复用原PlayerCardShell，未增加先选阵营等步骤。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\所有玩家目标候选-桌面.png",
+      "sourceRevision": "c23fee3b430086aa29f634044e00df0423e20ca959de2cbe706b660c47246989",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原玩家选择窗完整呈现四名候选，自己、敌方和队友关系可辨且确认处于未选择状态。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/12",
+      "baselineSha256": "d962515a61b09a0f67ea88c5e3e980f2cabe93053ad7ac128669bf0b8dc229b7",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793535584519-bm3cup\\所有玩家目标候选-桌面.png"
+      ]
+    },
+    {
+      "entryPath": "35-所有玩家队友已选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\所有玩家队友已选-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\所有玩家队友已选-桌面.png",
+      "sha256": "aa568b67ebe8420432fb4bab94283fb6983b80c07eacbd387eeeedd8a59635d7",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:InteractionOverlay.tsx/ChoiceModal.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "P3队友以原金色边界选中，其它三名候选完整可辨，原确认呈黄色；没有额外新勾或重复选中摘要。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "P3队友以原金色边界选中，其它三名候选完整可辨，原确认呈黄色；没有额外新勾或重复选中摘要。"
+      ],
+      "playerNextAction": "确认对P3施加即视感。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "选择结果仍在P3原卡槽，确认仍在该组下方。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "四候选位置与34一致，选中不抬移其它卡。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "仅原边界与按钮状态变化，没有重复选中摘要。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "仅原边界与按钮状态变化，没有重复选中摘要。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793537707962-ge7xsw\\所有玩家队友已选-桌面.png",
+      "sourceRevision": "c23fee3b430086aa29f634044e00df0423e20ca959de2cbe706b660c47246989",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "队友候选以原金色边界呈现已选状态，另外三名候选仍完整显示并保留下方原确认。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/13",
+      "baselineSha256": "22645bb14a5b3df4e405a3fc5be517720cd92435c9f9cd4788f4d6dc2edea132"
+    },
+    {
+      "entryPath": "36-多持有人状态候选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793537707962-ge7xsw\\多持有人状态候选-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793535584519-bm3cup\\多持有人状态候选-桌面.png",
+      "sha256": "7a7352045b07ca89faa6b38328c32fd55e8c9c9a202a55203238689e84508bef",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:InteractionOverlay.tsx/ChoiceModal.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "多人状态窗标题选择要移除的状态；P1自己眼形标记与P2敌方黄标记并排可见；致盲说明在整组右侧，未盖两持有人、标题或跳过。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "多人状态窗标题选择要移除的状态；P1自己眼形标记与P2敌方黄标记并排可见；致盲说明在整组右侧，未盖两持有人、标题或跳过。"
+      ],
+      "playerNextAction": "直接选择任一合法状态或跳过。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "候选与跳过保持原中心窗口，只有辅助说明避让。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "两持有人卡同高对齐，说明另置右外侧不挤压卡片。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "原状态素材与候选圈保留，无第二套状态按钮。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "原状态素材与候选圈保留，无第二套状态按钮。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793537707962-ge7xsw\\多持有人状态候选-桌面.png",
+      "sourceRevision": "794c4ed738dea1fd65b1c4a25ef824ea7e1d272ef76ab3f15781bfb6ae058171",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两名状态持有人及正式状态本体完整并排，右侧说明没有遮住候选、标题或跳过入口。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/14",
+      "baselineSha256": "7a7352045b07ca89faa6b38328c32fd55e8c9c9a202a55203238689e84508bef",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793535584519-bm3cup\\多持有人状态候选-桌面.png"
+      ]
+    },
+    {
+      "entryPath": "37-多持有人状态候选-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793537707962-ge7xsw\\多持有人状态候选-横屏.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793535584519-bm3cup\\多持有人状态候选-横屏.png",
+      "sha256": "b1bf9c61f1a6411dd719796866182ed23dd2c08a3478790b1bfb49841c601c94",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:InteractionOverlay.tsx/ChoiceModal.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "横屏两持有人及各自正式状态标记仍并排完整；致盲说明在左下方，跳过居中下方，三者互不覆盖。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "横屏两持有人及各自正式状态标记仍并排完整；致盲说明在左下方，跳过居中下方，三者互不覆盖。"
+      ],
+      "playerNextAction": "点状态本体，或点跳过。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "未重排主窗口来给说明腾空间，原标题在上、候选居中、动作在下。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "候选上缘一致；说明右界与跳过左界有间隙。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "辅助tooltip沿原皮肤避让，没有新增永久面板。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "辅助tooltip沿原皮肤避让，没有新增永久面板。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793537707962-ge7xsw\\多持有人状态候选-横屏.png",
+      "sourceRevision": "794c4ed738dea1fd65b1c4a25ef824ea7e1d272ef76ab3f15781bfb6ae058171",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏两名状态持有人及正式状态完整并排，左下说明与居中跳过入口之间留有清楚间隙。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/15",
+      "baselineSha256": "b1bf9c61f1a6411dd719796866182ed23dd2c08a3478790b1bfb49841c601c94",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793535584519-bm3cup\\多持有人状态候选-横屏.png"
+      ]
+    },
+    {
+      "entryPath": "38-无合法状态仅跳过-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793537707962-ge7xsw\\无合法状态仅跳过-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793535584519-bm3cup\\无合法状态仅跳过-桌面.png",
+      "sha256": "9f84e4683e522f7820be7f24ac09292196f3717061dbc457006f8f8c294b46b4",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "平面单列为用户明确授权。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:InteractionOverlay.tsx/ChoiceModal.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "无合法状态时显示原技能结算选择窗、选择要移除的状态说明以及单行跳过；没有空持有人卡或虚假状态图。",
+        "necessity": "平面单列为用户明确授权。"
+      },
+      "observations": [
+        "无合法状态时显示原技能结算选择窗、选择要移除的状态说明以及单行跳过；没有空持有人卡或虚假状态图。"
+      ],
+      "playerNextAction": "点击跳过回原流程。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "唯一可执行决策居中，背景暂时暗化，不挤主布局。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "标题、说明、单列选项共用中轴；跳过完整在窗口内。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "平面单列选项符合用户授权，不制造多余确认按钮。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "平面单列选项符合用户授权，不制造多余确认按钮。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793537707962-ge7xsw\\无合法状态仅跳过-桌面.png",
+      "sourceRevision": "1c23b045c86bfcb6dd8af74511a9a41b483e3610861598068bcbf5a16dc5fb3d",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "无合法状态时只显示原选择窗和获准的单行跳过，没有空持有人卡或虚假状态图。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/16",
+      "baselineSha256": "9f84e4683e522f7820be7f24ac09292196f3717061dbc457006f8f8c294b46b4",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793535584519-bm3cup\\无合法状态仅跳过-桌面.png"
+      ]
+    },
+    {
+      "entryPath": "43-值得拥有-来源卡等待玩家关闭.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-来源卡等待玩家关闭.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-来源卡等待玩家关闭.png",
+      "sha256": "188a4ac675c0be4f12608ed4ef29fc11b5a96f1302571fddeae158a47b28cf6a",
+      "status": "PASS",
+      "reviewer": "/root/doctor_final_visual_c",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "可读特写只由玩家关闭由engine-visual-events:75-79要求；原卡不额外框且不变形为明确授权。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:BoardOverlays.tsx/CardSpotlightOverlay.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "来源卡不愧是我在原中央特写完整等比显示，印刷橙边与同骰可重掷两次的规则可读，右侧0/2提示、骰盘与原取消确认均未被覆盖。",
+        "necessity": "可读特写只由玩家关闭由engine-visual-events:75-79要求；原卡不额外框且不变形为明确授权。"
+      },
+      "observations": [
+        "来源卡不愧是我在原中央特写完整等比显示，印刷橙边与同骰可重掷两次的规则可读，右侧0/2提示、骰盘与原取消确认均未被覆盖。"
+      ],
+      "playerNextAction": "读完点空白关闭，再选骰并确认。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "原来源特写覆盖中央阅读，不把主骰盘或HUD搬走。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "原竖卡比例自然，顶部标题和底部规则完整。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "没有额外金框/白框；静态图只证明可读，不独自证明停留时长。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "没有额外金框/白框；静态图只证明可读，不独自证明停留时长。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793537696114-oy6toq\\值得拥有-来源卡等待玩家关闭.png",
+      "sourceRevision": "d62336001496de8ff1f4a443df1c31e929693e45abe4b06a3f6bad1909bf1f40",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "来源卡在原中央特写中等比完整呈现，印刷橙边与规则可读且右侧骰盘及重投提示仍可见。",
+      "reviewMode": "original-read",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/17",
+      "baselineSha256": "31a9142fdd70fb5b446a286f5262ad7ae440f53454d49649cbe1e11987211273"
+    },
+    {
+      "entryPath": "45-即视感重开后-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793537696114-oy6toq\\即视感重开后-桌面.png",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793535576313-o5sd7x\\即视感重开后-桌面.png",
+      "sha256": "de074175906e1ce12a19df86f590114b01e9cb878d3049baafdb9f294b59191d",
+      "status": "PASS",
+      "reviewer": "/root/doctor_ui_ledger_other",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "oldUiComparison": {
+        "ref": "c057cfe76afab5c2078c129183a02d6f1fb21a90:RightSidebar.tsx/DiceTray.tsx",
+        "oldPixels": "未读取旧像素，仅对照旧源码合同。",
+        "difference": "即视感重开后原右骰盘五骰为未锁态，掷骰按钮恢复黄色可用并带原次数点；确认灰色，阶段仍显示掷骰攻击。",
+        "necessity": "新博士公开准备物件/真实候选接入，原组件承接；未获准的旧皮肤已恢复。"
+      },
+      "observations": [
+        "即视感重开后原右骰盘五骰为未锁态，掷骰按钮恢复黄色可用并带原次数点；确认灰色，阶段仍显示掷骰攻击。"
+      ],
+      "playerNextAction": "点击原掷骰开始本次投掷。",
+      "layoutAudit": {
+        "scopeSource": "用户要求本聊天全部UI与867前旧基线逐项恢复；当前原图，仅本轮直接目标及影响面。",
+        "空间主次": {
+          "status": "PASS",
+          "observation": "继续使用旧骰盘和按钮位置，无重开专用新面板。"
+        },
+        "对齐栅格": {
+          "status": "PASS",
+          "observation": "原掷骰/确认双列和结束攻击下行关系保持。"
+        },
+        "分组与装饰": {
+          "status": "PASS",
+          "observation": "临时即视感说明已退场，没有额外完成横幅。"
+        }
+      },
+      "scores": {
+        "任务清晰度": 19,
+        "视觉层级": 14,
+        "对象可识别性": 14,
+        "状态与动作载体": 14,
+        "布局完整性": 14,
+        "素材完整性": 10,
+        "操作人体工学": 9,
+        "total": 94
+      },
+      "protectedSlots": [
+        "本帧目标/候选完整",
+        "原生命CP/阶段/骰盘与手牌未因辅助UI迁移",
+        "标题与动作未被目标浮层裁切或遮住"
+      ],
+      "negativeImpactChecks": [
+        "没有目标素材破图或可见拉伸",
+        "没有以额外底框/新数字徽代替原UI",
+        "静态图不证明时序、规则数值、实际点击或实体触控"
+      ],
+      "hardFailures": [],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-restoration-ledger-other.json; temp/doctor-restoration-ledger-dice-adapters.json",
+        "decisions": [
+          "临时即视感说明已退场，没有额外完成横幅。"
+        ],
+        "uncoveredElements": []
+      },
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793537696114-oy6toq\\即视感重开后-桌面.png",
+      "sourceRevision": "b9b1f22f220c93bcfe2026eaf0c46ed3f354c58c3be5c04a8c1136f551f88a27",
+      "e2eSourceRevision": "19c95e2b0fe4a32abae7ff2e5d14dedc90b9309912aa44770045888debd31855",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感重开后原右侧骰盘与掷骰确认双列保持原位，临时说明退场且没有新增完成横幅。",
+      "reviewMode": "carried-forward",
+      "baselineReviewEntry": "temp/doctor-restoration-visual-c.json#items/18",
+      "baselineSha256": "de074175906e1ce12a19df86f590114b01e9cb878d3049baafdb9f294b59191d",
+      "unchangedEvidence": "当前源与本轮恢复基准逐字节散列相同；本次最终限定改动未覆盖此屏，验收条件未变。",
+      "unchangedEvidenceFiles": [
+        "temp/doctor-restoration-visual-c.json",
+        "temp/doctor-restoration-plan.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793535576313-o5sd7x\\即视感重开后-桌面.png"
+      ]
+    }
+  ],
+  "summary": {
+    "total": 19,
+    "PASS": 19,
+    "REVISE": 0,
+    "newOriginalReads": 12,
+    "carriedForward": 7,
+    "carriedFromOld49": 0
+  },
+  "createdAt": "2026-11-01T13:02:31.596718+00:00"
+}

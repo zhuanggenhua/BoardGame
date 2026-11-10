@@ -1,0 +1,2897 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "changeType": "refactor",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-11-01",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "visualReview": "子代理逐张私读当前桌面整屏图及录屏全部解码帧；主线程只处理原裁决、路径与散列。规则数值独立由行为测试证明。"
+  },
+  "humanAcceptance": {
+    "status": "pending",
+    "platform": "PC",
+    "mobileWork": "not-started",
+    "authority": ".spec/knowledge/standards/ui-change-gates.md#开工门槛"
+  },
+  "sourceDriftVerification": {
+    "status": "PASS-target-chain-unaffected",
+    "unchangedRawFiles": 715,
+    "actualByteDrift": 1,
+    "file": "src/components/common/media/CardPreview.tsx",
+    "capturedRawHash": "c3bbb402d95283e8681410537b4f9ff5100bf4bad3c0d0670731dd8088000c28",
+    "currentRawHash": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269",
+    "capturedNormalizedHash": "ba34d5333c242b20b9061e40ec45248ab89015de5a24a5ff45047ec55718a8f8",
+    "currentNormalizedHash": "4455f9bf5da75ba70afe60e9502758096bcf3575ce5a71581d2757575691111b",
+    "impactReview": "evidence/qidahen/tutorial-pc-open-battle-20261101/reviews/cardpreview-drift-impact-review.json",
+    "machineEvidence": "evidence/qidahen/tutorial-pc-open-battle-20261101/reviews/cardpreview-drift-ast-evidence.json",
+    "scopeConclusion": "变化helper未被本条链挂载执行，七大恨实际可见卡牌消费路径及其声明未变；49媒体及原79记录继续有效。原raw哈希差异一项如实保留，不替换capturedHash，不用模块加载直接等同符号消费。"
+  },
+  "media": [
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/01-PC-辽北前线与当前目标.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/02-PC-轮盘免费前进一步.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/03-PC-到达开垦军屯与先征召.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/04-PC-征召弃牌支付.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/05-PC-共享放大镜检视征召手牌.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/06-PC-全部合法征兵地区与辽北引导.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/07-PC-辽北完整地区与建军选项.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/08-PC-征召后执行同格军屯.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/09-PC-军屯后继续同格开垦.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/10-PC-开垦地区选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/11-PC-年中税赋与漕运.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/13-PC-军备升级卡牌.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/14-PC-先选出兵来源.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/15-PC-地图兵牌选择出兵.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/16-PC-已选部队与确认出兵.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/18-PC-战术牌使用前.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/21-PC-炮兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/23-PC-骑兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/25-PC-步兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/27-PC-战后占领选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/28-PC-主动展开只读战报.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/29-PC-对手推进轮盘后回到大明.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/30-PC-外交友好标记选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/31-PC-外交结果与落点继续.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/32-PC-外交后继续同格雇佣.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/33-PC-雇佣部队目标.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/34-PC-新年朝贡与结算顺序.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/35-PC-山海关维护选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/36-PC-叶赫部队维持费用.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/37-PC-三张费用牌分别选中.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/38-PC-手牌末端与翻看入口.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/39-PC-平壤雇佣军耗损选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/40-PC-选中平壤耗损部队.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/41-PC-领取纪年卡的费用.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/42-PC-新年顺位与纪年.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/43-PC-新年度人物选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/44-PC-共享放大镜检视人物.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/45-PC-新顺位首回合后回到大明.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/46-PC-次年炮兵训练选择.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/47-PC-剩余基础训练与前线步兵.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/48-PC-四次基础训练完成与保留手牌.png",
+    "evidence/qidahen/tutorial-pc-open-battle-20261101/media/49-PC-完整年度教程结束并继续对局.png"
+  ],
+  "implementationRecord": "docs/games/qidahen/records/qidahen-pc-open-battle-review-20261101.md",
+  "requirements": [
+    {
+      "requirement": "PC单独送验与人工批准顺序",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/01-PC-辽北前线与当前目标.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/03-PC-到达开垦军屯与先征召.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/04-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/05-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/06-PC-全部合法征兵地区与辽北引导.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/07-PC-辽北完整地区与建军选项.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/08-PC-征召后执行同格军屯.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/09-PC-军屯后继续同格开垦.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/10-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/13-PC-军备升级卡牌.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/29-PC-对手推进轮盘后回到大明.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/30-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/31-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/32-PC-外交后继续同格雇佣.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/33-PC-雇佣部队目标.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/34-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/35-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/36-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/37-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/38-PC-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/39-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/40-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/41-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/42-PC-新年顺位与纪年.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/43-PC-新年度人物选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/44-PC-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/45-PC-新顺位首回合后回到大明.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/46-PC-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/47-PC-剩余基础训练与前线步兵.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/48-PC-四次基础训练完成与保留手牌.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/49-PC-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "开放骰子与必要结果",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "完整PC教程与原有操作保留",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/01-PC-辽北前线与当前目标.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/03-PC-到达开垦军屯与先征召.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/04-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/05-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/06-PC-全部合法征兵地区与辽北引导.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/07-PC-辽北完整地区与建军选项.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/08-PC-征召后执行同格军屯.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/09-PC-军屯后继续同格开垦.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/10-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/13-PC-军备升级卡牌.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/29-PC-对手推进轮盘后回到大明.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/30-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/31-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/32-PC-外交后继续同格雇佣.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/33-PC-雇佣部队目标.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/34-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/35-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/36-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/37-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/38-PC-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/39-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/40-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/41-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/42-PC-新年顺位与纪年.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/43-PC-新年度人物选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/44-PC-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/45-PC-新顺位首回合后回到大明.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/46-PC-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/47-PC-剩余基础训练与前线步兵.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/48-PC-四次基础训练完成与保留手牌.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/media/49-PC-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-pc-open-battle-20261101/traces/desktop.json"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "qidahen-annual-desktop",
+      "sourceRun": "annual-r134-open-battle-pc-20261101",
+      "sourceRevision": "sha256:ec3dc17c3643322197b75e4dc07b7f2154e1994918ba2df2ed81a272c23b9a32",
+      "evidence": "evidence/qidahen/tutorial-pc-open-battle-20261101/traces/desktop.json",
+      "requiredSteps": [
+        "frontier-goal",
+        "opening-move",
+        "prepare-hand",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "farm-action",
+        "farm-alternative-checkpoint",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "opening-finish",
+        "midyear",
+        "hand-limit",
+        "battle-move",
+        "upgrade-first",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish",
+        "opponent-round",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand",
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "other-upkeep",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong",
+        "upkeep-liaodong",
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "year-ready",
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-second-kind",
+        "training-second-target",
+        "training-third-kind",
+        "training-third-target",
+        "training-fourth-kind",
+        "training-fourth-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/r134_head_first + /root/r134_head_remaining + /root/r134_tail_a + /root/r134_tail_b + /root/r134_battle_last_five + /root/r134_battle_resume + /root/r134_battle_b + /root/r134_battle_last_frame"
+    },
+    "reviewFile": "../.visual-review.json",
+    "baselineReviewFile": "../.baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/battleRollProjection.test.tsx src/games/qidahen/__tests__/battleRollPlacement.test.tsx src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts --configLoader native --maxWorkers 1"
+    ],
+    "evidence": [
+      "test-results/qidahen-open-battle-r133-focused.log"
+    ]
+  },
+  "additionalChecks": {
+    "typecheck": "test-results/qidahen-open-battle-r134-typecheck.log",
+    "focusedLocales": "test-results/qidahen-open-battle-r134-locales-focused.log",
+    "spec": "test-results/qidahen-open-battle-r134-spec.log",
+    "machineIntegrity": "test-results/qidahen-open-battle-r134-machine-health.json",
+    "e2e": "test-results/qidahen-open-battle-r134-pc.log",
+    "fullI18n": {
+      "status": "FAIL-unrelated-files",
+      "evidence": "test-results/qidahen-open-battle-r134-i18n.log"
+    },
+    "expandedArmament": {
+      "status": "FAIL-existing-domain-tests",
+      "evidence": "test-results/qidahen-open-battle-r132-unit.log",
+      "failed": 7
+    }
+  },
+  "boundaries": [
+    "本组只证明当前PC教程主链与本轮骰子表达，AI通过不等于用户人工认可；未进入移动端适配或验收。",
+    "城战、全部军备人物分支与所有骰种压力态未按完整自然浏览器主链验收；不宣称全游戏测试通过。",
+    "额外军备领域测试七失败、全局国际化八条其它文件告警导致检查失败均保留原日志，不删除断言、不改其它会话文件。",
+    "本轮未提交、推送、切换分支或发布。"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\00-frontier-goal.png",
+      "sha256": "78252187c7c6b5c48e8e20f6cf56145fc87e6918bf7fe81a87896680499a3541",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\01-opening-move.png",
+      "sha256": "e85125519e078898b1aedc2e3681900e74eccb42c4d432c4c5fda971393f0f90",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\02-prepare-hand.png",
+      "sha256": "49779c78d0b6bf0821e6bd7a561612aa7b3ae4c63cd47d91e9f3994ba661d8f8",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\03-recruit-payment.png",
+      "sha256": "ec0ac99437fd898a1ba1168b5f205c2c6cac0e4c54cfc9d00d65406ac27bb475",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\04-recruit-payment-inspect.png",
+      "sha256": "fb08035990b7dfb1e212eb88c912df9b0b5561c9f3d916b3e5caaf30f60542fe",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\05-recruit-source.png",
+      "sha256": "3529ca85c38407556fb88c78e0b1c1a4660b9a65459f11ccc3fe0ec7c44c2ab6",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\06-recruit-troops.png",
+      "sha256": "1e1da35788734e6edcfbae6edafa22eaf296e3d9b012ae947e6061ede19701c8",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\07-farm-action.png",
+      "sha256": "08e64281f68555b942dd61b1306ec6d605fac3456732ab6380b6e754a79f1f68",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\08-reclaim-action.png",
+      "sha256": "61a04a092f254f0c187b3bf8eb6641957c220a3072ae525c51bf2a502f8a263e",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\09-reclaim-target.png",
+      "sha256": "e340a0da689e98123967a35eed7847aa410a5ae69ad3390e5d73a8c09238452b",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\10-midyear.png",
+      "sha256": "c083a39c50f15aaf7cd0454c3b95654baf521649e2615f2de1b72c0a673d87e5",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\11-hand-limit.png",
+      "sha256": "f460078b0c3af1b1b108e2600d1606a6a3e41c742cf34af50685051a236b7db2",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\12-upgrade-card.png",
+      "sha256": "a0086cbabb65f6a5034fad28f2910004fbb734dfa8a1f66c84336fa20c744383",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\13-dispatch-source.png",
+      "sha256": "6aa1ccef55cc9fe6dff17c6f4d6a24141da2170684e761c414181afc68e0e1c4",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\14-dispatch-troops.png",
+      "sha256": "eee42ea28fdad9db40dd53aab6abc56028d8f6b9f625eb5b298e01049fcf6abf",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\15-dispatch-troops-selected.png",
+      "sha256": "5256ea298b067e952dfca24139bae0a8584ca5858a64a2f6853939fdb992efd0",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\16-dispatch-target.png",
+      "sha256": "6f0f0a0b7860563147817650ec3e03eae44423f62904f6a1f2ded9008e70125c",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\17-tactic-card.png",
+      "sha256": "7830539faf7a874c843888715261e2dd5f43834ccae06c12bf58cb9aa0671627",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\18-tactic-card-selected.png",
+      "sha256": "4954b85ee34aab6dafa2ee38de48a6a67e63319c2a2241d6e17478dbc258e9f9",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png",
+      "sha256": "c298488452c441776a4689c5bf0e34ad2f1e0b5772aa20696bd1c3fe9bbc77d0",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\27-occupy-report.png",
+      "sha256": "4b716cfa2c8972492fe2a33f2822f9dc417d4b1dd46e2f888e1830f46d6ea2c4",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\28-opponent-round.png",
+      "sha256": "fa03aca756300099221c8e4d74f6160d29eb2bc764acc78a8b3d840c7560911a",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\29-diplomacy-target.png",
+      "sha256": "04e55ce010800ffcb6e8e0bb7cf2001ed2645fae35f3dddca5a9656656870533",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\30-diplomacy-finish.png",
+      "sha256": "d2061e0d2f7ca051c02063431e74cf5fdc13d8eea4673dfa950d95621bf1f722",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\31-hire-action.png",
+      "sha256": "a372ebd8db3f3954fb54e86e908bd325a462c5873a1bac8f15844b670fdb48c8",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\32-hire-target.png",
+      "sha256": "a18efe3663aa7c95cb1792a46fa15dbd6af8896df7b9533b2b96d6cbdaa81e72",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\33-new-year.png",
+      "sha256": "342c54ba0b37eaa31eb22f504f41332f712f189baea8f1772e57bbadbe99db91",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\34-maintain-shanhai.png",
+      "sha256": "6c7ab0936bf847eba79507cfbd322384ac85f90c9772cceb38ca516fc8c4a71f",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\35-upkeep-yehe.png",
+      "sha256": "76a8507bb93907ef513699af234cceea933d7a7784bfa901410e2078acd09a47",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\36-upkeep-yehe-selected.png",
+      "sha256": "836cf77cc623e2264a4ac9d22d3f40fbf8909369f9d2b6380a3b9f5d0c26ab7c",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\37-hand-scroll-end.png",
+      "sha256": "9e4d31f627cb4c141ccd43f04832e24d7a5cb64b9b302ca5f37801386898f78d",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\38-upkeep-pyongyang.png",
+      "sha256": "60d5f8c28dec872cc876e75b2ed3387c05d03f3b767f08c1817f2addba9aa916",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\39-upkeep-pyongyang-selected.png",
+      "sha256": "354f1b0c6b9cd82ee87103ab61b3cb7db7621fe18b605a25692b04f8b81e7c73",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\40-claim-year.png",
+      "sha256": "0e2efb88b64d2f7a7c651624ebe650010402981916577893a4ff83f68cdc1755",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\41-new-order.png",
+      "sha256": "26cf079f820c348107017ffc3b30e552ecbc87f4bc857e2ed5088bdd20a65b33",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\42-year-character.png",
+      "sha256": "2221a33ed903513fb9fdfa4bc66ac640389be86ff78a971bd0893c59297d3cc0",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\43-year-character-inspect.png",
+      "sha256": "713f6b6dad44a0a582a74d9c6c1603f93bd831ede0228e2adb538923e76fab20",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\44-year-ready.png",
+      "sha256": "62d6262f9f971486238d2bc3cab028ecc3e16557973069500c0db4488a2c3eb5",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\45-training-target.png",
+      "sha256": "9e8efd7a7e3848afa860a3cc2850ed0eb52503509c24c9f999d408542daec0d4",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\46-training-second-target.png",
+      "sha256": "d6176ef978bc9b76e0e2073dcc87e361a95768eef44cb4a587dd1b6ec4e7c7ba",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\47-training-finish.png",
+      "sha256": "54f8e8b866d2f094c08fb5e31e0c13198153bc2f0cae05494f7a5b37d36c0a37",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\48-finish.png",
+      "sha256": "ea58b2edd49854af21d7508684122c03bea05a43902d28233f8612050bb75df4",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "1e66d6074ce4abb96f4e0428716e179025df93f7e325fa52faeae6e241371dda",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "1eae9d1f234bd2f2ab95a89cc25bd07d64ce23dbe1858a363ea79da8a5f5c217",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0056-crop.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0057-crop.png",
+      "sha256": "690b69aef1fec2ee168d710df64cc1b211901acf69f54da88744d0e092ae7b7a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0058-crop.png",
+      "sha256": "690b69aef1fec2ee168d710df64cc1b211901acf69f54da88744d0e092ae7b7a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0059-crop.png",
+      "sha256": "690b69aef1fec2ee168d710df64cc1b211901acf69f54da88744d0e092ae7b7a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0060-crop.png",
+      "sha256": "d8890250c6fd3bc04fae99182f377d0ce6c80af37e06ccdfbd26dc95ec3c1b49",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0061-crop.png",
+      "sha256": "3ce5f2f44e2cb12f56ce58a4711b68d3f8bfd7783391d9101227c2a649963d51",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0062-crop.png",
+      "sha256": "67c81fb1e82a5ae04ff108aee0c0ab3598f25e94cc8905d9664db14fec415b07",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0063-crop.png",
+      "sha256": "3da7ee10079ec8716d6902de195dfaa3ce832d780da25f93614dd4f86705a0bb",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0064-crop.png",
+      "sha256": "3f7111269e62b5a1d0fde867e0c084850f1202573787449f9a46526e33aaf168",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0065-crop.png",
+      "sha256": "692b347c8ae2797053f472f7b3797f74aefdd0032fb8a8b5eab98383a2ccde57",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0066-crop.png",
+      "sha256": "767fc1503f65206be61ce8638297154ed7b566afd3fbc14d036562256e3be7ff",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0067-crop.png",
+      "sha256": "c29b4db60c81c39f376b231dc91ca5f93c5ca8c8ba83f3b125946d9e271f1e22",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0068-crop.png",
+      "sha256": "3d4bc4aafb0c4f28414a5bb84bdccdb94945f5c786aefeeb7f52a8b6df51788f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0069-crop.png",
+      "sha256": "e389e8d59e62e0bb1ac9ea1f147a6a0ae18d586f2e1e049a0bbc1640fe088f63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0070-crop.png",
+      "sha256": "e7a580084062713e9b3d903b6ee4b31050b075398dbec84510c9d1e748ab3776",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0071-crop.png",
+      "sha256": "82bdc7a6b490f95f83a30649d902200ac54bee10a64b120e0c5fc35af8d840bd",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0072-crop.png",
+      "sha256": "abf08d4178396a9275fd8faad0e65bebf9456b8001ceb681a624f97515964920",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0073-crop.png",
+      "sha256": "3ad6f9981d510aeab1b742edc67284e1982122c2e74bebc3d7919a54a65696a5",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0074-crop.png",
+      "sha256": "5728da4c2670eb8aca24eb0d4da18a33961ab7599d647e59a36f20a66c93bf73",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0075-crop.png",
+      "sha256": "97cc652faa6956a7fc9aa820f4dd9c15558d7d0c9d548c208c04796c4ba9d29f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0076-crop.png",
+      "sha256": "36b13829406b25eb1fc0d531994d8e422e4173f28ec44ce2dc580edbbc632714",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0077-crop.png",
+      "sha256": "c005173e63f8b3aa1d498a92616ec82a625168798e1a48aebf7994b5a947448b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0078-crop.png",
+      "sha256": "768c02de55ab1a349fbd88ee8e9f5c5aaf8a087dd0ca9a07f702c8c151712433",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0079-crop.png",
+      "sha256": "8c45c62eb7c506d8ead851509fc0edb6730ec6e041df54a1a6a403f191e92a7d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0080-crop.png",
+      "sha256": "8c45c62eb7c506d8ead851509fc0edb6730ec6e041df54a1a6a403f191e92a7d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0081-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0082-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0083-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0084-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0085-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0086-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0087-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0088-crop.png",
+      "sha256": "1dc55e5cd5e2b2de55cff7df0a80654871fc6708d6193752db0c8673cda7dfac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0089-crop.png",
+      "sha256": "9dcf9496b02ae31c573f05567dacfaab43973f26becbbf4cb6b6f76a35c8b862",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0090-crop.png",
+      "sha256": "9dcf9496b02ae31c573f05567dacfaab43973f26becbbf4cb6b6f76a35c8b862",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0091-crop.png",
+      "sha256": "b73f7f9820d156eea8019e152dad52c4e178df5c0c2611bbb21b145867e4046f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0092-crop.png",
+      "sha256": "b73f7f9820d156eea8019e152dad52c4e178df5c0c2611bbb21b145867e4046f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0093-crop.png",
+      "sha256": "b73f7f9820d156eea8019e152dad52c4e178df5c0c2611bbb21b145867e4046f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0094-crop.png",
+      "sha256": "b73f7f9820d156eea8019e152dad52c4e178df5c0c2611bbb21b145867e4046f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0095-crop.png",
+      "sha256": "b73f7f9820d156eea8019e152dad52c4e178df5c0c2611bbb21b145867e4046f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0096-crop.png",
+      "sha256": "b73f7f9820d156eea8019e152dad52c4e178df5c0c2611bbb21b145867e4046f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0097-crop.png",
+      "sha256": "3a221937fcf11d5c34f95b09837902257e8022698336a9d79fd93479d653301e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0098-crop.png",
+      "sha256": "3a221937fcf11d5c34f95b09837902257e8022698336a9d79fd93479d653301e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0099-crop.png",
+      "sha256": "3a221937fcf11d5c34f95b09837902257e8022698336a9d79fd93479d653301e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0100-crop.png",
+      "sha256": "3a221937fcf11d5c34f95b09837902257e8022698336a9d79fd93479d653301e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0101-crop.png",
+      "sha256": "3a221937fcf11d5c34f95b09837902257e8022698336a9d79fd93479d653301e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0102-crop.png",
+      "sha256": "3a221937fcf11d5c34f95b09837902257e8022698336a9d79fd93479d653301e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0103-crop.png",
+      "sha256": "a2b3fa66141c22db8979f1879c88a0ceab6e9a1acfbc8d1bd44b1990f724d5e4",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0104-crop.png",
+      "sha256": "fee46ee04f0ef184fac08261d86e2902b3a1b96df260a90cbe26062dce3f6fad",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-final-part-b\\frame-0105-crop.png",
+      "sha256": "98c10e37434038d10dfe6909824a957feb3740a9ad33c6845060835a13cf153d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00000.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00001.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00002.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00003.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00004.jpg",
+      "sha256": "b69f1573675facf7af4039c8485ac10ad1b142adf1cd873b1e2317b50a02091c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00005.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00006.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00007.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00008.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00009.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00010.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00011.jpg",
+      "sha256": "fe7ad6eab0f532455e2b31ab7742fc0a0c124af14fe6267d6d0a004017060977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00012.jpg",
+      "sha256": "1e66d6074ce4abb96f4e0428716e179025df93f7e325fa52faeae6e241371dda",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00013.jpg",
+      "sha256": "688dc415441091153eb5b8d61b4bd71463a0e3ac551d12d3b24d2d9e7a4e7865",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00014.jpg",
+      "sha256": "688dc415441091153eb5b8d61b4bd71463a0e3ac551d12d3b24d2d9e7a4e7865",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00015.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00016.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00017.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00018.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00019.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00020.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00021.jpg",
+      "sha256": "635d8df8e9fe45d8bcb4ae5938ea1b25ccc8bcdb3960239b7bcec4c161125292",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00022.jpg",
+      "sha256": "687c3a76ec729bb46a802e6b580f5c32f816c988f3cfefbbfd0b262f7d84b379",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00023.jpg",
+      "sha256": "d9569cbda1a415e589603d57deff31049485b225ccf129d6c901930ba7ed670a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00024.jpg",
+      "sha256": "0c7bf5f3d547f16880d1600662e876416942468ba0878aa2fa2848d4d6289d7a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00025.jpg",
+      "sha256": "0fb46ebcbaec05b3327794dd5007788722c66a9e2fff8abe45361b0231fabef5",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00026.jpg",
+      "sha256": "6a514b16e5bf59cac5ed156ee9997cc58c4dd8fc08b7231cb5958a1f278ed77b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00027.jpg",
+      "sha256": "9747636bbc203f41eb8cd981c739450ef6637a59b50fadfae44e032cea236804",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00028.jpg",
+      "sha256": "1eae9d1f234bd2f2ab95a89cc25bd07d64ce23dbe1858a363ea79da8a5f5c217",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00029.jpg",
+      "sha256": "91b368a19a3a262fb6a48649b1a8c3b6efb41fa8da482794c69cfd5582e5ba59",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00030.jpg",
+      "sha256": "2012e9e0f4a3ad6404b7dd3809e2bb4090a54797c7661f33385778f17121543a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00031.jpg",
+      "sha256": "4e069964ae729ab1fcac8d14bb3d086fbf59d237d4b64472d6eceeb062f83785",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00032.jpg",
+      "sha256": "c3a218a5f8ab8cc8d4dc18c54b561cf9c2f6775c9042c95f92981fd19c220f7b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00033.jpg",
+      "sha256": "2dfe286a6eb567450991aaa8d604099e68c5123c57cf1133afc0986d163166fe",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00034.jpg",
+      "sha256": "bdc9cb92673386c0a5ee17b70829c4195613235417f3314c237d415d8461417b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00035.jpg",
+      "sha256": "95b014ce235b5082347a05515f5f7ea5b6bb57c1ab5549990cc474716f3bf40c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00036.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00037.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00038.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00039.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00040.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00041.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00042.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00043.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00044.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00045.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00046.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00047.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00048.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00049.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00050.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00051.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00052.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00053.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00054.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00055.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00056.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00057.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00058.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00059.jpg",
+      "sha256": "a60f2cac96663176fb87974db024a37fe5776cfd999ad2f53e0ce525e1edde3b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00060.jpg",
+      "sha256": "38755e1783b8676b2f914b0185f32c8c2a034d0b1f5fc451f3c52e2f84fd9170",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00061.jpg",
+      "sha256": "3129379d296f4948ef1fb0dae6d4396d7dc31c415fc32d20c1e4ac8a95af7cb1",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00062.jpg",
+      "sha256": "cf944f1a575bc771e73b6d18b0a0067bedc9fe836c22b729439d5b6e57ff6426",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00063.jpg",
+      "sha256": "2cc6da0ac130bc6cb3bc46773a11663200fa8f7b6232e1cbd409630f685663b9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00064.jpg",
+      "sha256": "9ce0007922c6ef3d246a674367f940e7b716be99f5f25761d47e272b2f82701b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00065.jpg",
+      "sha256": "203ed4b94cbb26fa8811bad967fce5aca2cf33f474be244eb4a38a29d93274f5",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00066.jpg",
+      "sha256": "20c82bd9bc8dea9d4aada8ef241ae1a262bfabe3ceb3de0d259ea4668a76a08d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00067.jpg",
+      "sha256": "2828fb6a24fa8496c50331ff10311001c419d8f1ae305d569f833eaa380a27ed",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00068.jpg",
+      "sha256": "836831b9a56aebf07c6b57608c407faa7a25914fe6703c61c5ac820ccd60a07f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00069.jpg",
+      "sha256": "a18ae202fd3d27853a4c5275a8dab93b430b21b63ca25ab29ed83c9e107fb0eb",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00070.jpg",
+      "sha256": "e14d4002e6feffc1de5ee5e44ed07afdc38aa10af100d25ee22af62f1b4582f0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00071.jpg",
+      "sha256": "53ab42c913c1435b2f86c880b49982ffb26b87d074af0e7b93c9172267a04ea5",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00072.jpg",
+      "sha256": "cfabf9cf28b07bc146c5aa590da73ae9e600db0a0827617ea5d6e652f666cf96",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00073.jpg",
+      "sha256": "e4ff55bce767b64136ee806a5d4a17a7258771e516866474ee5732d50ab8b399",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00074.jpg",
+      "sha256": "0fbf34b5b269e41882c9d4dd72d6cca73efc814bb24f12acc2e00a145296a8b9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00075.jpg",
+      "sha256": "c3de5098fbd593c074b63cba0948c3a0c2136067ec8196289bc53ec98d449b36",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00076.jpg",
+      "sha256": "7de6fb8c10fc5aa76d29aede81367af77fc2bf52b3fa88c59cf14d5b4001e95b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00077.jpg",
+      "sha256": "0558bab7f6fedc6d36d611e5c7eb9ec9eec8ea36a11c0c6d5cedcc56a5c8dc6e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00078.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00079.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00080.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00081.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00082.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00083.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00084.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00085.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00086.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00087.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00088.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00089.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00090.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00091.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00092.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00093.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00094.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00095.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00096.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00097.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00098.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00099.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00100.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00101.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00102.jpg",
+      "sha256": "910e537b792422a8dbd16179ec0ee3538e9bbc62e84de770661de95d8e692ce2",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00103.jpg",
+      "sha256": "ea2da7860600e351e17dccef78cffa30b9caf5c947a260f59db7b83a2e2fa4d8",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-frames\\00104.jpg",
+      "sha256": "7f7ff5a51cd6aba99a5a65a4686d09e39fe3cb87b79f91f27b83e20f00c1d44d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "836831b9a56aebf07c6b57608c407faa7a25914fe6703c61c5ac820ccd60a07f",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-real-time.webm",
+      "sha256": "558feaf903d055f327a33997b15df2d597e8a056f011431111053101c28cc033",
+      "contract": "source-original-byte-copy",
+      "reason": "原始行为链媒体的字节一致归档只展示一次，原路径保留来源。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0001.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0002.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0003.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0004.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0005.png",
+      "sha256": "83f02ff24d11b5f455e186df09b42eee5abdbf8480932afdece467f9e73f2c8c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0006.png",
+      "sha256": "a7d0dfaf1d0b19e4dec18cd1c652820bcd61c1c222b0410085ae2cf43ca4cee4",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0007.png",
+      "sha256": "d5ff593fc88bd72eec21129a33219743810d919f8864ba8a58818a60974be764",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0008.png",
+      "sha256": "10f9c0fd67f5c7b3fc6b7cd49f682ae772d392045877fb88404d357e72fb983f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0009.png",
+      "sha256": "f3fa89469871b6b97391ee8778d8efc87dabd3043eab75ba8ee1f7251e8e6b0f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0010.png",
+      "sha256": "f3fa89469871b6b97391ee8778d8efc87dabd3043eab75ba8ee1f7251e8e6b0f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0011.png",
+      "sha256": "a1e9a48c2642336cdfbd4653596e01d7ec6f42b1b3da2f806a28edfdb65398ed",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0012.png",
+      "sha256": "a1e9a48c2642336cdfbd4653596e01d7ec6f42b1b3da2f806a28edfdb65398ed",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0013.png",
+      "sha256": "7d84a7985d6f2a22a58e9ee29b74a2a307e5e6b5229c760be648cc77e0e84de8",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0014.png",
+      "sha256": "290025d3f9fb97b43f500625170049388d9103e8519deb1f4509d688fb4c79b9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0015.png",
+      "sha256": "290025d3f9fb97b43f500625170049388d9103e8519deb1f4509d688fb4c79b9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0016.png",
+      "sha256": "d2f1781afb4b4b0ab11a8de2db1e669645f86d72650a0e7ba7d7a4dbafb0a77a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0017.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0018.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0019.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0020.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0021.png",
+      "sha256": "2593c835427303934747fd112d23b3e3400e51d850490e7a1d142c54031a4870",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0022.png",
+      "sha256": "0cd32c0730d8862366a77f2df321c747c70b5455bfb5f4c73c8fdb344517de98",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0023.png",
+      "sha256": "dd8878d3500c80cdb6b6622c25da6d2ca082a25b1a326f98cffd31e52684222c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0024.png",
+      "sha256": "60be9290509f736b0b075c83e2c205c41bb69a7ed9b4e00a9f4e4c7d3bf14114",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0025.png",
+      "sha256": "ea0cc535f1949f90d3418348080029839c4f8398f7b2ac71a832192fd7e754c9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0026.png",
+      "sha256": "cb2da8e977234e1680fb1a69a7f279af0874d76dcf455cee9eb3186aca928212",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0027.png",
+      "sha256": "2683d4f5efa60c9eae5ef38644c1e323d83e19ea11a887ecc0c9e36fa5ce97a0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0028.png",
+      "sha256": "0437020acfd5b9fe10fb74fd231d2ffd72fc05659d2688ec873d6e880ff25b78",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0029.png",
+      "sha256": "1cd4c33b0b01bdd9a3622c483bfa322058ad6ca5a357902cd1a15d30a821ad89",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0030.png",
+      "sha256": "9694165eed43b6af4e50dfd0ac86412ec47a6e771da82a99803bdff2c01b29b4",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0031.png",
+      "sha256": "1dc4dc2944c19893a69a9ceb144fe3f6fda24e69710ca877d17615f49b947ece",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0032.png",
+      "sha256": "98013fd7172fde15838b0e15cbe311d2288d8e26edde7c9f6196b91af55dce98",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0033.png",
+      "sha256": "88421cbbf2f95127389e138425f59cd8d28d25af1d57d990190b79f5d5b43dac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0034.png",
+      "sha256": "e69ee17309e2de1e8e22f015509cb2e6c5e726ffe598bd2fd24d6dee989b512e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0035.png",
+      "sha256": "f0dccbc28e95e2ac318dfe0f3cb81275da4407ee3e433abfa36b37727d20168c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0036.png",
+      "sha256": "c24b52d81228d52fb85ebb1a7bb0649459cc8a89ee00c73a4992756b222a8289",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0037.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0038.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0039.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0040.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0041.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0042.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0043.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0044.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0045.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0046.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0047.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0048.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0049.png",
+      "sha256": "536d8b351001499ac36423d0ecea4c3381a96b85f18ae7b3ba6abebce97e7f5a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0050.png",
+      "sha256": "536d8b351001499ac36423d0ecea4c3381a96b85f18ae7b3ba6abebce97e7f5a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0051.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0052.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0053.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0054.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\a-crops\\crop-0055.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0001.png",
+      "sha256": "8b17fbf363595e63433641f24f684b479a2c6b8d055e3af6e09b4be6cf74c2dc",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0002.png",
+      "sha256": "949c5aa810f9b17a5989f4855997ffa29a6db57ff846e78b8a07a712b5582d66",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0003.png",
+      "sha256": "949c5aa810f9b17a5989f4855997ffa29a6db57ff846e78b8a07a712b5582d66",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0004.png",
+      "sha256": "949c5aa810f9b17a5989f4855997ffa29a6db57ff846e78b8a07a712b5582d66",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0005.png",
+      "sha256": "03a14e6c4d024f3adc41b3713a289d5eaa316bcf58c92bcafa8a4e33c646a17e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0006.png",
+      "sha256": "0013a14887e9b24f5fcc2d2fc7b89d24da663fc3fc57ad22691bc330b5b7ecb5",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0007.png",
+      "sha256": "f732a8d0948a66a00d78c9a2ebb80ee62f59562eb25f2c8fcab3464db0b491a3",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0008.png",
+      "sha256": "573624755d9d06ec51fbc126221a5d1314e61f8b6fa0bc9978ef54225fd49d51",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0009.png",
+      "sha256": "eb5386407858eeb2047e3c72841010caff72a97dd3c5592314352a9c7847719a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0010.png",
+      "sha256": "63c44e6889a68ce8d30941874aa0652a9786bad15225b443d87fdfe66009100b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0011.png",
+      "sha256": "50774d4dbf39734fb64bea612b5a5fedfe59863200c519dd74ea6b72d5c310a7",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0012.png",
+      "sha256": "d706fc4f1760f74a73f11cdfbc5e8ae55714db442f1386383a41d564ccd5e892",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0013.png",
+      "sha256": "b95e7565c8bf87fd0432782debf7be49225ea98bd7bd4b43e6c38accc25b247f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0014.png",
+      "sha256": "d1d740a0ffd875026e080d09cfc4f99560089a759efa976228a90e5ae750f9a1",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0015.png",
+      "sha256": "4eac12893c558013eaca20f02ad9d9d80d1ffe0fb46b9c2f086fd11c9b640729",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0016.png",
+      "sha256": "794c5bcecf7c14d5754213571f067f059217eb0a97269724382539c45d9cf74d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0017.png",
+      "sha256": "1e3a79afd7ae09791adc10ad01d2d9e7edff7af30d5164bba85ea99f04a1f443",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0018.png",
+      "sha256": "a4cf9ee2f38c3ecffc58f73cf086715483a95c016a4fe79e78c9f012615a3524",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0019.png",
+      "sha256": "85cd74888e346c3e4cefb7f3d19659503553f9f30b88f5c710a85b3a243527ce",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0020.png",
+      "sha256": "85cd74888e346c3e4cefb7f3d19659503553f9f30b88f5c710a85b3a243527ce",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0021.png",
+      "sha256": "41fb54fa2c1600c2230b71bd4da505bbecee7699075a5bc964beefb4d06483d7",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0022.png",
+      "sha256": "4d6eb6957e5b2aafd257571723c179536f676337a5f256313ef0b4f8fdebb195",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0023.png",
+      "sha256": "d7093cd913ab94d717d47e64692f7acd761dee08269377989628b50e82a3ea9a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0024.png",
+      "sha256": "f83b080f49e6d33b78948151af798660322c9f87c9ab75398fdeea116f2f3432",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0025.png",
+      "sha256": "7a03897969b4991b03f5037b5984e90e3fbc72aed4e06d687b0be37b24f4aabb",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0026.png",
+      "sha256": "c01c94d1a97e5ea5e4f39b9e314eafa3dcadfa5d1a7ca2579ac329e3d6963dad",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0027.png",
+      "sha256": "ef7128d94288959655f95aaaea8eb84626b247288fc22d54d464f6d1c49b6426",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0028.png",
+      "sha256": "fec06686bcb855343808daa7896ba637c3864aa1a22cc2fceef0c9db09a2a11e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0029.png",
+      "sha256": "99da8a4d4c2421985f21b24c3d60006d397ef490b5384231c51ab79cd38df977",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0030.png",
+      "sha256": "4f1242ae2b6e1003e6dc7574b39943ca29b1c3ce4d05c7915f3804419c31c790",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0031.png",
+      "sha256": "a149627bcf797dc9e7b88706b91b361927049b708e2fff6d5bb23eaafdeaebe9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0032.png",
+      "sha256": "055910e6851be483028a16f31eefe5776962d501086ae09187d3b7d1fc07484f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0033.png",
+      "sha256": "54eaef770c444ba8447aa2c70c035e34f5aa75eb945d285ef230bc98db1e9b1a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0034.png",
+      "sha256": "3c1b279cbfa74d284658d27cc54c616745c5bdae6b580a7e159e45aec9d8be14",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0035.png",
+      "sha256": "92563e2ce40efb86542a0e1a3023bd1ed17e98d66c4864c44fe6e2f52b3ac14b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0036.png",
+      "sha256": "6fb81db703c0de7d162a6110e9b306d314af9ea2a213490f2d07a73884eb9549",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0037.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0038.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0039.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0040.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0041.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0042.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0043.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0044.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0045.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0046.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0047.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0048.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0049.png",
+      "sha256": "f63d66651a609d40be8804426b89ae0e9fdde3ac7105c1ec6bdfcbdbb4fc17d3",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0050.png",
+      "sha256": "f63d66651a609d40be8804426b89ae0e9fdde3ac7105c1ec6bdfcbdbb4fc17d3",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0051.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0052.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0053.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0054.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0055.png",
+      "sha256": "9fe35e41dc8258cd680c02af876b361e3cf8068733c19301f4a6733902d12012",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0056.png",
+      "sha256": "e42b1ceba572c6b0409456c8d398ad6c023fef63fb08b4f64cac18f0773b6e8b",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0057.png",
+      "sha256": "49e095fd0b84358e9c637e89bf55066da0bca9ce7ef4836cfff984fdb6ecda68",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0058.png",
+      "sha256": "49e095fd0b84358e9c637e89bf55066da0bca9ce7ef4836cfff984fdb6ecda68",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0059.png",
+      "sha256": "0cd4058cf563db9fdde0359f2a6bea951774803547bf788a554baf2baa470831",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0060.png",
+      "sha256": "5f2bba08bb7aae919a86899a2108f1e392849ecf2a73a5c5aa585f485112e224",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0061.png",
+      "sha256": "a415e48dfc9cdfa311ee7fef027826b1f020d25e18c0a58c9ac70021ad9e29ee",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0062.png",
+      "sha256": "2f015d146d0afc7b650dfc6e589005c6f5209151cfee264489b38d27ce1467e3",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0063.png",
+      "sha256": "263afee7177b2b219f9a381ffdc44b70ef9471e5dbb7ba8416c0b40ceb38f8e3",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0064.png",
+      "sha256": "ec9c1483e7032b0a583a90bf8867bd81bff98bd91bffa904fcb4fd2f73947138",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0065.png",
+      "sha256": "dc5a945a92e60957812c0953087a2b9b75953184273effed3a84fd3a700f2414",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0066.png",
+      "sha256": "80b3c47811418178724129a61f775bba48dba6c4ee6e28afb67fea454470e451",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0067.png",
+      "sha256": "7361e6527e64148fbe62f3bf9a48aa541277a75c2a8f9f47b06a9e5afd8a0536",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0068.png",
+      "sha256": "4b1d80c5d2c85e098b4c58985c975375f79dd58ece3207a1fe25fcb8689417ee",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0069.png",
+      "sha256": "1ca5103bea7b6b2c9059054a176741b2966f2c370bafdaa76c63276fb7815199",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0070.png",
+      "sha256": "02cf8faa89283740f7c5772452d9ee233479d4bedcd1b28c679de403c47226dd",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0071.png",
+      "sha256": "71922f10fc0af4fb810b85e26397949238cab014d0eb5370c36e7a418077ce46",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0072.png",
+      "sha256": "973c3563156549e6db71fb09cc48aa818723c1ae8e408128716dc24929e0e929",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0073.png",
+      "sha256": "9cfe3c9a63e973be72b428feb7b71189931238a81077f49811331cc253a5c265",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0074.png",
+      "sha256": "f3c5097ced3f8b2e3a6976d8cf127cbe75a2867e8ada5158849981dca7e6fef2",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0075.png",
+      "sha256": "cf622ffecaf2043b3cdfdebb1f3ecfdc982279d3b09650ef00198e467c948321",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0076.png",
+      "sha256": "332091a3182996d9d42178286d553350660bb6c28e7d4e9423e06a678a4242f6",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0077.png",
+      "sha256": "74211abc1ca23647f1a2e82035d3abdddd39ec50c5dedf7a87b4334fb3ba1a08",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0078.png",
+      "sha256": "d760f7ca94fb01d4437c211df82245a1a139ec2a57215b1d6b9d851e8458f825",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0079.png",
+      "sha256": "ff15444f2bb55f4435ede7e839aeb7aabcc5f1e6bd058332cd9aecb0cfd50b92",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0080.png",
+      "sha256": "ff15444f2bb55f4435ede7e839aeb7aabcc5f1e6bd058332cd9aecb0cfd50b92",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0081.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0082.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0083.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0084.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0085.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0086.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0087.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0088.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0089.png",
+      "sha256": "f3693fc489757897161c3b48798f4a2d7a043179f25590755d385cf4952a9d0f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0090.png",
+      "sha256": "f3693fc489757897161c3b48798f4a2d7a043179f25590755d385cf4952a9d0f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0091.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0092.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0093.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0094.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0095.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0096.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0097.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0098.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0099.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0100.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0101.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0102.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0103.png",
+      "sha256": "70326169c783a1b611b7263fecde70c2bdadfb2bcc97e7b8eb9a0d719fd77907",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0104.png",
+      "sha256": "c5c56b484dbd6890d3edff50e2cdc608d0c268f3231b0ac4beee99c3bd1702aa",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0105.png",
+      "sha256": "dd2f0077216711767152568de479ec73444410eccd780fdd8defdc6ef7c4dd67",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0051-crop.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0052-crop.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0053-crop.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0054-crop.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0055-crop.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0001.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0002.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0003.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0004.png",
+      "sha256": "cb92fa889a0872ce4ea479da745a587f10890275ff379ba9bc4a30a906454d63",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0005.png",
+      "sha256": "83f02ff24d11b5f455e186df09b42eee5abdbf8480932afdece467f9e73f2c8c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0006.png",
+      "sha256": "a7d0dfaf1d0b19e4dec18cd1c652820bcd61c1c222b0410085ae2cf43ca4cee4",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0007.png",
+      "sha256": "d5ff593fc88bd72eec21129a33219743810d919f8864ba8a58818a60974be764",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0008.png",
+      "sha256": "10f9c0fd67f5c7b3fc6b7cd49f682ae772d392045877fb88404d357e72fb983f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0009.png",
+      "sha256": "f3fa89469871b6b97391ee8778d8efc87dabd3043eab75ba8ee1f7251e8e6b0f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0010.png",
+      "sha256": "f3fa89469871b6b97391ee8778d8efc87dabd3043eab75ba8ee1f7251e8e6b0f",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0011.png",
+      "sha256": "a1e9a48c2642336cdfbd4653596e01d7ec6f42b1b3da2f806a28edfdb65398ed",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0012.png",
+      "sha256": "a1e9a48c2642336cdfbd4653596e01d7ec6f42b1b3da2f806a28edfdb65398ed",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0013.png",
+      "sha256": "7d84a7985d6f2a22a58e9ee29b74a2a307e5e6b5229c760be648cc77e0e84de8",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0014.png",
+      "sha256": "290025d3f9fb97b43f500625170049388d9103e8519deb1f4509d688fb4c79b9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0015.png",
+      "sha256": "290025d3f9fb97b43f500625170049388d9103e8519deb1f4509d688fb4c79b9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0016.png",
+      "sha256": "d2f1781afb4b4b0ab11a8de2db1e669645f86d72650a0e7ba7d7a4dbafb0a77a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0017.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0018.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0019.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0020.png",
+      "sha256": "5999413752895c804a20c5f736a85a5b013cc1e2108fc4b9a11db8c5cb5e71ef",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0021.png",
+      "sha256": "2593c835427303934747fd112d23b3e3400e51d850490e7a1d142c54031a4870",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0022.png",
+      "sha256": "0cd32c0730d8862366a77f2df321c747c70b5455bfb5f4c73c8fdb344517de98",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0023.png",
+      "sha256": "dd8878d3500c80cdb6b6622c25da6d2ca082a25b1a326f98cffd31e52684222c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0024.png",
+      "sha256": "60be9290509f736b0b075c83e2c205c41bb69a7ed9b4e00a9f4e4c7d3bf14114",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0025.png",
+      "sha256": "ea0cc535f1949f90d3418348080029839c4f8398f7b2ac71a832192fd7e754c9",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0026.png",
+      "sha256": "cb2da8e977234e1680fb1a69a7f279af0874d76dcf455cee9eb3186aca928212",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0027.png",
+      "sha256": "2683d4f5efa60c9eae5ef38644c1e323d83e19ea11a887ecc0c9e36fa5ce97a0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0028.png",
+      "sha256": "0437020acfd5b9fe10fb74fd231d2ffd72fc05659d2688ec873d6e880ff25b78",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0029.png",
+      "sha256": "1cd4c33b0b01bdd9a3622c483bfa322058ad6ca5a357902cd1a15d30a821ad89",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0030.png",
+      "sha256": "9694165eed43b6af4e50dfd0ac86412ec47a6e771da82a99803bdff2c01b29b4",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0031.png",
+      "sha256": "1dc4dc2944c19893a69a9ceb144fe3f6fda24e69710ca877d17615f49b947ece",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0032.png",
+      "sha256": "98013fd7172fde15838b0e15cbe311d2288d8e26edde7c9f6196b91af55dce98",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0033.png",
+      "sha256": "88421cbbf2f95127389e138425f59cd8d28d25af1d57d990190b79f5d5b43dac",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0034.png",
+      "sha256": "e69ee17309e2de1e8e22f015509cb2e6c5e726ffe598bd2fd24d6dee989b512e",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0035.png",
+      "sha256": "f0dccbc28e95e2ac318dfe0f3cb81275da4407ee3e433abfa36b37727d20168c",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0036.png",
+      "sha256": "c24b52d81228d52fb85ebb1a7bb0649459cc8a89ee00c73a4992756b222a8289",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0037.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0038.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0039.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0040.png",
+      "sha256": "19d4445f0f0a258c5f19c4a24c959aa9f405fb8be0d2cd009b32fdbf0fd82d8d",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0041.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0042.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0043.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0044.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0045.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0046.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0047.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0048.png",
+      "sha256": "9c93208da509c0deb3ca87f91d9ce4796b252a08b1db7e7c7c442fbc32347117",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0049.png",
+      "sha256": "536d8b351001499ac36423d0ecea4c3381a96b85f18ae7b3ba6abebce97e7f5a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0050.png",
+      "sha256": "536d8b351001499ac36423d0ecea4c3381a96b85f18ae7b3ba6abebce97e7f5a",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0051.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0052.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0053.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0054.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\part-a-crops\\0055.png",
+      "sha256": "a07a9ff4a64506f3ac32d8675acc6c591026e393f36625eb5032e2aaa56d4aa0",
+      "contract": "internal-video-audit-material",
+      "reason": "同源采样、解码与私有审查材料不作为额外用户展示图。"
+    }
+  ]
+}

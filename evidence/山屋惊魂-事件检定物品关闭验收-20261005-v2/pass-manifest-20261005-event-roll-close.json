@@ -1,0 +1,107 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-05",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2"
+  },
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"手电筒真实链路从外星几何翻牌到事件检定额外加骰结算关闭\"",
+      "result": "1 passed",
+      "scope": "手电筒真实页面链路，停稳后点击返回牌桌并回到牌桌"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"灯笼真实链路从外星几何翻牌到事件检定额外加骰结算关闭\"",
+      "result": "1 passed",
+      "scope": "灯笼真实页面链路，停稳后点击返回牌桌并回到牌桌"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"魔法相机真实链路从外星几何翻牌到知识检定改用神志结算关闭\"",
+      "result": "1 passed",
+      "scope": "魔法相机真实页面链路，停稳后点击返回牌桌并回到牌桌"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"书本真实链路从本体使用到小丑房间非战斗检定替代结算关闭\"",
+      "result": "1 passed",
+      "scope": "书本真实页面链路，停稳后点击返回牌桌并回到牌桌"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "手电筒骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "手电筒定向 E2E：1 passed",
+        "截图覆盖停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "灯笼骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "灯笼定向 E2E：1 passed",
+        "截图覆盖停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "魔法相机替代检定骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "魔法相机定向 E2E：1 passed",
+        "截图覆盖停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "书本替代检定骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "书本定向 E2E：1 passed",
+        "截图覆盖停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "四条链路均覆盖前置、交互、骰盘停稳可关闭、结果和牌桌恢复",
+      "status": "PASS",
+      "evidence": [
+        "四条定向 E2E 均为 1 passed",
+        "展示目录包含 24 张本次运行截图副本"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\01-手电筒-01-手电筒加骰前牌桌可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\02-手电筒-02-选择未知房间前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\03-手电筒-03-外星几何翻出等待投掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\04-手电筒-04-5骰事件检定骰盘停稳-返回牌桌可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\05-手电筒-05-返回牌桌后加骰结算结果可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\06-手电筒-06-关闭后回牌桌状态清空.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\07-灯笼-01-灯笼加骰前牌桌可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\08-灯笼-02-选择未知房间前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\09-灯笼-03-外星几何翻出等待投掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\10-灯笼-04-5骰事件检定骰盘停稳-返回牌桌可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\11-灯笼-05-返回牌桌后加骰结算结果可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\12-灯笼-06-关闭后回牌桌状态清空.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\13-魔法相机-01-魔法相机替代前牌桌可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\14-魔法相机-02-选择未知房间前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\15-魔法相机-03-外星几何翻出等待投掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\16-魔法相机-04-5骰相机替代检定骰盘停稳-返回牌桌可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\17-魔法相机-05-返回牌桌后魔法相机替代检定结算结果可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\18-魔法相机-06-关闭后回牌桌状态清空.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\19-书本-01-书本使用前牌桌可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\20-书本-02-书本本体已选中准备使用.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\21-书本-03-书本已使用并选择未知房间前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\22-书本-04-小丑房间5骰神志检定停稳-返回牌桌可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\23-书本-05-返回牌桌后书本替代检定结算结果可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005-v2\\24-书本-06-关闭后回牌桌状态清空.jpg"
+  ]
+}

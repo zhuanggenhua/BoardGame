@@ -1,0 +1,2283 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r134_final_baseline",
+  "revision": 23,
+  "reviewKind": "whole-course-content-and-causality-final",
+  "claimScope": "当前52提示的内容、必要性、前因后果、中英文规则含义及静态正式对象身份通过；不是视觉、浏览器运行、生命周期、全游戏规则或用户人工认可。",
+  "firstReview": {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-full-causal-20261101\\reviews\\content-review.json",
+    "status": "REVISE",
+    "sha256": "cece013ebd7595589d3c81ff0d3b242aef20f97b95196141d0f2b864e186ecd5",
+    "preserved": true
+  },
+  "input": {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\qidahen-full-rebuild-content-input.json",
+    "sha256": "e4ca9058033f0a203e610482add869211b9f4662ffbda3ec58ac1386edbd38cb",
+    "sourceHashes": {
+      "src/games/qidahen/annualTutorial.ts": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1",
+      "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+      "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+    },
+    "sourceHashChecks": [
+      {
+        "path": "src/games/qidahen/annualTutorial.ts",
+        "sha256": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1",
+        "matchesCurrent": true
+      },
+      {
+        "path": "public/locales/zh-CN/game-qidahen.json",
+        "sha256": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+        "matchesCurrent": true
+      },
+      {
+        "path": "public/locales/en/game-qidahen.json",
+        "sha256": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6",
+        "matchesCurrent": true
+      }
+    ],
+    "visiblePromptsReviewed": 52,
+    "fullSequenceRead": true,
+    "languages": [
+      "zh-CN",
+      "en"
+    ],
+    "hiddenAutomationRead": 4,
+    "compressedRepeatedAiBatches": 3
+  },
+  "resolvedFindings": [
+    {
+      "id": "C1",
+      "status": "PASS",
+      "resolution": "frontier-goal中英均在首次目标处明示一张纪年卡为1威望。",
+      "source": "PDF Ver1.3 p1纪年卡、p6威望胜利。"
+    },
+    {
+      "id": "C2",
+      "status": "PASS",
+      "resolution": "midyear中英均保留季节格行动可择一或放弃，再结算；与实际AI放弃相符。",
+      "source": "PDF Ver1.3 p5季节及正式finish-slot候选。"
+    },
+    {
+      "id": "C3",
+      "status": "PASS",
+      "resolution": "独立朝鲜弃牌堆规则前移到首次朝贡取得卡的new-year，早于纪年三次付款；training-payment复用该知识。",
+      "source": "PDF Ver1.3 p7朝鲜特殊规则；manifest中new-year在chronology付款之前。"
+    },
+    {
+      "id": "C4",
+      "status": "PASS",
+      "resolution": "新卡就任只呈现current-year；唯一turnResolution frame在人物及必要的冲突/追加人物流程完成后进入reveal-next-year阶段，再由正式事实公开。new-order不提前透露1303，training-move才解释新条件。",
+      "source": "再次提取核对PDF Ver1.3 p5：领取本年纪年卡→依新卡顺序出人物→翻开再下一卡。",
+      "ownerEvidence": [
+        {
+          "path": "src/games/qidahen/domain/chronologyResolution.ts",
+          "fact": "applyQidahenChronologyTransition过滤yearCards为current-year。"
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionProgress.ts",
+          "fact": "只有year-characters且yearCharacterIndex达到当前顺位数量才转reveal-next-year；冲突和追加人物保持独立正式阶段，完成后回year-characters。"
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionFacts.ts",
+          "fact": "reveal-next-year事实从正式chronology重建公开yearCards。"
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionSystem.ts",
+          "fact": "有当前交互时不推进自动事实；正式frame归一并按阶段发出reveal-next-year，无教程平行状态。"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "line": 7149,
+          "fact": "ChronologyZone消费core.yearCards，未用另一套课程展示状态。"
+        }
+      ]
+    }
+  ],
+  "findings": [],
+  "promptReviews": [
+    {
+      "index": 1,
+      "id": "frontier-goal",
+      "status": "PASS-content-only",
+      "chinese": "你执掌大明，每张纪年卡计1点威望，先得3点即可获胜。新年按下一张纪年卡的条件决定领取资格；眼前的条件是增加最多控制区域。这一年从辽北夺取叶赫部，争取第一张纪年卡。",
+      "english": "You command Ming. Each chronology card is worth 1 prestige; the first player to reach 3 wins. At New Year, the next card determines eligibility to claim this year’s card. The revealed condition rewards the greatest increase in controlled regions. Capture Yehe from Liaobei to compete for your first card.",
+      "necessityAndCausality": "开场现已先说明每张纪年卡为1点威望，再从3点胜利、公开控制增长条件接到夺取叶赫，目标桥梁完整。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-chronology-zone",
+        "infoStep": true
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 2,
+      "id": "opening-move",
+      "status": "PASS-content-only",
+      "chinese": "三方共用这个行动轮盘。前进1格免费；前进2格须指定一名对手抽2张牌，前进3格则所有对手各抽2张。这次前进1格，利用开垦、军屯准备前线。",
+      "english": "All three factions share this action wheel. Advance 1 space for free, 2 spaces by giving one chosen opponent 2 cards, or 3 spaces by giving every opponent 2 cards. Advance 1 space to prepare your frontier with Reclamation and Military Farming.",
+      "necessityAndCausality": "共用轮盘、三种走法成本及本次合法选择共同服务当前落点；未要求体验所有互斥走法。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-move-move-1-free",
+        "commands": [
+          "EXECUTE_WHEEL_MOVE"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_MOVE_EXECUTED",
+            "match": {
+              "moveId": "move-1-free"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 3,
+      "id": "farm-action",
+      "status": "PASS-content-only",
+      "chinese": "要从辽北出兵，先补充当地部队和手牌。军屯：抽2张手牌，并且建立1个等级2的正规军部队。",
+      "english": "Prepare troops and cards for an advance from Liaobei. Military Farming: draw 2 hand cards and establish 1 level-2 regular unit.",
+      "necessityAndCausality": "当前前线兵力与手牌需要对应军屯双收益，行动目的与正式按钮一致。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-military-farm",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "military-farm"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 4,
+      "id": "reclaim-action",
+      "status": "PASS-content-only",
+      "chinese": "同格的开垦也可以执行。每个己方控制区域可增加1人口，一次最多选5处，不得超过当地人口上限。人口决定当地供养能力，也影响年中税赋。",
+      "english": "You may also perform Reclamation in this space. Add 1 population to each of up to 5 controlled regions without exceeding their population limits. Population supports local troops and determines eligibility for midyear tax.",
+      "necessityAndCausality": "说明同格第二项行动、次数及人口意义，为下一张选地提示提供必要规则。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-reclaim",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "reclaim"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 5,
+      "id": "reclaim-target",
+      "status": "PASS-content-only",
+      "chinese": "人口多于部队、且未被围城的控制区域，年中可收1张手牌。辽东现在3人口、3支部队；在这里开垦，便能取得这份收入。",
+      "english": "At midyear, each controlled region with more population than troops and no siege provides 1 card. Liaodong currently has 3 population and 3 units. Reclaim it to qualify for that income.",
+      "necessityAndCausality": "当前3人口与3兵直接对应税赋不成立，开垦产生下一次收入，因果明确。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-15-liaodong",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "city-region-15-liaodong"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "reclaim-targets"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 6,
+      "id": "prepare-hand",
+      "status": "PASS-content-only",
+      "chinese": "本回合还可执行一次手牌行动。利用刚补充的手牌征召军队，既准备进攻叶赫部，也留下部队守住辽北。",
+      "english": "You may still take one hand action this turn. Use your replenished cards to recruit troops for the attack on Yehe while retaining a garrison in Liaobei.",
+      "necessityAndCausality": "解释落点行动完成后仍有手牌行动额度，并将征召连到进攻和留守。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-hand-action",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "hand-action"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 7,
+      "id": "recruit-action",
+      "status": "PASS-content-only",
+      "chinese": "大明的征召军队：弃1张手牌，建立6个等级2部队，或2个等级4的川兵部队。选择征召军队。",
+      "english": "Ming’s Raise Troops: discard 1 hand card to establish either 6 level-2 units or 2 level-4 Sichuan infantry units. Choose Raise Troops.",
+      "necessityAndCausality": "使用PDF的大明势力动作、费用与两种结果，不把征召与轮盘征兵混为同一效果。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-action-recruit",
+        "commands": [
+          "CONFIRM_PREVIEW_ACTION"
+        ],
+        "allowedTargets": [
+          "recruit"
+        ],
+        "event": [
+          {
+            "type": "PREVIEW_ACTION_CONFIRMED",
+            "match": {
+              "actionId": "recruit"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 8,
+      "id": "recruit-payment",
+      "status": "PASS-content-only",
+      "chinese": "银两没有特殊效果，只能弃牌作为资源使用。用这张银两支付，保留其它牌；点击放大镜可查看整张手牌。",
+      "english": "Silver has no special effect and is used by discarding it as a resource. Pay with this Silver card and retain your other cards. The magnifying glass opens a full-card view.",
+      "necessityAndCausality": "银两资源身份与首次放大镜检视各有独立用途，不提前复述全部卡类。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-card-hand-3",
+        "commands": [
+          "SELECT_PAYMENT_CARD"
+        ],
+        "allowedTargets": [
+          "hand-3"
+        ],
+        "event": [
+          {
+            "type": "PAYMENT_CARD_SELECTED",
+            "match": {
+              "cardId": "hand-3"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 9,
+      "id": "recruit-source",
+      "status": "PASS-content-only",
+      "chinese": "正规军只能在自己的本土建立。辽北是这次进攻的出发地，在这里征召。",
+      "english": "Regular units must be established in your homeland. Recruit in Liaobei, the source of this attack.",
+      "necessityAndCausality": "正规军本土限制与辽北出兵来源绑定，实际目标同一地区。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-15",
+        "commands": [
+          "SELECT_REGION"
+        ],
+        "allowedTargets": [
+          "city-region-15"
+        ],
+        "event": [
+          {
+            "type": "REGION_SELECTED",
+            "match": {
+              "regionId": "city-region-15"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 10,
+      "id": "recruit-troops",
+      "status": "PASS-content-only",
+      "chinese": "这次建立6支2级部队，两支用于跨河，其余留守。等级决定每支部队的骰子：2级投八面骰，4级投十二面骰。军队超过当地人口的部分，新年须弃牌补给或减员。",
+      "english": "Establish 6 level-2 units: send two across the river and retain the rest. Each unit’s level determines its die: level 2 uses an eight-sided die, level 4 a twelve-sided die. At New Year, troops beyond local population require cards or removal.",
+      "necessityAndCausality": "六兵的出兵及留守用途、两种候选等级骰和后勤代价同处决策前；没有宣称普遍最优。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-recruit-choice-level-2-troops",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "level-2-troops"
+        ],
+        "event": [
+          {
+            "type": "SYS_INTERACTION_RESOLVED",
+            "match": {
+              "optionId": "level-2-troops"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 11,
+      "id": "midyear",
+      "status": "PASS-content-only",
+      "chinese": "轮盘经过年中、新年时必须停留；当前玩家可择一执行格内行动，也可放弃，随后全体结算。年中每个符合税赋条件的区域收1张手牌，大明另抽5张漕运牌；刚才开垦的辽东也贡献了收入。年中还检查人物的判定条件。",
+      "english": "The wheel must stop when passing Midyear or New Year. The active player may take one action there or decline; all factions then resolve the season. At Midyear, each tax-eligible region provides 1 card, and Ming draws 5 extra transport cards. Reclaimed Liaodong now contributes. Character judgment conditions are also checked.",
+      "necessityAndCausality": "现明确季节必停与当前玩家可择一行动或放弃，之后全体结算；税赋兑现开垦并承接超限，人物仅说明检查时机。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-action-wheel",
+        "infoStep": true
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 12,
+      "id": "hand-limit",
+      "status": "PASS-content-only",
+      "chinese": "收入带来了更多选择，但大明的手牌上限是15张，回合开始须弃掉超出的部分。保留接下来作战所需的鸳鸯阵和火炮技术，选择高亮的6张弃牌。",
+      "english": "Income provides more options, but Ming’s hand limit is 15. Discard excess cards at the start of your turn. Retain Mandarin Duck Formation and Artillery Technology for the coming battle; discard the six highlighted cards.",
+      "necessityAndCausality": "首次真实超限才说明15上限，保留实际后续卡，6张选择与正式候选相符。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-zone",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "hand-1",
+          "deck-ming-5",
+          "deck-ming-6",
+          "deck-ming-7",
+          "deck-ming-8",
+          "deck-ming-9"
+        ],
+        "event": [
+          {
+            "type": "SYS_INTERACTION_RESOLVED",
+            "match": {
+              "sourceId": "qidahen:hand-limit-discard"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 13,
+      "id": "battle-move",
+      "status": "PASS-content-only",
+      "chinese": "前线兵力已经备好。前进1格到进攻调度，这回合从辽北渡河进攻叶赫部，为本年的控制增长争取优势。",
+      "english": "Your frontier force is ready. Advance 1 space to Dispatch and Attack. Cross from Liaobei into Yehe this turn to improve your control-growth score.",
+      "necessityAndCausality": "回到开场控制增长目标，移动落点和进攻对象相接。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-move-move-1-free",
+        "commands": [
+          "EXECUTE_WHEEL_MOVE"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_MOVE_EXECUTED",
+            "match": {
+              "moveId": "move-1-free"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 14,
+      "id": "upgrade-first",
+      "status": "PASS-content-only",
+      "chinese": "辽北炮兵将参加这场战斗。先用本回合手牌行动研发火炮技术，再执行轮盘上的进攻。手牌行动和轮盘行动的先后由玩家决定。",
+      "english": "Liaobei’s artillery will join this battle. Use your hand action to develop Artillery Technology before the wheel’s attack. You choose the order of your hand and wheel actions.",
+      "necessityAndCausality": "第二回合通过相反顺序应用手牌与轮盘的自由顺序，并说明先研发的实际用途。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-hand-action",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "hand-action"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 15,
+      "id": "upgrade-card",
+      "status": "PASS-content-only",
+      "chinese": "军备牌打出后还需另弃1张手牌，随后留在己方场上。每张已研发的火炮技术使炮兵骰点加1，并提高炮兵可训练的等级上限。打出这张牌加强炮兵。",
+      "english": "Playing an armament requires discarding another hand card; the armament then remains in play. Each developed Artillery Technology adds 1 to artillery rolls and raises their training limit. Play this card to strengthen your artillery.",
+      "necessityAndCausality": "军备额外费用、留场及真实火炮效果都服务接下来作战和后续训练。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-card-deck-ming-4",
+        "commands": [
+          "CONFIRM_PREVIEW_ACTION"
+        ],
+        "allowedTargets": [
+          "deck-ming-4"
+        ],
+        "event": [
+          {
+            "type": "PREVIEW_ACTION_CONFIRMED",
+            "match": {
+              "actionId": "upgrade-armament"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 16,
+      "id": "upgrade-payment",
+      "status": "PASS-content-only",
+      "chinese": "打出的火炮技术不是费用牌。另选这张银两弃掉，完成研发。",
+      "english": "The played technology is not the payment card. Discard this separate Silver card to complete development.",
+      "necessityAndCausality": "区分打出的军备与另弃费用牌，补足该动作容易混淆的真实支付身份。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-card-deck-ming-10",
+        "commands": [
+          "SELECT_PAYMENT_CARD"
+        ],
+        "allowedTargets": [
+          "deck-ming-10"
+        ],
+        "event": [
+          {
+            "type": "PAYMENT_CARD_SELECTED",
+            "match": {
+              "cardId": "deck-ming-10"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 17,
+      "id": "dispatch-action",
+      "status": "PASS-content-only",
+      "chinese": "进攻调度：弃1张手牌，指挥最多6个部队移动。步兵、炮兵移动1格，骑兵移动2格；进入非己方或友好势力控制的区域触发战斗。执行调度，向叶赫部推进。",
+      "english": "Dispatch and Attack: discard 1 card to move up to 6 units. Infantry and artillery move 1 space; cavalry move 2. Entering a region outside your control or friendship triggers combat. Dispatch your force toward Yehe.",
+      "necessityAndCausality": "调度费用、人数、移动和触发战斗规则服务当前推进，不增列未操作分支。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-dispatch",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "dispatch"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 18,
+      "id": "dispatch-payment",
+      "status": "PASS-content-only",
+      "chinese": "这笔弃牌支付的是轮盘行动，之前的军备手牌行动已用过。用这张牌支付，留下鸳鸯阵用于战斗。",
+      "english": "This discard pays for the wheel action; your hand action was already used on the armament. Pay with this card and retain Mandarin Duck Formation for combat.",
+      "necessityAndCausality": "区分手牌行动费用与轮盘费用，保留实际战术牌，非重复付款播报。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-card-deck-ming-11",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "deck-ming-11"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "dispatch-payment"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 19,
+      "id": "dispatch-troops",
+      "status": "PASS-content-only",
+      "chinese": "野战以存活的步兵、骑兵数量判胜负，同数时守方胜。辽北到叶赫部隔河，战场宽度为2，炮兵不占宽度。选两支2级步兵和原有的1级炮兵，再确认。",
+      "english": "The side with more surviving infantry and cavalry wins a field battle; ties favor the defender. The river to Yehe gives a battle width of 2, while artillery ignores that width. Select two level-2 infantry and the existing level-1 artillery, then confirm.",
+      "necessityAndCausality": "先解释胜负判断再要求选兵，河宽与炮兵例外对应真实候选及来源。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-15",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "ming-recruit-regular-infantry-lv2__compat__1",
+          "ming-recruit-regular-infantry-lv2__compat__2",
+          "ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "dispatch-troops"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 20,
+      "id": "dispatch-target",
+      "status": "PASS-content-only",
+      "chinese": "部队已选好，选择叶赫部作为目标。这里有蒙古驻军，进攻提交后先由守方决定是否避战。",
+      "english": "Your force is selected. Choose Yehe as its destination. Mongol troops defend it; after you commit, the defender first decides whether to evade battle.",
+      "necessityAndCausality": "已选部队后才提交叶赫，解释蒙古为守方及响应归属。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-7",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "city-region-7"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "dispatch-target"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 21,
+      "id": "defender-response",
+      "status": "PASS-content-only",
+      "chinese": "守方骑兵可撤往其它己方控制区域避战；蒙古选择迎战。每3点骰值通常造成1损伤，但它已研发骑兵铁甲，本次需要4点。接下来由双方决定是否使用战术牌。",
+      "english": "Defending cavalry may evade into another controlled region; Mongol chooses to fight. Normally each 3 rolled points causes 1 damage, but its developed Cavalry Armor requires 4 here. Both sides may now play a tactic.",
+      "necessityAndCausality": "守方避战、当前铁甲的4点损伤门槛与战术窗口相接；仅观察对手，不冒称玩家实操防守。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-actions-zone",
+        "infoStep": true
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 22,
+      "id": "tactic-card",
+      "status": "PASS-content-only",
+      "chinese": "每场战斗通常只能打出1张战术牌。鸳鸯阵使这两支2级步兵改投十面骰，不改变部队等级；不用这张牌时，它们各投八面骰。选择并确认打出，增强这次进攻。",
+      "english": "Normally you may play 1 tactic per battle. Mandarin Duck Formation changes these level-2 infantry to ten-sided dice without changing their levels; without it, each rolls an eight-sided die. Select and confirm the card to strengthen this attack.",
+      "necessityAndCausality": "将等级、临时骰种改变及不改永久等级连到实际手牌使用，中英一致。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-card-hand-2",
+        "commands": [
+          "PLAY_TACTIC_CARD"
+        ],
+        "allowedTargets": [
+          "hand-2"
+        ],
+        "event": [
+          {
+            "type": "TACTIC_CARD_PLAYED"
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 23,
+      "id": "battle-roll",
+      "status": "PASS-content-only",
+      "chinese": "野战依炮兵、骑兵、步兵的顺序，双方同阶段同时结算。每支参战部队掷自己的骰子；1级炮兵投六面骰。损伤先由最高等级部队承受，步骑每受1损伤降1级，降至0移除；炮兵不承伤。开始战斗，观察骰果如何改变守军。",
+      "english": "Field battles resolve artillery, cavalry, then infantry; both sides resolve simultaneously within each phase. Each participating unit rolls its own die; level-1 artillery uses a six-sided die. Damage goes to the highest-level units first. Each damage lowers infantry or cavalry by 1 level; level 0 is removed. Artillery cannot absorb damage. Start combat and watch the rolls affect the defenders.",
+      "necessityAndCausality": "逐兵投骰、炮骑步顺序、同阶段同时和降级损伤读法在实际播放前交代。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-actions-zone",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "fight"
+        ],
+        "event": [
+          {
+            "type": "SYS_INTERACTION_RESOLVED",
+            "match": {
+              "optionId": "fight"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 24,
+      "id": "occupy",
+      "status": "PASS-content-only",
+      "chinese": "要把这次胜利计入控制区域的增长，必须留下部队占领。选择不劫掠占领，保留叶赫部人口。野战败方的人物还会获得战败标记，留待年中判定。",
+      "english": "To turn this victory into increased control, leave troops to occupy the region. Occupy without plundering to retain Yehe’s population. The defeated side also places a defeat marker on an eligible character for midyear judgment.",
+      "necessityAndCausality": "占领如何兑现控制增长与不劫掠保人口相接，战败标记只说明不伪造判定。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-actions-zone",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "occupy"
+        ],
+        "event": [
+          {
+            "type": "SYS_INTERACTION_RESOLVED",
+            "match": {
+              "optionId": "occupy"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 25,
+      "id": "diplomacy-move",
+      "status": "PASS-content-only",
+      "chinese": "叶赫部已拿下，接着照顾西线。大同邻接外喀尔喀部，当地的蒙古友好标记允许其安全通行、驻守。前进1格到外交、雇佣，取消这项资格并加强大同驻军。",
+      "english": "With Yehe taken, attend to the western frontier. Datong borders Outer Khalkha, where Mongol’s friendship marker permits passage and stationing. Advance 1 space to Diplomacy and Hiring to remove that permission and reinforce Datong.",
+      "necessityAndCausality": "大同弱驻军与相邻友好关系形成西线用途，没有宣称不能被蒙古进攻。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-move-move-1-free",
+        "commands": [
+          "EXECUTE_WHEEL_MOVE"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_MOVE_EXECUTED",
+            "match": {
+              "moveId": "move-1-free"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 26,
+      "id": "diplomacy-action",
+      "status": "PASS-content-only",
+      "chinese": "外交可影响最多3个邻接己方控制区域的区域。没有控制标记的本土、有正规军驻守的区域及朝鲜不能成为目标。选择外交，处理外喀尔喀部的蒙古标记。",
+      "english": "Diplomacy may affect up to 3 regions adjacent to your controlled regions. Unmarked homelands, regions containing regular units, and Korea are excluded. Choose Diplomacy to deal with Mongol’s marker in Outer Khalkha.",
+      "necessityAndCausality": "当前外交候选排除规则在选地前出现，不要求逐个例外实操。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-diplomacy",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "diplomacy"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 27,
+      "id": "diplomacy-target",
+      "status": "PASS-content-only",
+      "chinese": "反面标记表示友好，仍是中立区域；正面才是附庸控制区。选择外喀尔喀部，移除蒙古的反面标记；这会取消友好关系，不会让大明取得控制。",
+      "english": "A reverse marker means friendship while the region remains neutral; its front means vassal control. Select Outer Khalkha to remove Mongol’s reverse marker. This ends the friendship without giving Ming control.",
+      "necessityAndCausality": "正反面身份、取消友好且不获控制权明确，避免把外交移除当占领。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-2",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "city-region-2"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "diplomacy-targets"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 28,
+      "id": "diplomacy-finish",
+      "status": "PASS-content-only",
+      "chinese": "本回合只需处理这处友好关系。结束外交，转去补强相邻的大同。",
+      "english": "This turn only that friendship needs attention. Finish Diplomacy and reinforce neighboring Datong.",
+      "necessityAndCausality": "主动停止继续外交保留玩家决定，转入同落点的关联换防。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-finish-diplomacy",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "finish-diplomacy"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "diplomacy-targets"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 29,
+      "id": "hire-action",
+      "status": "PASS-content-only",
+      "chinese": "大同目前只有一支1级守军。同一格还可以雇佣：首次弃1张手牌，在己方控制区域建立2支2级雇佣军；继续雇佣时，每张牌只能再建1支。",
+      "english": "Datong currently has only one level-1 garrison. This space also permits Hiring: discard 1 card to establish 2 level-2 mercenaries in a controlled region. Further hires in this action provide only 1 unit per card.",
+      "necessityAndCausality": "实际大同一支低等级守军对应首次与继续雇佣价格，信息用于当前决定。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-hire",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "hire"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 30,
+      "id": "hire-target",
+      "status": "PASS-content-only",
+      "chinese": "在大同建立两支新守军。它们将和旧守军一起超过当地2人口；新年可用手牌支持差额，也可撤去旧兵。雇佣军可在任意己方控制区域建立，不限本土。",
+      "english": "Establish the two new defenders in Datong. With the old garrison, they exceed its 2 population. At New Year you may pay cards for the excess or remove the old unit. Unlike regular units, mercenaries may be established in any controlled region.",
+      "necessityAndCausality": "新旧守军与2人口的后勤取舍在雇佣前说明，雇佣与正规军建立地点差异明确。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-1",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "city-region-1"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "hire-target"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 31,
+      "id": "save-hand",
+      "status": "PASS-content-only",
+      "chinese": "新年将至，防线、驻军和领取纪年卡都需要手牌。这回合保留手牌，不再执行手牌行动。",
+      "english": "New Year is approaching. Fortifications, troop support, and claiming the chronology card all require cards. Retain your hand and forgo a hand action this turn.",
+      "necessityAndCausality": "本回合合法放弃手牌行动有下次新年的预算用途，不是为展示跳过而跳过。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-skip-hand",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "skip-hand"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "finish-hand"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 32,
+      "id": "new-year",
+      "status": "PASS-content-only",
+      "chinese": "新年先按控制的朝鲜区域标记抽取朝鲜牌；这些牌使用、弃掉后须回到独立的朝鲜弃牌堆。随后依序维护防线、处理耗损、领取纪年卡、打出新年度人物。现在的选择会影响还能留多少牌领取纪年卡。",
+      "english": "New Year first provides Korean tribute cards according to the marks in your controlled Korean regions. Used or discarded Korean cards go to their separate discard pile. Maintenance, upkeep, the chronology claim, and new-year characters then resolve in order. Your spending determines the cards left for the claim.",
+      "necessityAndCausality": "朝贡首次取得朝鲜牌时就说明使用或弃置进入独立朝鲜弃牌堆；随后维护、耗损、纪年、人物依序，预算连接清楚。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-action-wheel",
+        "infoStep": true
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 33,
+      "id": "maintain-shanhai",
+      "status": "PASS-content-only",
+      "chinese": "山海关维持辽西、蓟镇之间的城防；破败后这条边界按平原处理。保留山海关，把其余手牌分给前线补给和纪年卡。",
+      "english": "Shanhai Pass maintains the fortified boundary between Liaoxi and Jizhen; ruin turns it into a plain boundary. Maintain the pass and reserve the rest of your cards for frontier upkeep and the chronology card.",
+      "necessityAndCausality": "首次维护绑定辽西蓟镇边界和破败平原后果，费用由正式付款承接。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-maintain",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "maintain"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "maintenance"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 34,
+      "id": "abandon-jinzhou",
+      "status": "PASS-content-only",
+      "chinese": "锦州、宁远若不维护，会视为城市不存在。保留这些城防也要花手牌；本年把资源留给已出战的军队和纪年卡，放弃维护锦州，随后同样处理宁远。",
+      "english": "Unmaintained Jinzhou and Ningyuan lose their city effects. Keeping them also costs cards. This year reserve resources for the field army and chronology card: abandon Jinzhou, then do the same for Ningyuan.",
+      "necessityAndCausality": "第一次城市破败说明失去城市效果与年度预算取舍，同类宁远不重复讲解。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-abandon",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "abandon"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "maintenance"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 35,
+      "id": "abandon-inner-wall",
+      "status": "PASS-content-only",
+      "chinese": "从长城凸面进攻时，战场宽度为1；破败后变为3。放弃内、外长城维护会失去这项防御。本年保留手牌，选择放弃维护。",
+      "english": "An attack against the convex side of an intact wall has battle width 1; ruin raises it to 3. Abandoning either wall loses this defense. Retain your cards this year and abandon maintenance.",
+      "necessityAndCausality": "第一次长城破败说明宽度1变3，同类外墙复用，不为同规则重复加阅读卡。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-abandon",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "abandon"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "maintenance"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 36,
+      "id": "upkeep-datong",
+      "status": "PASS-content-only",
+      "chinese": "人口少于部队时，差额每支须弃1张手牌支持，或移除一支部队。大同已雇来两支2级守军；撤去原来的1级兵，让新守军由当地人口供养，保留手牌。",
+      "english": "When troops exceed population, each excess unit requires 1 discarded card or the removal of a unit. Datong has two newly hired level-2 defenders. Remove its old level-1 unit so local population supports the new garrison, retaining your cards.",
+      "necessityAndCausality": "以新旧真实守军说明每差额弃牌或减员，原1级兵换两支2级兵与当地供养相接。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-1",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "upkeep"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 37,
+      "id": "upkeep-yehe",
+      "status": "PASS-content-only",
+      "chinese": "叶赫部是非汉人区域，大明正规军不能接受当地人口补给。刚夺取的前线需要留下守军，每支各弃1张手牌支持；这次为三支驻军支付。",
+      "english": "Yehe is non-Han territory, where Ming regulars cannot use local population for support. Retain the garrison on your newly taken frontier by discarding 1 card per unit. Support all three here.",
+      "necessityAndCausality": "非汉人地区正规军不能当地补给的实际例外首次在对应前线使用。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-7",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "deck-ming-15",
+          "deck-ming-16",
+          "deck-ming-17"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "upkeep"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 38,
+      "id": "upkeep-xianxing",
+      "status": "PASS-content-only",
+      "chinese": "朝鲜不放人口，也不能就地补给任何军队。每支驻军完全由手牌支持；这次弃1张牌，保留咸兴驻军。",
+      "english": "Korea has no population and cannot supply any troops locally. Every stationed unit needs card support. Discard 1 card to retain the Hamhung garrison.",
+      "necessityAndCausality": "朝鲜无人口与所有军队均需牌补给区别于上一项非汉人正规军限制。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-xian-xing",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "deck-ming-18"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "upkeep"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 39,
+      "id": "upkeep-liaobei",
+      "status": "PASS-content-only",
+      "chinese": "辽北留下的预备队超过当地人口4支。扩军的补给代价现在兑现：支付4张手牌保留它们，而不是因部队留在本土就免除差额。",
+      "english": "Liaobei’s retained force exceeds local population by four units. Expansion now incurs its upkeep cost: pay 4 cards to retain them. Being in your homeland does not waive excess-troop support.",
+      "necessityAndCausality": "兑现此前扩军已告知的4兵差额，说明本土不免除超人口代价。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-15",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "deck-ming-19",
+          "deck-ming-20",
+          "deck-ming-21",
+          "deck-ming-22"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "upkeep"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 40,
+      "id": "upkeep-pyongyang",
+      "status": "PASS-content-only",
+      "chinese": "还要为纪年卡留出手牌。本次撤去平壤、随后撤去汉城的雇佣军，不再支付这两处驻军的补给；移除部队不会自动改变控制权。",
+      "english": "Retain cards for the chronology claim. Remove the mercenaries in Pyongyang, then Hanseong, rather than supporting those two garrisons. Removing units does not automatically change control.",
+      "necessityAndCausality": "保留纪年预算与移除两处驻军相接，明确减员不自动改变控制，汉城复用同规则。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-region-focus-city-region-18",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "upkeep"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 41,
+      "id": "claim-year",
+      "status": "PASS-content-only",
+      "chinese": "年初看到的控制增长条件现在结算：占领叶赫部使大明取得领取资格；同分时原顺位靠后者优先。弃一半手牌、向上取整，领取本年纪年卡和1点威望；放弃则资格顺延。",
+      "english": "The control-growth condition revealed at the start now resolves. Capturing Yehe makes Ming eligible; ties favor the later faction in the previous order. Discard half your hand, rounded up, to claim this year’s card and 1 prestige. Declining passes eligibility onward.",
+      "necessityAndCausality": "开场控制增长在此兑现；同分顺位、半手牌向上取整、1威望及拒绝顺延清楚。朝鲜付款差异已在new-year教过。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-chronology-zone",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "claim"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "chronology"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 42,
+      "id": "new-order",
+      "status": "PASS-content-only",
+      "chinese": "领走的是本年纪年卡；刚用于评分的下一张接任本年卡，决定新顺位和可出场人物。新顺位是蒙古、大明、后金。蒙古选完人物后轮到大明，全部出场完成才翻开再下一张。",
+      "english": "You claimed this year’s card. The next card, whose condition was just scored, becomes current and determines order and eligible characters. The new order is Mongol, Ming, Jin. After Mongol chooses, Ming chooses. The following card is revealed only after everyone finishes.",
+      "necessityAndCausality": "区分本年获奖卡、刚用于评分并接任的当前卡；只说明新顺位和当前人物资格，明确全部出场完成后才公开再下一卡，不提前透露1303。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-chronology-zone",
+        "infoStep": true
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 43,
+      "id": "year-character",
+      "status": "PASS-content-only",
+      "chinese": "人物由本年的纪年卡限定，不进入手牌，出场后的能力持续生效。点击放大镜查看杨镐：调度、进攻可指挥10个部队，且不受其它人物效果影响。选择他，为后续动员留下指挥余量。",
+      "english": "The current chronology card determines eligible characters. They do not enter your hand; their abilities persist in play. Inspect Yang Gao with the magnifying glass: he can command 10 units in dispatch or attacks and ignores other character effects. Choose him to allow larger future mobilization.",
+      "necessityAndCausality": "在尚未公开再下一卡时按当前卡资格检视并选择杨镐；10支指挥只为未来动员提供规则说明，不声称已经应用。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-ming-yang-gao",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "ming-yang-gao"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "year-characters"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 44,
+      "id": "training-move",
+      "status": "PASS-content-only",
+      "chinese": "人物出场完成后，新公开的纪年条件是本年新建最多部队。现在轮到大明，前进1格到征兵训练：先强化叶赫部驻军，再建立新兵，开始争取下一次领取资格。",
+      "english": "After character selection, the newly revealed chronology condition rewards the most units established this year. It is now Ming’s turn. Advance 1 space to Recruitment and Training: strengthen Yehe’s garrison, then recruit to compete for the next claim.",
+      "necessityAndCausality": "人物出场完成后的首次新决策才说明1303建军条件；原前线强化与新增实体分别对应战力和新目标，没有重新制造孤立章节。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-move-move-1-free",
+        "commands": [
+          "EXECUTE_WHEEL_MOVE"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_MOVE_EXECUTED",
+            "match": {
+              "moveId": "move-1-free"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 45,
+      "id": "training-action",
+      "status": "PASS-content-only",
+      "chinese": "弃1张手牌，最多可进行4次征兵或训练。征兵每次建立1个等级2正规军；训练每次使一支部队提升1级。本次用三次训练强化前线，再用一次征兵补充辽东。",
+      "english": "Discard 1 card for up to 4 recruitment or training actions. Each recruitment establishes 1 level-2 regular; each training raises one unit by 1 level. Train the frontier three times, then recruit once in Liaodong.",
+      "necessityAndCausality": "同一费用4次可混合行动与3训1征计划一致，未误写为每次另弃牌。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-turn-option-recruit-train",
+        "commands": [
+          "SYS_INTERACTION_RESPOND"
+        ],
+        "allowedTargets": [
+          "recruit-train"
+        ],
+        "event": [
+          {
+            "type": "TURN_RESOLUTION_APPLIED",
+            "match": {
+              "fromStep": "menu"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 46,
+      "id": "training-payment",
+      "status": "PASS-content-only",
+      "chinese": "用朝贡后保留的这张朝鲜手牌支付一次费用，开始征兵训练。",
+      "english": "Use this Korean tribute card retained from New Year to pay once for Recruitment and Training.",
+      "necessityAndCausality": "仅说明用朝贡后实际保留的一张牌支付一次费用，复用此前已教朝鲜弃牌规则，无重复教学。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-hand-card-korea-4",
+        "commands": [
+          "SELECT_PAYMENT_CARD"
+        ],
+        "allowedTargets": [
+          "korea-4"
+        ],
+        "event": [
+          {
+            "type": "PAYMENT_CARD_SELECTED",
+            "match": {
+              "cardId": "korea-4"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 47,
+      "id": "training-target",
+      "status": "PASS-content-only",
+      "chinese": "每支部队每回合只能提升1级，炮兵等级上限须由军备提高。之前的火炮技术已把上限提高到2；选择参加过叶赫之战的1级炮兵，训练到2级。",
+      "english": "Each unit may gain only 1 level per turn, and artillery limits require armaments. Your earlier Artillery Technology raised the limit to 2. Train the level-1 artillery that fought at Yehe to level 2.",
+      "necessityAndCausality": "原炮兵实体、前一年的技术与等级上限2对应，前因保留。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-recruit-train-choice-train%3Aming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1",
+        "commands": [
+          "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE"
+        ],
+        "allowedTargets": [
+          "train:ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED",
+            "match": {
+              "choiceId": "train:ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 48,
+      "id": "training-second-target",
+      "status": "PASS-content-only",
+      "chinese": "继续训练两支参战步兵，仍使用同一次费用的基础次数。2级升到3级后，通常投掷的骰子由八面变为十面，不必再靠鸳鸯阵临时改变。",
+      "english": "Train the two infantry that fought here, using the remaining base actions from the same payment. Raising level 2 to level 3 changes their normal dice from eight-sided to ten-sided without temporarily relying on Mandarin Duck Formation.",
+      "necessityAndCausality": "前线两原征召兵、剩余基础次数、2升3带来的普通d8变d10相接，第三兵同类复用。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-recruit-train-choice-train%3Aming-recruit-regular-infantry-lv2__compat__1",
+        "commands": [
+          "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE"
+        ],
+        "allowedTargets": [
+          "train:ming-recruit-regular-infantry-lv2__compat__1"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED",
+            "match": {
+              "choiceId": "train:ming-recruit-regular-infantry-lv2__compat__1"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 49,
+      "id": "training-recruit-kind",
+      "status": "PASS-content-only",
+      "chinese": "三次训练已强化前线，最后一次用于征兵。训练不算新建部队；征兵才能增加这次纪年条件所统计的建军数量。",
+      "english": "Three training actions strengthened the frontier. Use the last action to recruit. Training does not establish a new unit; recruitment increases the count used by this chronology condition.",
+      "necessityAndCausality": "在当前征兵或训练二选一语境中说明新实体计分差异；只判当前选择，不将其泛化为其它建军动作均不计数。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-recruit-train-selection",
+        "commands": [
+          "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE"
+        ],
+        "allowedTargets": [
+          "action:recruit"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED",
+            "match": {
+              "choiceId": "action:recruit"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 50,
+      "id": "training-recruit-target",
+      "status": "PASS-content-only",
+      "chinese": "辽东此前开垦后有4人口、3支部队。在这里建立1支2级正规军，可由当地人口供养；人口与部队相等后，这里不再符合年中税赋条件。",
+      "english": "Earlier reclamation left Liaodong with 4 population and 3 units. Establish 1 level-2 regular here, supported by local population. With equal population and troops, it will no longer qualify for midyear tax.",
+      "necessityAndCausality": "此前开垦的4人口3兵真实用于新增一兵，并如实说明4比4失去税赋资格，不称人口硬上限。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-recruit-train-choice-recruit%3Acity-region-15-liaodong",
+        "commands": [
+          "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE"
+        ],
+        "allowedTargets": [
+          "recruit:city-region-15-liaodong"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED",
+            "match": {
+              "choiceId": "recruit:city-region-15-liaodong"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 51,
+      "id": "training-finish",
+      "status": "PASS-content-only",
+      "chinese": "4次基础行动已用完。额外训练每次还需弃1张手牌；这次保留最后一张，不再追加训练。",
+      "english": "All 4 base actions are used. Each extra training requires another discarded card. Retain your last card and finish without additional training.",
+      "necessityAndCausality": "4次基础用尽后才解释追加训练费用及保留最后一牌，必要时机成立。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-wheel-recruit-train-choice-finish",
+        "commands": [
+          "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE"
+        ],
+        "allowedTargets": [
+          "finish"
+        ],
+        "event": [
+          {
+            "type": "WHEEL_RECRUIT_TRAIN_CHOICE_RESOLVED",
+            "match": {
+              "choiceId": "finish"
+            }
+          }
+        ],
+        "infoStep": false
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    },
+    {
+      "index": 52,
+      "id": "finish",
+      "status": "PASS-content-only",
+      "chinese": "叶赫部仍在大明控制下，第一点威望已经取得。接下来比较本年新建部队，继续扩军时也要为新年留下补给和领取纪年的手牌。率先取得3点威望即可获胜；攻下对手首都，或新年控制至少16个非朝鲜区域，也能获胜。",
+      "english": "Ming retains Yehe and has earned its first prestige. The next contest counts units established this year. As you recruit, retain cards for New Year support and the chronology claim. Reach 3 prestige first to win; capturing an opposing capital or controlling at least 16 non-Korean regions at New Year also wins.",
+      "necessityAndCausality": "承接叶赫控制、首点威望、新建兵条件与预算，补其它终局途径，未把教程结束当整局获胜。",
+      "cnEnMeaning": "已逐条连读核对，当前行动、费用、对象、时机、限制及后果的中英文含义一致。",
+      "uiContract": {
+        "target": "qidahen-map-layer",
+        "infoStep": true
+      },
+      "uiScope": "核对当前文本与正式目标、候选、命令、事件身份；不据此代填屏幕可见性及图面结论。"
+    }
+  ],
+  "wholeSequenceVerdict": {
+    "status": "PASS-content-only",
+    "opening": "威望目标→纪年资格→公开控制增长→叶赫任务在首段建立。",
+    "resources": "军屯获得牌兵，开垦取得税赋，征召与留守的后勤代价在决定前告知，收入后超限自然发生。",
+    "combat": "科技及独立费用、先胜负后选兵、宽度与炮兵、战术临时骰型、伤害及占领回到原目标，逐段因果成立。",
+    "westernFrontier": "取消邻接友好与大同换防相关；新旧驻军的年末取舍说明清楚，不宣称阻断敌方进攻或外交获得控制。",
+    "newYear": "维护的具体防御代价、一般差额与非汉人/朝鲜例外、减员及领取预算连续；朝鲜特殊弃牌规则在首次使用前出现。",
+    "chronology": "评分条件与获奖实体区分；当前卡选人物后才公开下一条件，内容和正式owner顺序一致。",
+    "followingTurn": "原参战兵与科技复用于3训，新兵实际服务新目标；辽东4兵4人口同时失去税赋，手牌预算真实。",
+    "ending": "以当前叶赫、首点威望、已公开建军条件与剩余手牌衔接继续对局，不把教学结束当整局获胜。"
+  },
+  "ownerSourceHashes": [
+    {
+      "path": "src/games/qidahen/domain/chronologyResolution.ts",
+      "sha256": "d34643b274b9fcd52551a67e36d659558c8b1c9793cc185d99e5272523ef8f89"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionProgress.ts",
+      "sha256": "32b75bcd2a532fb3233322d76133a2dd73c6a5651bd1d064b02076673c025ce0"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionFacts.ts",
+      "sha256": "ce6906c2d2fa57c7500a5a91f4a2d7b7f2445ef9a6cd93b4f22273867e742d33"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionTypes.ts",
+      "sha256": "4c4574f62b97206cc151b14b8f763ff30348651aa0d4f6d80b66d948bf5579a1"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionSystem.ts",
+      "sha256": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/turnResolution.test.ts",
+      "sha256": "e40300c8dc7ccdbfaa6933d85c3d4ac50a71497c9b8d68c238579efa12246880"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/annualTutorialFlow.test.ts",
+      "sha256": "09984e03eb2e86373647df5c601c9e8298e97aab58162974e8e46d3e1fa27bb4"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "f1f5fbd0203525d11fd4c90c8195e1c7d8b85507045a6b309ecc5b5314af5dd0"
+    }
+  ],
+  "testEvidenceBoundary": {
+    "redLog": "test-results/qidahen-full-rebuild-year-reveal-red.log",
+    "greenLog": "test-results/qidahen-full-rebuild-year-reveal-green.log",
+    "observed": "旧实现提前公开的断言曾失败，修后既有5文件26项通过；正常链和教程断言人物阶段无next-year、训练前已公开。",
+    "notUsedAsContentVerdict": "内容通过来自全程文本、实际对象与PDF顺序复核；26项绿灯仅支持该时序实现，不代填教学质量。",
+    "e2eAssertions": "已读new-order/year-character节点不存在next-year、training-move节点可见的真实页面断言；未在本次运行浏览器。"
+  },
+  "normalChain": {
+    "mingHandCount": 1,
+    "pieces": [
+      "ming-recruit-regular-infantry-lv2__compat__1",
+      "ming-recruit-regular-infantry-lv2__compat__2",
+      "ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1"
+    ],
+    "chronologyPayments": [
+      "korea-1",
+      "korea-2",
+      "korea-3"
+    ],
+    "nextInputAccepted": true,
+    "scope": "核对当前证据身份与预算，不把正常链通过等同内容通过。"
+  },
+  "referenceScope": {
+    "bga": {
+      "source": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "basis": "读取其它代理实际完整操作的reference-review.md/json及作者迁移记录，未冒称本审查亲玩。",
+      "boundary": "BGA托管社区作者课程，52提示16正式对象点击，第7轮教学完成并非12轮比赛完成。",
+      "adoptionAssessment": "当前目标带行动、首次费用配眼前收益、已有对象后续兑现及重复动作压缩有实际对应；不能单凭成熟参考宣布本课通过。"
+    },
+    "wesnoth": "官方完整可执行脚本分析仅作辅助来源，未声称亲玩。"
+  },
+  "boundaries": [
+    "原首轮REVISE完整保留，未覆盖或删除。",
+    "未读图、未运行测试或浏览器，未修改代码、规范及其它会话产物；仅写本任务最终内容审查报告。",
+    "不要求所有人物能力、城战、水路及各分支实操；防守避战仍是观察、杨镐10支指挥仍只说明。",
+    "当前目标对应的内容通过，不宣称所有例外正确，真实屏幕可读性、遮挡和当前E2E仍由后续独立证据裁决。",
+    "PC人工认可仍待用户，移动端未开始。",
+    "避让元数据更新仅重新绑定内容审查输入，未机械重读不变的52条文本；不升级或覆盖独立布局REVISE。"
+  ],
+  "metadataRebindReviews": [
+    {
+      "type": "presentation-metadata-only-rebind",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "d9710e560f08d5bde5638794ba745326881fda3fcbe61fa531c89338b508c720",
+      "currentInputHash": "a1b0345b2828c363666242f09762df6c965352acd6fa890ca2b9587d5fefbac4",
+      "file": "src/games/qidahen/annualTutorial.ts",
+      "previousSourceHash": "a3f278272b1ff52766b07f50a143ec621a5a001fcefe4b01dc5379d07eb8e948",
+      "currentSourceHash": "4f58d7d7ffb3dbf8d5387cfbc3cedf950e0acc12dd439e046a73a33b060dc3e4",
+      "exactDelta": {
+        "step": "recruit-troops",
+        "field": "avoidOverlapSelectors",
+        "addition": "[data-testid=\"qidahen-recruit-selection\"]",
+        "effect": "在原PROTECTED_UI基础上，将完整正式征召选择区加入提示框避让矩形。"
+      },
+      "exactReconstruction": {
+        "method": "只在内存将该一步扩展对象还原为之前的单行对象，保留CRLF，全文原始字节哈希等于先前已审annualTutorial哈希。",
+        "restoredHash": "a3f278272b1ff52766b07f50a143ec621a5a001fcefe4b01dc5379d07eb8e948",
+        "matchesPriorReviewedSource": true
+      },
+      "unchangedContent": {
+        "visiblePrompts": 52,
+        "chineseTexts": true,
+        "englishTexts": true,
+        "promptOrder": true,
+        "targets": true,
+        "commands": true,
+        "allowedTargets": true,
+        "advanceEvents": true,
+        "allOtherAnnualTutorialBytes": true,
+        "languageFileHashes": true
+      },
+      "consumerBoundary": [
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "line": 238,
+          "fact": "仅在applyLayout中querySelectorAll取得受保护DOMRect并参与提示框位置交叠计算；不改变命令白名单、规则、候选、事件或教学内容。"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "line": 4399,
+          "fact": "新增选择器指向已有完整qidahen-recruit-selection，含推荐及其它正式候选，不是新建候选或教程副本。"
+        }
+      ],
+      "testDelta": {
+        "file": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+        "previousHash": "ffd926b30b6d899d025c5ab50d74f35ebea5eafec5e41049c7260c555f03efa0",
+        "currentHash": "fe5e431996926a73af89146cdefeebde22a4e837e44a74058f8e975d3fce5584",
+        "removeAddedGeometryAssertionsRestoresPriorHash": true,
+        "scope": "新增对全部征召候选的可见及不相交几何断言，没有修改玩家输入或课程合同。未在本复核运行E2E。"
+      },
+      "layoutBoundary": "内容PASS继续有效，不能证明候选已无覆盖；首轮visual-review-early.json的REVISE保留，新布局由新E2E和独立原图审裁决。",
+      "firstReviewPreserved": true
+    },
+    {
+      "candidate": "R136",
+      "type": "presentation-metadata-and-local-scroll-rebind",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "a1b0345b2828c363666242f09762df6c965352acd6fa890ca2b9587d5fefbac4",
+      "currentInputHash": "1022a15ef8c16636137e5bdf673ad88747d7f7677b578267c03ecce9103a82c4",
+      "previousAnnualHash": "4f58d7d7ffb3dbf8d5387cfbc3cedf950e0acc12dd439e046a73a33b060dc3e4",
+      "currentAnnualHash": "40966c980e00d95f6b8b339f5e5354e1e5411b1e00fa7bc6d6a16737a6225d8e",
+      "exactAnnualDelta": {
+        "field": "PROTECTED_UI",
+        "addition": "[data-qidahen-map-token-type=\"army\"]",
+        "effect": "让全课提示位置计算避开所有真实army本体，包括非当前焦点的在场兵牌；保留此前recruit-troops完整候选区保护。",
+        "removeAddedSelectorRestoresPriorSourceHash": true,
+        "restoredHash": "4f58d7d7ffb3dbf8d5387cfbc3cedf950e0acc12dd439e046a73a33b060dc3e4"
+      },
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "visiblePromptIdsAndOrder": true,
+        "targets": true,
+        "commands": true,
+        "allowedTargets": true,
+        "advanceEvents": true,
+        "allOtherAnnualTutorialBytes": true,
+        "languageFileHashes": true
+      },
+      "consumerBoundary": [
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "line": 238,
+          "fact": "avoidOverlapSelectors仅生成受保护DOM矩形并参与提示框定位，不消费为规则候选或推进条件。"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "line": 1253,
+          "fact": "army选择器对应正式地图token.type，未新造隐藏对象或教程副本。"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "line": 3845,
+          "fact": "仅教程激活且highlightTarget属于正式征兵训练候选testId前缀时派生滚动目标，移除退休步骤和固定兵种实体映射。"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "line": 3880,
+          "fact": "useLayoutEffect只查询同一个wheelRecruitTrainSelectionRef面板内的正式候选；用panel/header/目标DOMRect及offsetHeight与屏幕高度比例换算panel.scrollTop，保留粘性标题下方的可见区。无规则状态写入、dispatch、支付、确认或自动选中。"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "line": 4165,
+          "fact": "已展开的征兵及训练目标列表统一maxHeight=640，并非规则容量或训练次数限制；普通非目标选择仍沿用原面板合同。"
+        }
+      ],
+      "reviewedBoardSourceHash": "ebcb62ca4eeee6c7102c4927881023fc80357525a672f132a4c6a8293e63525c",
+      "boardReviewScope": "仅上述ActionsZone候选定位、滚动、面板maxHeight及prop传递hunk；没有把完整Board文件视为重新审过。",
+      "e2eDelta": {
+        "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+        "previousHash": "fe5e431996926a73af89146cdefeebde22a4e837e44a74058f8e975d3fce5584",
+        "currentHash": "523f8f5d311f1d1c8e5aba2d0de55692d64bc52ba82765a2293f03c7c1fa8ac4",
+        "exactReconstructionMatchesPrior": true,
+        "addition": "保护矩形采集包含所有army；training-recruit-target增加推荐项位于粘性标题下、列表内并可直接命中的几何断言。",
+        "executionScope": "只读断言新增，没有在本复核运行E2E或读取图片。"
+      },
+      "codeOrPermissionFindings": [],
+      "codeRiskScope": "限定改动未发现新增规则写入、权限扩张或对局自动输入风险；最终位置和可达性仍须R136真实运行及图审。",
+      "layoutBoundary": "R135早期布局REVISE保留；R136正在完整PC重跑，当前内容PASS不构成新布局通过，不对未读图片裁决。",
+      "firstContentRevisePreserved": true
+    },
+    {
+      "candidate": "R137",
+      "type": "single-scroll-owner-source-rebind",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "1022a15ef8c16636137e5bdf673ad88747d7f7677b578267c03ecce9103a82c4",
+      "currentInputHash": "1022a15ef8c16636137e5bdf673ad88747d7f7677b578267c03ecce9103a82c4",
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "promptIdsAndOrder": true,
+        "targetsCommandsCandidatesAndEvents": true,
+        "annualTutorialAndLanguageSourceHashes": true
+      },
+      "priorFailureBoundary": "R136末端虽位于内层panel矩形内，但被更小的外action-slot视口裁剪，中心命中失败；该运行不是全程PASS。内容审查不覆盖这一布局失败。",
+      "sourceDelta": {
+        "file": "src/games/qidahen/Board.tsx",
+        "previousHash": "ebcb62ca4eeee6c7102c4927881023fc80357525a672f132a4c6a8293e63525c",
+        "currentHash": "ddb860c55facf161144efb6c976a3eb3f7daf1926a3a915520c051b6961579cd",
+        "exactReconstructionMatchesPrior": true,
+        "changes": [
+          {
+            "line": 4098,
+            "fact": "仅wheelRecruitTrainProgress存在且不是payment时，action-slot改为flex列及overflow-hidden，外层不再成为第二个用户滚动视口；其它动作沿用原overflow-y-auto。"
+          },
+          {
+            "line": 4156,
+            "fact": "正式征兵训练列表加min-h-0，允许在父flex可用高度内收缩；内层overflow-y-auto继续是该列表的唯一滚动owner。"
+          }
+        ],
+        "preserved": "真实候选、标签、禁用合同、onClick命令、确认与预算不变；原目标定位及按缩放换算的panel.scrollTop继续消费当前tutorialHighlightTarget。"
+      },
+      "reviewedBoardSourceHash": "ddb860c55facf161144efb6c976a3eb3f7daf1926a3a915520c051b6961579cd",
+      "e2eDelta": {
+        "file": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+        "previousHash": "523f8f5d311f1d1c8e5aba2d0de55692d64bc52ba82765a2293f03c7c1fa8ac4",
+        "currentHash": "8b32fa6641634e568f6f3d617aeea65e8f374c6331bb54bda5ebf8cc6c55e7cc",
+        "exactReconstructionMatchesPrior": true,
+        "addition": "在原training-recruit-target块只增outer slot测量及panel.bottom<=slot.bottom断言。",
+        "preserved": "标题下方、内层列表内与elementFromPoint中心命中断言全部保留，没有force click或取消失败门禁。"
+      },
+      "codeOrPermissionFindings": [],
+      "executionBoundary": "本复核只读代码和JSON；R137完整PC重跑尚在进行，不声明修复已通过真实运行，不读取或返回图片。",
+      "layoutBoundary": "R135图审REVISE及R136命中失败不被内容PASS覆盖；R137布局仍须其完整运行和独立图审。",
+      "firstContentRevisePreserved": true
+    },
+    {
+      "candidate": "R139",
+      "type": "maintenance-context-and-hand-confirmation-presentation-rebind",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "1022a15ef8c16636137e5bdf673ad88747d7f7677b578267c03ecce9103a82c4",
+      "currentInputHash": "c30910a4ea5477741bd183184c51b6c910961966be439d532abd38bd1ace5f8e",
+      "previousAnnualHash": "40966c980e00d95f6b8b339f5e5354e1e5411b1e00fa7bc6d6a16737a6225d8e",
+      "currentAnnualHash": "2ed3f6d9180fe7043389e89db3b74b6a1933c75c5a3ec52440fc2557df8669a6",
+      "exactAnnualDelta": {
+        "field": "PROTECTED_UI",
+        "replacement": "原显式保护token及army选择器改为所有正式map-token-type，并增加完整qidahen-tactic-card-selection-panel。",
+        "restoredPreviousSelectorBytesHash": "40966c980e00d95f6b8b339f5e5354e1e5411b1e00fa7bc6d6a16737a6225d8e",
+        "matchesPriorReviewedSource": true
+      },
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "visibleIdsAndOrder": true,
+        "targetsCommandsAllowedTargetsAndAdvanceEvents": true,
+        "allOtherAnnualTutorialBytes": true,
+        "languageFileHashes": true
+      },
+      "projectionBoundary": {
+        "status": "PASS-scoped-source-only",
+        "sourceOfObject": "useQidahenTurnInput仅在正式turn resolution请求且maintenance或maintenance-payment阶段，从同一frame维护索引读取core.fortifications对象ID。",
+        "derivation": "turnContextRegions只读canonical regionConfig.maintenanceFortificationId及已有地图graph带fortificationId的wall边界；真实城市取非逻辑region，墙取边界两侧并去重，没有写core或创建规则候选。",
+        "cityIdentity": "山海关取实际city-region-25，不以逻辑蓟镇或其它依赖地区替代；内外墙取真实所属边界两侧。",
+        "consumer": "Board将维护context并入已有自动镜头的bounds及focus key；MapSceneLayer.contextRegionIds仅供layoutRegionBounds和mapFocusBounds。",
+        "authoritySeparation": "mapSelectionCandidateIds仍由正式turnInput.mapCandidateIds或既有top-level候选生成。地图候选样式、data-qidahen-candidate-region-ids、命中解析与map-selection-space继续只读该集合，未把context加入合法性。",
+        "commands": "useQidahenTurnInput原canAct、toggle、selectRegion、confirm及SYS_INTERACTION_RESPOND路径未改变。"
+      },
+      "handConfirmationBoundary": {
+        "status": "PASS-scoped-source-only",
+        "owner": "Board现有HandZone",
+        "change": "原中心620宽确认区改为右下300宽，标题和正式确认/取消控件保留，删除显然重复的点击说明；当前内容提示仍指导选择并确认打出。",
+        "preserved": "确认继续onPlayTacticCard(selectedTacticCard.id)，取消继续清理本地selectedTacticCardId；不新增出牌、规则结果或权限。",
+        "layoutLimitation": "宽度位置及约90高仍是布局事实，未以本次只读检查证明不会遮住兵牌。"
+      },
+      "reviewedSourceHashes": [
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "sha256": "cafa9d9d8f3fa6a1c97b7422ee0d6fa3afad799f7f0b053076af1d56f483056e"
+        },
+        {
+          "path": "src/games/qidahen/ui/turnContextRegions.ts",
+          "sha256": "a4ce3f85415cce26ae15d9cff966e3f798e2c39300646580ae29de1d74472512"
+        },
+        {
+          "path": "src/games/qidahen/ui/useQidahenTurnInput.ts",
+          "sha256": "005ed98c7de2fb8ad95f672c94a8b3e3d709ab689df66a3924ce8ec543d259ab"
+        },
+        {
+          "path": "src/games/qidahen/domain/regionConfig.ts",
+          "sha256": "137b4e16922e37cb6a50be9cc9cbb2a197aaea6d385a67a0995e11ca803001d4"
+        },
+        {
+          "path": "src/games/qidahen/ui/mapGraph.ts",
+          "sha256": "8885745082a231d440558b0783241d2eee9d47ef389d7213d4236e065b7d1cbb"
+        },
+        {
+          "path": "src/games/qidahen/data/runtime-region-graph.json",
+          "sha256": "c4938a8b804ac5fa00e4e135e46c38c1300d49b5fe3c35c7bb085bafc67d87a7"
+        },
+        {
+          "path": "src/games/qidahen/__tests__/turnContextRegions.test.ts",
+          "sha256": "244a02ce4e6a2479e674691e50720e45a8a74be0ea7be1533bb180770e58d242"
+        }
+      ],
+      "e2eBinding": {
+        "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+        "sha256": "b9f423a029c1cea9bef6116cabe908bc8a16f5bd0f58117337bbd890526d56f6",
+        "scope": "更新当前文件身份；本审查没有运行E2E，不以此证明R139真实运行或图面通过。"
+      },
+      "codeOrPermissionFindings": [],
+      "executionBoundary": "限定新增UI投影及正式候选分离未发现代码、命令权限或来源层级新风险；没有图片输入，也未修改产品。",
+      "priorFailuresPreserved": "R138主E2E及源码身份通过仅证明其覆盖事实；其全量UI审查REVISE保持，不因内容PASS而改为最终通过。R135/R136历史失败亦保留。",
+      "layoutBoundary": "R139完整PC及独立全量图审仍须另行裁决；当前只维持内容层PASS。",
+      "firstContentRevisePreserved": true
+    },
+    {
+      "candidate": "post-R139-restored-layout-diagnostic-source",
+      "type": "reading-width-shared-search-and-fallback-boundary-review",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "c30910a4ea5477741bd183184c51b6c910961966be439d532abd38bd1ace5f8e",
+      "currentInputHash": "496be81236f17e8658e36e5cb44b0f7912ff367aab492995e14cf1f6de691afd",
+      "currentContentSourceHashes": {
+        "src/games/qidahen/annualTutorial.ts": "fdd3010be7c0c28bdc7e06644d9ed11cfe1b25887b27e86d7faa16daddde7d78",
+        "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+        "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+      },
+      "inputSourceHashesMatchCurrent": true,
+      "exactAnnualDelta": {
+        "field": "info.tooltipMaxWidth",
+        "before": 320,
+        "after": 400,
+        "allOtherAnnualBytesUnchanged": true,
+        "restoredHash": "2ed3f6d9180fe7043389e89db3b74b6a1933c75c5a3ec52440fc2557df8669a6"
+      },
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "idsAndOrder": true,
+        "targetsCommandsCandidatesAndAdvanceEvents": true,
+        "languageFileHashes": true
+      },
+      "sharedSource": {
+        "path": "src/components/tutorial/TutorialOverlay.tsx",
+        "sha256": "102ad079dfbaebef84a9db75465507fbcd1dac54898194f44b033e6780627b95",
+        "observedHunks": [
+          "有完美相邻候选时省略低优先级free-grid",
+          "显式宽度卡新增style.maxWidth=100%"
+        ],
+        "revertingBothHunksMatchesHead": true
+      },
+      "searchOptimization": {
+        "status": "PASS-static-selection-equivalence",
+        "proof": "旧sort按protectedOverlapArea、overlapArea、index字典序排列。面积非负；存在0/0的相邻候选且其index严格小于grid的placementOrder.length时，任何grid候选均不可能胜出。buildPlacement仅构造对象和计算交叠，省略该组计算无其它副作用。",
+        "defaultAndFallback": "新增条件只在非compact、有真实target且非center的支路；compact、center、targetless此前return，未改。null候选不满足条件；无0/0相邻时原grid全保留，原sort与selectedPlacement缺失回退未变。",
+        "consumerScope": "七大恨及Fate、Betrayal、DiceThrone等锚定桌面默认消费者共用该排序，证明与游戏身份无关；不声称逐游戏图面已验。",
+        "narrowerGuardRequired": false,
+        "reason": "0/0及严格更小index已经限定到排序必等价的路径；不应改成游戏名开关、删除真实token或放宽重叠门禁。",
+        "testBoundary": "现有TutorialOverlay.aiActions测试主要覆盖显示、AI隐藏、操作提示和回退，房间测试覆盖路由/生命周期；不能称已覆盖几何排序全部分支。本判断依据限定diff和排序证明，不以测试绿灯代填。"
+      },
+      "additionalCssReview": {
+        "status": "REVISE-fallback-scope",
+        "finding": {
+          "priority": "P2",
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "line": 1041,
+          "problem": "新maxWidth=100%不是原4行纯搜索等价优化。它解除max-w-sm的384上限，正常锚定wrapper已有显式400宽时可实现意图；但targetless/目标暂不存在的正式回退只设置viewport maxWidth，没有用配置tooltipMaxWidth设wrapper宽，100%也在该回退生效，未保留数值宽度上限。",
+          "consequence": "不能宣称共享范围仅四行或所有默认/回退表现等价；原本受数值上限约束的回退卡可能随父容器展开。",
+          "minimumRemedy": "使用配置的数值tooltipMaxWidth作为maxWidth并继续由父容器限制窄视口，或仅对已有明确width的锚定分支启用100%。随后复核真实宽度及回退边界，不以该源码推断图审通过。"
+        }
+      },
+      "diagnosticBoundary": {
+        "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.e2e.ts",
+        "sha256": "9aa6c09b5c027ee262849c19474b0304bd9532a8295412ae59c91bfc3188d31c",
+        "flow": "读取R139真实localStorage保存数据，在addInitScript恢复后走正式教程页并点击从上次继续；只读state.get，不调用state.set或dispatch造局面。",
+        "scope": "明确窄恢复态布局诊断，不能替代完整主链；当前样式元数据重绑定不能写成原R139已有此样式。本复核不运行诊断、不读图，也不宣称诊断已PASS。"
+      },
+      "preservedFailures": "R139 midyear全token门禁失败仍有效，R138 UI REVISE及更早失败继续保留；不以内容PASS或搜索等价覆盖。",
+      "layoutBoundary": "未对400宽新卡、CSS新hunk或任何未读图像判UI通过；新完整主链及独立全量图审仍待证明。",
+      "firstContentRevisePreserved": true
+    },
+    {
+      "candidate": "post-R139-decision-related-population-protection-source",
+      "type": "real-population-projection-and-current-decision-protection-scope-review",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "496be81236f17e8658e36e5cb44b0f7912ff367aab492995e14cf1f6de691afd",
+      "currentInputHash": "a10b2f2fdb8275ad75f2834ac19ef9bf8d66afb88cc1637ee9c4b5eec65f2662",
+      "currentContentSourceHashes": {
+        "src/games/qidahen/annualTutorial.ts": "6bf7970bc137db7c71f42481c3498dad4c9d34dc7b98070f302702be88d1cd80",
+        "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+        "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+      },
+      "inputSourceHashesMatchCurrent": true,
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "idsOrderTargetsCommandsCandidatesEvents": true,
+        "languageFileHashes": true,
+        "otherAnnualBytesUnchangedAfterGuardAndWidthReconstruction": true
+      },
+      "scopeVerdict": {
+        "status": "PASS-scoped-source",
+        "principle": "教程及UI标准保护持续参与当前决策的资源、对象、候选与主入口，不要求4X整个世界的每个无关外国控制标永久无遮挡。",
+        "protected": "保留全部正式军队、由battle/合法candidate/maintenance context/当前教程region投影的相关token与人口、大明自身控制及人口、既有手牌/牌堆/HUD/当前确认入口。",
+        "notWeakened": "皮岛等大明人口首次补真实人口层保护；韩国当前相关控制及人口仍由保护region集合覆盖。原R138遮挡失败不会被新范围解释成通过。",
+        "unrelated": "仅移除对与眼前决定无关的其它势力控制标永久无重叠要求，不改变对象显示、数值、访问、正式候选或世界状态。"
+      },
+      "projectionEvidence": {
+        "owner": "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx",
+        "source": "唯一正式regions数组core.regions，其中population/id/controller直接投影到现有人口数值DOM；属性不创建第二套数值或状态。",
+        "dataAttributes": [
+          "data-qidahen-map-population-faction",
+          "data-qidahen-map-population-region",
+          "data-qidahen-map-protected-population"
+        ],
+        "context": "MapSceneLayer传battleProtectedRegionIds、正式mapSelectionCandidateIds、维护contextRegionIds和当前教程地区，经既有expandRuntimeRegionIds映射到runtime IDs；MapToken同一保护集合也包含维护context。",
+        "authorityBoundary": "protectedRegionIds只用于保护DOM标记，未入map候选、高亮候选真相、命中合法性或命令；人口DOM仍pointer-events-none，未新增点击权限。",
+        "ownershipBoundary": "课程固定学员为大明，因此own controller selector为ming；共享人口组件本身没有硬编码势力归属。"
+      },
+      "priorAdditionalCssFinding": {
+        "status": "RESOLVED-by-removal",
+        "resolution": "info宽度恢复320；新增maxWidth=100% hunk已撤出，TutorialOverlay相对HEAD仅保留已证明等价的搜索剪枝。",
+        "sharedSourceHash": "8645e458e67fca1fe54dd3048441a591cfc0cad05994eaccf4dc3b6519b63a81",
+        "revertSearchGuardMatchesHead": true
+      },
+      "gateCoverage": {
+        "status": "REVISE",
+        "checks": [
+          {
+            "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+            "sha256": "a641374f15908188bf822777ed4bfb8b06c248ce3ebf4b80cd30d76948a40cc1",
+            "selector": "[data-qidahen-map-protected-token=\"true\"], [data-qidahen-map-token-type=\"army\"], [data-qidahen-map-token-type=\"control\"][data-qidahen-map-token-faction=\"ming\"], [data-qidahen-map-population-faction=\"ming\"]",
+            "includesProtectedPopulation": false
+          },
+          {
+            "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.e2e.ts",
+            "sha256": "42037b8f9a7e6c44fb31db6f5d83a869ad4bc1abb7ceace5e14cc811fd67f79e",
+            "selector": "[data-qidahen-map-protected-token=\"true\"], [data-qidahen-map-token-type=\"army\"], [data-qidahen-map-token-type=\"control\"][data-qidahen-map-token-faction=\"ming\"], [data-qidahen-map-population-faction=\"ming\"]",
+            "includesProtectedPopulation": false
+          }
+        ],
+        "findings": [
+          {
+            "id": "G1",
+            "priority": "P2",
+            "kind": "相关人口门禁覆盖缺口",
+            "paths": [
+              "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+              "e2e/qidahen/qidahen-tutorial-layout-diagnostic.e2e.ts"
+            ],
+            "problem": "通用保护对象采集及窄诊断已包含大明人口，却未包含data-qidahen-map-protected-population=true，因此当前相关但非大明的人口可能只有产品避让而无通用门禁验证。维护专检已有该selector，不代表战斗/其它候选态都覆盖。",
+            "minimumRemedy": "在这两处对象采集中补同一个protected-population selector，与当前课程guard对齐；无需恢复无关全世界对象限制。"
+          }
+        ],
+        "notProductContentFailure": "该项是验证对象集合的一致性，不表示52条内容改变，也不凭它裁决未看的布局。"
+      },
+      "sourceBindings": [
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "sha256": "5d6cdfa064538eb823f6f635501508fb3fb113ac7380a1186b68b6c29fae5e15"
+        },
+        {
+          "path": "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx",
+          "sha256": "6b103f92d75295c2caa15a1428d2dcb8dc8260177ad12437e250d0dd7a4ea8f3"
+        },
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "sha256": "8645e458e67fca1fe54dd3048441a591cfc0cad05994eaccf4dc3b6519b63a81"
+        },
+        {
+          "path": "src/games/qidahen/ui/turnContextRegions.ts",
+          "sha256": "a4ce3f85415cce26ae15d9cff966e3f798e2c39300646580ae29de1d74472512"
+        },
+        {
+          "path": "src/games/qidahen/ui/useQidahenTurnInput.ts",
+          "sha256": "005ed98c7de2fb8ad95f672c94a8b3e3d709ab689df66a3924ce8ec543d259ab"
+        }
+      ],
+      "executionBoundary": "只读源码、标准和JSON，没有图片输入或产品修改。恢复态诊断不是最终主链，尚未据此声明新布局通过。",
+      "preservedFailures": "R138遮大明皮岛人口/韩国控制的UI REVISE、R139 midyear失败及首轮内容REVISE都保留。",
+      "firstContentRevisePreserved": true
+    },
+    {
+      "candidate": "R140-source-frozen-pre-full-visual-review",
+      "type": "content-input-source-rebind-and-visual-ready-gate-scope-review",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "a10b2f2fdb8275ad75f2834ac19ef9bf8d66afb88cc1637ee9c4b5eec65f2662",
+      "currentInputHash": "a10b2f2fdb8275ad75f2834ac19ef9bf8d66afb88cc1637ee9c4b5eec65f2662",
+      "currentContentSourceHashes": {
+        "src/games/qidahen/annualTutorial.ts": "6bf7970bc137db7c71f42481c3498dad4c9d34dc7b98070f302702be88d1cd80",
+        "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+        "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+      },
+      "inputSourceHashesMatchCurrent": true,
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "idsOrderTargetsCommandsCandidatesEvents": true,
+        "languageFileHashes": true,
+        "fullTextRereadRepeated": false,
+        "reason": "本次52项文本与既有逐项内容审查字符串、完整uiContract逐项精确相等；未将布局元数据变化当新文案重审。"
+      },
+      "scopeVerdict": {
+        "status": "PASS-scoped-source",
+        "protected": "全部正式军队；当前battle/正式candidate/维护context/教程地区相关对象及相关非大明人口；大明自身控制及人口预算；当前决策所用正式HUD、手牌和确认入口。",
+        "principle": "保护持续参与当前决策的真实对象和资源，不要求整个4X世界所有无关控制标永久同屏且无遮挡。",
+        "authorityBoundary": "人口controller/region/protected属性由core.regions与既有runtime region投影得出，仅给避让/取景与测试读取；不新增状态、费用、合法candidate、点击权限或命令入口。",
+        "historicalFailureBoundary": "R138遮大明皮岛人口/韩国控制的REVISE和R139 midyear失败保留，不能用新范围追认旧图通过。"
+      },
+      "gateCoverage": {
+        "status": "PASS-static-coverage",
+        "resolvedFinding": "G1",
+        "resolution": "年度通用tokens采集和恢复态diagnostic covered采集均加入data-qidahen-map-protected-population=true；维护专检保留该selector。",
+        "checks": [
+          {
+            "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+            "sha256": "f1f5fbd0203525d11fd4c90c8195e1c7d8b85507045a6b309ecc5b5314af5dd0",
+            "includesProtectedPopulation": true
+          },
+          {
+            "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.e2e.ts",
+            "sha256": "22a5596eedf8dde17c829de75d5f554d6291827b5bae6c0decac3c51bab938d8",
+            "includesProtectedPopulation": true
+          }
+        ],
+        "boundary": "只确认源码集合一致，不表示已运行本次主链或已看图。"
+      },
+      "visualReadyReview": {
+        "status": "PASS-no-error-suppression-observed",
+        "path": "e2e/qidahen/visualReady.ts",
+        "sha256": "0b826d36023504e463e09b91d153912ad5927a712e16d952d34d395a1ab972c1",
+        "actualChecks": "选取有非零尺寸并与viewport相交的IMG，至少一张；每张complete、naturalWidth>0、IMG自身computed opacity>=0.99；90秒超时抛错，随后直接await document.fonts.ready和两次RAF。",
+        "calls": "主链每次capture开头await；恢复态窄诊断采样及截图前await。",
+        "errorPropagation": "helper内无catch、降级或忽略错误。年度主链catch将trace设FAIL，保存诊断后throw原error；诊断附件失败的catch不将主失败改成PASS。",
+        "productBoundary": "仅E2E采图/生命周期门禁，不修改产品、教程行动、提示文本或输入合同。",
+        "claimLimits": [
+          "未显式调用HTMLImageElement.decode()，complete/naturalWidth只直接证明加载结果，不单独证明全部图片解码或最终绘制。",
+          "不枚举CSS background、canvas、伪元素等素材，不校验祖先opacity；2RAF也不能替代真实图审。",
+          "本审查未运行浏览器或读取新图；诊断PASS及素材完整图审由其它真实证据承担，不能代替R140主链。"
+        ]
+      },
+      "sharedOverlayBoundary": {
+        "status": "PASS-static-equivalence-maintained",
+        "hash": "8645e458e67fca1fe54dd3048441a591cfc0cad05994eaccf4dc3b6519b63a81",
+        "detail": "相对HEAD仅保留hasPerfectAdjacentPlacement剪枝：0保护重叠/0目标重叠的相邻候选按原sort严格优于更低index优先级的freegrid；无完美候选时旧grid保留；默认/compact/fallback未改。额外CSS扩容已撤，info恢复320。",
+        "dynamicCoverageClaimed": false
+      },
+      "ownerBindingChecks": [
+        {
+          "path": "src/games/qidahen/domain/chronologyResolution.ts",
+          "previousHash": "d34643b274b9fcd52551a67e36d659558c8b1c9793cc185d99e5272523ef8f89",
+          "currentHash": "d34643b274b9fcd52551a67e36d659558c8b1c9793cc185d99e5272523ef8f89",
+          "unchanged": true
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionProgress.ts",
+          "previousHash": "32b75bcd2a532fb3233322d76133a2dd73c6a5651bd1d064b02076673c025ce0",
+          "currentHash": "32b75bcd2a532fb3233322d76133a2dd73c6a5651bd1d064b02076673c025ce0",
+          "unchanged": true
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionFacts.ts",
+          "previousHash": "ce6906c2d2fa57c7500a5a91f4a2d7b7f2445ef9a6cd93b4f22273867e742d33",
+          "currentHash": "ce6906c2d2fa57c7500a5a91f4a2d7b7f2445ef9a6cd93b4f22273867e742d33",
+          "unchanged": true
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionTypes.ts",
+          "previousHash": "4c4574f62b97206cc151b14b8f763ff30348651aa0d4f6d80b66d948bf5579a1",
+          "currentHash": "4c4574f62b97206cc151b14b8f763ff30348651aa0d4f6d80b66d948bf5579a1",
+          "unchanged": true
+        },
+        {
+          "path": "src/games/qidahen/domain/turnResolutionSystem.ts",
+          "previousHash": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc",
+          "currentHash": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc",
+          "unchanged": true
+        },
+        {
+          "path": "src/games/qidahen/__tests__/turnResolution.test.ts",
+          "previousHash": "e40300c8dc7ccdbfaa6933d85c3d4ac50a71497c9b8d68c238579efa12246880",
+          "currentHash": "e40300c8dc7ccdbfaa6933d85c3d4ac50a71497c9b8d68c238579efa12246880",
+          "unchanged": true
+        },
+        {
+          "path": "src/games/qidahen/__tests__/annualTutorialFlow.test.ts",
+          "previousHash": "09984e03eb2e86373647df5c601c9e8298e97aab58162974e8e46d3e1fa27bb4",
+          "currentHash": "09984e03eb2e86373647df5c601c9e8298e97aab58162974e8e46d3e1fa27bb4",
+          "unchanged": true
+        },
+        {
+          "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+          "previousHash": "b9f423a029c1cea9bef6116cabe908bc8a16f5bd0f58117337bbd890526d56f6",
+          "currentHash": "f1f5fbd0203525d11fd4c90c8195e1c7d8b85507045a6b309ecc5b5314af5dd0",
+          "unchanged": false
+        }
+      ],
+      "sourceBindings": [
+        {
+          "path": "src/games/qidahen/annualTutorial.ts",
+          "sha256": "6bf7970bc137db7c71f42481c3498dad4c9d34dc7b98070f302702be88d1cd80"
+        },
+        {
+          "path": "public/locales/zh-CN/game-qidahen.json",
+          "sha256": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16"
+        },
+        {
+          "path": "public/locales/en/game-qidahen.json",
+          "sha256": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "sha256": "5d6cdfa064538eb823f6f635501508fb3fb113ac7380a1186b68b6c29fae5e15"
+        },
+        {
+          "path": "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx",
+          "sha256": "6b103f92d75295c2caa15a1428d2dcb8dc8260177ad12437e250d0dd7a4ea8f3"
+        },
+        {
+          "path": "src/games/qidahen/ui/turnContextRegions.ts",
+          "sha256": "a4ce3f85415cce26ae15d9cff966e3f798e2c39300646580ae29de1d74472512"
+        },
+        {
+          "path": "src/games/qidahen/ui/useQidahenTurnInput.ts",
+          "sha256": "005ed98c7de2fb8ad95f672c94a8b3e3d709ab689df66a3924ce8ec543d259ab"
+        },
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "sha256": "8645e458e67fca1fe54dd3048441a591cfc0cad05994eaccf4dc3b6519b63a81"
+        },
+        {
+          "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+          "sha256": "f1f5fbd0203525d11fd4c90c8195e1c7d8b85507045a6b309ecc5b5314af5dd0"
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.e2e.ts",
+          "sha256": "22a5596eedf8dde17c829de75d5f554d6291827b5bae6c0decac3c51bab938d8"
+        },
+        {
+          "path": "e2e/qidahen/visualReady.ts",
+          "sha256": "0b826d36023504e463e09b91d153912ad5927a712e16d952d34d395a1ab972c1"
+        }
+      ],
+      "preservedFailures": [
+        "首轮内容REVISE及C1-C4修复历史",
+        "R135视觉REVISE",
+        "R136末端点击失败",
+        "R138全量UI REVISE",
+        "R139 midyear失败"
+      ],
+      "executionBoundary": "只读文本/源码/JSON，未看图、未启动浏览器或测试；仅更新本任务final内容报告。R140运行中，布局等待独立全量新图审；PC人工认可pending、移动端未开始。",
+      "firstContentRevisePreserved": true
+    },
+    {
+      "candidate": "R142-local-session-lossless-compression-and-context-scroll-source",
+      "type": "content-rebind-with-independent-shared-storage-code-review",
+      "reviewer": "/root/r134_final_baseline",
+      "contentVerdict": "PASS",
+      "previousInputHash": "a10b2f2fdb8275ad75f2834ac19ef9bf8d66afb88cc1637ee9c4b5eec65f2662",
+      "currentInputHash": "e4ca9058033f0a203e610482add869211b9f4662ffbda3ec58ac1386edbd38cb",
+      "currentContentSourceHashes": {
+        "src/games/qidahen/annualTutorial.ts": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1",
+        "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+        "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+      },
+      "inputSourceHashesMatchCurrent": true,
+      "unchangedContent": {
+        "all52ChineseAndEnglishTexts": true,
+        "idsOrderTargetsCommandsCandidatesEvents": true,
+        "method": "逐项精确比较既有逐条审查文本及全部uiContract，不机械重读相同文案。"
+      },
+      "presentationSourceReview": {
+        "status": "PASS-static-scope-only",
+        "contextSpace": "既有layoutRegionBounds DOM仅新增data-qidahen-map-context-space并加入课程guard；pointer-events-none保留，未改canonical城市markerBounds、hit owner或正式mapSelectionCandidateIds。",
+        "scrollOwner": "征兵非payment外层flex列裁切，header shrink-0独立兄弟body overflow-y-auto；唯一wheelRecruitTrainSelectionRef移到body，自动定位仍查正式候选并改body.scrollTop，原choice处理未另造合法输入。",
+        "sharedOverlay": "相对HEAD仍仅保留此前已审hasPerfectAdjacentPlacement等价剪枝；未恢复额外maxWidth CSS。",
+        "visualBoundary": "源码边界可接受；未看新图，不裁代表态或R142主链UI通过。"
+      },
+      "independentPersistenceReview": {
+        "status": "PASS-static-compatibility-runtime-pending",
+        "claimScope": "独立共享存储代码审查；不是内容PASS推导持久化PASS，也未声称当前level6的浏览器全链已通过。",
+        "problemEvidence": "原23,620,438字节正式晚期快照在Chromium通过原persist/read后storedStep=null；红日志保留该断言失败。",
+        "owner": "localSession原同步API/key与v1快照结构保持，只把JSON序列化/解析替换为唯一localSessionCodec编解码。fflate已为现有dependency；codec到LocalMatchSnapshot是type-only引用，不产生运行时循环。",
+        "encoding": "JSON.stringify完整snapshot，plain.length>=1,048,576时UTF-8 gzip level6/mtime0再base64包裹gzip-base64-v1；小JSON保持原明文。阈值单位是JS字符数，并非UTF-8字节或严格1MiB。",
+        "compatibility": "decode先读JSON；旧明文小/大v1直接返回，再由原owner校验version/gameId/seed/numPlayers/randomCursor/state结构。压缩解码后仍回同一校验；所有state/sys/core、checkpoints及随机游标不截断、不删字段。",
+        "exceptions": "坏JSON、base64、gzip及payload类型错误会抛到原read catch并返回null；写入编码/配额异常仍由原persist catch忽略。没有异步第二真相、改存档key或把旧档预先删除；普通setItem失败不生成成功回执。",
+        "productionConsumers": [
+          "useLocalProviderSession恢复与每次state变化后的effect保存",
+          "useMatchRoomTutorialLifecycle.readRestorableTutorialProgress读取继续对局；均继续走localSession owner"
+        ],
+        "testConsumerChanges": "生命周期与新增tutorialPersistence通过正式read/persist owner处理存档，兼容编码；普通入口改canonical /play/qidahen。诊断从正式年度管线快照恢复，明确不等于从开场的主链。",
+        "observedEvidence": {
+          "existingConsumersTests": "local-storage-unit日志3文件36项通过；shared-and-storage-final日志6文件94项通过；未由本审查运行。",
+          "actualBrowserReceipt": {
+            "storedStep": "training-recruit-target",
+            "expectedStep": "training-recruit-target",
+            "sourceBytes": 23620438,
+            "encodedChars": 4199206,
+            "allStatePreserved": true,
+            "cursorPreserved": true,
+            "allCheckpointsPreserved": true
+          },
+          "receiptInterpretation": "4199206字符是此前level1绿样本；当前源码level6，现收据与日志无当前源码hash绑定，因此不据它声明level6运行PASS。",
+          "greenDiagnostic": "现green日志4项通过，覆盖真实晚期API样本及恢复态；它不是完整主链。"
+        },
+        "capacityBoundary": "压缩解决已实测可压缩历史，不保证任意数据/浏览器/其它key占用都可写；base64有体积开销，容量失败仍可能静默保留旧档。必须用当前level6的真实后段读回和刷新继续证据确认该目标链。",
+        "performanceBoundary": "useLocalProviderSession effect依赖state，每次提交同步压缩；父代理报告level6 benchmark约501ms，尚未亲核该benchmark文件。该代价可能造成晚期主线程长任务，不能宣称性能无影响；需看当前主链操作/刷新与真实性能证据。",
+        "remainingAcceptance": [
+          "当前level6源码身份绑定的真实23.6MB样本完整state/history/cursor读回",
+          "完整主链后段保存与真实刷新继续，状态/随机游标/回退历史对比",
+          "当前主链晚期操作性能证据，不能以单次压缩率替代"
+        ],
+        "blockingCodeFindings": [],
+        "evidenceFiles": [
+          {
+            "path": "test-results/qidahen-late-storage-red.log",
+            "sha256": "5e8ab0e700ab7a6931ab5fd1b013971ba95d77034e13b1b60a3c5ed2b2c296c9"
+          },
+          {
+            "path": "test-results/qidahen-late-storage-green.log",
+            "sha256": "30aea316952a98cec68a9d4ba434511c2b98ac29307f89f47a7a1de391b729cb"
+          },
+          {
+            "path": "test-results/qidahen-local-storage-unit.log",
+            "sha256": "103d148d78e7a9178530200251ce03de226082c90ad3d7eba5136cbf840f1657"
+          },
+          {
+            "path": "test-results/qidahen-full-rebuild-shared-and-storage-final.log",
+            "sha256": "9de5e027bfdf74692e6072df374f40e1368bc7e471d7b5d5fe275e6b48382411"
+          },
+          {
+            "path": "test-results/qidahen-layout-diagnostic/late-storage.json",
+            "sha256": "4bf62b442b0902f538018be3030383ef8dcc8962df3033aeaaac3735af67d6f2"
+          }
+        ]
+      },
+      "sourceBindings": [
+        {
+          "path": "src/engine/transport/localSession.ts",
+          "sha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8"
+        },
+        {
+          "path": "src/engine/transport/localSessionCodec.ts",
+          "sha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132"
+        },
+        {
+          "path": "src/engine/transport/useLocalProviderSession.ts",
+          "sha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7"
+        },
+        {
+          "path": "src/pages/useMatchRoomTutorialLifecycle.tsx",
+          "sha256": "a494f3b581266832e8b26d2415318952170e45878f8b09320385c99233047a5e"
+        },
+        {
+          "path": "src/engine/transport/__tests__/localSessionCodec.test.ts",
+          "sha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d"
+        },
+        {
+          "path": "src/games/qidahen/annualTutorial.ts",
+          "sha256": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1"
+        },
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "sha256": "1f91345cebb89d7475b5853c8b0b20d6fff64551c8a452a4ebdcd07553aeb25d"
+        },
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "sha256": "8645e458e67fca1fe54dd3048441a591cfc0cad05994eaccf4dc3b6519b63a81"
+        },
+        {
+          "path": "e2e/qidahen/tutorialPersistence.ts",
+          "sha256": "01db9ffd4a308a2d63a83906e72c0a8e61136fafbcfca4f56653c08895606341"
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts",
+          "sha256": "46e9212f0e31c81c2bdb9bb387d73c38eacfaca986a827d154919a0bc7539a33"
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "sha256": "b166663b3f73c53dc9fb98124fb1bc7000f70eadfd5cdf8d3583cf112b186f78"
+        },
+        {
+          "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+          "sha256": "366f9867fe1f5d14e03fe1ac6874ca068636f23fe6564e83ae5bce6228e174f2"
+        }
+      ],
+      "executionBoundary": "仅源码/JSON/日志只读与本报告写入，未运行测试/浏览器、未看图、未改产品；保留首轮内容REVISE和历次UI失败。R142UI仍待新主链/全图审，PC人工认可pending、移动端未开始。",
+      "firstContentRevisePreserved": true
+    }
+  ],
+  "currentPresentationCandidate": "R142-local-session-lossless-compression-and-context-scroll-source",
+  "currentPresentationStatus": "R142产品源码候选；新主链与全量UI审查未由本审查确认。历次UI失败和诊断非主链边界保留。",
+  "currentContentSourceBindings": {
+    "src/games/qidahen/annualTutorial.ts": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1",
+    "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+    "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+  },
+  "currentContentInputBindingStatus": "CURRENT",
+  "currentSharedLayoutReviewStatus": "既有等价剪枝、context空间投影及征兵header/body滚动owner静态作用域通过；不代表未看的新布局通过。",
+  "currentIndependentPersistenceReviewStatus": "静态编解码兼容审通过；当前level6真实运行/后段刷新及性能验收待绑定证据。"
+}

@@ -1,0 +1,404 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "弃牌飞掷沿原手牌区选择和取消",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\02-弃牌飞掷手牌区成本.png"
+      ],
+      "after": [
+        "01-02-弃牌飞掷选择成本.png",
+        "02-03-取消弃牌支付且资源未扣.png",
+        "03-04-手牌区弃置成本后飞掷结算.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "奥丁效果骰沿原骰盘组选重掷",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\03-奥丁II效果骰选择.png"
+      ],
+      "after": [
+        "04-06-奥丁效果骰等待选择重掷骰子.png",
+        "05-07-使用原整组重掷动作提交两颗所选骰子.png",
+        "06-08-整组重掷一次完成并保留原确认收口.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "队友出牌后索尔同骰选择两次",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\15-队友不愧是我同骰两次.png"
+      ],
+      "after": [
+        "07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png",
+        "09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "当之无愧固定改为四或五",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\06-当之无愧选择固定四或五.png"
+      ],
+      "after": [
+        "10-03-当之无愧直接选择固定目标四或五.png",
+        "11-04-选择四后沿原固定值流程点选骰子.png",
+        "12-05-改为四且其余骰子保持.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "requirement": "任意改骰保留加减预览和确认",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\22-原任意改值选择骰和加减控件.png"
+      ],
+      "after": [
+        "13-01-旧固定值和任意编辑各自提示与控件.png",
+        "14-02-任意编辑保留原加减预览和手动确认.png",
+        "15-03-旧流程提交后只修改一颗骰子.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/4"
+    },
+    {
+      "requirement": "复制锁定骰",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\22-原任意改值选择骰和加减控件.png"
+      ],
+      "after": [
+        "16-01-原骰盘选择复制来源.png",
+        "17-02-来源骰选定后选择目标骰.png",
+        "18-03-复制完成且锁定骰点数更新.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/5"
+    },
+    {
+      "requirement": "连锁闪电四骰选两骰",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\20-连锁闪电二级四骰选择.png"
+      ],
+      "after": [
+        "19-03-原骰盘直接展示四骰与组合选择提示.png",
+        "20-04-选中两颗后原确认动作启用.png",
+        "21-05-玩家选低值组合后三附属伤害与主攻击分别保留.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/6"
+    },
+    {
+      "requirement": "瓶中闪电逐次飞掷与停止",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\26-瓶中闪电II锤子移动选择目标与停止.png"
+      ],
+      "after": [
+        "22-02-可选移动窗口保留立即停止入口.png",
+        "23-03-一次飞掷独立扣一生命后可继续或停止.png",
+        "24-05-飞掷一次后主动停止并进入攻击响应.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/7"
+    },
+    {
+      "requirement": "多人队友额外重投两骰",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\16-队友我又行了任选两骰.png"
+      ],
+      "after": [
+        "25-03-合法代表态-我又行了任选两骰-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "26-04-合法代表态-我又行了任选两骰-原有提示和双按钮确认.png",
+        "27-05-合法代表态-我又行了任选两骰-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/8"
+    },
+    {
+      "requirement": "多人队友防御骰重投",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\19-队友就这防御骰重投.png"
+      ],
+      "after": [
+        "28-03-合法代表态-就这防御骰重掷-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "29-04-合法代表态-就这防御骰重掷-原有提示和双按钮确认.png",
+        "30-05-合法代表态-就这防御骰重掷-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/9"
+    },
+    {
+      "requirement": "多人队友响应防伤",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\17-队友下次一定伤害响应前.png"
+      ],
+      "after": [
+        "31-08-合法代表态-莲花掌五点伤害到达索尔或队友的响应窗口.png",
+        "32-10-合法代表态-退出卡牌特写后仍可从旧响应界面继续结算.png",
+        "33-11-合法代表态-确认继续后五点伤害均被防止且索尔生命保持五十.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/10"
+    },
+    {
+      "requirement": "雷电之轮原防御流程",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\01-索尔在线角色板九槽.png"
+      ],
+      "after": [
+        "34-01-敌方八伤攻击前态与防御原入口.png",
+        "35-02-实际投出对应数量防御骰.png",
+        "36-03-防御减伤和每组神锤移动后结算生命.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/11"
+    },
+    {
+      "requirement": "一次改变两颗骰",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\22-原任意改值选择骰和加减控件.png"
+      ],
+      "after": [
+        "37-01-原骰盘显示两骰调整入口.png",
+        "38-02-两颗骰子预览后沿原按钮确认.png",
+        "39-03-确认后仅两颗骰子改变.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/12"
+    },
+    {
+      "requirement": "一掷千金效果骰一",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\05-奥丁II空选原确认.png"
+      ],
+      "after": [
+        "40-01-效果骰结果在原骰盘待确认.png",
+        "41-02-确认后获得对应CP.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/13"
+    },
+    {
+      "requirement": "一掷千金效果骰六",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\05-奥丁II空选原确认.png"
+      ],
+      "after": [
+        "42-01-效果骰结果在原骰盘待确认.png",
+        "43-02-确认后获得对应CP.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/14"
+    },
+    {
+      "requirement": "选状态并移除一层",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-new-interactions-20261101\\07-状态候选-桌面.png"
+      ],
+      "after": [
+        "44-01-起开沿原状态选择入口显示对手气.png",
+        "45-02-选中对手气后原确认入口可用.png",
+        "46-03-确认后只移除一层气并完成出牌.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/15"
+    },
+    {
+      "requirement": "选择转移状态与目标",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-new-interactions-20261101\\07-状态候选-桌面.png"
+      ],
+      "after": [
+        "47-01-选择转移来源且神锤不可转移.png",
+        "48-02-来源锁定后选择索尔为目标.png",
+        "49-03-选中目标后原确认入口可用.png",
+        "50-04-转移一层后神锤仍归索尔.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/16"
+    },
+    {
+      "requirement": "选择玩家移除状态",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-new-interactions-20261101\\07-状态候选-桌面.png"
+      ],
+      "after": [
+        "51-01-原玩家选择入口显示有状态的对手.png",
+        "52-02-选中对手后原确认入口可用.png",
+        "53-03-确认后对手状态清除且神锤仍在.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/17"
+    },
+    {
+      "requirement": "强制重投对手骰",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\15-队友不愧是我同骰两次.png"
+      ],
+      "after": [
+        "54-01-对手已确认骰面后原骰盘选择目标.png",
+        "55-02-选中对手骰后原确认入口可用.png",
+        "56-03-确认后仅选中对手骰重投.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/18"
+    },
+    {
+      "requirement": "修改对手两颗骰",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用对应的已有手牌、骰盘、选择或响应入口及其操作。",
+      "changes": "沿用既有手牌区、骰盘和响应入口；不同层级的暂时提示不作为背景提示板遮挡缺陷。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\22-原任意改值选择骰和加减控件.png"
+      ],
+      "after": [
+        "57-01-对手已确认后原骰盘允许修改.png",
+        "58-02-两颗对手骰预览后原确认可用.png",
+        "59-03-确认后仅两颗对手骰改变.png"
+      ],
+      "independentReviewFile": "baseline-review-source.json",
+      "sourceReviewEntry": "/requirements/19"
+    }
+  ]
+}

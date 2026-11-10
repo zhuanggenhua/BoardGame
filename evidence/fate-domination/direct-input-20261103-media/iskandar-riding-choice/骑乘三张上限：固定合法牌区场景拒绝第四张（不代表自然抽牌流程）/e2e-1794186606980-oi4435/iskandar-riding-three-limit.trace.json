@@ -1,0 +1,516 @@
+{
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "chainId": "iskandar-riding-three-limit",
+  "sourceRun": "1794186696290-143788-ea30afca-d805-4ea6-bc18-8de7d35fbe2c",
+  "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:619c5617f5842a6fbb845bdb6e9b1fd903baaeddbfa07f499d079f60e0656345",
+  "status": "PASS",
+  "outcome": "正式手牌里三张合法牌可选；达到上限后第四张不能加入，确认仅结算三张并扣除实际印刷费用。",
+  "steps": [
+    {
+      "id": "open-choice",
+      "action": "在本人手牌区打开骑乘选择",
+      "before": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "",
+          "ridingCostAccessibleLabel": "",
+          "choiceVisible": false,
+          "selectedCards": [],
+          "confirmText": "",
+          "confirmDisabled": null,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null,
+          "activeRidingFrames": [],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "after": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "已选 0/3 · 实付 0/8 魔力",
+          "ridingCostAccessibleLabel": "坐骑召唤 · 已选 0 张（最多 3 张）· 实付 0 / 8 魔力 · 本次选牌固定明置",
+          "choiceVisible": true,
+          "selectedCards": [],
+          "confirmText": "确认打出（0）",
+          "confirmDisabled": false,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e20-u0",
+          "interactionSourceId": "fate:riding-choice",
+          "activeFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+          "activeRidingFrames": [
+            {
+              "id": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+              "phase": "action"
+            }
+          ],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "assertions": [
+        {
+          "name": "four-or-more-candidates",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "choice-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "riding-interaction-open",
+          "actual": "fate:riding-choice",
+          "expected": "fate:riding-choice"
+        }
+      ]
+    },
+    {
+      "id": "select-three-cards",
+      "action": "依次点击三张合法低威力候选牌",
+      "before": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "已选 0/3 · 实付 0/8 魔力",
+          "ridingCostAccessibleLabel": "坐骑召唤 · 已选 0 张（最多 3 张）· 实付 0 / 8 魔力 · 本次选牌固定明置",
+          "choiceVisible": true,
+          "selectedCards": [],
+          "confirmText": "确认打出（0）",
+          "confirmDisabled": false,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e20-u0",
+          "interactionSourceId": "fate:riding-choice",
+          "activeFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+          "activeRidingFrames": [
+            {
+              "id": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+              "phase": "action"
+            }
+          ],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "after": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "已选 3/3 · 实付 0/8 魔力",
+          "ridingCostAccessibleLabel": "坐骑召唤 · 已选 3 张（最多 3 张）· 实付 0 / 8 魔力 · 本次选牌固定明置",
+          "choiceVisible": true,
+          "selectedCards": [
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ],
+          "confirmText": "确认打出（3）",
+          "confirmDisabled": false,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e20-u0",
+          "interactionSourceId": "fate:riding-choice",
+          "activeFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+          "activeRidingFrames": [
+            {
+              "id": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+              "phase": "action"
+            }
+          ],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "assertions": [
+        {
+          "name": "three-cards-selected",
+          "actual": 3,
+          "expected": 3
+        },
+        {
+          "name": "selected-candidate-ids",
+          "actual": [
+            "0:cardA2:9",
+            "0:cardQ1:6",
+            "0:cardQ2:7"
+          ],
+          "expected": [
+            "0:cardA2:9",
+            "0:cardQ1:6",
+            "0:cardQ2:7"
+          ]
+        },
+        {
+          "name": "fourth-disabled",
+          "actual": "true",
+          "expected": "true"
+        }
+      ]
+    },
+    {
+      "id": "attempt-fourth-card",
+      "action": "达到三张上限后尝试选择第四张",
+      "before": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "已选 3/3 · 实付 0/8 魔力",
+          "ridingCostAccessibleLabel": "坐骑召唤 · 已选 3 张（最多 3 张）· 实付 0 / 8 魔力 · 本次选牌固定明置",
+          "choiceVisible": true,
+          "selectedCards": [
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ],
+          "confirmText": "确认打出（3）",
+          "confirmDisabled": false,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e20-u0",
+          "interactionSourceId": "fate:riding-choice",
+          "activeFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+          "activeRidingFrames": [
+            {
+              "id": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+              "phase": "action"
+            }
+          ],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "after": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "已选 3/3 · 实付 0/8 魔力",
+          "ridingCostAccessibleLabel": "坐骑召唤 · 已选 3 张（最多 3 张）· 实付 0 / 8 魔力 · 本次选牌固定明置",
+          "choiceVisible": true,
+          "selectedCards": [
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ],
+          "confirmText": "确认打出（3）",
+          "confirmDisabled": false,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e20-u0",
+          "interactionSourceId": "fate:riding-choice",
+          "activeFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+          "activeRidingFrames": [
+            {
+              "id": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+              "phase": "action"
+            }
+          ],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "assertions": [
+        {
+          "name": "selection-stays-at-three",
+          "actual": 3,
+          "expected": 3
+        },
+        {
+          "name": "selection-does-not-change",
+          "actual": [
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ],
+          "expected": [
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ]
+        },
+        {
+          "name": "fourth-stays-disabled",
+          "actual": "true",
+          "expected": "true"
+        },
+        {
+          "name": "mana-does-not-change-before-confirm",
+          "actual": 8,
+          "expected": 8
+        }
+      ]
+    },
+    {
+      "id": "confirm-three-cards",
+      "action": "确认三张并按印刷费用结算",
+      "before": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "已选 3/3 · 实付 0/8 魔力",
+          "ridingCostAccessibleLabel": "坐骑召唤 · 已选 3 张（最多 3 张）· 实付 0 / 8 魔力 · 本次选牌固定明置",
+          "choiceVisible": true,
+          "selectedCards": [
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ],
+          "confirmText": "确认打出（3）",
+          "confirmDisabled": false,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost"
+          ],
+          "interactionId": "fate:riding-choice:1:0:sc_iskandar_1:3:e20-u0",
+          "interactionSourceId": "fate:riding-choice",
+          "activeFrameId": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+          "activeRidingFrames": [
+            {
+              "id": "fate:riding-frame:1:0:sc_iskandar_1:3:e20-u0",
+              "phase": "action"
+            }
+          ],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "after": {
+        "visible": {
+          "phaseText": "第 1 回合 行动",
+          "ridingCostPreview": "",
+          "ridingCostAccessibleLabel": "",
+          "choiceVisible": false,
+          "selectedCards": [],
+          "confirmText": "",
+          "confirmDisabled": null,
+          "currentPrimary": "结束行动"
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "mana": 8,
+          "handIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6",
+            "0:cardB1:0",
+            "0:cardluck:11"
+          ],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardA2:9",
+            "0:cardQ2:7",
+            "0:cardQ1:6"
+          ],
+          "selectedAttackIds": [],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "usedAbilityIds": [
+            "s2:1:outpost",
+            "sc_iskandar_1:3:action"
+          ],
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null,
+          "activeRidingFrames": [],
+          "opponentHandDetailsRecorded": false
+        }
+      },
+      "assertions": [
+        {
+          "name": "exact-batch-cost-paid",
+          "actual": 0,
+          "expected": 0
+        },
+        {
+          "name": "three-cards-committed",
+          "actual": 3,
+          "expected": 3
+        },
+        {
+          "name": "action-remains-open",
+          "actual": "action:0",
+          "expected": "action:0"
+        },
+        {
+          "name": "no-riding-frame-remains",
+          "actual": [],
+          "expected": []
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "riding-three-selected",
+      "stepId": "select-three-cards",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "48f61b42c692c70b845621a0e9ef4436ed841a8f8cf28642f93b0e23e331ea4f"
+    }
+  ]
+}

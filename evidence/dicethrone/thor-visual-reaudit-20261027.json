@@ -1,0 +1,1367 @@
+{
+  "reviewer": "/root/thor_contract_reaudit",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "scope": "22条主链80图及独立补5点3图；逐图观察不替代规则与权威状态审计",
+  "status": "COMPLETE",
+  "summary": {
+    "total": 83,
+    "reviewed": 83,
+    "pass": 83,
+    "revise": 0,
+    "notReviewed": 0
+  },
+  "criteriaSource": "temp/codex-thor-audit/independent-rule-expectations-20261027.md",
+  "overallRuleVerdict": "REVISE",
+  "items": [
+    {
+      "case": "索尔当之无愧选择五后取消不提交改骰",
+      "file": "01-当之无愧取消前选择五但尚未改骰.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793072168808-u11lt8/01-当之无愧取消前选择五但尚未改骰.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "02d57342c0aa77032f706c98b47c4edcc141a42436bbca34295a86c69cad1bb7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 0,
+      "observation": [
+        "固定5候选金色选中；顶部提示选择设为5的骰子完整可读，五骰仍为1；取消可见，未出现加减。",
+        "固定结果选择不等于提交；本图只证明未提交态。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔当之无愧选择五后取消不提交改骰",
+      "file": "02-取消改骰后骰面保持且卡牌资源退回.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793072168808-u11lt8/02-取消改骰后骰面保持且卡牌资源退回.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "608eb1c2638ccc1c61075f83b6806533eb7cb3207866f1976080f46b6c669c28",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 1,
+      "observation": [
+        "固定结果候选和交互提示已退出；五骰仍为1、CP从4恢复5、当之无愧回手。",
+        "与上一帧对照可见取消未改骰及退款；权威后态另由同源行为日志核对。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "file": "01-手牌放大完整阅读挥锤时刻.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793072168808-u11lt8/01-手牌放大完整阅读挥锤时刻.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "207ac3c3f7f81ab4aa3ecf886db59732e6835b66c4bafe7571fb037a14cd37ec",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 2,
+      "observation": [
+        "挥锤时刻完整卡面在阅读层，召回及1CP/驭电规则文字可读，关闭入口明确。",
+        "阅读特写是原入口，不替代出牌行为。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "file": "02-改骰前自己的五颗骰子.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793072168808-u11lt8/02-改骰前自己的五颗骰子.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "fe9e324fac0ec6979a982ecc65a1e81f32eff869c584fa896d19327ba2304b5a",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 3,
+      "observation": [
+        "五颗索尔骰均为1，原骰盘与投掷/确认/结算攻击入口完整，CP5。",
+        "作为同链改骰前态，不冒充改骰结果。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "file": "03-当之无愧直接选择固定目标四或五.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793072168808-u11lt8/03-当之无愧直接选择固定目标四或五.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "f5fb9e3c5019e7a85167e79977924fea3802be8a4b53c9acc1daff8846a895ad",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 4,
+      "observation": [
+        "骰盘顶部只有4和5两种目标点数，提示选择目标点数；骰子置暗等待选值，没有加减按钮。",
+        "提示与4/5控件在屏内，未覆盖提示板。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "file": "04-选择四后沿原固定值流程点选骰子.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793072168808-u11lt8/04-选择四后沿原固定值流程点选骰子.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "96ebe4368e6bf790ccbb569751cce5070bbd9d416f6e81e38d422425d682a4c3",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 5,
+      "observation": [
+        "目标4呈金色选中，提示明确选择要设为4的骰子，五骰仍为1并恢复候选亮度；取消可见。",
+        "选值只改变本地选择，尚未改权威骰值；无额外新弹窗。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "file": "05-改为四且其余骰子保持.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793072168808-u11lt8/05-改为四且其余骰子保持.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "79d288eb70163f0806e232ca32ef9de7f3984e697f4438d2b0938b3f788138b7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 6,
+      "observation": [
+        "第一骰为4，其余四骰仍1；候选和提示退出，CP为4，回到原骰盘操作。",
+        "与选4前帧对照符合固定4改一骰。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "01-索尔正式角色板与卡牌.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/01-索尔正式角色板与卡牌.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "eff97056ea9135fb672dcf90b06a5c1489074d20d275c6297bcbedea85ab6de1",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 7,
+      "observation": [
+        "索尔正式角色板、提示板、手牌与右侧骰盘同屏；弃牌飞掷入口可见，未新增选择弹窗。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "02-弃牌飞掷选择成本.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/02-弃牌飞掷选择成本.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "0c1419d00f5a4877a675e9f7d41e1728442a1213fd1d5f28e8d76172e6881852",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 8,
+      "observation": [
+        "顶部原弃牌提示“选择1张手牌弃置”和取消完整可见；直接在原手牌区选成本，下一阶段禁用，无遮挡成本对象。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "03-取消弃牌支付且资源未扣.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/03-取消弃牌支付且资源未扣.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "5fd1659b65cf9d02b092f0629b6b23f04b228015c805ea94a6358518ab54aa0a",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 9,
+      "observation": [
+        "取消后弃牌提示退出，四张手牌仍在，CP10、生命50、神锤仍在自己处；阶段操作恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "04-手牌区弃置成本后飞掷结算.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/04-手牌区弃置成本后飞掷结算.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "2983c13b21c7629c135d102e1555e1d25852b4b2eecd444704473d8b11a83959",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 10,
+      "observation": [
+        "雷霆万钧进入弃牌堆，手牌减为三张，神锤在对手头像旁并显示-1反馈；CP仍10。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "05-奥丁之力二级升级完成.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/05-奥丁之力二级升级完成.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "3fbe89c72085d78c85803e2f7c4d38803025f08302df10ce3be47f531154125b",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 11,
+      "observation": [
+        "奥丁之力II实际覆盖原能力槽，手牌减为二张，CP10降8；原槽位与规则没有被选择UI遮挡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "06-奥丁效果骰等待选择重掷骰子.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/06-奥丁效果骰等待选择重掷骰子.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "4c5bf8c259914d182535f692ac6e0b7bbe1d51b3642d0f24fb98af1ea41e7272",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 12,
+      "observation": [
+        "五颗效果骰为1、1、4、4、6；提示在骰盘上方完整显示：选择重掷骰子或确认保留。",
+        "空选仅显示确认；提示没有压到屏幕边缘、骰子或提示板规则。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "07-使用原掷骰操作提交两颗所选骰子.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/07-使用原掷骰操作提交两颗所选骰子.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "e62c150e7dcd5e0f9f2ae0e05bb2a0db2b31541b2ad793bfd5b8fa5cd7890678",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 13,
+      "observation": [
+        "第一、第三骰金色勾选，提示说明已选2颗，可重掷或确认保留。",
+        "原重掷和确认操作可见，无重置所选按钮；提示板及骰子未被遮挡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "08-整组重掷一次完成.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/08-整组重掷一次完成.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "08a6d8af77592c18230a3f78ad752e8b902ddee9bca9b97b8baa9464945361e3",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 14,
+      "observation": [
+        "重掷后第一、第三骰变6，其余三骰保持1、4、6；选择提示退出，仅原确认可用，显示总伤害6。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "file": "09-效果骰收口后进入主攻击防御.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793072168808-u11lt8/09-效果骰收口后进入主攻击防御.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "0dc4208f42bc0e7235f5176a76d3048e1acb8ffeb6b9b17846cfd6ef800d9426",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 15,
+      "observation": [
+        "效果骰退出并进入武僧防御阶段；主攻击总伤害6→9，驭电3/4，未遗留重掷候选。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔破防连续消费失败后仍可再次使用",
+      "file": "01-破防正式图标与消费入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793072168808-u11lt8/01-破防正式图标与消费入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "20e6674cdec76b0e2c1181fcf161cc16bffe548a2578031f407db81f1cd4517d",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 16,
+      "observation": [
+        "破防正式图标2/2在生命栏上方可用，响应跳过可见，主攻击7仍保留；相关骰子和状态可见。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔破防连续消费失败后仍可再次使用",
+      "file": "02-第一枚破防效果骰失败.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793072168808-u11lt8/02-第一枚破防效果骰失败.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "7a365d9c276200e7eb9a151bb42c7cd8bf30a590d32952165974eee702245ed3",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 17,
+      "observation": [
+        "消耗一枚后1/2，原奖励骰单骰1等待确认；总伤害7保留，无专用新骰子弹窗。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔破防连续消费失败后仍可再次使用",
+      "file": "03-失败后仍可使用第二枚破防.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793072168808-u11lt8/03-失败后仍可使用第二枚破防.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "f3c147ddb23138951f8bc730d362eae4cb48007614bf72fd302137f73cdb9e1b",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 18,
+      "observation": [
+        "失败后原攻击五骰恢复，破防1/2仍高亮可用，响应窗口再次可操作。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔破防连续消费失败后仍可再次使用",
+      "file": "04-第二枚破防效果骰成功.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793072168808-u11lt8/04-第二枚破防效果骰成功.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "a38760d9a2c8a58f280a912b2ddc38eee0261b12a328be4360764efd521e750c",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 19,
+      "observation": [
+        "第二枚破防已耗尽，奖励骰4头盔待原确认，主攻击7保留；效果骰与动作无遮挡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔破防连续消费失败后仍可再次使用",
+      "file": "05-不可防御主攻击结算后收口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1793072168808-u11lt8/05-不可防御主攻击结算后收口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "26e3a0ac5f2556968cf8309f4c15da2f3c256044ad31bb7d52e0920027e402c4",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 20,
+      "observation": [
+        "结算退出响应，进入主要阶段2，对手显示-7反馈，原攻击骰恢复且没有遗留奖励骰按钮。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "file": "01-连锁闪电触发前.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793072168808-u11lt8/01-连锁闪电触发前.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "b69084d1a6add4ac87f18881cd6d599166a184e1e16c31ddc312d1bdd922e23a",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 21,
+      "observation": [
+        "连锁触发前五骰1、1、1、6、6；能力槽可读，当前阶段和结束攻击可见。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "file": "02-三颗效果骰等待确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793072168808-u11lt8/02-三颗效果骰等待确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "abe61d2e2815e224d60706580dbe4078a41ef292925647955b72505d86ccf5b1",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 22,
+      "observation": [
+        "三颗效果骰1、4、6显示于原右侧骰盘，原确认按钮可见；连锁能力槽高亮且规则可读。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "file": "03-选择两颗效果骰组合.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793072168808-u11lt8/03-选择两颗效果骰组合.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "438297df51c715aa66a38bdfdc381f975ebd28da01ce029d3d0dedf6c8ad0226",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 23,
+      "observation": [
+        "既有技能结算选择窗口列出全部三对：1+4=5、1+6=7、4+6=10，骰面、序号及伤害可读且未裁切。",
+        "对象是跨骰组合，不套用固定值或加减流程。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "file": "04-附属伤害自动命中唯一对手并保留主攻击.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1793072168808-u11lt8/04-附属伤害自动命中唯一对手并保留主攻击.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "510ea71bb19bd449399ba5fad8f9b41722d1a47c1ccd2ac5e7c6d79b9c872013",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 24,
+      "observation": [
+        "三骰组合退出后唯一对手显示-2附属伤害，原主攻击10保留并进入防御；没有无意义目标选择窗口。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔不屈意志响应后生命0",
+      "file": "01-八伤致死攻击进入原受伤响应窗口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔不屈意志响应后生命0/_runs/e2e-1793072168808-u11lt8/01-八伤致死攻击进入原受伤响应窗口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "18f9c52f804341e0e84edbb8cb558929355d66578419e5b82eb431f19a8cbad7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 25,
+      "observation": [
+        "生命5、CP5、待受伤害8与原响应跳过同屏；不屈意志在原手牌区提供出牌入口。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔不屈意志响应后生命0",
+      "file": "02-不屈效果骰在原骰盘待玩家确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔不屈意志响应后生命0/_runs/e2e-1793072168808-u11lt8/02-不屈效果骰在原骰盘待玩家确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "56ba9fba7b4eb17d3096f796676c6139d5626a59531d00201fd620aa9e3c3851",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 26,
+      "observation": [
+        "不屈意志已进入弃牌堆，单骰1在原奖励骰盘待确认；生命5、CP3、待受伤害8保留；无额外新弹窗。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔不屈意志响应后生命0",
+      "file": "03-原伤害事务完成且生命与牌费正确.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔不屈意志响应后生命0/_runs/e2e-1793072168808-u11lt8/03-原伤害事务完成且生命与牌费正确.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "b2668d435140ac3e996b7875f60949f517950e8aa8ca82f0ea046336ba1420d9",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 27,
+      "observation": [
+        "非头盔分支结算生命0、CP3，原失败结算层清楚显示索尔HP0与对手HP50；没有错误保命。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔不屈意志响应后生命1",
+      "file": "01-八伤致死攻击进入原受伤响应窗口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔不屈意志响应后生命1/_runs/e2e-1793072168808-u11lt8/01-八伤致死攻击进入原受伤响应窗口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "06537fe5b40e98a40fc1e6b53a9528da48c12f01b5a8c1f13155a4290acf9048",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 28,
+      "observation": [
+        "另一头盔分支前态生命5、CP5、待受8伤害，原响应窗口及手牌入口可见。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔不屈意志响应后生命1",
+      "file": "02-不屈效果骰在原骰盘待玩家确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔不屈意志响应后生命1/_runs/e2e-1793072168808-u11lt8/02-不屈效果骰在原骰盘待玩家确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "c28297ca5504f17e36b7a9963d9d6d6281e4f1b27189e350c072b0372d88facd",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 29,
+      "observation": [
+        "不屈意志单骰4（头盔）在原骰盘待确认；生命5、CP3、待受8伤害可见，原确认入口清楚。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔不屈意志响应后生命1",
+      "file": "03-原伤害事务完成且生命与牌费正确.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔不屈意志响应后生命1/_runs/e2e-1793072168808-u11lt8/03-原伤害事务完成且生命与牌费正确.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "160ce62d94544871bdbddc1a3f3cb5ec2cd9b1b6964cb7e761e2f3878e809941",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 30,
+      "observation": [
+        "头盔分支后态生命1、CP3，伤害响应与奖励骰已退出；未出现失败结算层。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "file": "01-神锤在敌人处且驭电三枚.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔付费召回和驭电抽牌沿原主动栏与弃牌提示/_runs/e2e-1793072168808-u11lt8/01-神锤在敌人处且驭电三枚.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "66b0129ec16828009e62e4081842b1594e0b5bbdabee01c63ba893a9b3d7dd84",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 31,
+      "observation": [
+        "神锤图标在对手头像旁，驭电3/4；原召回入口可用、飞掷禁用，CP5。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "file": "02-召回成本复用手牌区与当前提示.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔付费召回和驭电抽牌沿原主动栏与弃牌提示/_runs/e2e-1793072168808-u11lt8/02-召回成本复用手牌区与当前提示.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "1738209d1b5d616a440efc01c5e7623b2ca5af82b3990e8f1e5c6f17c64f0ff3",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 32,
+      "observation": [
+        "召回成本沿原手牌区选1张，顶部弃牌提示和取消可见；神锤在对手、CP5、驭电3/4仍保留。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "file": "03-弃牌召回后神锤回归且驭电三至四.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔付费召回和驭电抽牌沿原主动栏与弃牌提示/_runs/e2e-1793072168808-u11lt8/03-弃牌召回后神锤回归且驭电三至四.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "60f7cb5f8954fee1ab602bcf9133987d97e2b764c367ea91a340519405004e03",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 33,
+      "observation": [
+        "弃牌后神锤回自己生命栏上方，驭电3升4，手牌为空；花4驭电抽1牌原主动按钮高亮。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "file": "04-花四驭电抽一牌并禁用重复抽牌.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔付费召回和驭电抽牌沿原主动栏与弃牌提示/_runs/e2e-1793072168808-u11lt8/04-花四驭电抽一牌并禁用重复抽牌.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "3a688c8437570d2afa55ba2e22e3ba81e044a1adf00f1a61a310e7cfbe0b09a0",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 34,
+      "observation": [
+        "抽牌后驭电图标清空、牌库29降28并手牌增加俺也一样，抽牌按钮禁用；神锤仍在自己。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔公共任意改一骰保留旧操作语义",
+      "file": "01-旧固定值和任意编辑各自提示与控件.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔公共任意改一骰保留旧操作语义/_runs/e2e-1793072168808-u11lt8/01-旧固定值和任意编辑各自提示与控件.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "dd687c5ae4e95fa555ce4e8b9c3731054cc45d6b5431beb9c1aa9b3864006ed4",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 35,
+      "observation": [
+        "任意改骰原±控件分布于五骰旁，顶部选择要修改的骰子；未选择时确认禁用，取消可用。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔公共任意改一骰保留旧操作语义",
+      "file": "02-任意编辑保留原加减预览和手动确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔公共任意改一骰保留旧操作语义/_runs/e2e-1793072168808-u11lt8/02-任意编辑保留原加减预览和手动确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "4588917c4c1d6031d788f732691372f24528dd43ef978ca9c8000d67e681a60c",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 36,
+      "observation": [
+        "公共任意改骰显示第一骰2的本地预览和±按钮，完成提示、取消与手动确认可见；与固定4/5分支明确不同。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔公共任意改一骰保留旧操作语义",
+      "file": "03-旧流程提交后只修改一颗骰子.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔公共任意改一骰保留旧操作语义/_runs/e2e-1793072168808-u11lt8/03-旧流程提交后只修改一颗骰子.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "41e46c3815c1212695d009b4cc20124113a19308a51ae7c15d617bcbf3106f19",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 37,
+      "observation": [
+        "任意改骰手动提交后第一骰2，其余四骰1，±和提示退出，CP3；原攻击骰操作恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔公共固定六保留旧操作语义",
+      "file": "01-旧固定值和任意编辑各自提示与控件.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔公共固定六保留旧操作语义/_runs/e2e-1793072168808-u11lt8/01-旧固定值和任意编辑各自提示与控件.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "2d021d1e801e67f98d02a63db96a7be8e517cd75b170566a766eb7b9ad2f1e9d",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 38,
+      "observation": [
+        "公共固定6只显示设6提示和骰子选择，取消可用；无±，保留原固定值流程。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔公共固定六保留旧操作语义",
+      "file": "03-旧流程提交后只修改一颗骰子.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔公共固定六保留旧操作语义/_runs/e2e-1793072168808-u11lt8/03-旧流程提交后只修改一颗骰子.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "8cf7133996461cd3de7fa9bfdf5b63a3b71de61a5708a4b1be043480afcf26b9",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 39,
+      "observation": [
+        "公共固定6后态第一骰6、其余四骰1，CP4；固定提示退出，原骰盘动作恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔奥丁二级空选保留效果骰原确认",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔奥丁二级空选保留效果骰原确认/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "69120921888396d7bfd262382a4d6aa9c0308d346d0fc0ce06ae64bb1439fa1c",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 40,
+      "observation": [
+        "奥丁II升级牌覆盖原槽位，五个攻击骰1、1、4、4、4；总基础伤害6、CP8、生命30可见。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔奥丁二级空选保留效果骰原确认",
+      "file": "02-五颗效果骰与原确认保留结果.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔奥丁二级空选保留效果骰原确认/_runs/e2e-1793072168808-u11lt8/02-五颗效果骰与原确认保留结果.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "4a018e31a755f5095894b0365330cf08a6293bb186637e7a7cc8eef54926ab2b",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 41,
+      "observation": [
+        "奥丁II空选五骰4、4、6、6、6；顶部完整提示选择重掷或确认保留，只有原确认入口，规则板不遮挡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔奥丁二级空选保留效果骰原确认",
+      "file": "03-确认后一次获得三驭电和一点战斗点数.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔奥丁二级空选保留效果骰原确认/_runs/e2e-1793072168808-u11lt8/03-确认后一次获得三驭电和一点战斗点数.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "694aa9e5b81272adec1dc2a113b7575de6f2e79b97d0882b151af535c099b3b7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 42,
+      "observation": [
+        "奥丁II确认后驭电3/4、CP8升9，原主攻击6增9并进入对手防御；重掷提示退出。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔奥丁基础无重掷效果骰原确认",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔奥丁基础无重掷效果骰原确认/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "3817c6609c778be4a68384c9c7c8e379223dbadd21a044251ce7858fc70d691d",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 43,
+      "observation": [
+        "基础奥丁原槽位未覆盖，攻击骰1、1、4、4、4；基础伤害5、CP10、生命30可见。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔奥丁基础无重掷效果骰原确认",
+      "file": "02-五颗效果骰与原确认保留结果.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔奥丁基础无重掷效果骰原确认/_runs/e2e-1793072168808-u11lt8/02-五颗效果骰与原确认保留结果.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "dd4908d0601935a1f6243cd3ffd58a0e011162ce3e77f997fb0400d77adaafc8",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 44,
+      "observation": [
+        "基础奥丁五骰4、4、6、6、6沿原骰盘确认，无II的选择重掷提示与重掷按钮；等级差异正确。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔奥丁基础无重掷效果骰原确认",
+      "file": "03-确认后一次获得三驭电和一点战斗点数.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔奥丁基础无重掷效果骰原确认/_runs/e2e-1793072168808-u11lt8/03-确认后一次获得三驭电和一点战斗点数.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "df772673b53b5c564181e9ced493529925cbcf5c538436f2a5e1132caab1f331",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 45,
+      "observation": [
+        "基础奥丁确认后驭电3/4、CP10升11，主攻击5增8并进入防御；无重掷残留。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔推广彩虹桥投出1沿原效果骰确认",
+      "file": "01-明确加入推广卡的合法主要阶段前态.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔推广彩虹桥投出1沿原效果骰确认/_runs/e2e-1793072168808-u11lt8/01-明确加入推广卡的合法主要阶段前态.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "4c5011582751e50f75ae518399a2cbf0e6c0f6d9c91ffe7dd0fbf1acc121b768",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 46,
+      "observation": [
+        "推广彩虹桥在主要阶段手牌原入口，CP5、牌库29，无状态奖励前置。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔推广彩虹桥投出1沿原效果骰确认",
+      "file": "02-推广卡效果骰原骰盘待确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔推广彩虹桥投出1沿原效果骰确认/_runs/e2e-1793072168808-u11lt8/02-推广卡效果骰原骰盘待确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "0203b7d837bf91815dd1eab056bde5f777567fa9fd7a73c0c17899863c7da8fc",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 47,
+      "observation": [
+        "彩虹桥投1沿原奖励骰盘显示单骰1与确认；下一阶段禁用，彩虹桥位于弃牌堆。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔推广彩虹桥投出1沿原效果骰确认",
+      "file": "03-确认后抽一牌及雷电分支状态奖励.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔推广彩虹桥投出1沿原效果骰确认/_runs/e2e-1793072168808-u11lt8/03-确认后抽一牌及雷电分支状态奖励.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "69dbd26ffdcb83283f46ac2537c9daa366f3af166827762a805f5a4a5ff8ad76",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 48,
+      "observation": [
+        "投1确认后牌库28、抽到俺也一样，CP5且无破防/驭电奖励；原下一阶段恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔推广彩虹桥投出6沿原效果骰确认",
+      "file": "01-明确加入推广卡的合法主要阶段前态.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔推广彩虹桥投出6沿原效果骰确认/_runs/e2e-1793072168808-u11lt8/01-明确加入推广卡的合法主要阶段前态.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "c3f2854988a8ce9b51fe93bd6763f9a72593726e17f73b1c4b7992ee0265b148",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 49,
+      "observation": [
+        "投6分支前同样主要阶段原手牌彩虹桥、CP5、牌库29，未预置应获得奖励。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔推广彩虹桥投出6沿原效果骰确认",
+      "file": "02-推广卡效果骰原骰盘待确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔推广彩虹桥投出6沿原效果骰确认/_runs/e2e-1793072168808-u11lt8/02-推广卡效果骰原骰盘待确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "d1a029c9a4ea5c3b6192e7b62628a85cc938c7e8504b1ec484cb6be6a060f8c5",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 50,
+      "observation": [
+        "彩虹桥投6沿原奖励骰盘显示单骰6闪电与确认；未提前给予奖励，驭电栏尚空。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔推广彩虹桥投出6沿原效果骰确认",
+      "file": "03-确认后抽一牌及雷电分支状态奖励.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔推广彩虹桥投出6沿原效果骰确认/_runs/e2e-1793072168808-u11lt8/03-确认后抽一牌及雷电分支状态奖励.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "d6e803413e49781342e7f51d294d7f51280c49c8f0d740c3ab4154a8b3ad621e",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 51,
+      "observation": [
+        "投6确认后牌库28、抽1牌、破防1/2及驭电2/4同屏；原下一阶段恢复，奖励分支有区别。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔无懈可击响应后生命5",
+      "file": "01-八伤致死攻击进入原受伤响应窗口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔无懈可击响应后生命5/_runs/e2e-1793072168808-u11lt8/01-八伤致死攻击进入原受伤响应窗口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "c9e8862c8092d0e84d4d51586316be6a28d06ba917db79e12e0081e43c961241",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 52,
+      "observation": [
+        "无懈可击在生命5/驭电3/4/CP5、待受8伤害时沿原受伤响应窗口出牌；手牌成本语义可读。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔无懈可击响应后生命5",
+      "file": "03-原伤害事务完成且生命与牌费正确.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔无懈可击响应后生命5/_runs/e2e-1793072168808-u11lt8/03-原伤害事务完成且生命与牌费正确.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "60edb57d1ea010ee6454ac0aa8fe29ad308c58c04af437264c41bbb7535a08f1",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 53,
+      "observation": [
+        "无懈可击后生命保持5、CP5降3、驭电3降1，伤害8→0；原响应确认仍可见。",
+        "本图是防止后等待确认，不按文件名推断整个伤害事务已完成。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "file": "00-同张升级的两个变体以真实规则供选择.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中二级三次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/00-同张升级的两个变体以真实规则供选择.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "e67177a45f9328e708d6f9905c10f5bf46a15f59a4eeb03598d9156da55599b7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 54,
+      "observation": [
+        "原变体选择同时列瓶中闪电II：最多3次/2破防/8伤害/驭电加伤，以及连锁锤击：最多6次；不发动技能在下方。",
+        "各候选真实数值可区分，无生成的泛化占位文案，完整位于屏幕。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中二级三次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "036e14b14b3132f16d6d66de8f9bdc401c6ac219c21ca4f5a6abab901bae793c",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 55,
+      "observation": [
+        "瓶中II覆盖原槽位，四闪电攻击骰满足主变体，基础总伤害8、CP8；升级两个子区域完整。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "file": "02-可选移动窗口保留立即停止入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中二级三次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/02-可选移动窗口保留立即停止入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "bde4d66871998d207a4221bf994e57a514aea1064ba24f15a860e2c3c23ef3e7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 56,
+      "observation": [
+        "瓶中II原结算选择窗口显示唯一对手头像/飞掷至武僧及停止移动；两项完整可点击，无强制执行满3次。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "file": "03-一次飞掷独立扣一生命后可继续或停止.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中二级三次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/03-一次飞掷独立扣一生命后可继续或停止.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "50af4a1debd6d10a77499d953c134b85af7a5f90ea6c342accb54e6d0c1cace4",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 57,
+      "observation": [
+        "瓶中II第一次飞掷后原移动候选切换召回自己P1，并继续保留停止移动；文字、头像无遮挡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "file": "04-达到次数上限或停止后回原结算.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中二级三次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/04-达到次数上限或停止后回原结算.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "f5bdefce56d9e4eec818167fde752ea9e205dd170694a69b5b1881fa8e8465fb",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 58,
+      "observation": [
+        "瓶中II移动链退出后破防2/2、驭电1/4、主伤害8→9，神锤在敌方并有-1反馈；原响应入口恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中基础零次停止沿既有选择窗口逐次移动",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中基础零次停止沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "313989a01866fcd86f88c9036f896e7795f503330388d331b964e8969ee3fd65",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 59,
+      "observation": [
+        "基础瓶中未升级，四闪电攻击骰、基础主伤害7和CP10清晰；原技能槽选择高亮。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中基础零次停止沿既有选择窗口逐次移动",
+      "file": "02-可选移动窗口保留立即停止入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中基础零次停止沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/02-可选移动窗口保留立即停止入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "2dd59ad060020397d11a1555fca42877328e88712408fdba2fff2af3756ec8b8",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 60,
+      "observation": [
+        "基础瓶中同样保留飞掷与停止移动两项，允许零次停止；候选在屏内完整。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔瓶中基础零次停止沿既有选择窗口逐次移动",
+      "file": "04-达到次数上限或停止后回原结算.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔瓶中基础零次停止沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/04-达到次数上限或停止后回原结算.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "60fbae5836edf1a7405f908de9f47d1da3809cafade9232ece9355d03205fda9",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 61,
+      "observation": [
+        "基础瓶中零次停止后神锤仍在自己、对手生命50不变，破防2/2已获得、总伤害7，原响应恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔终极四次沿既有选择窗口逐次移动",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔终极四次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "5d24de63597ef16d9cbcf989a8c5550abfac6a3ba04cc126c57892e32ac040fb",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 62,
+      "observation": [
+        "终极五闪电骰，底部终极能力原槽位高亮，主伤害14、CP10；无错认瓶中II卡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔终极四次沿既有选择窗口逐次移动",
+      "file": "02-可选移动窗口保留立即停止入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔终极四次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/02-可选移动窗口保留立即停止入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "9fd1ee2b848a0378214caca2bf08e62db89b79799c45385f143519a0b6ed6fb7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 63,
+      "observation": [
+        "终极能力沿同一飞掷或召回窗口，仍有停止移动；没有强制4次的新专用流程。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔终极四次沿既有选择窗口逐次移动",
+      "file": "03-一次飞掷独立扣一生命后可继续或停止.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔终极四次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/03-一次飞掷独立扣一生命后可继续或停止.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "966bf78c9b510cc1d7429d442f09bd5e4eb32cc5a8b58e7498d58895021b0f43",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 64,
+      "observation": [
+        "终极第一次飞掷后选择窗口切换召回自己和停止移动，两个原候选完整。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔终极四次沿既有选择窗口逐次移动",
+      "file": "04-达到次数上限或停止后回原结算.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔终极四次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/04-达到次数上限或停止后回原结算.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "4632bee1d4540c76ec32de92829cfe4723cfdff7bcfe511f18fa2f1034403128",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 65,
+      "observation": [
+        "终极移动链结束回主要阶段2，神锤回自己、驭电2/4、破防1/2，敌方-14反馈；移动窗口退出。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁二级四颗效果骰保留六个组合选择/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "ecd2ae9409305dfe8771f7498686c9384afab24db80146c3fa2197ca9eab6da2",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 66,
+      "observation": [
+        "连锁II实际升级卡覆盖原槽位，明确卡面投4骰/选2和3附属伤害；骰盘攻击组合1、1、1、6、6可见。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "file": "02-四颗效果骰先由原骰盘确认.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁二级四颗效果骰保留六个组合选择/_runs/e2e-1793072168808-u11lt8/02-四颗效果骰先由原骰盘确认.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "1a6ed94c688a100d8d921a15cb60fe0b180ffb38165edbe5dfdb15f27e2ac6ed",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 67,
+      "observation": [
+        "连锁II四颗效果骰1、2、4、6在原骰盘待确认；原确认按钮清晰，未直接自动选最高组合。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "file": "03-六个两骰组合供玩家比较.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁二级四颗效果骰保留六个组合选择/_runs/e2e-1793072168808-u11lt8/03-六个两骰组合供玩家比较.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "3ab805bb7f3c64c1ee38d81e9b910e5c9364440a7d90652bbf8f3ea2d920c7e3",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 68,
+      "observation": [
+        "四颗效果骰产生六个组合：3、5、7、6、8、10伤害，骰面与序号都可比较，最下项在屏幕内未裁切。",
+        "本图只覆盖双人唯一附属目标；不能证明2v2多敌目标选择。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "file": "04-玩家选低值组合后三附属伤害与主攻击分别保留.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁二级四颗效果骰保留六个组合选择/_runs/e2e-1793072168808-u11lt8/04-玩家选低值组合后三附属伤害与主攻击分别保留.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "c8cd39818c121de80635063c4cb9b069d1999c9b2b859611e53a385268c3f75b",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 69,
+      "observation": [
+        "选择低值组合后主攻击3保留，唯一对手另外显示-3附属反馈；组合窗口退出进入原防御。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "file": "01-原角色板技能选择与升级牌面.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁锤击六次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/01-原角色板技能选择与升级牌面.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "5b497d842c2a4cdcffdc472d7eb7fcb668587db5693406979e8be303083b6fa2",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 70,
+      "observation": [
+        "连锁锤击分支前为三闪电两神锤，瓶中II卡下部连锁锤击真实规则可读；未展示主8伤害作为该分支基础。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "file": "02-可选移动窗口保留立即停止入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁锤击六次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/02-可选移动窗口保留立即停止入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "40db1ad09089a53e015400c2d1c6f60afbba892c2960b999d1cc7d7971eb86d2",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 71,
+      "observation": [
+        "连锁锤击原移动窗口列飞掷至武僧和停止移动，唯一对手头像与P2标识清晰。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "file": "03-一次飞掷独立扣一生命后可继续或停止.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁锤击六次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/03-一次飞掷独立扣一生命后可继续或停止.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "d568c289e87c895b17bb5c0b1c73ec76c128a3f69a44fa811abfe59b5a03d6a6",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 72,
+      "observation": [
+        "一次飞掷后候选变为召回索尔P1，并保留停止移动；没有错误地仍指向对手或强制下一次。",
+        "背景被选择层弱化，独立1点伤害数值须权威后态核对。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "file": "04-达到次数上限或停止后回原结算.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔连锁锤击六次沿既有选择窗口逐次移动/_runs/e2e-1793072168808-u11lt8/04-达到次数上限或停止后回原结算.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "85b957c7663727389ae8b7735647e86c12cc9cc222e874ff9ec8c60c9af2966a",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 73,
+      "observation": [
+        "六次移动后对手生命47、自己驭电3/4、神锤回自己，进入主要阶段2；没有额外第7次选择窗口。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔雷电之轮二级四骰沿原防御入口",
+      "file": "01-敌方八伤攻击前态与防御原入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔雷电之轮二级四骰沿原防御入口/_runs/e2e-1793072168808-u11lt8/01-敌方八伤攻击前态与防御原入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "96ee0bd43af8a8779f2307e5f5781ece860584c897d6a8caa8f742e1469f5139",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 74,
+      "observation": [
+        "敌方冲拳原攻击展示层完整显示6/7/8伤害分档，开始防御按钮清晰，未使用测试专用入口。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔雷电之轮二级四骰沿原防御入口",
+      "file": "02-实际投出对应数量防御骰.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔雷电之轮二级四骰沿原防御入口/_runs/e2e-1793072168808-u11lt8/02-实际投出对应数量防御骰.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "b3a393ff8f77be4807b3e63888216727df0f4da55941caf8233f345fc63cf8a2",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 75,
+      "observation": [
+        "防御II原槽位被升级卡覆盖，右侧实际显示四颗骰子，原投掷/确认入口及待受8伤害可见。",
+        "静态图证明四骰呈现；是否已经实际投掷由对应输入轨迹/权威状态另核。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔雷电之轮二级四骰沿原防御入口",
+      "file": "03-防御减伤和每组神锤移动后结算生命.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔雷电之轮二级四骰沿原防御入口/_runs/e2e-1793072168808-u11lt8/03-防御减伤和每组神锤移动后结算生命.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "40ff1d55fa89076343fb5b2cc5d096f3bfd5bfc394e24aba0d6be59bb153e47b",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 76,
+      "observation": [
+        "II防御后生命40降32、CP8，驭电1/4、神锤回自己，敌方49且-1反馈；原防御流程结束。",
+        "四神锤无头盔，防御未减伤；两组神锤移动的最终位置与奖励可见，逐次次序另核输入/事件。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔雷电之轮基础三骰沿原防御入口",
+      "file": "01-敌方八伤攻击前态与防御原入口.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔雷电之轮基础三骰沿原防御入口/_runs/e2e-1793072168808-u11lt8/01-敌方八伤攻击前态与防御原入口.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "353359230c4ddd641bed52c73b22dc2c90357298be94e32316e1f072118b6dde",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 77,
+      "observation": [
+        "基础同样从敌方冲拳原攻击展示层开始防御，规则卡和按钮完整，没有跳过玩家原入口。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔雷电之轮基础三骰沿原防御入口",
+      "file": "02-实际投出对应数量防御骰.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔雷电之轮基础三骰沿原防御入口/_runs/e2e-1793072168808-u11lt8/02-实际投出对应数量防御骰.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "b08891e2de8e2e9a027ca57a63efa25775b8bc2c8f9c4f644a35f631a8bc7aa7",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 78,
+      "observation": [
+        "基础防御仅三骰1、1、4，原投掷/确认可见，待受伤害8、生命40；与II四骰明确不同。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔雷电之轮基础三骰沿原防御入口",
+      "file": "03-防御减伤和每组神锤移动后结算生命.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-rule-interactions.e2e/索尔雷电之轮基础三骰沿原防御入口/_runs/e2e-1793072168808-u11lt8/03-防御减伤和每组神锤移动后结算生命.png",
+      "run": "e2e-1793072168808-u11lt8",
+      "sha256": "afaa75b406a1dfb401a03cd1ece231be309712a75a9d57dbc8b2c7399bcf2fb9",
+      "sourceRevision": "876167f558d0ac5677abcfba950947c3b874b70236427a302976995146245588",
+      "index": 79,
+      "observation": [
+        "基础防御后生命40降34，CP10，对手显示-1且神锤在敌方；两锤一头盔的减2和飞掷后态与规则一致。",
+        "生命瞬时伤害反馈暂覆盖部分栏背景但34仍清楚；这不是提示板长期遮挡。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔当之无愧选择五后取消不提交改骰",
+      "file": "01-当之无愧取消前选择五但尚未改骰.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793072738337-8lyin0/01-当之无愧取消前选择五但尚未改骰.png",
+      "run": "e2e-1793072738337-8lyin0",
+      "sha256": "66fb40a741ea33130adb7ab77f8d9ea51618f1da0d0282b610a0c250429cc7fc",
+      "sourceRevision": "fe86092671de0d03ede4fb966fc2a5b9f9359cf6476784dfdff1149526aa7f4e",
+      "index": 80,
+      "observation": [
+        "补5独立run：4/5固定候选中5金色，顶部“选择要设为5的骰子”完整；五骰仍1，取消可用，无加减。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔当之无愧选择五后取消不提交改骰",
+      "file": "02-取消改骰后骰面保持且卡牌资源退回.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793072738337-8lyin0/02-取消改骰后骰面保持且卡牌资源退回.png",
+      "run": "e2e-1793072738337-8lyin0",
+      "sha256": "3e789f86ae2d0fc58348009f7de1e117241e0ab277162c35646b170c0f715091",
+      "sourceRevision": "fe86092671de0d03ede4fb966fc2a5b9f9359cf6476784dfdff1149526aa7f4e",
+      "index": 81,
+      "observation": [
+        "补5独立run：取消后五骰仍1、CP4返5、当之无愧回手；交互候选退出，原骰盘操作恢复。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    },
+    {
+      "case": "索尔当之无愧选择五后取消不提交改骰",
+      "file": "03-重新出牌选择五后原固定流程完成改骰.png",
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793072738337-8lyin0/03-重新出牌选择五后原固定流程完成改骰.png",
+      "run": "e2e-1793072738337-8lyin0",
+      "sha256": "f40266a3b608a723f85b918e5768582245d3e066a139e3d2a32b04a0d8c9e82b",
+      "sourceRevision": "fe86092671de0d03ede4fb966fc2a5b9f9359cf6476784dfdff1149526aa7f4e",
+      "index": 82,
+      "observation": [
+        "补充独立run的第二骰变为5，其余四骰仍1，CP为4；候选和修改提示退出。",
+        "画面符合固定5单骰改值后态；即时提交需结合该run输入/权威后态。"
+      ],
+      "score": 94,
+      "verdict": "PASS",
+      "actualImageOpened": true
+    }
+  ],
+  "visualVerdict": "PASS",
+  "boundaries": [
+    "83张均通过view_image实际逐张查看，非文件存在或DOM代替读图。",
+    "本包仅证明所摄1920x1080双人态与对应局部玩家流程；不证明2v2多敌目标、未摄升级分支或所有公共卡权限。",
+    "点击即提交、退款、规则数值与次序应结合本run输入及权威状态；静态画面观察未越权推断。",
+    "四公共卡规则权限/时机实证失败仍存在，整体索尔审计为REVISE；visualVerdict仅指83张局部图面。"
+  ],
+  "sharedRuleResiduals": [
+    {
+      "card": "09 下次一定",
+      "issue": "一名玩家减伤被self+实际受伤者权限限制，2v2队友代用被拒；原roll-phase卡却配置instant。",
+      "evidence": "common-card-authorization-probe-20261027.json"
+    },
+    {
+      "card": "11 不愧是我",
+      "issue": "你或队友重掷被requireIsRoller/self限制，2v2队友打牌被拒。",
+      "evidence": "common-card-authorization-probe-20261027.json"
+    },
+    {
+      "card": "14 我又行了",
+      "issue": "原仅进攻阶段，正式checkPlayCard在防御阶段仍ok；受益者也被限定自己骰主。",
+      "evidence": "common-card-authorization-probe-20261027.json"
+    },
+    {
+      "card": "16 就这",
+      "issue": "一名玩家防御加掷被限定自身骰主，队友代用拒绝。",
+      "evidence": "common-card-authorization-probe-20261027.json"
+    }
+  ],
+  "testExpectationCaveats": [
+    {
+      "path": "src/games/dicethrone/__tests__/card-playCondition-audit.test.ts",
+      "lines": [
+        245,
+        252
+      ],
+      "observed": "测试名写必须当前防御掷骰者，快照强制requireIsRoller:true。",
+      "boundary": "只能证明当前自用限制未回归；原就这为一名玩家，不能把该绿测试当成队友代用权限或原规则一致性证据。"
+    },
+    {
+      "path": "src/games/dicethrone/__tests__/card-flick-locked-dice.test.ts",
+      "lines": [
+        234,
+        260
+      ],
+      "observed": "对手于当前投掷者确认骰后打我又行了，测试预期无交互、卡留手、CP不扣。",
+      "boundary": "把整个对手代用行为拒绝写成预期；原卡受益者一名玩家，不能据此证明角色权限正确。真实入口窗口是否提供合法出牌还需与受益者选择及响应队列一起修。"
+    },
+    {
+      "path": "src/games/dicethrone/__tests__/card-flick-locked-dice.test.ts",
+      "lines": [
+        205,
+        231
+      ],
+      "observed": "同文件不愧是我拒绝对手代用只覆盖敌方；原卡你或队友确实不包含敌人。",
+      "boundary": "该敌方拒绝用例可以保留，但不能推广为2v2队友也应拒绝；已有独立队友checkPlayCard反例。"
+    }
+  ],
+  "historicalFailures": [
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793068320321-gbcufm/06-奥丁效果骰等待选择重掷骰子.png",
+      "sha256": "29756df3611096ee5000e2c7f5598b65e4c1f4483004cf56668991043e34cbac",
+      "run": "e2e-1793068320321-gbcufm",
+      "actualImageOpened": true,
+      "observation": "之前逐张实审：选择提示在右侧提示板中段，约x1340..1680/y334..388，遮住驭电标题及规则；当时已反馈返工。",
+      "score": 60,
+      "verdict": "REVISE",
+      "resolution": "已在最终run索引12、13、41实际复看：提示改在骰盘上方，未挡提示板。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793068320321-gbcufm/07-使用原掷骰操作提交两颗所选骰子.png",
+      "sha256": "e632e60275f6dd464f0c40ba847730a0e3216a7c2f277fcc8fb403b7781ab808",
+      "run": "e2e-1793068320321-gbcufm",
+      "actualImageOpened": true,
+      "observation": "之前逐张实审：已选两颗时提示同样覆盖驭电规则区，选中态不能通过图面验收。",
+      "score": 60,
+      "verdict": "REVISE",
+      "resolution": "最终run索引13的新原图已实际复看并通过。"
+    }
+  ],
+  "coverageSummary": {
+    "inventory": "21能力语义对象/34实体卡/7状态及伴随动作的原规则预期见独立规则表；该表是审计基线，不是新增实现真相源。",
+    "visual": "本报告83张覆盖主5链及扩展17链，含另run补固定5链；未由截图覆盖的对象保持静态/规则测试证据分类，不声称全量图审通过。",
+    "sourceIdentity": "每项保留PNG SHA256及同源sidecar sourceRevision；80张主run876167…，3张补run fe8609…；不同run没有混为一个源码快照。",
+    "parentSourceScope": "根代理负责最终源码依赖边界和冻结期间差异核实；本报告不以无关工作区变动否认或代替该核实。"
+  }
+}

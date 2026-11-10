@@ -1,0 +1,787 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-25T01-35-43-407Z",
+  "points": [],
+  "boundaries": [],
+  "logs": [
+    {
+      "at": "2026-09-25T01:36:03.671Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-25T01:36:03.690Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-25T01:36:03.768Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-25T01:36:03.896Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-25T01:36:06.250Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-25T01:36:08.367Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-25T01:36:08.366Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-25T01:36:08.369Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-25T01:36:08.367Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-25T01:36:08.372Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-25T01:36:08.372Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-25T01:36:09.717Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-25T01:36:09.684Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-25T01:36:09.717Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-25T01:36:09.685Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-25T01:36:10.767Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 24.8 FPS | P95 帧时 33.4ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:22.974Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 46.2 FPS | P95 帧时 83.4ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-25T01:36:25.074Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-25T01:36:25.041Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":16673}"
+    },
+    {
+      "at": "2026-09-25T01:36:25.078Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-25T01:36:25.041Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":15356}"
+    },
+    {
+      "at": "2026-09-25T01:36:27.397Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-25T01:36:27.379Z\",\"stage\":\"load-http-fallback-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":17695}"
+    },
+    {
+      "at": "2026-09-25T01:36:27.509Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 35, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-25T01:36:27.509Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-25T01:36:27.510Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:27.510Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-25T01:36:27.510Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-25T01:36:27.555Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 35, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-25T01:36:27.667Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r7\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-25T01:36:27.667Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r7, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:28.386Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\",\"2\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-25T01:36:28.386Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: true, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:29.243Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:30.070Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:32.161Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 12.9 FPS | P95 帧时 349.9ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:37.123Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 23.5 FPS | P95 帧时 83.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:39.213Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-25T01:36:39.213Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:39.258Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:39.908Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-25T01:36:40.614Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 17.5 FPS | P95 帧时 333.4ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:42.748Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-25T01:36:42.749Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:42.892Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:43.171Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-25T01:36:43.710Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 19.0 FPS | P95 帧时 316.6ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:43.995Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-25T01:36:43.995Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:44.102Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-25T01:36:45.030Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-25T01:36:45.204Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-25T01:36:45.204Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-25T01:36:45.204Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-skipped {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll, hasContainer: true}"
+    },
+    {
+      "at": "2026-09-25T01:36:45.314Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] cleanup {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll, hadEngine: false}"
+    },
+    {
+      "at": "2026-09-25T01:36:45.314Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] init-start {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll}"
+    },
+    {
+      "at": "2026-09-25T01:36:48.016Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 14.0 FPS | P95 帧时 166.7ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:48.397Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/xia"
+    },
+    {
+      "at": "2026-09-25T01:36:48.397Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-25T01:36:48.397Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-25T01:36:48.397Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-25T01:36:48.402Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/number-blank"
+    },
+    {
+      "at": "2026-09-25T01:36:48.403Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/might"
+    },
+    {
+      "at": "2026-09-25T01:36:48.403Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/speed"
+    },
+    {
+      "at": "2026-09-25T01:36:48.403Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/knowledge"
+    },
+    {
+      "at": "2026-09-25T01:36:48.403Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/markers/sanity"
+    },
+    {
+      "at": "2026-09-25T01:36:48.403Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/anita-hernandez"
+    },
+    {
+      "at": "2026-09-25T01:36:48.403Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/father-warren-leung"
+    },
+    {
+      "at": "2026-09-25T01:36:48.416Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/item-front-atlas"
+    },
+    {
+      "at": "2026-09-25T01:36:48.416Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/omen-front-atlas"
+    },
+    {
+      "at": "2026-09-25T01:36:48.416Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "at": "2026-09-25T01:36:48.521Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "at": "2026-09-25T01:36:48.522Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/tokens/explorers/anita-hernandez"
+    },
+    {
+      "at": "2026-09-25T01:36:48.530Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "at": "2026-09-25T01:36:48.530Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/tokens/explorers/father-warren-leung"
+    },
+    {
+      "at": "2026-09-25T01:36:48.530Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-omen"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-item"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-event"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/ui/trait-track-0-9"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-omen"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-item"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/back-event"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/anita-hernandez"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/explorers/father-warren-leung"
+    },
+    {
+      "at": "2026-09-25T01:36:48.531Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/player-reference-zh-front"
+    },
+    {
+      "at": "2026-09-25T01:36:48.725Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:48.863Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/speed.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:48.863Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/sanity.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:48.894Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:48.991Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/knowledge.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:48.992Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/might.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:49.350Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:49.481Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:49.481Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:49.546Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:50.010Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:50.974Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:51.108Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 19.4 FPS | P95 帧时 100.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:36:51.227Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:51.237Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:51.301Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-front.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:51.359Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:51.607Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:51.910Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:36:55.982Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 26.1 FPS | P95 帧时 83.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:37:00.825Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 25.5 FPS | P95 帧时 100.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:37:03.341Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-front-atlas"
+    },
+    {
+      "at": "2026-09-25T01:37:03.341Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/cards/event-front-atlas"
+    },
+    {
+      "at": "2026-09-25T01:37:03.341Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/tokens/explorers/isa-valencia"
+    },
+    {
+      "at": "2026-09-25T01:37:03.341Z",
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "at": "2026-09-25T01:37:03.645Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:37:05.652Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:37:06.111Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 20.6 FPS | P95 帧时 116.7ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:37:06.284Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/event-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-25T01:38:27.714Z",
+      "type": "warning",
+      "text": "WARNING: Multiple instances of Three.js being imported."
+    },
+    {
+      "at": "2026-09-25T01:38:27.876Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] create-resolved {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll, cancelled: false}"
+    },
+    {
+      "at": "2026-09-25T01:38:27.876Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SOURCE] engine-ready {testId: betrayal-house-dice-physics-source, canvasTestId: betrayal-house-dice-box-canvas-0---1790300205021, diceLength: 3, motionType: roll}"
+    },
+    {
+      "at": "2026-09-25T01:38:28.022Z",
+      "type": "warning",
+      "text": "[.WebGL-0xf8c2133dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-25T01:38:28.022Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-start"
+    },
+    {
+      "at": "2026-09-25T01:38:28.056Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-start"
+    },
+    {
+      "at": "2026-09-25T01:38:28.065Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-simulate-complete"
+    },
+    {
+      "at": "2026-09-25T01:38:29.344Z",
+      "type": "warning",
+      "text": "[.WebGL-0xf8c2133dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-25T01:38:29.585Z",
+      "type": "warning",
+      "text": "[.WebGL-0xf8c2133dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-25T01:38:29.992Z",
+      "type": "warning",
+      "text": "[.WebGL-0xf8c2133dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    },
+    {
+      "at": "2026-09-25T01:38:40.492Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 4.6 FPS | P95 帧时 466.7ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-25T01:38:43.248Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-visible-animation-complete"
+    },
+    {
+      "at": "2026-09-25T01:38:43.541Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] contained-throw-complete"
+    },
+    {
+      "at": "2026-09-25T01:38:43.541Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-apply-final-values"
+    },
+    {
+      "at": "2026-09-25T01:38:43.725Z",
+      "type": "warning",
+      "text": "[DEBUG-DICE-SETTLE] roll-complete"
+    },
+    {
+      "at": "2026-09-25T01:38:45.117Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 12.6 FPS | P95 帧时 416.6ms — 严重掉帧"
+    }
+  ],
+  "failures": [
+    {
+      "message": "real player flow script threw before completing",
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"betrayal-inventory-omen-book-magnify\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" title=\"放大查看书本\" aria-label=\"放大查看书本\" data-testid=\"betrayal-inventory-omen-book-magnify\" class=\"betrayal-inventory-card-magnify pointer-events-auto absolute right-1 top-1 h-7 w-7 z-[80] inline-flex items-center justify-center rounded-[5px] border border-[rgba(238,204,126,0.52)] bg-[rgba(18,15,12,0.86)] text-[#f3dfab] shadow-[0_8px_18px_rgba(0,0,0,0.34)] transition hover:border-[#f1d68d] hover:bg-[rgba(35,27,18,0.94)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring…>…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"relative flex-1\"></div> from <button type=\"button\" aria-pressed=\"false\" data-touch-inspect-enabled=\"true\" data-roll-modifier-available=\"true\" data-event-roll-book-available=\"true\" data-testid=\"betrayal-inventory-omen-book\" title=\"书本 · 下一次非战斗检定可用知识替换；知识检定 +1 · 点击选择\" class=\"pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed focus-visible:ring-0 z-30\">…</button> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"relative flex-1\"></div> from <button type=\"button\" aria-pressed=\"false\" data-touch-inspect-enabled=\"true\" data-roll-modifier-available=\"true\" data-event-roll-book-available=\"true\" data-testid=\"betrayal-inventory-omen-book\" title=\"书本 · 下一次非战斗检定可用知识替换；知识检定 +1 · 点击选择\" class=\"pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed focus-visible:ring-0 z-30\">…</button> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    44 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"relative flex-1\"></div> from <button type=\"button\" aria-pressed=\"false\" data-touch-inspect-enabled=\"true\" data-roll-modifier-available=\"true\" data-event-roll-book-available=\"true\" data-testid=\"betrayal-inventory-omen-book\" title=\"书本 · 下一次非战斗检定可用知识替换；知识检定 +1 · 点击选择\" class=\"pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed focus-visible:ring-0 z-30\">…</button> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "stack": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"betrayal-inventory-omen-book-magnify\"]')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" title=\"放大查看书本\" aria-label=\"放大查看书本\" data-testid=\"betrayal-inventory-omen-book-magnify\" class=\"betrayal-inventory-card-magnify pointer-events-auto absolute right-1 top-1 h-7 w-7 z-[80] inline-flex items-center justify-center rounded-[5px] border border-[rgba(238,204,126,0.52)] bg-[rgba(18,15,12,0.86)] text-[#f3dfab] shadow-[0_8px_18px_rgba(0,0,0,0.34)] transition hover:border-[#f1d68d] hover:bg-[rgba(35,27,18,0.94)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring…>…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"relative flex-1\"></div> from <button type=\"button\" aria-pressed=\"false\" data-touch-inspect-enabled=\"true\" data-roll-modifier-available=\"true\" data-event-roll-book-available=\"true\" data-testid=\"betrayal-inventory-omen-book\" title=\"书本 · 下一次非战斗检定可用知识替换；知识检定 +1 · 点击选择\" class=\"pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed focus-visible:ring-0 z-30\">…</button> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"relative flex-1\"></div> from <button type=\"button\" aria-pressed=\"false\" data-touch-inspect-enabled=\"true\" data-roll-modifier-available=\"true\" data-event-roll-book-available=\"true\" data-testid=\"betrayal-inventory-omen-book\" title=\"书本 · 下一次非战斗检定可用知识替换；知识检定 +1 · 点击选择\" class=\"pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed focus-visible:ring-0 z-30\">…</button> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    44 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"relative flex-1\"></div> from <button type=\"button\" aria-pressed=\"false\" data-touch-inspect-enabled=\"true\" data-roll-modifier-available=\"true\" data-event-roll-book-available=\"true\" data-testid=\"betrayal-inventory-omen-book\" title=\"书本 · 下一次非战斗检定可用知识替换；知识检定 +1 · 点击选择\" class=\"pointer-events-auto relative w-full overflow-visible text-left outline-none transition focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed focus-visible:ring-0 z-30\">…</button> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at playRabbitAndEndTurn (D:\\gongzuo\\webgame\\BoardGame\\temp\\betrayal-full-tutorial-video.mjs:398:78)\n    at async run (D:\\gongzuo\\webgame\\BoardGame\\temp\\betrayal-full-tutorial-video.mjs:680:5)",
+      "lastPoint": null,
+      "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-25T01-35-43-407Z\\failure.png",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cpath%20d%3D%22M8%206%20L8%2021%20L11%2018%22%20fill%3D%22none%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 6 3, default; } #game-cursor-scope button, #game-cursor-scope a, #game-cursor-scope [role=\"button\"], #game-cursor-scope [style*=\"cursor: pointer\"], #game-cursor-scope [style*=\"cursor:pointer\"], #game-cursor-scope .cursor-pointer { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%",
+        "boardVisible": true,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": "view-book",
+        "overlay": {
+          "visible": true,
+          "text": "桌面端先把鼠标悬浮到书本本体，右上角才会出现放大按钮，再点它查看牌面；触屏设备请长按书本本体放大查看。长按只用于读牌，不会触发使用书本。读清牌面后关闭：本次非战斗检定可以花费 1 点神志改用知识。上一步下一步",
+          "rect": {
+            "x": 8,
+            "y": 355,
+            "width": 384,
+            "height": 268
+          }
+        },
+        "tutorialNext": {
+          "visible": true,
+          "disabled": false,
+          "text": "下一步",
+          "rect": {
+            "x": 106,
+            "y": 567,
+            "width": 266,
+            "height": 36
+          }
+        },
+        "highlight": {
+          "target": "betrayal-inventory-omen-book",
+          "found": true,
+          "visible": true,
+          "rect": {
+            "x": 12,
+            "y": 635,
+            "width": 62,
+            "height": 117
+          }
+        },
+        "discoveryPanel": {
+          "visible": true,
+          "text": "事件牌 标本剥制 结果已公开 受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物事件效果：力量检定 4：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物●●●●211力量检定总点数 4骰面合计 4｜加值 0｜总点数 4骰面合计 4/加值 0骰面合计 4｜加值 0｜总点数 4无加值力量检定无加值骰面合计 4｜加值 0｜总点数 4总点数 4确认 0/1",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 1366,
+            "height": 768
+          }
+        },
+        "discoveryConfirm": {
+          "visible": true,
+          "disabled": false,
+          "text": "确认 0/1",
+          "rect": {
+            "x": 617,
+            "y": 671,
+            "width": 132,
+            "height": 62
+          },
+          "pendingCardResolutionId": null,
+          "cardConfirmed": null,
+          "cardRequired": null,
+          "eventConfirmed": "0",
+          "eventRequired": "1",
+          "eventReadable": "true"
+        },
+        "rollContinue": null,
+        "recentRollPanel": {
+          "visible": true,
+          "text": "●●●●211力量检定总点数 4骰面合计 4｜加值 0｜总点数 4骰面合计 4/加值 0骰面合计 4｜加值 0｜总点数 4无加值力量检定无加值骰面合计 4｜加值 0｜总点数 4总点数 4",
+          "rect": {
+            "x": 563,
+            "y": 178,
+            "width": 560,
+            "height": 380
+          }
+        },
+        "scenarioReader": null,
+        "tutorial": {
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "manifestRevision": 7,
+          "stepIndex": 17,
+          "stepId": "view-book",
+          "infoStep": true,
+          "requireAction": null,
+          "allowedCommands": null,
+          "aiActions": null,
+          "storedAiActions": null
+        },
+        "tutorialContext": {
+          "isBoardMounted": true,
+          "isControllerReady": true,
+          "active": true,
+          "manifestId": "basic-setup-and-turn",
+          "stepIndex": 17,
+          "stepId": "view-book",
+          "stepAiActionCount": 0,
+          "aiActionCount": 0
+        },
+        "core": {
+          "phase": "preHaunt",
+          "currentPlayer": "0",
+          "activePlayerId": null,
+          "activeRoomId": "ground-north",
+          "currentExplorerRoomId": "ground-north",
+          "recommendedAction": "endTurn",
+          "scenarioRuntime": {
+            "hauntTriggered": false,
+            "hauntScenarioCardId": null,
+            "hauntRevealerPlayerId": null,
+            "traitorPlayerId": null,
+            "mummyKnowledgeTokenCount": null,
+            "mummyTrueNameFound": null,
+            "mummyBanishmentSpellLearned": null
+          },
+          "pendingCardResolution": null,
+          "pendingCardResolutionQueueLength": 0,
+          "pendingEventRollResolution": {
+            "rollId": "0-标本剥制-1790300205021",
+            "playerId": "0",
+            "requiredPlayerIds": [
+              "0"
+            ],
+            "acknowledgedPlayerIds": [],
+            "requiresAcknowledgement": true
+          },
+          "pendingDamageAllocation": null,
+          "recentRoll": {
+            "id": "0-标本剥制-1790300205021",
+            "kind": "eventTraitCheck",
+            "playerId": "0",
+            "dice": [
+              2,
+              1,
+              1
+            ],
+            "sourceTitle": "标本剥制",
+            "label": null,
+            "latestLabel": "受到 1 点物理伤害；放置障碍物",
+            "acknowledgedPlayerIds": null,
+            "requiredPlayerIds": null
+          }
+        }
+      }
+    }
+  ]
+}

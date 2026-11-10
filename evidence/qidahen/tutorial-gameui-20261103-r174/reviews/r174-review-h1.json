@@ -1,0 +1,108 @@
+{
+  "reviewer": "/root/r174_h1",
+  "status": "PASS",
+  "score": 95,
+  "issues": [],
+  "actualReadCount": 5,
+  "media": [
+    {
+      "id": "training-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/49-training-target.png",
+      "sha256": "e3b01a89f84d748cdd2741543c3a211d5095176648bf6c600a0047ffc7062ac9",
+      "status": "PASS",
+      "observation": "训练教程说明位于目标左上方，叶赫部当前推荐炮兵以贴身白边呈现，旁边绿色步兵候选可辨认，右侧显示训练进度，底部半露手牌符合约定且未遮挡推荐炮兵。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "推荐炮兵本体、等级和贴身白边完整可见。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "教程要求直接选择炮兵，训练进度与对象操作分工清楚。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "说明、叶赫部军队和右侧进度分组可辨，固定手牌未侵占当前推荐。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "地图、兵牌、阵营标记和牌面均已渲染，未见报错或破图。"
+        }
+      ]
+    },
+    {
+      "id": "training-pan",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/50-training-pan.png",
+      "sha256": "cf83f40aec3622cdfd8802a9458913678c5b31b55a020165b72e5f363861e586",
+      "status": "PASS",
+      "observation": "地图平移后山西及周边合法训练兵牌以绿色贴边呈现，本次查看的骑兵完整可辨，教程说明与固定进度继续可读，推荐炮兵随世界层移至画面上沿属于主动浏览约定。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "本次浏览的山西骑兵和周边候选本体完整可见，未被手牌或说明遮住。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "绿色兵牌仍直接承载候选操作，右侧进度保持可辨。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "固定轮盘、手牌与地图分层，世界层平移没有挤压固定操作区。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "地图及兵牌素材完整，无报错或破图。"
+        }
+      ]
+    },
+    {
+      "id": "training-second-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/51-training-second-target.png",
+      "sha256": "4cb7839d7d6bc5a83af38296d1914b70062bb4c5c6116fa2e555443e751b83fc",
+      "status": "PASS",
+      "observation": "叶赫部第二次训练的推荐步兵白边完整贴合兵牌，旁侧绿色步兵仍是可选候选，炮兵已不带绿色边，说明位于部队左上方且进度显示已完成一次，下一步选择清楚。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "白边推荐步兵及旁侧绿色候选均完整可辨。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "推荐白边、合法候选绿边与已训练炮兵的普通边界清楚区分。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "教程说明没有盖住推荐兵牌，阵营、城名、军队与进度各有承载。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "地图兵牌和固定牌区均正常渲染，未见破图或错误提示。"
+        }
+      ]
+    }
+  ],
+  "readCountMeaning": "实际读取五张原始整屏，其中三张进入媒体审查、一张当前征兵图仅作基线、一张旧训练图仅作基线。",
+  "scoreBreakdown": {
+    "taskClarity": 20,
+    "visualHierarchy": 14,
+    "objectRecognition": 15,
+    "stateAndAction": 14,
+    "layoutIntegrity": 14,
+    "assetIntegrity": 9,
+    "ergonomics": 9
+  },
+  "scopeLimit": "仅裁决本批三张训练目标图；征兵模式及结束按钮不在这些目标选择态中，本批不据此宣称其视觉通过。图片不单独证明规则数值和点击结果。",
+  "behaviorSupplement": "行为记录中训练目标步骤包含自由平移恢复其它候选且状态不变的通过断言；本批实际平移整图直接可见其它候选，返回后的第二次训练图直接可见推荐本体。"
+}

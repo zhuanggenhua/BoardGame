@@ -1,0 +1,74 @@
+{
+  "verdict": "PASS",
+  "score": 96,
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "image_acceptance_audit",
+    "subagentId": "01a12ec7-36e1-7421-a835-ff567f2b1bf0",
+    "parentConfirm": "父代理核对子代理三条观察后，与本轮托盘不叠横幅、无托盘才出横幅的合同一致"
+  },
+  "target_requirements": [
+    {
+      "requirement": "轮盘进攻调度弃牌一开始就有托盘时，不要再叠顶部操作横幅",
+      "status": "PASS",
+      "evidence": "前态底部可见进攻调度弃牌托盘与确认弃牌，顶部没有操作横幅，底部三张手牌牌面可见。"
+    },
+    {
+      "requirement": "势力行动支付托盘出现时不要叠横幅，托盘也不重复说明效果或操作方法",
+      "status": "PASS",
+      "evidence": "中态底部可见赐印招安支付托盘、确认执行与取消，顶部没有操作横幅，托盘内无点击手牌类操作说明。"
+    },
+    {
+      "requirement": "没有底部托盘时，才显示统一横幅选择弃置的手牌",
+      "status": "PASS",
+      "evidence": "后态顶部横幅为选择弃置的手牌，底部没有手牌交互托盘，右侧仅有高第弃牌调度与跳过。"
+    }
+  ],
+  "media": [
+    {
+      "path": "media/前态-轮盘进攻调度托盘弃牌无横幅.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "底部进攻调度弃牌托盘可见并含确认弃牌按钮，顶部没有操作横幅，底部三张手牌牌面可见，地点悬浮未挡住托盘与确认按钮，未见教程遮罩与页面报错。"
+    },
+    {
+      "path": "media/中态-势力行动托盘弃牌无横幅.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "底部赐印招安支付托盘可见并含确认执行与取消按钮，顶部没有操作横幅，托盘内无点击手牌类操作说明，底部三张手牌牌面可见，未见教程遮罩。"
+    },
+    {
+      "path": "media/后态-高第无托盘显示选择弃置的手牌横幅.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶部操作横幅显示选择弃置的手牌，底部没有手牌交互托盘，右侧仅有高第弃牌调度与跳过按钮且无大段效果复述，底部三张手牌牌面可见，未见教程遮罩。"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    {
+      "slot": "轮盘弃牌托盘",
+      "status": "PASS",
+      "note": "前态托盘承担弃牌确认，顶部没有再叠操作横幅。"
+    },
+    {
+      "slot": "势力行动支付托盘",
+      "status": "PASS",
+      "note": "中态托盘只保留进度与确认取消，没有操作说明。"
+    },
+    {
+      "slot": "高第弃牌横幅",
+      "status": "PASS",
+      "note": "后态没有托盘，才出现选择弃置的手牌横幅。"
+    },
+    {
+      "slot": "地点悬浮",
+      "status": "PASS",
+      "note": "前态地点悬浮残留未挡住托盘与确认按钮。"
+    }
+  ],
+  "issues": []
+}

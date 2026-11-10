@@ -1,10 +1,12 @@
 import {expect, test, type Page} from '@playwright/test';
-import {writeFile} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
 import {GameTransportClient} from '../../src/engine/transport/client';
 import {initContext, getGameServerBaseURL, joinMatchViaAPI, seedMatchCredentials} from '../helpers/common';
 import {getMatchState} from '../helpers/state-injection';
 import {chooseFateIdentity} from './identitySelection';
 import {captureEvidenceSourceIdentity,releaseSourceSession,startSourceSession} from '../framework/sourceIdentity';
+import {FATE_ATTACK_BY_ID} from '../../src/games/fate-domination/data';
 
 test.use({trace:'retain-on-failure',video:'retain-on-failure',viewport:{width:1366,height:768}});
 
@@ -23,6 +25,8 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
  test.setTimeout(240000);
  await initContext(context,{skipImageGate:false});
  const secondContext=await browser.newContext({viewport:{width:1366,height:768}});
+ const evidenceDir=path.resolve('evidence/fate-domination/online-undo-log-runs',`${Date.now()}-${process.pid}`);
+ await mkdir(evidenceDir,{recursive:true});
  await initContext(secondContext,{skipImageGate:false});
  await startSourceSession(context,baseURL!);
  await startSourceSession(secondContext,baseURL!);
@@ -60,10 +64,12 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   await expect.poll(async()=>(await read()).core.currentPlayerId).toBe('2');
   expect(peer.sendCommand('ADVANCE_PHASE',{})).toBe(true);
   await expect.poll(async()=>(await read()).core.phase).toBe('outpost');
+  await expect.poll(()=>(actor.latestState as any)?.core?.phase,{timeout:15000}).toBe('outpost');
   const privateCard=(await read()).core.players['0'].hand[0].id;
   const version=actor.lastReceivedStateID;
   expect(actor.sendCommand('INSPECT_CARD',{cardId:privateCard})).toBe(true);
   await expect.poll(()=>actor.lastReceivedStateID,{timeout:15000}).toBeGreaterThan(version!);
+  await expect.poll(async()=>(await read()).sys.actionLog.entries.some((entry:any)=>entry.kind==='INSPECT_CARD'),{timeout:15000}).toBe(true);
   await expect.poll(()=>second.evaluate(()=>JSON.stringify((window as any).__BG_TEST_HARNESS__?.state?.get()?.sys?.actionLog??{})),{timeout:15000}).toContain('查看卡牌');
   const otherView=await second.evaluate(()=>{const state=(window as any).__BG_TEST_HARNESS__.state.get();return JSON.stringify({log:state.sys.actionLog,events:state.sys.eventStream});});
   expect(otherView).not.toContain(privateCard);
@@ -83,13 +89,16 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
    const content=(entries[index].segments??[]).filter((segment:any)=>segment.type==='text').map((segment:any)=>segment.text).join(' ');
    if(content)expect(text[index]).toContain(content);
   }
-  expect(text.join('\n')).toContain(privateCard);
-  await page.screenshot({path:test.info().outputPath('01-正式联机操作日志.png')});
+  const ownCard=before.core.players['0'].hand.find((card:any)=>card.id===privateCard);
+  expect(text.join('\n')).toContain(FATE_ATTACK_BY_ID[ownCard.definitionId].name);
+  expect(text.join('\n')).not.toContain(privateCard);
+  await page.screenshot({path:path.join(evidenceDir,'01-正式联机操作日志.png')});
   const otherLog=await openPanel(second,'action-log');
   const otherRows=otherLog.getByTestId('hud-action-log-row');
   await expect(otherRows).toHaveCount(entries.length);
   const otherText=await otherRows.allInnerTexts();
   expect(otherText.join('\n')).not.toContain(privateCard);
+  expect(otherText.join('\n')).not.toContain(FATE_ATTACK_BY_ID[ownCard.definitionId].name);
   const request=async()=>{
    const panel=await openPanel(page,'undo-request');
    await panel.getByRole('button',{name:'申请撤回',exact:true}).click();
@@ -97,7 +106,7 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   };
   await request();
   await record('申请撤回');
-  await page.screenshot({path:test.info().outputPath('02-撤回申请等待对方.png')});
+  await page.screenshot({path:path.join(evidenceDir,'02-撤回申请等待对方.png')});
   const waiting=await openPanel(page,'undo-request');
   await waiting.getByRole('button',{name:'取消申请',exact:true}).click();
   await expect.poll(async()=>(await read()).sys.undo.pendingRequest).toBeUndefined();
@@ -105,7 +114,20 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   await record('申请者取消');
   await request();
   const reject=await openPanel(second,'undo-review');
-  await second.screenshot({path:test.info().outputPath('03-对方收到撤回审批.png')});
+  // 展开全局工具栏时，玩家姓名和资源数值仍须完整露出。
+  const overlaps=await second.evaluate(()=>{
+   const summaries=Array.from(document.querySelectorAll('.fd-runtime-seat-summary'));
+   const buttons=Array.from(document.querySelectorAll('[data-testid="fab-menu"] button')).filter(element=>{
+    const rect=element.getBoundingClientRect(),style=getComputedStyle(element);
+    return rect.width>0&&rect.height>0&&style.visibility!=='hidden'&&style.pointerEvents!=='none';
+   });
+   return summaries.flatMap(summary=>buttons.filter(button=>{
+    const a=summary.getBoundingClientRect(),b=button.getBoundingClientRect();
+    return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+   }).map(button=>({summary:summary.textContent,button:button.getAttribute('data-fab-id')})));
+  });
+  expect(overlaps).toEqual([]);
+  await second.screenshot({path:path.join(evidenceDir,'03-对方收到撤回审批.png')});
   await reject.getByRole('button',{name:'拒绝',exact:true}).click();
   await expect.poll(async()=>(await read()).sys.undo.pendingRequest).toBeUndefined();
   expect((await read()).core).toEqual(before.core);
@@ -117,10 +139,12 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
   const after=await read();
   expect(after.core).not.toEqual(before.core);
   await record('对方同意并恢复状态');
-  await second.screenshot({path:test.info().outputPath('04-同意撤回后的正式状态.png')});
+  await second.screenshot({path:path.join(evidenceDir,'04-同意撤回后的正式状态.png')});
   const afterLog=await openPanel(second,'action-log');
   const afterRows=afterLog.getByTestId('hud-action-log-row');
-  const afterEntries=[...(after.sys.actionLog?.entries??[])].sort((a:any,b:any)=>b.timestamp-a.timestamp);
+  await expect.poll(()=>second.evaluate(()=>(window as any).__BG_TEST_HARNESS__.state.get().sys.undo.rollbackRevision??0),{timeout:15000}).toBe(after.sys.undo.rollbackRevision??0);
+  const afterEntries=await second.evaluate(()=>(window as any).__BG_TEST_HARNESS__.state.get().sys.actionLog.entries);
+  afterEntries.sort((a:any,b:any)=>b.timestamp-a.timestamp);
   await expect(afterRows).toHaveCount(afterEntries.length);
   const afterText=await afterRows.allInnerTexts();
   for(let index=0;index<afterEntries.length;index++){
@@ -128,10 +152,10 @@ test('Fate 真实双人页面撤回申请、取消、拒绝、同意及日志',a
    if(content)expect(afterText[index]).toContain(content);
   }
   for(const player of Object.values(after.core.players) as any[])for(const card of player.hand??[])expect(afterText.join('\n')).not.toContain(card.id);
-  await second.screenshot({path:test.info().outputPath('05-撤回后的公开日志.png')});
+  await second.screenshot({path:path.join(evidenceDir,'05-撤回后的公开日志.png')});
   expect(peerErrors).toEqual([]);
   const identities=await Promise.all([captureEvidenceSourceIdentity(page,'fate-domination'),captureEvidenceSourceIdentity(second,'fate-domination')]);
-  await writeFile(test.info().outputPath('source-identity.json'),JSON.stringify(identities,null,2));
-  await writeFile(test.info().outputPath('behavior-trace.json'),JSON.stringify({gameId:'fate-domination',kind:'online-undo-log',steps:trace},null,2));
+  await writeFile(path.join(evidenceDir,'source-identity.json'),JSON.stringify(identities,null,2));
+  await writeFile(path.join(evidenceDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',kind:'online-undo-log',steps:trace},null,2));
  }finally{peer.disconnect();actor.disconnect();await releaseSourceSession(context);await releaseSourceSession(secondContext);await secondContext.close();}
 });

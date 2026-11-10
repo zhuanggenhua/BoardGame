@@ -1,0 +1,51 @@
+{
+  "gameId": "qidahen",
+  "sourceRun": "20261025-qidahen-refactor-r6",
+  "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "rules, numbers, resource effects and tutorial transitions",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "result": "1 test file passed; 29/29 tests passed."
+  },
+  "e2e": [
+    {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+      "status": "PASS",
+      "result": "21/21 Chromium tests passed."
+    },
+    {
+      "command": "$env:QIDAHEN_CAPTURE_BEHAVIOR_TRACE=1; $env:QIDAHEN_TUTORIAL_SCREENSHOT_RUN_ID=20261025-qidahen-refactor-r6; node scripts/infra/run-e2e-batch.mjs default --files e2e/qidahen/qidahen-closeout.e2e.ts -- --grep \"唯一入门入口|教程模式会带玩家走完真实回合主路|基础教程的 1 格走法|玩家可先做轮盘行动|基础教程的 3 格走法|移动横屏真实教程\"",
+      "status": "PASS",
+      "result": "6/6 traced E2E tests passed; six same-run traces, 31 distinct UI states from 36 captures; five duplicate captures were excluded."
+    }
+  ],
+  "otherChecks": [
+    {
+      "command": "npx eslint src/games/qidahen/Board.tsx e2e/qidahen/qidahen-closeout.e2e.ts",
+      "status": "PASS_WITH_EXISTING_WARNING",
+      "result": "0 errors; one react-hooks/refs warning at Board.tsx:4351."
+    },
+    {
+      "command": "npm run typecheck",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run spec:lint",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run i18n:check",
+      "status": "FAIL_UNRELATED_WORKTREE_KEYS",
+      "result": "Reports lobby.homeAppearance in zh-CN/en and unrelated DiceThrone locale keys; no Qidahen tutorial locale key was reported missing."
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "screenshotClaimScope": "Visual review covers UI, interaction affordances, readability, clipping, occlusion and visible errors. Rules, values and settlement are covered by Vitest/E2E assertions."
+}

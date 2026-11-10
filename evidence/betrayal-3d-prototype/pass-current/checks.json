@@ -1,0 +1,152 @@
+{
+  "url": "http://127.0.0.1:5188/betrayal-3d.html",
+  "generatedAt": "2026-09-05T18:23:44.003Z",
+  "errors": [],
+  "screenshots": [
+    {
+      "name": "01-overview-current-map",
+      "path": "evidence/betrayal-3d-prototype/pass-current/01-overview-current-map.png",
+      "proves": "full scene: real room tiles, merged walls, furniture, explorers and monster",
+      "lit": 869,
+      "mean": 46.29695638020829,
+      "colors": 395,
+      "frames": 14,
+      "overflow": false
+    },
+    {
+      "name": "02-explorer-scale-closeup",
+      "path": "evidence/betrayal-3d-prototype/pass-current/02-explorer-scale-closeup.png",
+      "proves": "explorer miniatures stand upright and remain board-scale",
+      "lit": 3734,
+      "mean": 117.18131510416633,
+      "colors": 1335,
+      "frames": 23,
+      "overflow": false
+    },
+    {
+      "name": "03-monster-graveyard-closeup",
+      "path": "evidence/betrayal-3d-prototype/pass-current/03-monster-graveyard-closeup.png",
+      "proves": "CC0 Skeleton monster is placed in the graveyard as a board-scale enemy",
+      "lit": 2480,
+      "mean": 69.59008789062518,
+      "colors": 1029,
+      "frames": 32,
+      "overflow": false
+    },
+    {
+      "name": "04-route-preview-to-kitchen",
+      "path": "evidence/betrayal-3d-prototype/pass-current/04-route-preview-to-kitchen.png",
+      "proves": "selected destination shows an amber legal route preview before movement",
+      "lit": 884,
+      "mean": 46.440673828124986,
+      "colors": 404,
+      "frames": 63,
+      "overflow": false
+    },
+    {
+      "name": "04-moved-to-kitchen-via-doors",
+      "path": "evidence/betrayal-3d-prototype/pass-current/04-moved-to-kitchen-via-doors.png",
+      "proves": "movement reaches kitchen through legal connected doorways without clipping furniture",
+      "lit": 885,
+      "mean": 46.335693359374986,
+      "colors": 380,
+      "frames": 99,
+      "overflow": false
+    },
+    {
+      "name": "05-moved-to-storage-via-kitchen-door",
+      "path": "evidence/betrayal-3d-prototype/pass-current/05-moved-to-storage-via-kitchen-door.png",
+      "proves": "storage room remains reachable only through the kitchen matching doorway",
+      "lit": 865,
+      "mean": 46.28841145833338,
+      "colors": 395,
+      "frames": 139,
+      "overflow": false
+    },
+    {
+      "name": "06-sealed-wall-routes-around",
+      "path": "evidence/betrayal-3d-prototype/pass-current/06-sealed-wall-routes-around.png",
+      "proves": "route to the study goes around sealed shared walls instead of cutting through them",
+      "lit": 865,
+      "mean": 46.32161458333339,
+      "colors": 391,
+      "frames": 198,
+      "overflow": false
+    },
+    {
+      "name": "07-adjacent-sealed-wall-not-crossed",
+      "path": "evidence/betrayal-3d-prototype/pass-current/07-adjacent-sealed-wall-not-crossed.png",
+      "proves": "conservatory and study share a sealed wall, so the path uses legal doorways around it",
+      "lit": 907,
+      "mean": 46.39680989583332,
+      "colors": 388,
+      "frames": 246,
+      "overflow": false
+    },
+    {
+      "name": "08-top-view-door-and-wall-check",
+      "path": "evidence/betrayal-3d-prototype/pass-current/08-top-view-door-and-wall-check.png",
+      "proves": "top view confirms doors, solid walls and room selection remain readable",
+      "lit": 870,
+      "mean": 47.62540690104161,
+      "colors": 503,
+      "frames": 284,
+      "overflow": false
+    },
+    {
+      "name": "09-settings-and-camera-controls",
+      "path": "evidence/betrayal-3d-prototype/pass-current/09-settings-and-camera-controls.png",
+      "proves": "pan, rotate, zoom, wall visibility, atmosphere and exposure controls are live",
+      "lit": 4066,
+      "mean": 70.07674153645874,
+      "colors": 520,
+      "frames": 450,
+      "overflow": false
+    },
+    {
+      "name": "10-mobile-landscape",
+      "path": "evidence/betrayal-3d-prototype/pass-current/10-mobile-landscape.png",
+      "proves": "mobile landscape keeps the scene, HUD and room strip usable",
+      "lit": 682,
+      "mean": 44.890380859374915,
+      "colors": 338,
+      "frames": 515,
+      "overflow": false
+    },
+    {
+      "name": "11-mobile-portrait",
+      "path": "evidence/betrayal-3d-prototype/pass-current/11-mobile-portrait.png",
+      "proves": "mobile portrait keeps the scene visible and controls accessible",
+      "lit": 1447,
+      "mean": 59.30249023437521,
+      "colors": 787,
+      "frames": 528,
+      "overflow": false
+    }
+  ],
+  "geometryChecks": [
+    "shared room edges emitted once",
+    "room doors stay synchronized with each tile artwork orientation",
+    "shared walls connect only when both sides have matching doors",
+    "conservatory-study and gallery-graveyard sealed edges are not traversable",
+    "path points avoid furniture and other figures",
+    "explorer and monster model heights stay in board-miniature scale",
+    "visible route preview is generated from the same legal path used for movement"
+  ],
+  "interactionChecks": [
+    "room selection",
+    "route preview",
+    "reachable move",
+    "sealed wall route avoidance",
+    "occupied room slot clearance",
+    "turn",
+    "pan",
+    "rotate",
+    "zoom",
+    "top view",
+    "reset",
+    "walls",
+    "atmosphere",
+    "exposure"
+  ]
+}

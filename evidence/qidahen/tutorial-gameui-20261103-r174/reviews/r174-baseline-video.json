@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_video_c2",
+  "requirements": [
+    {
+      "requirement": "战斗掷骰过程与结果归属",
+      "status": "PASS",
+      "baselineSource": "指定旧版步兵损伤原始整屏与本批当前步兵损伤原始整屏，并核对当前录屏末段连续联系表；未读取旧视频或其它录屏时段。",
+      "preservedInformation": "保留战斗起止地名、步兵阶段、实体骰、骰面结果与合计损伤、地图军牌、阵营读数及底部手牌；数值是否正确不由图审裁决。",
+      "preservedActions": "保留战斗结果可阅读的停留，并在本批录屏末段转入下一步面板和教学说明；不据静态基线推断旧版操作是否成功。",
+      "changes": "当前图把攻方改为大明攻方并配原明字阵营标记，损伤写明对蒙古造成；放大并定位到交战地图区域，参战大明步兵与蒙古标记旁骑兵正面可辨，移除旧图顶部大块空白。",
+      "duplicateDecision": "战斗结果由地图上的一组骰子及一个合计损伤承载，未另造重复战果横幅；顶部阵营条负责回合与阵营信息，地图标记负责单位归属，职责可区分。",
+      "changeAuthority": "依据本轮合同要求真实阵营及原有标记、明确承受方、参战兵牌可辨和消除顶部空白判定；旧图仅作历史对照，旧通过结论不作为当前放行依据。",
+      "before": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-infantry-damage.jpg"
+      ],
+      "after": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-damage.jpg"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,410 @@
+{
+  "reviewer": "/root/r154_ui_tail",
+  "status": "PASS",
+  "scope": "interaction-ui",
+  "score": 94,
+  "criteriaScores": {
+    "任务清晰度": {
+      "score": 19,
+      "max": 20
+    },
+    "视觉层级": {
+      "score": 14,
+      "max": 15
+    },
+    "对象可识别性": {
+      "score": 14,
+      "max": 15
+    },
+    "状态与动作载体": {
+      "score": 14,
+      "max": 15
+    },
+    "布局完整性": {
+      "score": 14,
+      "max": 15
+    },
+    "素材完整性": {
+      "score": 10,
+      "max": 10
+    },
+    "操作人体工学": {
+      "score": 9,
+      "max": 10
+    }
+  },
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/32-save-hand.png",
+      "sha256": "4727ebab70f0a218623c96e08b56fb83d0de2c1aa979e6be5f2e46665aff0165",
+      "status": "PASS",
+      "observations": [
+        "放弃手牌行动并结束回合按钮位于手牌正上方约95px，空间归属手牌，教程在左侧且互不遮挡。",
+        "教程说明保留手牌、不再执行手牌行动，按钮同时写明结束回合，下一输入及后果清楚。"
+      ],
+      "observation": "放弃手牌行动并结束回合按钮位于手牌正上方约95像素，空间归属手牌，教程在左侧且互不遮挡。；教程说明保留手牌、不再执行手牌行动，按钮同时写明结束回合，下一输入及后果清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/33-new-year.png",
+      "sha256": "8e8062fdd134e8334e8bcb0cd79a3ddc2e5735dadc4a30ea70d0ad46e184ec06",
+      "status": "PASS",
+      "observations": [
+        "时标和印刷新年名称可见；教程说明抽朝鲜牌、维护、耗损、纪年、人物的顺序，下一步明确。",
+        "维护山海关面板保留弃2张手牌维护与放弃维护两个直接决策，无无实体草稿的灰色确认。"
+      ],
+      "observation": "时标和印刷新年名称可见；教程说明抽朝鲜牌、维护、耗损、纪年、人物的顺序，下一步明确。；维护山海关面板保留弃2张手牌维护与放弃维护两个直接决策，无无实体草稿的灰色确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/34-maintain-shanhai.png",
+      "sha256": "4a84bb58b211775b1854c9c0cc19c16caee28ba0aeb78a36ceb724347c5b617a",
+      "status": "PASS",
+      "observations": [
+        "教程点明山海关与边界的关系和保留防线的原因；操作面板标题明确当前规则对象。",
+        "支付2张与放弃并列清楚，教程在左侧且不挡当前输入。"
+      ],
+      "observation": "教程点明山海关与边界的关系和保留防线的原因；操作面板标题明确当前规则对象。；支付2张与放弃并列清楚，教程在左侧且不挡当前输入。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/35-abandon-jinzhou.png",
+      "sha256": "672ebfa8ecb6d17290dd31b57336fcc0e9f13d54aa3d4619266d2adc07b042bb",
+      "status": "PASS",
+      "observations": [
+        "维护锦州标题、2张成本及放弃维护输入可读；教程说明不维护将视为城市不存在，后果明确。",
+        "教程与按钮上下错开，当前锦州对象与控制标记可见。"
+      ],
+      "observation": "维护锦州标题、2张成本及放弃维护输入可读；教程说明不维护将视为城市不存在，后果明确。；教程与按钮上下错开，当前锦州对象与控制标记可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/36-abandon-inner-wall.png",
+      "sha256": "3e6564fb779fdb8330a7c9cbab8add6a9c4f043022a66672b51196ebb54bde81",
+      "status": "PASS",
+      "observations": [
+        "维护内长城标题及成本可读，教程说明城防宽度、放弃后的能力损失与保留手牌取舍。",
+        "放弃维护是当前直接选择，无多余确认；不把无关地图低层覆盖当硬失败。"
+      ],
+      "observation": "维护内长城标题及成本可读，教程说明城防宽度、放弃后的能力损失与保留手牌取舍。；放弃维护是当前直接选择，无多余确认；不把无关地图低层覆盖当硬失败。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/37-upkeep-datong.png",
+      "sha256": "020d9eaa676958135a89c119426e721c8185736f32455e6df9f0ea5631139f89",
+      "status": "PASS",
+      "observations": [
+        "大同区域、三支候选兵本体与绿色边界可见，教程说明补1张或移除一支的取舍。",
+        "面板写尚需支持1支、已选0牌0兵，未选时确认灰显对应真实多选草稿，状态可理解。"
+      ],
+      "observation": "大同区域、三支候选兵本体与绿色边界可见，教程说明补1张或移除一支的取舍。；面板写尚需支持1支、已选0牌0兵，未选时确认灰显对应真实多选草稿，状态可理解。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/38-upkeep-yehe.png",
+      "sha256": "c2630d73698ca85290e8ac56c774c0efe1fb834dc2b2668bea7da566924ebd81",
+      "status": "PASS",
+      "observations": [
+        "叶赫部区域和三支驻军可见，教程说明非汉人区补给及支付选择。",
+        "面板清楚显示尚需支持3支与当前0牌0兵，手牌类别、放大镜、横滚入口可见。"
+      ],
+      "observation": "叶赫部区域和三支驻军可见，教程说明非汉人区补给及支付选择。；面板清楚显示尚需支持3支与当前0牌0兵，手牌类别、放大镜、横滚入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/39-upkeep-yehe-selected.png",
+      "sha256": "bab503a9aaddbf0d4dd70418929bbf666ae8d979628c8486a522179722c156f4",
+      "status": "PASS",
+      "observations": [
+        "三张被选手牌抬起，牌面和已选标记可识别；面板同步显示3张手牌0支部队。",
+        "确认在已满足实体支付选择后亮起，不是额外无草稿确认，当前目标兵未被选牌覆盖。"
+      ],
+      "observation": "三张被选手牌抬起，牌面和已选标记可识别；面板同步显示3张手牌0支部队。；确认在已满足实体支付选择后亮起，不是额外无草稿确认，当前目标兵未被选牌覆盖。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/40-hand-scroll-end.png",
+      "sha256": "71d63d5714e8353d1c2ba83f167f23fa60e347a5b42ab5546ab268888c9adf48",
+      "status": "PASS",
+      "observations": [
+        "横滚后尾部银两及事件牌本体、分类与独立放大镜可见，前后箭头保留。",
+        "已选3牌计数仍在支持面板，半露手牌保留用户要求的结构，未因此判缺陷。"
+      ],
+      "observation": "横滚后尾部银两及事件牌本体、分类与独立放大镜可见，前后箭头保留。；已选3牌计数仍在支持面板，半露手牌保留用户要求的结构，未因此判缺陷。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/41-upkeep-pyongyang.png",
+      "sha256": "a4d47c25ad5958f16dcdc24943d3ad8dfac75b8bd17180f90754cce8f9c527fd",
+      "status": "PASS",
+      "observations": [
+        "平壤区域及可移除兵本体可见，教程说明撤兵保留纪年手牌与控制权不自动改变。",
+        "尚需支持1支、0牌0兵和灰确认清楚表达当前尚待选择。"
+      ],
+      "observation": "平壤区域及可移除兵本体可见，教程说明撤兵保留纪年手牌与控制权不自动改变。；尚需支持1支、0牌0兵和灰确认清楚表达当前尚待选择。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/42-upkeep-pyongyang-selected.png",
+      "sha256": "6a3d347517c15034427cf5584cfd168866c4ea3bd971d384b25a931bb395d52a",
+      "status": "PASS",
+      "observations": [
+        "所选步兵本体仍完整可辨，贴合的高亮和勾选表达选中；面板更新0牌1兵并亮起确认。",
+        "教程不挡该兵及确认，真实选兵后果与下一输入明确。"
+      ],
+      "observation": "所选步兵本体仍完整可辨，贴合的高亮和勾选表达选中；面板更新0牌1兵并亮起确认。；教程不挡该兵及确认，真实选兵后果与下一输入明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/43-claim-year.png",
+      "sha256": "ded3770a495e1d0aa9c164a5bb7e9d216c887e437b3c6f3b9e262015c4b0a63c",
+      "status": "PASS",
+      "observations": [
+        "纪年卡本体被指向，教程解释领取资格、支付一半手牌、取得威望与放弃顺延。",
+        "取得本年纪年卡面板明确弃3张手牌取得或放弃资格顺延，无多余灰确认。"
+      ],
+      "observation": "纪年卡本体被指向，教程解释领取资格、支付一半手牌、取得威望与放弃顺延。；取得本年纪年卡面板明确弃3张手牌取得或放弃资格顺延，无多余灰确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/44-new-order.png",
+      "sha256": "bac3da8062d29826b4f964520b2a0ce30344e4493ccff585b29f707290c3dc09",
+      "status": "PASS",
+      "observations": [
+        "剩余纪年卡与教程相邻，教程区分领走本年卡和用于新顺位的新年卡。",
+        "人物实体缩图、姓名及独立放大镜在右侧，当前教程下一步入口清楚。"
+      ],
+      "observation": "剩余纪年卡与教程相邻，教程区分领走本年卡和用于新顺位的新年卡。；人物实体缩图、姓名及独立放大镜在右侧，当前教程下一步入口清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/45-year-character.png",
+      "sha256": "06fdc6e41f4a5451c407e6ed297e511315001720a24ce15546a4cf5e344089f1",
+      "status": "PASS",
+      "observations": [
+        "毛文龙、熊廷弼、杨镐三个候选各有实体缩图及姓名，放大镜与出场按钮职责可区分。",
+        "教程说明人物不进手牌及杨镐的选择目的，指向当前候选且不挡操作。"
+      ],
+      "observation": "毛文龙、熊廷弼、杨镐三个候选各有实体缩图及姓名，放大镜与出场按钮职责可区分。；教程说明人物不进手牌及杨镐的选择目的，指向当前候选且不挡操作。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/46-year-character-inspect.png",
+      "sha256": "597d772d1beb13b5cccccb0b632264bb1e82820f7833b7cad8d3051733aa4509",
+      "status": "PASS",
+      "observations": [
+        "杨镐原卡放大完整显示名称、效果、倒戈条款，素材比例正常且可阅读。",
+        "右上显式关闭按钮清楚；背景候选、教程保留上下文。静态图不证明持久化时长。"
+      ],
+      "observation": "杨镐原卡放大完整显示名称、效果、倒戈条款，素材比例正常且可阅读。；右上显式关闭按钮清楚；背景候选、教程保留上下文。静态图不证明持久化时长。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/47-training-kind.png",
+      "sha256": "53dcce88900eb4c2be56bbde0bff770bea6b8359bb0b9245b785354979de53f2",
+      "status": "PASS",
+      "observations": [
+        "征兵训练面板显示已完成0/4次和额外训练0次，菜单明确征兵、训练、额外弃牌、完成四种输入。",
+        "各项描述承接自己的规则对象，没有独立无草稿确认。"
+      ],
+      "observation": "征兵训练面板显示已完成0/4次和额外训练0次，菜单明确征兵、训练、额外弃牌、完成四种输入。；各项描述承接自己的规则对象，没有独立无草稿确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/48-training-target.png",
+      "sha256": "0066eeba737fa1d4e5f069cae551e46fb80e5a941b9991bc19851a4c5b95bf96",
+      "status": "PASS",
+      "observations": [
+        "候选逐项标注地区、兵种、当前到目标等级与重复兵序号，当前叶赫部炮兵可定位。",
+        "教程解释单兵每回合限训1级及炮兵上限；列表内部滚动提示可见，教程不挡候选。"
+      ],
+      "observation": "候选逐项标注地区、兵种、当前到目标等级与重复兵序号，当前叶赫部炮兵可定位。；教程解释单兵每回合限训1级及炮兵上限；列表内部滚动提示可见，教程不挡候选。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/49-training-second-target.png",
+      "sha256": "3076af82d8c9cf27717e81adf0a52c7b2fd6917c9e4ee678dbe694459620aded",
+      "status": "PASS",
+      "observations": [
+        "面板显示完成1/4和前次炮兵升级反馈，已训炮兵退出当前候选。",
+        "两支叶赫部步兵分别编号、标出2到3级；教程说明继续使用基础次数，当前输入明确。"
+      ],
+      "observation": "面板显示完成1/4和前次炮兵升级反馈，已训炮兵退出当前候选。；两支叶赫部步兵分别编号、标出2到3级；教程说明继续使用基础次数，当前输入明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/50-training-recruit-target.png",
+      "sha256": "294da460750f38e727dd9a626fe968d3b2b9cb248974661b99c9c3c5ee108d06",
+      "status": "PASS",
+      "observations": [
+        "面板显示已完成3/4及前次训练结果，征兵候选列出地区和建立等级2正规军。",
+        "辽东被教程指向，人口与部队取舍说明清楚，候选按钮与教程互不挡。"
+      ],
+      "observation": "面板显示已完成3/4及前次训练结果，征兵候选列出地区和建立等级2正规军。；辽东被教程指向，人口与部队取舍说明清楚，候选按钮与教程互不挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/51-training-finish.png",
+      "sha256": "c2304e8593e58cbdc8d8104678a9b3352f8c4736eb82418a2abf84b5b452c24a",
+      "status": "PASS",
+      "observations": [
+        "已完成4/4与新建辽东正规军反馈可读，额外训练的弃1牌成本明确。",
+        "教程说明保留最后一张并停止训练，完成征兵训练按钮就在菜单下方，下一输入清楚。"
+      ],
+      "observation": "已完成4/4与新建辽东正规军反馈可读，额外训练的弃1牌成本明确。；教程说明保留最后一张并停止训练，完成征兵训练按钮就在菜单下方，下一输入清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/52-finish.png",
+      "sha256": "f4334034b1adb882b4da115ee1f3655fc5bb064a2716377b24c757d86a6e8718",
+      "status": "PASS",
+      "observations": [
+        "终页说明已取得第一点威望、继续扩军并为新年留牌及胜利条件，完成并返回是明确主输入。",
+        "当前势力、轮盘可用扇区、纪年卡、真实手牌和牌堆保留；图面本身不证明完成后已接受输入，另查trace。"
+      ],
+      "observation": "终页说明已取得第一点威望、继续扩军并为新年留牌及胜利条件，完成并返回是明确主输入。；当前势力、轮盘可用扇区、纪年卡、真实手牌和牌堆保留；图面本身不证明完成后已接受输入，另查记录。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "failures": [],
+  "evidenceBoundaries": [
+    "本报告只逐张审查32至52共21张原始PNG，未替其它审查者覆盖前段或战斗媒体。",
+    "手牌半露、悬停抬起为明确要求；无关低层地图覆盖不构成本范围失败，只保护当前来源、目标与输入。",
+    "规则数值正确性不从图验得出；运行事实来自最终behavior-trace和生命周期真实记录。",
+    "R154 trace status PASS，76步、53媒体，outcome tutorialActive=false/year=1/claimed=[1301]/nextInputAccepted=true；53条媒体路径均存在。",
+    "R153生命周期revision26 PASS，记录reload-continue、previous-and-redo、restart、outdated-progress、exit-through-real-menu、ordinary-room-after-exit；按任务提供的同代码条件沿用，不宣称本次R154另跑生命周期。"
+  ],
+  "functionalEvidence": {
+    "sourceRevision": "annual-revision-26",
+    "mediaCount": 53,
+    "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/behavior-trace.json",
+    "stepCount": 76,
+    "outcome": {
+      "tutorialActive": false,
+      "year": 1,
+      "claimed": [
+        1301
+      ],
+      "nextInputAccepted": true
+    },
+    "status": "PASS"
+  },
+  "lifecycleEvidence": {
+    "status": "PASS",
+    "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/lifecycle/lifecycle-verification.json",
+    "revision": 26,
+    "recordIds": [
+      "reload-continue",
+      "previous-and-redo",
+      "restart",
+      "outdated-progress",
+      "exit-through-real-menu",
+      "ordinary-room-after-exit"
+    ]
+  }
+}

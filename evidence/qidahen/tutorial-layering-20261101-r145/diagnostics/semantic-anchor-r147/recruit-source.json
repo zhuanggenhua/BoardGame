@@ -1,0 +1,55 @@
+{
+  "hint": {
+    "x": 884.65625,
+    "y": 100.25,
+    "width": 310,
+    "height": 179.75,
+    "top": 100.25,
+    "right": 1194.65625,
+    "bottom": 280,
+    "left": 884.65625
+  },
+  "anchor": {
+    "id": "qidahen-map-region-focus-name",
+    "bounds": {
+      "x": 1317.203125,
+      "y": 124.8125,
+      "width": 36,
+      "height": 20,
+      "top": 124.8125,
+      "right": 1353.203125,
+      "bottom": 144.8125,
+      "left": 1317.203125
+    }
+  },
+  "surfaces": [
+    {
+      "id": "qidahen-recruit-selection",
+      "bounds": {
+        "x": 1528,
+        "y": 288,
+        "width": 320,
+        "height": 104,
+        "top": 288,
+        "right": 1848,
+        "bottom": 392,
+        "left": 1528
+      }
+    },
+    {
+      "id": "qidahen-map-region-focus-name",
+      "bounds": {
+        "x": 1317.203125,
+        "y": 124.8125,
+        "width": 36,
+        "height": 20,
+        "top": 124.8125,
+        "right": 1353.203125,
+        "bottom": 144.8125,
+        "left": 1317.203125
+      }
+    }
+  ],
+  "gap": 122.546875,
+  "fullChainClaimed": false
+}

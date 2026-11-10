@@ -1,0 +1,246 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "auditSubject": "Mage Wars 当前新增真实玩家交互",
+  "generatedAt": "2026-09-23T07:53:44+08:00",
+  "run": {
+    "command": "npm run test:e2e:file -- e2e/mage-wars/online-runtime.e2e.ts",
+    "result": "11 passed",
+    "evidenceRoot": "test-results/evidence-screenshots/mage-wars/online-runtime.e2e",
+    "mediaCount": 76,
+    "interactionCount": 11
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/01-入口选择页-四本标准书和双方选择目标可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/02-入口选择页-P1兽王书-P2女祭司书已选中.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/03-入口确认后-牌桌绑定兽王女祭司法术书.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/04-双方计划后-对手计划仍隐藏.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09-两派系生物部署后-兽王女祭司各有场上生物.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤光柱过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤来源和目标区域.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤完成单位落场.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤完成单位落场.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10B-兽王结界犀牛兽皮施放前-野性山猫为绿色合法目标.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10C-女祭司装备风龙皮甲施放前-女祭司法师为绿色合法目标.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10D-女祭司结界公牛耐力施放前-阿希拉牧师为绿色合法目标.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10E-装备和结界最终附着结果-两派系附着关系可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10F-荆棘之墙施放前-A3-B3边界可选.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10G-荆棘之墙施放后-A3-B3边界墙牌可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-投射物飞行中.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/12-候选链收口-回到下一轮计划阶段.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/13-阿希拉牧师自然移动到A2-与受伤野性山猫同区.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/14-守卫动作后-阿希拉牧师守卫标记可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15-近战攻击守卫生物后-守卫标记移除.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15A-守卫生物被攻击后-反击响应可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15B-放弃反击后-守卫响应收口.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16-阿希拉牧师治疗之光结算后-治疗能力可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/17-女祭司复原术代表态移除燃烧后-状态标记消失.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/18-近终局代表态基础攻击后-胜负遮罩可见.jpg"
+      ]
+    },
+    {
+      "requirement": "正式联机入口从双方计划到部署并保持对手计划隐藏",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/01-双方计划后-对手计划仍隐藏.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/02-部署完成后-场地生物和隐藏计划.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/02A-己方生物部署-召唤光柱过程帧.jpg"
+      ]
+    },
+    {
+      "requirement": "正式联机入口真实施放标准强化法术并只产生法力、弃牌和卡牌结果",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实施放标准强化法术并只产生法力、弃牌和卡牌结果/03-荒野呼唤结算后-法力弃牌已变化.jpg"
+      ]
+    },
+    {
+      "requirement": "正式联机入口真实移动、攻击并切换回合",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/05-生物行动前-场地对象可直选.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06A-PC基线-丛林灰狼移动后桌面同源布局.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06B-移动横屏镜像-丛林灰狼进入目标区域.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/08-攻击行动结束后-进入终末快速施法窗口.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面传送法术过程帧覆盖来源轨迹落点",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面传送法术过程帧覆盖来源轨迹落点/12B-传送-传送轨迹过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面传送法术过程帧覆盖来源轨迹落点/12B-传送-来源唤醒过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面传送法术过程帧覆盖来源轨迹落点/12B-传送-目标区域落点过程帧.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面召唤和攻击必要过程帧覆盖",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/01-兽王野性山猫-召唤光柱过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/01-兽王野性山猫-召唤来源和目标区域.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/01-兽王野性山猫-召唤完成单位落场.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/02-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/02-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/02-女祭司阿希拉牧师-召唤完成单位落场.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/03-间歇喷泉攻击阿希拉牧师-投射物飞行中.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面墙体法术可选择边界并在穿越时触发通行伤害",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/18-墙前远程视线未阻挡-B3目标可选.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/19-荆棘之墙施放前-A3-B3边界可选.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/20-荆棘之墙施放后-A3-B3边界墙牌可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/21-墙后远程视线阻挡-B3目标不可选.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/22-穿越荆棘之墙后-通行伤害结算可见.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面推斥法术过程帧覆盖来源飞行命中",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面推斥法术过程帧覆盖来源飞行命中/12A-原力推斥-来源唤醒过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面推斥法术过程帧覆盖来源飞行命中/12A-原力推斥-命中推离过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面推斥法术过程帧覆盖来源飞行命中/12A-原力推斥-气流推离路径中.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面群兽法杖附件可从牌面发动并选择治疗模式",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24A-群兽法杖附件入口-来源卡牌下方能力按钮可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24B-群兽法杖目标选择-友方动物整卡高亮.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24C-群兽法杖模式选择-治疗和近战加成需玩家选择.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24D-群兽法杖治疗模式-治疗光效和恢复数字过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24E-群兽法杖治疗模式结算后-动物伤害降低.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面近战攻击实际动效独立证据覆盖",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/01-近战攻击代表态-来源和目标可见.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/02-近战攻击选择态-目标高亮.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/03-野性山猫近战攻击阿希拉牧师-来源唤醒和命中过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/03-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/04-近战攻击稳定收口-目标可继续.jpg"
+      ]
+    },
+    {
+      "requirement": "正式页面隐藏法力失效响应窗口可揭示并反制目标法术",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23A-法力失效隐藏附着-女祭司视角可见响应结界.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23B-剧痛难当施放前-阿希拉牧师为合法目标.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23C-法力失效响应窗口-女祭司必须展示结界.jpg",
+        "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23D-法力失效揭示后-剧痛难当被反制并入弃牌.jpg"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/01-入口选择页-四本标准书和双方选择目标可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/02-入口选择页-P1兽王书-P2女祭司书已选中.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/03-入口确认后-牌桌绑定兽王女祭司法术书.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/04-双方计划后-对手计划仍隐藏.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09-两派系生物部署后-兽王女祭司各有场上生物.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤光柱过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤来源和目标区域.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09A-兽王野性山猫-召唤完成单位落场.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/09B-女祭司阿希拉牧师-召唤完成单位落场.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10A-兽王结界公牛耐力施放前-野性山猫为绿色合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10B-兽王结界犀牛兽皮施放前-野性山猫为绿色合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10C-女祭司装备风龙皮甲施放前-女祭司法师为绿色合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10D-女祭司结界公牛耐力施放前-阿希拉牧师为绿色合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10E-装备和结界最终附着结果-两派系附着关系可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10F-荆棘之墙施放前-A3-B3边界可选.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/10G-荆棘之墙施放后-A3-B3边界墙牌可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-来源到目标投射过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-命中动画和伤害飘字过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/11A-间歇喷泉攻击法术-投射物飞行中.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/12-候选链收口-回到下一轮计划阶段.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/13-阿希拉牧师自然移动到A2-与受伤野性山猫同区.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/14-守卫动作后-阿希拉牧师守卫标记可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15-近战攻击守卫生物后-守卫标记移除.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15A-守卫生物被攻击后-反击响应可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/15B-放弃反击后-守卫响应收口.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16-阿希拉牧师治疗之光-治疗光效和恢复数字过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16-阿希拉牧师治疗之光结算后-治疗能力可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/17-女祭司复原术代表态移除燃烧后-状态标记消失.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/Mage-Wars-入口接入当前范围候选链：选择法师法术书后覆盖计划、部署、移动、守卫、装备结界、魔物、攻击、能力和终局/18-近终局代表态基础攻击后-胜负遮罩可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/01-双方计划后-对手计划仍隐藏.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/02-部署完成后-场地生物和隐藏计划.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口从双方计划到部署并保持对手计划隐藏/02A-己方生物部署-召唤光柱过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实施放标准强化法术并只产生法力、弃牌和卡牌结果/03-荒野呼唤结算后-法力弃牌已变化.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/05-生物行动前-场地对象可直选.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06A-PC基线-丛林灰狼移动后桌面同源布局.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/06B-移动横屏镜像-丛林灰狼进入目标区域.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/07-横屏圣光之柱攻击阿希拉牧师后-攻击骰反馈和伤害状态.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式联机入口真实移动、攻击并切换回合/08-攻击行动结束后-进入终末快速施法窗口.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面传送法术过程帧覆盖来源轨迹落点/12B-传送-传送轨迹过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面传送法术过程帧覆盖来源轨迹落点/12B-传送-来源唤醒过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面传送法术过程帧覆盖来源轨迹落点/12B-传送-目标区域落点过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/01-兽王野性山猫-召唤光柱过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/01-兽王野性山猫-召唤来源和目标区域.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/01-兽王野性山猫-召唤完成单位落场.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/02-女祭司阿希拉牧师-召唤光柱过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/02-女祭司阿希拉牧师-召唤来源和目标区域.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/02-女祭司阿希拉牧师-召唤完成单位落场.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/03-间歇喷泉攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面召唤和攻击必要过程帧覆盖/03-间歇喷泉攻击阿希拉牧师-投射物飞行中.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/18-墙前远程视线未阻挡-B3目标可选.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/19-荆棘之墙施放前-A3-B3边界可选.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/20-荆棘之墙施放后-A3-B3边界墙牌可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/21-墙后远程视线阻挡-B3目标不可选.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面墙体法术可选择边界并在穿越时触发通行伤害/22-穿越荆棘之墙后-通行伤害结算可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面推斥法术过程帧覆盖来源飞行命中/12A-原力推斥-来源唤醒过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面推斥法术过程帧覆盖来源飞行命中/12A-原力推斥-命中推离过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面推斥法术过程帧覆盖来源飞行命中/12A-原力推斥-气流推离路径中.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24A-群兽法杖附件入口-来源卡牌下方能力按钮可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24B-群兽法杖目标选择-友方动物整卡高亮.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24C-群兽法杖模式选择-治疗和近战加成需玩家选择.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24D-群兽法杖治疗模式-治疗光效和恢复数字过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面群兽法杖附件可从牌面发动并选择治疗模式/24E-群兽法杖治疗模式结算后-动物伤害降低.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/01-近战攻击代表态-来源和目标可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/02-近战攻击选择态-目标高亮.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/03-野性山猫近战攻击阿希拉牧师-来源唤醒和命中过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/03-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面近战攻击实际动效独立证据覆盖/04-近战攻击稳定收口-目标可继续.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23A-法力失效隐藏附着-女祭司视角可见响应结界.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23B-剧痛难当施放前-阿希拉牧师为合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23C-法力失效响应窗口-女祭司必须展示结界.jpg",
+    "test-results/evidence-screenshots/mage-wars/online-runtime.e2e/正式页面隐藏法力失效响应窗口可揭示并反制目标法术/23D-法力失效揭示后-剧痛难当被反制并入弃牌.jpg"
+  ],
+  "notes": [
+    "本清单只证明当前 11 项真实浏览器交互及其直接过程/结果证据。",
+    "它不把 Mage Wars 当前配置包 153 个对象的未完成规则实现升格为全部完成。",
+    "用户要求自己打开网页，因此本轮只生成 VIEWER_URL，不代为打开。"
+  ]
+}

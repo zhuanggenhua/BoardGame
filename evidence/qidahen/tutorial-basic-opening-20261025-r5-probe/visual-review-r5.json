@@ -1,0 +1,35 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_visual_final_b"
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r5-probe/media/03f-训练目标选择与等级提示.png",
+      "sha256": "551E0422898A7ECF09E0818BA30C0AF11B0CE71D93E92FC94EAAB172FE0E364B",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右侧候选列表中相同部队名通过“野战部队目标1/2”明确区分，所有候选行含最底一行均完整可读；“征兵训练”标题和进度可见，教学提示与候选面板之间没有遮挡。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r5-probe/media/03j-额外训练目标与结果.png",
+      "sha256": "11D8D1EB097FA11CDB2B2844CBC29395A61718E5F6022FBB754296D59E9D5290",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "列表显示到后续候选时，顶部“征兵训练”标题、已完成进度和结果说明仍完整可见；候选名称的目标1/2标记清楚，首末行均完整，未见结果浮层遮挡或文字裁切。"
+    }
+  ]
+}

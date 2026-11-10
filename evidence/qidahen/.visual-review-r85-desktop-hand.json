@@ -1,0 +1,128 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r85_final_desktop_hand"
+  },
+  "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "scope": "仅覆盖索引前七张桌面原图，逐张私读完整原图；不判断规则与数值正确性，不代表其余十二张通过。",
+  "score": {
+    "任务清晰度": 19,
+    "视觉层级": 14,
+    "对象可识别性": 14,
+    "状态与动作载体": 14,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 10,
+    "总分": 95
+  },
+  "negativeEffects": [
+    "底部手牌收为半露后，事件、战术、银两、军备等牌的标题、分类与各自放大镜仍在原槽位可见；五张牌能够横向比较，没有改成无数量或无名称的隐藏入口。",
+    "银两悬停只把对应牌向上抬起，另外四张牌的上缘、名称和放大镜继续保留；完整牌面位于底部中央，没有覆盖右侧突袭主入口、左侧轮盘和两侧牌堆。",
+    "完整检视进入独立遮罩阅读层，主牌完整呈现，关闭钮位于大牌右上角；遮罩覆盖地图和部分上方读数是当前阅读模式的可见结果，关闭后的地图目标状态由后续一图直接覆盖。",
+    "叶赫部目标图的支付托盘在目标下方，叶赫部地区本体、城名和驻军图标完整露出；轮盘、五张手牌上缘、左侧纪年牌与两侧牌堆仍有原承载。",
+    "地区选择图的提示框位于辽北左侧，辽北北侧、东侧与南侧的白色主描边及较深绿色填充清楚可见，其余可见合法候选保留绿色细边；没有叠加第二个独立推荐框或新增重复说明。"
+  ],
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/00-辽北军屯地区选择.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/00-辽北军屯地区选择.png",
+      "sha256": "2cf3e6227c630933e936eaff8a7d77f0b59c88b0108e6cfeba8841bc77c44313",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图右上方辽北位于提示框右侧，北侧弧边、东侧直边与南侧弧边有清楚白色主描边，内部绿色较深；其余合法候选以绿色细边呈现，两种状态能直接区分。辽北地区与点名名称对应，底部三张半露手牌均有放大镜，初始状态已能发现检视入口。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/01-轮盘前进两格与军屯落点.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/01-轮盘前进两格与军屯落点.png",
+      "sha256": "d840941c00dba7a9ca4d9f48f0ed5c7ba8affd131bb65b142d53627de9ebce6e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左上轮盘的军屯扇区呈浅绿色，推荐落点另有清楚蓝框；两种状态能够区分。辽北地区与原有驻军完整可见，提示位于轮盘右侧，没有遮住军屯扇区、底部手牌或两侧牌堆。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/02-指定后金抽牌.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/02-指定后金抽牌.png",
+      "sha256": "a4affa36c78e985a66f88b12c509b9627fe609fc0d66528c83c17c61c5725e92",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手选择框承接在轮盘中央，蒙古与后金两个按钮并列、文字完整，蓝框只围住当前选择区域。上方提示、地图地区、右侧行动入口与底部三张手牌各自可辨，没有出现空牌或错误图标。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03-辽北军屯结果.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03-辽北军屯结果.png",
+      "sha256": "c05200a1038550bdd9cba40feeed46687376c6e1bf2e7e21fab6c007602e3319",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北地区有贴合地区的浅色边界与新增驻军图案，结果落在真实地图上。底部五张手牌半露且横向展开，每张分类、名称和放大镜均可见；右侧突袭按钮有蓝框，下一动作能直接定位，手牌不与该按钮竞争槽位。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03a-手牌悬停完整抬起.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03a-手牌悬停完整抬起.png",
+      "sha256": "67a7c743dcda1054ca21f5a5350bf792a01b42c02796b58f206fdd6a1f78f1c7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中央银两牌向上抬起后整张卡面从上缘至下缘完整可见，放大镜位于该牌右上角。左右其余四张牌保留名称与自己的放大镜，仍可比较和切换；抬起区域没有盖住轮盘、突袭按钮、两侧牌堆或上方玩家读数。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03b-共享放大镜检视手牌.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03b-共享放大镜检视手牌.png",
+      "sha256": "0bc2d65f61c2abd6cbd0996d1bd3a91ee6740a5b662e2d1d4728ac0d9497ebb1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两原卡在中央按整卡比例放大，标题、银锭与四周卡边完整，没有截掉底边。黑色圆形关闭钮位于大牌右上角，白色叉号清楚；背景被统一压暗，阅读焦点明确，没有额外文字按钮重复解释检视动作。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/04-叶赫部真实地图目标.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/04-叶赫部真实地图目标.png",
+      "sha256": "643e420e3b064b29ee30a779c4f264065a7c4d8502af1ea39c7cc52a2de2136f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "检视大牌已退出，真实地图重新成为操作层。中央叶赫部由醒目的浅色地区边界突出，城名、蒙古标记与驻军读数完整露出，与周边绿色候选可区分；支付托盘处于目标下方，底部五张半露手牌、左上轮盘、纪年牌和两侧牌堆仍有可见承载。",
+      "issues": []
+    }
+  ]
+}

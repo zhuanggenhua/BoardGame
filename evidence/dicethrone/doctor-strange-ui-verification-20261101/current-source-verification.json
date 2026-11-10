@@ -1,0 +1,66 @@
+{
+  "checkedAt": "2026-11-01T10:32:58.969Z",
+  "checks": [
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    },
+    {
+      "file": "evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "matched": true
+    }
+  ],
+  "allActualDependenciesMatched": true,
+  "unchangedCasesTextEquivalent": true,
+  "currentE2eSha256": "f4094bd91d2dcc61f8cf47f4dade2382689cba1721a293d7393c18c9085c043f",
+  "executedR6E2eSha256": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+  "scope": "全部实际响应依赖保留核对；只公开区用例更新并以R7取证，选角按当前首页真实依赖以R8重拍"
+}

@@ -1,0 +1,50 @@
+{
+  "title": "山屋惊魂楼层右下角属性对齐与持有区加大验收",
+  "media": [
+    {
+      "path": "01-PC-1920x1080-属性条与HUD.jpg",
+      "chainId": "od-floor-right-inventory",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-floor-right-inventory-20261009",
+      "stage": "前态",
+      "description": "电脑开局牌桌，楼层切换在右下角用小箭头显示一层，属性格金色填满并与格间竖线对齐，左下急救包加大且空预兆行收起。"
+    },
+    {
+      "path": "02-Vivo-796x360-属性条与HUD等比.jpg",
+      "chainId": "od-floor-right-inventory",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-floor-right-inventory-20261009",
+      "stage": "中态",
+      "description": "手机横屏同一牌桌，楼层切换仍在右下角小箭头，属性格对齐可读，急救包可读，能力说明换行且未挡住持有区。"
+    },
+    {
+      "path": "03-PC-1920x1080-当前值与初始值分离.jpg",
+      "chainId": "od-floor-right-inventory",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/trait-track-ui.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-floor-right-inventory-20261009",
+      "stage": "后态",
+      "description": "电脑速度初始格深绿、当前格金色相邻共边，物品与预兆都空时持有区只留当前持有区标题，楼层切换在右下角。"
+    },
+    {
+      "path": "04-PC-1920x1080-高密度持有区.jpg",
+      "chainId": "od-floor-right-inventory",
+      "chainStep": "四",
+      "sourceRun": "e2e/betrayal/inventory-density.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-floor-right-inventory-20261009",
+      "stage": "中态",
+      "description": "电脑高密度持有，物品多张加大卡牌铺开并露出第六张边，预兆书本和狗不占空行，楼层切换仍在右下角。"
+    },
+    {
+      "path": "05-PC-1920x1080-一层切换后.jpg",
+      "chainId": "od-floor-right-inventory",
+      "chainStep": "五",
+      "sourceRun": "e2e/betrayal/floor-switcher-visual.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-floor-right-inventory-20261009",
+      "stage": "后态",
+      "description": "玩家切到一层后，楼层切换仍是右下角上下箭头加一层字样，未挡住继续按钮。"
+    }
+  ]
+}

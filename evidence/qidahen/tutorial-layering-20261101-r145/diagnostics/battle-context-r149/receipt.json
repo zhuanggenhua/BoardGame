@@ -1,0 +1,35 @@
+{
+  "status": "PASS-diagnostic-only",
+  "source": "saved-state-diagnostic",
+  "fullChainClaimed": false,
+  "pictures": [
+    {
+      "id": "battle-artillery-rolling",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-artillery-rolling.jpg"
+    },
+    {
+      "id": "battle-artillery-damage",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-artillery-damage.jpg"
+    },
+    {
+      "id": "battle-cavalry-rolling",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-cavalry-rolling.jpg"
+    },
+    {
+      "id": "battle-cavalry-damage",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-cavalry-damage.jpg"
+    },
+    {
+      "id": "battle-infantry-rolling",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-infantry-rolling.jpg"
+    },
+    {
+      "id": "battle-infantry-damage",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-infantry-damage.jpg"
+    }
+  ],
+  "video": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-layering-20261101-r145\\diagnostics\\battle-context-r149\\battle-real-time.webm",
+  "frameCount": 154,
+  "durationSeconds": 18.314000129699707,
+  "actualNextStep": "occupy"
+}

@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "大杀四方派系选择去除重复内描边",
+  "generatedAt": "2026-10-10T08:31:38+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "evidence/smashup-faction-selection-selected-20261010"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "tests": [
+    {
+      "command": "npm run test:e2e:ci:file -- e2e/smashup/smashup-faction-random-selection.e2e.ts 第一张随机派系卡点击后会落地为真实派系并占用该派系",
+      "result": "1 passed",
+      "scope": "真实派系选择入口与选中态截图"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "选中派系只保留已有卡片外框的颜色变化、缩放和抬升，不叠加整卡内层重复描边",
+      "status": "PASS",
+      "evidence": [
+        "同一次真实 E2E 的三段截图显示选中卡片本体保持可见，未再出现整卡绿色遮罩和内层绿色边框标签。"
+      ],
+      "images": [
+        "smashup-faction-before.png",
+        "smashup-faction-selected-current.png",
+        "smashup-faction-after-scroll.png"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/smashup-faction-selection-selected-20261010/smashup-faction-before.png",
+    "evidence/smashup-faction-selection-selected-20261010/smashup-faction-selected-current.png",
+    "evidence/smashup-faction-selection-selected-20261010/smashup-faction-after-scroll.png"
+  ]
+}

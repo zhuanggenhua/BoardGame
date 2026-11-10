@@ -1,4 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { disableAudio, setChineseLocale } from '../helpers/common';
 import { QIDAHEN_VISUAL_SOURCE_PATHS, requireCompleteQidahenSourceIdentity, trackQidahenSourceIdentity } from './sourceIdentity';
@@ -16,7 +17,8 @@ test('真实教程入口的页面响应与源码直接对应', async ({ page }, 
     await expect(page.locator('[data-tutorial-step="frontier-goal"]')).toBeVisible({ timeout: 90_000 });
     await waitForQidahenVisualReady(page);
     const identity = await verify();
-    mkdirSync(testInfo.outputDir, { recursive: true });
-    writeFileSync(testInfo.outputPath('source-identity.json'), JSON.stringify(identity, null, 2));
+    const recordPath = resolve(process.env.QIDAHEN_SOURCE_IDENTITY_RECORD ?? testInfo.outputPath('source-identity.json'));
+    mkdirSync(dirname(recordPath), { recursive: true });
+    writeFileSync(recordPath, JSON.stringify(identity, null, 2));
     requireCompleteQidahenSourceIdentity(identity);
 });

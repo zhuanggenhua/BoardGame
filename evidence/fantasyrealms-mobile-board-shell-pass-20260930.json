@@ -1,0 +1,31 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "936x432 手机横屏下幻想国度牌桌完整可见",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/fantasyrealms/mobile-board-shell/01-mobile-landscape-repaired.png",
+        "真实入口 E2E 通过，document overflow 为 936x432"
+      ]
+    },
+    {
+      "requirement": "手牌、牌堆、回合条和右侧动作按钮均在视口内",
+      "status": "PASS",
+      "evidence": [
+        "同一张真实入口截图",
+        "壳层几何：x=84,width=768,height=432；overflow width=936,height=432"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\fantasyrealms\\mobile-board-shell\\01-mobile-landscape-repaired.png"
+  ]
+}

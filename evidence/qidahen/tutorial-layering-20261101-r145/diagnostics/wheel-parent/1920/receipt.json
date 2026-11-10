@@ -1,0 +1,46 @@
+{
+  "source": "real-tutorial-entry",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "before": {
+    "wheel": {
+      "x": 136,
+      "y": 8,
+      "width": 438,
+      "height": 438
+    },
+    "hint": {
+      "x": 594,
+      "y": 107.875,
+      "width": 310,
+      "height": 238.25
+    },
+    "gap": 20
+  },
+  "after": {
+    "wheel": {
+      "x": 136,
+      "y": 8,
+      "width": 438,
+      "height": 438
+    },
+    "hint": {
+      "x": 594,
+      "y": 107.875,
+      "width": 310,
+      "height": 238.25
+    },
+    "gap": 20
+  },
+  "panBefore": {
+    "x": "0",
+    "y": "0"
+  },
+  "panAfter": {
+    "x": "96.4792756017925",
+    "y": "64.19827845722186"
+  },
+  "scenePannedWithoutMovingHud": true
+}

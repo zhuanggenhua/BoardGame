@@ -1,0 +1,115 @@
+{
+  "runId": "20261026-r28-fixed-hand-action-final",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r28_visual_delta3"
+  },
+  "reviewedAt": "2026-10-26T03:06:00.828Z",
+  "scope": "R28 相对 R27 的四张哈希变化截图及一张支付状态语义更正截图；逐张真实打开检查 UI、交互状态、可读性、高亮、遮挡与可见错误。",
+  "summary": {
+    "total": 5,
+    "pass": 5,
+    "revise": 0,
+    "failedPaths": []
+  },
+  "entries": [
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/03-轮盘走法悬停-显示费用与效果.png",
+      "status": "PASS",
+      "score": 94,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘本体、候选高亮和费用效果悬浮说明均可见；悬浮说明与教学正文未遮住轮盘候选，正文和说明没有越界裁切。",
+      "sha256": "cfacddc972c0bda8568d2c85d3936411684a5d67545e9a6fc7d2434f4416c365",
+      "bytes": 3197321,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "source": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/03-轮盘走法悬停-显示费用与效果.png"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/07-支付1张手牌.png",
+      "status": "PASS",
+      "score": 94,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召支付栏、三张手牌候选与看牌入口完整可见；教程提示位于选牌区域之外，未选状态与禁用确认按钮能够区分。",
+      "sha256": "0f9d45b535bfa3d8b2c47b3c112450784d935c3db779753db4867623f7206ed5",
+      "bytes": 3182214,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "source": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/07-支付1张手牌.png"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/07a-确认弃置手牌.png",
+      "status": "PASS",
+      "score": 94,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选中手牌抬起并显示已选标记，确认执行按钮有清楚焦点；确认提示、支付状态、选中牌及取消入口均未被遮挡。",
+      "sha256": "da6052752af9daa988749e7b6f03cab944a84a9d99f0e4b26efd0cdd87c7fc8b",
+      "bytes": 3187382,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "source": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/07a-确认弃置手牌.png"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final-mobile/移动-02-征召支付-手牌检视前.png",
+      "status": "PASS",
+      "score": 94,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏移动端的教程提示、支付栏、三张手牌和看牌入口均在视口内可辨；当前选牌区域未被提示遮住，支付进度与尚未选择的状态清楚。",
+      "sha256": "987f49ebd90dfd0b59f8ca45741788d0dd79112e3ab5e01b08166c81543a6e70",
+      "bytes": 511825,
+      "dimensions": {
+        "width": 844,
+        "height": 390
+      },
+      "source": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final-mobile/移动-02-征召支付-手牌检视前.png"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/07a-征召支付-点击看查看牌面.png",
+      "status": "PASS",
+      "score": 94,
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌检视层完整显示卡牌标题、正文和底部类型标记，关闭入口位于特写右上且可辨；检视层有明确遮罩，没有牌面裁切或可见错误。",
+      "sha256": "8d0ae9eae90f4e96b681c48ac3e44198fb64e9dba560046ca53eae264b9d1043",
+      "bytes": 2732813,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "source": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261026-r28-fixed-hand-action-final/07a-征召支付-点击看查看牌面.png"
+    }
+  ]
+}

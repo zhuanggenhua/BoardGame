@@ -1,0 +1,6 @@
+{
+  "permanentTest": "e2e/qidahen/pc-proportional-layout.e2e.ts",
+  "executedTest": "temp/qidahen-acceptance-snapshot-20261028/e2e/qidahen/mobile-population-layout.tmp.e2e.ts",
+  "emittedJavaScriptIdentical": true,
+  "sha256": "77cef7c1c6cd02c40a9c1d174f2e456d4ba98d7a4322cd9a8e1c256b45c6e156"
+}

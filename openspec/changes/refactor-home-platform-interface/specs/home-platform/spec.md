@@ -8,7 +8,7 @@
 - **THEN** 游戏信息来自正式注册表，动作通过现有房间服务执行，成功后进入真实房间，失败时保留可理解的错误与重试路径
 
 ### Requirement: Library and responsive navigation retain context
-收藏库 SHALL 保存收藏选择，并在详情返回后保留查询、排序与滚动上下文。
+现代首页的收藏库 SHALL 保存收藏选择，并在详情返回后保留查询、排序与滚动上下文。经典首页及其详情 SHALL 保持原有入口，不提供收藏入口。
 
 #### Scenario: Return from a mobile game detail
 - **WHEN** 手机玩家从收藏库进入详情再返回

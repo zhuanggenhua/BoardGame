@@ -1,0 +1,205 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r144_visual_middle"
+  },
+  "claimScope": "interaction-ui",
+  "scope": "R144中段16张当前原始整屏，逐张私读；只验UI与布局，不以图判数值正确性，不代替完整主链终态、生命周期或PC人工认可。",
+  "score": 94,
+  "hard_failures": [],
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\13-dispatch-source.png",
+      "sha256": "4f1fa23f4b36313d7d138c64fd7ac92bfc8f97b7f471e7bf076064f47e1e9cb3",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "来源地图完整呈现于轮盘右侧，己方来源绿色地区边界和兵堆可辨，右侧选择出兵来源与确认分开；未见教程压住兵、明归属或人口。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\14-dispatch-troops.png",
+      "sha256": "a226c67e2f5869f84ff5d31e2bda46a5053cadc11e3befe782af3293bb0bef29",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北放大至画面中央，10个兵候选的绿色贴边轮廓、步骑炮本体均可辨；右侧说明不压候选，已选0支与禁用确认可读。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\15-dispatch-troops-selected.png",
+      "sha256": "1f589d5879e18a037c0ea0855221bfedbbcf8e24af53c0ea50ebc9f54ecd0e31",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北候选仍齐全；两支步兵金色边界和底部炮兵金色边界可与绿色未选候选区分，选中标记及已选3支、确认可读；教程不遮兵。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\16-dispatch-target.png",
+      "sha256": "07ee7d95435018214ed5d90d967cb08f0dbe4f98ba1006ca87a7c8739161fa1f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部的上缘名称、地区实质本体、蒙古归属与人口2及可点击轮廓均清楚，辽北来源兵堆仍在；地图上界是素材边界，右侧教程没有遮住当前目标，重新选择部队入口清楚。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\17-tactic-card.png",
+      "sha256": "c6d07f5f41c95da8f6f48a8bb5444c5100e3c97e1ee196203d4c3a04202fd628",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北兵堆、指向叶赫的路径及目标驻军在开放地图内可辨；右侧开始战斗独立，手牌区保留战术选择，教程位于右下空区不盖兵或明归属人口。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\18-tactic-card-selected.png",
+      "sha256": "a407d3aa2d3764c6e40262eb39d2c92db2f0c8d9c2fc2cd743492c4eedb24100",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "鸳鸯阵从手牌区抬起为完整牌面，选中态清楚；右侧已选战术牌确认和取消面板不盖地图军队，教程位于其上方，源与目标仍可辨。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\26-occupy.png",
+      "sha256": "1db9bbf04881fc190794b6d2b6e2a5ebe6a27b5738bf5a3cac3fed036d066d36",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北与叶赫交战地区及地区内标记完整可辨；右侧战后选择、占领和撤回清楚，教程位于右下，不压双方地区、兵堆、明归属人口；战报展开入口可见。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\27-occupy-report.png",
+      "sha256": "77aa1a1934aeac1f6544ab67e3ef34d66dc2feae3de4e6f3ac7736206b38f17b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧战报展开后炮兵、骑兵、步兵三段及各自结果逐行可读，未被教程遮住；占领撤回仍在战报上方，开放地图保留双方完整交战地区。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\28-diplomacy-target.png",
+      "sha256": "5a85fb0683f50d15d22dbca32855f84ae2a48247df6b184839ad308bed5a898b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "外喀尔喀位于地图上部，名称、蒙古反面友好标记和人口清楚，绿色合法候选仍可辨；教程在下方，未遮外交本体或明归属人口，结束外交保留。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\29-diplomacy-finish.png",
+      "sha256": "e76fe7676e77ee5a1a334d2310e03e9f3dfc4c6c4d0fe6b5b9a4759e3d691d51",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "同一外喀尔喀位置的蒙古友好标记已不在，目标地区和人口仍可辨；结束外交获高亮，教程在地图下方与手牌上方，不盖军队或归属人口。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\30-hire-action.png",
+      "sha256": "fe4171915addbd2d2abad31fd708328c53180cdbdc3db4b2e9d6f25201821506",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧轮盘行动内雇佣选项高亮，同时保留先执行手牌行动与结束轮盘行动；大同原守军在地图内可辨，教程位于地图右下空白且不压军队或明归属人口。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\31-hire-target.png",
+      "sha256": "cddbb03e24e4e3f914ab42332d81c418df969390c729a07c03044a1ab137f0ba",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大同以白色贴边轮廓和名称定位，原守军及人口2可辨；其他合法己方地区仍显示绿色边界，教程置于右侧地图外，确认与目标没有混淆。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\32-new-year.png",
+      "sha256": "af1e787e64327eb51e2a5de7eed8938aa88c733036888130f42fb46049823079",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "年末说明和下一步置于右下，山海关名称、相邻防线和相关明标记可见；右侧正式维护面板标题与两种选项可读，教程未压军队或明归属人口。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\33-maintain-shanhai.png",
+      "sha256": "447f9705c14b5e9ef0162cca084345b8f25609b49cd2a2e0810ba6537754b7b8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "维护山海关标题与弃2张手牌维护选项清楚，地图中央山海关名称、明归属和相邻部队/人口未被教程盖住；教程在右下，皮岛兵、明归属与人口2仍可见。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\34-abandon-jinzhou.png",
+      "sha256": "91cde1e1a60459350cc1badc333fff802f3b469746be841c45c1c7b15df7990f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "当前维护锦州标题与放弃维护高亮可见，地图中央锦州城市名称和城市图标完整，不被右下教程盖住；辽北/辽东兵和可见明归属人口未受教程遮挡。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\35-abandon-inner-wall.png",
+      "sha256": "8da775808a873d9ff63f8faedbcf6c34f81331451107481db47949a885f22a95",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内长城边界及其两侧地区在中央可辨，维护内长城标题和放弃维护选项明确；教程在右下流程印刷区，不盖中央长城或军队、明归属人口。"
+    }
+  ]
+}

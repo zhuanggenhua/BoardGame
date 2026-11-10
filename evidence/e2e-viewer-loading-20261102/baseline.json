@@ -1,0 +1,23 @@
+{
+  "userReport": "本地截图加载很久，半天都是黑的",
+  "url": "http://127.0.0.1:4867/?key=ac4b3089e113",
+  "owner": "existing viewer directory-fetch lifecycle",
+  "scope": [
+    "viewer refresh scheduling",
+    "same URL load and image display verification"
+  ],
+  "excluded": [
+    "game/tutorial/rules/assets",
+    "image quality reduction",
+    "new viewer or changed layout",
+    "commit/push/deploy"
+  ],
+  "observed": {
+    "autoRefreshIntervalMs": 2500,
+    "directoryDurationMs": 312118,
+    "browserQueueMs": 304352,
+    "serverTTFBMs": 7719,
+    "incompleteImages": 42,
+    "directHealthTimeoutMs": 5016
+  }
+}

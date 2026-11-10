@@ -1,0 +1,441 @@
+{
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r149_video_part1"
+  },
+  "video": {
+    "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\battle-real-time.webm",
+    "sha256": "753fd81415cc7ee22386dc3a296d3363cbbc305d55e869b4a8bb48ae6199d82b",
+    "totalFrames": 154,
+    "firstFrame": 1,
+    "lastFrame": 77,
+    "frames": [
+      {
+        "number": 1,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0001.png",
+        "sha256": "9725545f7858141f21b91eb319392c2fb387a17e62ef334826c6ea5adf81d3b6"
+      },
+      {
+        "number": 2,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0002.png",
+        "sha256": "9725545f7858141f21b91eb319392c2fb387a17e62ef334826c6ea5adf81d3b6"
+      },
+      {
+        "number": 3,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0003.png",
+        "sha256": "9725545f7858141f21b91eb319392c2fb387a17e62ef334826c6ea5adf81d3b6"
+      },
+      {
+        "number": 4,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0004.png",
+        "sha256": "9725545f7858141f21b91eb319392c2fb387a17e62ef334826c6ea5adf81d3b6"
+      },
+      {
+        "number": 5,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0005.png",
+        "sha256": "c9fef36e46500c630d3448edbca8d65265a19d3b11f00e15957095fbc11c1091"
+      },
+      {
+        "number": 6,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0006.png",
+        "sha256": "c9fef36e46500c630d3448edbca8d65265a19d3b11f00e15957095fbc11c1091"
+      },
+      {
+        "number": 7,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0007.png",
+        "sha256": "c9fef36e46500c630d3448edbca8d65265a19d3b11f00e15957095fbc11c1091"
+      },
+      {
+        "number": 8,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0008.png",
+        "sha256": "453800d2bf7619d983ab4826d2d75fd909e471c998523ecb93d32441789ffa09"
+      },
+      {
+        "number": 9,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0009.png",
+        "sha256": "9736eb55f7e7e35b811eb9292b74235302f210ee7a09ebe766a30f7738f9259a"
+      },
+      {
+        "number": 10,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0010.png",
+        "sha256": "db3c5b7702ee0c6dd5cd31267968fed9b884f701b494fe3b422c04e9ba118345"
+      },
+      {
+        "number": 11,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0011.png",
+        "sha256": "44da975981fa6593d9f7135abfb7044c5efca9f94c0808c14b7d3b2e74cc54f1"
+      },
+      {
+        "number": 12,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0012.png",
+        "sha256": "654c5022792d0da7e5eead6f0ee693c155b2c209a1fb8671b7794ff381d40b80"
+      },
+      {
+        "number": 13,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0013.png",
+        "sha256": "a7fd1848fff6211be2eb8c3c893c9c70d472d94c5253fb89512bac89d9e1246d"
+      },
+      {
+        "number": 14,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0014.png",
+        "sha256": "844d69abb3eb563ee710cec5fbe95d6d2f532703e98a3e6cdb8ea469f2f2d8a9"
+      },
+      {
+        "number": 15,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0015.png",
+        "sha256": "4b4c8673d7ed35d1d41c82e9f5dc7a2dc5976c816b91e7d33f72bf432502e3da"
+      },
+      {
+        "number": 16,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0016.png",
+        "sha256": "fe1d1db96a219b22da7637f6e9596540ca0c7f770f359a6dda0d23366213d2a6"
+      },
+      {
+        "number": 17,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0017.png",
+        "sha256": "55a9e136db047e9e1635701ee6058841b314fdfba0a0420aa9009bb839d44dab"
+      },
+      {
+        "number": 18,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0018.png",
+        "sha256": "93fa50babd7e49965a252af1c686a80844a01ac68c92fcba699ed863ee8d5ee4"
+      },
+      {
+        "number": 19,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0019.png",
+        "sha256": "25ad1bc1c8e40823ba82eb2262e04eec35ecb4ec690f509bb5741d7676e0a402"
+      },
+      {
+        "number": 20,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0020.png",
+        "sha256": "2a87fc60a8c8d6d42c63d5b9f5a9328ff357ba93e03299514133467d838e8d4f"
+      },
+      {
+        "number": 21,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0021.png",
+        "sha256": "2de9acdeb92e8c9ac142c8fbd42f92619f1232ff0335da42598be6a9e09a37f3"
+      },
+      {
+        "number": 22,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0022.png",
+        "sha256": "d83b156ed2ba95ec9dac2fd8668ef7963bd88e8820ec1d52e2b1b5d9cb81cbf9"
+      },
+      {
+        "number": 23,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0023.png",
+        "sha256": "75bc3868daec7043a8bacb3277344e003998b2e53331c342d81a3ad23b16d376"
+      },
+      {
+        "number": 24,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0024.png",
+        "sha256": "3e254fd50080f4483ff67da290a1b1b3bd013cccfbc95e8294dc3f2d9376da5a"
+      },
+      {
+        "number": 25,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0025.png",
+        "sha256": "967047572d10fc1ff1af26c0560160db56b692a82443da18e34dfd15ae91b0ce"
+      },
+      {
+        "number": 26,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0026.png",
+        "sha256": "76e47615a8517975a73140919451de73e46f3079e4f22299b1f77212bdee797a"
+      },
+      {
+        "number": 27,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0027.png",
+        "sha256": "4cce046d32c0635db1b86714d8f8189b4cb0316121f64661ceca6060f4c487f9"
+      },
+      {
+        "number": 28,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0028.png",
+        "sha256": "2113d04a8775dc4426576f3e3e74ebfaacb9d93b07008a622adf4d39902babe2"
+      },
+      {
+        "number": 29,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0029.png",
+        "sha256": "f4bd9435f53de5cb53036551da26fecd25c61a693a9ec554fb0805569bf277b8"
+      },
+      {
+        "number": 30,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0030.png",
+        "sha256": "d2b4f39de7810e663bc32836c0cad9b7b4033b18837d0dbb7c3eb30eee2c225f"
+      },
+      {
+        "number": 31,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0031.png",
+        "sha256": "194d744efa3f161e190db0072189324531adb10f99f1095727899d6a2db9699c"
+      },
+      {
+        "number": 32,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0032.png",
+        "sha256": "a986a8678aa324cbf21feeb210bbdf4ec3ebffe97ad1a271ac01025cf970495c"
+      },
+      {
+        "number": 33,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0033.png",
+        "sha256": "05adf3d5d2b50d679386d771647050b0e4c3c475745de4b5da4bd22b682a311a"
+      },
+      {
+        "number": 34,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0034.png",
+        "sha256": "8b7ea8c1873a2155bb85b23fc414bccf19fc1232a552d20719023324fdb0864a"
+      },
+      {
+        "number": 35,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0035.png",
+        "sha256": "3ee62f6fc5d887a575119bcc6eaa8c9be939dd56d6d9df7d8254d2bd116c253f"
+      },
+      {
+        "number": 36,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0036.png",
+        "sha256": "edb606593b0a0d1a9fd9f0528d7812c9fd8347be7181e4ceb77c3244f949526e"
+      },
+      {
+        "number": 37,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0037.png",
+        "sha256": "f6ae6bd188ff04c34d1124e06562a2b251ac5def78ceab97f388a50612144bcb"
+      },
+      {
+        "number": 38,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0038.png",
+        "sha256": "3ea491701507c9c9625a6f0e3d9ea7a3f78e7e3513f026638fa3aee43c9895e5"
+      },
+      {
+        "number": 39,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0039.png",
+        "sha256": "fad81d1d83ea79bb17313babfe3a70aeab1a3df4395471a8567f3e35b1718d6a"
+      },
+      {
+        "number": 40,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0040.png",
+        "sha256": "fad81d1d83ea79bb17313babfe3a70aeab1a3df4395471a8567f3e35b1718d6a"
+      },
+      {
+        "number": 41,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0041.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 42,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0042.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 43,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0043.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 44,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0044.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 45,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0045.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 46,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0046.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 47,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0047.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 48,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0048.png",
+        "sha256": "4af5762b3edbdae2473e6befd3a4f9573c523d5a533adc8533c45232613bbe04"
+      },
+      {
+        "number": 49,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0049.png",
+        "sha256": "2f4a8e29ea7d5b57f1f6a25e69f299e7702cdb082f937a25c7587b4180881a55"
+      },
+      {
+        "number": 50,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0050.png",
+        "sha256": "2f4a8e29ea7d5b57f1f6a25e69f299e7702cdb082f937a25c7587b4180881a55"
+      },
+      {
+        "number": 51,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0051.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 52,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0052.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 53,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0053.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 54,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0054.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 55,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0055.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 56,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0056.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 57,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0057.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 58,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0058.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 59,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0059.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 60,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0060.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 61,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0061.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 62,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0062.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 63,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0063.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 64,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0064.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 65,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0065.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 66,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0066.png",
+        "sha256": "9d30d86aa0731c42933aa3c56a3515eb276ab15831056e8d905e803f6b67bfb6"
+      },
+      {
+        "number": 67,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0067.png",
+        "sha256": "a7dcab0611baf6893d6f4b26e4098712bcbf2f4a439999e8f6ccc0565f96e4f5"
+      },
+      {
+        "number": 68,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0068.png",
+        "sha256": "265c6e41955b630c52cd9f2a8150f020165c21adde09e10d0c951e7fed284a51"
+      },
+      {
+        "number": 69,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0069.png",
+        "sha256": "72f70fd16fff668dee27819829f8352a00f1886f5ec1835f9bb17e2e6ca99aa8"
+      },
+      {
+        "number": 70,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0070.png",
+        "sha256": "777ef0dabf875a4be2745c787b2d1a99812427150bfa5d526e7261b9b412d74c"
+      },
+      {
+        "number": 71,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0071.png",
+        "sha256": "0c999509783a748cf14cdaa2a7ace9c1612475b13fb5dc239ea26f46a1308284"
+      },
+      {
+        "number": 72,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0072.png",
+        "sha256": "c6e882916a70f836fc3fbacd2fe009f7821b5b43dac6e689ae13dac80e0b8735"
+      },
+      {
+        "number": 73,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0073.png",
+        "sha256": "cc1fde43a5569662d3d9d5eb9b9c5fa775dae5317d89931c52df442ece5f0449"
+      },
+      {
+        "number": 74,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0074.png",
+        "sha256": "44a0ec86a2c8dcae4257873eca5ccc47aaad1d16dc2d17cb5d5511dece0935ae"
+      },
+      {
+        "number": 75,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0075.png",
+        "sha256": "4a733585b93ae2fb7d18cf7cd26988533e6d32d23fcf0d68556766da8429cba1"
+      },
+      {
+        "number": 76,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0076.png",
+        "sha256": "caddddaef1cb5f7c9a053302bf2cc3336d40971b2afa60cad90fdbc35b2cd007"
+      },
+      {
+        "number": 77,
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\video-private-review\\frames\\frame-0077.png",
+        "sha256": "b501986d9caff0c3ffb74a9c9051b80749bc76ee47cc7e6355896085e9307125"
+      }
+    ],
+    "observation": "已实际逐帧检查第一至第七十七帧的完整画面。第一至第七帧为开战准备，第八至第十二帧进入炮兵阶段，辽北至叶赫部与阶段标题同列可见。第十三至第三十六帧白骰持续变换朝向，第三十七帧停稳，第三十八至第六十六帧显示合计三和造成零损伤，标题、攻方、骰子与结果归属成组清楚。第六十七帧切换骑兵阶段，第六十八至第七十七帧守方红骰连续转动。整个范围未见不明封闭框，真正交战双方的地图与兵力仍可辨，未见目标裁切、主体遮挡或可见报错。低层蒙古底图局部被结算信息覆盖，不影响本次交战对象识别。本段止于骑兵滚动中，不对后续骑兵停稳、损伤或退场作结论，也不从图面推断规则数值正确性。"
+  },
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "fdf993edd3493a8ad86deaa82ed4143157ca835cd2350303b6ad293685877da1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏中辽北至叶赫部与炮兵阶段同列，攻方标记位于骰子上方。白骰具有清楚的立体转动姿态，骰子周围没有不明封闭框。地图上的交战双方及兵力标记可辨，手牌与牌堆边缘没有侵占本次结算主体，未见可见报错。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "4de82414b5799f2dd715c8de08dfaeb6db6ea50e99bec957bc1792cb76208b2f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏中白骰已停稳，骰面、算式、合计三与造成零损伤上下成组，参战名称、炮兵阶段及攻方标记仍清楚可见。结算信息覆盖的是无关蒙古底图局部，未遮住真正交战双方。未见文字裁切、主体遮挡或可见报错；此处仅判断结果可读性，不判断数值规则。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "f4b6421a9b7ec3a9cf731862ded7fbd8cbd99b25d22f086968b562cf7511d6c4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏中辽北至叶赫部与骑兵阶段同列，守方标记在红骰上方，红骰处于可辨识的转动姿态。红骰与上一炮兵白骰的阶段归属清楚，交战双方地图仍可辨；没有不明封闭框、裁切、主体遮挡或可见报错。"
+    }
+  ]
+}

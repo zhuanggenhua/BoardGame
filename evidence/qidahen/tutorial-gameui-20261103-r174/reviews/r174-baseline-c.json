@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_c",
+  "actualReadCount": 1,
+  "baselineMedia": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/18-tactic-card-selected.png",
+      "sha256": "025bc1235ba511621594a225bcd17b44bcde277cd542da41d23b25692dcca7e7",
+      "status": "PASS",
+      "observation": "旧图用于职责对照：战术牌在左下完整抬起，但打出与取消按钮位于右侧远端面板，来源兵牌较密集，顶部仅写当前。此项通过只表示完成基线核对，不表示旧版可验收。",
+      "checks": [
+        "target-visible：旧版来源部队、目标、已选战术均已核对",
+        "interaction-ui：旧版远端确认与取消位置已锁定",
+        "layout-readable：旧图完整整屏读取并与当前对应对象比较",
+        "no-error：不以旧图或旧通过结论替代当前验收"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "出兵来源目标与战术确认",
+      "status": "PASS",
+      "baselineSource": "实际读取旧版所选战术完整整屏，与当前来源、部队、目标及所选战术四张完整整屏比较。",
+      "preservedInformation": "保留辽北至叶赫部交战关系、兵种与等级角标、战场宽度、所选战术牌面以及阵营身份。",
+      "preservedActions": "保留地图来源与目标选择、具体兵牌选择、战术牌选取、打出与取消以及开始战斗入口。",
+      "changes": "当前具体兵牌分布更疏，绿色合法、白色推荐和金色勾选层次可辨；战术提交与取消从右侧远端移至所选卡上沿，顶部当前明确为当前回合。",
+      "duplicateDecision": "当前图未继续在右侧复写所选战术标题与提交按钮，所选卡与贴附按钮承担一次选牌决策，交战摘要保留独立战场信息职责。",
+      "changeAuthority": "依据本轮最终候选视觉合同中的提示贴实际对象、合法推荐已选可区分和确认贴所选卡要求核对；仅裁决可见职责，不推断规则数值或商业教程。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/18-tactic-card-selected.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/13-dispatch-source.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/14-dispatch-troops.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/16-dispatch-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/18-tactic-card-selected.png"
+      ]
+    }
+  ]
+}

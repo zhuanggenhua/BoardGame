@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "手机横屏使用真机 796x360 CSS 视口时，牌桌外层按宽度优先占满视口",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/basic-flow.e2e.ts：真实 vivo V2314A 视口 796x360，角色选择 E2E 通过",
+        "e2e/betrayal/room-effect-representative.e2e.ts：同一视口结束回合投骰链通过",
+        "evidence/山屋惊魂-移动端结束回合投骰阻塞完整链路/03-移动端横屏-分配伤害后下一位行动.jpg"
+      ]
+    },
+    {
+      "requirement": "放大后投骰骰子、结算信息和返回牌桌按钮仍保持同一视觉带并可读",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/room-effect-representative.e2e.ts：骰子可视尺寸、canvas 宽度、结算间距断言通过",
+        "evidence/山屋惊魂-移动端结束回合投骰阻塞完整链路/01-移动端横屏-速度检定骰盘阻塞.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-移动端结束回合投骰阻塞完整链路\\01-移动端横屏-速度检定骰盘阻塞.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-移动端结束回合投骰阻塞完整链路\\03-移动端横屏-分配伤害后下一位行动.jpg"
+  ]
+}

@@ -1,0 +1,519 @@
+{
+  "reviewer": "/root/r134_battle_b",
+  "sourceVideo": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-real-time.webm",
+  "sourceSha256": "558feaf903d055f327a33997b15df2d597e8a056f011431111053101c28cc033",
+  "range": [
+    56,
+    105
+  ],
+  "status": "PARTIAL",
+  "reviewedFrameCount": 49,
+  "claimScope": "仅覆盖第56至104帧已实际读取内容，尚缺105；不代表全录像通过，不评价数值规则。",
+  "frames": [
+    {
+      "index": 56,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0056.png",
+      "sha256": "e42b1ceba572c6b0409456c8d398ad6c023fef63fb08b4f64cac18f0773b6e8b",
+      "timeSeconds": 17.307,
+      "actuallyRead": true,
+      "readMode": "full-original",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0056.png",
+      "observation": "完整原帧：骑兵阶段、守方和红色停稳骰体同屏，合计1、造成0损伤可读；交战双方地图、手牌、顶部资源和牌堆保留。"
+    },
+    {
+      "index": 57,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0057.png",
+      "sha256": "49e095fd0b84358e9c637e89bf55066da0bca9ce7ef4836cfff984fdb6ecda68",
+      "timeSeconds": 17.377,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0057-crop.png",
+      "observation": "骑兵守方红骰保持停稳，合计1、造成0损伤完整清楚。"
+    },
+    {
+      "index": 58,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0058.png",
+      "sha256": "49e095fd0b84358e9c637e89bf55066da0bca9ce7ef4836cfff984fdb6ecda68",
+      "timeSeconds": 17.443,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0058-crop.png",
+      "observation": "骑兵守方结果维持，红骰姿态未变，短标签与合计损伤无漂移。"
+    },
+    {
+      "index": 59,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0059.png",
+      "sha256": "0cd4058cf563db9fdde0359f2a6bea951774803547bf788a554baf2baa470831",
+      "timeSeconds": 17.507,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0059-crop.png",
+      "observation": "骑兵守方结果尾帧仍可读，下一阶段尚未出现。"
+    },
+    {
+      "index": 60,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0060.png",
+      "sha256": "5f2bba08bb7aae919a86899a2108f1e392849ecf2a73a5c5aa585f485112e224",
+      "timeSeconds": 17.604,
+      "actuallyRead": true,
+      "readMode": "full-original",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0060.png",
+      "observation": "完整原帧：切为步兵阶段、攻方，旧红骰与旧合计退场，地图交战双方、手牌与HUD保留。"
+    },
+    {
+      "index": 61,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0061.png",
+      "sha256": "a415e48dfc9cdfa311ee7fef027826b1f020d25e18c0a58c9ac70021ad9e29ee",
+      "timeSeconds": 17.763,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0061-crop.png",
+      "observation": "两个绿色骰体进入，初始相邻，多个侧面数字可见，步兵阶段与攻方清楚。"
+    },
+    {
+      "index": 62,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0062.png",
+      "sha256": "2f015d146d0afc7b650dfc6e589005c6f5209151cfee264489b38d27ce1467e3",
+      "timeSeconds": 17.899,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0062-crop.png",
+      "observation": "两绿骰持续旋转，与前帧相比可见面朝向改变。"
+    },
+    {
+      "index": 63,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0063.png",
+      "sha256": "263afee7177b2b219f9a381ffdc44b70ef9471e5dbb7ba8416c0b40ceb38f8e3",
+      "timeSeconds": 17.981,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0063-crop.png",
+      "observation": "两绿骰朝向继续变化，保持开放地图承载，没有骰盘或分盒。"
+    },
+    {
+      "index": 64,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0064.png",
+      "sha256": "ec9c1483e7032b0a583a90bf8867bd81bff98bd91bffa904fcb4fd2f73947138",
+      "timeSeconds": 18.083,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0064-crop.png",
+      "observation": "两绿骰继续换面并出现横向分离趋势，阶段和侧别不被遮挡。"
+    },
+    {
+      "index": 65,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0065.png",
+      "sha256": "dc5a945a92e60957812c0953087a2b9b75953184273effed3a84fd3a700f2414",
+      "timeSeconds": 18.18,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0065-crop.png",
+      "observation": "两绿骰明显分开，左右各自转动，移动方向可追踪。"
+    },
+    {
+      "index": 66,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0066.png",
+      "sha256": "80b3c47811418178724129a61f775bba48dba6c4ee6e28afb67fea454470e451",
+      "timeSeconds": 18.258,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0066-crop.png",
+      "observation": "左右两绿骰间距扩大，骰面旋转持续。"
+    },
+    {
+      "index": 67,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0067.png",
+      "sha256": "7361e6527e64148fbe62f3bf9a48aa541277a75c2a8f9f47b06a9e5afd8a0536",
+      "timeSeconds": 18.338,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0067-crop.png",
+      "observation": "左骰向左、右骰向右移动，两个骰体轮廓清楚。"
+    },
+    {
+      "index": 68,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0068.png",
+      "sha256": "4b1d80c5d2c85e098b4c58985c975375f79dd58ece3207a1fe25fcb8689417ee",
+      "timeSeconds": 18.417,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0068-crop.png",
+      "observation": "两骰继续分离并换面，位移与朝向均相对前帧改变。"
+    },
+    {
+      "index": 69,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0069.png",
+      "sha256": "1ca5103bea7b6b2c9059054a176741b2966f2c370bafdaa76c63276fb7815199",
+      "timeSeconds": 18.494,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0069-crop.png",
+      "observation": "两骰开放地图上继续滚动，步兵阶段与攻方持续可读。"
+    },
+    {
+      "index": 70,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0070.png",
+      "sha256": "02cf8faa89283740f7c5772452d9ee233479d4bedcd1b28c679de403c47226dd",
+      "timeSeconds": 18.579,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0070-crop.png",
+      "observation": "两骰横向移动仍可辨，左右各自可见面变化，无承载盒。"
+    },
+    {
+      "index": 71,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0071.png",
+      "sha256": "71922f10fc0af4fb810b85e26397949238cab014d0eb5370c36e7a418077ce46",
+      "timeSeconds": 18.673,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0071-crop.png",
+      "observation": "两骰继续向左右铺开，正面数字与轮廓随旋转改变。"
+    },
+    {
+      "index": 72,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0072.png",
+      "sha256": "973c3563156549e6db71fb09cc48aa818723c1ae8e408128716dc24929e0e929",
+      "timeSeconds": 18.757,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0072-crop.png",
+      "observation": "左骰与右骰继续换面，位置接近两侧停稳区。"
+    },
+    {
+      "index": 73,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0073.png",
+      "sha256": "9cfe3c9a63e973be72b428feb7b71189931238a81077f49811331cc253a5c265",
+      "timeSeconds": 18.845,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0073-crop.png",
+      "observation": "两骰滚动过程连续，左骰姿态倾斜变化，右骰面向变化。"
+    },
+    {
+      "index": 74,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0074.png",
+      "sha256": "f3c5097ced3f8b2e3a6976d8cf127cbe75a2867e8ada5158849981dca7e6fef2",
+      "timeSeconds": 18.93,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0074-crop.png",
+      "observation": "两骰仍在旋转，横向间距稳定增大后逐渐收敛。"
+    },
+    {
+      "index": 75,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0075.png",
+      "sha256": "cf622ffecaf2043b3cdfdebb1f3ecfdc982279d3b09650ef00198e467c948321",
+      "timeSeconds": 19.011,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0075-crop.png",
+      "observation": "两骰在分离位置继续换面，阶段短标签保持固定可读。"
+    },
+    {
+      "index": 76,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0076.png",
+      "sha256": "332091a3182996d9d42178286d553350660bb6c28e7d4e9423e06a678a4242f6",
+      "timeSeconds": 19.104,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0076-crop.png",
+      "observation": "两骰滚动开始收敛，左骰与右骰仍有明确朝向变化。"
+    },
+    {
+      "index": 77,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0077.png",
+      "sha256": "74211abc1ca23647f1a2e82035d3abdddd39ec50c5dedf7a87b4334fb3ba1a08",
+      "timeSeconds": 19.187,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0077-crop.png",
+      "observation": "两骰正面逐渐转向0，结果文字尚未出现。"
+    },
+    {
+      "index": 78,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0078.png",
+      "sha256": "d760f7ca94fb01d4437c211df82245a1a139ec2a57215b1d6b9d851e8458f825",
+      "timeSeconds": 19.285,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0078-crop.png",
+      "observation": "两绿色骰面均转为0，位置基本收敛，合计损伤仍未显示。"
+    },
+    {
+      "index": 79,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0079.png",
+      "sha256": "ff15444f2bb55f4435ede7e839aeb7aabcc5f1e6bd058332cd9aecb0cfd50b92",
+      "timeSeconds": 19.385,
+      "actuallyRead": true,
+      "readMode": "full-original",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0079.png",
+      "observation": "完整原帧：两骰停稳，出现0（10）0（10）、合计20、造成2损伤；步兵阶段/攻方可读，交战双方与手牌HUD保留。"
+    },
+    {
+      "index": 80,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0080.png",
+      "sha256": "ff15444f2bb55f4435ede7e839aeb7aabcc5f1e6bd058332cd9aecb0cfd50b92",
+      "timeSeconds": 19.46,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0080-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 81,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0081.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "timeSeconds": 19.528,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0081-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 82,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0082.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "timeSeconds": 19.595,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0082-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 83,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0083.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "timeSeconds": 19.669,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0083-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 84,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0084.png",
+      "sha256": "30c3004e147a211ab8c8cafdbddf85958e8b46052c4c493f2a55bbdbfcabc201",
+      "timeSeconds": 19.749,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0084-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 85,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0085.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "timeSeconds": 19.825,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0085-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 86,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0086.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "timeSeconds": 19.912,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0086-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 87,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0087.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "timeSeconds": 20.014,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0087-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 88,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0088.png",
+      "sha256": "805e5cd61ded5289a8a49426f9621f2767904592912a7dcd3fc1bb318f507d27",
+      "timeSeconds": 20.097,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0088-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 89,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0089.png",
+      "sha256": "f3693fc489757897161c3b48798f4a2d7a043179f25590755d385cf4952a9d0f",
+      "timeSeconds": 20.174,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0089-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 90,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0090.png",
+      "sha256": "f3693fc489757897161c3b48798f4a2d7a043179f25590755d385cf4952a9d0f",
+      "timeSeconds": 20.247,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0090-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 91,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0091.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "timeSeconds": 20.324,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0091-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 92,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0092.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "timeSeconds": 20.401,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0092-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 93,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0093.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "timeSeconds": 20.473,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0093-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 94,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0094.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "timeSeconds": 20.541,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0094-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 95,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0095.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "timeSeconds": 20.614,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0095-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 96,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0096.png",
+      "sha256": "a173cf7778171569d4c890f05e781f7b195abe88e6b07d107208c61932da6ab0",
+      "timeSeconds": 20.691,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0096-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 97,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0097.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "timeSeconds": 20.761,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0097-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 98,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0098.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "timeSeconds": 20.828,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0098-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 99,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0099.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "timeSeconds": 20.905,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0099-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 100,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0100.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "timeSeconds": 20.984,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0100-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 101,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0101.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "timeSeconds": 21.058,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0101-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 102,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0102.png",
+      "sha256": "0fbd73f396a770c06ecd6423e12e51be82088ba5ce8be297c35c1223f1905a37",
+      "timeSeconds": 21.131,
+      "actuallyRead": true,
+      "readMode": "original-pixel-crop",
+      "readPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/battle-final-part-b/frame-0102-crop.png",
+      "observation": "步兵攻方结果保持稳定：两个绿色骰面停稳为0，0（10）0（10）、合计20、造成2损伤持续可读，未见漂移、总骰盘或骰种分盒。"
+    },
+    {
+      "index": 103,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0103.png",
+      "sha256": "70326169c783a1b611b7263fecde70c2bdadfb2bcc97e7b8eb9a0d719fd77907",
+      "timeSeconds": 22.716,
+      "actuallyRead": true,
+      "readMode": "full-original",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0103.png",
+      "observation": "完整原帧：骰体、阶段和合计损伤全部退场，镜头恢复战后地图；右侧战后选择·辽北→叶赫部与占领、撤回按钮清楚可见，手牌及顶部HUD保留。"
+    },
+    {
+      "index": 104,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0104.png",
+      "sha256": "c5c56b484dbd6890d3edff50e2cdc608d0c268f3231b0ac4beee99c3bd1702aa",
+      "timeSeconds": 24.324,
+      "actuallyRead": true,
+      "readMode": "full-original",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0104.png",
+      "observation": "完整原帧：战后选择持续，右下教程说明出现但不遮挡占领、撤回双按钮；骰体与战斗结果层无残留。"
+    }
+  ],
+  "fullOriginalFramesRead": [
+    56,
+    60,
+    79,
+    103,
+    104
+  ],
+  "contextOriginalImagesRead": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/26-occupy.png",
+      "actuallyRead": true,
+      "observation": "完整原图补验同一战后状态，占领/撤回按钮可读可辨；只作上下文，不新增到媒体清单。"
+    }
+  ],
+  "issues": []
+}

@@ -1,0 +1,753 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/01-索尔正式素材、弃牌飞掷与奥丁整组重掷-01-索尔正式角色板与卡牌.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "索尔正式角色板、提示板、手牌与右侧骰盘同屏；弃牌飞掷入口可见，未新增选择弹窗。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/02-索尔正式素材、弃牌飞掷与奥丁整组重掷-02-弃牌飞掷选择成本.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "顶部原弃牌提示“选择1张手牌弃置”和取消完整可见；直接在原手牌区选成本，下一阶段禁用，无遮挡成本对象。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/03-索尔正式素材、弃牌飞掷与奥丁整组重掷-03-取消弃牌支付且资源未扣.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "3",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "取消后弃牌提示退出，四张手牌仍在，CP10、生命50、神锤仍在自己处；阶段操作恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/04-索尔正式素材、弃牌飞掷与奥丁整组重掷-04-手牌区弃置成本后飞掷结算.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "4",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "雷霆万钧进入弃牌堆，手牌减为三张，神锤在对手头像旁并显示-1反馈；CP仍10。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/05-索尔正式素材、弃牌飞掷与奥丁整组重掷-05-奥丁之力二级升级完成.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "5",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "奥丁之力II实际覆盖原能力槽，手牌减为二张，CP10降8；原槽位与规则没有被选择UI遮挡。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/06-索尔正式素材、弃牌飞掷与奥丁整组重掷-06-奥丁效果骰等待选择重掷骰子.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "6",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "五颗效果骰为1、1、4、4、6；提示在骰盘上方完整显示：选择重掷骰子或确认保留。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/07-索尔正式素材、弃牌飞掷与奥丁整组重掷-07-使用原掷骰操作提交两颗所选骰子.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "7",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "第一、第三骰金色勾选，提示说明已选2颗，可重掷或确认保留。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/08-索尔正式素材、弃牌飞掷与奥丁整组重掷-08-整组重掷一次完成.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "8",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "重掷后第一、第三骰变6，其余三骰保持1、4、6；选择提示退出，仅原确认可用，显示总伤害6。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/09-索尔正式素材、弃牌飞掷与奥丁整组重掷-09-效果骰收口后进入主攻击防御.png",
+      "chainId": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "chainStep": "9",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "效果骰退出并进入武僧防御阶段；主攻击总伤害6→9，驭电3/4，未遗留重掷候选。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/10-索尔当之无愧选择五后取消不提交改骰-01-当之无愧取消前选择五但尚未改骰.png",
+      "chainId": "索尔当之无愧选择五后取消不提交改骰",
+      "chainStep": "10",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "固定5候选金色选中；顶部提示选择设为5的骰子完整可读，五骰仍为1；取消可见，未出现加减。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/11-索尔当之无愧选择五后取消不提交改骰-02-取消改骰后骰面保持且卡牌资源退回.png",
+      "chainId": "索尔当之无愧选择五后取消不提交改骰",
+      "chainStep": "11",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "固定结果候选和交互提示已退出；五骰仍为1、CP从4恢复5、当之无愧回手。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/12-索尔当之无愧选择五后取消不提交改骰-01-当之无愧取消前选择五但尚未改骰.png",
+      "chainId": "索尔当之无愧选择五后取消不提交改骰",
+      "chainStep": "12",
+      "sourceRun": "e2e-1793072738337-8lyin0",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793072738337-8lyin0",
+      "stage": "独立代表态",
+      "description": "补5独立run：4/5固定候选中5金色，顶部“选择要设为5的骰子”完整；五骰仍1，取消可用，无加减。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/13-索尔当之无愧选择五后取消不提交改骰-02-取消改骰后骰面保持且卡牌资源退回.png",
+      "chainId": "索尔当之无愧选择五后取消不提交改骰",
+      "chainStep": "13",
+      "sourceRun": "e2e-1793072738337-8lyin0",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793072738337-8lyin0",
+      "stage": "独立代表态",
+      "description": "补5独立run：取消后五骰仍1、CP4返5、当之无愧回手；交互候选退出，原骰盘操作恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/14-索尔当之无愧选择五后取消不提交改骰-03-重新出牌选择五后原固定流程完成改骰.png",
+      "chainId": "索尔当之无愧选择五后取消不提交改骰",
+      "chainStep": "14",
+      "sourceRun": "e2e-1793072738337-8lyin0",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793072738337-8lyin0",
+      "stage": "独立代表态",
+      "description": "补充独立run的第二骰变为5，其余四骰仍1，CP为4；候选和修改提示退出。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/15-索尔手牌可完整放大并通过当之无愧选择自己的骰子-01-手牌放大完整阅读挥锤时刻.png",
+      "chainId": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "chainStep": "15",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "挥锤时刻完整卡面在阅读层，召回及1CP/驭电规则文字可读，关闭入口明确。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/16-索尔手牌可完整放大并通过当之无愧选择自己的骰子-02-改骰前自己的五颗骰子.png",
+      "chainId": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "chainStep": "16",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "五颗索尔骰均为1，原骰盘与投掷/确认/结算攻击入口完整，CP5。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/17-索尔手牌可完整放大并通过当之无愧选择自己的骰子-03-当之无愧直接选择固定目标四或五.png",
+      "chainId": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "chainStep": "17",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "骰盘顶部只有4和5两种目标点数，提示选择目标点数；骰子置暗等待选值，没有加减按钮。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/18-索尔手牌可完整放大并通过当之无愧选择自己的骰子-04-选择四后沿原固定值流程点选骰子.png",
+      "chainId": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "chainStep": "18",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "目标4呈金色选中，提示明确选择要设为4的骰子，五骰仍为1并恢复候选亮度；取消可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/19-索尔手牌可完整放大并通过当之无愧选择自己的骰子-05-改为四且其余骰子保持.png",
+      "chainId": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "chainStep": "19",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "第一骰为4，其余四骰仍1；候选和提示退出，CP为4，回到原骰盘操作。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/20-索尔不屈意志响应后生命0-01-八伤致死攻击进入原受伤响应窗口.png",
+      "chainId": "索尔不屈意志响应后生命0",
+      "chainStep": "20",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命0\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "生命5、CP5、待受伤害8与原响应跳过同屏；不屈意志在原手牌区提供出牌入口。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/21-索尔不屈意志响应后生命0-02-不屈效果骰在原骰盘待玩家确认.png",
+      "chainId": "索尔不屈意志响应后生命0",
+      "chainStep": "21",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命0\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "不屈意志已进入弃牌堆，单骰1在原奖励骰盘待确认；生命5、CP3、待受伤害8保留；无额外新弹窗。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/22-索尔不屈意志响应后生命0-03-原伤害事务完成且生命与牌费正确.png",
+      "chainId": "索尔不屈意志响应后生命0",
+      "chainStep": "22",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命0\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "非头盔分支结算生命0、CP3，原失败结算层清楚显示索尔HP0与对手HP50；没有错误保命。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/23-索尔不屈意志响应后生命1-01-八伤致死攻击进入原受伤响应窗口.png",
+      "chainId": "索尔不屈意志响应后生命1",
+      "chainStep": "23",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命1\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "另一头盔分支前态生命5、CP5、待受8伤害，原响应窗口及手牌入口可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/24-索尔不屈意志响应后生命1-02-不屈效果骰在原骰盘待玩家确认.png",
+      "chainId": "索尔不屈意志响应后生命1",
+      "chainStep": "24",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命1\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "不屈意志单骰4（头盔）在原骰盘待确认；生命5、CP3、待受8伤害可见，原确认入口清楚。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/25-索尔不屈意志响应后生命1-03-原伤害事务完成且生命与牌费正确.png",
+      "chainId": "索尔不屈意志响应后生命1",
+      "chainStep": "25",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔不屈意志响应后生命1\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "头盔分支后态生命1、CP3，伤害响应与奖励骰已退出；未出现失败结算层。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/26-索尔付费召回和驭电抽牌沿原主动栏与弃牌提示-01-神锤在敌人处且驭电三枚.png",
+      "chainId": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "chainStep": "26",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "神锤图标在对手头像旁，驭电3/4；原召回入口可用、飞掷禁用，CP5。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/27-索尔付费召回和驭电抽牌沿原主动栏与弃牌提示-02-召回成本复用手牌区与当前提示.png",
+      "chainId": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "chainStep": "27",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "召回成本沿原手牌区选1张，顶部弃牌提示和取消可见；神锤在对手、CP5、驭电3/4仍保留。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/28-索尔付费召回和驭电抽牌沿原主动栏与弃牌提示-03-弃牌召回后神锤回归且驭电三至四.png",
+      "chainId": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "chainStep": "28",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "弃牌后神锤回自己生命栏上方，驭电3升4，手牌为空；花4驭电抽1牌原主动按钮高亮。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/29-索尔付费召回和驭电抽牌沿原主动栏与弃牌提示-04-花四驭电抽一牌并禁用重复抽牌.png",
+      "chainId": "索尔付费召回和驭电抽牌沿原主动栏与弃牌提示",
+      "chainStep": "29",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔付费召回和驭电抽牌沿原主动栏与弃牌提示\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "抽牌后驭电图标清空、牌库29降28并手牌增加俺也一样，抽牌按钮禁用；神锤仍在自己。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/30-索尔公共任意改一骰保留旧操作语义-01-旧固定值和任意编辑各自提示与控件.png",
+      "chainId": "索尔公共任意改一骰保留旧操作语义",
+      "chainStep": "30",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "任意改骰原±控件分布于五骰旁，顶部选择要修改的骰子；未选择时确认禁用，取消可用。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/31-索尔公共任意改一骰保留旧操作语义-02-任意编辑保留原加减预览和手动确认.png",
+      "chainId": "索尔公共任意改一骰保留旧操作语义",
+      "chainStep": "31",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "公共任意改骰显示第一骰2的本地预览和±按钮，完成提示、取消与手动确认可见；与固定4/5分支明确不同。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/32-索尔公共任意改一骰保留旧操作语义-03-旧流程提交后只修改一颗骰子.png",
+      "chainId": "索尔公共任意改一骰保留旧操作语义",
+      "chainStep": "32",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共任意改一骰保留旧操作语义\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "任意改骰手动提交后第一骰2，其余四骰1，±和提示退出，CP3；原攻击骰操作恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/33-索尔公共固定六保留旧操作语义-01-旧固定值和任意编辑各自提示与控件.png",
+      "chainId": "索尔公共固定六保留旧操作语义",
+      "chainStep": "33",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共固定六保留旧操作语义\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "公共固定6只显示设6提示和骰子选择，取消可用；无±，保留原固定值流程。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/34-索尔公共固定六保留旧操作语义-03-旧流程提交后只修改一颗骰子.png",
+      "chainId": "索尔公共固定六保留旧操作语义",
+      "chainStep": "34",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔公共固定六保留旧操作语义\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "公共固定6后态第一骰6、其余四骰1，CP4；固定提示退出，原骰盘动作恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/35-索尔奥丁二级空选保留效果骰原确认-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔奥丁二级空选保留效果骰原确认",
+      "chainStep": "35",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁二级空选保留效果骰原确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "奥丁II升级牌覆盖原槽位，五个攻击骰1、1、4、4、4；总基础伤害6、CP8、生命30可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/36-索尔奥丁二级空选保留效果骰原确认-02-五颗效果骰与原确认保留结果.png",
+      "chainId": "索尔奥丁二级空选保留效果骰原确认",
+      "chainStep": "36",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁二级空选保留效果骰原确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "奥丁II空选五骰4、4、6、6、6；顶部完整提示选择重掷或确认保留，只有原确认入口，规则板不遮挡。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/37-索尔奥丁二级空选保留效果骰原确认-03-确认后一次获得三驭电和一点战斗点数.png",
+      "chainId": "索尔奥丁二级空选保留效果骰原确认",
+      "chainStep": "37",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁二级空选保留效果骰原确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "奥丁II确认后驭电3/4、CP8升9，原主攻击6增9并进入对手防御；重掷提示退出。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/38-索尔奥丁基础无重掷效果骰原确认-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔奥丁基础无重掷效果骰原确认",
+      "chainStep": "38",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁基础无重掷效果骰原确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础奥丁原槽位未覆盖，攻击骰1、1、4、4、4；基础伤害5、CP10、生命30可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/39-索尔奥丁基础无重掷效果骰原确认-02-五颗效果骰与原确认保留结果.png",
+      "chainId": "索尔奥丁基础无重掷效果骰原确认",
+      "chainStep": "39",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁基础无重掷效果骰原确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础奥丁五骰4、4、6、6、6沿原骰盘确认，无II的选择重掷提示与重掷按钮；等级差异正确。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/40-索尔奥丁基础无重掷效果骰原确认-03-确认后一次获得三驭电和一点战斗点数.png",
+      "chainId": "索尔奥丁基础无重掷效果骰原确认",
+      "chainStep": "40",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁基础无重掷效果骰原确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础奥丁确认后驭电3/4、CP10升11，主攻击5增8并进入防御；无重掷残留。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/41-索尔推广彩虹桥投出1沿原效果骰确认-01-明确加入推广卡的合法主要阶段前态.png",
+      "chainId": "索尔推广彩虹桥投出1沿原效果骰确认",
+      "chainStep": "41",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出1沿原效果骰确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "推广彩虹桥在主要阶段手牌原入口，CP5、牌库29，无状态奖励前置。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/42-索尔推广彩虹桥投出1沿原效果骰确认-02-推广卡效果骰原骰盘待确认.png",
+      "chainId": "索尔推广彩虹桥投出1沿原效果骰确认",
+      "chainStep": "42",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出1沿原效果骰确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "彩虹桥投1沿原奖励骰盘显示单骰1与确认；下一阶段禁用，彩虹桥位于弃牌堆。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/43-索尔推广彩虹桥投出1沿原效果骰确认-03-确认后抽一牌及雷电分支状态奖励.png",
+      "chainId": "索尔推广彩虹桥投出1沿原效果骰确认",
+      "chainStep": "43",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出1沿原效果骰确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "投1确认后牌库28、抽到俺也一样，CP5且无破防/驭电奖励；原下一阶段恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/44-索尔推广彩虹桥投出6沿原效果骰确认-01-明确加入推广卡的合法主要阶段前态.png",
+      "chainId": "索尔推广彩虹桥投出6沿原效果骰确认",
+      "chainStep": "44",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出6沿原效果骰确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "投6分支前同样主要阶段原手牌彩虹桥、CP5、牌库29，未预置应获得奖励。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/45-索尔推广彩虹桥投出6沿原效果骰确认-02-推广卡效果骰原骰盘待确认.png",
+      "chainId": "索尔推广彩虹桥投出6沿原效果骰确认",
+      "chainStep": "45",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出6沿原效果骰确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "彩虹桥投6沿原奖励骰盘显示单骰6闪电与确认；未提前给予奖励，驭电栏尚空。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/46-索尔推广彩虹桥投出6沿原效果骰确认-03-确认后抽一牌及雷电分支状态奖励.png",
+      "chainId": "索尔推广彩虹桥投出6沿原效果骰确认",
+      "chainStep": "46",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出6沿原效果骰确认\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "投6确认后牌库28、抽1牌、破防1/2及驭电2/4同屏；原下一阶段恢复，奖励分支有区别。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/47-索尔无懈可击响应后生命5-01-八伤致死攻击进入原受伤响应窗口.png",
+      "chainId": "索尔无懈可击响应后生命5",
+      "chainStep": "47",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔无懈可击响应后生命5\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "无懈可击在生命5/驭电3/4/CP5、待受8伤害时沿原受伤响应窗口出牌；手牌成本语义可读。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/48-索尔无懈可击响应后生命5-03-原伤害事务完成且生命与牌费正确.png",
+      "chainId": "索尔无懈可击响应后生命5",
+      "chainStep": "48",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔无懈可击响应后生命5\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "无懈可击后生命保持5、CP5降3、驭电3降1，伤害8→0；原响应确认仍可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/49-索尔瓶中二级三次沿既有选择窗口逐次移动-00-同张升级的两个变体以真实规则供选择.png",
+      "chainId": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "chainStep": "49",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "原变体选择同时列瓶中闪电II：最多3次/2破防/8伤害/驭电加伤，以及连锁锤击：最多6次；不发动技能在下方。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/50-索尔瓶中二级三次沿既有选择窗口逐次移动-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "chainStep": "50",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "瓶中II覆盖原槽位，四闪电攻击骰满足主变体，基础总伤害8、CP8；升级两个子区域完整。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/51-索尔瓶中二级三次沿既有选择窗口逐次移动-02-可选移动窗口保留立即停止入口.png",
+      "chainId": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "chainStep": "51",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "瓶中II原结算选择窗口显示唯一对手头像/飞掷至武僧及停止移动；两项完整可点击，无强制执行满3次。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/52-索尔瓶中二级三次沿既有选择窗口逐次移动-03-一次飞掷独立扣一生命后可继续或停止.png",
+      "chainId": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "chainStep": "52",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "瓶中II第一次飞掷后原移动候选切换召回自己P1，并继续保留停止移动；文字、头像无遮挡。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/53-索尔瓶中二级三次沿既有选择窗口逐次移动-04-达到次数上限或停止后回原结算.png",
+      "chainId": "索尔瓶中二级三次沿既有选择窗口逐次移动",
+      "chainStep": "53",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "瓶中II移动链退出后破防2/2、驭电1/4、主伤害8→9，神锤在敌方并有-1反馈；原响应入口恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/54-索尔瓶中基础零次停止沿既有选择窗口逐次移动-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔瓶中基础零次停止沿既有选择窗口逐次移动",
+      "chainStep": "54",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础瓶中未升级，四闪电攻击骰、基础主伤害7和CP10清晰；原技能槽选择高亮。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/55-索尔瓶中基础零次停止沿既有选择窗口逐次移动-02-可选移动窗口保留立即停止入口.png",
+      "chainId": "索尔瓶中基础零次停止沿既有选择窗口逐次移动",
+      "chainStep": "55",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础瓶中同样保留飞掷与停止移动两项，允许零次停止；候选在屏内完整。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/56-索尔瓶中基础零次停止沿既有选择窗口逐次移动-04-达到次数上限或停止后回原结算.png",
+      "chainId": "索尔瓶中基础零次停止沿既有选择窗口逐次移动",
+      "chainStep": "56",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础瓶中零次停止后神锤仍在自己、对手生命50不变，破防2/2已获得、总伤害7，原响应恢复。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/57-索尔破防连续消费失败后仍可再次使用-01-破防正式图标与消费入口.png",
+      "chainId": "索尔破防连续消费失败后仍可再次使用",
+      "chainStep": "57",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "破防正式图标2/2在生命栏上方可用，响应跳过可见，主攻击7仍保留；相关骰子和状态可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/58-索尔破防连续消费失败后仍可再次使用-02-第一枚破防效果骰失败.png",
+      "chainId": "索尔破防连续消费失败后仍可再次使用",
+      "chainStep": "58",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "消耗一枚后1/2，原奖励骰单骰1等待确认；总伤害7保留，无专用新骰子弹窗。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/59-索尔破防连续消费失败后仍可再次使用-03-失败后仍可使用第二枚破防.png",
+      "chainId": "索尔破防连续消费失败后仍可再次使用",
+      "chainStep": "59",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "失败后原攻击五骰恢复，破防1/2仍高亮可用，响应窗口再次可操作。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/60-索尔破防连续消费失败后仍可再次使用-04-第二枚破防效果骰成功.png",
+      "chainId": "索尔破防连续消费失败后仍可再次使用",
+      "chainStep": "60",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "第二枚破防已耗尽，奖励骰4头盔待原确认，主攻击7保留；效果骰与动作无遮挡。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/61-索尔破防连续消费失败后仍可再次使用-05-不可防御主攻击结算后收口.png",
+      "chainId": "索尔破防连续消费失败后仍可再次使用",
+      "chainStep": "61",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "结算退出响应，进入主要阶段2，对手显示-7反馈，原攻击骰恢复且没有遗留奖励骰按钮。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/62-索尔终极四次沿既有选择窗口逐次移动-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔终极四次沿既有选择窗口逐次移动",
+      "chainStep": "62",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "终极五闪电骰，底部终极能力原槽位高亮，主伤害14、CP10；无错认瓶中II卡。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/63-索尔终极四次沿既有选择窗口逐次移动-02-可选移动窗口保留立即停止入口.png",
+      "chainId": "索尔终极四次沿既有选择窗口逐次移动",
+      "chainStep": "63",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "终极能力沿同一飞掷或召回窗口，仍有停止移动；没有强制4次的新专用流程。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/64-索尔终极四次沿既有选择窗口逐次移动-03-一次飞掷独立扣一生命后可继续或停止.png",
+      "chainId": "索尔终极四次沿既有选择窗口逐次移动",
+      "chainStep": "64",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "终极第一次飞掷后选择窗口切换召回自己和停止移动，两个原候选完整。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/65-索尔终极四次沿既有选择窗口逐次移动-04-达到次数上限或停止后回原结算.png",
+      "chainId": "索尔终极四次沿既有选择窗口逐次移动",
+      "chainStep": "65",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "终极移动链结束回主要阶段2，神锤回自己、驭电2/4、破防1/2，敌方-14反馈；移动窗口退出。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/66-索尔连锁二级四颗效果骰保留六个组合选择-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "chainStep": "66",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "连锁II实际升级卡覆盖原槽位，明确卡面投4骰/选2和3附属伤害；骰盘攻击组合1、1、1、6、6可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/67-索尔连锁二级四颗效果骰保留六个组合选择-02-四颗效果骰先由原骰盘确认.png",
+      "chainId": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "chainStep": "67",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "连锁II四颗效果骰1、2、4、6在原骰盘待确认；原确认按钮清晰，未直接自动选最高组合。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/68-索尔连锁二级四颗效果骰保留六个组合选择-03-六个两骰组合供玩家比较.png",
+      "chainId": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "chainStep": "68",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "四颗效果骰产生六个组合：3、5、7、6、8、10伤害，骰面与序号都可比较，最下项在屏幕内未裁切。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/69-索尔连锁二级四颗效果骰保留六个组合选择-04-玩家选低值组合后三附属伤害与主攻击分别保留.png",
+      "chainId": "索尔连锁二级四颗效果骰保留六个组合选择",
+      "chainStep": "69",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "选择低值组合后主攻击3保留，唯一对手另外显示-3附属反馈；组合窗口退出进入原防御。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/70-索尔连锁锤击六次沿既有选择窗口逐次移动-01-原角色板技能选择与升级牌面.png",
+      "chainId": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "chainStep": "70",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁锤击六次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "连锁锤击分支前为三闪电两神锤，瓶中II卡下部连锁锤击真实规则可读；未展示主8伤害作为该分支基础。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/71-索尔连锁锤击六次沿既有选择窗口逐次移动-02-可选移动窗口保留立即停止入口.png",
+      "chainId": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "chainStep": "71",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁锤击六次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "连锁锤击原移动窗口列飞掷至武僧和停止移动，唯一对手头像与P2标识清晰。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/72-索尔连锁锤击六次沿既有选择窗口逐次移动-03-一次飞掷独立扣一生命后可继续或停止.png",
+      "chainId": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "chainStep": "72",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁锤击六次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "一次飞掷后候选变为召回索尔P1，并保留停止移动；没有错误地仍指向对手或强制下一次。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/73-索尔连锁锤击六次沿既有选择窗口逐次移动-04-达到次数上限或停止后回原结算.png",
+      "chainId": "索尔连锁锤击六次沿既有选择窗口逐次移动",
+      "chainStep": "73",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁锤击六次沿既有选择窗口逐次移动\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "六次移动后对手生命47、自己驭电3/4、神锤回自己，进入主要阶段2；没有额外第7次选择窗口。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/74-索尔连锁闪电选择效果骰并自动结算唯一附属目标-01-连锁闪电触发前.png",
+      "chainId": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "chainStep": "74",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "连锁触发前五骰1、1、1、6、6；能力槽可读，当前阶段和结束攻击可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/75-索尔连锁闪电选择效果骰并自动结算唯一附属目标-02-三颗效果骰等待确认.png",
+      "chainId": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "chainStep": "75",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "三颗效果骰1、4、6显示于原右侧骰盘，原确认按钮可见；连锁能力槽高亮且规则可读。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/76-索尔连锁闪电选择效果骰并自动结算唯一附属目标-03-选择两颗效果骰组合.png",
+      "chainId": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "chainStep": "76",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "既有技能结算选择窗口列出全部三对：1+4=5、1+6=7、4+6=10，骰面、序号及伤害可读且未裁切。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/77-索尔连锁闪电选择效果骰并自动结算唯一附属目标-04-附属伤害自动命中唯一对手并保留主攻击.png",
+      "chainId": "索尔连锁闪电选择效果骰并自动结算唯一附属目标",
+      "chainStep": "77",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "三骰组合退出后唯一对手显示-2附属伤害，原主攻击10保留并进入防御；没有无意义目标选择窗口。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/78-索尔雷电之轮二级四骰沿原防御入口-01-敌方八伤攻击前态与防御原入口.png",
+      "chainId": "索尔雷电之轮二级四骰沿原防御入口",
+      "chainStep": "78",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔雷电之轮二级四骰沿原防御入口\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "敌方冲拳原攻击展示层完整显示6/7/8伤害分档，开始防御按钮清晰，未使用测试专用入口。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/79-索尔雷电之轮二级四骰沿原防御入口-02-实际投出对应数量防御骰.png",
+      "chainId": "索尔雷电之轮二级四骰沿原防御入口",
+      "chainStep": "79",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔雷电之轮二级四骰沿原防御入口\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "防御II原槽位被升级卡覆盖，右侧实际显示四颗骰子，原投掷/确认入口及待受8伤害可见。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/80-索尔雷电之轮二级四骰沿原防御入口-03-防御减伤和每组神锤移动后结算生命.png",
+      "chainId": "索尔雷电之轮二级四骰沿原防御入口",
+      "chainStep": "80",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔雷电之轮二级四骰沿原防御入口\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "II防御后生命40降32、CP8，驭电1/4、神锤回自己，敌方49且-1反馈；原防御流程结束。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/81-索尔雷电之轮基础三骰沿原防御入口-01-敌方八伤攻击前态与防御原入口.png",
+      "chainId": "索尔雷电之轮基础三骰沿原防御入口",
+      "chainStep": "81",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔雷电之轮基础三骰沿原防御入口\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础同样从敌方冲拳原攻击展示层开始防御，规则卡和按钮完整，没有跳过玩家原入口。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/82-索尔雷电之轮基础三骰沿原防御入口-02-实际投出对应数量防御骰.png",
+      "chainId": "索尔雷电之轮基础三骰沿原防御入口",
+      "chainStep": "82",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔雷电之轮基础三骰沿原防御入口\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础防御仅三骰1、1、4，原投掷/确认可见，待受伤害8、生命40；与II四骰明确不同。"
+    },
+    {
+      "path": "evidence/dicethrone/thor-audit-images-20261028/83-索尔雷电之轮基础三骰沿原防御入口-03-防御减伤和每组神锤移动后结算生命.png",
+      "chainId": "索尔雷电之轮基础三骰沿原防御入口",
+      "chainStep": "83",
+      "sourceRun": "e2e-1793072168808-u11lt8",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔雷电之轮基础三骰沿原防御入口\\_runs\\e2e-1793072168808-u11lt8",
+      "stage": "独立代表态",
+      "description": "基础防御后生命40降34，CP10，对手显示-1且神锤在敌方；两锤一头盔的减2和飞掷后态与规则一致。"
+    }
+  ]
+}

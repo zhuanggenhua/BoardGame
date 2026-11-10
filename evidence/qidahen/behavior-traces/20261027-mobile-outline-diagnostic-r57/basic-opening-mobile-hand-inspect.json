@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "20261027-mobile-outline-diagnostic-r57",
+  "sourceRevision": "sha256:d8d79db033b5bf156a4fb9daadd6da22a9955825be781bf2351cf5f44b1ff25a",
+  "status": "FAIL",
+  "outcome": "教程 E2E 未通过；本行为链不得用于最终 PASS。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>final</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>final</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-01-索尔正式角色板与卡牌.png","displayTitle":"01 · 01 · 索尔正式角色板与卡牌","description":"索尔正式角色板与卡牌","kind":"image"},{"relativePath":"01-02-弃牌飞掷选择成本.png","displayTitle":"01 · 02 · 弃牌飞掷选择成本","description":"弃牌飞掷选择成本","kind":"image"},{"relativePath":"01-03-手动选择飞掷目标.png","displayTitle":"01 · 03 · 手动选择飞掷目标","description":"手动选择飞掷目标","kind":"image"},{"relativePath":"01-04-飞掷后独立伤害与锤子位置.png","displayTitle":"01 · 04 · 飞掷后独立伤害与锤子位置","description":"飞掷后独立伤害与锤子位置","kind":"image"},{"relativePath":"01-05-奥丁之力二级升级完成.png","displayTitle":"01 · 05 · 奥丁之力二级升级完成","description":"奥丁之力二级升级完成","kind":"image"},{"relativePath":"01-06-奥丁效果骰等待任选重掷.png","displayTitle":"01 · 06 · 奥丁效果骰等待任选重掷","description":"奥丁效果骰等待任选重掷","kind":"image"},{"relativePath":"01-07-选择两颗骰子一起重掷.png","displayTitle":"01 · 07 · 选择两颗骰子一起重掷","description":"选择两颗骰子一起重掷","kind":"image"},{"relativePath":"01-08-整组重掷一次完成.png","displayTitle":"01 · 08 · 整组重掷一次完成","description":"整组重掷一次完成","kind":"image"},{"relativePath":"01-09-效果骰收口后进入主攻击防御.png","displayTitle":"01 · 09 · 效果骰收口后进入主攻击防御","description":"效果骰收口后进入主攻击防御","kind":"image"},{"relativePath":"02-01-手牌放大完整阅读挥锤时刻.png","displayTitle":"02 · 01 · 手牌放大完整阅读挥锤时刻","description":"手牌放大完整阅读挥锤时刻","kind":"image"},{"relativePath":"02-02-改骰前自己的五颗骰子.png","displayTitle":"02 · 02 · 改骰前自己的五颗骰子","description":"改骰前自己的五颗骰子","kind":"image"},{"relativePath":"02-03-当之无愧选择四或五.png","displayTitle":"02 · 03 · 当之无愧选择四或五","description":"当之无愧选择四或五","kind":"image"},{"relativePath":"02-04-选择自己的一颗骰子.png","displayTitle":"02 · 04 · 选择自己的一颗骰子","description":"选择自己的一颗骰子","kind":"image"},{"relativePath":"02-05-改为四且其余骰子保持.png","displayTitle":"02 · 05 · 改为四且其余骰子保持","description":"改为四且其余骰子保持","kind":"image"},{"relativePath":"03-01-连锁闪电触发前.png","displayTitle":"03 · 01 · 连锁闪电触发前","description":"连锁闪电触发前","kind":"image"},{"relativePath":"03-02-三颗效果骰等待确认.png","displayTitle":"03 · 02 · 三颗效果骰等待确认","description":"三颗效果骰等待确认","kind":"image"},{"relativePath":"03-03-手动选择两颗效果骰.png","displayTitle":"03 · 03 · 手动选择两颗效果骰","description":"手动选择两颗效果骰","kind":"image"},{"relativePath":"03-04-独立选择附属伤害目标.png","displayTitle":"03 · 04 · 独立选择附属伤害目标","description":"独立选择附属伤害目标","kind":"image"},{"relativePath":"03-05-独立伤害完成且主攻击保留.png","displayTitle":"03 · 05 · 独立伤害完成且主攻击保留","description":"独立伤害完成且主攻击保留","kind":"image"},{"relativePath":"04-01-破防正式图标与消费入口.png","displayTitle":"04 · 01 · 破防正式图标与消费入口","description":"破防正式图标与消费入口","kind":"image"},{"relativePath":"04-02-第一枚破防效果骰失败.png","displayTitle":"04 · 02 · 第一枚破防效果骰失败","description":"第一枚破防效果骰失败","kind":"image"},{"relativePath":"04-03-失败后仍可使用第二枚破防.png","displayTitle":"04 · 03 · 失败后仍可使用第二枚破防","description":"失败后仍可使用第二枚破防","kind":"image"},{"relativePath":"04-05-不可防御主攻击结算后收口.png","displayTitle":"04 · 05 · 不可防御主攻击结算后收口","description":"不可防御主攻击结算后收口","kind":"image"},{"relativePath":"05-01-索尔真实双人选角与实施中标记.png","displayTitle":"05 · 01 · 索尔真实双人选角与实施中标记","description":"索尔真实双人选角与实施中标记","kind":"image"},{"relativePath":"05-02-索尔在线开局角色板九槽与手牌.png","displayTitle":"05 · 02 · 索尔在线开局角色板九槽与手牌","description":"索尔在线开局角色板九槽与手牌","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getGitCommonDir, getWorktreeRoot } from './e2e-runtime-registry.js';
+import { getHeavyProcessIdentities, getHeavyProcessIdentity } from './heavy-process-identity.mjs';
 
 const BUDGET_DIR_NAME = 'boardgame-heavy-budget';
 const REGISTRY_FILE_NAME = 'registry.json';
@@ -13,6 +14,10 @@ const LOCK_RETRY_MS = 100;
 const LOCK_STALE_MS = 30000;
 const HEARTBEAT_INTERVAL_MS = 5000;
 const HEARTBEAT_TTL_MS = 15000;
+const IDENTITY_CONFIRM_TTL_MS = 5000;
+const recentlyConfirmedIdentities = new Map();
+
+class ResourcePressureError extends Error {}
 
 function nowIso() {
     return new Date().toISOString();
@@ -41,7 +46,8 @@ function isPidAlive(pid) {
         process.kill(pid, 0);
         return true;
     } catch (error) {
-        return error?.code === 'EPERM';
+        // 只有明确不存在才能清理登记；权限或其他错误按未知保留。
+        return error?.code !== 'ESRCH';
     }
 }
 
@@ -86,9 +92,12 @@ function ensureBudgetDir(cwd = process.cwd()) {
 
 function readRegistry(cwd = process.cwd()) {
     try {
-        return JSON.parse(fs.readFileSync(getRegistryFilePath(cwd), 'utf8'));
-    } catch {
-        return { entries: [], updatedAt: null };
+        const registry = JSON.parse(fs.readFileSync(getRegistryFilePath(cwd), 'utf8'));
+        if (!registry || !Array.isArray(registry.entries)) throw new Error('全局重任务登记文件格式无效：缺少 entries 数组');
+        return registry;
+    } catch (error) {
+        if (error?.code === 'ENOENT') return { entries: [], updatedAt: null };
+        throw error;
     }
 }
 
@@ -141,8 +150,13 @@ async function acquireRegistryLock(cwd = process.cwd()) {
             try {
                 const stats = fs.statSync(lockPath);
                 if (Date.now() - stats.mtimeMs > LOCK_STALE_MS) {
-                    fs.unlinkSync(lockPath);
-                    removedStaleLock = true;
+                    let owner;
+                    try { owner = JSON.parse(fs.readFileSync(lockPath, 'utf8')); } catch { owner = null; }
+                    const pid = Number(owner?.pid);
+                    if (!Number.isInteger(pid) || pid <= 0 || !isPidAlive(pid)) {
+                        fs.unlinkSync(lockPath);
+                        removedStaleLock = true;
+                    }
                 }
             } catch {
                 // Windows can transiently deny stat/unlink while another process is closing the lock.
@@ -177,7 +191,8 @@ function inspectEntry(entry) {
     return {
         alive,
         heartbeatFresh,
-        stale: !alive || !heartbeatFresh,
+        // 心跳过期只触发身份复核，不能单独证明持有者已退出。
+        stale: !alive,
     };
 }
 
@@ -185,6 +200,7 @@ function normalizeEntry(entry, cwd = process.cwd()) {
     return {
         entryId: String(entry.entryId || `${process.pid}-${Date.now()}`),
         pid: Number(entry.pid || process.pid),
+        processIdentity: typeof entry.processIdentity === 'string' ? entry.processIdentity : null,
         group: normalizeName(entry.group, 'default'),
         weight: Math.max(1, Number(entry.weight || 1)),
         worktreeRoot: path.resolve(entry.worktreeRoot || getWorktreeRoot(cwd)),
@@ -197,7 +213,34 @@ function normalizeEntry(entry, cwd = process.cwd()) {
     };
 }
 
-export async function pruneGlobalHeavyBudget({ logger = console, cwd = process.cwd() } = {}) {
+export async function pruneGlobalHeavyBudget({ logger = console, cwd = process.cwd(),
+    resolveIdentities = getHeavyProcessIdentities, now = Date.now } = {}) {
+    // 进程身份查询可能启动系统命令，必须在登记锁之外进行。
+    const initial = readRegistry(cwd).entries.map(entry => normalizeEntry(entry, cwd));
+    const replaced = new Map();
+    const candidates = initial.filter(entry => {
+        const status = inspectEntry(entry);
+        return status.alive && !status.heartbeatFresh;
+    });
+    const currentTime = now();
+    for (const [key, expiresAt] of recentlyConfirmedIdentities) {
+        if (expiresAt <= currentTime) recentlyConfirmedIdentities.delete(key);
+    }
+    const identityKey = entry => `${entry.pid}:${entry.processIdentity}`;
+    const needsQuery = candidates.filter(entry => entry.processIdentity && !recentlyConfirmedIdentities.has(identityKey(entry)));
+    const identities = needsQuery.length ? await resolveIdentities(needsQuery.map(entry => entry.pid)) : new Map();
+    for (const entry of candidates) {
+        if (entry.processIdentity && recentlyConfirmedIdentities.has(identityKey(entry))) continue;
+        const identity = entry.processIdentity ? identities.get(entry.pid) : null;
+        if (identity && identity !== entry.processIdentity) {
+            replaced.set(entry.entryId, { pid: entry.pid, processIdentity: entry.processIdentity });
+        } else if (identity) {
+            // 缓存只用于暂时保留同一实例；清理必须依据重新查询的明确不匹配。
+            recentlyConfirmedIdentities.set(identityKey(entry), now() + IDENTITY_CONFIRM_TTL_MS);
+        } else if (!identity) {
+            (logger.warn ?? logger.log)?.call(logger, `[global-heavy-budget] 心跳已过期，但无法核实 PID ${entry.pid} 的进程身份，保留登记。`);
+        }
+    }
     return await withRegistryLock(async () => {
         const registry = readRegistry(cwd);
         const removed = [];
@@ -206,7 +249,10 @@ export async function pruneGlobalHeavyBudget({ logger = console, cwd = process.c
         for (const rawEntry of registry.entries ?? []) {
             const entry = normalizeEntry(rawEntry, cwd);
             const inspected = inspectEntry(entry);
-            if (inspected.stale) {
+            const previous = replaced.get(entry.entryId);
+            const identityChanged = !inspected.heartbeatFresh && previous
+                && previous.pid === entry.pid && previous.processIdentity === entry.processIdentity;
+            if (inspected.stale || identityChanged) {
                 removed.push(entry);
                 continue;
             }
@@ -468,6 +514,7 @@ export async function acquireGlobalHeavyBudget({
             const entry = normalizeEntry({
                 entryId,
                 pid: process.pid,
+                processIdentity: await getHeavyProcessIdentity(process.pid),
                 group: normalizedGroup,
                 weight: normalizedWeight,
                 worktreeRoot: getWorktreeRoot(cwd),
@@ -488,14 +535,15 @@ export async function acquireGlobalHeavyBudget({
 
                     // 注册与启动之间重新采样，避免并发申请都消费同一个过时的资源快照。
                     const currentStatus = await evaluateBudgetGate({ group: normalizedGroup, weight: normalizedWeight, cwd });
-                    if (!currentStatus.allowed) throw new Error(formatGlobalHeavyBudgetStatus(currentStatus));
+                    if (!currentStatus.allowed) throw new ResourcePressureError(formatGlobalHeavyBudgetStatus(currentStatus));
                     status = currentStatus;
 
                     activeEntries.push(entry);
                     writeRegistry({ entries: activeEntries }, cwd);
                 }, cwd);
             } catch (error) {
-                if (!shouldWait || (Date.now() - startedAt >= timeoutMs)) {
+                if (!shouldWait || (!(error instanceof ResourcePressureError) && !isRegistryLockContention(error))
+                    || (Date.now() - startedAt >= timeoutMs)) {
                     throw error;
                 }
 
@@ -519,8 +567,9 @@ export async function acquireGlobalHeavyBudget({
                         }, cwd);
                     });
                     writeRegistry(registry, cwd);
-                }, cwd).catch(() => {
-                    // ignore heartbeat write failure
+                }, cwd).catch(error => {
+                    const log = logger.warn ?? logger.log ?? console.warn;
+                    log.call(logger, `[global-heavy-budget] 心跳更新失败，将核实进程身份: ${error instanceof Error ? error.message : String(error)}`);
                 });
             }, HEARTBEAT_INTERVAL_MS);
             if (typeof heartbeat.unref === 'function') {
@@ -528,28 +577,41 @@ export async function acquireGlobalHeavyBudget({
             }
 
             let released = false;
+            let releasing = null;
+            let releaseRetry = null;
+            let releaseFailures = 0;
             const release = () => {
                 if (released) {
-                    return;
+                    return Promise.resolve(true);
                 }
-                released = true;
-                clearInterval(heartbeat);
+                if (releasing) return releasing;
+                if (releaseRetry) { clearTimeout(releaseRetry); releaseRetry = null; }
 
-                const releasePromise = withRegistryLock(async () => {
+                releasing = withRegistryLock(async () => {
                     const registry = readRegistry(cwd);
                     registry.entries = (registry.entries ?? [])
                         .map(rawEntry => normalizeEntry(rawEntry, cwd))
                         .filter(existingEntry => existingEntry.entryId !== entryId);
                     writeRegistry(registry, cwd);
-                }, cwd).catch(() => {
-                    // ignore release failure
-                });
-
-                process.removeListener('exit', release);
-                return releasePromise;
+                }, cwd).then(() => {
+                    released = true;
+                    clearInterval(heartbeat);
+                    process.removeListener('exit', onExit);
+                    return true;
+                }).catch(error => {
+                    releaseFailures += 1;
+                    const delayMs = Math.min(60_000, 2000 * 2 ** Math.min(releaseFailures - 1, 5));
+                    const log = logger.warn ?? logger.log ?? console.warn;
+                    log.call(logger, `[global-heavy-budget] 释放登记失败，将于 ${delayMs / 1000}s 后重试: ${error instanceof Error ? error.message : String(error)}`);
+                    releaseRetry = setTimeout(() => { releaseRetry = null; void release(); }, delayMs);
+                    releaseRetry.unref?.();
+                    return false;
+                }).finally(() => { releasing = null; });
+                return releasing;
             };
 
-            process.once('exit', release);
+            const onExit = () => { release()?.catch(() => {}); };
+            process.once('exit', onExit);
             logger.log?.(`[global-heavy-budget] 资源检查通过: CPU=${status.snapshot.cpuUsagePercent.toFixed(1)}%, 可用内存=${status.snapshot.freeMemoryGb.toFixed(2)}GB, 其它活跃任务=${status.snapshot.activeEntryCount}（不设任务数量上限）。`);
             return {
                 release,

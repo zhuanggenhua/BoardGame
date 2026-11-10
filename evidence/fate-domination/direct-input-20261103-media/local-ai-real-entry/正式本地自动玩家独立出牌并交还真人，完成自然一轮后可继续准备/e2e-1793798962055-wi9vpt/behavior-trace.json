@@ -1,0 +1,134 @@
+{
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "sourceRun": "1793798988570-563264-bbbd9210-84ae-483e-ae28-d613ef7e2de8",
+  "sourceRevision": "tree-sha256:c2b9493afaf080e9ffcb229d976c362a1716bfabf0821d42cb3609d712fd2d67",
+  "chainId": "fate-local-ai-natural-round",
+  "status": "PASS",
+  "visualStatus": "pending",
+  "outcome": "正式本地AI自主出牌、结算一轮并交还真人下一轮准备",
+  "fixtureBoundary": {
+    "kind": "natural-setup-no-injection"
+  },
+  "steps": [
+    {
+      "id": "automatic-opponents-played",
+      "action": "真人实际暂选和确认攻击，自动玩家自行完成两席行动，真人悬浮检视公开出牌",
+      "before": {
+        "visible": {
+          "phase": "第 1 回合 行动",
+          "primary": "选择两张攻击牌",
+          "opponents": "AI 2 号位威力3战果 0 · 魔力 6 · 手牌 3AI 3 号位威力0战果 0 · 魔力 4 · 手牌 3",
+          "publicCardsOpen": false
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "action",
+          "current": "0",
+          "normalAttacks": {
+            "0": false,
+            "1": false,
+            "2": false
+          },
+          "interactionOwner": null
+        }
+      },
+      "after": {
+        "visible": {
+          "phase": "第 1 回合 战斗",
+          "primary": "结束我的战斗阶段",
+          "opponents": "AI 2 号位威力13战果 0 · 魔力 5 · 手牌 1AI 3 号位威力8战果 0 · 魔力 4 · 手牌 1",
+          "publicCardsOpen": true
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "normalAttacks": {
+            "0": true,
+            "1": true,
+            "2": true
+          },
+          "interactionOwner": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "both-ai-normal-attacks-committed",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "next-round",
+      "action": "真人结算战斗后自动玩家完成其准备并交还真人",
+      "before": {
+        "visible": {
+          "phase": "第 1 回合 战斗",
+          "primary": "结束我的战斗阶段",
+          "opponents": "AI 2 号位威力13战果 0 · 魔力 5 · 手牌 1AI 3 号位威力8战果 0 · 魔力 4 · 手牌 1",
+          "publicCardsOpen": true
+        },
+        "authoritative": {
+          "round": 1,
+          "phase": "battle",
+          "current": "0",
+          "normalAttacks": {
+            "0": true,
+            "1": true,
+            "2": true
+          },
+          "interactionOwner": null
+        }
+      },
+      "after": {
+        "visible": {
+          "phase": "第 2 回合 准备",
+          "primary": "完成准备",
+          "opponents": "AI 2 号位威力0战果 7 · 魔力 5 · 手牌 3AI 3 号位威力0战果 3 · 魔力 4 · 手牌 3",
+          "publicCardsOpen": false
+        },
+        "authoritative": {
+          "round": 2,
+          "phase": "preparation",
+          "current": "0",
+          "normalAttacks": {
+            "0": false,
+            "1": false,
+            "2": false
+          },
+          "interactionOwner": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "human-next-round-preparation",
+          "actual": "0",
+          "expected": "0"
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "local-ai-0",
+      "stepId": "automatic-opponents-played",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "9e2c02f68b47acc6a1e694cb0ac08cd695ed8071579b79742a7465c419a81597"
+    },
+    {
+      "id": "local-ai-1",
+      "stepId": "next-round",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "2768b45bc82b49be6391cdfe4d290d0334b9b21796a33d521bcc2b1ccd1c87f2"
+    }
+  ],
+  "terminal": {
+    "nextRound": 2,
+    "nextPhase": "preparation",
+    "humanControl": "0"
+  }
+}

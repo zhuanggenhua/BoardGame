@@ -1,0 +1,325 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/final_visual_scoped"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/01-桌面常态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面常态保留正式轮盘、三席公开读数、两张纪年、朝鲜牌堆、三张手牌、抽弃牌、地图控件及右侧势力动作，类别和查看入口贴所属卡牌，未见对象遗失、同层意外交叠或素材破图。",
+      "sha256": "80ea191a2b010b1ec8c798476ee7005cc7f6d221d755acb472ebafeca64443c7",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/01-桌面常态.png",
+      "score": 94,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "hardFailures": [],
+      "carriedForwardFrom": {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-pc-proportional-20261027\\01-桌面常态.png",
+        "sha256": "80ea191a2b010b1ec8c798476ee7005cc7f6d221d755acb472ebafeca64443c7",
+        "basis": "已实际读过该完整原图，最终冻结图与已审字节完全相同，本轮不重复读图。"
+      },
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/02-手机常态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机常态沿用桌面相同对象、方位及相对构图，侧边底色与文字整体缩小符合明确等比合同，未因适配另排、隐藏规则对象或造成卡牌与查看入口错位。",
+      "sha256": "4f4909b35d8ae5f355a2fc6294387fabd84749aff7f2d21bf0de448e70b70249",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/02-手机常态.png",
+      "score": 93,
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "hardFailures": [],
+      "carriedForwardFrom": {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-pc-proportional-20261027\\02-手机常态.png",
+        "sha256": "4f4909b35d8ae5f355a2fc6294387fabd84749aff7f2d21bf0de448e70b70249",
+        "basis": "已实际读过该完整原图，最终冻结图与已审字节完全相同，本轮不重复读图。"
+      },
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/03-桌面支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面支付中选中事件牌抬升并保留已选标记，支付栏与真实牌顶分离且确认取消完整，没有压住类别、卡名或查看入口，其余手牌和固定读数仍在。",
+      "sha256": "274720d0036d363778c2ca06c71ebbd4aa6163afbd39cc6a0172e4de47670a3e",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/03-桌面支付.png",
+      "score": 95,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "hardFailures": [],
+      "carriedForwardFrom": {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-pc-proportional-20261027\\03-桌面支付.png",
+        "sha256": "274720d0036d363778c2ca06c71ebbd4aa6163afbd39cc6a0172e4de47670a3e",
+        "basis": "已实际读过该完整原图，最终冻结图与已审字节完全相同，本轮不重复读图。"
+      },
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机支付与桌面支付保持同一结构和比例，选中牌、其余两牌、支付进度及确认取消均有对应，支付栏没有压住抬升牌顶且类别和查看入口未漂移。",
+      "sha256": "7df0106c1c9353ac89d48b51daec2f2d09b8c8875c7987e141c0a8175ac03111",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/04-手机支付.png",
+      "score": 94,
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮实际读取该冻结整屏原图。",
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/05-手机八张支付压力态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机八牌压力态从完整首牌开始，末端局部露牌表达横向延续，各牌类别和查看圆面准确跟随牌本体，支付栏未压牌顶且没有两层起点错开或首牌被裁去。",
+      "sha256": "8bca0f737cdb9d1b15c4ef3efacd17921103c2c2f4c9db847aeabec6f5b11283",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/05-手机八张支付压力态.png",
+      "score": 93,
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "hardFailures": [],
+      "carriedForwardFrom": {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-pc-proportional-20261027\\05-手机八张支付压力态.png",
+        "sha256": "8bca0f737cdb9d1b15c4ef3efacd17921103c2c2f4c9db847aeabec6f5b11283",
+        "basis": "已实际读过该完整原图，最终冻结图与已审字节完全相同，本轮不重复读图。"
+      },
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/06-宽屏桌面常态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宽屏桌面常态保持标准桌面相同对象与结构，字体、动作间距、手牌及查看入口随统一尺度变化，未见再次独立改字号、异常拉散、人口数字两两相压或正式素材失真。",
+      "sha256": "d7cb91d23297f303f250d24858616c92526df0a9b0f3faf25fe1b9f97e0987d2",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/06-宽屏桌面常态.png",
+      "score": 94,
+      "viewport": {
+        "width": 2560,
+        "height": 1304
+      },
+      "hardFailures": [],
+      "carriedForwardFrom": {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-pc-proportional-20261027\\06-宽屏桌面常态.png",
+        "sha256": "d7cb91d23297f303f250d24858616c92526df0a9b0f3faf25fe1b9f97e0987d2",
+        "basis": "已实际读过该完整原图，最终冻结图与已审字节完全相同，本轮不重复读图。"
+      },
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/07-小屏手机常态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "小屏手机常态仍保留桌面同构的轮盘、三席、纪年、牌堆、三牌及动作与地图控件，没有因窄屏删对象或产生入口错位，整体缩小按明确等比合同保留。",
+      "sha256": "4c9b2abf53ba21a6ed4af36b2d22f86837248daad812c6b13d995bda9fc30f30",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/07-小屏手机常态.png",
+      "score": 92,
+      "viewport": {
+        "width": 740,
+        "height": 342
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮实际读取该冻结整屏原图。",
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/08-桌面八张支付压力态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面八牌压力态与手机同为完整首牌起始和末端局部露牌的横向结构，类别和查看入口逐牌对应，支付栏完整位于牌排上方，未见首牌裁切、卡牌彼此压叠或残留空槽。",
+      "sha256": "37ffcde3f0bbfd7dd1b8f1cc14286090f381f62fd851ad0fe5072dcde51fc728",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/08-桌面八张支付压力态.png",
+      "score": 94,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "hardFailures": [],
+      "carriedForwardFrom": {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-pc-proportional-20261027\\08-桌面八张支付压力态.png",
+        "sha256": "37ffcde3f0bbfd7dd1b8f1cc14286090f381f62fd851ad0fe5072dcde51fc728",
+        "basis": "已实际读过该完整原图，最终冻结图与已审字节完全相同，本轮不重复读图。"
+      },
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/09-手机地图浏览前.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机地图浏览前保持同一固定界面构图和三牌状态，可见人口块彼此分开，部分地图对象位于固定手牌之后属于可浏览场景的跨层覆盖，图内尚未显示地区说明。",
+      "sha256": "f035dc8056a8d010cd04b0f153b6f148800c67f84f8665feb1a5e46497f75078",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/09-手机地图浏览前.png",
+      "score": 93,
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮实际读取该冻结整屏原图。",
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机地图平移检视后原先靠近手牌的地区及人口已移到无遮挡位置，地区旁出现原有说明卡并可辨地区标题、属性分行与底部操作，固定轮盘、三席、纪年和手牌仍保持原位。",
+      "sha256": "5e4e47bad6197656940f05b571f75eacb5c836312584ff4ced8a5aa6c085e347",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/10-手机地图平移检视后.png",
+      "score": 92,
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "hardFailures": [],
+      "reviewMethod": "本轮实际读取该冻结整屏原图。",
+      "sourceMetadata": {
+        "type": "runtime-screenshot",
+        "entry": "/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0",
+        "runtimeSession": "e2e-1793172488996-3m8alv",
+        "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\geometry.json",
+        "identity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\pc-proportional-layout-20261028\\snapshot-source-identity.json"
+      },
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/media/9"
+    }
+  ]
+}

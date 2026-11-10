@@ -1,0 +1,225 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_r79_visual_all"
+  },
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/00-辽东军屯地区选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽东名称贴近绿色不规则地区边界，教程要求选择辽东；地区本体和当地部队清楚可见，提示没有遮住目标。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\00-辽东军屯地区选择.png",
+      "sha256": "a0cc29a8944c9609ffeafec50b9e3c4d691704e4c8c6011c3214a86f8976657c"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘右上军屯扇区高亮，教程要求前进两格；扇区名称及点击对象完整可见。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\01-轮盘前进两格与军屯落点.png",
+      "sha256": "5a9d1e3f08670c01fc6a3b0f7e67178aeccbbd90c769da9f013c2fd0da0f9f74"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求指定后金抽牌，轮盘中心弹框展示蒙古、后金和建军地辽东；两个对手按钮均未被遮挡。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\02-指定后金抽牌.png",
+      "sha256": "c8c4dd389359b070cbeecd356e29d3edde07b656d5adc980c83fd1bdac228721"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/03-辽东军屯结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽东部队、军屯结果说明和手牌同屏可见，教程提供下一步；地区选择高亮已经退场。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\03-辽东军屯结果.png",
+      "sha256": "da8d7b6df8821ddd860d32243ded114bcf786667f9cbe93bdd34e579c0e12479"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/04-叶赫部真实地图目标.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部标签、绿色不规则边界和蒙古控制标记对应清楚；支付托盘提示在地图选择目标，没有提前显示建州目标。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\04-叶赫部真实地图目标.png",
+      "sha256": "6d9e19b575b8580896562afb9d2bd9f0acc7ed413a72dadffdb2b916570cda90"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求银两支付并保留鸳鸯阵，支付摘要显示目标叶赫部；对应手牌、看牌入口和确认执行按钮均可见。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\05-银两支付与鸳鸯阵手牌.png",
+      "sha256": "2e065c3b7b4154187488ab424aec7e513caa0878189e5fb4e3da8bb1baa80964"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "鸳鸯阵抬升并显示已选标记，但教程白框盖住所选卡顶部名称，同时遮住打出战术牌按钮左侧约三十像素。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\05a-鸳鸯阵选中与确认出牌.png",
+      "sha256": "1521220713a6594a9193ad56160091c4ebee8ada554e413f5d0fadfc23099f05"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/06-野战选择实际出兵部队.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽东参战部队绿色描边、通向叶赫部的路线、实际出兵摘要及开始战斗按钮均可见，教程没有遮住当前出兵操作。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\06-野战选择实际出兵部队.png",
+      "sha256": "487efb86f6be07f6276a726f383f97ca96013370adeb9e8112d96c28e28fb972"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/07-战后幸存部队与占领选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战后面板展示叶赫部、分阶段结果和幸存部队说明，占领与撤回按钮完整可见；教程位于面板左侧。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\07-战后幸存部队与占领选择.png",
+      "sha256": "55621aa67cecf29e90ff3685dbfff771c8482bb32621778a4f52d0ccb906853a"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部位置显示大明控制标记和部队，教程提供完成并返回按钮；支付、选牌及战后选择面板已经退场。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\08-叶赫部占领结果.png",
+      "sha256": "c8db3488cca46cc93888a80e8a7380274449d5265a730b89174cfaf1964083b4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/09-教程退出后同局继续.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程白框、目标高亮及战后结果面板均已退场，蒙古当前玩家标记、手牌和征兵训练弃牌托盘可见。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79\\09-教程退出后同局继续.png",
+      "sha256": "f65e39afe9397a5a8ca73447f26c2d55d53ff70341bbf29d002f7b99c9a98ccc"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/移动-00-轮盘军屯与指定对手.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘、地图及手牌延续桌面等比构图，对手选择弹框可见；右下教程没有压住蒙古或后金候选。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79-mobile\\移动-00-轮盘军屯与指定对手.png",
+      "sha256": "daa808797ba35cca0f4621abae933626ec342910cf8ebca868d8d1f5cd031345"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部标签、绿色不规则边界与蒙古控制标记对应明确，支付托盘位于目标下方；左下教程没有遮住当前地图目标。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79-mobile\\移动-01-叶赫部地图目标避开支付托盘.png",
+      "sha256": "c8b9da29819b5f7ac2c9e9551b9bbf203849e5b5fd6be16464dcf91de2074d3a"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/移动-02-突袭支付与手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图、手牌及支付托盘延续桌面构图，教程位于上方；银两、鸳鸯阵、看牌入口及确认按钮没有被提示或聊天浮标覆盖。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79-mobile\\移动-02-突袭支付与手牌.png",
+      "sha256": "1422e01622e14416e8a1bb8aabd125aeb7c7ee8a429cc784a390e4b4b8eb4dc9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/移动-03-长按银两检视卡面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两大卡完整显示，牌名、图案和右上关闭按钮清楚可见；大卡及关闭入口没有裁切。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79-mobile\\移动-03-长按银两检视卡面.png",
+      "sha256": "7e9721e806e0a3825f9f7b82453f42989f0f4d9131ff4d2cd02ae3fe7df0db45"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r79-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "检视大卡已退场，银两抬升并显示已选标记；教程要求确认弃牌，支付托盘确认按钮高亮且无遮挡。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r79-mobile\\移动-04-检视返回后轻点银两选择支付.png",
+      "sha256": "aaac45a325b181d269021ed68cce966c52b66e86baf11c8a389017bbc0c0ff98"
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "passed": 15,
+    "revise": 1
+  },
+  "metadataAssembly": "主线程仅按子代理原始逐图结论补齐路径与哈希，观察和裁决未改写。"
+}

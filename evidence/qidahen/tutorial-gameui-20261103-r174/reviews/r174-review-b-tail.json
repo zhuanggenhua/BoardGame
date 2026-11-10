@@ -1,0 +1,60 @@
+{
+  "reviewer": "/root/r174_b_tail",
+  "status": "PASS",
+  "score": 93,
+  "issues": [],
+  "actualReadCount": 5,
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/09-recruit-troops.png",
+      "sha256": "1794db243de208cfd506c5336043961173cf9b8395f36de423ba9a3deac734b3",
+      "status": "PASS",
+      "score": 94,
+      "observation": "辽北地区以贴合地界的白边和城名承接当前建军地点，区内大明兵牌正面与数量标记可辨；右侧两种建军方式具有完整按钮底面，教学说明紧邻选择区，没有遮住当前地区及兵牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/10-midyear.png",
+      "sha256": "4d989edd97be1a4738ab28464174b03d9741873ae42d77fde4602b4d61a27859",
+      "status": "PASS",
+      "score": 93,
+      "observation": "左上轮盘的年中格与时标仍可见，教学浮层贴轮盘并保留明确的下一步按钮；中央偏下的手牌上限请求标明大明及确认弃牌，和顶部当前回合身份一致，未遮住下方可选手牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/11-hand-limit.png",
+      "sha256": "1b864f1dc8275da7b3e4686c86c59831e16c0120c2504303da228d1fb2f7078e",
+      "status": "PASS",
+      "score": 94,
+      "observation": "弃牌请求以大明和手牌上限为明确标题，已择进度与确认弃牌按钮归于同一横条；右侧教学明确保留与弃牌任务，下方手牌的绿色推荐边界、牌面和检视入口可辨，未与教学浮层互相遮挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "baselineReads": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/08-recruit-source.png",
+      "sha256": "d576b09a72dcb8d4088a82a4e10c0c527df7c9180bc13186448f72c458116960",
+      "observation": "建军地区选择态中辽北城名、区内兵牌及大明标记可见，推荐白边与其它合法地区绿色边界分明，教学贴在辽北一侧。"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/09-recruit-troops.png",
+      "sha256": "409016030073b3f4075839df1b7884f8e4e3f33c50205dde785facce48a98a87",
+      "observation": "旧图将地图缩至右上区域，建军地区以红色区域显现，兵牌较小；右侧保留两种建军方式及教学说明，只作历史信息和操作职责对照。"
+    }
+  ]
+}

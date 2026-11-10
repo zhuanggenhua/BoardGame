@@ -1,0 +1,74 @@
+{
+  "regionId": "city-region-28",
+  "covered": {
+    "id": "qidahen-map-population-city-region-28",
+    "x": 372.9865417480469,
+    "y": 308.5866394042969,
+    "width": 15.785003662109375,
+    "height": 15.785003662109375
+  },
+  "after": {
+    "x": 512.1463012695312,
+    "y": 184.5619659423828,
+    "width": 23.38616943359375,
+    "height": 23.386138916015625
+  },
+  "handBox": {
+    "x": 206,
+    "y": 304.3999938964844,
+    "width": 524,
+    "height": 120.4000244140625
+  },
+  "gestures": [
+    {
+      "distance": 140,
+      "previousPan": "0",
+      "nextPan": "-350"
+    },
+    {
+      "distance": 112.69186401367188,
+      "previousPan": "-350",
+      "nextPan": "-682.6594944587068"
+    }
+  ],
+  "probe": {
+    "hits": [
+      {
+        "tag": "CANVAS",
+        "id": "qidahen-map-hitmap-canvas",
+        "role": null
+      },
+      {
+        "tag": "IMG",
+        "id": "qidahen-main-map-image",
+        "role": null
+      },
+      {
+        "tag": "DIV",
+        "id": "qidahen-map-content",
+        "role": null
+      },
+      {
+        "tag": "DIV",
+        "id": "qidahen-map-viewport-content",
+        "role": null
+      },
+      {
+        "tag": "DIV",
+        "id": "qidahen-map-layer",
+        "role": null
+      },
+      {
+        "tag": "DIV",
+        "id": "qidahen-scene-stage",
+        "role": null
+      },
+      {
+        "tag": "DIV",
+        "id": "qidahen-scene-layer",
+        "role": null
+      }
+    ],
+    "core": "action-window"
+  }
+}

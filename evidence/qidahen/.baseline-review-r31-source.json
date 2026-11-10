@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "reviewer": "/root/qidahen_r31_source_review",
+  "reviewedAt": "2026-10-26",
+  "verdict": "REVISE",
+  "scope": "R31 basic-opening 原始源码独立审查；不是最终视觉验收",
+  "authority": "用户要求先设计正常连续对局、再贴教学；正式 PDF Ver 1.3；tutorial-design 唯一通用正文",
+  "baselineSource": "git HEAD:src/games/qidahen/tutorial.ts（basic-opening revision 8）、git HEAD:public/locales/zh-CN/game-qidahen.json，与本轮旧稿记录",
+  "requirements": [
+    {
+      "requirement": "连续正式开局与轮盘军屯",
+      "status": "REVISE",
+      "baselineSource": "旧 basic-opening 从自由行动顺序与征召入口开始，并分别承接轮盘 1/2/3 格；正式 PDF p2/p4；当前 tutorialSetup.ts、wheelImmediateEffect.ts",
+      "preservedInformation": "保留正式大明开局、两类行动、公共轮盘两格代价、军屯抽牌与建立等级2正规军。其它轮盘落点与征召没有从正式对局删除，但移出了玩家入门，应明确作为本课范围外，不能称教学覆盖已保留。",
+      "preservedActions": "保留真实轮盘输入、真实指定对手与同局结算。删除只决定先教哪项的课程分支符合用户授权。当前军屯建军地点仍由初始化选择辽东并自动结算，未保留玩家亲手选择部署地的规则决策。",
+      "changes": "从无后续用途的宣府大批征召改成辽东前线补兵，再承接相邻叶赫部进攻；主线固定一条合法走法，互斥的三种走法不再串成课纲。",
+      "duplicateDecision": "没有为章节排版新增重复行动；但不能用固定示范路线作为初始化代做建军地点选择的依据。",
+      "changeAuthority": "用户明确要求重构为正常流程自然教学；tutorial-design 第三节允许固定合法路线，同时禁止借初始化代做部署、支付或选牌。",
+      "findings": ["F3"]
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "status": "REVISE",
+      "baselineSource": "旧稿征召支付与独立进攻代表态；正式 PDF p1/p2/p3/p5/p6；atlas05 第44格卡面；当前 tutorial.ts、Board.tsx、attackRules.ts、pendingBattleCombatSupport.ts、battleForceOutcomes.ts",
+      "preservedInformation": "保留弃一张手牌的实际支付、战术牌效果、地图目标及战后控制权；第44格身份已按实图纠正为鸳鸯阵，未将第50格乌真超哈特例混入。",
+      "preservedActions": "支付、选目标、打出战术、投入兵力、结算与占领通过正式命令和 UI 连接；当前被测试路线主动选择低等级先损，且正式战斗仍把损伤点直接当阵亡兵数。选错支付牌的合法输入可以让后续战术步骤卡死。",
+      "changes": "把独立预设的进攻教学接入同一局军屯之后；保留银两用于费用、鸳鸯阵用于野战的资源因果。当前结算结果须回到正式规则重新推演，不能沿用旧损一兵、剩两兵的预期。",
+      "duplicateDecision": "支付、地图目标、战术与占领分别有实际规则后果；确认弃牌步骤只承接真实提交。选择已付掉的战术牌或战后撤回的非示范合法路径尚未闭合，不能只靠推荐路径绿灯放行。",
+      "changeAuthority": "用户授权修正正式规则交互；tutorial-design 要求来源、动作、UI、输入和后果对应，并验证非推荐合法分支。",
+      "findings": ["F1", "F2", "F4"]
+    },
+    {
+      "requirement": "手机长按检视",
+      "status": "REVISE",
+      "baselineSource": "旧移动端征召支付检视；当前 e2e/qidahen/qidahen-closeout.e2e.ts 移动横屏用例与 Board.tsx 正式手牌检视 owner",
+      "preservedInformation": "保留首次真实费用支付时的桌面看牌入口与触屏长按说明，不把普通关闭按钮单独编成课程。",
+      "preservedActions": "现测试改为浏览器 CDP 真实触摸输入、打开银两卡面、关闭并回到突袭支付；没有用 DOM dispatch 代替玩家手势。当前最新成功运行与逐图视觉结论尚未提交给本次独立审查。",
+      "changes": "检视从无局面用途的征召支付移到突袭首次支付，并保留同一支付状态。",
+      "duplicateDecision": "移动端只补平台独有的长按和布局，不复制整个桌面教程截图链。",
+      "changeAuthority": "用户要求真实交互与子代理全量验图；tutorial-design 隐藏手势首次用途教学与跨视口证据规则。",
+      "findings": ["EVIDENCE_PENDING"]
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "status": "REVISE",
+      "baselineSource": "旧 stayOnMatchAfterCompletion 与共享教程生命周期；当前 basic-opening revision13、closeout 新入口/刷新继续/重开/退出清理用例",
+      "preservedInformation": "保留教程完成后同局继续，不自动跳到另一代表态。重排步骤更新清单版本，不继承不兼容旧步骤号。",
+      "preservedActions": "主代理已提供真实浏览器刷新继续、重头开始、退出到大厅且清除教程状态的通过结果；同局下一玩家输入仍待最新完整主线成功证据。",
+      "changes": "由旧分支共同终点改为战后占领收口；下一玩家继续同一局的契约保留。",
+      "duplicateDecision": "没有新增章节选择或教程专属假确认；当前 finish 文案静态断言占领，若合法选择撤回也会推进，须与真实结果绑定。",
+      "changeAuthority": "用户要求初始化、退出、重开、继续和版本处理；tutorial-design 第五节生命周期与同局续玩验收。",
+      "findings": ["F2", "EVIDENCE_PENDING"]
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "priority": "P1",
+      "finding": "新教程路线选择低等级先损，且正式结算把损伤点直接当阵亡部队数，违反最高等承伤、士气下降后归零才消灭。",
+      "ruleSource": "正式 PDF p1 部队等级/士气；p6 损伤判定。",
+      "evidence": [
+        "e2e/qidahen/qidahen-closeout.e2e.ts:847 点击 qidahen-attacker-casualty-lowest-level",
+        "src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts:92/:142 指定 lowest-level",
+        "src/games/qidahen/domain/attackRules.ts:199-203 将 attackerDamage/defenderDamage 直接作为部队损失",
+        "src/games/qidahen/domain/pendingBattleCombatSupport.ts:75-98 按损失数量整支移除",
+        "src/games/qidahen/domain/battleForceOutcomes.ts:82-93 按损失数量整支移除"
+      ],
+      "consequence": "本课战斗结果及占领兵力不是正式规则推导；改测试预期或只切回高级先损不能修复士气处理。",
+      "minimalFix": "修唯一正式战斗伤害 owner：同一阶段同时结算后以单位自身当前等级承伤并降级、零级才移除；阶段之间使用受损后部队。保留连炮阵炮兵先承伤的卡面特例。新年耗损的合法最低等级选兵不能随战斗修复一并误删。",
+      "notes": "当前来源未发现普通战损低等级先损例外；第38格连炮阵是炮兵先承伤特例。同级且实际不同兵种/归属时由承伤方选择，现 stack/piece 固定顺序不能承接这项决策。"
+    },
+    {
+      "id": "F2",
+      "priority": "P1",
+      "finding": "固定示范缺少对合法偏离的承接，支付掉鸳鸯阵可使后续战术步骤卡死；战后撤回仍会进入静态占领完成文案。",
+      "evidence": [
+        "src/games/qidahen/tutorial.ts:593-604 任意 PAYMENT_CARD_SELECTED 推进且随后只允许确认",
+        "src/games/qidahen/Board.tsx:5779/:5812-5813 支付期间所有未禁用手牌可选择",
+        "src/games/qidahen/tutorial.ts:647-653 任意战后交互完成事件推进 finish",
+        "public/locales/zh-CN/game-qidahen.json:504 finish 静态声称叶赫部由大明控制"
+      ],
+      "consequence": "只走建议牌/建议占领的 E2E 不能证明玩家真实可完成教程；一次合法误点即可缺失目标牌或得到假结果。",
+      "reproduction": "已只读运行正式 executePipeline：pay-raid 选择鸳鸯阵→confirm-raid-payment→确认→play-tactic；输出 tacticStillInHand=false、highlight=qidahen-atlas05-1644-yuanyang-zhen、allowedCommands=[PLAY_TACTIC_CARD]。",
+      "minimalFix": "沿现有教程检查点机制恢复不属于本次示范且无教学价值的合法偏离，或承接真实分支与动态结果；补至少战术牌当费用、战后撤回两条回归。"
+    },
+    {
+      "id": "F3",
+      "priority": "P1",
+      "finding": "军屯部署地由初始化预选辽东后自动建军，玩家没有完成部署目标选择。",
+      "evidence": [
+        "src/games/qidahen/tutorialSetup.ts:181 初始化 selectedRegionId=city-region-15-liaodong",
+        "src/games/qidahen/domain/wheelImmediateEffect.ts:40-62 选中地区/后备地区自动决定建军地",
+        "src/games/qidahen/domain/wheelImmediateEffect.ts:70-102 自动增加部队",
+        "docs/games/qidahen/records/qidahen-tutorial-coverage-matrix.md 把军屯列为玩家实操"
+      ],
+      "consequence": "玩家看到补兵结果，却未学会将建军地绑定当前前线用途；本课的首个部署决策被 setup 代做。",
+      "minimalFix": "在同一正式军屯入口提供合法本土目标，并让本课引导玩家点辽东完成建立；不把隐藏默认地区称作玩家已选择。"
+    },
+    {
+      "id": "F4",
+      "priority": "P2",
+      "finding": "首次战斗/战术只写步兵骰子等级+1，未教当前部队等级与骰面数的读法，覆盖文档声称讲战场宽度与胜负判定但 basic 文案没有对应说明。",
+      "ruleSource": "正式 PDF p1/p2 等级、士气、等级对应骰种；p5 战场宽度；p6 胜负判定。",
+      "evidence": [
+        "public/locales/zh-CN/game-qidahen.json:499-502 battleOpen/playTactic/resolveBattle/battleResult",
+        "docs/games/qidahen/records/qidahen-tutorial-coverage-matrix.md 第二节 resolve-battle/battle-result 行"
+      ],
+      "consequence": "玩家会按提示打卡，但不知道骰子等级提升改变了什么，也不能据图理解战斗结束。",
+      "minimalFix": "在公开部队和首次战术用途处，按眼前实际等级摘取所需规则读法；把胜负判定贴到真实幸存部队结果。覆盖矩阵只声称实际出现的教学。"
+    }
+  ],
+  "verifiedFacts": [
+    "直接提取并阅读正式 PDF p1-p6；未依赖简体转写作规则裁决。",
+    "只读正式 pipeline 复演到待战斗：叶赫部为蒙古正规骑兵 Lv2 ×1。",
+    "辽东军屯后：正规炮兵 Lv1 ×1、正规步兵 Lv1 ×2、正规步兵 Lv2 ×1。",
+    "takeCommittedSpecialTroopStacks(source,3,null) 选中步兵Lv2 ×1、炮兵Lv1 ×1、步兵Lv1 ×1；留步兵Lv1 ×1。",
+    "只读正式 pipeline 已复现战术牌当费用后的不可达战术步骤。"
+  ],
+  "evidenceLimitations": [
+    "本报告未读取本轮产品截图，不能替代全量逐图视觉审查。",
+    "最新完整 E2E 与同局继续证据仍由主代理汇总；本报告不将此前失败运行或领域绿灯解释为最终通过。",
+    "本文件是原始 REVISE 审查产物；修复后应另行复审，不能抹掉发现记录。"
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "status": "RUNNING",
+  "reviewer": "/root/r174_a",
+  "score": 94,
+  "issues": [],
+  "actualReadCount": 6,
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/00-frontier-goal.png",
+      "sha256": "81313d0ed23165cad87318f8732dda3f666f487c07c3e6b3a7bda0e7507cabda",
+      "status": "PASS",
+      "score": 94,
+      "observation": "胜利目标说明与下一步按钮同处纪年牌旁，顶部大明当前回合标记可读，轮盘和地图本体保持可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/01-opening-move.png",
+      "sha256": "3226f31e660213a4fa97e2d29900749303e192bc859ef0017827c50d3a462f39",
+      "status": "PASS",
+      "score": 94,
+      "observation": "轮盘右侧提示紧贴轮盘并明确本次前进一格，开垦军屯扇区白边突出，其他可达扇区绿色较弱，当前回合标记清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/02-farm-action.png",
+      "sha256": "d1b28df2dcc16c386e1f9bb0e147cd14a91435c2ed3635d7ad6827f4b1e52541",
+      "status": "PASS",
+      "score": 92,
+      "observation": "军屯文字按钮位于当前绿色轮盘扇区内，提示箭头贴近军屯入口，轮盘下放弃按钮和底部势力行动分区明确，未遮住本步操作目标。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/03-reclaim-action.png",
+      "sha256": "7daa3b09ab6e061dbe9ee25ea5c27cedf3c62f42cee738bbe7f40904b0b297dd",
+      "status": "PASS",
+      "score": 92,
+      "observation": "开垦入口在轮盘当前扇区内以独立边界显示，人口说明紧邻该入口，放大地图与固定轮盘保持层级区分，手牌和征召军队入口仍可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/04-reclaim-target.png",
+      "sha256": "24008a3873884af8f321d45b74cf1b6995509aa387c51decd7d7cdaa96cdc423",
+      "status": "PASS",
+      "score": 91,
+      "observation": "合法开垦区域沿地图本体绿边显示，辽东推荐区域以白色主边界区别于其他候选，辽东名称和人口标记可读，邻近提示与右侧大明确认面板共同说明当前对象和下一步。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/05-recruit-action.png",
+      "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313",
+      "status": "PASS",
+      "score": 94,
+      "observation": "征召军队按钮位于半露手牌正上方并承接同轴提示，势力行动各有独立按钮，轮盘完成入口独立保留，地图兵牌和顶部当前回合标记可辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ]
+}

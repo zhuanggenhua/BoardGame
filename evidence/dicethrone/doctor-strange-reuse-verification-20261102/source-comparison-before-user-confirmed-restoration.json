@@ -1,0 +1,136 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "把我说的从牌堆拿牌效果的界面和新实现或者复用的效果截图对比，现在去找",
+  "productAcceptance": "not-claimed",
+  "referenceEffect": {
+    "name": "血色杀戮",
+    "actionId": "vampire-lord-bloody-slaughter-search-deck-card",
+    "interactionType": "selectDeckCard",
+    "registry": "src/games/dicethrone/domain/customActions/index.ts",
+    "handler": "src/games/dicethrone/domain/customActions/vampire_lord.ts",
+    "renderer": "src/games/dicethrone/ui/InteractionOverlay.tsx"
+  },
+  "limitations": [
+    "历史图文件缺失，第一组为指定历史组件在当前其余应用源码下重放，不是原时整应用截图，也未认定最后正常版本。",
+    "第一、二组完全相同视口、效果、牌库全集、搜索词及已选卡；第三组规则卡区与候选数量有差异，明确不作同规则完整行为对比。",
+    "当前共同使用同一组件只能证明共用owner，不能证明没有改旧UI；本轮不更改游戏源码。"
+  ],
+  "media": [
+    {
+      "file": "01-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\historical-component-replay\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "ba7fd9fa92ab10ab795ee5e5dc2acdca6140efa108317b6aebdad73478cfbf45",
+      "description": "博士实施前历史选择器组件重放；不是当时原截图或已认可基线；真实完整抽牌堆候选。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "measuredCardFrame": {
+        "x": 195.90625,
+        "y": 122.5,
+        "width": 103.671875,
+        "height": 169.640625
+      }
+    },
+    {
+      "file": "01-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\historical-component-replay\\02-血色杀戮-搜索命中.png",
+      "sha256": "2ca66295a5702ca3b8826c59c5978544bfdf12252490c02402b4768b4153836c",
+      "description": "博士实施前历史选择器组件重放；不是当时原截图或已认可基线；相同搜索词命中单张。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "measuredCardFrame": {
+        "x": 668.15625,
+        "y": 122.5,
+        "width": 103.671875,
+        "height": 169.640625
+      }
+    },
+    {
+      "file": "01-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\historical-component-replay\\03-血色杀戮-已选待确认.png",
+      "sha256": "d4667b21269fa54529a884917e682440f7c6c0f178654d0b5eff298e5b414ae9",
+      "description": "博士实施前历史选择器组件重放；不是当时原截图或已认可基线；相同目标已选待确认。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "measuredCardFrame": {
+        "x": 668.15625,
+        "y": 122.5,
+        "width": 103.671875,
+        "height": 169.640625
+      }
+    },
+    {
+      "file": "02-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\current\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "548b4d007894fea7da18eac099106dcb463e1e43fdc86a3b03c5ba3f00eb14e9",
+      "description": "当前血色杀戮原效果入口；共享选择器已被本聊天修改，不能称未改原版；真实完整抽牌堆候选。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "measuredCardFrame": {
+        "x": 362.796875,
+        "y": 130.5,
+        "width": 350,
+        "height": 572.9375
+      }
+    },
+    {
+      "file": "02-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\current\\02-血色杀戮-搜索命中.png",
+      "sha256": "9483af2c8d6409a5b69cff2ed1847832a41cfab628bf7801e5483217b17cbc2e",
+      "description": "当前血色杀戮原效果入口；共享选择器已被本聊天修改，不能称未改原版；相同搜索词命中单张。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "measuredCardFrame": {
+        "x": 545,
+        "y": 130.5,
+        "width": 350,
+        "height": 572.9375
+      }
+    },
+    {
+      "file": "02-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\current\\03-血色杀戮-已选待确认.png",
+      "sha256": "113295614b8e2a58fe9515af8dce4f548079a5b96e012c3308c924fe01de00f6",
+      "description": "当前血色杀戮原效果入口；共享选择器已被本聊天修改，不能称未改原版；相同目标已选待确认。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "measuredCardFrame": {
+        "x": 545,
+        "y": 130.5,
+        "width": 350,
+        "height": 572.9375
+      }
+    },
+    {
+      "file": "03-01-弃牌法术候选-桌面.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\桌面-弃牌准备选择态.png",
+      "sha256": "3ce5903d97bc8d06da2edbff915486f04d5611b5dba1c29dda49789e4f2173de",
+      "description": "当前博士弃牌准备候选；与血色杀戮规则来源和候选数量不同，只比较共享承载，不当成同一规则动作。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "file": "03-02-弃牌法术已选-桌面.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\桌面-法术卡已选待确认.png",
+      "sha256": "6ee0d53f5cd4b3ae2d3ff24e74a963a41d9b1163604629ef38e6cfdaca3520b7",
+      "description": "当前博士弃牌法术已选待确认；不是用户指定原效果的历史图。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    }
+  ]
+}

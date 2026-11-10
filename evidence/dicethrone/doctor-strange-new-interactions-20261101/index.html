@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>奇异博士交互截图（用户已否决，基线重审中）</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>奇异博士交互截图（用户已否决，基线重审中）</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-弃牌法术候选-桌面.png","displayTitle":"独立交互组 01 · 宇宙感知桌面弃牌法术 · 弃牌法术候选-桌面","description":"打开桌面弃牌法术选择界面，桌面弃牌法术候选完整显示卡面、选择标题和确认操作。","kind":"image"},{"relativePath":"02-弃牌法术已选-桌面.png","displayTitle":"独立交互组 01 · 宇宙感知桌面弃牌法术 · 弃牌法术已选-桌面","description":"点击弃牌区候选法术但暂不确认，桌面选中弃牌法术后卡面高亮且确认仍待提交。","kind":"image"},{"relativePath":"03-弃牌法术候选-横屏.png","displayTitle":"独立交互组 02 · 宇宙感知横屏弃牌法术 · 弃牌法术候选-横屏","description":"打开横屏手机弃牌法术选择界面，横屏手机的弃牌法术候选和确认操作完整可见。","kind":"image"},{"relativePath":"04-弃牌法术已选-横屏.png","displayTitle":"独立交互组 02 · 宇宙感知横屏弃牌法术 · 弃牌法术已选-横屏","description":"点击横屏候选法术但暂不确认，横屏手机选中法术后卡面和确认操作完整可见。","kind":"image"},{"relativePath":"05-深红系带玩家候选.png","displayTitle":"独立交互组 03 · 深红系带目标玩家 · 深红系带玩家候选","description":"打出深红系带法术后选择合法对手，深红系带显示合法对手候选并复用玩家选择卡片。","kind":"image"},{"relativePath":"06-深红系带玩家已选.png","displayTitle":"独立交互组 03 · 深红系带目标玩家 · 深红系带玩家已选","description":"点击玩家目标卡片但暂不确认，选中对手后保留确认态，法术效果尚未施加。","kind":"image"},{"relativePath":"07-状态候选-桌面.png","displayTitle":"独立交互组 04 · 瓦图姆之风桌面状态选择 · 状态候选-桌面","description":"打开独立状态选择器并显示可选图标，瓦图姆之风直接展示可移除状态及其持有人。","kind":"image"},{"relativePath":"08-状态已选-桌面.png","displayTitle":"独立交互组 04 · 瓦图姆之风桌面状态选择 · 状态已选-桌面","description":"直接点击状态图标但暂不确认，状态已选中并保留确认操作，另一候选仍可见。","kind":"image"},{"relativePath":"09-状态候选-横屏.png","displayTitle":"独立交互组 05 · 瓦图姆之风横屏状态选择 · 状态候选-横屏","description":"打开横屏手机状态选择器，横屏手机直接展示两个可点击状态图标。","kind":"image"},{"relativePath":"10-状态已选-横屏.png","displayTitle":"独立交互组 05 · 瓦图姆之风横屏状态选择 · 状态已选-横屏","description":"直接选中状态图标但暂不确认，横屏手机状态已选且标题、候选和确认完整可见。","kind":"image"},{"relativePath":"11-预感收入替代选项.png","displayTitle":"独立交互组 06 · 预感收入与抽牌返还 · 预感收入替代选项","description":"进入收入阶段并查看预感替代选项，收入阶段显示普通收入与预感替代选项。","kind":"image"},{"relativePath":"11b-预感收入替代选项-横屏.png","displayTitle":"独立交互组 06 · 预感收入与抽牌返还 · 横屏三个选项","description":"玩家在横屏收入阶段查看预感的三个选项，三行平面选项完整可比较。","kind":"image"},{"relativePath":"12-抽牌返还候选.png","displayTitle":"独立交互组 06 · 预感收入与抽牌返还 · 抽牌返还候选","description":"选择预感替代收入后显示本次抽到的牌，抽牌后显示本次获得的候选卡供返还选择。","kind":"image"},{"relativePath":"13-抽牌返还已选.png","displayTitle":"独立交互组 06 · 预感收入与抽牌返还 · 抽牌返还已选","description":"选中本次抽到的卡牌但暂不确认，选中返还卡后保留确认操作和其他候选。","kind":"image"},{"relativePath":"14-牌库位置选择.png","displayTitle":"独立交互组 06 · 预感收入与抽牌返还 · 牌库位置选择","description":"选中返还卡后选择牌库位置，返还卡牌位置显示牌库顶与牌库底选项。","kind":"image"},{"relativePath":"15-牌库顶五法术候选.png","displayTitle":"独立交互组 07 · 全知之眼顶五法术 · 牌库顶五法术候选","description":"打开牌库顶五的法术卡牌选择器，全知之眼展示牌库顶五法术卡牌供选择。","kind":"image"},{"relativePath":"16-牌库顶五第二张已选.png","displayTitle":"独立交互组 07 · 全知之眼顶五法术 · 牌库顶五第二张已选","description":"从顶五候选中选中第二张法术，第二张法术选中后仍能比较其他候选。","kind":"image"},{"relativePath":"17-剩余牌重排候选.png","displayTitle":"独立交互组 08 · 全知之眼余牌重排 · 剩余牌重排候选","description":"准备两张法术后显示剩余卡牌重排界面，准备法术后显示剩余三张卡牌的排序候选。","kind":"image"},{"relativePath":"18-剩余牌首张已选.png","displayTitle":"独立交互组 08 · 全知之眼余牌重排 · 剩余牌首张已选","description":"选择剩余卡牌顺序中的第一张，选中第一张重排卡后保留后续确认操作。","kind":"image"},{"relativePath":"19-准备区法术施放候选.png","displayTitle":"独立交互组 09 · 全知之眼准备区施法 · 准备区法术施放候选","description":"攻击结算后选择准备区法术，攻击后显示可施放法术候选和跳过操作。","kind":"image"},{"relativePath":"20-准备区法术已选.png","displayTitle":"独立交互组 09 · 全知之眼准备区施法 · 准备区法术已选","description":"点击准备区法术但暂不确认施放，准备区法术已选中并等待确认施放。","kind":"image"},{"relativePath":"21-星际侵入技能已选.png","displayTitle":"独立交互组 10 · 星际侵入奖励骰 · 星际侵入技能已选","description":"选择星际侵入技能但暂不结算攻击，星际侵入技能已选并等待攻击结算。","kind":"image"},{"relativePath":"22-奖励骰待确认.png","displayTitle":"独立交互组 10 · 星际侵入奖励骰 · 奖励骰待确认","description":"结算星际侵入后查看奖励骰并等待确认，奖励骰出现后显示骰面与确认操作。","kind":"image"},{"relativePath":"23-值得拥有骰子候选.png","displayTitle":"独立交互组 11 · 不愧是我骰子重掷 · 不愧是我骰子候选","description":"打开目标投掷者的骰子选择界面，不愧是我显示当前投掷者的骰子候选。","kind":"image"},{"relativePath":"24-值得拥有骰子已选一次.png","displayTitle":"独立交互组 11 · 不愧是我骰子重掷 · 不愧是我骰子已选一次","description":"选择一颗骰子后查看当前重复选择进度，第一次选择后显示重复选择进度和骰子标记。","kind":"image"},{"relativePath":"25-值得拥有骰子已选两次.png","displayTitle":"独立交互组 11 · 不愧是我骰子重掷 · 不愧是我骰子已选两次","description":"重复选择同一骰子两次达到上限，进度达到上限后标记完成并显示确认操作。","kind":"image"},{"relativePath":"26-即视感悬停说明.png","displayTitle":"独立交互组 12 · 即视感状态说明 · 即视感悬停说明","description":"悬停即视感状态标记查看说明，悬停即视感标记时显示完整效果说明。","kind":"image"},{"relativePath":"27-角色排序-已完成角色前段.png","displayTitle":"选角列表顶部首先展示已完成角色。","description":"选角列表顶部首先展示已完成角色。","kind":"image"},{"relativePath":"28-角色排序-实施中角色后段.png","displayTitle":"滚动到列表后段，奇异博士位于实施中角色区域并显示实施中标记。","description":"滚动到列表后段，奇异博士位于实施中角色区域并显示实施中标记。","kind":"image"},{"relativePath":"29-卡牌候选复用放大阅读.png","displayTitle":"卡牌候选 · 复用原放大阅读","description":"候选使用原卡池尺寸，规则详情通过既有牌桌放大界面阅读，关闭后保持原选择。","kind":"image"},{"relativePath":"30-公开准备区三张法术-桌面.png","displayTitle":"公开准备区显示三张法术的数量及横向浏览入口。","description":"公开准备区显示三张法术的数量及横向浏览入口。","kind":"image"},{"relativePath":"31-公开准备区原卡阅读-桌面.png","displayTitle":"桌面实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。","description":"桌面实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。","kind":"image"},{"relativePath":"32-公开准备区横向找到第三张-横屏.png","displayTitle":"横屏原牌桌准备区显示三张数量，并通过实际横滚找回第三张法术。","description":"横屏原牌桌准备区显示三张数量，并通过实际横滚找回第三张法术。","kind":"image"},{"relativePath":"33-公开准备区原卡阅读-横屏.png","displayTitle":"横屏实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。","description":"横屏实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。","kind":"image"},{"relativePath":"34-所有玩家目标候选-桌面.png","displayTitle":"授予即视感可以选择本人、队友或对手，四个玩家候选同屏显示。","description":"授予即视感可以选择本人、队友或对手，四个玩家候选同屏显示。","kind":"image"},{"relativePath":"35-所有玩家队友已选-桌面.png","displayTitle":"队友候选显示选中反馈，其它玩家仍可比较，等待原确认按钮提交。","description":"队友候选显示选中反馈，其它玩家仍可比较，等待原确认按钮提交。","kind":"image"},{"relativePath":"36-多持有人状态候选-桌面.png","displayTitle":"本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。","description":"本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。","kind":"image"},{"relativePath":"37-多持有人状态候选-横屏.png","displayTitle":"本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。","description":"本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。","kind":"image"},{"relativePath":"38-无合法状态仅跳过-桌面.png","displayTitle":"没有合法可移除状态时只提供跳过，不显示虚假状态。","description":"没有合法可移除状态时只提供跳过，不显示虚假状态。","kind":"image"},{"relativePath":"39-秘术雷击原技能分支-桌面.png","displayTitle":"秘术雷击通过原技能分支界面选择本次进攻效果。","description":"秘术雷击通过原技能分支界面选择本次进攻效果。","kind":"image"},{"relativePath":"40-弃牌直接施放完整候选-桌面.png","displayTitle":"施放拉格伽多尔之环后，从弃牌堆选择法术，可搜索和滚动查看全部候选。","description":"施放拉格伽多尔之环后，从弃牌堆选择法术，可搜索和滚动查看全部候选。","kind":"image"},{"relativePath":"41-弃牌直接施放八牌候选-横屏.png","displayTitle":"横屏保持法术可读尺度，候选可横向浏览，侧栏保留原搜索和跳过。","description":"横屏保持法术可读尺度，候选可横向浏览，侧栏保留原搜索和跳过。","kind":"image"},{"relativePath":"42-弃牌搜索无匹配可清除-横屏.png","displayTitle":"搜索无匹配时明确显示空结果，并保留清空搜索和跳过入口。","description":"搜索无匹配时明确显示空结果，并保留清空搜索和跳过入口。","kind":"image"},{"relativePath":"43-值得拥有-来源卡等待玩家关闭.png","displayTitle":"队友打出的来源卡保持完整显示，等待玩家主动关闭后选择骰子。","description":"队友打出的来源卡保持完整显示，等待玩家主动关闭后选择骰子。","kind":"image"},{"relativePath":"44-手机横屏-弃牌候选原阅读界面.png","displayTitle":"弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。","description":"弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。","kind":"image"},{"relativePath":"45-即视感重开后-桌面.png","displayTitle":"真实鼠标点击即视感后，状态标记消耗、投掷计数归零且旧阶段效果清理。","description":"真实鼠标点击即视感后，状态标记消耗、投掷计数归零且旧阶段效果清理。","kind":"image"},{"relativePath":"46-桌面-弃牌候选原阅读界面.png","displayTitle":"弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。","description":"弃牌候选通过原检视入口打开完整卡面阅读，等待玩家关闭。","kind":"image"},{"relativePath":"47-预感返还多卡候选-横屏.png","displayTitle":"横屏以可读卡面比较本次抽牌，原选择控件与标题位于侧栏。","description":"横屏以可读卡面比较本次抽牌，原选择控件与标题位于侧栏。","kind":"image"},{"relativePath":"48-预感返还横向浏览末张-横屏.png","displayTitle":"通过原候选区横向滚动查看末张返还牌，当前选择仍未提交。","description":"通过原候选区横向滚动查看末张返还牌，当前选择仍未提交。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

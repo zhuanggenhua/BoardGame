@@ -1,0 +1,16 @@
+{
+  "check": "typecheck",
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "--max-old-space-size=6144",
+    "node_modules/typescript/bin/tsc",
+    "--build",
+    "--pretty",
+    "false"
+  ],
+  "startedSourceRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "finishedSourceRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "sourceUnchanged": true,
+  "exitCode": 1,
+  "finishedAt": "2026-10-26T13:32:23.898Z"
+}

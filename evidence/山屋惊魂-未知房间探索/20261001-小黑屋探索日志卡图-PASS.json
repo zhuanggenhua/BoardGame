@@ -1,0 +1,77 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "山屋惊魂小黑屋探索、操作日志与关键字卡图预览证据",
+  "generatedAt": "2026-10-01T22:20:00+08:00",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "进入真实牌桌后默认不进入探索选择态，未知房间没有提前高亮。",
+      "status": "PASS",
+      "evidence": [
+        "01-山屋惊魂-未知房间-探索前.jpg：探索按钮可见，未知房间目标未出现。",
+        "e2e/betrayal/explore-unknown-room.e2e.ts：1 passed。"
+      ]
+    },
+    {
+      "requirement": "点击探索后，未知房间目标才显示并可被点击。",
+      "status": "PASS",
+      "evidence": [
+        "02-山屋惊魂-未知房间-选择门位.jpg：上下两个未知房间目标出现并高亮。",
+        "e2e/betrayal/explore-unknown-room.e2e.ts：真实点击 betrayal-action-explore 后断言目标可见。"
+      ]
+    },
+    {
+      "requirement": "操作日志显示具体玩家与获得物品。",
+      "status": "PASS",
+      "evidence": [
+        "04-山屋惊魂-未知房间-发现牌关闭后.jpg：日志可见“薇薇安 探索到观测台，获得了书本”。",
+        "src/games/betrayal/__tests__/actionLogUndo.test.ts：探索事件和结果日志通过。"
+      ]
+    },
+    {
+      "requirement": "悬停日志中的房间名时显示对应房间卡图。",
+      "status": "PASS",
+      "evidence": [
+        "05-山屋惊魂-日志房间名悬停卡图.jpg：观测台房间卡图在日志右侧浮层显示。",
+        "e2e/betrayal/explore-unknown-room.e2e.ts：悬停观测台后 card-preview-tooltip 可见。"
+      ]
+    },
+    {
+      "requirement": "悬停日志中的物品名时显示对应物品卡图。",
+      "status": "PASS",
+      "evidence": [
+        "04-山屋惊魂-未知房间-发现牌关闭后.jpg：书本物品卡图在日志右侧浮层显示。",
+        "e2e/betrayal/explore-unknown-room.e2e.ts：悬停书本后 card-preview-tooltip 可见。"
+      ]
+    },
+    {
+      "requirement": "日志预览按正式素材自身宽高比渲染，不用默认竖卡比例拉伸房间方卡。",
+      "status": "PASS",
+      "evidence": [
+        "05-山屋惊魂-日志房间名悬停卡图.jpg：观测台预览保持方形房间牌比例。",
+        "04-山屋惊魂-未知房间-发现牌关闭后.jpg：书本预览保持正式竖向卡牌比例。",
+        "CardPreview renderer metadata + Betrayal aspect-ratio 单测通过。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/山屋惊魂-未知房间探索/01-山屋惊魂-未知房间-探索前.jpg",
+    "evidence/山屋惊魂-未知房间探索/02-山屋惊魂-未知房间-选择门位.jpg",
+    "evidence/山屋惊魂-未知房间探索/03-山屋惊魂-未知房间-翻开后.jpg",
+    "evidence/山屋惊魂-未知房间探索/04-山屋惊魂-未知房间-发现牌关闭后.jpg",
+    "evidence/山屋惊魂-未知房间探索/05-山屋惊魂-日志房间名悬停卡图.jpg"
+  ],
+  "notes": [
+    "本图组覆盖本轮真实探索链、日志可见玩家/获得物品、房间名悬停卡图和物品名悬停卡图。",
+    "更广泛的事件触发字段已由结构化日志单测覆盖；本次探索结果为物品分支，因此截图中的日志结果是获得书本。"
+  ]
+}

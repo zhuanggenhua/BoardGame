@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793671209604-p5kjl7/战后恢复令咒等待本人确认.jpg.jpg",
+      "chainId": "fate-online-post-battle-11",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "战后恢复令咒等待本人确认",
+      "description": "战后恢复令咒等待本人确认",
+      "uiStateId": "fate-online-post-battle-11-open-choice",
+      "uiChange": "panel",
+      "uiChangeReason": "战后恢复令咒等待本人确认",
+      "behaviorStepId": "open-choice",
+      "sourceRevision": "8134eb0f637b9512d8194a09d538378209a56c39+tree-sha256:1ef34ceccfa97cd2b18053368424b700aad324ddbd52affcd504d062e796f9d6",
+      "requirements": [
+        "末轮战后选择全部完成后才设置系统终局并展示结果"
+      ],
+      "sourceRun": "1793671249998-379956-dca5504e-d3aa-4de4-9a00-8a7d5ab97c31",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793671209604-p5kjl7"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793671209604-p5kjl7/本人完成选择后仍等待第二席.jpg.jpg",
+      "chainId": "fate-online-post-battle-11",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "本人完成选择后仍等待第二席",
+      "description": "本人完成选择后仍等待第二席",
+      "uiStateId": "fate-online-post-battle-11-confirm-own-choice",
+      "uiChange": "panel",
+      "uiChangeReason": "本人完成选择后仍等待第二席",
+      "behaviorStepId": "confirm-own-choice",
+      "sourceRevision": "8134eb0f637b9512d8194a09d538378209a56c39+tree-sha256:1ef34ceccfa97cd2b18053368424b700aad324ddbd52affcd504d062e796f9d6",
+      "requirements": [
+        "末轮战后选择全部完成后才设置系统终局并展示结果"
+      ],
+      "sourceRun": "1793671249998-379956-dca5504e-d3aa-4de4-9a00-8a7d5ab97c31",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793671209604-p5kjl7"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793671209604-p5kjl7/全部战后选择后才显示正式终局.jpg.jpg",
+      "chainId": "fate-online-post-battle-11",
+      "chainStep": "03",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "全部战后选择后才显示正式终局",
+      "description": "全部战后选择后才显示正式终局",
+      "uiStateId": "fate-online-post-battle-11-complete-peer-choice",
+      "uiChange": "panel",
+      "uiChangeReason": "全部战后选择后才显示正式终局",
+      "behaviorStepId": "complete-peer-choice",
+      "sourceRevision": "8134eb0f637b9512d8194a09d538378209a56c39+tree-sha256:1ef34ceccfa97cd2b18053368424b700aad324ddbd52affcd504d062e796f9d6",
+      "requirements": [
+        "末轮战后选择全部完成后才设置系统终局并展示结果"
+      ],
+      "sourceRun": "1793671249998-379956-dca5504e-d3aa-4de4-9a00-8a7d5ab97c31",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793671209604-p5kjl7"
+    }
+  ]
+}

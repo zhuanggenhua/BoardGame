@@ -1,0 +1,216 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_contract_review"
+  },
+  "date": "2026-10-23",
+  "objective": "破防连续消费过程的整屏交互可见性审计",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "scopeBoundary": "只判断目标可见性、交互承载、布局可读性与错误表现，不判定骰值、伤害、资源增减或规则正确性。",
+  "score": 76,
+  "scoreBreakdown": {
+    "任务清晰度": 15,
+    "视觉层级": 12,
+    "对象可识别性": 10,
+    "状态与动作载体": 12,
+    "布局完整性": 9,
+    "素材完整性": 10,
+    "操作人体工学": 8
+  },
+  "target_requirements": [
+    {
+      "requirement": "正式破防图标与消费入口可识别",
+      "status": "PASS",
+      "evidence": "第一张与第三张可见左侧正式状态图标及响应入口。"
+    },
+    {
+      "requirement": "两次效果骰的最终结果与确认入口清楚可读",
+      "status": "REVISE",
+      "evidence": "第二张与第四张仍呈倾斜骰子外观，无法清楚区分最终骰面。"
+    },
+    {
+      "requirement": "第一次确认后仍可发现继续使用入口",
+      "status": "PASS",
+      "evidence": "第三张保留破防图标、剩余标记和响应提示。"
+    },
+    {
+      "requirement": "悬浮说明不遮挡生命与战斗点数",
+      "status": "REVISE",
+      "evidence": "第二张与第四张的悬浮说明覆盖左侧主要资源读数。"
+    },
+    {
+      "requirement": "结算后能够识别第二主要阶段及下一步入口",
+      "status": "PASS",
+      "evidence": "第五张阶段高亮与下一阶段按钮清楚可见。"
+    }
+  ],
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757026110-7clqr1/01-破防正式图标与消费入口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "正式破防图标及剩余标记位于左侧资源区上方，响应提示与跳过入口可见，当前攻击技能、骰盘、提示板和主要资源区域均可辨认。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757026110-7clqr1/02-第一枚破防效果骰失败.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "REVISE",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "score": 78,
+      "observation": "破防悬浮说明遮住生命与战斗点数读数，奖励骰仍呈倾斜转动外观，无法仅从整屏画面清楚辨明本次最终骰面及其结果。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757026110-7clqr1/03-失败后仍可使用第二枚破防.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "第一次效果骰确认后，左侧仍显示破防图标及剩余标记，继续响应与跳过入口可见，生命、战斗点数、骰盘与技能区域无遮挡。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757026110-7clqr1/04-第二枚破防效果骰成功.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "REVISE",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "score": 76,
+      "observation": "同伴悬浮说明遮住生命与战斗点数读数，奖励骰仍呈倾斜转动外观，与前次截图难以区分，无法由画面清楚识别本次最终骰面。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757026110-7clqr1/05-不可防御主攻击结算后收口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "第二主要阶段高亮且下一阶段入口可见，奖励骰确认入口已退场，破防操作区已经收口，生命与战斗点数区域无遮挡。"
+    }
+  ],
+  "element_responsibility_audit": {
+    "ledger": "本报告的元素职责审计",
+    "uncovered_elements": [],
+    "decisions": [
+      {
+        "element": "破防图标与剩余标记",
+        "responsibility": "承载状态身份与持续消费入口",
+        "decision": "保留；第一张与第三张可识别。"
+      },
+      {
+        "element": "奖励骰与确认按钮",
+        "responsibility": "承载本次效果投掷结果与玩家确认",
+        "decision": "保留；第二张与第四张须等待转动落定后重新取证。"
+      },
+      {
+        "element": "响应提示与跳过按钮",
+        "responsibility": "承载可继续响应的时机与放弃入口",
+        "decision": "保留；不替代正式状态图标。"
+      },
+      {
+        "element": "生命与战斗点数",
+        "responsibility": "持续承载玩家主要资源",
+        "decision": "保留原槽位；悬浮说明不得遮住读数。"
+      },
+      {
+        "element": "玩家板、提示板与阶段栏",
+        "responsibility": "承载技能来源、规则参考与当前流程",
+        "decision": "保留；本轮仅审查其与破防交互的同屏关系。"
+      },
+      {
+        "element": "牌堆与弃牌区",
+        "responsibility": "保留持续可支配对象的入口和集合位置",
+        "decision": "保留；截图中的手牌为空，本报告不据此声明有手牌压力态通过。"
+      }
+    ]
+  },
+  "negative_impact_checks": [
+    {
+      "target": "主要资源保护槽位",
+      "status": "REVISE",
+      "observation": "第二张与第四张的悬浮说明覆盖生命和战斗点数。"
+    },
+    {
+      "target": "当前技能与奖励骰确认入口",
+      "status": "PASS",
+      "observation": "技能来源、右侧骰盘与确认按钮未被悬浮说明遮挡。"
+    },
+    {
+      "target": "持续对象入口",
+      "status": "PASS",
+      "observation": "牌堆、弃牌区与提示板位置保留；未把空手牌截图扩充为有手牌布局证明。"
+    }
+  ],
+  "hard_failures": [
+    {
+      "media": "02-第一枚破防效果骰失败.png",
+      "issue": "悬浮说明遮挡主要资源，效果骰最终面不可清楚辨认。",
+      "fix": "鼠标移出状态图标，等待悬浮说明退场及奖励骰转动结束后，在同一过程状态重拍。"
+    },
+    {
+      "media": "04-第二枚破防效果骰成功.png",
+      "issue": "同伴悬浮说明遮挡主要资源，效果骰最终面不可清楚辨认。",
+      "fix": "鼠标移至空白位置，等待说明退场和骰面稳定后，在本次确认前重拍。"
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 3,
+    "revise": 2
+  },
+  "verdictReason": "第二张与第四张存在范围内硬失败，整组必须返工；不得把测试通过、文件名称或状态快照替代清楚可读的实际画面。"
+}

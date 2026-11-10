@@ -1,0 +1,51 @@
+{
+  "manifestVersion": 1,
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "feedbackId": "6a1118c965c7c371dcef9083",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-05",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "test": {
+    "file": "e2e/smashup/feedback-6a1118-reaction-options.e2e.ts",
+    "command": "PW_USE_DEV_SERVERS=true PW_ALLOW_DEV_SERVER_TESTS=true PW_START_SERVERS=false node scripts/infra/run-e2e-single.mjs dev e2e/smashup/feedback-6a1118-reaction-options.e2e.ts",
+    "result": "passed",
+    "entry": "dev:lite in-memory game server + real Chromium page",
+    "productMutation": "none"
+  },
+  "requirements": [
+    {
+      "requirement": "真实页面显示 time_travelers_time_box 对应的‘时间盒’选项",
+      "status": "PASS",
+      "evidence": [
+        "截图底部反应区直接显示‘时间盒’按钮。",
+        "E2E 断言页面可见文本包含‘时间盒’。"
+      ]
+    },
+    {
+      "requirement": "真实页面显示 pass 对应的‘跳过’选项",
+      "status": "PASS",
+      "evidence": [
+        "截图底部反应区直接显示‘跳过’按钮。",
+        "E2E 断言页面可见文本包含‘跳过’。"
+      ]
+    },
+    {
+      "requirement": "反馈状态注入后运行时真正进入 smashup_reaction_choose 阶段",
+      "status": "PASS",
+      "evidence": [
+        "E2E 通过 setupScene 注入 smashup_reaction_choose，并在真实页面完成截图。",
+        "截图同时显示牌桌、计分板与反应区，证明运行时消费了该阶段。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/smashup/feedback-6a1118-reaction-options.e2e/真实页面应显示-time_travelers_time_box-与-pass-两个选项/时间盒与跳过反应选项.png"
+  ]
+}

@@ -1,0 +1,222 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_contract_review"
+  },
+  "date": "2026-10-23",
+  "runId": "e2e-1792757343532-13ucob",
+  "objective": "索尔手牌完整放大及当之无愧改骰过程的整屏交互可见性审计",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "scopeBoundary": "只判断卡面阅读、点数选择、骰子候选、操作收口及同屏可读性；不判定出牌费用、骰值运算或规则正确性。",
+  "score": 94,
+  "scoreBreakdown": {
+    "任务清晰度": 20,
+    "视觉层级": 14,
+    "对象可识别性": 14,
+    "状态与动作载体": 14,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 8
+  },
+  "target_requirements": [
+    {
+      "requirement": "手牌能够打开完整且可读的正式卡面",
+      "status": "PASS",
+      "evidence": "第一张完整呈现挥锤时刻的标题、费用和效果文字，关闭入口没有压住关键内容。"
+    },
+    {
+      "requirement": "点数选择清楚提供四和五两个入口",
+      "status": "PASS",
+      "evidence": "第三张居中的选择弹窗同时呈现两个同级按钮。"
+    },
+    {
+      "requirement": "选择自己的骰子时候选本体可见且操作归属明确",
+      "status": "PASS",
+      "evidence": "第四张本方五颗骰子完整露出，提示与取消、确认入口位于同一骰区。"
+    },
+    {
+      "requirement": "改骰完成后提示退场并恢复正常操作",
+      "status": "PASS",
+      "evidence": "第五张不再显示改骰提示与取消按钮，骰子与正式操作按钮均可读。"
+    },
+    {
+      "requirement": "本轮交互不遮住持续对象及主要资源",
+      "status": "PASS",
+      "evidence": "非阻塞选择状态中，手牌、来源弃牌、生命和战斗点数均可发现；阻塞弹窗独立承担当前选择，不压缩其前景内容。"
+    }
+  ],
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792757343532-13ucob/01-手牌放大完整阅读挥锤时刻.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 96,
+      "observation": "挥锤时刻的放大卡面完整呈现标题、费用、插画与效果正文，文字可读，关闭按钮位于标题右侧且未压住关键牌文，背景仍可辨认手牌来源。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792757343532-13ucob/02-改骰前自己的五颗骰子.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "改骰前的本方五颗骰子均在右侧完整呈现，手牌、阶段、玩家板、提示板与本方主要资源同时可见，当前操作入口没有浮层遮挡。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792757343532-13ucob/03-当之无愧选择四或五.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 95,
+      "observation": "点数选择弹窗居中，选择骰子点数的提示与改为四、改为五两个同级按钮清楚可读，背景降暗使当前选择成为明确焦点。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792757343532-13ucob/04-选择自己的一颗骰子.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "点数选择完成后，本方五颗骰子完整露出，改骰提示紧邻骰区，取消与确认入口可见，手牌及弃牌中的来源卡牌未压住骰子候选。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792757343532-13ucob/05-改为四且其余骰子保持.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 95,
+      "observation": "改骰完成后，右侧各颗骰面的数字与图案清楚可辨，改骰提示与取消入口已经退场，正式投掷和确认入口恢复，剩余手牌及来源弃牌仍可发现。"
+    }
+  ],
+  "element_responsibility_audit": {
+    "ledger": "本报告的元素职责审计",
+    "uncovered_elements": [],
+    "decisions": [
+      {
+        "element": "完整卡面放大",
+        "responsibility": "承载手牌详细阅读",
+        "decision": "保留正式卡面，完整呈现标题、费用和正文，不用旁侧摘要替代阅读对象。"
+      },
+      {
+        "element": "卡面关闭按钮",
+        "responsibility": "明确退出详细阅读",
+        "decision": "保留在标题右侧，不占用效果正文区域。"
+      },
+      {
+        "element": "四与五的点数选择按钮",
+        "responsibility": "承载本次改骰目标数值选择",
+        "decision": "保留同级入口，以居中弹窗形成明确焦点，不要求背景骰区同时可操作。"
+      },
+      {
+        "element": "本方骰盘与改骰提示",
+        "responsibility": "承载合法候选本体及当前操作意图",
+        "decision": "保留五颗完整骰子，提示紧邻骰区，不以提示条替代候选本体。"
+      },
+      {
+        "element": "取消、确认及恢复后的正常操作按钮",
+        "responsibility": "承载当前交互结束和下一步操作",
+        "decision": "保留原骰区位置；改骰后取消入口退场，正常入口恢复。"
+      },
+      {
+        "element": "手牌、牌堆及来源弃牌",
+        "responsibility": "保留持续可支配对象与行动来源",
+        "decision": "保留；两张手牌到剩余一张的来源变化可发现，来源卡牌在弃牌区可辨认。"
+      },
+      {
+        "element": "本方生命、战斗点数及阶段栏",
+        "responsibility": "持续承载主要资源与流程",
+        "decision": "保留原槽位，非阻塞状态没有说明浮层覆盖这些信息。"
+      }
+    ]
+  },
+  "negative_impact_checks": [
+    {
+      "target": "卡面完整性",
+      "status": "PASS",
+      "observation": "放大卡面未被裁断，关闭入口未压住费用和效果正文。"
+    },
+    {
+      "target": "骰子候选与当前提示",
+      "status": "PASS",
+      "observation": "候选五颗骰子未被手牌、来源卡牌或提示条遮住，提示与操作入口的归属清楚。"
+    },
+    {
+      "target": "持续行动来源",
+      "status": "PASS",
+      "observation": "改骰过程中剩余手牌和来源弃牌仍可发现，没有新增空白卡壳替代真实对象。"
+    },
+    {
+      "target": "交互结束后的操作区",
+      "status": "PASS",
+      "observation": "改骰提示及取消入口退场，正常骰区和确认入口恢复，没有残留遮罩。"
+    }
+  ],
+  "hard_failures": [],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "revise": 0
+  },
+  "uncovered": [
+    "移动端与其它视口",
+    "更多手牌时的压力态",
+    "权限拒绝及取消分支的规则结果",
+    "卡牌费用与骰值变化的数值正确性"
+  ],
+  "verdictReason": "同次运行的五张原始整屏图均已逐一私有读取，完整卡面、点数选择、骰子候选和结束状态可读，未发现本轮范围内的遮挡、破图或内部标识泄漏。"
+}

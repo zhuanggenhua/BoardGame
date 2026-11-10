@@ -1,0 +1,48 @@
+{
+  "reviewer": "/root/r174_b_head",
+  "status": "PASS",
+  "score": 94,
+  "issues": [],
+  "actualReadCount": 3,
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/06-recruit-payment.png",
+      "sha256": "fc2f07a1e2d4634b318274d624ec367086d7af3110bb907abbc8b7eef7af4b2e",
+      "status": "PASS",
+      "score": 92,
+      "observation": "银两说明清楚交代弃牌支付和保留其他牌，说明卡位于支付栏上方，支付进度与确认和取消入口清楚；下方银两牌以绿色边界区别于其余灰化手牌，放大镜可发现，当前没有选中勾记；黄色人口引线未被当作教程指向，未见目标遮挡或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/07-recruit-payment-inspect.png",
+      "sha256": "2b7a5319c1e8ff223b497764713c8d4b1558d130df2955c483dd3347202c8ccc",
+      "status": "PASS",
+      "score": 96,
+      "observation": "银两整张牌面居中完整展示，标题和银锭图案可识别，未见卡面裁切或变形；右上角关闭叉号贴在阅读层内且清楚，不占正文行，底层支付栏降为背景，没有重复银两说明争抢阅读焦点。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/08-recruit-source.png",
+      "sha256": "d576b09a72dcb8d4088a82a4e10c0c527df7c9180bc13186448f72c458116960",
+      "status": "PASS",
+      "score": 94,
+      "observation": "建军说明紧邻辽北地区，说明卡左侧缺口朝向该地区，辽北名称及军队本体可见，白色推荐边界与其余绿色合法地区可分辨；右侧当前任务为选择建军地区，玩家能据此直接点击辽北，未见选中勾记冒充已提交结果，也未把黄色人口引线当作教程指向。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ]
+}

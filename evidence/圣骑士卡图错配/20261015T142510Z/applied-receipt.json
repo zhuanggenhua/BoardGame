@@ -1,0 +1,19 @@
+{
+  "applied": true,
+  "webpSha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+  "bytes": 2040596,
+  "manifestChanges": [
+    {
+      "manifest": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\assets-manifest.json",
+      "changedKeys": [
+        "images/paladin/compressed/ability-cards"
+      ]
+    },
+    {
+      "manifest": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\assets-manifest.json",
+      "changedKeys": [
+        "zh-CN/dicethrone/images/paladin/compressed/ability-cards"
+      ]
+    }
+  ]
+}

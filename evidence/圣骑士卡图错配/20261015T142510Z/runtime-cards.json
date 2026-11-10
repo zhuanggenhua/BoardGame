@@ -1,0 +1,1501 @@
+[
+  {
+    "id": "card-might",
+    "index": 1,
+    "name": "神力！",
+    "description": "获得 1 个暴击标记。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "1名玩家获得暴击",
+        "action": {
+          "type": "grantToken",
+          "target": "self",
+          "tokenId": "crit",
+          "value": 1
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 1
+    }
+  },
+  {
+    "id": "card-consecrate",
+    "index": 2,
+    "name": "神圣祝圣！",
+    "description": "获得守护、神罚、暴击和精准各 1 个。",
+    "cpCost": 4,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-consecrate.description",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "paladin-consecrate"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 2
+    }
+  },
+  {
+    "id": "card-divine-favor",
+    "index": 3,
+    "name": "神恩！",
+    "description": "投掷 1 骰：剑→抽 2 张牌；头盔→治疗 3；心→治疗 4；祈祷→获得 3 CP。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-divine-favor.description",
+        "action": {
+          "type": "rollDie",
+          "target": "self",
+          "diceCount": 1,
+          "conditionalEffects": [
+            {
+              "face": "sword",
+              "drawCard": 2,
+              "effectKey": "bonusDie.effect.divineFavor.sword"
+            },
+            {
+              "face": "helm",
+              "heal": 3,
+              "effectKey": "bonusDie.effect.divineFavor.helm"
+            },
+            {
+              "face": "heart",
+              "heal": 4,
+              "effectKey": "bonusDie.effect.divineFavor.heart"
+            },
+            {
+              "face": "pray",
+              "cp": 3,
+              "effectKey": "bonusDie.effect.divineFavor.pray"
+            }
+          ]
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 3
+    }
+  },
+  {
+    "id": "card-absolution",
+    "index": 4,
+    "name": "赦免！",
+    "description": "投掷 1 骰进行防御：剑→对攻击者造成 1 点不可防御伤害；头盔→防止 1 点伤害；心→防止 2 点伤害；祈祷→获得 1 CP。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-absolution.description",
+        "action": {
+          "type": "rollDie",
+          "target": "self",
+          "diceCount": 1,
+          "conditionalEffects": [
+            {
+              "face": "sword",
+              "bonusDamage": 3,
+              "effectKey": "bonusDie.effect.absolution.sword"
+            },
+            {
+              "face": "helm",
+              "grantDamageShield": {
+                "value": 3
+              },
+              "effectKey": "bonusDie.effect.absolution.helm"
+            },
+            {
+              "face": "heart",
+              "grantDamageShield": {
+                "value": 5
+              },
+              "effectKey": "bonusDie.effect.absolution.heart"
+            },
+            {
+              "face": "pray",
+              "grantDamageShield": {
+                "value": 2
+              },
+              "cp": 2,
+              "effectKey": "bonusDie.effect.absolution.pray"
+            }
+          ]
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 4
+    }
+  },
+  {
+    "id": "card-gods-grace",
+    "index": 11,
+    "name": "神佑！",
+    "description": "投掷 1 骰：若为祈祷，则获得 4 CP；否则抽 1 张牌。",
+    "cpCost": 0,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-gods-grace.description",
+        "action": {
+          "type": "rollDie",
+          "target": "self",
+          "diceCount": 1,
+          "conditionalEffects": [
+            {
+              "face": "pray",
+              "cp": 4,
+              "effectKey": "bonusDie.effect.godsGrace.pray"
+            }
+          ],
+          "defaultEffect": {
+            "drawCard": 1,
+            "effectKey": "bonusDie.effect.godsGrace.other"
+          }
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 11
+    }
+  },
+  {
+    "id": "card-holy-defense-3",
+    "index": 0,
+    "name": "神圣防御 III",
+    "description": "升级神圣防御至 III 级。",
+    "cpCost": 4,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级神圣防御至 III 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "holy-defense",
+          "newAbilityDef": {
+            "id": "holy-defense",
+            "name": "abilities.holy-defense-3.name",
+            "type": "defensive",
+            "description": "abilities.holy-defense-3.description",
+            "trigger": {
+              "type": "phase",
+              "phaseId": "defensiveRoll",
+              "diceCount": 4
+            },
+            "effects": [
+              {
+                "description": "abilities.holy-defense-3.effects.effect",
+                "action": {
+                  "type": "custom",
+                  "target": "self",
+                  "customActionId": "paladin-holy-defense-3"
+                },
+                "timing": "withDamage"
+              }
+            ]
+          },
+          "newAbilityLevel": 3
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 0
+    }
+  },
+  {
+    "id": "card-holy-defense-2",
+    "index": 5,
+    "name": "神圣防御 II",
+    "description": "升级神圣防御至 II 级。",
+    "cpCost": 3,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级神圣防御至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "holy-defense",
+          "newAbilityDef": {
+            "id": "holy-defense",
+            "name": "abilities.holy-defense-2.name",
+            "type": "defensive",
+            "description": "abilities.holy-defense-2.description",
+            "trigger": {
+              "type": "phase",
+              "phaseId": "defensiveRoll",
+              "diceCount": 4
+            },
+            "effects": [
+              {
+                "description": "abilities.holy-defense-2.effects.effect",
+                "action": {
+                  "type": "custom",
+                  "target": "self",
+                  "customActionId": "paladin-holy-defense-2"
+                },
+                "timing": "withDamage"
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 5
+    }
+  },
+  {
+    "id": "card-holy-light-2",
+    "index": 7,
+    "name": "圣光术 II",
+    "description": "升级圣光术至 II 级。",
+    "cpCost": 2,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级圣光术至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "holy-light",
+          "newAbilityDef": {
+            "id": "holy-light",
+            "name": "abilities.holy-light-2.name",
+            "type": "offensive",
+            "description": "abilities.holy-light-2.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_grace_whisper_001",
+            "trigger": {
+              "type": "diceSet",
+              "faces": {
+                "heart": 2
+              }
+            },
+            "effects": [
+              {
+                "description": "abilities.holy-light-2.effects.healByHearts",
+                "action": {
+                  "type": "custom",
+                  "target": "self",
+                  "customActionId": "paladin-holy-light-heal"
+                }
+              },
+              {
+                "description": "abilities.holy-light-2.effects.roll3",
+                "action": {
+                  "type": "rollDie",
+                  "target": "self",
+                  "diceCount": 3,
+                  "conditionalEffects": [
+                    {
+                      "face": "sword",
+                      "grantToken": {
+                        "tokenId": "crit",
+                        "value": 1
+                      },
+                      "effectKey": "bonusDie.effect.holyLight2.sword"
+                    },
+                    {
+                      "face": "helm",
+                      "grantToken": {
+                        "tokenId": "protect",
+                        "value": 1
+                      },
+                      "effectKey": "bonusDie.effect.holyLight2.helm"
+                    },
+                    {
+                      "face": "heart",
+                      "drawCard": 1,
+                      "effectKey": "bonusDie.effect.holyLight2.heart"
+                    },
+                    {
+                      "face": "pray",
+                      "cp": 2,
+                      "effectKey": "bonusDie.effect.holyLight2.pray"
+                    }
+                  ]
+                },
+                "timing": "withDamage"
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 7
+    }
+  },
+  {
+    "id": "card-righteous-combat-3",
+    "index": 8,
+    "name": "正义战法 III",
+    "description": "升级正义战法至 III 级。",
+    "cpCost": 4,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级正义战法至 III 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "righteous-combat",
+          "newAbilityDef": {
+            "id": "righteous-combat",
+            "name": "abilities.righteous-combat-3.name",
+            "type": "offensive",
+            "description": "abilities.righteous-combat-3.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+            "variants": [
+              {
+                "id": "righteous-combat-3-tenacity",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "sword": 2,
+                    "helm": 1
+                  }
+                },
+                "tags": [
+                  "unblockable"
+                ],
+                "effects": [
+                  {
+                    "description": "abilities.righteous-combat-3.effects.heal2",
+                    "action": {
+                      "type": "heal",
+                      "target": "self",
+                      "value": 2
+                    }
+                  },
+                  {
+                    "description": "abilities.righteous-combat-3.effects.damage2Unblockable",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 2,
+                      "tags": [
+                        "unblockable"
+                      ]
+                    }
+                  }
+                ],
+                "priority": 0
+              },
+              {
+                "id": "righteous-combat-3-main",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "sword": 3,
+                    "helm": 2
+                  }
+                },
+                "effects": [
+                  {
+                    "description": "abilities.righteous-combat-3.effects.damage6",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 6
+                    }
+                  },
+                  {
+                    "description": "abilities.righteous-combat-3.effects.roll3",
+                    "action": {
+                      "type": "rollDie",
+                      "target": "self",
+                      "diceCount": 3,
+                      "resolutionMode": "attackBonus",
+                      "conditionalEffects": [
+                        {
+                          "face": "helm",
+                          "bonusDamage": 1
+                        },
+                        {
+                          "face": "sword",
+                          "bonusDamage": 2
+                        },
+                        {
+                          "face": "heart",
+                          "heal": 2
+                        },
+                        {
+                          "face": "pray",
+                          "cp": 1
+                        }
+                      ]
+                    },
+                    "timing": "preDefense"
+                  }
+                ],
+                "priority": 1
+              }
+            ]
+          },
+          "newAbilityLevel": 3
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 8
+    }
+  },
+  {
+    "id": "card-righteous-combat-2",
+    "index": 10,
+    "name": "正义战法 II",
+    "description": "升级正义战法至 II 级。",
+    "cpCost": 2,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级正义战法至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "righteous-combat",
+          "newAbilityDef": {
+            "id": "righteous-combat",
+            "name": "abilities.righteous-combat-2.name",
+            "type": "offensive",
+            "description": "abilities.righteous-combat-2.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+            "trigger": {
+              "type": "diceSet",
+              "faces": {
+                "sword": 3,
+                "helm": 2
+              }
+            },
+            "effects": [
+              {
+                "description": "abilities.righteous-combat-2.effects.damage5",
+                "action": {
+                  "type": "damage",
+                  "target": "opponent",
+                  "value": 5
+                }
+              },
+              {
+                "description": "abilities.righteous-combat-2.effects.roll3",
+                "action": {
+                  "type": "rollDie",
+                  "target": "self",
+                  "diceCount": 3,
+                  "resolutionMode": "attackBonus",
+                  "conditionalEffects": [
+                    {
+                      "face": "helm",
+                      "bonusDamage": 1
+                    },
+                    {
+                      "face": "sword",
+                      "bonusDamage": 2
+                    },
+                    {
+                      "face": "heart",
+                      "heal": 2
+                    },
+                    {
+                      "face": "pray",
+                      "cp": 1
+                    }
+                  ]
+                },
+                "timing": "preDefense"
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 10
+    }
+  },
+  {
+    "id": "card-blessing-of-might-2",
+    "index": 9,
+    "name": "神力信徒 II",
+    "description": "升级神力信徒至 II 级。",
+    "cpCost": 2,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级神力信徒至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "blessing-of-might",
+          "newAbilityDef": {
+            "id": "blessing-of-might",
+            "name": "abilities.blessing-of-might-2.name",
+            "type": "offensive",
+            "description": "abilities.blessing-of-might-2.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+            "variants": [
+              {
+                "id": "blessing-of-might-2-stance",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "sword": 2,
+                    "pray": 1
+                  }
+                },
+                "tags": [
+                  "unblockable"
+                ],
+                "effects": [
+                  {
+                    "description": "abilities.blessing-of-might-2.effects.damage2Unblockable",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 2,
+                      "tags": [
+                        "unblockable"
+                      ]
+                    }
+                  },
+                  {
+                    "description": "abilities.blessing-of-might-2.effects.choice",
+                    "action": {
+                      "type": "choice",
+                      "target": "self",
+                      "choiceTitleKey": "choices.critOrAccuracy",
+                      "choiceOptions": [
+                        {
+                          "tokenId": "crit",
+                          "value": 1
+                        },
+                        {
+                          "tokenId": "accuracy",
+                          "value": 1
+                        }
+                      ]
+                    },
+                    "timing": "preDefense"
+                  }
+                ],
+                "priority": 0
+              },
+              {
+                "id": "blessing-of-might-2-main",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "sword": 3,
+                    "pray": 1
+                  }
+                },
+                "tags": [
+                  "unblockable"
+                ],
+                "effects": [
+                  {
+                    "description": "abilities.blessing-of-might-2.effects.damage4Unblockable",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 4,
+                      "tags": [
+                        "unblockable"
+                      ]
+                    }
+                  },
+                  {
+                    "description": "abilities.blessing-of-might-2.effects.gainCrit",
+                    "action": {
+                      "type": "grantToken",
+                      "target": "self",
+                      "tokenId": "crit",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "description": "abilities.blessing-of-might-2.effects.gainAccuracy",
+                    "action": {
+                      "type": "grantToken",
+                      "target": "self",
+                      "tokenId": "accuracy",
+                      "value": 1
+                    }
+                  }
+                ],
+                "priority": 1
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 9
+    }
+  },
+  {
+    "id": "card-holy-strike-2",
+    "index": 13,
+    "name": "神圣攻击 II",
+    "description": "升级神圣攻击至 II 级。",
+    "cpCost": 2,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级神圣攻击至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "holy-strike",
+          "newAbilityDef": {
+            "id": "holy-strike",
+            "name": "abilities.holy-strike-2.name",
+            "type": "offensive",
+            "description": "abilities.holy-strike-2.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+            "variants": [
+              {
+                "id": "holy-strike-2-small",
+                "trigger": {
+                  "type": "smallStraight"
+                },
+                "effects": [
+                  {
+                    "description": "abilities.holy-strike-2.effects.heal1",
+                    "action": {
+                      "type": "heal",
+                      "target": "self",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "description": "abilities.holy-strike-2.effects.damage7",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 7
+                    }
+                  }
+                ],
+                "priority": 0
+              },
+              {
+                "id": "holy-strike-2-large",
+                "trigger": {
+                  "type": "largeStraight"
+                },
+                "effects": [
+                  {
+                    "description": "abilities.holy-strike-2.effects.heal2",
+                    "action": {
+                      "type": "heal",
+                      "target": "self",
+                      "value": 2
+                    }
+                  },
+                  {
+                    "description": "abilities.holy-strike-2.effects.damage9",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 9
+                    }
+                  }
+                ],
+                "priority": 1
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 13
+    }
+  },
+  {
+    "id": "card-vengeance-2",
+    "index": 12,
+    "name": "反击 II",
+    "description": "升级反击至 II 级。",
+    "cpCost": 1,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级反击至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "vengeance",
+          "newAbilityDef": {
+            "id": "vengeance",
+            "name": "abilities.vengeance-2.name",
+            "type": "offensive",
+            "description": "abilities.vengeance-2.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+            "variants": [
+              {
+                "id": "vengeance-2-mix",
+                "trigger": {
+                  "type": "allSymbolsPresent",
+                  "symbols": [
+                    "sword",
+                    "helm",
+                    "heart",
+                    "pray"
+                  ]
+                },
+                "tags": [
+                  "unblockable"
+                ],
+                "effects": [
+                  {
+                    "description": "abilities.vengeance-2.effects.gainRetribution",
+                    "action": {
+                      "type": "grantToken",
+                      "target": "self",
+                      "tokenId": "retribution",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "description": "abilities.vengeance-2.effects.heal1",
+                    "action": {
+                      "type": "heal",
+                      "target": "self",
+                      "value": 1
+                    }
+                  },
+                  {
+                    "description": "abilities.vengeance-2.effects.damage3Unblockable",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 3,
+                      "tags": [
+                        "unblockable"
+                      ]
+                    }
+                  }
+                ],
+                "priority": 0
+              },
+              {
+                "id": "vengeance-2-main",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "helm": 3,
+                    "pray": 1
+                  }
+                },
+                "effects": [
+                  {
+                    "description": "abilities.vengeance-2.effects.gainRetributionToAny",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "paladin-vengeance-select-player"
+                    },
+                    "timing": "preDefense"
+                  },
+                  {
+                    "description": "abilities.vengeance-2.effects.gain4CP",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "gain-cp",
+                      "params": {
+                        "amount": 4
+                      }
+                    },
+                    "timing": "postDamage"
+                  }
+                ],
+                "priority": 1
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 12
+    }
+  },
+  {
+    "id": "card-righteous-prayer-2",
+    "index": 14,
+    "name": "正义祷告 II",
+    "description": "升级正义祷告至 II 级。",
+    "cpCost": 2,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级正义祷告至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "righteous-prayer",
+          "newAbilityDef": {
+            "id": "righteous-prayer",
+            "name": "abilities.righteous-prayer-2.name",
+            "type": "offensive",
+            "description": "abilities.righteous-prayer-2.description",
+            "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+            "variants": [
+              {
+                "id": "righteous-prayer-2-prosperity",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "pray": 3
+                  }
+                },
+                "effects": [
+                  {
+                    "description": "abilities.righteous-prayer-2.effects.gain4CP",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "gain-cp",
+                      "params": {
+                        "amount": 4
+                      }
+                    }
+                  }
+                ],
+                "priority": 0
+              },
+              {
+                "id": "righteous-prayer-2-main",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "pray": 4
+                  }
+                },
+                "tags": [
+                  "unblockable"
+                ],
+                "effects": [
+                  {
+                    "description": "abilities.righteous-prayer-2.effects.damage8Unblockable",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 8,
+                      "tags": [
+                        "unblockable"
+                      ]
+                    }
+                  },
+                  {
+                    "description": "abilities.righteous-prayer-2.effects.gainCrit",
+                    "action": {
+                      "type": "grantToken",
+                      "target": "self",
+                      "tokenId": "crit",
+                      "value": 1
+                    },
+                    "timing": "postDamage"
+                  },
+                  {
+                    "description": "abilities.righteous-prayer-2.effects.gain2CP",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "gain-cp",
+                      "params": {
+                        "amount": 2
+                      }
+                    },
+                    "timing": "postDamage"
+                  }
+                ],
+                "priority": 1
+              }
+            ]
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 14
+    }
+  },
+  {
+    "id": "card-tithes-2",
+    "index": 6,
+    "name": "教会税 II",
+    "description": "升级教皇税：抽牌消耗降为 2 CP，且在进攻阶段激活含 🙏 的技能时获得 1 CP。",
+    "cpCost": 3,
+    "type": "upgrade",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "升级教会税至 II 级",
+        "action": {
+          "type": "replaceAbility",
+          "target": "self",
+          "targetAbilityId": "tithes",
+          "newAbilityDef": {
+            "id": "tithes",
+            "nameKey": "passive.tithes-2.name",
+            "actions": [
+              {
+                "type": "rerollDie",
+                "cpCost": 1,
+                "timing": "anytime",
+                "descriptionKey": "passive.tithes-2.reroll"
+              },
+              {
+                "type": "drawCard",
+                "cpCost": 2,
+                "timing": "anytime",
+                "descriptionKey": "passive.tithes-2.draw"
+              }
+            ],
+            "trigger": {
+              "on": "abilityActivatedWithFace",
+              "requiredFace": "pray",
+              "grantCp": 1,
+              "ownOffensiveOnly": true
+            }
+          },
+          "newAbilityLevel": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 6
+    }
+  },
+  {
+    "id": "card-play-six",
+    "index": 15,
+    "name": "来个六！",
+    "description": "将你 1 颗骰子的数值改至 6。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-play-six.effects.modifyDieTo6",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "modify-die-to-6"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 15
+    }
+  },
+  {
+    "id": "card-just-this",
+    "index": 16,
+    "name": "就这？",
+    "description": "1 名玩家可以在其防御投掷阶段，对至多 5 颗骰子进行 1 次额外的投掷尝试。",
+    "cpCost": 0,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-just-this.effects.rerollUpTo5Dice",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "reroll-die-5"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 16
+    }
+  },
+  {
+    "id": "card-give-hand",
+    "index": 17,
+    "name": "抬一手！",
+    "description": "选择对手的 1 颗骰子，强制其重掷该骰子。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-give-hand.effects.forceOpponentReroll1Die",
+        "action": {
+          "type": "custom",
+          "target": "opponent",
+          "customActionId": "reroll-opponent-die-1"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 17
+    }
+  },
+  {
+    "id": "card-i-can-again",
+    "index": 18,
+    "name": "我又行了！",
+    "description": "1 名玩家可以在其进攻投掷阶段，对至多 5 颗骰子进行 1 次额外的投掷尝试。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-i-can-again.effects.rerollUpTo5Dice",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "reroll-die-5"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 18
+    }
+  },
+  {
+    "id": "card-me-too",
+    "index": 19,
+    "name": "俺也一样！",
+    "description": "将你 1 颗骰子的数值变为和另一颗骰子的数值一样（同一阶段使用且目的相同）。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-me-too.effects.copyOneDieValue",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "modify-die-copy"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 19
+    }
+  },
+  {
+    "id": "card-surprise",
+    "index": 20,
+    "name": "惊不惊喜？！",
+    "description": "改变任意 1 颗骰子的数值。",
+    "cpCost": 2,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-surprise.effects.modifyAny1Die",
+        "action": {
+          "type": "custom",
+          "target": "select",
+          "customActionId": "modify-die-any-1"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 20
+    }
+  },
+  {
+    "id": "card-worthy-of-me",
+    "index": 21,
+    "name": "不愧是我！",
+    "description": "你或 1 名队友可以重掷至多 2 颗骰子（可以是同一颗骰子重掷 2 次，或两颗骰子各重掷 1 次）。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-worthy-of-me.effects.rerollUpTo2Dice",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "reroll-die-2"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 21
+    }
+  },
+  {
+    "id": "card-unexpected",
+    "index": 22,
+    "name": "意不意外？！",
+    "description": "改变任意 2 颗骰子的数值。",
+    "cpCost": 3,
+    "type": "action",
+    "timing": "roll",
+    "effects": [
+      {
+        "description": "cards.card-unexpected.effects.modifyAny2Dice",
+        "action": {
+          "type": "custom",
+          "target": "select",
+          "customActionId": "modify-die-any-2"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 22
+    }
+  },
+  {
+    "id": "card-next-time",
+    "index": 23,
+    "name": "这次不算！",
+    "description": "一名玩家防止即将受到的 6 点伤害。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-next-time.effects.prevent6Damage",
+        "action": {
+          "type": "grantDamageShield",
+          "target": "self",
+          "value": 6
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 23
+    }
+  },
+  {
+    "id": "card-boss-generous",
+    "index": 24,
+    "name": "老板大气！",
+    "description": "获得 2 CP。",
+    "cpCost": 0,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-boss-generous.effects.gain2CP",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "grant-cp-2"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 24
+    }
+  },
+  {
+    "id": "card-flick",
+    "index": 25,
+    "name": "弹一手！",
+    "description": "增加或减少任意 1 颗骰子的数值 1 点（数值 1 无法再减少，数值 6 无法再增加）。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-flick.effects.adjust1DieBy1",
+        "action": {
+          "type": "custom",
+          "target": "select",
+          "customActionId": "modify-die-adjust-1"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 25
+    }
+  },
+  {
+    "id": "card-bye-bye",
+    "index": 26,
+    "name": "拜拜了您内！",
+    "description": "从 1 名玩家身上移除 1 个状态效果。",
+    "cpCost": 2,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-bye-bye.effects.remove1Status",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "remove-status-1"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 26
+    }
+  },
+  {
+    "id": "card-double",
+    "index": 27,
+    "name": "加倍！",
+    "description": "抽 2 张牌。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-double.effects.draw2Cards",
+        "action": {
+          "type": "drawCard",
+          "target": "self",
+          "drawCount": 2
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 27
+    }
+  },
+  {
+    "id": "card-super-double",
+    "index": 28,
+    "name": "超级加倍！",
+    "description": "抽 3 张牌。",
+    "cpCost": 2,
+    "type": "action",
+    "timing": "instant",
+    "effects": [
+      {
+        "description": "cards.card-super-double.effects.draw3Cards",
+        "action": {
+          "type": "drawCard",
+          "target": "self",
+          "drawCount": 3
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 28
+    }
+  },
+  {
+    "id": "card-get-away",
+    "index": 29,
+    "name": "起开！",
+    "description": "从 1 名玩家身上移除 1 个状态效果。",
+    "cpCost": 1,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-get-away.effects.remove1StatusFromAPlayer",
+        "action": {
+          "type": "custom",
+          "target": "select",
+          "customActionId": "remove-status-1"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 29
+    }
+  },
+  {
+    "id": "card-one-throw-fortune",
+    "index": 30,
+    "name": "一掷千金！",
+    "description": "投掷 1 骰：获得等同于投掷数值 1/2 的 CP（向上取整）。",
+    "cpCost": 0,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-one-throw-fortune.effects.roll1DieGainCP",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "one-throw-fortune-cp"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 30
+    }
+  },
+  {
+    "id": "card-what-status",
+    "index": 31,
+    "name": "状什么态？",
+    "description": "移除 1 名玩家的所有状态效果。",
+    "cpCost": 2,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-what-status.effects.removeAllStatusesFrom1Player",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "remove-all-status"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 31
+    }
+  },
+  {
+    "id": "card-transfer-status",
+    "index": 32,
+    "name": "乾坤大挪移！",
+    "description": "将 1 名玩家身上的 1 个状态效果转移至另一名玩家。",
+    "cpCost": 2,
+    "type": "action",
+    "timing": "main",
+    "effects": [
+      {
+        "description": "cards.card-transfer-status.effects.transferStatuses",
+        "action": {
+          "type": "custom",
+          "target": "self",
+          "customActionId": "transfer-status"
+        },
+        "timing": "immediate"
+      }
+    ],
+    "previewRef": {
+      "type": "atlas",
+      "atlasId": "dicethrone:paladin-cards",
+      "index": 32
+    }
+  }
+]

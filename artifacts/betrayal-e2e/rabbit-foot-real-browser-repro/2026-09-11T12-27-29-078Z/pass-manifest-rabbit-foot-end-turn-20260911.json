@@ -1,0 +1,48 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "system",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "兔脚重投过程必须肉眼可见，不是原地闪现或原地打转。",
+      "status": "PASS",
+      "evidence": [
+        "真实浏览器 4274 入口 PASS：rabbit-reroll-motion 采样到 diceMotionType=reroll 且 diceSettled=false。",
+        "被选骰过程位移 30.2px，最终落点相对原位 37.6px，落点仍在 560x253 骰盘内。"
+      ]
+    },
+    {
+      "requirement": "确认骰面后必须保留伤害分配，并在伤害后允许玩家点结束回合。",
+      "status": "PASS",
+      "evidence": [
+        "确认前步骤 rabbit-foot-result 允许 FINALIZE_EVENT_ROLL，确认后进入 finish 且 pendingDamageAllocation.playerId=0。",
+        "伤害分配后步骤 return-to-table-after-damage 允许 END_TURN，文案指向结束回合。"
+      ]
+    },
+    {
+      "requirement": "点击结束回合不能再出现 tutorial_command_blocked，且必须进入队友提示。",
+      "status": "PASS",
+      "evidence": [
+        "日志中没有 tutorial_command_blocked。",
+        "点击结束回合后 currentPlayer=1，教程步骤进入 watch-teammate-one-omen-turn。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-end-turn.png"
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-end-turn.png"
+  ]
+}

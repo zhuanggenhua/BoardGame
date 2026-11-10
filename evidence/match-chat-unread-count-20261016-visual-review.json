@@ -1,0 +1,107 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/chat_review_current"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/01-玩家频道-双方交流与仅玩家可见提示.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家与观战席为紧凑文字频道，两条玩家消息完整，输入和小图标没有挤压消息区。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/02-观战席-玩家与观众公开交流.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "观战席处于选中态且没有未读角标，玩家与观众交流完整可读，输入使用观战席名称。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/03-观众视角-默认可发言且无玩家频道.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "观众仅见观战席入口，双方公开消息与底部输入发送完整，未出现玩家专用频道。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/04-玩家频道-观战席未读数字角标.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家频道保持选中，观战席文字旁显示靛色小数字角标二，已经没有绿点。",
+      "score": 95
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/05-宽屏玩家频道-保留当前窗口设计.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宽屏继续保留深色聊天小窗和紧凑文字频道，正文是主要内容区域。",
+      "score": 93
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/06-手机横屏观众频道-输入与发送可见.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机横屏可完整阅读双方两条消息，观战席标签和底部输入发送均在视口内。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/07-观战席-玩家频道未读数字角标.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "观战席保持选中，玩家文字旁显示靛色小数字角标一，外观与观战席数字角标一致。",
+      "score": 95
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/08-玩家频道-切入后清除未读数字角标.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家频道已选中且其数字角标消失，新玩家消息完整显示在当前消息流中。",
+      "score": 95
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "reviewer": "/root/r174_f1",
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "长城维护与真实墙线",
+      "status": "PASS",
+      "baselineSource": "实际读取旧版内长城维护整屏与当前内外长城两张整屏，只对照本次维护对象识别及真实墙线，未亲玩或引用旧版通过结论。",
+      "preservedInformation": "保留印刷地图的城墙走向、墙面费用二和六、驻军人口，以及维护和放弃所需阅读信息。",
+      "preservedActions": "当前内外墙面板都保留弃手牌维护与放弃维护两个决策入口，内墙放弃仍为当前教学选择。",
+      "changes": "当前以青色墙体主轴线标出维护对象，并增加不被兵牌人口遮挡的内外长城名称；内墙视图放大，维护标题明确大明归属，费用位置断线留空。",
+      "duplicateDecision": "地图名称承担空间定位，面板标题承担当前请求身份，两个职责不同；保留两项维护决策，不增加第二套决策菜单。",
+      "changeAuthority": "按本轮图审合同要求真实印刷墙线、费用留空和名称可读进行验收，旧图只作实际基线，不授权改变规则数值或推断结算效果。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/36-abandon-inner-wall.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/36-abandon-inner-wall.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/37-abandon-outer-wall.png"
+      ]
+    }
+  ]
+}

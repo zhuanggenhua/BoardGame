@@ -14,6 +14,12 @@
     },
     {
       "chainId": "qidahen-annual-desktop",
+      "uiStateId": "frontier-target",
+      "viewport": "desktop",
+      "reason": "前线目标紧邻叶赫部真实地图对象，并保留辽北来源"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
       "uiStateId": "opening-move",
       "viewport": "desktop",
       "reason": "前线目标与轮盘本体操作、合法地区和教程推荐可辨"
@@ -38,6 +44,12 @@
     },
     {
       "chainId": "qidahen-annual-desktop",
+      "uiStateId": "reclaim-target-selected",
+      "viewport": "desktop",
+      "reason": "真实选中开垦地区后，选中反馈与确认状态可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
       "uiStateId": "recruit-action",
       "viewport": "desktop",
       "reason": "手牌征召的入口、支付、合法本土与部队方式可理解"
@@ -47,6 +59,18 @@
       "uiStateId": "recruit-payment",
       "viewport": "desktop",
       "reason": "手牌征召的入口、支付、合法本土与部队方式可理解"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-payment-hover",
+      "viewport": "desktop",
+      "reason": "悬浮手牌完整抬起，且未误选支付"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-confirm",
+      "viewport": "desktop",
+      "reason": "真实选中支付牌后，可辨已选牌和确认状态"
     },
     {
       "chainId": "qidahen-annual-desktop",
@@ -167,6 +191,12 @@
       "uiStateId": "occupy",
       "viewport": "desktop",
       "reason": "战后选择及展开战报的不同交互状态"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-finish",
+      "viewport": "desktop",
+      "reason": "占领选择完成后显示真实地图结果与下一步"
     },
     {
       "chainId": "qidahen-annual-desktop",

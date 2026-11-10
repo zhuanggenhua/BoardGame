@@ -1,0 +1,4 @@
+{
+  "message": "page.waitForFunction: Timeout 45000ms exceeded.",
+  "stack": "page.waitForFunction: Timeout 45000ms exceeded.\n    at waitForStep (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:79:14)\n    at runRabbitConfirm (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:233:9)\n    at async main (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:296:28)"
+}

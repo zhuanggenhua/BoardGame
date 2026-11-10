@@ -1,0 +1,207 @@
+{
+  "verdict": "REVISE",
+  "scope": "independent",
+  "changeType": "new",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "requirements": [
+    {
+      "requirement": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "status": "REVISE",
+      "evidence": [
+        "evidence/dicethrone/thor-20261026-325607/companion-odin.trace.json",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/01-索尔角色板与四张正式手牌.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/02-手牌区单张弃置成本选择.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/03-手牌区支付成本并完成飞掷.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/04-奥丁之力二级升级完成.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/05-奥丁效果骰等待任选重掷.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/06-选择两颗效果骰一起重掷.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/07-奖励骰完成一次整组重掷.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/08-奖励骰收口进入主防御阶段.png"
+      ]
+    },
+    {
+      "requirement": "索尔手牌放大与当之无愧选择自己的骰子",
+      "status": "REVISE",
+      "evidence": [
+        "evidence/dicethrone/thor-20261026-325607/worthy.trace.json",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/09-放大阅读挥锤时刻卡牌.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/10-当之无愧改骰前的五颗骰子.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/11-选择将骰子改为四或五.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/12-选择自己的一颗骰子作为目标.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/13-一颗骰子改为四且其余保持.png"
+      ]
+    },
+    {
+      "requirement": "连锁闪电选择效果骰并自动结算唯一附属目标",
+      "status": "REVISE",
+      "evidence": [
+        "evidence/dicethrone/thor-20261026-325607/chain-lightning.trace.json",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/14-连锁闪电触发前的攻击骰状态.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/15-三颗连锁效果骰等待确认.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/16-查看两颗效果骰组合候选.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/17-附属伤害结算且主攻击保留.png"
+      ]
+    },
+    {
+      "requirement": "破防失败后仍可再次消费并结算主攻击",
+      "status": "REVISE",
+      "evidence": [
+        "evidence/dicethrone/thor-20261026-325607/guard-break.trace.json",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/18-破防资源与正式消费入口.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/19-第一枚破防效果骰失败.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/20-失败后仍可再次使用破防.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/21-第二枚破防效果骰成功.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/22-不可防御主攻击结算完成.png"
+      ]
+    },
+    {
+      "requirement": "真实双人房间选择索尔并以实施中状态开局",
+      "status": "REVISE",
+      "evidence": [
+        "evidence/dicethrone/thor-20261026-325607/online-entry.trace.json",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/23-真实双人选角与实施中标记.png",
+        "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/24-在线开局后的角色板九槽与手牌.png"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "companion-odin",
+      "sourceRun": "e2e-1792956074228-4ozck4",
+      "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+      "evidence": "evidence/dicethrone/thor-20261026-325607/companion-odin.trace.json",
+      "requiredSteps": [
+        "companion-odin-01",
+        "companion-odin-02",
+        "companion-odin-03",
+        "companion-odin-04",
+        "companion-odin-05",
+        "companion-odin-06",
+        "companion-odin-07",
+        "companion-odin-08",
+        "companion-odin-09"
+      ]
+    },
+    {
+      "chainId": "worthy",
+      "sourceRun": "e2e-1792956074228-4ozck4",
+      "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+      "evidence": "evidence/dicethrone/thor-20261026-325607/worthy.trace.json",
+      "requiredSteps": [
+        "worthy-01",
+        "worthy-02",
+        "worthy-03",
+        "worthy-04",
+        "worthy-05"
+      ]
+    },
+    {
+      "chainId": "chain-lightning",
+      "sourceRun": "e2e-1792956074228-4ozck4",
+      "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+      "evidence": "evidence/dicethrone/thor-20261026-325607/chain-lightning.trace.json",
+      "requiredSteps": [
+        "chain-lightning-01",
+        "chain-lightning-02",
+        "chain-lightning-03",
+        "chain-lightning-04"
+      ]
+    },
+    {
+      "chainId": "guard-break",
+      "sourceRun": "e2e-1792956074228-4ozck4",
+      "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+      "evidence": "evidence/dicethrone/thor-20261026-325607/guard-break.trace.json",
+      "requiredSteps": [
+        "guard-break-01",
+        "guard-break-02",
+        "guard-break-03",
+        "guard-break-04",
+        "guard-break-05"
+      ]
+    },
+    {
+      "chainId": "online-entry",
+      "sourceRun": "e2e-1792956207290-2bmsmi",
+      "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+      "evidence": "evidence/dicethrone/thor-20261026-325607/online-entry.trace.json",
+      "requiredSteps": [
+        "online-entry-01",
+        "online-entry-02"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/thor_visual_audit_current"
+    },
+    "reviewFile": "visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run [14个Thor、共享交互、海盗、树精回归测试文件] --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/thor-interactions.e2e.ts --retries=0",
+      "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/thor-online-entry.e2e.ts --retries=0",
+      "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts --grep=selectHandCard|战略防御与送你们去喂鱼的交互 UI|深海潜行前置链|走跳板的弃牌分支 --retries=0"
+    ],
+    "evidence": [
+      "temp/codex-thor-audit/thor-cursed-treant-regressions-325607.log",
+      "temp/codex-thor-audit/thor-interactions-e2e-325607.log",
+      "temp/codex-thor-audit/thor-online-entry-e2e-325607.log",
+      "temp/codex-thor-audit/cursed-pirate-four-consumers-e2e-325607.log",
+      "temp/codex-thor-audit/build-325607.log",
+      "temp/codex-thor-audit/style-contract-325607.log",
+      "temp/codex-thor-audit/dicethrone-assets-manifest-325607.log"
+    ]
+  },
+  "media": [
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/01-索尔角色板与四张正式手牌.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/02-手牌区单张弃置成本选择.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/03-手牌区支付成本并完成飞掷.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/04-奥丁之力二级升级完成.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/05-奥丁效果骰等待任选重掷.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/06-选择两颗效果骰一起重掷.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/07-奖励骰完成一次整组重掷.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/08-奖励骰收口进入主防御阶段.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/09-放大阅读挥锤时刻卡牌.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/10-当之无愧改骰前的五颗骰子.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/11-选择将骰子改为四或五.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/12-选择自己的一颗骰子作为目标.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/13-一颗骰子改为四且其余保持.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/14-连锁闪电触发前的攻击骰状态.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/15-三颗连锁效果骰等待确认.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/16-查看两颗效果骰组合候选.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/17-附属伤害结算且主攻击保留.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/18-破防资源与正式消费入口.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/19-第一枚破防效果骰失败.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/20-失败后仍可再次使用破防.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/21-第二枚破防效果骰成功.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/22-不可防御主攻击结算完成.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/23-真实双人选角与实施中标记.png",
+    "evidence/dicethrone/thor-20261026-325607-viewer-all-ui/24-在线开局后的角色板九槽与手牌.png"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792956074228-4ozck4/03-取消弃牌支付且资源未扣.png",
+      "contract": "独特界面状态",
+      "reason": "取消后返回初始常态，与本链第01张属于同一独特界面状态；取消后的资源、手牌与状态变化已保留在行为trace步骤companion-odin-03。"
+    }
+  ],
+  "reopenNote": "本清单证明索尔实施中门槛；OpenSpec任务8仍需用户明确确认完成态。"
+}

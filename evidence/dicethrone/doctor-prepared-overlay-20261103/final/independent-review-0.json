@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/prepared_desktop_final",
+  "reference": {
+    "path": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/录入-04-蜘蛛侠重拳二级升级后.png",
+    "observation": "左上重拳二级升级牌直接覆盖棋盘技能槽，牌面完整，无另加底框。"
+  },
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面单张.png",
+      "sha256": "7b60453963f5c6a68b71fb3200eab7b89da7382d911e2b265159581694fc0e75",
+      "status": "PASS",
+      "observation": "单牌主体完整等比覆盖左下槽，高度铺满，未见额外底框，也未遮挡右侧邻槽；无需翻页控件。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面两张.png",
+      "sha256": "7d246d9aee83dad7677c9d64f5fd2304aefed1f07a9d4d4f36a46b0dfcdc45a8",
+      "status": "PASS",
+      "observation": "首张完整，主体等比覆盖槽位，未见额外底框或遮挡邻槽；1/2 与向右箭头可辨。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面两张-浏览末张.png",
+      "sha256": "e5567b015998c40297918c2d44ad8e8a4fbebb136da3678934ff0e95cc5d23f9",
+      "status": "PASS",
+      "observation": "末张主体完整等比覆盖槽位，无额外底框或邻槽遮挡；2/2 与向左箭头可辨。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面三张.png",
+      "sha256": "09baa73b7d4b0413f43672781791e3b6030b1ce419e8aa6ca69639b19a90fbfe",
+      "status": "PASS",
+      "observation": "首张完整等比覆盖槽位，无额外底框或邻槽遮挡；1/3 与向右箭头可辨。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面三张-浏览末张.png",
+      "sha256": "653cc9137b5c8e25f9f80364fbd201c3ff73d06272ea83879895b5e9708f2aa2",
+      "status": "PASS",
+      "observation": "末张主体完整等比覆盖槽位，无额外底框或邻槽遮挡；3/3 与向左箭头可辨。",
+      "hardFailures": []
+    }
+  ]
+}

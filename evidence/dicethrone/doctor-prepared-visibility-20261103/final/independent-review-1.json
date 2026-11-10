@@ -1,0 +1,20 @@
+{
+  "reviewer": "/root/visibility_desktop_b",
+  "status": "PASS",
+  "media": [
+    {
+      "status": "PASS",
+      "observation": "恢复后法术牌重新显示，眼睛图标位于牌左下边缘，未遮挡准备、施放文字或相邻槽。",
+      "hardFailures": [],
+      "sha256": "c1ce856d4f5335f8e1f996077c4bb3be2a7ac4b3cbd66af8e23f4b51cae1e044",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面单张-恢复法术.png"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面多张-法术显示.png",
+      "sha256": "190415ec4c46f9228cfea2c688c36fe3fa5d8a8750b56b2076f8ffbc77e4f381",
+      "status": "PASS",
+      "observation": "显示第 3/3 张法术牌，眼睛图标可辨，位于牌左侧图案边缘；准备、施放文字和相邻槽未被按钮遮挡。",
+      "hardFailures": []
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "mode": "pc-1920-desktop-baseline",
+  "claimScope": "interaction-ui",
+  "canvas": "1920x1080",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "visual-review-pc-fluid-layout-r1"
+  },
+  "hardGate": {
+    "mustKeepDesktopBaseline": true,
+    "mustNotLeakMobileBottomNav": true,
+    "mustNotLeakDrawer": true,
+    "mustNotLeakTwoColumnDiscover": true,
+    "mustNotLeakVerticalActionStack": true
+  },
+  "media": [
+    {
+      "path": "01-收藏库主页.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "top-nav-library-active",
+        "no-mobile-bottom-nav",
+        "no-hamburger-hero",
+        "left-game-list-persistent",
+        "news-landscape-my-games-portrait",
+        "match-bar-overlays-content",
+        "not-two-column-phone-grid",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "1920×1080 桌面构图。顶栏三导航发现|收藏库|上传，收藏库黄绿高亮。无底部三栏、无汉堡占主视觉。左侧收藏库列表常驻，宽度约 300。新情报四张横版，游戏名与更新叠在图内。我的游戏竖封面完整，首排六张、次排七大恨与山屋惊魂未被对局条裁切。底部对局条叠在内容上。不是两列手机网格。"
+    },
+    {
+      "path": "02-收藏库游戏页.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "hero-four-buttons-one-row-gapped",
+        "not-vertical-four-button-stack",
+        "right-rooms-above-friends-to-bottom",
+        "left-game-list-persistent",
+        "no-mobile-bottom-nav",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "封面英雄区同一排四个主按钮：重连进入、教程模式、移出收藏、配置表，横向有空隙并能看见封面底。不是纵向堆叠四键。左侧列表仍在且大杀四方选中。右侧当前房间在上、玩过的好友在下，两框接到视口底。无底栏导航。底部对局条为全站悬浮。"
+    },
+    {
+      "path": "05-发现网格.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "discover-six-column-portrait",
+        "not-two-column-phone-grid",
+        "title-overlay-in-cover",
+        "top-nav-discover-active",
+        "no-mobile-bottom-nav",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "发现页六列竖封面，不是两列。游戏名叠在图内底部。顶栏三导航发现黄绿高亮。无底栏导航。末排封面待接入占位诚实可见。底部对局条叠在网格上，未改成手机底栏。"
+    },
+    {
+      "path": "06-游戏详情.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "centered-modal-not-phone-fullscreen",
+        "close-x-top-right",
+        "hero-four-buttons-one-row-gapped",
+        "digitized-author-own-row",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "居中大卡片模态，左右仍露出发现网格封面，不是手机全屏铺满。右上正方形叉。英雄区重连进入、教程模式、移出收藏、配置表同一排且有空隙。电子化作者：佚名单独一行。无底栏。"
+    },
+    {
+      "path": "07-上传页.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "workshop-list-persistent",
+        "desktop-list-plus-form-not-phone-single-column",
+        "player-count-two-selects-with-zhi",
+        "link-detect-can-open-green",
+        "no-mobile-bottom-nav",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧工坊列表常驻。中间表单加右侧发布更新，是桌面列表+宽表单两栏，不是手机单列挤在底栏上。人数两个下拉，中间写至。游戏链接下方绿色可以打开。上传高亮。无底栏导航。"
+    },
+    {
+      "path": "07b-上传新游戏.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "empty-link-gray-auto-detect",
+        "player-count-two-selects-with-zhi",
+        "submit-and-cover-dash-visible",
+        "no-mobile-bottom-nav",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "空链接下方灰色写粘贴后自动检测能否打开。人数两个下拉中间写至。右侧封面虚线框与提交审核均完整可见。左侧工坊列表常驻。无底栏。"
+    },
+    {
+      "path": "08-个人主页.png",
+      "status": "PASS",
+      "size": "1920x1080",
+      "checks": [
+        "desktop-1920",
+        "cover-background-both-sides",
+        "centered-white-well-not-375",
+        "two-column-profile",
+        "activity-plays-rank-score-3dp",
+        "right-only-edit-hours-plays-collection",
+        "right-no-rank-no-rating",
+        "no-now-playing-profile-field",
+        "global-match-bar-not-profile-field",
+        "neo-brutalist",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左右两侧露出封面当资料背景，中间白底内容井，不是通栏 375 宽。左列头像加动态横条，右栏只有编辑个人资料、游玩时长、局数、收藏。动态行可见局数、排行、三位小数分数。右栏没有排行、没有评分。资料字段没有当前正在游戏。底部对局条是全站悬浮，不判失败。"
+    }
+  ]
+}

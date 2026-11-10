@@ -1,0 +1,807 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "reviewedAt": "2026-11-01T11:26:22.589Z",
+  "boundary": "42张非教程媒体：11黄金联网主线及31独立专项；只作各组图面结论，不混作连续教程或生产验收。",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/行动手牌与原位出牌区.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/行动手牌与原位出牌区.png.jpg",
+      "sha256": "2f82ce2299220514e91feddb72ca2553e36ae77f0969ad964ddbfee625d33046",
+      "uiStateId": "empty-play-area",
+      "status": "PASS",
+      "observation": "攻击牌单主区、技能右侧分离；空暂存的合计威力在手牌上方左侧，能力按钮在人物旁，未挤动其它槽位。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\行动手牌与原位出牌区.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/攻击牌本体暂选于牌区.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/攻击牌本体暂选于牌区.png.jpg",
+      "sha256": "eb2916a77a83d1f88edd88a28c1577649a384b0f13a53ce467a09a45b958abca",
+      "uiStateId": "staged-card-in-place",
+      "status": "PASS",
+      "observation": "选中强打后小牌进入上方暂存，剩余手牌仍是大牌；预计威力在暂存左，确认在技能上方。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\攻击牌本体暂选于牌区.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/发动骑乘后进入的手牌选择态.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/发动骑乘后进入的手牌选择态.png.jpg",
+      "sha256": "630a3ece8c370d54c1d949b18337a5ad4a4e0a16e256f0d66f7a11dcc5a9dfb4",
+      "uiStateId": "riding-choice-controls",
+      "status": "PASS",
+      "observation": "骑乘零选状态有单独已选/实付、确认和取消；暂存及普通手牌不切换成第二主区。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\发动骑乘后进入的手牌选择态.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/二十张真实实例仍留在原出牌区.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/二十张真实实例仍留在原出牌区.png.jpg",
+      "sha256": "fd19812c0df3bec67ec06a232a437a0f5f1787beeb8f4463d59ab173024ec09c",
+      "uiStateId": "twenty-inline-played-cards",
+      "status": "PASS",
+      "observation": "二十张密集代表态仍在原暂存横排，当前卡可放大；其人工补充数量不作自然对局合法张数证明。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\二十张真实实例仍留在原出牌区.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/空攻击手牌仍留在独立攻击区.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/空攻击手牌仍留在独立攻击区.png.jpg",
+      "sha256": "474abccaec2cca450043b5d5dbeb626bb7b764f076ec11a1e417e382723f2eaf",
+      "uiStateId": "empty-attack-hand",
+      "status": "PASS",
+      "observation": "空手牌保留“暂无攻击手牌”及独立技能，主推进仍在右上；没有把技能迁入空攻击主区。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\空攻击手牌仍留在独立攻击区.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄横屏手牌与出牌分区.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄横屏手牌与出牌分区.png.jpg",
+      "sha256": "2839c3df37acf26cfd3cc909945c19cdd5b6393e08b13c6f2e6c469535c42649",
+      "uiStateId": "narrow-landscape-density",
+      "status": "PASS",
+      "observation": "936×432横屏密集代表态仍见人物、双方摘要、威力、技能及推进；只能证明该横屏，不能外推竖屏。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\窄横屏手牌与出牌分区.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄桌面关闭检视后的正常牌桌.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄桌面关闭检视后的正常牌桌.png.jpg",
+      "sha256": "2aeb9cb2daa10ad95456f323a0b342889521d4d4702afe1eb4784d9b00e801d9",
+      "uiStateId": "desktop-narrow-normal",
+      "status": "PASS",
+      "observation": "1366×768检视关闭后恢复正常牌桌；当前两张打出牌、左侧威力、下方大牌与右侧剩余技能同屏。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\窄桌面关闭检视后的正常牌桌.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/头像悬浮单排公开牌与暗置牌背.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/头像悬浮单排公开牌与暗置牌背.png.jpg",
+      "sha256": "22af3854611d79dd1f45c95dda914e3f921e389f2688ece4c4de83c93c9a700f",
+      "uiStateId": "desktop-opponent-cards-open",
+      "status": "PASS",
+      "observation": "头像悬浮后无框单排明牌和暗牌背在摘要左，威力4仍直接可读；没有把暗牌露正面。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\头像悬浮单排公开牌与暗置牌背.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/从对方悬浮牌排点击放大卡图.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/从对方悬浮牌排点击放大卡图.png.jpg",
+      "sha256": "4323c357f908a8ebbd5e653b598ad84f8057f60cf5271b026b22bbb6f308b584",
+      "uiStateId": "desktop-opponent-card-inspection",
+      "status": "PASS",
+      "observation": "点击悬浮牌排后完整幸运卡前景可读，关闭按钮可达，未裁掉费用和底部效果。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\从对方悬浮牌排点击放大卡图.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄桌面对手身份详情打开.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄桌面对手身份详情打开.png.jpg",
+      "sha256": "3a030c263e9046f5916881e3894f6769075cdab2cec9276c6d4d0e9f1d9cba78",
+      "uiStateId": "desktop-player-detail-open",
+      "status": "PASS",
+      "observation": "对手详情静态御主、已公开从者及技能原卡紧凑排列；没有临时合计威力或发动交互。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\窄桌面对手身份详情打开.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/玩家详情两排紧凑牌距.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/玩家详情两排紧凑牌距.png.jpg",
+      "sha256": "c4833d8b476299a20791eecce4715728e2f73e4d4e3bf2dec2946a8e08ed6e17",
+      "uiStateId": "desktop-self-detail-compact",
+      "status": "PASS",
+      "observation": "本人详情两排卡约10px间距，三张技能连续紧凑；说明与原卡并存，没有误改整个手牌布局。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\玩家详情两排紧凑牌距.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/淘汰玩家详情红色状态.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/淘汰玩家详情红色状态.png.jpg",
+      "sha256": "827d9d5a48482daaeaeddb22ccd014f33e17b297381c1f7335cb58c21406efd6",
+      "uiStateId": "desktop-eliminated-detail",
+      "status": "PASS",
+      "observation": "淘汰详情红色状态醒目，原卡仍完整，临时威力不在资料页显示。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\淘汰玩家详情红色状态.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏点牌打开完整检视.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏点牌打开完整检视.png.jpg",
+      "sha256": "a69401915c9ec2e1aa8410d021e34ad83d5e73bed5672e6f326d5db5a61391c5",
+      "uiStateId": "touch-inspection-open",
+      "status": "PASS",
+      "observation": "真实触控长按打开强打完整检视，关闭区可达，卡底未裁切。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\触屏点牌打开完整检视.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏关闭检视后的正常牌桌.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏关闭检视后的正常牌桌.png.jpg",
+      "sha256": "6c91843d52c45e3920e64ba90887c2cc202f5ae9d37161873bc12ff580e234a4",
+      "uiStateId": "touch-normal-after-inspection",
+      "status": "PASS",
+      "observation": "触控关闭后没有残留放大卡或悬浮，普通手牌恢复，技能和威力仍在原位置。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\触屏关闭检视后的正常牌桌.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏检视关闭后继续结束行动.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏检视关闭后继续结束行动.png.jpg",
+      "sha256": "f6bed78d1a6a6ca1e8f1f9cbd1473dc759978075fee1a9c29f7455d48d38fd9b",
+      "uiStateId": "touch-continued-action",
+      "status": "PASS",
+      "observation": "触控随后结束行动，当前行动席切为对手；没有留下吞点击的检视遮罩。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "手牌专项；密集数量及部分公开状态使用显式代表态，真实触控另有正式起点和后续动作。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\hand-layout-real-board.e2e\\Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立\\_runs\\e2e-1793528788513-7nk7ga\\触屏检视关闭后继续结束行动.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793529574818-siosrd/01-真实手牌请求延迟时保留扫光牌框.png",
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793529574818-siosrd/01-真实手牌请求延迟时保留扫光牌框.png",
+      "sha256": "97302ab2f9f14040499d62a5592f9970fac83ef269d3093f086ddfdf7b1b2ab5",
+      "uiStateId": "cards-loading",
+      "status": "PASS",
+      "observation": "战略部署抽到的追击图片请求被真实延迟，原位保留约180×255的扫光牌框；没有浏览器破图图标或文字，旁边图集牌和技能完整，HUD没有塌陷。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\image-loading-real-entry.e2e\\真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框\\_runs\\e2e-1793529574818-siosrd\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "正式准备和部署后，仅把本局未抽牌库追击实例置顶；再由实际能力抽牌和真实请求恢复。合法代表态，不伪装成自然主教程或所有候选耗尽。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\image-loading-real-entry.e2e\\真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框\\_runs\\e2e-1793529574818-siosrd\\01-真实手牌请求延迟时保留扫光牌框.png",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793529574818-siosrd/02-真实资源返回后完整卡面替代扫光.png",
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793529574818-siosrd/02-真实资源返回后完整卡面替代扫光.png",
+      "sha256": "0afdb4e19baa6f55a2430d1f80cf7a2bcb7bf4e0e6a2554637fa41532201c653",
+      "uiStateId": "cards-loaded",
+      "status": "PASS",
+      "observation": "同一请求放行后追击完整卡图替代原占位，原图自然比例使高度略变，宽度和整体手牌槽位未移；不是换图或另造结果态。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\image-loading-real-entry.e2e\\真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框\\_runs\\e2e-1793529574818-siosrd\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "正式准备和部署后，仅把本局未抽牌库追击实例置顶；再由实际能力抽牌和真实请求恢复。合法代表态，不伪装成自然主教程或所有候选耗尽。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\image-loading-real-entry.e2e\\真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框\\_runs\\e2e-1793529574818-siosrd\\02-真实资源返回后完整卡面替代扫光.png",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1793528886516-vprzro/骑乘三张已选满.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1793528886516-vprzro/骑乘三张已选满.png.jpg",
+      "sha256": "3e29747728bb89feb7ed6286f44b4b8a0fd39f37af0c01261b128538836f7a04",
+      "uiStateId": "riding-three-selected",
+      "status": "PASS",
+      "observation": "三张候选轻描边，已选3/3和实付0/8在深底清楚可读；其它候选仍完整。第四张拒绝由行为测试证明。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\iskandar-riding-choice.e2e\\骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）\\_runs\\e2e-1793528886516-vprzro\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "骑乘专项代表态/正式操作；三张场景合法实例并显式固定牌区，不冒称自然抽牌。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\iskandar-riding-choice.e2e\\骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）\\_runs\\e2e-1793528886516-vprzro\\骑乘三张已选满.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1793528886516-vprzro/骑乘单张费用牌.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1793528886516-vprzro/骑乘单张费用牌.png.jpg",
+      "sha256": "c121d63d2499f482d9100a6bb25969ec698f1c279d77cc3b0631236ddf263eee",
+      "uiStateId": "riding-one-selected",
+      "status": "PASS",
+      "observation": "急行被选中，已选1/3及实付1/6清楚；费用读数、原卡费用和确认按钮同屏。数值扣除另由正式结算证明。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\iskandar-riding-choice.e2e\\骑乘单张按印刷魔耗结算且不结束行动\\_runs\\e2e-1793528886516-vprzro\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "骑乘专项代表态/正式操作；三张场景合法实例并显式固定牌区，不冒称自然抽牌。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\iskandar-riding-choice.e2e\\骑乘单张按印刷魔耗结算且不结束行动\\_runs\\e2e-1793528886516-vprzro\\骑乘单张费用牌.png.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1793528886516-vprzro/骑乘选择打开.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1793528886516-vprzro/骑乘选择打开.png.jpg",
+      "sha256": "9661e7ce1d0444946abb5712da3fd4aafe3390ade18c99737551102535dcd5af",
+      "uiStateId": "riding-open",
+      "status": "PASS",
+      "observation": "零选骑乘仍提供确认零张与取消；普通暂存和手牌不被骑乘专用选择替换。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\iskandar-riding-choice.e2e\\骑乘选择取消后可重开并确认零张\\_runs\\e2e-1793528886516-vprzro\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "骑乘专项代表态/正式操作；三张场景合法实例并显式固定牌区，不冒称自然抽牌。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\iskandar-riding-choice.e2e\\骑乘选择取消后可重开并确认零张\\_runs\\e2e-1793528886516-vprzro\\骑乘选择打开.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1793528886516-vprzro/骑乘费用不足且候选不可选.png.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1793528886516-vprzro/骑乘费用不足且候选不可选.png.jpg",
+      "sha256": "ad2ca2aa1405089d4eff99d078233b6f8a27123f66b15155e6b99bb59c9212ab",
+      "uiStateId": "riding-unaffordable",
+      "status": "PASS",
+      "observation": "魔力0时付费急行灰化，零选与实付0/0可见，取消仍可达；没有以视觉灰化替代费用拒绝测试。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\iskandar-riding-choice.e2e\\骑乘魔力不足时拒绝费用牌且取消不消费能力\\_runs\\e2e-1793528886516-vprzro\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "骑乘专项代表态/正式操作；三张场景合法实例并显式固定牌区，不冒称自然抽牌。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\iskandar-riding-choice.e2e\\骑乘魔力不足时拒绝费用牌且取消不消费能力\\_runs\\e2e-1793528886516-vprzro\\骑乘费用不足且候选不可选.png.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793529521198-2iobzm/AI自主出牌并交还真人.png",
+      "source": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793529521198-2iobzm/AI自主出牌并交还真人.png",
+      "sha256": "9ee3038fb7cc12970d7250390794993043de666ef270e8a5ae5ffad66440615d",
+      "uiStateId": "local-ai-0",
+      "status": "PASS",
+      "observation": "本地自动玩家已有公开攻击，真人阶段操作重新可用，右侧两名AI摘要及威力可读。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\local-ai-real-entry.e2e\\正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备\\_runs\\e2e-1793529521198-2iobzm\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\local-ai-real-entry.e2e\\正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备\\_runs\\e2e-1793529521198-2iobzm\\AI自主出牌并交还真人.png",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793529521198-2iobzm/本地AI自然换轮后真人继续准备.png",
+      "source": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793529521198-2iobzm/本地AI自然换轮后真人继续准备.png",
+      "sha256": "ee1d099da896a5d6315bdb1617b9c7120a5fccf753c553a689599c150b3232e5",
+      "uiStateId": "local-ai-1",
+      "status": "PASS",
+      "observation": "自然换轮显示第二回合准备；牌已返回、手牌和推进可继续，没有把AI接管说成策略强度通过。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\local-ai-real-entry.e2e\\正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备\\_runs\\e2e-1793529521198-2iobzm\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\local-ai-real-entry.e2e\\正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备\\_runs\\e2e-1793529521198-2iobzm\\本地AI自然换轮后真人继续准备.png",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/主视角真实联网选角准备.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/主视角真实联网选角准备.jpg.jpg",
+      "sha256": "80f7debfb268ee577404f8b4c95cc090e2cfd99bd9e08e89fd4ce95d6dc4a559",
+      "uiStateId": "ui-1",
+      "status": "PASS",
+      "observation": "真实联网正式选角是候选、当前大原卡、关联技能三列，底部完成准备可达；不是教程首步。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\主视角真实联网选角准备.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/三名真实客户端准备完成.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/三名真实客户端准备完成.jpg.jpg",
+      "sha256": "4584c0a34c7aab645898b2ea19ded7448a733bb7e13b03cb2814d28d3ef52a0d",
+      "uiStateId": "ui-2",
+      "status": "PASS",
+      "observation": "准备后实际部署候选高亮、人物尚未落位；手牌/技能/威力保持最新合同。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\三名真实客户端准备完成.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/御主能力位于本人角色旁.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/御主能力位于本人角色旁.jpg.jpg",
+      "sha256": "27088896f8e92a243afb332fb338918aecc4702a72b3d522c5a11b0062209f7b",
+      "uiStateId": "ui-3",
+      "status": "PASS",
+      "observation": "御主能力在角色右侧；发动后当前不可重复的入口灰化，未加资料弹窗。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\御主能力位于本人角色旁.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/常规移动目标等待确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/常规移动目标等待确认.jpg.jpg",
+      "sha256": "2e0198335570508bbad8cfeacb10af218cd350bde1ec8b91b9f860fc2fc2e63b",
+      "uiStateId": "ui-4",
+      "status": "PASS",
+      "observation": "常规移动目标已选深山町；确认与取消在推进处，合法地点仍有边框，原棋子保留。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\常规移动目标等待确认.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/常规移动确认并按费用结算.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/常规移动确认并按费用结算.jpg.jpg",
+      "sha256": "9eafbeaf50671f90b1b0e702957235418e16590a1f19be4f2bfabedb7612c308",
+      "uiStateId": "ui-5",
+      "status": "PASS",
+      "observation": "移动后韦伯落深山町，候选边框收起，牌桌回到选牌；威力在一级可见。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\常规移动确认并按费用结算.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/令咒移动等待确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/令咒移动等待确认.jpg.jpg",
+      "sha256": "7a0676c578757c176d652d64222867b6373a47dd2e8d307ee806d0e6cd0564ed",
+      "uiStateId": "ui-6",
+      "status": "PASS",
+      "observation": "令咒移动目标选工房，候选地点可辨，确认与取消仍在；不是点击地点立即消费令咒。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\令咒移动等待确认.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/令咒恢复魔力等待确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/令咒恢复魔力等待确认.jpg.jpg",
+      "sha256": "99617bbc847460c655657a9b81f93461d0d9c73a67c34477e87caecc79301df9",
+      "uiStateId": "ui-7",
+      "status": "PASS",
+      "observation": "令咒恢复窗口保留三种效果，当前恢复已选且有确认；不在窗口下继续教学。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\令咒恢复魔力等待确认.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/真实联网两张草稿尚未提交.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/真实联网两张草稿尚未提交.jpg.jpg",
+      "sha256": "11cd157b5969fdc172305919576530167bcb212d75aecf6b667af015690df007",
+      "uiStateId": "ui-8",
+      "status": "PASS",
+      "observation": "联网两张草稿上移，左侧“预计”与确认按钮明确，普通手牌与技能仍分开。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\真实联网两张草稿尚未提交.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/草稿撤回后权威状态保持不变.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/草稿撤回后权威状态保持不变.jpg.jpg",
+      "sha256": "52631b80a7b3055afa5ac3f726e5d6874b9b3d55ff48fb36a1b75698d25b7fa0",
+      "uiStateId": "ui-9",
+      "status": "PASS",
+      "observation": "撤回一张后它回到剩余手牌，暂存只余一张，确认灰化；画面区分未提交状态。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\草稿撤回后权威状态保持不变.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/原子确认后正式攻击生效.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/原子确认后正式攻击生效.jpg.jpg",
+      "sha256": "d2e8bf645d2b6a736ac91e9df5d7c2b1b321daf8e93078cfc84ec235cf7789e8",
+      "uiStateId": "ui-10",
+      "status": "PASS",
+      "observation": "正式确认后摘要改为“已打出”，右侧可结束行动；原卡仍在攻击区，位置没有跳到第二手牌主区。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\原子确认后正式攻击生效.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/真实联网多轮对局正式终局.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/真实联网多轮对局正式终局.jpg.jpg",
+      "sha256": "82f5fedf2490575c58a49f24e0244508651e53c2e5abbf618089f9e3f7d1f08d",
+      "uiStateId": "ui-11",
+      "status": "PASS",
+      "observation": "联网自然十一轮终局赢家、排序、再来一局及返回大厅完整；没有教程或旧交互残留。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "独立真实运行界面；只证明这一条链的可见状态。",
+      "evidenceCategory": "golden",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-basic-match.e2e\\真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）\\_runs\\e2e-1793529019451-z5wedt\\真实联网多轮对局正式终局.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/战后恢复令咒等待本人确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/战后恢复令咒等待本人确认.jpg.jpg",
+      "sha256": "03b1469e278f2ed47c8c67ad7565d1c9ade8bc752b2959be19d729ebdee79314",
+      "uiStateId": "fate-online-post-battle-10-open-choice",
+      "status": "PASS",
+      "observation": "第十轮合法代表态的战后窗口显示真实事件、恢复/不恢复及确认；两项不是无来源的按钮。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\战后恢复令咒等待本人确认.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/本人完成选择后仍等待第二席.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/本人完成选择后仍等待第二席.jpg.jpg",
+      "sha256": "478cdae939d50336f03057235c3da6957cbb11603cf73ec3516b70ddca9a71a5",
+      "uiStateId": "fate-online-post-battle-10-confirm-own-choice",
+      "status": "PASS",
+      "observation": "本人确认后回到牌桌但显示等待战后选择，尚未提前显示终局；第二席行动摘要可见。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\本人完成选择后仍等待第二席.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "sha256": "5f02e4444c66e14508d0dcd2b8b6aa7dc0075f9bb920e558f99195bf6e25781a",
+      "uiStateId": "fate-online-post-battle-10-complete-peer-choice",
+      "status": "PASS",
+      "observation": "第二席收口后进入第十一轮准备，淘汰观察席头像有红斜杠；没有用普通灰字代替淘汰。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\全部战后选择后才显示淘汰状态.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "sha256": "e71c0a77b0259f9dc74a335d1892259add4683b2f40ff3b53d0aa3c031167c19",
+      "uiStateId": "fate-online-post-battle-10-inspect-eliminated",
+      "status": "PASS",
+      "observation": "淘汰观察席详情红色已淘汰，未揭示从者和技能保持牌背，不泄露隐藏信息。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "sha256": "e81ac0ca7141d57964b518f9c783fe8177677ba429aa978d2921544496856b5e",
+      "uiStateId": "fate-online-post-battle-10-observe-eliminated",
+      "status": "PASS",
+      "observation": "切到淘汰本人视角仍可观察局面，人物头像红斜杠；推进入口不允许继续本人行动。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再淘汰（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/战后恢复令咒等待本人确认.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/战后恢复令咒等待本人确认.jpg.jpg",
+      "sha256": "194d42989055e1c71ede88450913ba2720aa29080abf46537240c462d9cc1dd0",
+      "uiStateId": "fate-online-post-battle-11-open-choice",
+      "status": "PASS",
+      "observation": "第十一轮战后恢复选项与当前事件完整，确认入口明确，没有直接跳赢家。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再终局（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再终局（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\战后恢复令咒等待本人确认.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/本人完成选择后仍等待第二席.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/本人完成选择后仍等待第二席.jpg.jpg",
+      "sha256": "4808695d5b6ea1d4c121b30929cda09c73b1caa070c373ff389931da90c93966",
+      "uiStateId": "fate-online-post-battle-11-confirm-own-choice",
+      "status": "PASS",
+      "observation": "本人完成后仍显示等待另一席战后选择；结果页尚未覆盖未完成决定。",
+      "method": "carried-forward:与本轮已直接读取的原图SHA完全一致",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再终局（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再终局（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\本人完成选择后仍等待第二席.jpg.jpg",
+      "unchangedEvidenceFiles": [
+        "evidence/fate-domination/visual-review-before-output-cleanup-20261101.json"
+      ]
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/全部战后选择后才显示正式终局.jpg.jpg",
+      "source": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再终局（合法pipeline代表态）/_runs/e2e-1793529475421-bjspjr/全部战后选择后才显示正式终局.jpg.jpg",
+      "sha256": "4535b87c9e72d5a9b84c932869378f727d674d2270420a3954e365a6e74cd8b8",
+      "uiStateId": "fate-online-post-battle-11-complete-peer-choice",
+      "status": "PASS",
+      "observation": "全部战后选择收口后才出现赢家及最终分数列表；返回入口完整，旧战后窗已关闭。",
+      "method": "主代理重新直接读取新跑次整屏，保持原观察的实际对象与边界",
+      "sourceIndex": "test-results\\evidence-screenshots\\fate-domination\\online-post-battle.e2e\\真实联网战后选择先收口再终局（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\.e2e-image-index.json",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "boundary": "合法pipeline代表态进入战后边界；不能冒称从第一轮自然走到此处。",
+      "evidenceCategory": "independent",
+      "archive": "evidence\\fate-domination\\acceptance-media-20261101-snapshot\\online-post-battle.e2e\\真实联网战后选择先收口再终局（合法pipeline代表态）\\_runs\\e2e-1793529475421-bjspjr\\全部战后选择后才显示正式终局.jpg.jpg",
+      "unchangedEvidenceFiles": []
+    }
+  ]
+}

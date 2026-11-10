@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "status": "PASS",
+  "verdict": "PASS",
+  "reviewLayer": "source",
+  "scope": "basic-opening revision15及本轮直接修改的战斗阶段消费点；非全游戏规则或视觉验收",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_r31_source_review"
+  },
+  "reviewedAt": "2026-10-26T17:05:31.584Z",
+  "comparison": "R28固定征召主线 → R35自然前线军屯/突袭主线",
+  "statusMeaning": "四项PASS仅指源码职责、来源、正式命令、合法状态转移与窄回归；不证明本轮截图可读、实际浏览器已通过或用户已验收。",
+  "sourceBaseline": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/.baseline-review.json",
+  "previousReview": "evidence/qidahen/.baseline-review-r31-source.json",
+  "sourceRevision": "sha256:4029f0c4f81d24e09f822e0aa2a7bce82fc3cb761cf5b14e2a8dd2a2bf93d3f6",
+  "sourceFiles": [
+    {
+      "path": "src/games/qidahen/tutorial.ts",
+      "sha256": "b1e6973e6bf7e0e82c00ef02ee5c32903bc29d441791beab1d8421356942a9be"
+    },
+    {
+      "path": "src/games/qidahen/tutorialSetup.ts",
+      "sha256": "78a1088e701e68a8977a2a8acb7b1a4b2d984d592d942880fc3f480e7251e8db"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "f9df8c35af4122e677cf0e25513be6c3d41c30aac7302cf095bd251b011f0a1b"
+    },
+    {
+      "path": "src/games/qidahen/domain/ordinaryHandCardIdentities.ts",
+      "sha256": "105774feab843d8d51a16d720b7d27ce37583e9475f15c64b8a4d52ac4f17b1a"
+    },
+    {
+      "path": "src/games/qidahen/domain/selectionBuilders.ts",
+      "sha256": "6391a0b0b712df599f7f2cda73739182e4f9de7eedee507841fd44b4dac0607d"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleCommittedTroops.ts",
+      "sha256": "107e3f030ad2d751a20ab957a4f8239714aa5a1e083b3f1f3a79d407ed1aa505"
+    },
+    {
+      "path": "src/games/qidahen/domain/types.ts",
+      "sha256": "6402b42cb554eecfc91e23b6c00cdd54fe5a3404d108fbdf36b0508424b5943f"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleMorale.ts",
+      "sha256": "2223142dbb9286cb81f1315571333057fdc896b8bcf0497d3a492415b005e3bb"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleRollMath.ts",
+      "sha256": "9f43fec097db04b049c988839261a2fea13889d0d597d18ba056fc01cc51dcea"
+    },
+    {
+      "path": "src/games/qidahen/domain/attackRules.ts",
+      "sha256": "c8cd3ebfe5df4179cbbe363d5fa947c04aa0f2b6dd762b09db542060e8960a03"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleForceOutcomes.ts",
+      "sha256": "e8bea6d7e62d76ca5906f05d9b05c8b48ee5f100247c7d7d68b19d1abd54f577"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleForceCommitments.ts",
+      "sha256": "68f839d4942abb5e7a21cbf10980615230c5119ed83acf40deee5e9144906425"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleCombatSupport.ts",
+      "sha256": "113860fa255efedd4c53f3d7241b3f12872afd9d44b5393133070cc466fae9b5"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetResolution.ts",
+      "sha256": "78e6985fdbcf929a34d7d18963271af0e318ae26af0cf87c5a3b7c9000861525"
+    },
+    {
+      "path": "src/games/qidahen/domain/postBattleDecisionResolution.ts",
+      "sha256": "95462d6c0719d50935e18a0305a5ffbff41a187ec96799774cc339d43f18012b"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleFlow.ts",
+      "sha256": "e45ea8eca7c6216033053219658d4fd39674aceefc680bb273ec3fe67296f472"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleState.ts",
+      "sha256": "a9f095595b7beb94967fce93f30e5381f9478d964b58d08b4fb06a41a86ee26a"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetActionBuilder.ts",
+      "sha256": "f8a73712f43b343de692af58929815887574f0e2699853730d7544b40fa527fb"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetChoiceOptions.ts",
+      "sha256": "ff0e08c92766c1eb869288b32e0f5f11ec9069b8e5710231b821c03afdbd1231"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetChoicePayload.ts",
+      "sha256": "ee9d02586eefd7259c43791742c8f85d85a6ddb5ad91811c9574a055cca721e1"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleInteractionBuilders.ts",
+      "sha256": "d54d613dbd954567347a793055116828dc49b1c970664d37926c48e91a222efe"
+    },
+    {
+      "path": "src/games/qidahen/domain/interactionSystem.ts",
+      "sha256": "d017722afbae88baddcc9b12d6a19e25c7936ef9d59ba18a9fc671d4f90dbf65"
+    },
+    {
+      "path": "src/games/qidahen/domain/commands.ts",
+      "sha256": "2fad39b700e8003082fd3ac8b640114e75dfc4bd94e36fd3820bd3dfed7e5974"
+    },
+    {
+      "path": "src/games/qidahen/domain/resolvedCommandEventBuilders.ts",
+      "sha256": "1edb3fc9e4169f2c3b1fc2d9eead47c5bd4b7cb0c3c69b34eb3721c5cd03e315"
+    },
+    {
+      "path": "src/games/qidahen/domain/actionWindowDispatch.ts",
+      "sha256": "37c8dfec30a0545cf33e5a2b43c73fe3e11f0097e151ebcde44db597076521d9"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionSelectionPreferences.ts",
+      "sha256": "1430de70805219406d8362a0882e394a8de054b59069e0222fc241d64a027962"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelImmediateEffect.ts",
+      "sha256": "43a6c9bf7816df4022a4b75b80a9599f98797df3a28d43a8bf938e4d3cf8c552"
+    },
+    {
+      "path": "src/components/game/framework/widgets/GameHUD.tsx",
+      "sha256": "d232195170b3b47337ad0d25a498248deb373ee69685cd73a8408fb60fe73618"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "14b7c1b9c7216fdd9ccb9ed53cbff1bb756956955ae6f5f7812f7ecdf8d647c2"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "1be4742013b4c6f8b72b3a8287c1e1572e69fb130e088f309f6fb7d1a8910516"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-closeout.e2e.ts",
+      "sha256": "0f8ce0e163aab080f36caadc1030bfb145ff3b53c0a86463ecb94c61f1211913"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "连续正式开局与轮盘军屯",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/02-固定先完成手牌行动.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03b-轮盘两格-进入军屯并结算.png"
+      ],
+      "baselineSource": "R28历史清单中的开局、固定征召首步、互斥轮盘走法和两格军屯；当前正式开局合同、PDF p2/p4、tutorial.ts、tutorialSetup.ts、Board.tsx与军屯目标selector。",
+      "preservedInformation": "保留正式大明开局、公共轮盘两格代价、指定一名对手抽牌、军屯抽2牌与建立等级2正规军，以及两类行动均可继续的正式状态。旧课程的1格/3格及征召教学移出本课，正式规则能力和隐藏专项仍在，但不称本课已教会。",
+      "preservedActions": "玩家实际点辽东作为建军地，选择两格，指定后金，并由同一正式轮盘结算在辽东建立部队；setup不代选建军地。",
+      "changes": "用辽东前线补兵后突袭相邻叶赫的正常行动链替换宣府无后续用途的集中征召。首屏呈现本回合争取叶赫控制权的局面目标；不把决定先教哪项的选择交给学员。",
+      "duplicateDecision": "保留地域、轮盘格数与指定对手这三个实际规则决策；不要求依次体验互斥的1/2/3格。地图高亮定位改消费正式runtime anchor，图面是否准确另由本轮视觉报告判定。",
+      "changeAuthority": "用户明确要求先设计有真实用途的连续对局再贴教程；tutorial-design第三节允许固定合法路线，并禁止初始化代做部署。",
+      "sourceEvidence": [
+        "src/games/qidahen/tutorial.ts:QIDAHEN_BASIC_TUTORIAL",
+        "src/games/qidahen/tutorialSetup.ts:NATURAL_OPENING_CONTRACT",
+        "src/games/qidahen/domain/regionSelectionPreferences.ts",
+        "src/games/qidahen/domain/wheelImmediateEffect.ts",
+        "test-results/qidahen-r35-independent-source-tests.log"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/00-唯一入门入口-直接进入胜利条件.png",
+          "sha256": "81d70b31347c1d7f2f8cf799abe9b7d401d34e00c9582e08b8cac858eeb0ca6f",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/02-固定先完成手牌行动.png",
+          "sha256": "c37a0a313cd86607cf7ad9e7e40aec9d504a5f68d1b3b000085a0a6db074d2ef",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘选择-三种走法均可选择.png",
+          "sha256": "34f794790cb494039cf498fd88d0b0f56b89e9bea9130cd7303ab093c94bce57",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03a-轮盘两格-选择对手抽牌.png",
+          "sha256": "a77c8ef40408a8c1a2f315d61b62aa3626e68ae9dfc663faf36a68169928a462",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03b-轮盘两格-进入军屯并结算.png",
+          "sha256": "7a6d4a8c2d18169fa62b82f5ac558d52c82127149190816e630049ddc5239da3",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [],
+      "afterBindings": [],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "仅通过当前源码职责与行为合同审查；after媒体由本轮成功E2E与另一子代理逐图审查后在派生产物中绑定。"
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/10-征召结果-轮盘行动待完成.png"
+      ],
+      "baselineSource": "旧主线只有征召支付与部署；不把旧征召图误称突袭/战术旧证据。当前PDF p1/p2/p3/p5/p6、atlas05第44格卡源结论、正式pending战斗/士气/force outcome owner和当前basic文案。",
+      "preservedInformation": "保留手牌作费用、真实选牌确认和地图结果反馈；动作身份明确改为突袭，新增野战与占领的同局用途。第44格数据统一为鸳鸯阵，与第50格乌真超哈分开。首次战斗给当前等级/骰种、宽度、攻击顺序、士气损伤与胜负判定。",
+      "preservedActions": "真实点突袭入口、点叶赫目标、弃银两、确认、由蒙古正式应战、玩家打鸳鸯阵、地图投入3支、开始战斗、占领；不会把断后/溃败当开战按钮。",
+      "changes": "正常分阶段战斗先以单位自身士气承伤，零级才移除；败方有幸存部队才由败方选择撤退，复用同次骰果。占领和撤回都保留受损等级及未参战身份。误点行动、支付掉战术、未到占领结果或撤回，使用已有完整检查点恢复机制。",
+      "duplicateDecision": "费用选择与确认、实际目标、战术和战后选择各有规则后果。非示范合法输入不伪装规则禁止，也不推进到缺失牌或缺失占领面板；不把恢复导航写给玩家。",
+      "changeAuthority": "用户授权完整教程重构及正式规则交互修复；tutorial-design要求来源、动作、真实UI、输入与结果对应，且覆盖非推荐合法分支。",
+      "sourceEvidence": [
+        "src/games/qidahen/domain/battleMorale.ts",
+        "src/games/qidahen/domain/battleRollMath.ts",
+        "src/games/qidahen/domain/pendingBattleFlow.ts",
+        "src/games/qidahen/domain/battleForceOutcomes.ts",
+        "src/games/qidahen/domain/battleForceCommitments.ts",
+        "src/games/qidahen/domain/postBattleDecisionResolution.ts",
+        "test-results/qidahen-r35-independent-source-tests.log"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07-支付1张手牌.png",
+          "sha256": "0f9d45b535bfa3d8b2c47b3c112450784d935c3db779753db4867623f7206ed5",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-确认弃置手牌.png",
+          "sha256": "da6052752af9daa988749e7b6f03cab944a84a9d99f0e4b26efd0cdd87c7fc8b",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/08-选择宣府建军位置.png",
+          "sha256": "776bd3f2c91420796e9452f325913b9e6e6913e93a3357336edae776ddc097c3",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09-选择建军方式.png",
+          "sha256": "c4e5a8fcf9576350c920c00621a84357953bc0d94b93d4ad8a9d640e8b6c53df",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/10-征召结果-轮盘行动待完成.png",
+          "sha256": "8f0eb9e2a9176ca83e0616c9c9b31cc72bad92cf81bdbaa5c6f02a715b72b897",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [],
+      "afterBindings": [],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "仅通过当前源码职责与行为合同审查；after媒体由本轮成功E2E与另一子代理逐图审查后在派生产物中绑定。"
+    },
+    {
+      "requirement": "手机长按检视",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "baselineSource": "R28移动征召支付检视媒体职责；当前Board.tsx正式手牌检视owner和closeout移动触摸用例。",
+      "preservedInformation": "保留首次真实支付处桌面看牌与触屏长按提示；不为普通关闭按钮增加课程。",
+      "preservedActions": "保留长按打开真实银两卡面、关闭检视、回到同一支付步骤。当前E2E使用CDP触摸输入，没有DOM合成dispatch替代玩家手势。",
+      "changes": "将检视从旧征召支付移到当前突袭支付；移动端只补平台独有手势和布局证据。",
+      "duplicateDecision": "复用同一手牌和检视入口，不另外创建教程卡面副本或复制桌面完整课程；视觉可读性不由本源码报告证明。",
+      "changeAuthority": "用户要求边玩边学、必要隐藏交互实际完成，以及子代理全量核图；tutorial-design首次用途和跨视口证据规则。",
+      "sourceEvidence": [
+        "src/games/qidahen/Board.tsx:HandCard",
+        "e2e/qidahen/qidahen-closeout.e2e.ts:dispatchTouchLongPress",
+        "public/locales/zh-CN/game-qidahen.json:tutorial.basic.steps.payRaid"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-02-征召支付-手牌检视前.png",
+          "sha256": "987f49ebd90dfd0b59f8ca45741788d0dd79112e3ab5e01b08166c81543a6e70",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-03-征召支付-长按手牌打开检视.png",
+          "sha256": "6f516d8eba440af3941cb99021f2afe2e2de27595402a2ba3a8215467f649573",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-05-选牌后确认征召支付.png",
+          "sha256": "acce68240cd0ed18b98af9f5401ea200b2c6376e8be677220d14bbe7991e6951",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [],
+      "afterBindings": [],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "仅通过当前源码职责与行为合同审查；after媒体由本轮成功E2E与另一子代理逐图审查后在派生产物中绑定。"
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/11-教程结束后同局下一位玩家可操作.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03l-教程退场后同局继续.png"
+      ],
+      "baselineSource": "R28同局继续历史媒体及共享教程生命周期；当前basic revision15、stayOnMatchAfterCompletion、正式local dispatch和closeout生命周期用例。旧媒体不证明刷新或退出清理。",
+      "preservedInformation": "保留完成提示后同局继续。旧教程的互斥轮盘分支没有被伪装成新的连续章节；清单版本随步骤前提变化更新。",
+      "preservedActions": "源代码与当前测试承接刷新继续、重开、退出大厅清理、结束后下一玩家真实轮盘输入；不自动跳到另一个预设状态。最新浏览器运行与视觉仍须由R35独立证据确认。",
+      "changes": "收口改为叶赫战后占领；守方作者动作使用正式SYS_RESPOND optionId并由真实buildLocalDispatchCommand绑定当前interactionId，未注入选择结果。恢复使用完整局面与随机游标检查点。",
+      "duplicateDecision": "不增加额外章节或假确认；完成后撤销教程限制，下一入口仍属于同一真实对局。非示范分支恢复不代付或造胜利。",
+      "changeAuthority": "用户要求初始化、退出、重开、继续和版本处理；tutorial-design生命周期及结果后继续操作验收。",
+      "sourceEvidence": [
+        "src/games/qidahen/tutorial.ts",
+        "src/pages/matchRoomTutorialStageRuntime.tsx",
+        "src/pages/matchRoomBridges.tsx",
+        "src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts",
+        "e2e/qidahen/qidahen-closeout.e2e.ts"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/11-教程结束后同局下一位玩家可操作.png",
+          "sha256": "b9f7b0f611160b703151ad81a72b25260df4ddec41b3ebdc0154facc6f3970d6",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+          "sha256": "081bae41b00dfe931fbfd52eaaf1a586fb4bcd7700ab587884507e8988b8de98",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03l-教程退场后同局继续.png",
+          "sha256": "895f760ee4467b490a5fad1a5130dc233504561f528d921cb92e90ea65ea386f",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [],
+      "afterBindings": [],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "仅通过当前源码职责与行为合同审查；after媒体由本轮成功E2E与另一子代理逐图审查后在派生产物中绑定。"
+    }
+  ],
+  "summary": {
+    "requirements": 4,
+    "sourcePass": 4,
+    "sourceRevise": 0,
+    "afterMedia": 0
+  },
+  "validation": [
+    {
+      "kind": "vitest",
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/battleMorale.test.ts src/games/qidahen/__tests__/qidahen-battle-resolution-and-offense-tactics.test.ts --configLoader native",
+      "result": "PASS 56/56, 4 files",
+      "log": "test-results/qidahen-r35-independent-source-tests.log"
+    },
+    {
+      "kind": "independent-read-only-pipeline",
+      "result": "PASS",
+      "case": "自然开局出兵2、鸳鸯阵、骰序[1,1,4,1]、断后：参战步兵及无掩护炮兵被移除，辽东仅剩2支原未参战Lv1步兵；不重掷。"
+    },
+    {
+      "kind": "independent-read-only-pipeline",
+      "result": "PASS",
+      "case": "现有siege-and-occupation QA fixture出城、骰值4：续战为city，单线width/attackPressure=1，各force为city宽度1；旧宣告/骰果/败方清空，受损等级与exact存活piece IDs保留。此为规则回归夹具，不充当自然教程E2E。"
+    },
+    {
+      "kind": "independent-read-only-pipeline",
+      "result": "PASS",
+      "case": "同QA fixture直接守城：宣告不掷骰，进入city+tactics且width/attackPressure=1。"
+    }
+  ],
+  "closedFindings": [
+    "原F1低级先损/整支伤害及阶段士气已修；保留新年耗损选择。",
+    "原F2合法偏离失去战术或伪报占领，已由正式检查点恢复承接。",
+    "原F3初始化代选军屯地点，已改真实地图输入。",
+    "原F4当前等级/骰种、宽度和判胜读法已补齐。",
+    "撤回原地恢复等级、撤退改变参战数量、败方溃败使用战前等级及无掩护炮兵错误留存已修。",
+    "野战转城战的旧宣告/骰果、进攻军士气、exact身份和城战宽度消费已修。"
+  ],
+  "remainingScope": [
+    "同等级且不同兵种/身份的承伤对象选择仍是已登记的正式游戏缺口；当前课程最高士气承伤者唯一，不触发。",
+    "其它势力、年度补给、征兵训练、其它轮盘落点和攻城不属于这条玩家入门主线；隐藏专项不能代替玩家教学。",
+    "本次不称全游戏卡牌/战斗审计完成。"
+  ],
+  "evidenceLimitations": [
+    "未读取本轮或历史产品截图；before仅核存在、哈希和历史职责，不能继承旧视觉PASS。",
+    "第44格卡图由此前卡源子代理核读，本报告只核其身份/效果登记与文字结论一致；不声称本审查者亲自看图。",
+    "R35真实浏览器结果与after媒体尚未由本报告验收；最终图面由另一子代理全量审查。",
+    "原始R31 REVISE报告保持不变；本报告不得被改写成视觉总PASS。"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "小黑屋选择探索者 Open Design 候选稿",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "用 Open Design 出小黑屋开局选探索者稿，正式角色板是画面主体",
+      "status": "PASS",
+      "evidence": [
+        "01-选择探索者.png：1920x1080。12 张正式五角板同屏，左侧放大正在看的米歇尔·梦露，确认和随机贴在这块板下。"
+      ]
+    },
+    {
+      "requirement": "饱和态能分清已选、已占用、已准备和空位",
+      "status": "PASS",
+      "evidence": [
+        "01-选择探索者.png：你待确认，周衡已准备，阿凯待确认，苏麦空位；占用的板压暗并写玩家名。已准备 1/4。"
+      ]
+    },
+    {
+      "requirement": "右下角剧本描述用可读字号，不是密密麻麻的小字",
+      "status": "PASS",
+      "evidence": [
+        "01-选择探索者.png：右下角标题木乃伊横行，描述为 22px 两行，没有再堆小号说明。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-character-select-open-design\\exports\\01-选择探索者.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-character-select-open-design\\exports\\02-点击剧本名.png"
+  ]
+}

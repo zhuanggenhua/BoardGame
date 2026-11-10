@@ -18,7 +18,7 @@ import { withWindowsHide } from './windows-hide.js';
 
 const DEFAULT_VITE_DEV_PORT = 4273;
 
-const logDir = join(process.cwd(), 'logs');
+const logDir = process.env.BG_E2E_LOG_DIR?.trim() || join(process.cwd(), 'logs');
 if (!existsSync(logDir)) {
   mkdirSync(logDir, { recursive: true });
 }

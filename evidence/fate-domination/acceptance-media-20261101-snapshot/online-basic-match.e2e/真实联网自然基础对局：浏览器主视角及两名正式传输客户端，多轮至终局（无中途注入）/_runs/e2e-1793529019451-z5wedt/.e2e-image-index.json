@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "golden",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/主视角真实联网选角准备.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "主视角真实联网选角准备",
+      "description": "主视角真实联网选角准备",
+      "uiStateId": "ui-1",
+      "uiChange": "panel",
+      "uiChangeReason": "主视角真实联网选角准备",
+      "behaviorStepId": "step-001",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/三名真实客户端准备完成.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "三名真实客户端准备完成",
+      "description": "三名真实客户端准备完成",
+      "uiStateId": "ui-2",
+      "uiChange": "layout",
+      "uiChangeReason": "三名真实客户端准备完成",
+      "behaviorStepId": "step-004",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/御主能力位于本人角色旁.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "03",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "御主能力位于本人角色旁",
+      "description": "御主能力位于本人角色旁",
+      "uiStateId": "ui-3",
+      "uiChange": "panel",
+      "uiChangeReason": "御主能力位于本人角色旁",
+      "behaviorStepId": "step-007",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/常规移动目标等待确认.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "04",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "常规移动目标等待确认",
+      "description": "常规移动目标等待确认",
+      "uiStateId": "ui-4",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "常规移动目标等待确认",
+      "behaviorStepId": "step-014",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/常规移动确认并按费用结算.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "05",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "常规移动确认并按费用结算",
+      "description": "常规移动确认并按费用结算",
+      "uiStateId": "ui-5",
+      "uiChange": "layout",
+      "uiChangeReason": "常规移动确认并按费用结算",
+      "behaviorStepId": "step-016",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/令咒移动等待确认.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "06",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "令咒移动等待确认",
+      "description": "令咒移动等待确认",
+      "uiStateId": "ui-6",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "令咒移动等待确认",
+      "behaviorStepId": "step-017",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/令咒恢复魔力等待确认.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "07",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "令咒恢复魔力等待确认",
+      "description": "令咒恢复魔力等待确认",
+      "uiStateId": "ui-7",
+      "uiChange": "panel",
+      "uiChangeReason": "令咒恢复魔力等待确认",
+      "behaviorStepId": "step-019",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/真实联网两张草稿尚未提交.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "08",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实联网两张草稿尚未提交",
+      "description": "真实联网两张草稿尚未提交",
+      "uiStateId": "ui-8",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "真实联网两张草稿尚未提交",
+      "behaviorStepId": "step-021",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/草稿撤回后权威状态保持不变.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "09",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "草稿撤回后权威状态保持不变",
+      "description": "草稿撤回后权威状态保持不变",
+      "uiStateId": "ui-9",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "草稿撤回后权威状态保持不变",
+      "behaviorStepId": "step-022",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/原子确认后正式攻击生效.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "10",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "原子确认后正式攻击生效",
+      "description": "原子确认后正式攻击生效",
+      "uiStateId": "ui-10",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "原子确认后正式攻击生效",
+      "behaviorStepId": "step-023",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt/真实联网多轮对局正式终局.jpg.jpg",
+      "chainId": "fate-online-natural-basic-match",
+      "chainStep": "11",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实联网多轮对局正式终局",
+      "description": "真实联网多轮对局正式终局",
+      "uiStateId": "ui-11",
+      "uiChange": "panel",
+      "uiChangeReason": "真实联网多轮对局正式终局",
+      "behaviorStepId": "terminal",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:03ee1f6c473d05d9c5d51bd8472eb805d27d4ec1cc19b927bbd7a69b713e41b0",
+      "requirements": [
+        "真实联网主视角从选角自然推进多轮至终局",
+        "草稿与移动选择仅在确认后提交权威状态",
+        "御主能力和令咒通过正式界面操作"
+      ],
+      "sourceRun": "1793529031799-47580-6aec13be-7df6-4bfb-8850-c543d297cfc8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-basic-match.e2e/真实联网自然基础对局：浏览器主视角及两名正式传输客户端，多轮至终局（无中途注入）/_runs/e2e-1793529019451-z5wedt"
+    }
+  ]
+}

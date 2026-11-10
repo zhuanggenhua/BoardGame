@@ -1,0 +1,298 @@
+{
+  "url": "http://127.0.0.1:4273/play/mage-wars",
+  "viewport": {
+    "width": 1920,
+    "height": 1080,
+    "deviceScaleFactor": 1
+  },
+  "finalHref": "http://127.0.0.1:4273/play/mage-wars",
+  "boardPhase": "creatureAction",
+  "overlay": {
+    "attached": true,
+    "ariaHidden": "true",
+    "visibility": "hidden",
+    "display": "flex",
+    "opacity": 0.824123,
+    "sourceCardId": null
+  },
+  "audits": [
+    {
+      "label": "已消耗生物场上卡",
+      "objectId": "mw-test-red-creature",
+      "sourceCardId": "2802",
+      "beforeHover": {
+        "point": {
+          "x": 489.78749084472656,
+          "y": 632.8875122070312
+        },
+        "rect": {
+          "left": 457.3687438964844,
+          "top": 587.2874755859375,
+          "right": 522.2062377929688,
+          "bottom": 678.487548828125,
+          "width": 64.83749389648438,
+          "height": 91.2000732421875
+        },
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2211%22%20fill%3D%22rgba(26%2C32%2C44%2C0.65)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%228%22%20y1%3D%2216%22%20x2%3D%2224%22%20y2%3D%2216%22%20stroke%3D%22%23ff1744%22%20stroke-width%3D%222.8%22%20stroke-linecap%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3C%2Fsvg%3E\") 16 16, not-allowed",
+        "disabled": true,
+        "dataPrimaryAction": "true",
+        "dataPrimaryActionState": "disabled",
+        "dataBrowseInspectable": null,
+        "dataSecondaryInspect": "true",
+        "dataActionReady": "false",
+        "dataActionTokenState": "spent",
+        "hitTestId": "mage-wars-zone-field-card",
+        "hitInspectButton": false,
+        "hitPrimaryAction": true,
+        "hitBrowseInspectable": false,
+        "hitTag": "DIV"
+      },
+      "beforeInspect": {
+        "rect": {
+          "left": 495.8062438964844,
+          "top": 589.6875,
+          "right": 519.8062744140625,
+          "bottom": 613.6875,
+          "width": 24.000030517578125,
+          "height": 24
+        },
+        "opacity": 0,
+        "pointerEvents": "none",
+        "hitInspectButton": false,
+        "hitTestId": "mage-wars-zone-field-card"
+      },
+      "centerHover": {
+        "point": {
+          "x": 489.78749084472656,
+          "y": 632.8875122070312
+        },
+        "rect": {
+          "left": 457.3687438964844,
+          "top": 587.2874755859375,
+          "right": 522.2062377929688,
+          "bottom": 678.487548828125,
+          "width": 64.83749389648438,
+          "height": 91.2000732421875
+        },
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2211%22%20fill%3D%22rgba(26%2C32%2C44%2C0.65)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%228%22%20y1%3D%2216%22%20x2%3D%2224%22%20y2%3D%2216%22%20stroke%3D%22%23ff1744%22%20stroke-width%3D%222.8%22%20stroke-linecap%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3C%2Fsvg%3E\") 16 16, not-allowed",
+        "disabled": true,
+        "dataPrimaryAction": "true",
+        "dataPrimaryActionState": "disabled",
+        "dataBrowseInspectable": null,
+        "dataSecondaryInspect": "true",
+        "dataActionReady": "false",
+        "dataActionTokenState": "spent",
+        "hitTestId": "mage-wars-zone-field-card",
+        "hitInspectButton": false,
+        "hitPrimaryAction": true,
+        "hitBrowseInspectable": false,
+        "hitTag": "DIV"
+      },
+      "inspectAfterHover": {
+        "rect": {
+          "left": 495.8062438964844,
+          "top": 589.6875,
+          "right": 519.8062744140625,
+          "bottom": 613.6875,
+          "width": 24.000030517578125,
+          "height": 24
+        },
+        "opacity": 1,
+        "pointerEvents": "auto",
+        "hitInspectButton": true,
+        "hitTestId": "mage-wars-card-inspect-button"
+      },
+      "beforeClickSource": {
+        "selectedSourceObjectId": null,
+        "actionDockVisible": false
+      },
+      "afterCenterClick": {
+        "point": {
+          "x": 489.78749084472656,
+          "y": 632.8875122070312
+        },
+        "rect": {
+          "left": 457.3687438964844,
+          "top": 587.2874755859375,
+          "right": 522.2062377929688,
+          "bottom": 678.487548828125,
+          "width": 64.83749389648438,
+          "height": 91.2000732421875
+        },
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2211%22%20fill%3D%22rgba(26%2C32%2C44%2C0.65)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%228%22%20y1%3D%2216%22%20x2%3D%2224%22%20y2%3D%2216%22%20stroke%3D%22%23ff1744%22%20stroke-width%3D%222.8%22%20stroke-linecap%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3C%2Fsvg%3E\") 16 16, not-allowed",
+        "disabled": true,
+        "dataPrimaryAction": "true",
+        "dataPrimaryActionState": "disabled",
+        "dataBrowseInspectable": null,
+        "dataSecondaryInspect": "true",
+        "dataActionReady": "false",
+        "dataActionTokenState": "spent",
+        "hitTestId": "mage-wars-zone-field-card",
+        "hitInspectButton": false,
+        "hitPrimaryAction": true,
+        "hitBrowseInspectable": false,
+        "hitTag": "DIV"
+      },
+      "afterClickSource": {
+        "selectedSourceObjectId": null,
+        "actionDockVisible": false
+      },
+      "overlayAfterCenterClick": {
+        "attached": true,
+        "ariaHidden": "true",
+        "visibility": "hidden",
+        "display": "flex",
+        "opacity": 0,
+        "sourceCardId": null
+      },
+      "selectedSourceAfterInspect": {
+        "selectedSourceObjectId": null,
+        "actionDockVisible": false
+      },
+      "screenshots": [
+        "mw-test-red-creature-hover.png",
+        "mw-test-red-creature-center-click.png",
+        "mw-test-red-creature-inspect-overlay.png"
+      ]
+    },
+    {
+      "label": "就绪生物场上卡",
+      "objectId": "mw-test-red-angel",
+      "sourceCardId": "2907",
+      "beforeHover": {
+        "point": {
+          "x": 489.7875061035156,
+          "y": 539.9906005859375
+        },
+        "rect": {
+          "left": 457.38751220703125,
+          "top": 494.390625,
+          "right": 522.1875,
+          "bottom": 585.590576171875,
+          "width": 64.79998779296875,
+          "height": 91.199951171875
+        },
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "disabled": false,
+        "dataPrimaryAction": "true",
+        "dataPrimaryActionState": "enabled",
+        "dataBrowseInspectable": null,
+        "dataSecondaryInspect": "true",
+        "dataActionReady": "true",
+        "dataActionTokenState": "ready",
+        "hitTestId": "mage-wars-zone-field-card",
+        "hitInspectButton": false,
+        "hitPrimaryAction": true,
+        "hitBrowseInspectable": false,
+        "hitTag": "DIV"
+      },
+      "beforeInspect": {
+        "rect": {
+          "left": 495.7875061035156,
+          "top": 496.7906188964844,
+          "right": 519.7874755859375,
+          "bottom": 520.7906494140625,
+          "width": 23.999969482421875,
+          "height": 24.000030517578125
+        },
+        "opacity": 0,
+        "pointerEvents": "none",
+        "hitInspectButton": false,
+        "hitTestId": "mage-wars-zone-field-card"
+      },
+      "centerHover": {
+        "point": {
+          "x": 489.7875061035156,
+          "y": 539.9906005859375
+        },
+        "rect": {
+          "left": 457.38751220703125,
+          "top": 494.390625,
+          "right": 522.1875,
+          "bottom": 585.590576171875,
+          "width": 64.79998779296875,
+          "height": 91.199951171875
+        },
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "disabled": false,
+        "dataPrimaryAction": "true",
+        "dataPrimaryActionState": "enabled",
+        "dataBrowseInspectable": null,
+        "dataSecondaryInspect": "true",
+        "dataActionReady": "true",
+        "dataActionTokenState": "ready",
+        "hitTestId": "mage-wars-zone-field-card",
+        "hitInspectButton": false,
+        "hitPrimaryAction": true,
+        "hitBrowseInspectable": false,
+        "hitTag": "DIV"
+      },
+      "inspectAfterHover": {
+        "rect": {
+          "left": 495.7875061035156,
+          "top": 496.7906188964844,
+          "right": 519.7874755859375,
+          "bottom": 520.7906494140625,
+          "width": 23.999969482421875,
+          "height": 24.000030517578125
+        },
+        "opacity": 1,
+        "pointerEvents": "auto",
+        "hitInspectButton": true,
+        "hitTestId": "mage-wars-card-inspect-button"
+      },
+      "beforeClickSource": {
+        "selectedSourceObjectId": null,
+        "actionDockVisible": false
+      },
+      "afterCenterClick": {
+        "point": {
+          "x": 489.7875061035156,
+          "y": 539.9906005859375
+        },
+        "rect": {
+          "left": 457.38751220703125,
+          "top": 494.390625,
+          "right": 522.1875,
+          "bottom": 585.590576171875,
+          "width": 64.79998779296875,
+          "height": 91.199951171875
+        },
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "disabled": false,
+        "dataPrimaryAction": "true",
+        "dataPrimaryActionState": "enabled",
+        "dataBrowseInspectable": null,
+        "dataSecondaryInspect": "true",
+        "dataActionReady": "true",
+        "dataActionTokenState": "ready",
+        "hitTestId": "mage-wars-zone-field-card",
+        "hitInspectButton": false,
+        "hitPrimaryAction": true,
+        "hitBrowseInspectable": false,
+        "hitTag": "DIV"
+      },
+      "afterClickSource": {
+        "selectedSourceObjectId": "mw-test-red-angel",
+        "actionDockVisible": true
+      },
+      "overlayAfterCenterClick": {
+        "attached": true,
+        "ariaHidden": "true",
+        "visibility": "hidden",
+        "display": "flex",
+        "opacity": 0,
+        "sourceCardId": null
+      },
+      "selectedSourceAfterInspect": {
+        "selectedSourceObjectId": "mw-test-red-angel",
+        "actionDockVisible": true
+      },
+      "screenshots": [
+        "mw-test-red-angel-hover.png",
+        "mw-test-red-angel-center-click.png",
+        "mw-test-red-angel-inspect-overlay.png"
+      ]
+    }
+  ]
+}

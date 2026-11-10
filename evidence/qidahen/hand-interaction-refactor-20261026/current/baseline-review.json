@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "桌面支付栏明确区分确认与取消，同时保留支付和手牌信息",
+      "status": "PASS",
+      "baselineSource": "{\"boardSource\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/Board.before.tsx\", \"runtimeEvidence\": \"开工前完整Board在同真实入口重跑所得原始整屏\", \"log\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log\", \"sha256\": \"072a24ae385648f8ecb9c2ba68f32b79a3662eefce0f8f3f8d6cf8663eb7b8ab\"}",
+      "preservedInformation": "[\"征召军队名称\", \"支付进度已选1/1\", \"已选牌东北大军名称\", \"三张手牌本体与选择态\", \"同屏玩家条、地图和牌堆\"]",
+      "preservedActions": "[\"确认执行入口\", \"取消本次行动入口\", \"手牌选牌入口\", \"手牌查看入口；点击结果由行为测试单独证明\"]",
+      "changes": "[\"将原本同等纸色实底的确认/取消改为确认实底、取消次级表达\", \"托盘仍位于同一手牌上方槽位，未增加确认层或第二套支付状态\"]",
+      "duplicateDecision": "不增加新提示、按钮或支付信息副本；复用原有托盘、现有选牌信息和两项动作，单一职责承载。",
+      "changeAuthority": "用户：该优化重构的可以做一下；前轮已明确支付确认与取消主次优化候选。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/01-桌面支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current/01-桌面支付确认与取消.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/review-original.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "手机横屏支付栏与最高选中手牌保持间隔，不遮挡卡头和查看入口",
+      "status": "PASS",
+      "baselineSource": "{\"boardSource\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/Board.before.tsx\", \"runtimeEvidence\": \"开工前完整Board在同真实入口重跑所得原始整屏\", \"log\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log\", \"sha256\": \"4c20dd14abccf00847f8d77f249ddde6204260ceb8a5bd68f7494986422643c2\"}",
+      "preservedInformation": "[\"征召军队和已选1/1\", \"已选牌名称\", \"事件/战术/银两三张手牌本体\", \"已选牌标记\", \"地图与当前玩家条\"]",
+      "preservedActions": "[\"确认执行入口\", \"取消本次行动入口\", \"手牌重新选择入口\", \"三张手牌的看入口\"]",
+      "changes": "[\"移动端支付托盘bottom由168调整为192，给最高卡头与放大查看入口留出间隔\", \"取消采用次级样式；确认仍为主操作\", \"当前整屏中托盘与选中卡头间存在可见间隔，hover态间隔>=8由E2E另行断言\"]",
+      "duplicateDecision": "仅移动既有临时托盘并区分既有操作的视觉主次；未隐藏手牌、未新增代理按钮或重复确认层。",
+      "changeAuthority": "用户：该优化重构的可以做一下；首次当前图面审查确认支付托盘遮住选中卡头，属于本轮支付交互直接依赖，实施最小避让修复。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current/02-手机横屏支付确认与取消.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/review-original.json",
+      "sourceReviewEntry": "/requirements/1"
+    }
+  ]
+}

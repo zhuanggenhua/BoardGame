@@ -1,0 +1,1011 @@
+{
+  "status": "source-identities-inventoried-with-boundary-gaps",
+  "claimScope": "original-map-geographic-identities-only",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r80_visual_review"
+  },
+  "source": {
+    "path": "D:/gongzuo/webgame/BoardGame/public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "width": 1265,
+    "height": 893,
+    "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e",
+    "originalRead": "本轮重新实际读取完整原图，并辅助读取东北女真文字和西侧城名局部。"
+  },
+  "countPolicy": "逐一登记原图土地地区文字，再单列朝鲜点位、白底城名牌、岛名与海域；未使用旧34/37区数量或规则35数量生成名字、分界或ID。",
+  "entries": [
+    {
+      "name": "外喀尔喀部",
+      "labelRect": [
+        523,
+        45,
+        546,
+        132
+      ],
+      "safePoint": [
+        491,
+        100
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "北部接原图上缘；可见河流/山脊和地区名。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "科尔沁部",
+      "labelRect": [
+        766,
+        69,
+        785,
+        138
+      ],
+      "safePoint": [
+        745,
+        105
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "北部接原图上缘，东西地形和南河边界可见。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "巴林部",
+      "labelRect": [
+        484,
+        188,
+        501,
+        236
+      ],
+      "safePoint": [
+        478,
+        201
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "河流及棕线分出，与外喀尔喀、扎鲁特、克什克腾和土默特相邻。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "扎鲁特部",
+      "labelRect": [
+        668,
+        165,
+        689,
+        233
+      ],
+      "safePoint": [
+        645,
+        205
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "以河流和棕线分区。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "内喀尔喀部",
+      "labelRect": [
+        777,
+        218,
+        799,
+        300
+      ],
+      "safePoint": [
+        780,
+        258
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "位于科尔沁南方、叶赫西方，河流和棕线分区。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "克什克腾部",
+      "labelRect": [
+        419,
+        297,
+        441,
+        379
+      ],
+      "safePoint": [
+        409,
+        356
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "棕线、河流和山脊围定地区；不将山形当无效装饰。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "察哈尔部",
+      "labelRect": [
+        581,
+        361,
+        605,
+        427
+      ],
+      "safePoint": [
+        579,
+        353
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "棕线、山脊和南方河道围定，白城是内部城名。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "奈曼部",
+      "labelRect": [
+        774,
+        320,
+        794,
+        375
+      ],
+      "safePoint": [
+        760,
+        339
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "北河与南西棕线分出。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "敖汉部",
+      "labelRect": [
+        689,
+        357,
+        710,
+        407
+      ],
+      "safePoint": [
+        716,
+        400
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "北西棕线、东河和南河分区。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "土默特部",
+      "labelRect": [
+        198,
+        400,
+        217,
+        467
+      ],
+      "safePoint": [
+        170,
+        450
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "partly-occluded",
+      "boundaryObservation": "棕线、南河和地形边界可见，部分西北区域被轮盘占用；归化是城名。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "喀喇沁部",
+      "labelRect": [
+        299,
+        447,
+        319,
+        512
+      ],
+      "safePoint": [
+        306,
+        455
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "西北棕线与土默特分区，南侧由长城/地形围定。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "朵颜部",
+      "labelRect": [
+        591,
+        448,
+        615,
+        506
+      ],
+      "safePoint": [
+        602,
+        476
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "terrain-closure-needs-trace",
+      "boundaryObservation": "北侧河道、南侧长城、西侧山脊和东侧辽西山脊有地形分界语法；东侧完整闭合路径尚未锁定。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "鄂尔多斯部",
+      "labelRect": [
+        113,
+        574,
+        138,
+        669
+      ],
+      "safePoint": [
+        119,
+        604
+      ],
+      "textColor": "green",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "原图左缘一侧土地，河流与长城分出；独立地区名带黄色框。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "乌喇部",
+      "labelRect": [
+        1006,
+        49,
+        1050,
+        123
+      ],
+      "safePoint": [
+        1009,
+        53
+      ],
+      "textColor": "black",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "印刷全名海西女真乌喇部，北接原图上缘，南侧河流。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "叶赫部",
+      "labelRect": [
+        920,
+        164,
+        959,
+        232
+      ],
+      "safePoint": [
+        894,
+        186
+      ],
+      "textColor": "black",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "印刷全名海西女真叶赫部，河流和东棕线分区；叶赫山城是内部城名。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "哈达部",
+      "labelRect": [
+        995,
+        144,
+        1045,
+        209
+      ],
+      "safePoint": [
+        1012,
+        181
+      ],
+      "textColor": "black",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "印刷全名海西女真哈达部，西棕线与叶赫分区，其余以河流围定。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "辉发部",
+      "labelRect": [
+        1140,
+        120,
+        1181,
+        201
+      ],
+      "safePoint": [
+        1184,
+        125
+      ],
+      "textColor": "black",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "印刷全名海西女真辉发部，北西南河道可见，东接原图边缘。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "建州女真",
+      "labelRect": [
+        1013,
+        261,
+        1040,
+        326
+      ],
+      "safePoint": [
+        1009,
+        296
+      ],
+      "textColor": "black",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "河流与东侧棕线分区，赫图阿拉是内部城名。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "长白女真",
+      "labelRect": [
+        1084,
+        242,
+        1110,
+        312
+      ],
+      "safePoint": [
+        1110,
+        250
+      ],
+      "textColor": "black",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "partly-occluded",
+      "boundaryObservation": "西侧棕线及北河可见，东南部分被朝鲜牌库UI覆盖，未宣称该部分完整闭环已读。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "辽北",
+      "labelRect": [
+        889,
+        345,
+        911,
+        392
+      ],
+      "safePoint": [
+        882,
+        369
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "铁岭所在北部土地，与辽东之间有明确棕色分界。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "辽东",
+      "labelRect": [
+        890,
+        417,
+        914,
+        467
+      ],
+      "safePoint": [
+        880,
+        455
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "沈阳所在土地，与辽北及南部东江一侧有实际分界。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "辽西",
+      "labelRect": [
+        700,
+        436,
+        720,
+        479
+      ],
+      "safePoint": [
+        724,
+        447
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "terrain-closure-needs-trace",
+      "boundaryObservation": "北河、东侧河流/海岸清楚，西侧与朵颜之间为山脊；不据旧锦州色块倒推完整闭环。",
+      "misusedAsRegionCityNames": [
+        "锦州"
+      ],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "东江",
+      "labelRect": [
+        807,
+        505,
+        829,
+        548
+      ],
+      "safePoint": [
+        830,
+        550
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "位于辽东以南的橙色沿海土地，白底皮岛牌在同侧海岸；不把海域点(878,717)当本区内部。",
+      "misusedAsRegionCityNames": [
+        "皮岛"
+      ],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "宣府",
+      "labelRect": [
+        391,
+        530,
+        410,
+        568
+      ],
+      "safePoint": [
+        395,
+        548
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "红色地区名，长城及棕线与大同/顺天等分区。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "大同",
+      "labelRect": [
+        279,
+        590,
+        303,
+        625
+      ],
+      "safePoint": [
+        301,
+        615
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "红色土地名；不能因与城名常见同名而排除本图地区文字。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "蓟镇",
+      "labelRect": [
+        491,
+        527,
+        517,
+        575
+      ],
+      "safePoint": [
+        566,
+        563
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "长城南侧、顺天分界北侧；遵化和山海关城牌在其中。",
+      "misusedAsRegionCityNames": [
+        "山海关"
+      ],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "顺天",
+      "labelRect": [
+        457,
+        592,
+        482,
+        635
+      ],
+      "safePoint": [
+        485,
+        640
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "北京城牌所在土地，北侧棕线与蓟镇分开，南侧棕线与保定分开。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "保定",
+      "labelRect": [
+        474,
+        720,
+        494,
+        758
+      ],
+      "safePoint": [
+        424,
+        718
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": true,
+      "boundaryStatus": "confirmed",
+      "boundaryObservation": "红色地区名，河流、山脊和棕线分区，大名是内部城名。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "山西",
+      "labelRect": [
+        279,
+        735,
+        300,
+        775
+      ],
+      "safePoint": [
+        269,
+        776
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "太原城牌所在土地，西河和东山脊分区，南接图缘/时间轨附近。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "延绥",
+      "labelRect": [
+        110,
+        746,
+        132,
+        784
+      ],
+      "safePoint": [
+        86,
+        809
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "榆林城牌所在土地，长城、河流和图缘分区。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "登莱",
+      "labelRect": [
+        724,
+        718,
+        745,
+        755
+      ],
+      "safePoint": [
+        756,
+        746
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "partly-occluded",
+      "boundaryObservation": "东部沿海土地，与山东之间为棕色分界；底部部分被城战流程表覆盖。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    },
+    {
+      "name": "山东",
+      "labelRect": [
+        627,
+        750,
+        648,
+        789
+      ],
+      "safePoint": [
+        596,
+        830
+      ],
+      "textColor": "red",
+      "kind": "mainland-territory-label",
+      "hasIndependentBoundary": null,
+      "boundaryStatus": "image-edge",
+      "boundaryObservation": "济南城牌所在土地，河流与东北棕线分区，南接原图下缘和流程表。",
+      "misusedAsRegionCityNames": [],
+      "coordinateNote": "原图像素；地名矩形与安全点为视觉近似定位，不是命中多边形；不使用旧seed替代原图身份。"
+    }
+  ],
+  "cityNameplates": [
+    {
+      "name": "归化",
+      "labelRect": [
+        76,
+        454,
+        98,
+        499
+      ],
+      "containingTerritory": "土默特部",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "白城",
+      "labelRect": [
+        532,
+        377,
+        559,
+        424
+      ],
+      "containingTerritory": "察哈尔部",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "叶赫山城",
+      "labelRect": [
+        865,
+        196,
+        891,
+        277
+      ],
+      "containingTerritory": "叶赫部",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "赫图阿拉",
+      "labelRect": [
+        977,
+        297,
+        1004,
+        377
+      ],
+      "containingTerritory": "建州女真",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "铁岭",
+      "labelRect": [
+        850,
+        325,
+        877,
+        374
+      ],
+      "containingTerritory": "辽北",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "沈阳",
+      "labelRect": [
+        843,
+        402,
+        870,
+        453
+      ],
+      "containingTerritory": "辽东",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "锦州",
+      "labelRect": [
+        742,
+        416,
+        769,
+        469
+      ],
+      "containingTerritory": "辽西",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": true,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "宁远",
+      "labelRect": [
+        680,
+        484,
+        710,
+        547
+      ],
+      "containingTerritory": "辽西",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "山海关",
+      "labelRect": [
+        625,
+        483,
+        652,
+        554
+      ],
+      "containingTerritory": "蓟镇",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": true,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "遵化",
+      "labelRect": [
+        534,
+        548,
+        561,
+        591
+      ],
+      "containingTerritory": "蓟镇",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "北京",
+      "labelRect": [
+        501,
+        619,
+        529,
+        666
+      ],
+      "containingTerritory": "顺天",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "榆林",
+      "labelRect": [
+        96,
+        793,
+        117,
+        842
+      ],
+      "containingTerritory": "延绥",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "太原",
+      "labelRect": [
+        239,
+        760,
+        266,
+        806
+      ],
+      "containingTerritory": "山西",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "大名",
+      "labelRect": [
+        442,
+        767,
+        467,
+        814
+      ],
+      "containingTerritory": "保定",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    },
+    {
+      "name": "济南",
+      "labelRect": [
+        583,
+        764,
+        610,
+        813
+      ],
+      "containingTerritory": "山东",
+      "kind": "white-city-nameplate",
+      "hasIndependentBoundary": false,
+      "independentLandTerritory": "原图未证明",
+      "misusedAsRegionInOldData": false,
+      "observation": "白底文字牌有矩形描边；没有只围绕本牌闭合的独立土地边界。可作为城市节点，不能将文字框直接划为地区。"
+    }
+  ],
+  "koreaPoints": [
+    {
+      "name": "咸兴",
+      "labelRect": [
+        1050,
+        405,
+        1081,
+        449
+      ],
+      "safePoint": [
+        1064,
+        426
+      ],
+      "textColor": "black-on-white-oval",
+      "kind": "korea-point",
+      "hasIndependentBoundary": null,
+      "observation": "白色椭圆点位，连接红箭头道路；周边朝鲜黄色土地及山脊可见，但本图不证明一圈只属于咸兴的独立闭合土地。"
+    },
+    {
+      "name": "平壤",
+      "labelRect": [
+        1012,
+        554,
+        1048,
+        599
+      ],
+      "safePoint": [
+        1030,
+        578
+      ],
+      "textColor": "black-on-white-oval",
+      "kind": "korea-point",
+      "hasIndependentBoundary": null,
+      "observation": "白色椭圆点位，红箭头连线和海岸可见；不能把椭圆边框当成区域外框。"
+    },
+    {
+      "name": "汉城",
+      "labelRect": [
+        1127,
+        607,
+        1159,
+        651
+      ],
+      "safePoint": [
+        1141,
+        629
+      ],
+      "textColor": "black-on-white-oval",
+      "kind": "korea-point",
+      "hasIndependentBoundary": null,
+      "observation": "白色椭圆点位，有VP图符和红箭头；未见围绕该城的独立印刷土地闭环。"
+    }
+  ],
+  "islandAndCoastalNameplates": [
+    {
+      "name": "皮岛",
+      "labelRect": [
+        850,
+        500,
+        877,
+        551
+      ],
+      "safePoint": [
+        862,
+        526
+      ],
+      "kind": "island-name-on-white-coastal-nameplate",
+      "hasIndependentBoundary": false,
+      "misusedAsRegionInOldData": true,
+      "oldObject": "song-jin名称皮岛",
+      "observation": "名称是岛名，但本图表现为贴东江侧沿海土地的白色城名牌；未看到围合独立岛屿本体的闭合海岸，不把字牌本身计土地。"
+    }
+  ],
+  "seaAreas": [
+    {
+      "name": "未命名海域",
+      "labelRect": null,
+      "safePoint": [
+        690,
+        600
+      ],
+      "kind": "unlabelled-sea",
+      "hasIndependentBoundary": null,
+      "observation": "深蓝海浪纹理连续铺在陆地间，蓝色路线和水师运补文字是航路/规则UI；图上没有足以逐块命名的独立海区标签。不得把海域某个点借作东江土地中心。"
+    }
+  ],
+  "uncertainItems": [
+    {
+      "name": "朵颜部/辽西",
+      "reason": "两个不同地区文字确实存在，山脊具边界语法；精确的完整闭合路径仍须按原图地形描线复核，不因缺单色连续线就吞掉朵颜。"
+    },
+    {
+      "name": "朝鲜三个点位",
+      "reason": "可以直接确认名字和点位表达，不能仅凭32+3=35倒推三块独立土地。规则若把它们算区域，应保留节点/土地承载差异。"
+    },
+    {
+      "name": "长白女真与底部沿海区域",
+      "reason": "正式牌库和流程表遮住部分原图；源图未画出的隐藏线不补造。"
+    },
+    {
+      "name": "白底城名节点规则身份",
+      "reason": "本报告只判图面空间层级；是否是可占领、可驻军或有城战的规则节点由规则审查决定，不借本报告删节点。"
+    }
+  ],
+  "summary": {
+    "mainlandTerritoryLabels": 32,
+    "greenMongolLabels": 13,
+    "blackJurchenLabels": 6,
+    "redLandLabels": 13,
+    "koreaNamedPoints": 3,
+    "whiteMainlandCityNameplates": 15,
+    "islandNameplates": 1,
+    "namedSeaRegionsConfirmed": 0
+  },
+  "ruleCountComparison": {
+    "ruleReportedTotal": 35,
+    "observedNameArithmetic": "32个土地地区名 + 3个朝鲜点位 = 35个地理操作名目",
+    "meaning": "仅为独立盘点后的数量对照，不证明朝鲜各点位具有单独土地闭环，也不构成最终区域规则表。"
+  },
+  "noFormalFilesChanged": true
+}

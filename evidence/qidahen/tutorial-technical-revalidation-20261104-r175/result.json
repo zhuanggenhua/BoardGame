@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-04",
+  "scope": "当前源码完整PC技术回归，不是新媒体视觉送验",
+  "status": "PASS",
+  "main": {
+    "steps": 74,
+    "outcome": {
+      "tutorialActive": false,
+      "year": 1,
+      "claimed": [
+        1301
+      ],
+      "nextInputAccepted": true
+    },
+    "sourceFiles": 725,
+    "sourceChanged": [],
+    "evidence": "desktop-trace.json"
+  },
+  "lifecycle": {
+    "status": "PASS",
+    "revision": 27,
+    "evidence": "lifecycle.json"
+  },
+  "unit": {
+    "tests": 65,
+    "files": 12,
+    "evidence": "unit.log"
+  },
+  "contentAudit": {
+    "status": "PASS",
+    "evidence": "current-gap-audit.json"
+  },
+  "visual": {
+    "mode": "carried-forward",
+    "evidence": "../tutorial-gameui-20261103-r174/.visual-review.json",
+    "viewerUrl": "http://127.0.0.1:4867/?key=e88f4b09f9a3",
+    "limits": "沿用原有未改写且已全量审查的R174媒体。本轮新采集媒体不送验、不称已逐图通过；本轮没有UI源码改动。"
+  },
+  "humanAcceptance": "pending",
+  "mobile": "not-started",
+  "releaseActions": "none",
+  "resource": {
+    "workers": 1,
+    "execution": "主线与生命周期串行，使用原4.5GB临时门槛均实际完成；未执行降低门槛尝试，未关闭任何外部进程。"
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "status": "PASS",
+    "exitCode": 0,
+    "evidence": "typecheck.log"
+  }
+}

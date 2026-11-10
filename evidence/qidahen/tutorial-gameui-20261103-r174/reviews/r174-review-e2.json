@@ -1,0 +1,64 @@
+{
+  "reviewer": "/root/r174_e2",
+  "status": "PASS",
+  "score": 94,
+  "issues": [],
+  "actualReadCount": 5,
+  "media": [
+    {
+      "id": "maintain-shanhai",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/34-maintain-shanhai.png",
+      "sha256": "667a088a96cdbd37407922e78fea4a0e6c59b64cff03d7b8dcdb85c084a443c9",
+      "status": "PASS",
+      "observation": "山海关地名和城防位置可读，教程解释保留该关的意义，右侧维护山海关请求与弃牌或放弃两个按钮明确对应；地图主体未被提示遮住，未见重复决策或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "abandon-jinzhou",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/35-abandon-jinzhou.png",
+      "sha256": "25cff198c33e78b9816ec99bde8337b1121e11559fc9ea8bf9269a1a4e97af5e",
+      "status": "PASS",
+      "observation": "锦州地名与城防在地图中央可读，右侧维护锦州请求紧接放弃维护按钮，教程在其下说明放弃城防的后果与资源取舍；放弃按钮蓝色边界清楚，未见目标被遮挡或重复菜单。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "upkeep-datong",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/38-upkeep-datong.png",
+      "sha256": "13d080cdc045dd998f90c8a27f43d9605de01bc24bdeb01103e2386dec96cc40",
+      "status": "PASS",
+      "observation": "大同白边区域居中，三支兵牌及等级清楚可辨，绿色候选与白边推荐有区别；教程明确建议撤去旧兵，下面支持请求和确认按钮对应本区，手牌仍可见，未见提示遮住部队或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "baselineReads": [
+    {
+      "id": "hire-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/31-hire-target.png",
+      "sha256": "01fec0cdd8f82824e42b3ca0f4cd0bb1f57517483700db0de89d7da2a874df5c",
+      "status": "PASS",
+      "observation": "大同白色边界与名称清楚，绿色合法区域与右侧雇佣军建立区域请求对应，确认按钮处于待选择状态；左侧教程解释建立地点与人口限制，未见错误或裁切。"
+    },
+    {
+      "id": "old-abandon-jinzhou",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/35-abandon-jinzhou.png",
+      "sha256": "672ebfa8ecb6d17290dd31b57336fcc0e9f13d54aa3d4619266d2adc07b042bb",
+      "status": "PASS",
+      "observation": "旧图已具有锦州地图、维护与放弃两个按钮以及放弃维护教学说明；旧请求标题不含大明阵营，邻近部队较重叠，本条仅记录历史内容而不恢复旧版整体通过结论。"
+    }
+  ]
+}

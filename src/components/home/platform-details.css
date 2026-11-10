@@ -4,6 +4,7 @@
 .platform-details-cover { grid-area: cover; width: 150px; align-self: start; aspect-ratio: 3 / 4; overflow: hidden; }
 .platform-details-cover > * { width: 100%; height: 100%; }
 .platform-details-cover img { width: 100%; height: 100%; object-fit: cover; }
+body .platform-details-cover .betrayal-game-thumbnail img { object-fit: cover; object-position: 8% center; }
 .platform-details-cover .platform-external-art { padding: 0; }
 .platform-details-cover .platform-external-art small { display: none; }
 .platform-details-copy { display: contents; }

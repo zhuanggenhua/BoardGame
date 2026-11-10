@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/prepared_touch_visual",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-touch-capture-20261103\\横屏触控三张.png",
+      "sha256": "eef830b094192b42da21adca09ea599ab98607545216cef3ff5df22d344cdee5",
+      "status": "PASS",
+      "observation": "首张显示 1/3，法术牌比例正常并覆盖左下槽位，无额外底框；页码及箭头可辨，未见遮挡关键文字或侵入相邻槽。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-touch-capture-20261103\\横屏触控末张.png",
+      "sha256": "c9c1448df94f3033d22abd2cec8c12a5b80135b220f6c2498193dc1dfead4dfa",
+      "status": "PASS",
+      "observation": "末张显示 3/3，法术牌比例正常并覆盖左下槽位，无额外底框；页码及箭头可辨，未见遮挡关键文字或侵入相邻槽。",
+      "hardFailures": []
+    }
+  ]
+}

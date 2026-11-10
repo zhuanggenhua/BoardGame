@@ -1,0 +1,64 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "直接打开小黑屋基础教程不再卡在选择角色",
+      "status": "PASS",
+      "evidence": [
+        "direct-entry.png 显示牌桌和教程提示，result.json 记录 hasCharacterSelect=false"
+      ]
+    },
+    {
+      "requirement": "旧选择角色存档恢复后不再露出选角页",
+      "status": "PASS",
+      "evidence": [
+        "stale-character-select-restore.png 显示恢复到教程起点，result.json 记录 hasResumePrompt=false 且 hasCharacterSelect=false"
+      ]
+    },
+    {
+      "requirement": "兔脚选骰方框清晰、贴近骰子、选中态清楚且不遮挡骰面",
+      "status": "PASS",
+      "evidence": [
+        "rabbit-selection-highlight.png 显示候选青色框和选中品红框贴近骰子边缘，骰面内容可见"
+      ]
+    },
+    {
+      "requirement": "兔脚重投过程不是原地闪现，且结果未稳定前不能确认",
+      "status": "PASS",
+      "evidence": [
+        "rabbit-reroll-motion.png 显示骰子在骰盘内移动，确认 0/1 按钮处于灰态"
+      ]
+    },
+    {
+      "requirement": "兔脚重投完成后保留确认 0/1，点击后不触发 tutorial_command_blocked",
+      "status": "PASS",
+      "evidence": [
+        "rabbit-before-confirm.png 显示确认 0/1 可用；rabbit-after-confirm.png 显示点击后进入伤害分配；result.json 记录 blockedLogCount=0"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\direct-entry.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\stale-character-select-restore.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\rabbit-after-confirm.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\01-labeled-direct-entry.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\02-labeled-stale-character-select-restore.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\03-labeled-rabbit-selection-highlight.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\04-labeled-rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\05-labeled-rabbit-before-confirm.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T20-36-48-184Z\\_labeled-final\\06-labeled-rabbit-after-confirm.png"
+  ]
+}

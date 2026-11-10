@@ -1,0 +1,14 @@
+# bsk-observation 1
+state: "s1"
+url: "http://127.0.0.1:4273/"
+title: "127.0.0.1:4273"
+steps_here: [1, 2]
+---
+@vom 1
+@view 1127x515
+@layers 2 focus=L1
+L1 mask cover=100%
+  img
+  StaticText "易桌游"
+  StaticText "加载中…"
+L2 page … occluded by L1 (~1 nodes, not actionable)

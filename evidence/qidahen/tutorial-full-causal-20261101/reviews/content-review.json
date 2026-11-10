@@ -1,0 +1,682 @@
+{
+  "status": "REVISE",
+  "reviewer": "/root/r134_final_baseline",
+  "revision": 23,
+  "reviewKind": "whole-course-content-and-causality",
+  "scope": "独立内容、必要性、规则句意和中英文语义审查；未读图片、未运行浏览器或测试，测试与图审不代替本裁决。",
+  "input": {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\qidahen-full-rebuild-content-input.json",
+    "sha256": "d9710e560f08d5bde5638794ba745326881fda3fcbe61fa531c89338b508c720",
+    "sourceHashes": {
+      "src/games/qidahen/annualTutorial.ts": "a3f278272b1ff52766b07f50a143ec621a5a001fcefe4b01dc5379d07eb8e948",
+      "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+      "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+    },
+    "visiblePromptsReviewed": 52,
+    "languages": [
+      "zh-CN",
+      "en"
+    ],
+    "fullSequenceRead": true,
+    "hiddenAutomationRead": 4,
+    "compressedRepeatedAiBatches": 3
+  },
+  "findings": [
+    {
+      "id": "C1",
+      "priority": "P2",
+      "steps": [
+        "frontier-goal",
+        "claim-year"
+      ],
+      "kind": "目标因果缺口",
+      "problem": "开场说3点威望获胜并要求争取第一张纪年卡，尚未说明一张纪年卡等于1点威望；这一目标桥梁迟至领取时才出现。",
+      "directEvidence": {
+        "chineseOpening": "你执掌大明，每张纪年卡计1点威望，先得3点即可获胜。新年按下一张纪年卡的条件决定领取资格；眼前的条件是增加最多控制区域。这一年从辽北夺取叶赫部，争取第一张纪年卡。",
+        "englishOpening": "You command Ming. Each chronology card is worth 1 prestige; the first player to reach 3 wins. At New Year, the next card determines eligibility to claim this year’s card. The revealed condition rewards the greatest increase in controlled regions. Capture Yehe from Liaobei to compete for your first card.",
+        "laterFirstExplanation": "claim-year：领取本年纪年卡和1点威望。"
+      },
+      "ruleSource": "正式PDF Ver1.3 p1纪年卡：视为VP、获得此卡1VP；p6威望胜利。",
+      "consequence": "新手第一次为纪年目标扩军出兵时，尚不能从课程得知这张卡如何接近开场胜利条件。",
+      "minimumRemedy": "在首次纪年目标处补足纪年与威望的必要等价关系，中英文一致；无需另增教学步骤。"
+    },
+    {
+      "id": "C2",
+      "priority": "P2",
+      "steps": [
+        "midyear"
+      ],
+      "kind": "规则可选性偏差",
+      "problem": "中文写当前玩家完成该格择一行动后，英文写finishes one action there，给出必须执行一个季节格行动的含义；本链AI实际finish-slot放弃。",
+      "directEvidence": {
+        "chinese": "轮盘经过年中、新年时必须停留，当前玩家完成该格择一行动后，全体结算。",
+        "english": "The wheel must stop when passing Midyear or New Year. After the active player finishes one action there, all factions resolve the season.",
+        "manifest": "midyear.aiActions依次移动，后金直接response(finish-slot)，未执行季节格动作。"
+      },
+      "ruleSource": "正式PDF Ver1.3 p5新年与年中：该玩家执行完该格内可选择执行的行动后结算；正式menu允许finish-slot。",
+      "consequence": "首次季节教学把可以不做的行动说成触发结算前必须做一项，和学员实际观察不一致。",
+      "minimumRemedy": "保留季节停留及结束落点后结算的顺序，明确可执行或放弃，不能把固定AI放弃说成已做了一项。"
+    },
+    {
+      "id": "C3",
+      "priority": "P2",
+      "steps": [
+        "new-year",
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "training-payment"
+      ],
+      "kind": "首次应用晚于教学",
+      "problem": "首次三次朝鲜牌弃置发生在纪年付款，均为隐藏提示步骤；直到后续训练付款才首次说明朝鲜牌须入独立弃牌堆。",
+      "directEvidence": {
+        "firstPayments": [
+          "korea-1",
+          "korea-2",
+          "korea-3"
+        ],
+        "hiddenBy": "SELF_EXPLANATORY_INPUTS包含三次chronology付款。",
+        "firstExplanation": "training-payment：朝贡得到的朝鲜手牌也能支付这笔费用，但使用、弃掉后须进入朝鲜弃牌堆。"
+      },
+      "ruleSource": "正式PDF Ver1.3 p7朝鲜特殊规则：任何时候使用或弃掉朝鲜手牌，进入朝鲜弃牌堆。",
+      "consequence": "首次具有不同弃牌归属的支付被当作已学过的普通重复付牌，后续才解释先前已执行的差异。",
+      "minimumRemedy": "把必要的朝鲜牌通用费用及弃牌归属说明移至首次真实朝鲜付款前，后续训练只复用，不增加重复阅读。"
+    },
+    {
+      "id": "C4",
+      "priority": "P1",
+      "steps": [
+        "new-order",
+        "year-character",
+        "year-ready"
+      ],
+      "kind": "规则来源与正式时序冲突",
+      "problem": "new-order在大明和后金人物尚未出场前已公开再下一张1303及其得分条件，正式领域year-transition也在出人物前暴露它；PDF明确出人物后才翻再下一年度卡。",
+      "directEvidence": {
+        "chinese": "现在按蒙古、大明、后金行动，并公开再下一张的条件：本年新建立最多部队。蒙古选完人物后，轮到大明。",
+        "english": "The new order is Mongol, Ming, Jin. The newly revealed next card rewards the most units established this year. After Mongol chooses a character, Ming chooses.",
+        "manifest": "new-order只自动选择蒙古人物，然后进入玩家year-character；后金人物留在后续year-ready。",
+        "ownerEvidence": [
+          {
+            "path": "src/games/qidahen/domain/turnResolutionProgress.ts",
+            "lines": [
+              68,
+              69,
+              97,
+              105
+            ],
+            "fact": "领取后先执行year-transition，再逐个year-characters。"
+          },
+          {
+            "path": "src/games/qidahen/domain/chronologyResolution.ts",
+            "lines": [
+              58,
+              60
+            ],
+            "fact": "year-transition立即drawPile.slice(1)并buildQidahenActualYearCardSlots，把1303公开。"
+          }
+        ]
+      },
+      "ruleSource": "正式PDF Ver1.3 p5新年依序：领取本年卡→依新卡决定顺序并依序打出人物→翻开再下一年度卡公开内容。已再次从PDF提取核对。",
+      "consequence": "人物选择提前获知原规则尚未公开的下一年评分信息，不能把正式实现现状当作来源背书。",
+      "minimumRemedy": "先由正式年度事务owner解决公开时机与PDF的冲突，或补充可回查的权威例外来源；教程在真实全体人物完成后再教下一目标。只改话术隐藏冲突不能收口。"
+    }
+  ],
+  "promptReviews": [
+    {
+      "index": 1,
+      "id": "frontier-goal",
+      "status": "REVISE",
+      "observation": "计分条件、扩张对象和首张纪年目标已经连上；但纪年卡如何转换为开场所求的威望尚未首次说明。",
+      "findingIds": [
+        "C1"
+      ],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 2,
+      "id": "opening-move",
+      "status": "PASS-content-only",
+      "observation": "共用轮盘、三种走法成本及本次合法选择共同服务当前落点；未要求体验所有互斥走法。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 3,
+      "id": "farm-action",
+      "status": "PASS-content-only",
+      "observation": "当前前线兵力与手牌需要对应军屯双收益，行动目的与正式按钮一致。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 4,
+      "id": "reclaim-action",
+      "status": "PASS-content-only",
+      "observation": "说明同格第二项行动、次数及人口意义，为下一张选地提示提供必要规则。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 5,
+      "id": "reclaim-target",
+      "status": "PASS-content-only",
+      "observation": "当前3人口与3兵直接对应税赋不成立，开垦产生下一次收入，因果明确。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 6,
+      "id": "prepare-hand",
+      "status": "PASS-content-only",
+      "observation": "解释落点行动完成后仍有手牌行动额度，并将征召连到进攻和留守。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 7,
+      "id": "recruit-action",
+      "status": "PASS-content-only",
+      "observation": "使用PDF的大明势力动作、费用与两种结果，不把征召与轮盘征兵混为同一效果。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 8,
+      "id": "recruit-payment",
+      "status": "PASS-content-only",
+      "observation": "银两资源身份与首次放大镜检视各有独立用途，不提前复述全部卡类。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 9,
+      "id": "recruit-source",
+      "status": "PASS-content-only",
+      "observation": "正规军本土限制与辽北出兵来源绑定，实际目标同一地区。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 10,
+      "id": "recruit-troops",
+      "status": "PASS-content-only",
+      "observation": "六兵的出兵及留守用途、两种候选等级骰和后勤代价同处决策前；没有宣称普遍最优。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 11,
+      "id": "midyear",
+      "status": "REVISE",
+      "observation": "收入兑现开垦并承接手牌超限；但中英都把季节前置行动表述成须完成一个，与本链放弃及规则可选性冲突。",
+      "findingIds": [
+        "C2"
+      ],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 12,
+      "id": "hand-limit",
+      "status": "PASS-content-only",
+      "observation": "首次真实超限才说明15上限，保留实际后续卡，6张选择与正式候选相符。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 13,
+      "id": "battle-move",
+      "status": "PASS-content-only",
+      "observation": "回到开场控制增长目标，移动落点和进攻对象相接。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 14,
+      "id": "upgrade-first",
+      "status": "PASS-content-only",
+      "observation": "第二回合通过相反顺序应用手牌与轮盘的自由顺序，并说明先研发的实际用途。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 15,
+      "id": "upgrade-card",
+      "status": "PASS-content-only",
+      "observation": "军备额外费用、留场及真实火炮效果都服务接下来作战和后续训练。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 16,
+      "id": "upgrade-payment",
+      "status": "PASS-content-only",
+      "observation": "区分打出的军备与另弃费用牌，补足该动作容易混淆的真实支付身份。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 17,
+      "id": "dispatch-action",
+      "status": "PASS-content-only",
+      "observation": "调度费用、人数、移动和触发战斗规则服务当前推进，不增列未操作分支。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 18,
+      "id": "dispatch-payment",
+      "status": "PASS-content-only",
+      "observation": "区分手牌行动费用与轮盘费用，保留实际战术牌，非重复付款播报。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 19,
+      "id": "dispatch-troops",
+      "status": "PASS-content-only",
+      "observation": "先解释胜负判断再要求选兵，河宽与炮兵例外对应真实候选及来源。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 20,
+      "id": "dispatch-target",
+      "status": "PASS-content-only",
+      "observation": "已选部队后才提交叶赫，解释蒙古为守方及响应归属。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 21,
+      "id": "defender-response",
+      "status": "PASS-content-only",
+      "observation": "守方避战、当前铁甲的4点损伤门槛与战术窗口相接；仅观察对手，不冒称玩家实操防守。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 22,
+      "id": "tactic-card",
+      "status": "PASS-content-only",
+      "observation": "将等级、临时骰种改变及不改永久等级连到实际手牌使用，中英一致。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 23,
+      "id": "battle-roll",
+      "status": "PASS-content-only",
+      "observation": "逐兵投骰、炮骑步顺序、同阶段同时和降级损伤读法在实际播放前交代。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 24,
+      "id": "occupy",
+      "status": "PASS-content-only",
+      "observation": "占领如何兑现控制增长与不劫掠保人口相接，战败标记只说明不伪造判定。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 25,
+      "id": "diplomacy-move",
+      "status": "PASS-content-only",
+      "observation": "大同弱驻军与相邻友好关系形成西线用途，没有宣称不能被蒙古进攻。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 26,
+      "id": "diplomacy-action",
+      "status": "PASS-content-only",
+      "observation": "当前外交候选排除规则在选地前出现，不要求逐个例外实操。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 27,
+      "id": "diplomacy-target",
+      "status": "PASS-content-only",
+      "observation": "正反面身份、取消友好且不获控制权明确，避免把外交移除当占领。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 28,
+      "id": "diplomacy-finish",
+      "status": "PASS-content-only",
+      "observation": "主动停止继续外交保留玩家决定，转入同落点的关联换防。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 29,
+      "id": "hire-action",
+      "status": "PASS-content-only",
+      "observation": "实际大同一支低等级守军对应首次与继续雇佣价格，信息用于当前决定。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 30,
+      "id": "hire-target",
+      "status": "PASS-content-only",
+      "observation": "新旧守军与2人口的后勤取舍在雇佣前说明，雇佣与正规军建立地点差异明确。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 31,
+      "id": "save-hand",
+      "status": "PASS-content-only",
+      "observation": "本回合合法放弃手牌行动有下次新年的预算用途，不是为展示跳过而跳过。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 32,
+      "id": "new-year",
+      "status": "REVISE",
+      "observation": "朝贡、维护、耗损及纪年费用有顺序与预算连接；但朝鲜牌首次弃置规则仍未出现，见首次付款缺口。",
+      "findingIds": [
+        "C3"
+      ],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 33,
+      "id": "maintain-shanhai",
+      "status": "PASS-content-only",
+      "observation": "首次维护绑定辽西蓟镇边界和破败平原后果，费用由正式付款承接。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 34,
+      "id": "abandon-jinzhou",
+      "status": "PASS-content-only",
+      "observation": "第一次城市破败说明失去城市效果与年度预算取舍，同类宁远不重复讲解。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 35,
+      "id": "abandon-inner-wall",
+      "status": "PASS-content-only",
+      "observation": "第一次长城破败说明宽度1变3，同类外墙复用，不为同规则重复加阅读卡。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 36,
+      "id": "upkeep-datong",
+      "status": "PASS-content-only",
+      "observation": "以新旧真实守军说明每差额弃牌或减员，原1级兵换两支2级兵与当地供养相接。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 37,
+      "id": "upkeep-yehe",
+      "status": "PASS-content-only",
+      "observation": "非汉人地区正规军不能当地补给的实际例外首次在对应前线使用。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 38,
+      "id": "upkeep-xianxing",
+      "status": "PASS-content-only",
+      "observation": "朝鲜无人口与所有军队均需牌补给区别于上一项非汉人正规军限制。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 39,
+      "id": "upkeep-liaobei",
+      "status": "PASS-content-only",
+      "observation": "兑现此前扩军已告知的4兵差额，说明本土不免除超人口代价。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 40,
+      "id": "upkeep-pyongyang",
+      "status": "PASS-content-only",
+      "observation": "保留纪年预算与移除两处驻军相接，明确减员不自动改变控制，汉城复用同规则。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 41,
+      "id": "claim-year",
+      "status": "REVISE",
+      "observation": "兑现开场得分，说明同分、半手牌向上取整及拒绝顺延；但紧随的三次朝鲜牌弃置发生在特殊弃牌去向首次教学之前。",
+      "findingIds": [
+        "C3"
+      ],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 42,
+      "id": "new-order",
+      "status": "REVISE",
+      "observation": "清楚区分评分条件卡与本年获奖卡；但在人物全部出场前提前公开再下一卡，与PDF依序合同相冲突。",
+      "findingIds": [
+        "C4"
+      ],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 43,
+      "id": "year-character",
+      "status": "PASS-content-only",
+      "observation": "人物资格与非手牌身份、实际检视和选人相接；10支能力只说明未来用途，未冒称已经应用。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 44,
+      "id": "training-move",
+      "status": "PASS-content-only",
+      "observation": "回到新公开条件和保留下来的实际前线兵，而非新增孤立训练章节。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 45,
+      "id": "training-action",
+      "status": "PASS-content-only",
+      "observation": "同一费用4次可混合行动与3训1征计划一致，未误写为每次另弃牌。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 46,
+      "id": "training-payment",
+      "status": "REVISE",
+      "observation": "朝贡卡费用与独立弃牌堆说明正确，但首次教学位置晚于纪年三次朝鲜付款，需前移。",
+      "findingIds": [
+        "C3"
+      ],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 47,
+      "id": "training-target",
+      "status": "PASS-content-only",
+      "observation": "原炮兵实体、前一年的技术与等级上限2对应，前因保留。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 48,
+      "id": "training-second-target",
+      "status": "PASS-content-only",
+      "observation": "前线两原征召兵、剩余基础次数、2升3带来的普通d8变d10相接，第三兵同类复用。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 49,
+      "id": "training-recruit-kind",
+      "status": "PASS-content-only",
+      "observation": "在当前征兵或训练二选一语境中说明新实体计分差异；只判当前选择，不将其泛化为其它建军动作均不计数。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 50,
+      "id": "training-recruit-target",
+      "status": "PASS-content-only",
+      "observation": "此前开垦的4人口3兵真实用于新增一兵，并如实说明4比4失去税赋资格，不称人口硬上限。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 51,
+      "id": "training-finish",
+      "status": "PASS-content-only",
+      "observation": "4次基础用尽后才解释追加训练费用及保留最后一牌，必要时机成立。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    },
+    {
+      "index": 52,
+      "id": "finish",
+      "status": "PASS-content-only",
+      "observation": "承接叶赫控制、首点威望、新建兵条件与预算，补其它终局途径，未把教程结束当整局获胜。",
+      "findingIds": [],
+      "cnEnMeaning": "中英在本提示的当前规则与动作基本一致；共同问题见findingIds。",
+      "objectMapping": "已核对文本目标与该提示target、命令、候选及事件的对象身份；未以源码映射证明真实屏幕可见性。"
+    }
+  ],
+  "causalSegments": [
+    {
+      "range": "frontier-goal→recruit-troops",
+      "status": "REVISE",
+      "observation": "军屯、开垦、征召、留守及补给代价连续成立；开场纪年卡与威望的桥梁仍缺。"
+    },
+    {
+      "range": "midyear→hand-limit",
+      "status": "REVISE",
+      "observation": "税赋兑现及超限承接成立；季节前置行动可放弃的含义未保留。"
+    },
+    {
+      "range": "battle-move→occupy",
+      "status": "PASS-content-only",
+      "observation": "原兵、技术、费用、宽度、胜负读法、战术、损伤与控制增长已串起；未强迫其它战斗分支实操。"
+    },
+    {
+      "range": "diplomacy-move→save-hand",
+      "status": "PASS-content-only",
+      "observation": "邻接友好取消、大同换防和年末预算有当前用途；未声称阻断蒙古进攻或外交获控制。"
+    },
+    {
+      "range": "new-year→upkeep-pyongyang",
+      "status": "PASS-content-only",
+      "observation": "城市与长城破败、一般耗损与两类补给例外、保新兵与收缩驻军，分别服务真实预算。朝鲜弃牌首次教学问题另列。"
+    },
+    {
+      "range": "claim-year→year-character",
+      "status": "REVISE",
+      "observation": "开场目标兑现及半手牌支付成立；首次朝鲜弃牌说明迟到，再下一卡公开时序与PDF冲突。"
+    },
+    {
+      "range": "training-move→finish",
+      "status": "PASS-content-only",
+      "observation": "保留原前线、原科技、同费3训1征、当前建军统计和税赋代价应用成立；须先解决前段首次教学及公开时机，才能给整课PASS。"
+    }
+  ],
+  "referenceReview": {
+    "bga": {
+      "source": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+      "basis": "读取其它代理实际完整操作的reference-review.md/json及作者迁移记录，未冒称本审查亲玩。",
+      "boundary": "BGA托管社区作者课程，52提示16正式对象点击，第7轮教学完成并非12轮比赛完成。",
+      "adoptionAssessment": "当前目标带行动、首次费用配眼前收益、已有对象后续兑现及重复动作压缩有实际对应；不能单凭成熟参考宣布本课通过。"
+    },
+    "wesnoth": "官方完整可执行脚本分析仅作辅助来源，未声称亲玩。"
+  },
+  "normalChainAcknowledgement": {
+    "basis": "读取当前normal-battle-report，不把5/5或225项绿灯作为内容通过理由。",
+    "mingHandCount": 1,
+    "pieces": [
+      "ming-recruit-regular-infantry-lv2__compat__1",
+      "ming-recruit-regular-infantry-lv2__compat__2",
+      "ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1"
+    ],
+    "chronologyPayments": [
+      "korea-1",
+      "korea-2",
+      "korea-3"
+    ],
+    "nextInputAccepted": true,
+    "oldFindingsNotReused": [
+      "旧0牌预算",
+      "旧军屯兵参战身份",
+      "人口被称硬上限",
+      "外交移除被称取得控制"
+    ]
+  },
+  "boundaries": [
+    "不要求所有人物、城战、水路、全部骰种或所有分支实操；当前未覆盖项保持明确边界。",
+    "没有将杨镐10支指挥能力称为本课已应用。",
+    "没有将普通确认及同类重复支付改成新课程需求。",
+    "正式屏幕的提示与本体同帧、可读性和遮挡仍须独立图审，本报告不代填。",
+    "仅写任务专属content-review.json，不修改运行时代码、规范或他人报告。"
+  ]
+}

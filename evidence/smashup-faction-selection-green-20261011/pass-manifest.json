@@ -1,0 +1,58 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-11T00:57:49+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "选中派系沿用原有卡框：外框变为绿色，卡片轻微放大并上抬。",
+      "status": "PASS",
+      "evidence": [
+        "当前工作树真实 Playwright E2E 通过；目标节点 computed border-top-color 为 rgb(34, 197, 94)，border-top-width 为 4px，border-top-style 为 solid。",
+        "02-action-heroes-selected-green.png 中间的动作英雄卡可直接看到绿色外框、放大和上抬。"
+      ]
+    },
+    {
+      "requirement": "不新增内容层第二层描边。",
+      "status": "PASS",
+      "evidence": [
+        "选中样式只写入 .smashup-card-frame；.smashup-card-inner 没有独立 border 类。",
+        "中态截图中绿色只出现在卡片最外层，卡面内部没有额外绿色内框。"
+      ]
+    },
+    {
+      "requirement": "随机落地后，当前选中的派系卡自动回到可见视口。",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 断言目标卡 getBoundingClientRect 在当前视口内并通过。",
+        "02-action-heroes-selected-green.png 中目标卡位于当前视口中部。"
+      ]
+    }
+  ],
+  "command": "node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-faction-random-selection.e2e.ts \"第一张随机派系卡点击后会落地为真实派系并占用该派系\" --reporter=line",
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/01-random-faction-before.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/02-action-heroes-selected-green.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/03-after-scroll.png"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/01-labeled-01-random-faction-before.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/02-labeled-02-action-heroes-selected-green.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/03-labeled-03-after-scroll.png"
+  ],
+  "labeledImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/01-labeled-01-random-faction-before.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/02-labeled-02-action-heroes-selected-green.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011/03-labeled-03-after-scroll.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "sourceImagesNote": "三张原图来自同一轮真实 E2E：前态、随机落地后的绿色选中中态、滚动后状态。"
+}
+

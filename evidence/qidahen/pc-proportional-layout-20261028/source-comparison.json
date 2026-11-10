@@ -1,0 +1,17 @@
+{
+  "snapshotRoot": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028",
+  "originalRoot": "D:\\gongzuo\\webgame\\BoardGame",
+  "changedPaths": [
+    "src/components/home/creator-center.css",
+    "src/engine/systems/TutorialSystem.ts",
+    "src/games/dicethrone/Board.tsx",
+    "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+    "src/games/dicethrone/ui/InteractionOverlay.tsx",
+    "src/games/qidahen/tutorial.ts",
+    "e2e/qidahen/qidahen-closeout.e2e.ts",
+    "e2e/qidahen/mobile-population-layout.tmp.e2e.ts"
+  ],
+  "qidahenSourceMatches": false,
+  "note": "仅按独立审查允许的非教程范围沿用，不宣称整仓同一版本。",
+  "scopeEquivalenceReview": "source-scope-equivalence-review.json"
+}

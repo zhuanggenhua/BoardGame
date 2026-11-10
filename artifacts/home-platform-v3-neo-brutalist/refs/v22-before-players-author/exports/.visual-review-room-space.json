@@ -1,0 +1,349 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": 94,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/steam_library_reference"
+  },
+  "scope": "仅本轮重拍的十一张详情变化图。先验整屏是否把可用空间交给房间列表，再验主辅操作、信息层级与关联弹窗，不沿用上一轮局部分组通过结论。",
+  "method": "逐张私有读取十一张当前原始截图，桌面和移动分别裁决。静态图只证明房间名称人数及对应操作完整可见，不以截图代替点击、独立滚动或短视口行为证据。",
+  "screenSpaceReview": {
+    "desktop": {
+      "headerHeightApprox": 237,
+      "firstRoomTopApprox": 450,
+      "visibleCompleteRooms": 4,
+      "observation": "资料与动作共用封面右侧，原独占操作行已消失，四间房完整，大厅下方剩余高度归属列表容量，没有再被头部空区截走。"
+    },
+    "mobile": {
+      "viewport": "375x812",
+      "firstRoomTopApprox": 406,
+      "lastRoomBottomApprox": 740,
+      "visibleCompleteRooms": 4,
+      "observation": "全文简介保留，主辅操作之间仍有清楚间距，四间房完整进入首屏且末房下方仍有余量，头部没有无职责的大分隔空带。"
+    }
+  },
+  "target_requirements": [
+    {
+      "requirement": "整屏优先回收头部无职责占高，给房间列表可用空间",
+      "status": "PASS",
+      "evidence": "06-游戏详情.png；m06-游戏详情.png"
+    },
+    {
+      "requirement": "当前四间房的名称人数和对应操作完整可读可识别",
+      "status": "PASS",
+      "evidence": "06-游戏详情.png；m06-游戏详情.png"
+    },
+    {
+      "requirement": "主操作独立，三个辅助动作间距及视觉重量清楚",
+      "status": "PASS",
+      "evidence": "06-游戏详情.png；m06-游戏详情.png"
+    },
+    {
+      "requirement": "全文简介及作者人数时长信息保留，不以删信息换空间",
+      "status": "PASS",
+      "evidence": "06-游戏详情.png；m06-游戏详情.png；m06e-规则原文.png"
+    },
+    {
+      "requirement": "作者销毁创建规则状态未被紧凑头部引入新的遮挡裁切",
+      "status": "PASS",
+      "evidence": "其余九张关联状态图"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    "桌面操作从独立占高行并入封面右侧资料空间，全部四个动作保留，未压住正文和作者信息。",
+    "移动缩减封面及空隙后，封面仍可辨认，全文简介保留，主操作与三个辅助动作没有合并为拥挤按钮带。",
+    "当前四间房的全部名称人数和对应操作在桌面及移动原图中完整可见，满房继续显示灰色已满。",
+    "作者仍有署名信息入口及前景阅读弹窗，详情只读人数与真实创建人数选择仍保持不同外观。",
+    "规则阅读区随着头部收紧获得更多空间，创建配置及末端操作仍由对应图覆盖。"
+  ],
+  "limitations": [
+    "本报告只覆盖十一张当前图面，其余媒体需由主线程依据未改写证据沿用。",
+    "移动原图覆盖三百七十五乘八百一十二视口；三百七十五乘五百四十的末房滚动命中属于主线程行为测试范围，本报告不冒充已看过该短视口原图。",
+    "静态图无法证明独立滚动、点击成功、满房禁止加入和真实人数修改，需主线程行为证据支持。",
+    "桌面房间行内横向留白仍可见，但没有再增加头部占高或压缩列表纵向容量，本轮未把房间行重排扩展为新的要求。",
+    "图面通过属于助手独立审计，不表示用户已验收。"
+  ],
+  "media": [
+    {
+      "path": "06-游戏详情.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "封面右侧同时承载资料和动作，头部没有再为操作另占整行，四间房及对应操作完整可见，大厅获得主要剩余高度。",
+      "targetObject": "桌面详情整屏大厅空间",
+      "actionBefore": "打开大杀四方详情",
+      "actionAfter": "展示压缩头部及大厅",
+      "playerVisibleResult": "封面右侧同时承载资料和动作，头部没有再为操作另占整行，四间房及对应操作完整可见，大厅获得主要剩余高度。",
+      "protectedSlots": [
+        "游戏封面",
+        "资料",
+        "主辅动作",
+        "大厅标签",
+        "四间房及对应操作",
+        "关闭入口"
+      ],
+      "overlap": "主辅动作横向有间距且未挤压正文，列表区域没有被头部空操作带占用",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "06b-作者弹窗.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "作者弹窗居中，文字与关闭入口完整，背景详情头部仍保持紧凑共用空间，没有恢复占高操作区。",
+      "targetObject": "桌面作者信息弹窗及背景空间",
+      "actionBefore": "打开署名信息入口",
+      "actionAfter": "展示作者说明",
+      "playerVisibleResult": "作者弹窗居中，文字与关闭入口完整，背景详情头部仍保持紧凑共用空间，没有恢复占高操作区。",
+      "protectedSlots": [
+        "作者信息",
+        "关闭入口",
+        "背景紧凑头部"
+      ],
+      "overlap": "前景作者弹窗明确承接阅读，背景遮罩符合当前弹窗状态",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "06c-销毁确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认标题后果说明与确认按钮分组清楚，前景关闭独立，背景四间房所在大厅保持紧凑头部后的空间。",
+      "targetObject": "桌面房间销毁确认",
+      "actionBefore": "点击自己的房间销毁",
+      "actionAfter": "展示销毁后果确认",
+      "playerVisibleResult": "确认标题后果说明与确认按钮分组清楚，前景关闭独立，背景四间房所在大厅保持紧凑头部后的空间。",
+      "protectedSlots": [
+        "确认标题",
+        "后果说明",
+        "确认按钮",
+        "关闭入口"
+      ],
+      "overlap": "前景弹窗未裁切，确认与关闭操作互不重叠",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "06d-创建房间.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "前景创建字段和底部创建按钮完整，背景资料及动作共用封面旁空间，未因游戏切换恢复多余占高。",
+      "targetObject": "桌面创建表单及详情头部",
+      "actionBefore": "打开王权骰铸创建房间并展开配置",
+      "actionAfter": "展示完整创建表单",
+      "playerVisibleResult": "前景创建字段和底部创建按钮完整，背景资料及动作共用封面旁空间，未因游戏切换恢复多余占高。",
+      "protectedSlots": [
+        "房间名称",
+        "密码",
+        "真实人数选择",
+        "保存选项",
+        "自动玩家配置",
+        "创建按钮",
+        "关闭入口"
+      ],
+      "overlap": "表单字段与底部创建完整处于弹窗内",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06-游戏详情.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "头部去掉无职责分隔空带后，四间房及重连加入观战操作均完整进入首屏，主辅动作仍有清楚间距且没有扎堆。",
+      "targetObject": "移动详情整屏大厅空间",
+      "actionBefore": "打开移动大杀四方详情",
+      "actionAfter": "展示头部及四间房",
+      "playerVisibleResult": "头部去掉无职责分隔空带后，四间房及重连加入观战操作均完整进入首屏，主辅动作仍有清楚间距且没有扎堆。",
+      "protectedSlots": [
+        "游戏封面",
+        "全文简介",
+        "只读人数时长",
+        "署名",
+        "主辅动作",
+        "大厅标签",
+        "四间房及对应操作",
+        "关闭入口"
+      ],
+      "overlap": "首房从画面中部开始，末房底边离屏底仍有空间，头部和房间操作没有相互遮挡",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06b-作者弹窗.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "作者弹窗内署名作品说明和关闭入口完整，背景头部保持收紧结构，未出现新的按钮堆叠或内容交叉。",
+      "targetObject": "移动作者说明弹窗",
+      "actionBefore": "点击作者署名信息入口",
+      "actionAfter": "展示作者信息",
+      "playerVisibleResult": "作者弹窗内署名作品说明和关闭入口完整，背景头部保持收紧结构，未出现新的按钮堆叠或内容交叉。",
+      "protectedSlots": [
+        "作者信息",
+        "作品说明",
+        "关闭入口"
+      ],
+      "overlap": "前景阅读层边界清楚，关闭与文字互不重叠",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06c-销毁确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认弹窗完整呈现后果和确认操作，关闭独立位于右上，背景房间区没有被改造为额外头部空间。",
+      "targetObject": "移动房间销毁确认",
+      "actionBefore": "点击自己的房间销毁",
+      "actionAfter": "展示确认说明",
+      "playerVisibleResult": "确认弹窗完整呈现后果和确认操作，关闭独立位于右上，背景房间区没有被改造为额外头部空间。",
+      "protectedSlots": [
+        "确认标题",
+        "后果说明",
+        "确认按钮",
+        "关闭入口"
+      ],
+      "overlap": "前景弹窗完整，确认按钮与说明之间间距清楚",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06d-创建房间.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "创建表单字段顺序清楚，真实人数按钮和底部创建完整，背景封面与署名仍在紧凑资料区承载。",
+      "targetObject": "移动创建基础表单",
+      "actionBefore": "打开王权骰铸创建房间",
+      "actionAfter": "展示基础创建字段",
+      "playerVisibleResult": "创建表单字段顺序清楚，真实人数按钮和底部创建完整，背景封面与署名仍在紧凑资料区承载。",
+      "protectedSlots": [
+        "房间名称",
+        "密码",
+        "真实人数选择",
+        "保存选项",
+        "配置展开",
+        "创建按钮",
+        "关闭入口"
+      ],
+      "overlap": "表单主要对象完整可读，操作没有因背景头部收紧而挤压",
+      "clipping": "本轮目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06e-规则原文.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "规则正文从收紧头部下方开始，阅读区获得更多高度，全文简介和主辅操作仍清楚且没有压住规则标签。",
+      "targetObject": "移动规则阅读空间",
+      "actionBefore": "切换规则概览",
+      "actionAfter": "展示完整头部与规则阅读区",
+      "playerVisibleResult": "规则正文从收紧头部下方开始，阅读区获得更多高度，全文简介和主辅操作仍清楚且没有压住规则标签。",
+      "protectedSlots": [
+        "全文简介",
+        "主辅动作",
+        "规则标签",
+        "规则正文",
+        "关闭入口"
+      ],
+      "overlap": "规则正文按阅读区正常向下延伸，标签和开头内容完整",
+      "clipping": "正文在屏幕下方正常延伸，目标规则标签和开头阅读内容完整",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06f-创建AI展开.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "展开后人数难度时长与席位依次可读，关闭入口完整，配置字段没有因详情收紧出现相互遮挡。",
+      "targetObject": "移动创建配置展开",
+      "actionBefore": "展开自动玩家配置",
+      "actionAfter": "展示详细配置",
+      "playerVisibleResult": "展开后人数难度时长与席位依次可读，关闭入口完整，配置字段没有因详情收紧出现相互遮挡。",
+      "protectedSlots": [
+        "真实人数选择",
+        "保存选项",
+        "难度",
+        "思考时长",
+        "席位",
+        "关闭入口"
+      ],
+      "overlap": "字段互不重叠，底部创建按钮由后续滚动末端图补足",
+      "clipping": "底部创建按钮在当前滚动范围外，由后续滚动末端图覆盖",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    },
+    {
+      "path": "m06g-AI创建按钮可达.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "表单末端完整显示席位状态和独立创建按钮，配置与创建操作保持清楚间距，未见按钮被底边裁切。",
+      "targetObject": "移动创建配置末端",
+      "actionBefore": "设置席位并滚动至表单末端",
+      "actionAfter": "展示创建操作",
+      "playerVisibleResult": "表单末端完整显示席位状态和独立创建按钮，配置与创建操作保持清楚间距，未见按钮被底边裁切。",
+      "protectedSlots": [
+        "真实人数选择",
+        "难度",
+        "思考时长",
+        "席位",
+        "创建按钮"
+      ],
+      "overlap": "创建操作完整处于弹窗底部，顶部关闭随正常滚动离开当前画面",
+      "clipping": "表单顶部随正常滚动离开画面，当前目标创建按钮完整",
+      "internalIdLeak": "未见调试标识泄漏，房间短码属于玩家可见房间编号"
+    }
+  ]
+}

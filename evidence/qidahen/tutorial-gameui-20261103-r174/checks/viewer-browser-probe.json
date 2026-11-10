@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "viewerUrl": "http://127.0.0.1:4867/?key=e88f4b09f9a3",
+  "galleryFirstDecodeMs": 2214.3633,
+  "firstDetailDecodeMs": 420.35180000000037,
+  "firstTitle": "01 · PC · 公开纪年与年度扩张目标\n用实际公开的控制增长条件建立本年扩张目标。",
+  "image": {
+    "width": 1920,
+    "height": 1080,
+    "displayed": true,
+    "renderedWidth": 1479.111083984375,
+    "renderedHeight": 832
+  },
+  "playback": {
+    "time": 0.016352,
+    "duration": 22.945,
+    "width": 1920,
+    "height": 1080,
+    "paused": false
+  },
+  "pageErrors": [],
+  "limits": "独立隐藏浏览器只验证本地查看器可解码、显示原图和播放原录屏；不代替游戏视觉审查或用户人工验收。"
+}

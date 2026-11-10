@@ -1,0 +1,159 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "date": "2026-10-06",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "viewerUrl": "http://127.0.0.1:4867/?key=68371c87f3f5",
+    "mobileViewerUrl": "http://127.0.0.1:4867/?key=8c783f8370c2",
+    "finalPassBeforeOpen": true,
+    "visualReview": "复看轮盘规则、合法分支自动恢复、同层行动总览、赐印招安规则、动作卡和移动端手牌检视；关键对象与正文焦点一致，未见导航补救文案或教程卡遮挡主操作。"
+  },
+  "evidenceIndex": ".e2e-image-index-20261006-qidahen-full-tutorial-rebuild-r4.json",
+  "problemChain": {
+    "problemOriginal": "教程把合法轮盘分支、固定示范路径、导航回退和子项规则混在一起：前进 2 或 3 格是合法走法，却被引入征兵训练主线后再用可见回退文案补救；父层还提前复述子项费用、目标和结果。",
+    "understanding": "需要全面重构教程设置：先讲正式合法集合和共同任务，再用一个真实动作承接固定示范；导航控件只做导航，非示范合法分支由真实隐藏恢复或独立教程处理；费用、目标、限制和结果下沉到对应子项。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "同一真实入口覆盖基础主线、合法 2/3 格分支恢复、各专题行动链和移动端检视。",
+        "本次截图直接包含轮盘 1/2/3 格规则、免费走 1 动作、合法分支自动恢复、四项同层行动和赐印招安子项。",
+        "关键截图已人工复看，正文焦点、真实高亮对象和正式操作入口一致。"
+      ]
+    },
+    "currentSolution": "基础教程按正式开局、轮盘规则、固定动作、真实结算、手牌行动总览、赐印招安规则、选择、支付、目标和结果推进；合法 2/3 格走法不进入征兵训练后续链，运行态自动恢复到轮盘选择。其它行动教程同步采用父层总览、子项动作、结果反馈分层。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "真实 Chromium E2E：18 passed。",
+        "七大恨教程与教程系统定向测试：52 passed。",
+        "TypeScript、spec:lint、i18n:check、git diff --check 全部通过。",
+        "本次运行生成桌面 68 张、移动端 3 张，共 71 张 PNG；全部非零且为有效 PNG。"
+      ]
+    },
+    "remainingBlockers": "无。当前结论仅覆盖七大恨教程重构范围，不外推到非教程完整游戏状态。",
+    "specBackfill": "唯一规范源为 .spec/knowledge/standards/tutorial-design.md；tutorial-workflow 仅引用该标准。"
+  },
+  "requirements": [
+    {
+      "requirement": "合法规则集合与固定示范动作分层",
+      "status": "PASS",
+      "evidence": [
+        "轮盘规则卡保留 1/2/3 格合法集合；动作卡只要求选择免费走 1。",
+        "合法 2/3 格真实点击后不进入征兵训练链，自动恢复到轮盘选择。"
+      ]
+    },
+    {
+      "requirement": "导航控件不进入教程正文",
+      "status": "PASS",
+      "evidence": [
+        "真实教程文案未写点击上一步、当前路径或本示范。",
+        "全局上一步仍保留为教程导航按钮。"
+      ]
+    },
+    {
+      "requirement": "父层先总览，子项再解释费用目标结果",
+      "status": "PASS",
+      "evidence": [
+        "基础、事件、进攻和军备教程先展示同层行动总览，再进入具体动作。",
+        "赐印招安费用、目标与结果分别落在子步骤。"
+      ]
+    },
+    {
+      "requirement": "真实端到端证据",
+      "status": "PASS",
+      "evidence": [
+        "同一运行 ID 生成桌面与移动截图，并由 18 条真实浏览器用例覆盖。",
+        "媒体索引逐张登记路径、链路、前中后态和中文画面说明。"
+      ]
+    }
+  ],
+  "verification": {
+    "e2e": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+    "unit": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts src/engine/__tests__/tutorialStepAutomation.test.ts src/engine/systems/__tests__/TutorialSystem.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+    "typecheck": "npm run typecheck",
+    "specLint": "npm run spec:lint",
+    "i18n": "npm run i18n:check",
+    "diffCheck": "git diff --check",
+    "screenshotRunId": "20261006-qidahen-full-tutorial-rebuild-r4",
+    "desktopPngCount": 68,
+    "mobilePngCount": 3,
+    "totalPngCount": 71,
+    "badPngCount": 0
+  },
+  "media": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/00-教程目录-先选择章节.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/01-开场-阅读三种胜利条件.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/01a-玩家行动流程-轮盘与手牌行动无固定先后.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/02-开局检查-3张手牌未超过15张不弃牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/03a-轮盘合法分支自动恢复到选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/03-轮盘选择-现在选择免费走1.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/04-轮盘结算-征兵训练建立部队并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/04a-手牌行动规则-四个同层行动.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/05-赐印招安规则原文.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/06-手牌行动-现在选择赐印招安.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/07-赐印招安-支付3张手牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/08-赐印招安-锦州部队移入山海关.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/09-赐印招安-部队位置与阵营变化.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/10-首回合-规则链完成.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/14a-轮盘第2a步-先选择参与进攻的部队.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15-轮盘第3步-进入进攻调度落点.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15a-开垦第1步-先把轮盘推进到开垦.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15b-开垦第2步-看己方控制区人口增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15c-军屯第1步-先把轮盘推进到军屯.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15d-军屯第2步-看补牌并建立正规军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15e-征兵训练第1步-先把轮盘推进到征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15f-征兵训练第2步-地图区域闪烁与兵牌淡出特写.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/15f-征兵训练第2步-看加兵并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/16-军备第0步-四个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/16-军备第1步-先点升级军备.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/17-军备第2步-点击底部手牌支付2张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/18-军备第3步-看火炮技术升到2级.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/18a-事件第0步-蒙古三个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/19-事件第1步-先点大汗令箭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/20-事件第2步-点击底部手牌支付1张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/21-事件第3步-选择征兵训练效果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/22-事件第4步-看蒙古兵力增加到4.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/22a-进攻第0步-大明四个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/23-进攻第1步-点击突袭作战入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/24-进攻第2步-弃1张手牌支付突袭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/25-进攻第3步-支付后进入察哈尔野战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/26a-进攻第4a步-看断后后的战后处理.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/27-进攻第5步-看战败标记与战后选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/27a-进攻第6步-看占领结果摘要.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/28-撤退第1步-先看断后和溃退入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/30-攻城第1步-真实守城宣告入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/30a-攻城第1a步-右侧断后结算城战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/31-攻城第2步-选择围城该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/31a-攻城第3步-同章选择占领该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/32-外交第1步-从轮盘进入外交雇佣.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/33-外交第2步-先放置友好标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/33a-外交第2a步-翻为附庸.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/33b-外交第2b步-移除他方控制标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/34-外交第3步-结束并结算雇佣军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/35-外交第4步-看完外交与雇佣的合并收益.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/36-跨年第1步-推进到年中并查看税赋与人物.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/37-跨年第2步-先看新年朝鲜朝贡.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/38-跨年第3步-进入新年防线维护.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/39-跨年第4步-看纪年卡与争分结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/40-跨年第5步-看新顺位与人物刷新.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/41-跨年第6步-看到新年结算与新年份.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/44-朝鲜第3步-看海路与船锚区域关系.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4-mobile/移动-01-移动教程-手牌检视前.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4-mobile/移动-02-移动教程-长按手牌打开检视.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261006-qidahen-full-tutorial-rebuild-r4-mobile/移动-03-移动教程-关闭检视回到牌桌.png"
+  ]
+}

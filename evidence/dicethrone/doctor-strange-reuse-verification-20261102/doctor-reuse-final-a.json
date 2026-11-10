@@ -1,0 +1,867 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/doctor_reuse_final_a",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "scope": "仅本分工十八张当前原图与卡牌选择复用基线职责，不代表全组或未分配媒体的最终裁决。",
+  "sourcePlan": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-ui-reuse-plan-20261102.json",
+  "sourceHashesVerified": true,
+  "summary": {
+    "total": 18,
+    "PASS": 13,
+    "carried-forward": 5,
+    "REVISE": 0,
+    "newOriginalsRead": 13,
+    "sameByteCarriedForward": 5,
+    "beforeOriginalsPreviouslyRead": 3
+  },
+  "media": [
+    {
+      "entryPath": "01-弃牌法术候选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\桌面-弃牌准备选择态.png",
+      "sha256": "3ce5903d97bc8d06da2edbff915486f04d5611b5dba1c29dda49789e4f2173de",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\桌面-弃牌准备选择态.png",
+      "status": "PASS",
+      "observation": "桌面法瑞拉之牙候选在中央以完整牌面呈现，标题与下方灰色确认各自清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "02-弃牌法术已选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\桌面-法术卡已选待确认.png",
+      "sha256": "6ee0d53f5cd4b3ae2d3ff24e74a963a41d9b1163604629ef38e6cfdaca3520b7",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\桌面-法术卡已选待确认.png",
+      "status": "PASS",
+      "observation": "桌面已选法瑞拉之牙的四条黄色边线完整，橙色确认明确承接当前选择。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "03-弃牌法术候选-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\手机横屏-弃牌准备选择态.png",
+      "sha256": "fbf596d250c61b152305934d8a8901187e58aaceeb1803d877a7e59114127589",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\手机横屏-弃牌准备选择态.png",
+      "status": "PASS",
+      "observation": "横屏单张法瑞拉之牙的名称与图案可辨，完整卡面位于标题和确认之间。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "04-弃牌法术已选-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\手机横屏-法术卡已选待确认.png",
+      "sha256": "42e8ec0e6e62b55cdbfff118cc014840ddf3284d84ac71b7b77e000e086383bb",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793587681387-h92bwx\\手机横屏-法术卡已选待确认.png",
+      "status": "PASS",
+      "observation": "横屏法瑞拉之牙选中四边完整，确认按钮在卡面下方且不压住卡面。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "12-抽牌返还候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793587681387-h92bwx\\本次抽牌返还选择-桌面.png",
+      "sha256": "79204fdd9d5c9d62688acceeee1738887309dfaca24899dc62c70cb6f13aa1d1",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793587681387-h92bwx\\本次抽牌返还选择-桌面.png",
+      "status": "PASS",
+      "observation": "抽牌返还候选以大幅卡面并列供比较，搜索与候选数量位于卡面上方。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "13-抽牌返还已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793587681387-h92bwx\\本次抽牌已选待确认-桌面.png",
+      "sha256": "170eb358b3c1d687f79d1df1544a124e0240e3228c3717fef21ae622dcf0eb50",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793586152139-4ntj43\\本次抽牌已选待确认-桌面.png",
+      "status": "carried-forward",
+      "observation": "返还候选首张升起并以四边黄框表达已选，卡面与确认按钮都完整可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "unchangedEvidence": "当前原图与本代理已实际读取的完整原图散列相同；该屏没有非空搜索清空按钮，本次清空按钮垂直居中修改不改变这些已读图面的对象、条件与布局。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793586152139-4ntj43\\本次抽牌已选待确认-桌面.png"
+      ],
+      "carriedForwardSha256": "170eb358b3c1d687f79d1df1544a124e0240e3228c3717fef21ae622dcf0eb50"
+    },
+    {
+      "entryPath": "15-牌库顶五法术候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼顶五法术选择-桌面.png",
+      "sha256": "b9045dc3c1189966c7c5737845cf8ce2e9a6993cb055e760a7f777dc6ae7a896",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼顶五法术选择-桌面.png",
+      "status": "PASS",
+      "observation": "牌顶法术候选以两张完整大牌并列，名称与准备施放效果均能直接比较。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "16-牌库顶五第二张已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼次张法术已选-桌面.png",
+      "sha256": "1b322e52ec94ca57ed3d863339253c8e2742055d236951787b7a6012432b189e",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼次张法术已选-桌面.png",
+      "status": "PASS",
+      "observation": "第二张法术成为唯一当前候选并有完整黄色四边，确认紧随其下。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "17-剩余牌重排候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼重排剩余三张-桌面.png",
+      "sha256": "4834e0a0e847edcd4bf7480598df9d8f134da34ce2addcf1868f5da675dd9ec8",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼重排剩余三张-桌面.png",
+      "status": "PASS",
+      "observation": "重排下一张牌的标题、搜索及两张可见候选各有独立位置，剩余候选在滚动窗口内。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "18-剩余牌首张已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼重排首张已选-桌面.png",
+      "sha256": "4556236cf56739daec5008b5db840efdd6349b0270a3711133dfee8c47926dcf",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼重排首张已选-桌面.png",
+      "status": "PASS",
+      "observation": "重排首张牌以完整黄色边框表达已选，确认位于候选窗口下方。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "19-准备区法术施放候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼攻击后施法选择-桌面.png",
+      "sha256": "83cc45f2c83f51a96d3980d1f122ef451e1fefb7a6ac8d29f6918a09af4e2be3",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼攻击后施法选择-桌面.png",
+      "status": "PASS",
+      "observation": "准备区施法候选呈现两张完整法术并可比较名称及效果，跳过位于候选下方。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "20-准备区法术已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼准备区法术已选-桌面.png",
+      "sha256": "93d49e3265f67a3bc4bc1b98dd0337c0d2fd02ef2cb6aa5b9380bce023c1e27e",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793587681387-h92bwx\\全知之眼准备区法术已选-桌面.png",
+      "status": "PASS",
+      "observation": "第二行选中法瑞拉之牙的本体与黄色四边均完整，底边与下方确认保持间距。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "第二行当前选中法瑞拉之牙的本体及四边完整可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "29-卡牌候选复用放大阅读.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793587681387-h92bwx\\本次抽牌复用放大阅读-桌面.png",
+      "sha256": "4eb6ee35c15338de637269bc9fc6493ad7c923263f92e83c5d6867010c8fd5a0",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793586152139-4ntj43\\本次抽牌复用放大阅读-桌面.png",
+      "status": "carried-forward",
+      "observation": "原有放大阅读层呈现完整玩的六啊牌面及关闭入口，前景覆盖背景候选符合阅读职责。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "unchangedEvidence": "当前原图与本代理已实际读取的完整原图散列相同；该屏没有非空搜索清空按钮，本次清空按钮垂直居中修改不改变这些已读图面的对象、条件与布局。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793586152139-4ntj43\\本次抽牌复用放大阅读-桌面.png"
+      ],
+      "carriedForwardSha256": "4eb6ee35c15338de637269bc9fc6493ad7c923263f92e83c5d6867010c8fd5a0"
+    },
+    {
+      "entryPath": "40-弃牌直接施放完整候选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793587681387-h92bwx\\弃牌直接施放完整候选-桌面.png",
+      "sha256": "25b257d56e634dcad90ccb0b39748887d3fbd9ec7359a331f3e8cede1a8c5759",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793587681387-h92bwx\\弃牌直接施放完整候选-桌面.png",
+      "status": "PASS",
+      "observation": "弃牌施法的八张候选数量可见，首屏两张大牌可读且搜索与跳过归属明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      }
+    },
+    {
+      "entryPath": "41-弃牌直接施放八牌候选-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793587681387-h92bwx\\弃牌直接施放八牌候选-横屏.png",
+      "sha256": "88a36159cdbfc68a3ff071c70f01fc1fc8bae2a86a70f8952d05d1779f47afbf",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793586152139-4ntj43\\弃牌直接施放八牌候选-横屏.png",
+      "status": "carried-forward",
+      "observation": "横屏弃牌候选首屏六张牌均保留完整形状与可辨名称，后续候选由滚动承接。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "unchangedEvidence": "当前原图与本代理已实际读取的完整原图散列相同；该屏没有非空搜索清空按钮，本次清空按钮垂直居中修改不改变这些已读图面的对象、条件与布局。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793586152139-4ntj43\\弃牌直接施放八牌候选-横屏.png"
+      ],
+      "carriedForwardSha256": "88a36159cdbfc68a3ff071c70f01fc1fc8bae2a86a70f8952d05d1779f47afbf"
+    },
+    {
+      "entryPath": "41b-弃牌直接施放法术已选-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793587681387-h92bwx\\弃牌直接施放法术已选-横屏.png",
+      "sha256": "e51ae7c1c85021904ad752511e2bf8ad05e51420b08020f89558536ab65a821a",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793586152139-4ntj43\\弃牌直接施放法术已选-横屏.png",
+      "status": "carried-forward",
+      "observation": "横屏法尔特之焰已选黄框四边完整，确认与候选下沿保持间距。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "unchangedEvidence": "当前原图与本代理已实际读取的完整原图散列相同；该屏没有非空搜索清空按钮，本次清空按钮垂直居中修改不改变这些已读图面的对象、条件与布局。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793586152139-4ntj43\\弃牌直接施放法术已选-横屏.png"
+      ],
+      "carriedForwardSha256": "e51ae7c1c85021904ad752511e2bf8ad05e51420b08020f89558536ab65a821a"
+    },
+    {
+      "entryPath": "42-弃牌搜索无匹配可清除-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793587681387-h92bwx\\弃牌搜索无匹配可清除-横屏.png",
+      "sha256": "baa5c029f4a07f5186979e0a9a48c2055764bb1f9892ceeecc270c95756a5eb1",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793587681387-h92bwx\\弃牌搜索无匹配可清除-横屏.png",
+      "status": "PASS",
+      "observation": "非空搜索只显示一个白色清空叉，圆底完整位于输入框内并垂直居中，空态与跳过清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "本图为空态，无选中卡；不以空态证明选中边缘。",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "visualNotes": [
+        "实读当前完整原图，白叉与圆底中心已回到输入框中线，圆底未跨出上下边沿。"
+      ]
+    },
+    {
+      "entryPath": "47-预感返还多卡候选-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793587681387-h92bwx\\预感返还多卡候选-横屏.png",
+      "sha256": "f228b9093973eefed4527f8681fc2ba91afdb433f79c77d043fb312f06087a0e",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793586152139-4ntj43\\预感返还多卡候选-横屏.png",
+      "status": "carried-forward",
+      "observation": "横屏三张返还候选完整并列，卡面名称与不同图案清楚且确认处于未选禁用态。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": "对照既有血色杀戮的牌库选择器职责：真实候选本体、搜索筛选、选中、确认和原读牌入口由同一交互层承接；历史小卡图仅为被否决症状，不作为正常尺度基线。",
+      "authorizationVerdict": {
+        "status": "PASS",
+        "basis": "本轮用户明确要求修复小卡并复用既有完整选择器；允许原选择器承接博士真实来源与合法候选，阅读尺度来自同游戏多卡阅读。"
+      },
+      "protectedSlots": {
+        "当前候选": "当前候选或目标空态可见",
+        "当前提示": "标题位于候选上方且无同层遮挡",
+        "主动作": "确认或跳过位于候选下方；阅读层由关闭入口承接返回",
+        "手牌与棋盘": "保留底层对象和原槽位，前景选择或阅读层按职责合法覆盖，不以压小候选换底层全露",
+        "骰盘与资源": "原槽位保留在背景，未见被新布局挤走"
+      },
+      "negativeImpactChecks": {
+        "同层竞争": "当前标题、候选、搜索及提交入口职责清楚，未见重复清空入口或清空控件错位。",
+        "选中边缘": "当前已选态四边完整；本图没有选中态时不据此声称覆盖选中",
+        "素材比例": "源卡面自然比例，无新增卡外底框",
+        "错误展示": "仅证明本图未见报错、素材空白或内部标识泄漏"
+      },
+      "hardFailures": [],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "unchangedEvidence": "当前原图与本代理已实际读取的完整原图散列相同；该屏没有非空搜索清空按钮，本次清空按钮垂直居中修改不改变这些已读图面的对象、条件与布局。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-one-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-a.json",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793586152139-4ntj43\\预感返还多卡候选-横屏.png"
+      ],
+      "carriedForwardSha256": "f228b9093973eefed4527f8681fc2ba91afdb433f79c77d043fb312f06087a0e"
+    }
+  ],
+  "oldUiComparison": {
+    "actualOldEntry": "src/games/dicethrone/domain/customActions/vampire_lord.ts:handleBloodySlaughterSearchDeckCard → selectDeckCard → Board.tsx InteractionOverlay → 真实牌库候选及选择确认",
+    "currentAdapter": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx 将规则拥有的来源候选和原选项映射到 InteractionOverlay，本地选择后提交原选项；原有右键或长按交给 BoardOverlays 阅读层。",
+    "readingScaleSource": "BoardOverlays 的 magnifiedMultiCardWidth 与 InteractionOverlay 的 CARD_POOL_READING_WIDTH 使用同一个尺度族；不是机械恢复旧的八十八至一百三十二像素。",
+    "baselineLimits": "三张before原图已实读：桌面单卡约一百零四乘一百六十九，横屏约八十七乘一百四十六，均为被否决症状；没有把这些或整版历史提交当作正常视觉基线。",
+    "sourceFrames": "新卡面按源图比例自然呈现，博士候选没有额外卡外底框。"
+  },
+  "authorizationVerdict": {
+    "status": "PASS",
+    "basis": "本轮明确授权修复过小卡牌并复用既有完整选择器；限定原组件和真实候选，未以图面评分为旧版外观改造追加授权。"
+  },
+  "protectedSlots": {
+    "候选与确认": "分工图中当前候选或目标空态可辨，第二十张选中黄框四边完整且确认入口独立。",
+    "背景棋盘与手牌": "前景选择或阅读允许合法覆盖背景，未要求通过缩小候选露全底层手牌",
+    "阶段骰盘资源": "保留原槽位，图面没有显示因候选布局而迁移"
+  },
+  "negativeImpactChecks": [
+    "十三张变字节原图已逐张私有实读，包括第二十张选中四边和第四十二张非空搜索清空中线。",
+    "五张同字节原图沿用真实读取路径并附首轮、第二轮报告及原图散列。",
+    "标题实际可读，不沿用已撤销的标题裁切误判。",
+    "前景选择与阅读层可合法覆盖底层手牌棋盘，不为露全底层而缩小候选。",
+    "本报告仅覆盖所分工十八图，不以测试通过替代图面判断。",
+    "未改产品或最终清单，未向主用户展示媒体。"
+  ],
+  "hardFailures": [],
+  "baselineRequirements": [
+    {
+      "id": "ui-2",
+      "requirement": "所有来源卡牌复用完整牌库选择器，候选尺度可读且保留搜索选中确认和原读牌入口",
+      "baselineSource": "既有血色杀戮selectDeckCard→InteractionOverlay完整入口；博士只适配合法来源候选。用户明确要求修复小卡，不机械恢复尺寸。修前图是被否决的症状对照，不是正常尺寸基线；阅读尺度来自同游戏既有BoardOverlays多卡阅读，保留源frame比例。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\01-弃牌法术候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\03-弃牌法术候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\before\\41-弃牌直接施放八牌候选-横屏.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\01-弃牌法术候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\02-弃牌法术已选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\03-弃牌法术候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\04-弃牌法术已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\12-抽牌返还候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\13-抽牌返还已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\14-牌库位置选择.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\15-牌库顶五法术候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\16-牌库顶五第二张已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\17-剩余牌重排候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\18-剩余牌首张已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\19-准备区法术施放候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\20-准备区法术已选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\29-卡牌候选复用放大阅读.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\40-弃牌直接施放完整候选-桌面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41-弃牌直接施放八牌候选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\41b-弃牌直接施放法术已选-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\42-弃牌搜索无匹配可清除-横屏.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\44-手机横屏-弃牌候选原阅读界面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\46-桌面-弃牌候选原阅读界面.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restored-interactions-20261101\\47-预感返还多卡候选-横屏.png"
+      ],
+      "status": "PASS",
+      "preservedInformation": "正式卡面名称与内容、真实合法来源候选、来源标题、搜索结果和空态继续由既有选择器承接；三张修前原图只作为被否决的小卡症状对照，不作为正常尺寸基线。",
+      "preservedActions": "保留既有血色杀戮入口的浏览、搜索、选择、确认或规则允许跳过、右键或长按读牌职责；博士适配器只映射真实来源与合法候选，并在确认后提交原选项。",
+      "changes": "获准将被否决的小卡尺度改为同游戏既有多卡阅读尺度族并保持源框比例；当前第二行选中原图四条金边完整，非空搜索原图仅有一个在输入框内垂直居中的清空按钮。",
+      "duplicateDecision": "正式卡面不在外部复写名称或效果；搜索清空合并为一个主可见入口，且该入口已居中，空态与主提交分别承担独立职责。",
+      "changeAuthority": "依据用户当轮明确要求修复小卡并复用完整旧组件；正常旧像素大小未取得，三张修前图仅作症状对照，没有以历史提交、旧小卡或测试通过授予额外改造权限。"
+    }
+  ],
+  "sourcePlanSha256": "7ac2822e18460d193190061ddf66fb4ea9f159bd449b92f0b519a822a2c04aee",
+  "previousRoundReport": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-verification-20261102\\round-two-doctor-reuse-final-a.json",
+  "previousRoundFailuresResolved": [
+    {
+      "entryPath": "20-准备区法术已选.png",
+      "previousIssue": "第二行选中卡的黄框底边裁切",
+      "currentResult": "本轮实读原图显示四条金边完整且不碰确认。"
+    },
+    {
+      "entryPath": "42-弃牌搜索无匹配可清除-横屏.png",
+      "previousIssue": "原生与自建清空重复，随后唯一清空圆底仍偏低",
+      "currentResult": "本轮实读原图仅有一个白叉，圆底完整位于输入框内且垂直居中。"
+    }
+  ],
+  "refreshBasis": {
+    "newOriginalsActuallyRead": [
+      "01",
+      "02",
+      "03",
+      "04",
+      "12",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "40",
+      "42"
+    ],
+    "sameByteCarriedForward": [
+      "13",
+      "29",
+      "41",
+      "41b",
+      "47"
+    ],
+    "currentOriginalsReadCount": 13,
+    "priorRoundActuallyReadCount": 18,
+    "unchangedHashEvidence": "所有十八项最新来源散列与计划一致；五项继承同时核对旧实际读取原图的散列，未假造当前重新读图。"
+  }
+}

@@ -33,7 +33,10 @@ export function ClassicHomeSurface({
             data-home-entry-style="classic"
             style={{ minHeight: 'var(--runtime-viewport-height, 100vh)' }}
         >
-            <header className="w-full relative px-6 md:px-12 pt-[calc(env(safe-area-inset-top)+4.25rem)] md:pt-8 pb-0">
+            <header className="w-full relative px-6 md:px-12 pt-[calc(env(safe-area-inset-top)+0.875rem)] md:pt-8 pb-0">
+                <div className="-mx-2 mb-2 flex w-[calc(100%+1rem)] flex-wrap items-center justify-end gap-x-3 gap-y-2 md:absolute md:right-12 md:top-8 md:mx-0 md:mb-0 md:w-auto md:flex-nowrap md:gap-x-4">
+                    {utility}
+                </div>
                 <div className="flex flex-col items-center justify-center mb-1 md:mb-4">
                     <div className="flex items-center justify-center gap-3 md:gap-4 mb-2">
                         {brand}
@@ -41,9 +44,6 @@ export function ClassicHomeSurface({
                     <p className="text-[10px] md:text-sm text-parchment-light-text tracking-[0.2em] font-bold uppercase opacity-80">
                         {subtitle}
                     </p>
-                </div>
-                <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+0.875rem)] mb-0 flex max-w-[calc(100vw-2rem)] flex-wrap items-center justify-end gap-x-3 gap-y-2 md:right-12 md:top-8 md:flex-nowrap md:gap-x-4">
-                    {utility}
                 </div>
             </header>
             <main className="w-full max-w-7xl flex flex-col items-center pt-0 px-4 sm:px-6 md:px-8">

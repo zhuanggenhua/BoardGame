@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>exports · v23 · selected · review · 20261016</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>exports · v23 · selected · review · 20261016</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"v3-375x812-details-rooms.png","displayTitle":"v3 · 375x812 · details · rooms","description":"游戏详情在375×812视口显示操作区和房间列表","kind":"image"},{"relativePath":"v3-1024x600-favorites-last-item.png","displayTitle":"v3 · 1024x600 · favorites · last · item","description":"收藏库在1024×600视口显示列表末项和滚动区域","kind":"image"},{"relativePath":"v3-1024x600-favorites.png","displayTitle":"v3 · 1024x600 · favorites","description":"收藏库在1024×600视口显示封面列表和页面内容","kind":"image"},{"relativePath":"v3-1024x768-details-rooms.png","displayTitle":"v3 · 1024x768 · details · rooms","description":"游戏详情在1024×768视口显示操作区和房间列表","kind":"image"},{"relativePath":"v3-1024x768-favorites-last-item.png","displayTitle":"v3 · 1024x768 · favorites · last · item","description":"收藏库在1024×768视口显示列表末项和滚动区域","kind":"image"},{"relativePath":"v3-1024x768-favorites.png","displayTitle":"v3 · 1024x768 · favorites","description":"收藏库在1024×768视口显示封面列表和页面内容","kind":"image"},{"relativePath":"v3-1280x800-details-rooms.png","displayTitle":"v3 · 1280x800 · details · rooms","description":"游戏详情在1280×800视口显示操作区和房间列表","kind":"image"},{"relativePath":"v3-1280x800-favorites-last-item.png","displayTitle":"v3 · 1280x800 · favorites · last · item","description":"收藏库在1280×800视口显示列表末项和滚动区域","kind":"image"},{"relativePath":"v3-1280x800-favorites.png","displayTitle":"v3 · 1280x800 · favorites","description":"收藏库在1280×800视口显示封面列表和页面内容","kind":"image"},{"relativePath":"v3-1920x1080-details-rooms.png","displayTitle":"v3 · 1920x1080 · details · rooms","description":"游戏详情在1920×1080视口显示操作区和房间列表","kind":"image"},{"relativePath":"v4-1024x600-profile-last-row.png","displayTitle":"v4 · 1024x600 · profile · last · row","description":"个人主页显示资料信息与动态列表内容","kind":"image"},{"relativePath":"v4-1024x768-profile-last-row.png","displayTitle":"v4 · 1024x768 · profile · last · row","description":"个人主页显示资料信息与动态列表内容","kind":"image"},{"relativePath":"v23-1024x768-discover.png","displayTitle":"v23 · 1024x768 · discover","description":"发现页面以卡片网格呈现游戏与分类入口","kind":"image"},{"relativePath":"v23-1024x768-profile.png","displayTitle":"v23 · 1024x768 · profile","description":"个人主页显示资料信息与动态列表内容","kind":"image"},{"relativePath":"v23-1280x800-discover.png","displayTitle":"v23 · 1280x800 · discover","description":"发现页面以卡片网格呈现游戏与分类入口","kind":"image"},{"relativePath":"v23-1280x800-profile.png","displayTitle":"v23 · 1280x800 · profile","description":"个人主页显示资料信息与动态列表内容","kind":"image"},{"relativePath":"v23-chain-01-收藏库主页.png","displayTitle":"v23 · chain · 01 · 收藏库主页","description":"收藏库主页显示收藏内容与页面导航入口","kind":"image"},{"relativePath":"v23-chain-01b-收藏库悬停.png","displayTitle":"v23 · chain · 01b · 收藏库悬停","description":"封面悬停状态显示游戏说明与交互反馈","kind":"image"},{"relativePath":"v23-chain-02-收藏库游戏页.png","displayTitle":"v23 · chain · 02 · 收藏库游戏页","description":"收藏游戏页面显示详情内容与对局操作区域","kind":"image"},{"relativePath":"v23-chain-02b-收藏库排行榜.png","displayTitle":"v23 · chain · 02b · 收藏库排行榜","description":"排行榜页面显示榜单内容和页面页签","kind":"image"},{"relativePath":"v23-chain-02c-收藏库规则概览.png","displayTitle":"v23 · chain · 02c · 收藏库规则概览","description":"规则概览页面显示规则内容和页签区域","kind":"image"},{"relativePath":"v23-chain-03-切发现再回收藏库.png","displayTitle":"v23 · chain · 03 · 切发现再回收藏库","description":"返回收藏库后显示当前游戏与页面状态","kind":"image"},{"relativePath":"v23-chain-04-点主页.png","displayTitle":"v23 · chain · 04 · 点主页","description":"主页显示主体内容区域和导航状态","kind":"image"},{"relativePath":"v23-chain-05-发现网格.png","displayTitle":"v23 · chain · 05 · 发现网格","description":"发现页面以卡片网格呈现游戏与分类入口","kind":"image"},{"relativePath":"v23-chain-05b-发现悬停.png","displayTitle":"v23 · chain · 05b · 发现悬停","description":"封面悬停状态显示游戏说明与交互反馈","kind":"image"},{"relativePath":"v23-chain-06b-作者弹窗.png","displayTitle":"v23 · chain · 06b · 作者弹窗","description":"作者信息弹窗显示署名内容和关闭入口","kind":"image"},{"relativePath":"v23-chain-06c-销毁确认.png","displayTitle":"v23 · chain · 06c · 销毁确认","description":"销毁确认弹窗显示操作说明和确认入口","kind":"image"},{"relativePath":"v23-chain-06d-创建房间.png","displayTitle":"v23 · chain · 06d · 创建房间","description":"创建房间弹窗显示人数设置与创建操作","kind":"image"},{"relativePath":"v23-chain-07-上传页.png","displayTitle":"v23 · chain · 07 · 上传页","description":"上传页面显示游戏资料表单与页面入口","kind":"image"},{"relativePath":"v23-chain-07b-上传新游戏.png","displayTitle":"v23 · chain · 07b · 上传新游戏","description":"新游戏上传页面显示资料表单与检测提示","kind":"image"},{"relativePath":"v23-chain-08-个人主页.png","displayTitle":"v23 · chain · 08 · 个人主页","description":"个人主页显示资料信息与动态列表内容","kind":"image"},{"relativePath":"v23-chain-m01-收藏库主页.png","displayTitle":"v23 · chain · m01 · 收藏库主页","description":"收藏库主页显示收藏内容与页面导航入口","kind":"image"},{"relativePath":"v23-chain-m01c-收藏库末项.png","displayTitle":"v23 · chain · m01c · 收藏库末项","description":"收藏库在375×812视口显示列表末项和滚动区域","kind":"image"},{"relativePath":"v23-chain-m02-收藏库游戏页.png","displayTitle":"v23 · chain · m02 · 收藏库游戏页","description":"收藏游戏页面显示详情内容与对局操作区域","kind":"image"},{"relativePath":"v23-chain-m02b-游戏列表抽屉.png","displayTitle":"v23 · chain · m02b · 游戏列表抽屉","description":"游戏列表抽屉显示可选游戏和导航内容","kind":"image"},{"relativePath":"v23-chain-m02c-完整房间列表.png","displayTitle":"v23 · chain · m02c · 完整房间列表","description":"房间列表显示完整对局条目和操作区域","kind":"image"},{"relativePath":"v23-chain-m02d-完整好友列表.png","displayTitle":"v23 · chain · m02d · 完整好友列表","description":"好友列表显示完整好友条目及邀请入口","kind":"image"},{"relativePath":"v23-chain-m05-发现两列.png","displayTitle":"v23 · chain · m05 · 发现两列","description":"发现页面以卡片网格呈现游戏与分类入口","kind":"image"},{"relativePath":"v23-chain-m05b-发现点开展开.png","displayTitle":"v23 · chain · m05b · 发现点开展开","description":"发现卡片展开后显示介绍文字和游戏信息","kind":"image"},{"relativePath":"v23-chain-m05c-发现末项.png","displayTitle":"v23 · chain · m05c · 发现末项","description":"发现列表末项显示在滚动区域底部","kind":"image"},{"relativePath":"v23-chain-m06b-作者弹窗.png","displayTitle":"v23 · chain · m06b · 作者弹窗","description":"作者信息弹窗显示署名内容和关闭入口","kind":"image"},{"relativePath":"v23-chain-m06c-销毁确认.png","displayTitle":"v23 · chain · m06c · 销毁确认","description":"销毁确认弹窗显示操作说明和确认入口","kind":"image"},{"relativePath":"v23-chain-m06d-创建房间.png","displayTitle":"v23 · chain · m06d · 创建房间","description":"创建房间弹窗显示人数设置与创建操作","kind":"image"},{"relativePath":"v23-chain-m06e-规则原文.png","displayTitle":"v23 · chain · m06e · 规则原文","description":"规则页面显示原文内容和页面导航入口","kind":"image"},{"relativePath":"v23-chain-m06f-创建AI展开.png","displayTitle":"v23 · chain · m06f · 创建AI展开","description":"创建房间界面显示展开的电脑设置区域","kind":"image"},{"relativePath":"v23-chain-m06g-AI创建按钮可达.png","displayTitle":"v23 · chain · m06g · AI创建按钮可达","description":"创建房间界面显示可访问的电脑创建操作","kind":"image"},{"relativePath":"v23-chain-m07-上传页.png","displayTitle":"v23 · chain · m07 · 上传页","description":"上传页面显示游戏资料表单与页面入口","kind":"image"},{"relativePath":"v23-chain-m07b-上传提交区.png","displayTitle":"v23 · chain · m07b · 上传提交区","description":"上传表单末端显示规则附件与提交操作","kind":"image"},{"relativePath":"v23-chain-m07c-短视口填写.png","displayTitle":"v23 · chain · m07c · 短视口填写","description":"短视口上传页面显示表单内容和提交区域","kind":"image"},{"relativePath":"v23-chain-m08-个人主页.png","displayTitle":"v23 · chain · m08 · 个人主页","description":"个人主页显示资料信息与动态列表内容","kind":"image"},{"relativePath":"v23-chain-m08b-顶栏抽屉.png","displayTitle":"v23 · chain · m08b · 顶栏抽屉","description":"顶栏抽屉显示搜索指南和语言菜单入口","kind":"image"},{"relativePath":"v23-chain-m08c-个人动态末项.png","displayTitle":"v23 · chain · m08c · 个人动态末项","description":"个人动态末项显示排行信息与列表收尾内容","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

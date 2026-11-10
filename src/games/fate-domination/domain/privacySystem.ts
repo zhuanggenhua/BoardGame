@@ -30,9 +30,9 @@ export function createFatePrivacySystem():EngineSystem<FateDominationCore>{
    actionLog:{...state.sys.actionLog,entries:state.sys.actionLog.entries.map(entry=>{
     if(['SELECT_SERVANT','SELECT_ATTACK_CARD'].includes(entry.kind))return {...entry,segments:[{type:'text' as const,text:entry.kind==='SELECT_SERVANT'?'召唤从者':'调整出牌选择'}]};
     if(entry.kind==='INSPECT_CARD' && entry.actorId!==viewerId){
-     const publicCardIds=[state.core.situation.id,state.core.miyamaEvent.id];
-     const publiclyVisible=entry.segments.some(segment=>segment.type==='text' && publicCardIds.some(id=>segment.text===`查看卡牌：${id}`));
-     if(!publiclyVisible)return {...entry,segments:[{type:'text' as const,text:'查看卡牌'}]};
+     const publicCardNames=[state.core.situation.name,state.core.miyamaEvent.name];
+     const publiclyVisible=entry.segments.some(segment=>segment.type==='text' && publicCardNames.some(name=>segment.text===`查看卡牌：${name}`));
+     if((entry as typeof entry & {fatePrivateInspection?:boolean}).fatePrivateInspection!==false || !publiclyVisible)return {...entry,segments:[{type:'text' as const,text:'查看卡牌'}]};
     }
     return entry;
    })},

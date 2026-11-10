@@ -1,0 +1,185 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "online-entry",
+  "sourceRun": "e2e-1793038085138-is2r0u",
+  "sourceRevision": "50e0906c84d06b937d5864fb6c410e4587e111c7decb3a202f3c36cd48fcb869",
+  "status": "PASS",
+  "outcome": "两位真实浏览器参与者分别选择索尔/武僧、准备并开局，索尔以实施中状态加载角色板、九槽和四牌。",
+  "steps": [
+    {
+      "id": "online-entry-01",
+      "action": "真实双人房间分别选索尔和武僧",
+      "before": {
+        "visible": {
+          "text": "选择你的英雄\n奇异博士\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1793038109976(你)\nP2\n武僧\nGuest-1793038110298\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "选择你的英雄\n奇异博士\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1793038109976(你)\nP2\n武僧\nGuest-1793038110298\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "phase",
+          "actual": "setup",
+          "expected": "setup",
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "characters",
+          "actual": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "expected": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "not-started",
+          "actual": false,
+          "expected": false,
+          "evidence": "state-sidecar"
+        }
+      ],
+      "sourceScreenshot": "test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1793038085138-is2r0u/01-索尔真实双人选角与实施中标记.png"
+    },
+    {
+      "id": "online-entry-02",
+      "action": "双方通过自己的页面准备并由主持人开局",
+      "before": {
+        "visible": {
+          "text": "选择你的英雄\n奇异博士\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1793038109976(你)\nP2\n武僧\nGuest-1793038110298\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "🛠️\nGuest-1793038110298\n武僧\n50\n2\n4\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n2\n手动响应\n牌堆\n29\n<\n投掷\n确认\n下一阶段\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n弃牌堆\n2\n1\n1\n0"
+        },
+        "authoritative": {
+          "phase": "main1",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": true,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": [
+                "upgrade-thor-mighty-summon-2",
+                "card-i-can-again",
+                "card-thor-worthy",
+                "upgrade-thor-hammer-2"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": [
+                "hidden-card-0",
+                "hidden-card-1",
+                "hidden-card-2",
+                "hidden-card-3"
+              ]
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "phase",
+          "actual": "main1",
+          "expected": "main1",
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "started",
+          "actual": true,
+          "expected": true,
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "hand-count",
+          "actual": 4,
+          "expected": 4,
+          "evidence": "state-sidecar"
+        }
+      ],
+      "sourceScreenshot": "test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1793038085138-is2r0u/02-索尔在线开局角色板九槽与手牌.png"
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "online-entry-01-ui",
+      "stepId": "online-entry-01",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "7e6d45ad986d18c57a64a2892bc48d13dc796291206ecf6b811aed92c8d7d589"
+    },
+    {
+      "id": "online-entry-02-ui",
+      "stepId": "online-entry-02",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "f9263b64884127a69f861c30944a824d78058327beefd6b465599fae076d8ff2"
+    }
+  ]
+}

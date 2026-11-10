@@ -1,0 +1,45 @@
+{
+  "runId": "20261027-natural-opening-r50",
+  "sourceRevision": "sha256:991a1c31bc27b83442dfe930a990d7e2f3c636f84d04178808b9c84124ce8e56",
+  "requirements": [
+    {
+      "requirement": "连续正式开局与轮盘军屯",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/00-辽东与叶赫部局面.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/03-辽东军屯结果.png"
+      ]
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/06-野战出兵与战术牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/08-叶赫部占领结果.png"
+      ]
+    },
+    {
+      "requirement": "手机长按检视",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-01-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-02-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-03-检视返回后轻点银两选择支付.png"
+      ]
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/09-教程退出后同局继续.png"
+      ]
+    }
+  ],
+  "traceFiles": [
+    "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-entry.json",
+    "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-natural-raid.json",
+    "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-mobile-hand-inspect.json"
+  ]
+}

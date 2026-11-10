@@ -1,0 +1,43 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { expect, test } from '@playwright/test';
+import { disableAudio, setChineseLocale } from '../helpers/common';
+import { encodeLocalMatchSnapshot } from '../../src/engine/transport/localSessionCodec';
+import { qidahenTutorialProgressIdentity } from './tutorialPersistence';
+import { dragQidahenMap } from './mapPointer';
+import { waitForQidahenVisualReady } from './visualReady';
+
+test.use({ channel: 'chromium', launchOptions: { args: [] } });
+test('选择其他合法地区时，地图反馈与当前草稿一致', async ({ page }) => {
+    test.setTimeout(180_000);
+    const encoded = encodeLocalMatchSnapshot(JSON.parse(readFileSync('.tmp/qidahen-r236-checkpoints/farm-target.json', 'utf8')));
+    await setChineseLocale(page); await disableAudio(page);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.addInitScript(({ encoded, seed }) => {
+        (window as any).__E2E_TEST_MODE__ = true;
+        localStorage.setItem(`local_match_snapshot_v1:qidahen:${seed}`, encoded);
+    }, { encoded, seed: qidahenTutorialProgressIdentity.seed });
+    await page.goto('/play/qidahen/tutorial/basic-opening', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: '从上次继续', exact: true }).click({ timeout: 90_000 });
+    await expect.poll(() => page.evaluate(() => (window as any).__BG_TEST_HARNESS__?.state.get()?.sys.tutorial.step?.id), { timeout: 60_000 }).toBe('farm-target');
+    await waitForQidahenVisualReady(page);
+    const target = page.locator('[data-qidahen-map-region-choice="true"][data-qidahen-map-token-region="city-region-19-liaoxi"]').first();
+    await expect(target).toHaveCount(1);
+    const box = await target.boundingBox();
+    expect(box).not.toBeNull();
+    const dx = Math.max(-700, Math.min(700, 960 - (box!.x + box!.width / 2)));
+    const dy = Math.max(-350, Math.min(350, 500 - (box!.y + box!.height / 2)));
+    await dragQidahenMap(page, dx, dy);
+    await expect(target).toBeInViewport({ ratio: 1 });
+    await target.click();
+    await expect(target).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('qidahen-turn-choice')).toContainText('辽西');
+    await expect(page.getByTestId('qidahen-map-selected-region-name')).toHaveText('已选：辽西');
+    await expect(page.getByTestId('qidahen-turn-confirm')).toBeEnabled();
+    const output = resolve('.tmp/qidahen-region-draft-feedback'); mkdirSync(output, { recursive: true });
+    await page.screenshot({ path: resolve(output, 'selected.png') });
+    await page.getByTestId('qidahen-turn-confirm').click();
+    await expect.poll(() => page.evaluate(() => (window as any).__BG_TEST_HARNESS__?.state.get()?.sys.tutorial.step?.id)).toBe('farm-target');
+    await expect(page.getByTestId('qidahen-turn-confirm')).toBeDisabled();
+    writeFileSync(resolve(output, 'result.json'), JSON.stringify({ status: 'PASS', selected: 'city-region-19-liaoxi', restored: 'farm-target' }, null, 2));
+});

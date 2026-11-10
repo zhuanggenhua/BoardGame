@@ -1,0 +1,15 @@
+{
+  "reviewer": "/root",
+  "files": {
+    "src/engine/transport/onlineAiFeedbackDiagnosticsBuilder.ts": {
+      "capturedSha256": "5a4a60c79948a43dcf691c628116c89590ee092897cf661ab5e6a9ee4e5a1eca",
+      "currentSha256": "51b9bc145885b1e1f20bcae73fcfcf18b506b3ee2fa02ba72496996fefb6a107",
+      "impact": "仅扩展在线人工智能故障快照诊断字段，不改变本组索尔交互界面或正常玩家操作。"
+    },
+    "src/engine/transport/onlineAiWatchdogFeedbackDiagnostics.ts": {
+      "capturedSha256": "073b21463a2ecea36c5e26078ae2d242f586370e9bd235eccd185bd06087b4aa",
+      "currentSha256": "5562eb39d5dab8966a2926f8c091be4fbddbaf824d7f1bc7827a148ded863814",
+      "impact": "仅扩展在线人工智能故障快照诊断字段，不改变本组索尔交互界面或正常玩家操作。"
+    }
+  }
+}

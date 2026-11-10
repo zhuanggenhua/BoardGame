@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>zhizhuxia · v2 · final · user · view · 20260920</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>zhizhuxia · v2 · final · user · view · 20260920</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-蜘蛛侠选角-实施中状态.jpg","displayTitle":"01 · 蜘蛛侠选角 · 实施中状态","description":"","kind":"image"},{"relativePath":"02-蜘蛛侠牌桌-玩家板与手牌.jpg","displayTitle":"02 · 蜘蛛侠牌桌 · 玩家板与手牌","description":"","kind":"image"},{"relativePath":"03-蜘蛛侠正式专属卡图槽位.jpg","displayTitle":"03 · 蜘蛛侠正式专属卡图槽位","description":"","kind":"image"},{"relativePath":"04-蜘蛛侠重拳二级升级后.jpg","displayTitle":"04 · 蜘蛛侠重拳二级升级后","description":"","kind":"image"},{"relativePath":"05-落网-普通攻击前.jpg","displayTitle":"05 · 落网 · 普通攻击前","description":"","kind":"image"},{"relativePath":"06-落网-普通攻击前被消费.jpg","displayTitle":"06 · 落网 · 普通攻击前被消费","description":"","kind":"image"},{"relativePath":"07-手牌来源伤害-落网保留.jpg","displayTitle":"07 · 手牌来源伤害 · 落网保留","description":"","kind":"image"},{"relativePath":"08-手牌来源伤害-不消费落网.jpg","displayTitle":"08 · 手牌来源伤害 · 不消费落网","description":"","kind":"image"},{"relativePath":"09-Token来源伤害-落网保留.jpg","displayTitle":"09 · Token来源伤害 · 落网保留","description":"","kind":"image"},{"relativePath":"10-Token来源伤害-不消费落网.jpg","displayTitle":"10 · Token来源伤害 · 不消费落网","description":"","kind":"image"},{"relativePath":"11-蜘蛛感应-投出蜘蛛前.jpg","displayTitle":"11 · 蜘蛛感应 · 投出蜘蛛前","description":"","kind":"image"},{"relativePath":"12-蜘蛛感应-伤害减半结算.jpg","displayTitle":"12 · 蜘蛛感应 · 伤害减半结算","description":"","kind":"image"},{"relativePath":"13-飞荡脱身-蛛网骰面.jpg","displayTitle":"13 · 飞荡脱身 · 蛛网骰面","description":"","kind":"image"},{"relativePath":"14-飞荡脱身-蛛网视为成功面并减伤.jpg","displayTitle":"14 · 飞荡脱身 · 蛛网视为成功面并减伤","description":"","kind":"image"},{"relativePath":"15-隐形-不可防御伤害响应窗口.jpg","displayTitle":"15 · 隐形 · 不可防御伤害响应窗口","description":"","kind":"image"},{"relativePath":"16-隐形-伤害完全失效.jpg","displayTitle":"16 · 隐形 · 伤害完全失效","description":"","kind":"image"},{"relativePath":"17-隐形-防御投骰中可用.jpg","displayTitle":"17 · 隐形 · 防御投骰中可用","description":"","kind":"image"},{"relativePath":"18-隐形-增加一次防御投骰.jpg","displayTitle":"18 · 隐形 · 增加一次防御投骰","description":"","kind":"image"},{"relativePath":"19-成熟参考-吸血鬼领主牌桌玩家板.jpg","displayTitle":"19 · 成熟参考 · 吸血鬼领主牌桌玩家板","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

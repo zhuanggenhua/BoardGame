@@ -429,9 +429,10 @@ for (const input of [
 });
 
 for (const input of [
-    { cardId: 'card-play-six', fixed: true, expectedValue: 6 },
-    { cardId: 'card-surprise', fixed: false, expectedValue: 2 },
-]) test(`索尔公共${input.fixed ? '固定六' : '任意改一骰'}保留旧操作语义`, async ({ page, game }, info) => {
+    { cardId: 'card-play-six', fixed: true, expectedValue: 6, label: '固定六', hint: '选择要设为6的骰子' },
+    { cardId: 'card-surprise', fixed: false, expectedValue: 2, label: '任意改一骰', hint: '选择要修改的骰子' },
+    { cardId: 'card-flick', fixed: false, expectedValue: 2, label: '弹一手调整一格', hint: '选择要调整的骰子' },
+]) test(`索尔公共${input.label}保留旧操作语义`, async ({ page, game }, info) => {
     test.setTimeout(120000);
     await scene(page, game, info, { gameId: 'dicethrone', phase: 'main1', currentPlayer: '0', randomQueue: [.08, .08, .08, .08, .08],
         player0: { hand: [input.cardId], resources: { hp: 50, cp: 5 } }, player1: { hand: [] }, extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true, dice: [], rollCount: 0, rollConfirmed: false } });
@@ -442,14 +443,17 @@ for (const input of [
     await shot(page, info, '00-改骰前放大阅读公共卡牌');
     await page.getByTestId('board-magnify-overlay-close').click();
     await dragDiceThroneHandCardToPlay(page, input.cardId);
-    await expect(page.getByTestId('dice-interaction-hint')).toContainText(input.fixed ? '选择要设为6的骰子' : '选择要修改的骰子');
-    await shot(page, info, '01-旧固定值和任意编辑各自提示与控件');
+    await expect(page.getByTestId('dice-interaction-hint')).toContainText(input.hint);
+    await shot(page, info, input.cardId === 'card-flick' ? '01-调整一格使用原骰盘提示与控件' : '01-旧固定值和任意编辑各自提示与控件');
     if (input.fixed) {
         await expect(page.locator('[data-testid^="die-adjust-"]')).toHaveCount(0);
         await page.getByTestId('die-button-0').click();
     } else {
         await page.getByTestId('die-adjust-increment-0').click();
-        await shot(page, info, '02-任意编辑保留原加减预览和手动确认');
+        if (input.cardId === 'card-flick') {
+            await expect(page.getByTestId('die-adjust-increment-0')).toBeDisabled();
+        }
+        await shot(page, info, input.cardId === 'card-flick' ? '02-调整一格后原确认可用且再次增加被禁用' : '02-任意编辑保留原加减预览和手动确认');
         await page.getByTestId('dice-interaction-confirm-button').click();
     }
     await expect.poll(async () => (await game.getState()).core.currentRollContext?.dice.map((d: { value: number }) => d.value)).toEqual([input.expectedValue, 1, 1, 1, 1]);

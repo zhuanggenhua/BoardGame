@@ -373,6 +373,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                         <HomeModalErrorBoundary resetKey={game.id}>
                             <Suspense fallback={homeStyle === 'modern' ? <PlatformGameDetailsFallback onClose={close} closeOnBackdrop={closeOnBackdrop} /> : <HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
                                 <GameDetailsModalComponent
+                                homeStyle={homeStyle}
                                 isOpen
                                 onClose={close}
                                 gameId={game.id}
@@ -510,7 +511,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
             },
             render: ({ close, closeOnBackdrop }) => (
                 <AuthModal
-                    visualStyle="platform"
+                    visualStyle={homeStyle === 'modern' ? 'platform' : 'default'}
                     isOpen
                     onClose={() => {
                         close();

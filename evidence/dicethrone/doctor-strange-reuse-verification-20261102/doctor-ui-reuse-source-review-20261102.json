@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "role": "独立只读 reviewer",
+  "generatedAt": "2026-11-02T10:08:01.3626906+08:00",
+  "verdict": "通过：仅本轮源码复用与回归风险审查",
+  "visualVerdict": "未验证；不得据此生成PASS清单或整体交付通过",
+  "scope": [
+    "本轮重投提示恢复骰盘左侧垂直居中",
+    "卡选择继续使用既有InteractionOverlay完整owner并采用已存在阅读尺度族",
+    "只查本轮新增回归；不重审历史53图、不认可被用户否决的旧尺寸"
+  ],
+  "canonicalStandards": [
+    ".spec/agents/reviewer.agent.md",
+    ".spec/knowledge/standards/ui-change-gates.md:15-21",
+    ".spec/skills/safe-image-reading/SKILL.md"
+  ],
+  "changesReviewed": [
+    "src/games/dicethrone/ui/InteractionOverlay.tsx",
+    "src/games/dicethrone/ui/RightSidebar.tsx",
+    "src/games/dicethrone/ui/diceInteractionContract.ts"
+  ],
+  "existingOwners": [
+    {
+      "task": "规则Choice卡牌选择",
+      "chain": "Board ChoiceObjectSelection -> InteractionOverlay -> CardPreview",
+      "evidence": [
+        "src/games/dicethrone/Board.tsx:1890",
+        "src/games/dicethrone/ui/ChoiceObjectSelection.tsx:124",
+        "src/games/dicethrone/ui/InteractionOverlay.tsx:389"
+      ],
+      "result": "适配候选与原option ID；选中、确认、跳过、搜索、纵向多行滚动仍由既有完整owner承载，没有第二套卡选择器"
+    },
+    {
+      "task": "旧英雄牌库选择",
+      "chain": "血色杀戮 custom action selectDeckCard -> Board InteractionOverlay",
+      "evidence": [
+        "src/games/dicethrone/domain/customActions/vampire_lord.ts:550",
+        "src/games/dicethrone/Board.tsx:1756"
+      ],
+      "result": "与新增Choice卡池使用同一个InteractionOverlay卡选择分支；本轮卡尺度和窗口结构会影响此真实旧入口，必须复验"
+    },
+    {
+      "task": "普通及奖励选骰提示",
+      "chain": "diceInteractionContract hint.surface=dice-tray -> RightSidebar 原hint owner",
+      "evidence": [
+        "src/games/dicethrone/ui/diceInteractionContract.ts:552",
+        "src/games/dicethrone/ui/RightSidebar.tsx:141",
+        "src/games/dicethrone/ui/RightSidebar.tsx:217"
+      ],
+      "result": "原骰盘定位父级保留；right-full/top-1/2与单次translateY(-50%)表达骰盘左侧中心。Token响应分支未迁移"
+    }
+  ],
+  "sourceChecks": [
+    {
+      "check": "真实完整owner复用",
+      "result": "通过（源码）",
+      "detail": "ChoiceObjectSelection只适配InteractionDescriptor与原option ID；未复制完整选择UI或另造卡选择器"
+    },
+    {
+      "check": "既有阅读尺度",
+      "result": "通过（来源确认）",
+      "detail": "28vw/350px/54.9vh可追到BoardOverlays多卡阅读层；这只证明数值来源，不证明本轮视觉合格"
+    },
+    {
+      "check": "源卡比例",
+      "result": "通过（源码）",
+      "detail": "getCardPreviewAspectRatio读取atlas frame；选择分支只提供width，没有强制height/aspectRatio，CardPreview内部保留computeSpriteImgStyle得到的真实frame aspectRatio"
+    },
+    {
+      "check": "选中卡边缘",
+      "result": "未发现必然裁切；需要实图",
+      "detail": "选中位移8px，滚窗顶部padding12px；ring2理论仍有4px余量。cqh依赖实际滚窗内容高度、flex收缩与浏览器样式，不能替代短屏现场核图"
+    },
+    {
+      "check": "无关旧UI扩大修改",
+      "result": "本轮增量未发现",
+      "detail": "34源文件旧账逐项hash核对，只3个文件发生变化；状态owner紧凑/原padding等HEAD diff属于旧账已有变化，不错误归成本轮新增"
+    },
+    {
+      "check": "放大阅读完整链",
+      "result": "通过（源码接线）",
+      "detail": "右键和触摸长按均接Board setMagnifiedCard；BoardOverlays在存在sysInteraction时提高magnify层级；返回后保留选择由同一state承载。实际触摸和返回态尚未验证"
+    }
+  ],
+  "findings": [],
+  "remainingRisks": [
+    "所有本轮新交互必须以当前真实入口新截图重新验收；旧c057、旧53图及本报告不能替代。",
+    "共享卡池变更影响血色杀戮selectDeckCard旧入口；须覆盖未选、已选、搜索、多行纵滚、右键/长按读牌返回与确认动作。",
+    "短横屏下滚窗受容器高度收缩，须现场核对完整牌面、选中边缘和动作区均可读可点。",
+    "Thor共用选骰/卡选择承载；本审查未修改或验收Thor旧UI，需其owner按已通知范围核图。",
+    "源码没有确证bug不等于布局和玩家接受度通过。"
+  ],
+  "verification": [
+    "读取当前产品源码与对应HEAD diff；核对既有阅读层和真实血色杀戮触发链",
+    "逐项对照temp/doctor-restoration-final-ledger.json的sourceIdentity，34源文件仅3项hash变化",
+    "未运行浏览器/未读取历史53图/未生成PASSmanifest/未改产品源码"
+  ],
+  "historicalLedger": "temp/doctor-restoration-final-ledger.json",
+  "memoryUse": "仅定位历史卡池与证据边界；MEMORY.md:729-755中的旧尺寸和旧PASS结论不作为本轮验收依据",
+  "ledgerSourceCount": 34,
+  "ledgerHashChanges": [
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "ledgerHash": "ca89a92b23296511275b5f8d1d98ddeb34b856d7bbfd25a76a8a4baf6f154fd8",
+      "reviewedHash": "b2372e37bfe9cf4d6001648b8f1395283c5b91d055cc62bc9c66ac2002c25cdf"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "ledgerHash": "66493be18b1bffb5bd6b322498db1f81b956c5a5f2c8080d3ea104053922281b",
+      "reviewedHash": "f80c9db27af1d0970d67d42eda0680e9f809f1a541fa64c66c43c0284687586c"
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceInteractionContract.ts",
+      "ledgerHash": "f1915cab3daafad2485856056154e05ffdcd5c46ad7a574a6aff0a8740481d20",
+      "reviewedHash": "0b14da0014938744a777ba0bc3eebadbb735025e7768fa81610d2b58e5ab5652"
+    }
+  ],
+  "handOverlapContractDecision": {
+    "question": "旧血色杀戮E2E完全不交/每行至少5卡，与用户拒绝缩小卡牌的冲突",
+    "verdict": "允许更新这两项旧验收；不应为迎合旧几何条件压小产品卡面",
+    "authorization": "本轮用户明确指出卡牌过小，并否决为了避免遮挡而缩小以及机械套历史尺寸。此授权直接覆盖卡池可读尺寸及与其冲突的旧密度条件；不授权隐藏/缩小/重排原手牌。",
+    "evidence": [
+      "e2e/dicethrone/vampire-lord-real-entry.e2e.ts:1007-1015：旧断言要求hand.top-panel.bottom>=4且无相交，这是跨层几何约束，不是独立规则结果。",
+      "该文件HEAD原927-947：firstRowCount>=5/原80x120阈值服务旧小卡密度；未发现本案必须保留五张横排的规则输入。",
+      ".spec/knowledge/standards/ui-responsive-layout.md:38-40：上层弹窗独立窗口，不扣下层高度，不为露出下层压小牌；下层可被覆盖，滚动归属弹窗。",
+      ".spec/knowledge/standards/ui-responsive-layout.md:47：absolute/fixed/portal可跨层覆盖，几何相交不等于失败。",
+      ".spec/knowledge/standards/ui-ux.md:33-34：主信息不因操作态降级，不重叠不等于体验合格。",
+      ".spec/knowledge/standards/ui-ux.md:42-43：一级当前决策信息必须直接读取；静态完整规则可由只读检视补足，关闭后仍继续比较。"
+    ],
+    "approvedReplacement": [
+      "不隐藏、不缩小、不改布局的真实原手牌仍保留可识别上下文；记录实际前景覆盖和剩余可见范围，不称完整无遮挡。",
+      "至少半张作为当前视口最低回归保护可以采用，但不能反向升级为所有游戏/视口通用产品比例，也不独立证明视觉通过。",
+      "在实际露出的原手牌区域验证elementFromPoint命中，执行真实右键（触屏等价长按若本轮范围包含），打开完整读牌，关闭后候选、已选项与确认权限不变。不得force点击或隐藏helper代替真实入口。",
+      "保留alpha/filter/visibility、非当前操作者权限、真实牌库全集、搜索匹配/清空/空态、纵滚可达、最终选牌入手与牌库变化等行为断言。",
+      "新截图继续验候选读数、选中态、动作区、手牌识别与比较任务；半张/可命中不能替代玩家视角审图。"
+    ],
+    "suppliedRuntimeMetrics": {
+      "source": "主线程本次真实入口测量转述，审查者未独立量测",
+      "viewport": "1920x1080",
+      "surfaceY": "8..768",
+      "handY": "702..1080",
+      "verticalOverlapPx": 66,
+      "uncoveredHeightPx": 312,
+      "handHeightPx": 378,
+      "uncoveredFraction": 0.8254,
+      "meaning": "满足所提半张最低保护的几何条件，但仍须实图和读牌行为证明"
+    },
+    "mustPreserve": "现有手牌本体/原检视链、真实信息权限、当前候选及确认结果；无直接证据要求继续把全部手牌完整无交叠当本轮硬合同。即使旧历史曾有此几何目标，本轮明确纠偏也优先；其保留的用户任务应由可读候选和真实手牌检视证明。",
+    "boundary": "只读裁决，未实现测试或产品修改；不是为让绿而删错，不宣告视觉通过。"
+  }
+}

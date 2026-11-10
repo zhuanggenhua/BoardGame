@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "sourceSnapshot": {
+    "index.html": "aed409c5c03c1d3f234522e8d7a55feff906717a2765c7089d7eec10bb800d9b",
+    "mobile.css": "4d49892b20a48f30039305b910863948a1024636f7cf53094a850b4226296b7d",
+    "capture.mjs": "735983b6adfc6f2b1db8d1c499514adfcf269ff330c2b3b5907bbbc12c4e3524",
+    "mobile-capture.mjs": "e61448abd98110af060bd6b95ee1e935e627cd77689f8b1a1cd84580d3fd9d02",
+    "details-layout.mjs": "130f7d6969f3ac70e61dec210097e20e62be053b108472409fea9ea083934519",
+    "details-actions.behavior.test.ts": "d86870e1bc75fb194197ee03372111e958bd0e453df0eb5ca0f55a6dfef0498b",
+    "library-tasks.mjs": "e8f3c111e90795bc81bfc85e9cbfa3a265803711a495c6b03be685a2c519a8b0",
+    "library-task.behavior.test.ts": "d3b1635532679ecec567237f937fb962a18d370598b080def475a347c7367e1a",
+    "vitest.config.ts": "9a2ae93ae87da3514bf4972ae42d17a2ea14e7b8700a5356c9438cebf3beffde"
+  },
+  "originalIssue": "用户指出现有界面的人数表达更好，并建议电子化作者放在按钮右侧",
+  "sourceReference": {
+    "mode": "read-only-source",
+    "files": [
+      "src/components/home-v2/GameDetails.tsx",
+      "src/components/lobby/GameDetailsModal.tsx"
+    ],
+    "absorbed": "逐个数字格表达支持人数并用深底突出推荐值；不修改生产源"
+  },
+  "before": {
+    "evidence": "../refs/v22-before-players-author/exports",
+    "issue": "支持人数压成一行文字，署名占据资料行"
+  },
+  "priorBehaviorEvidence": {
+    "red": "details-actions-red.log",
+    "hoverIteration": "details-actions-vitest-initial.log",
+    "note": "历史操作分组批次证据，本轮未覆盖或删除"
+  },
+  "vitest": {
+    "status": "PASS",
+    "files": 3,
+    "tests": 4,
+    "log": "details-players-author-vitest.log",
+    "checks": [
+      "支持人数数字格完整",
+      "仅推荐人数突出",
+      "数字格保持只读",
+      "作者位于按钮右侧同排且轻量可点",
+      "大厅获得超过半幅空间",
+      "默认四房完整可见",
+      "短屏真实滚轮抵达末房且按钮可命中",
+      "桌面手机主辅分区间距",
+      "三个辅助入口同排且有触控区域",
+      "收藏切换恢复",
+      "教程配置原有示意反馈",
+      "作者打开关闭",
+      "满房按钮禁用",
+      "收藏库主任务回归"
+    ]
+  },
+  "browser": {
+    "status": "PASS",
+    "log": "details-players-author-capture.log",
+    "freshMedia": 11,
+    "checks": [
+      "数字人数与推荐突出",
+      "按钮右侧署名",
+      "详情整屏空间及四房完整",
+      "作者弹窗",
+      "销毁确认",
+      "创建表单",
+      "规则页签",
+      "电脑展开",
+      "创建按钮滚动可达"
+    ]
+  },
+  "visual": {
+    "fresh": 11,
+    "carriedForward": 32,
+    "total": 43,
+    "reviewFile": ".visual-review.json"
+  },
+  "limitations": [
+    "操作入口仍为现有设计稿示意行为，不代表真实教程配置或联机功能",
+    "移动新图为三百七十五竖屏；没有真机键盘或安全区验收",
+    "只修当前设计稿，未提交推送或部署"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "对照旧版，核验按钮位置样式调整后牌面、被动、侧栏与相邻界面保持。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\01-桌面单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\02-桌面单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\04-桌面多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\05-桌面多张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\07-横屏单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\08-横屏单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\10-横屏多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\11-横屏多张-露出被动.png"
+      ],
+      "preservedActions": "静态图片不证明交互；行为另见 e2e/dicethrone/doctor-prepared-visibility.e2e.ts 和 e2e/dicethrone/doctor-prepared-visibility-touch.e2e.ts，是否通过以独立运行结果为准。",
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\01-桌面单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\02-桌面单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\04-桌面多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\05-桌面多张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\07-横屏单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\08-横屏单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\10-横屏多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\11-横屏多张-露出被动.png"
+      ],
+      "preservedInformation": "所审画面中法术牌面、露出的被动文字及位置、阶段列表、生命和 CP、手动响应、牌堆、右侧提示与操作区视觉上保持，未见新增遮挡或裁切。",
+      "changeAuthority": "用户指定调整按钮位置和样式。",
+      "status": "PASS",
+      "baselineSource": "旧版 final 的桌面和横屏单张、多张法术显示与露出被动截图；逐一对照当前同态截图。",
+      "changes": "眼睛按钮从槽内移到槽外，增加紧贴槽位的橙色控制片；原先被图标遮住的牌图区域露出。",
+      "duplicateDecision": "维持一个显示切换按钮；16张截图按字节去重，重复画面仍由行为用例覆盖恢复动作。",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-outside-20261104\\final\\independent-baseline.json",
+      "sourceReviewEntry": "/baselineRequirements/0"
+    }
+  ]
+}

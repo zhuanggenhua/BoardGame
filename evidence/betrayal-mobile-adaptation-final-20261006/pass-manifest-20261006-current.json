@@ -1,0 +1,18 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-06T23:59:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {"requirement":"同分辨率 2388x1080 等效视口下，缩放→平移→移动后聚焦玩家自己的 token。","status":"PASS","evidence":["e2e/betrayal/mobile-zoom-move-animation.e2e.ts","targetState=settled","visibleMapResidualX=-4.6217803955078125 CSS px"]},
+    {"requirement":"PC 与手机同入口、同状态对照；剧本候选页三个按钮同排且字号可读。","status":"PASS","evidence":["e2e/betrayal/pc-mobile-width-comparison.e2e.ts","6 passed","手机按钮实际高度 56px、字号 18px"]},
+    {"requirement":"剧本书首页、翻页、末页、关闭返回选择页、过程文案继续按钮和主桌面回归均通过真实入口。","status":"PASS","evidence":["e2e/betrayal/basic-flow.e2e.ts","5 passed","正文与继续按钮字号下限 16px、继续按钮热区通过"]}
+  ],
+  "images": ["01-pc-character-select.jpg","02-mobile-character-select.jpg","03-pc-scenario-actions.jpg","04-mobile-scenario-actions.jpg","05-pc-script-home.jpg","06-pc-script-page.jpg","07-pc-script-last.jpg","08-mobile-script-home.jpg","09-mobile-script-page.jpg","10-mobile-script-last.jpg","11-mobile-script-return.jpg","12-mobile-transition-continue.jpg","13-mobile-main-board.jpg","14-focus-before.jpg","15-focus-after-zoom-pan.jpg","16-focus-after-move.jpg"],
+  "evidenceIndex": ".e2e-image-index.json"
+}

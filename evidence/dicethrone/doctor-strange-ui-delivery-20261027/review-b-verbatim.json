@@ -1,0 +1,465 @@
+{
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/strange_ui_delivery_b"
+  },
+  "reviewedAt": "2026-10-27T04:23:26.333Z",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击前-桌面.png",
+      "sha256": "4228b3e44f69f7d9760d3d533726cf8eb572d8bb3bfe443a9e4e6437c33274e9",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗护身符骰面、全知之眼技能槽及结束攻击按钮同时可见；准备区位于左下书槽，生命和CP未被遮挡。",
+      "userDescription": "起始牌桌显示全知之眼技能、五颗护身符骰面和公开准备区。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-ready",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "visibleConsequence": "五颗护身符骰面、全知之眼技能槽及结束攻击按钮同时可见；准备区位于左下书槽，生命和CP未被遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼攻击前-桌面.png"
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼已选待结算-桌面.png",
+      "sha256": "ed7f1ac2acdd18f570e03599509add1aa0a5e22956072dda1df9b4a2970c1ac5",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "全知之眼槽出现粉色选中边框，右侧显示总伤害提示；技能槽、骰区和结束攻击入口完整可见。",
+      "userDescription": "玩家选择全知之眼后，技能槽出现粉色边框。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-selected",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼已选待结算-桌面.png"
+        ],
+        "visibleConsequence": "全知之眼槽出现粉色选中边框，右侧显示总伤害提示；技能槽、骰区和结束攻击入口完整可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼已选待结算-桌面.png"
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+      "sha256": "390b926a1efbf2e3b5d909095a7733c73ff077b205d2182abb00a572cce29294",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "居中弹窗呈现两张不同法术的正式卡图、名称和跳过按钮；两张候选均未被遮挡或裁切。",
+      "userDescription": "提交全知之眼后，弹窗显示两张可准备法术和跳过入口。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-top-five-choice",
+        "before": [
+          "images/all-seeing-eye__全知之眼已选待结算-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png"
+        ],
+        "visibleConsequence": "居中弹窗呈现两张不同法术的正式卡图、名称和跳过按钮；两张候选均未被遮挡或裁切。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼顶五法术选择-桌面.png",
+      "unchangedEvidence": "新跑次的本张原始整屏图与前轮已逐图审查原图SHA256完全相同，合同未变，沿用原观察。",
+      "unchangedEvidenceFiles": [
+        "evidence/dicethrone/doctor-strange-ui-delivery-20261027/review-b-before-current.json"
+      ]
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+      "sha256": "249aa669a33dc73ffd1de728206059c8dd12e3c4171a3a12df0e3e8d6936d457",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "法术准备后弹出玩家选择，P2武僧头像及选择按钮清晰可见；单一候选仍有明确点击入口。",
+      "userDescription": "准备法术后，弹窗显示武僧头像供玩家选择目标。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-prepare-target",
+        "before": [
+          "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png"
+        ],
+        "visibleConsequence": "法术准备后弹出玩家选择，P2武僧头像及选择按钮清晰可见；单一候选仍有明确点击入口。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼法术准备目标选择-桌面.png"
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+      "sha256": "b4171bf11160c22fd13623297f5b9e303635b34277ffb3796e9c932e62cf97f8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张剩余卡牌在弹窗中并排完整呈现，排序提示清楚，当前悬停卡有黄色边框；候选没有相互遮挡。",
+      "userDescription": "选完准备法术后，弹窗显示三张待排序卡牌。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-reorder",
+        "before": [
+          "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png"
+        ],
+        "visibleConsequence": "三张剩余卡牌在弹窗中并排完整呈现，排序提示清楚，当前悬停卡有黄色边框；候选没有相互遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼重排剩余三张-桌面.png"
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+      "sha256": "76aa4f2f93dec9df583ed12be35cf52163c7dd3a4180fac1b0adb2f2c8c633dc",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "施放选择弹窗并排呈现三张准备法术及跳过按钮；法术卡图、名称和当前黄色反馈边框均可辨识。",
+      "userDescription": "完成排序后，弹窗显示三张法术供玩家选择施放或跳过。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-post-damage-cast",
+        "before": [
+          "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png"
+        ],
+        "visibleConsequence": "施放选择弹窗并排呈现三张准备法术及跳过按钮；法术卡图、名称和当前黄色反馈边框均可辨识。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼攻击后施法选择-桌面.png"
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击结算-桌面.png",
+      "sha256": "ac16ed1c3968e8f9a7e9939ded00bfd5fb892904484b3aa963d9727f49c09282",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "跳过施法后弹窗关闭，主要阶段二高亮；准备区标题显示三张，当前横向窗口中可见两张卡图，技能、提示板和资源读数保持可见。",
+      "userDescription": "玩家跳过施法后，弹窗关闭并回到主要阶段二。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-settled",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击结算-桌面.png"
+        ],
+        "visibleConsequence": "跳过施法后弹窗关闭，主要阶段二高亮；准备区标题显示三张，当前横向窗口中可见两张卡图，技能、提示板和资源读数保持可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "准备区采用横向窗口，只直接看见前两张，标题数量可见；本图不证明第三张卡的滚动恢复路径。其余技能、骰盘和资源未被准备区遮挡。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793072939126-kjv32o/全知之眼攻击结算-桌面.png"
+    },
+    {
+      "path": "images/astral-invasion__星际侵入前-桌面.png",
+      "sha256": "60664b01ddd06d16dccab3dfb88194833925f61d21bfe66ff47941f71682bd97",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入槽、五颗锁定骰面及结束攻击入口可见；手牌部分处于翻转姿态，未遮挡本链技能或骰区。",
+      "userDescription": "起始牌桌显示星际侵入技能与锁定的骰面。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-ready",
+        "before": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "visibleConsequence": "星际侵入槽、五颗锁定骰面及结束攻击入口可见；手牌部分处于翻转姿态，未遮挡本链技能或骰区。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1793072939126-kjv32o/星际侵入前-桌面.png"
+    },
+    {
+      "path": "images/astral-invasion__星际侵入已选-桌面.png",
+      "sha256": "f8786cd82088ad1c5c09ad389d995bd5051e38bfcd91f047b8f4a04eb1e6fc94",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入槽显示粉色选中边框，右侧总伤害提示可见；结束攻击按钮仍在骰盘下方清楚呈现。",
+      "userDescription": "玩家选择星际侵入后，技能槽出现粉色边框。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-selected",
+        "before": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入已选-桌面.png"
+        ],
+        "visibleConsequence": "星际侵入槽显示粉色选中边框，右侧总伤害提示可见；结束攻击按钮仍在骰盘下方清楚呈现。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1793072939126-kjv32o/星际侵入已选-桌面.png",
+      "unchangedEvidence": "新跑次的本张原始整屏图与前轮已逐图审查原图SHA256完全相同，合同未变，沿用原观察。",
+      "unchangedEvidenceFiles": [
+        "evidence/dicethrone/doctor-strange-ui-delivery-20261027/review-b-before-current.json"
+      ]
+    },
+    {
+      "path": "images/astral-invasion__星际侵入奖励骰待确认-桌面.png",
+      "sha256": "6bdc61ee67d4c93acd8fb7a54ebec7d646d7c5e711510cfb9a47f57112c24276",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提交技能后，右侧两颗立体奖励骰及黄色确认按钮可见，确认入口未被覆盖；本帧不判定最终骰值或骰子运动正确性。",
+      "userDescription": "提交星际侵入后，右侧显示两颗奖励骰和确认入口。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-bonus-dice",
+        "before": [
+          "images/astral-invasion__星际侵入已选-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入奖励骰待确认-桌面.png"
+        ],
+        "visibleConsequence": "提交技能后，右侧两颗立体奖励骰及黄色确认按钮可见，确认入口未被覆盖；本帧不判定最终骰值或骰子运动正确性。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "两颗奖励骰以倾斜立体面呈现，黄色确认按钮未被遮挡；不从单帧推断旋转是否结束。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1793072939126-kjv32o/星际侵入奖励骰待确认-桌面.png"
+    },
+    {
+      "path": "images/astral-invasion__星际侵入奖励骰确认-桌面.png",
+      "sha256": "60ad4d199a4c9903acd3eb902826ebe2b7b15f14fe56535a1a385b94f825e547",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "奖励骰确认后切换至武僧防御玩家板，防御阶段高亮、当前攻击提示及状态图标可见；没有残留选择弹窗。",
+      "userDescription": "玩家确认奖励骰后，牌桌切换到防御视角。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-bonus-confirmed",
+        "before": [
+          "images/astral-invasion__星际侵入奖励骰待确认-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入奖励骰确认-桌面.png"
+        ],
+        "visibleConsequence": "奖励骰确认后切换至武僧防御玩家板，防御阶段高亮、当前攻击提示及状态图标可见；没有残留选择弹窗。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1793072939126-kjv32o/星际侵入奖励骰确认-桌面.png"
+    },
+    {
+      "path": "images/crimson-bands__深红系带手牌-桌面.png",
+      "sha256": "7af7994a5b3edac1508fd25242a62b8491ec301a335d4f8751f079718b1b3cca",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主阶段手牌显示深红系带法术的卡名与主体图案，底部部分卡面沿视口边缘延伸；出牌本体和下一阶段入口未被遮挡。",
+      "userDescription": "主阶段手牌显示可操作的深红系带法术。",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-hand",
+        "before": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "visibleConsequence": "主阶段手牌显示深红系带法术的卡名与主体图案，底部部分卡面沿视口边缘延伸；出牌本体和下一阶段入口未被遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "法术手牌下端随常规手牌沿底缘延伸；卡名及操作本体可见，未压住准备区、技能或骰盘。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1793072939126-kjv32o/深红系带手牌-桌面.png"
+    },
+    {
+      "path": "images/crimson-bands__深红系带目标选择-桌面.png",
+      "sha256": "8de74750a071228d4317dd522cde2f04ece75a2b9299507c5c0ad36cb6cdbc5c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "打出法术后，居中弹窗稳定显示武僧头像、P2及选择按钮；单一候选和提示均清楚可见，未被遮挡或裁切。",
+      "userDescription": "玩家打出深红系带后，弹窗显示对手目标。",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-target",
+        "before": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带目标选择-桌面.png"
+        ],
+        "visibleConsequence": "打出法术后，居中弹窗稳定显示武僧头像、P2及选择按钮；单一候选和提示均清楚可见，未被遮挡或裁切。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1793072939126-kjv32o/深红系带目标选择-桌面.png"
+    },
+    {
+      "path": "images/crimson-bands__深红系带已施加-桌面.png",
+      "sha256": "1505771f1ac857541716c17135561ca5eb60a3a5b48211230e502f6c8286aa43",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择目标后弹窗关闭，顶部对手区域显示红色系带状态图标，准备区显示两张正式法术图，下一阶段入口仍可见。",
+      "userDescription": "玩家选择对手后，其状态区出现深红系带图标。",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-granted",
+        "before": [
+          "images/crimson-bands__深红系带目标选择-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带已施加-桌面.png"
+        ],
+        "visibleConsequence": "选择目标后弹窗关闭，顶部对手区域显示红色系带状态图标，准备区显示两张正式法术图，下一阶段入口仍可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "source": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1793072939126-kjv32o/深红系带已施加-桌面.png"
+    }
+  ],
+  "issues": [],
+  "boundaries": [
+    "只审本次十四张整屏交互图，不以图面证明规则、伤害、资源或骰值正确性。",
+    "全知之眼结果态准备区数量三可见，但横向窗口只直接显示前两张；本报告不证明第三张的恢复浏览路径。",
+    "奖励骰待确认帧呈现两颗倾斜立体骰和确认入口；单帧不证明最终骰值或旋转是否结束。",
+    "常规手牌底缘延伸和个别翻转姿态未阻断本次技能、目标选择或确认入口。"
+  ],
+  "sourceSessionId": "e2e-1793072939126-kjv32o",
+  "refresh": {
+    "newOriginalsRead": 12,
+    "byteIdenticalCarried": 2,
+    "priorReview": "evidence/dicethrone/doctor-strange-ui-delivery-20261027/review-b-before-current.json"
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "蜘蛛侠 v2 玩家板与成熟英雄在同一证据组中完成几何对照",
+      "status": "PASS",
+      "evidence": [
+        "02-蜘蛛侠牌桌-玩家板与手牌.jpg",
+        "04-蜘蛛侠重拳二级升级后.jpg",
+        "19-成熟参考-吸血鬼领主牌桌玩家板.jpg"
+      ]
+    },
+    {
+      "requirement": "素材录入、真实选角、牌桌和升级牌面截图齐全",
+      "status": "PASS",
+      "evidence": [
+        "01-蜘蛛侠选角-实施中状态.jpg",
+        "02-蜘蛛侠牌桌-玩家板与手牌.jpg",
+        "03-蜘蛛侠正式专属卡图槽位.jpg",
+        "04-蜘蛛侠重拳二级升级后.jpg"
+      ]
+    },
+    {
+      "requirement": "落网只消费技能区普通攻击",
+      "status": "PASS",
+      "evidence": [
+        "05-落网-普通攻击前.jpg",
+        "06-落网-普通攻击前被消费.jpg"
+      ]
+    },
+    {
+      "requirement": "手牌和 Token 直接伤害不消费落网",
+      "status": "PASS",
+      "evidence": [
+        "07-手牌来源伤害-落网保留.jpg",
+        "08-手牌来源伤害-不消费落网.jpg",
+        "09-Token来源伤害-落网保留.jpg",
+        "10-Token来源伤害-不消费落网.jpg"
+      ]
+    },
+    {
+      "requirement": "蜘蛛感应、飞荡脱身的成功面和减伤结算可见",
+      "status": "PASS",
+      "evidence": [
+        "11-蜘蛛感应-投出蜘蛛前.jpg",
+        "12-蜘蛛感应-伤害减半结算.jpg",
+        "13-飞荡脱身-蛛网骰面.jpg",
+        "14-飞荡脱身-蛛网视为成功面并减伤.jpg"
+      ]
+    },
+    {
+      "requirement": "隐形的不可防御伤害窗口、完全失效和额外防御投骰可见",
+      "status": "PASS",
+      "evidence": [
+        "15-隐形-不可防御伤害响应窗口.jpg",
+        "16-隐形-伤害完全失效.jpg",
+        "17-隐形-防御投骰中可用.jpg",
+        "18-隐形-增加一次防御投骰.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/01-蜘蛛侠选角-实施中状态.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/02-蜘蛛侠牌桌-玩家板与手牌.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/03-蜘蛛侠正式专属卡图槽位.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/04-蜘蛛侠重拳二级升级后.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/05-落网-普通攻击前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/06-落网-普通攻击前被消费.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/07-手牌来源伤害-落网保留.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/08-手牌来源伤害-不消费落网.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/09-Token来源伤害-落网保留.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/10-Token来源伤害-不消费落网.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/11-蜘蛛感应-投出蜘蛛前.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/12-蜘蛛感应-伤害减半结算.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/13-飞荡脱身-蛛网骰面.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/14-飞荡脱身-蛛网视为成功面并减伤.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/15-隐形-不可防御伤害响应窗口.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/16-隐形-伤害完全失效.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/17-隐形-防御投骰中可用.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/18-隐形-增加一次防御投骰.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920/19-成熟参考-吸血鬼领主牌桌玩家板.jpg"
+  ],
+  "notes": [
+    "本清单只覆盖当前用户要求的蜘蛛侠 v2 实现、规则交互和几何对照证据。",
+    "所有媒体均从当前工作树最新 test-results/evidence-screenshots 复制到本目录；未复用旧 zhizhuxia-final-user-view 图组。",
+    "角色继续保留 implementation_in_progress；本清单不代表用户已经批准移除实施中状态。"
+  ]
+}

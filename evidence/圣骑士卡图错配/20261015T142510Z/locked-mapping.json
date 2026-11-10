@@ -1,0 +1,791 @@
+{
+  "scope": "33张卡图身份/费用/source/index；不等同全部规则实现审计",
+  "agents": [
+    "/root/audit_frames_00_10",
+    "/root/audit_frames_11_21",
+    "/root/audit_frames_22_32"
+  ],
+  "sourceByFrame": [
+    28,
+    29,
+    30,
+    31,
+    32,
+    27,
+    19,
+    26,
+    24,
+    25,
+    23,
+    33,
+    20,
+    21,
+    22,
+    18,
+    17,
+    16,
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1
+  ],
+  "changes": [
+    {
+      "index": 8,
+      "cardId": "card-righteous-combat-3",
+      "wrongSourceNumber": 23,
+      "correctSourceNumber": 24,
+      "wrongTitle": "正义战法 II",
+      "correctTitle": "正义战法 III / 执着"
+    },
+    {
+      "index": 10,
+      "cardId": "card-righteous-combat-2",
+      "wrongSourceNumber": 24,
+      "correctSourceNumber": 23,
+      "wrongTitle": "正义战法 III / 执着",
+      "correctTitle": "正义战法 II"
+    },
+    {
+      "index": 20,
+      "cardId": "card-surprise",
+      "wrongSourceNumber": 12,
+      "correctSourceNumber": 13,
+      "wrongTitle": "不愧是我！",
+      "correctTitle": "惊不惊喜？！"
+    },
+    {
+      "index": 21,
+      "cardId": "card-worthy-of-me",
+      "wrongSourceNumber": 11,
+      "correctSourceNumber": 12,
+      "wrongTitle": "意不意外？！",
+      "correctTitle": "不愧是我！"
+    },
+    {
+      "index": 22,
+      "cardId": "card-unexpected",
+      "wrongSourceNumber": 13,
+      "correctSourceNumber": 11,
+      "wrongTitle": "惊不惊喜？！",
+      "correctTitle": "意不意外？！"
+    }
+  ],
+  "cards": [
+    {
+      "index": 0,
+      "cardId": "card-holy-defense-3",
+      "sourceNumber": 28,
+      "actualTitle": "神圣防御 III",
+      "actualCpCost": 4,
+      "actualTimingColor": "绿色边框，英雄升级；左侧升级箭头4CP及M主要阶段标志",
+      "bodyText": "防御投掷4[骰子]。造成[伤害1]×[剑]伤害。防止[护盾1]×[头盔]+[护盾2]×[红心]伤害。获得[1CP]×[祈祷]。如果投出[头盔][头盔][祈祷]，获得守护[白色盾形守护图标]。",
+      "sourceFrameBeforeFix": 0,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-00-source.png",
+      "sourceCropSha256": "66e7c404557cef7f2cb67a3276f711bd00fd4f485184c477291daea1f898862f",
+      "runtimeCpCost": 4,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 1,
+      "cardId": "card-might",
+      "sourceNumber": 29,
+      "actualTitle": "威势！",
+      "actualCpCost": 1,
+      "actualTimingColor": "蓝色边框，主要阶段行动；蓝星1CP及M标志",
+      "bodyText": "1名玩家获得暴击[青色放射状暴击图标]。",
+      "sourceFrameBeforeFix": 1,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-01-source.png",
+      "sourceCropSha256": "f3e4d018089f7f664ead139aa052b279b5d0b7c2b8aef8b4702811d420688863",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "same-card-title",
+          "detail": "卡图标题威势！，expected标题神力！；费用和获得暴击的效果指向同一张牌，无图序错配证据。"
+        },
+        {
+          "kind": "same-card-target-definition",
+          "detail": "图面目标为1名玩家；expected描述省略目标，effects.action.target为self。只登记定义差异，未运行交互或修改规则。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 2,
+      "cardId": "card-consecrate",
+      "sourceNumber": 30,
+      "actualTitle": "祝圣！",
+      "actualCpCost": 4,
+      "actualTimingColor": "蓝色边框，主要阶段行动；蓝星4CP及M标志",
+      "bodyText": "1名玩家获得守护[白色盾形图标]、弹反[红色反向箭头图标]、暴击[青色放射状图标]和精准[蓝色靶心图标]。",
+      "sourceFrameBeforeFix": 2,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-02-source.png",
+      "sourceCropSha256": "d2f3c03738ef32bb3f85e82a1aebec2a906a782e812e43b81f391bae9763691e",
+      "runtimeCpCost": 4,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "same-card-title",
+          "detail": "卡图为祝圣！，expected为神圣祝圣！；同卡命名差异。"
+        },
+        {
+          "kind": "same-card-description-vocabulary",
+          "detail": "图面用弹反，expected.description用神罚；handleConsecrate给任意1名玩家PROTECT/RETRIBUTION/CRIT/ACCURACY各1，结构及图示四类一致。图面显式1名玩家，expected描述省略目标，但handler有selectPlayer。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 3,
+      "cardId": "card-divine-favor",
+      "sourceNumber": 31,
+      "actualTitle": "神佑！",
+      "actualCpCost": 1,
+      "actualTimingColor": "蓝色边框，主要阶段行动；蓝星1CP及M标志",
+      "bodyText": "投掷1[骰子]：如果投出[剑]，抽取[牌2]。如果投出[头盔]，治疗[绿色生命3]。如果投出[红心]，治疗[绿色生命4]。如果投出[祈祷]，获得[3CP]。",
+      "sourceFrameBeforeFix": 3,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-03-source.png",
+      "sourceCropSha256": "d460eea435fccf248af46355e8130ee9acb0f930f9b3b96e3af62677c95e9cdd",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "same-card-title",
+          "detail": "图面神佑！，expected为神恩！；四分支2牌/治疗3/治疗4/3CP及费用1明确匹配card-divine-favor。不能因为runtime另有名为神佑！的card-gods-grace就改配到它：后者费用0且效果为祈祷4CP/其它1牌，与本图不符。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 4,
+      "cardId": "card-absolution",
+      "sourceNumber": 32,
+      "actualTitle": "赦免！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色边框，投掷阶段行动；橙星1CP及骰子标志",
+      "bodyText": "仅能在被攻击后打出。投掷1[骰子]：如果投出[剑]，造成[伤害3]伤害。如果投出[头盔]，防止[护盾3]伤害。如果投出[红心]，防止[护盾5]伤害。如果投出[祈祷]，防止[护盾2]伤害且获得[2CP]。",
+      "sourceFrameBeforeFix": 4,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-04-source.png",
+      "sourceCropSha256": "ddb31040bfa33d3865b0390ae3510a107a0692652297c02b507ac68e27488bf6",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "instant",
+      "discrepancies": [
+        {
+          "kind": "same-card-description-values",
+          "detail": "卡图为剑伤害3/头盔防3/心防5/祈祷防2且2CP。expected.description却为剑1不可防御/头盔防1/心防2/祈祷1CP；expected.effects的3/3/5/2+2CP数值与图面一致。"
+        },
+        {
+          "kind": "same-card-timing",
+          "detail": "图为橙色投掷阶段行动且显式仅能在被攻击后打出；expected.timing是instant。仅登记定义对照，未审查全部可用性校验和伤害处理链。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 5,
+      "cardId": "card-holy-defense-2",
+      "sourceNumber": 27,
+      "actualTitle": "神圣防御 II",
+      "actualCpCost": 3,
+      "actualTimingColor": "绿色边框，英雄升级；左侧升级箭头3CP及M标志",
+      "bodyText": "防御投掷4[骰子]。造成[伤害1]×[剑]伤害。防止[护盾1]×[头盔]+[护盾2]×[红心]伤害。获得[1CP]×[祈祷]。",
+      "sourceFrameBeforeFix": 5,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-05-source.png",
+      "sourceCropSha256": "7477b910b6e7ef8d43d611ebf9a56834f23cf41b0439699ca5558ffe5055881d",
+      "runtimeCpCost": 3,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 6,
+      "cardId": "card-tithes-2",
+      "sourceNumber": 19,
+      "actualTitle": "教会税 II",
+      "actualCpCost": 3,
+      "actualTimingColor": "紫色边框，英雄升级/被动；左侧升级箭头3CP及M标志",
+      "bodyText": "被动。你可以在任何时候花费[1CP]以重掷1颗你的骰子。你可以在任何时候花费[2CP]以抽取[牌1]。每当你在自己的进攻投掷阶段成功地激活1个能力，且该能力使用至少1个[祈祷]时，获得[1CP]。",
+      "sourceFrameBeforeFix": 6,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-06-source.png",
+      "sourceCropSha256": "71bd038b8e92262f8943f4087fbdeb6c63efd92a434ded39456f35ee3a802c43",
+      "runtimeCpCost": 3,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "same-card-description-typo",
+          "detail": "expected.description称教皇税，标题与图面均为教会税；重掷1CP、抽牌2CP及自己进攻阶段含祈祷能力获1CP的结构化effects一致。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 7,
+      "cardId": "card-holy-light-2",
+      "sourceNumber": 26,
+      "actualTitle": "圣光术 II",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头2CP及M标志",
+      "bodyText": "[红心][红心]。治疗[绿色生命1]×[红心]并投掷3[骰子]：如果投出[剑]，获得暴击[青色放射状图标]。如果投出[头盔]，获得守护[白色盾形图标]。抽取[牌1]×[红心]。获得[2CP]×[祈祷]。",
+      "sourceFrameBeforeFix": 7,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-07-source.png",
+      "sourceCropSha256": "8eb19f6b5f42eab266f67c5dc98a24c945eb75611d36b050da869f62811e7428",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 8,
+      "cardId": "card-righteous-combat-3",
+      "sourceNumber": 24,
+      "actualTitle": "正义战法 III / 执着",
+      "actualCpCost": 4,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头4CP及M标志",
+      "bodyText": "正义战法 III：[剑][剑][剑][头盔][头盔]。造成[伤害6]伤害并投掷3[骰子]：增加[伤害1]×[头盔]+[伤害2]×[剑]伤害。治疗[绿色生命2]×[红心]。获得[1CP]×[祈祷]。执着：[剑][剑][头盔]。治疗[绿色生命2]。造成[伤害2]不可防御伤害。",
+      "sourceFrameBeforeFix": 10,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-10-source.png",
+      "sourceCropSha256": "1f6041f07bf69620cf40a441fb406c07b58c2dd129a50e7f8f9032e90bed9def",
+      "runtimeCpCost": 4,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "当前expected是card-righteous-combat-2/II/2CP/主伤害5/无副技能；卡面实际III/4CP/主伤害6并含执着（2剑1盔，治疗2后不可防御伤害2）。与runtime-cards.json中card-righteous-combat-3完整定义相符，后者现配frame8。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 9,
+      "cardId": "card-blessing-of-might-2",
+      "sourceNumber": 25,
+      "actualTitle": "神力信徒 II / 进攻姿态",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头2CP及M标志",
+      "bodyText": "神力信徒 II：[剑][剑][剑][祈祷]。造成[伤害4]不可防御伤害。然后获得暴击[青色放射状图标]和精准[蓝色靶心图标]。进攻姿态：[剑][剑][祈祷]。造成[伤害2]不可防御伤害。然后获得暴击[青色放射状图标]或精准[蓝色靶心图标]。",
+      "sourceFrameBeforeFix": 9,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-09-source.png",
+      "sourceCropSha256": "113e0a5b7bc75d712a213cd104a9f11c8c77a3708ca7c7a726d00873f9c6db70",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 10,
+      "cardId": "card-righteous-combat-2",
+      "sourceNumber": 23,
+      "actualTitle": "正义战法 II",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色边框，英雄升级；左侧升级箭头2CP及M标志",
+      "bodyText": "[剑][剑][剑][头盔][头盔]。造成[伤害5]伤害并投掷3[骰子]：增加[伤害1]×[头盔]+[伤害2]×[剑]伤害。治疗[绿色生命2]×[红心]。获得[1CP]×[祈祷]。",
+      "sourceFrameBeforeFix": 8,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-08-source.png",
+      "sourceCropSha256": "0ed7c3c61fb59578149cf727af849df35e4568c15012a14d36b84aecd61cd663",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "当前expected是card-righteous-combat-3/正义战法III/4CP/主伤害6/副技能执着；完整卡面实际II/2CP/主伤害5且没有副技能。与runtime-cards.json中card-righteous-combat-2的完整定义相符，后者现配frame10。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 11,
+      "cardId": "card-gods-grace",
+      "sourceNumber": 33,
+      "actualTitle": "神的恩宠！",
+      "actualCpCost": 0,
+      "actualTimingColor": "蓝色；主要阶段行动；星形行动图标、M标记",
+      "bodyText": "投掷1[骰子]：\n如果投出[祈祷／合十双手骰面]，获得[4CP]。\n否则抽取[1张牌]。\n底部标签：推广卡。",
+      "sourceFrameBeforeFix": 11,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-11-source.png",
+      "sourceCropSha256": "1669fc4e7bfd5f06cf45cb43e456781e7d13e6d0355120900e318ba1b4991a95",
+      "runtimeCpCost": 0,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "title-only",
+          "detail": "图面标题为神的恩宠！，当前代码名为神佑！；0CP、主要阶段、祈祷得4CP／否则抽1张均一致，不构成图序错配。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 12,
+      "cardId": "card-vengeance-2",
+      "sourceNumber": 20,
+      "actualTitle": "反击 II／复仇",
+      "actualCpCost": 1,
+      "actualTimingColor": "浅蓝白色；英雄升级；向上箭头图标、M标记",
+      "bodyText": "上区：反击 II\n[头盔][头盔][头盔][祈祷／合十双手]\n1名玩家获得弹反[红色弹反标记]。\n获得[4CP]。\n下区：复仇\n[剑][头盔][心][祈祷／合十双手]\n获得弹反[红色弹反标记]。治疗[绿色心形1]。\n造成[红色伤害3]不可防御伤害。",
+      "sourceFrameBeforeFix": 12,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-12-source.png",
+      "sourceCropSha256": "8dac82375003bb77a77273ec474feaeb02188aa043cc39142f2a3f2277ea2609",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 13,
+      "cardId": "card-holy-strike-2",
+      "sourceNumber": 21,
+      "actualTitle": "神圣攻击 II",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色；英雄升级；向上箭头图标、M标记",
+      "bodyText": "上区：[4个空白骰框]\n小顺子\n治疗[绿色心形1]。\n造成[黑色尖齿圆形伤害7]伤害。\n下区：[5个空白骰框]\n大顺子\n治疗[绿色心形2]。\n造成[黑色尖齿圆形伤害9]伤害。",
+      "sourceFrameBeforeFix": 13,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-13-source.png",
+      "sourceCropSha256": "75c374f22379a0fcb66b36189fdfde0e4a6b75708392be39dbe26fe6937543b7",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 14,
+      "cardId": "card-righteous-prayer-2",
+      "sourceNumber": 22,
+      "actualTitle": "正义祷告 II／繁盛",
+      "actualCpCost": 2,
+      "actualTimingColor": "浅蓝白色；英雄升级；向上箭头图标、M标记",
+      "bodyText": "上区：正义祷告 II\n[祈祷／合十双手][祈祷／合十双手][祈祷／合十双手][祈祷／合十双手]\n造成[红色伤害8]不可防御伤害。\n然后获得暴击[蓝色暴击标记]和[2CP]。\n下区：繁盛\n[祈祷／合十双手][祈祷／合十双手][祈祷／合十双手]\n获得[4CP]。",
+      "sourceFrameBeforeFix": 14,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-14-source.png",
+      "sourceCropSha256": "41344a21d9cc355d9d8fd9501741c7b280418b0809b94bbfe7049f691eff47df",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 15,
+      "cardId": "card-play-six",
+      "sourceNumber": 18,
+      "actualTitle": "玩得六啊！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "将你1颗骰子的数值改至6。",
+      "sourceFrameBeforeFix": 15,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-15-source.png",
+      "sourceCropSha256": "3df13bf1c81362220a7215ff76aaebc6e128a0dd65f0a457e97c082686f51f23",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "roll",
+      "discrepancies": [
+        {
+          "kind": "title-only",
+          "detail": "图面标题为玩得六啊！，当前代码名为来个六！；1CP、投掷阶段、将自己1骰改至6均一致，不构成图序错配。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 16,
+      "cardId": "card-just-this",
+      "sourceNumber": 17,
+      "actualTitle": "就这？",
+      "actualCpCost": 0,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "1名玩家可以在其防御投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。",
+      "sourceFrameBeforeFix": 16,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-16-source.png",
+      "sourceCropSha256": "2fe9a257461ea31a6ed9f4e450a2ab904e462eadb3af98375c033736b02e8c2a",
+      "runtimeCpCost": 0,
+      "runtimeTiming": "roll",
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面与expected.description均写1名玩家；expected.effects.action.target为self。此项仅登记目标范围的待审点，未追custom handler，不判定为规则已错，也不是图序错配。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 17,
+      "cardId": "card-give-hand",
+      "sourceNumber": 16,
+      "actualTitle": "抬一手！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "选择对手的1颗骰子，强制他重掷该骰子。",
+      "sourceFrameBeforeFix": 17,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-17-source.png",
+      "sourceCropSha256": "eae6def517e0b23a6c482dc9184d1b0b2964bde640eff13dc2fd9a9c6d4b9f3f",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "roll",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 18,
+      "cardId": "card-i-can-again",
+      "sourceNumber": 15,
+      "actualTitle": "我又行了！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "1名玩家可以在其进攻投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。",
+      "sourceFrameBeforeFix": 18,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-18-source.png",
+      "sourceCropSha256": "6d8cd47fc96cdbff9d35b200ba618c6946187034414205eb2e71fd9b0e8cf472",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "roll",
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面与expected.description均写1名玩家；expected.effects.action.target为self。此项仅登记目标范围的待审点，未追custom handler，不判定为规则已错，也不是图序错配。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 19,
+      "cardId": "card-me-too",
+      "sourceNumber": 14,
+      "actualTitle": "俺也一样！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "将你1颗骰子的数值变为和你另一颗骰子的数值一样\n（同一阶段使用且目的相同）。",
+      "sourceFrameBeforeFix": 19,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-19-source.png",
+      "sourceCropSha256": "41b5a8fb787c7e8aff274078f83016bd5b9423a4e01fa400d1b1625567c73d96",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "roll",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 20,
+      "cardId": "card-surprise",
+      "sourceNumber": 13,
+      "actualTitle": "惊不惊喜？！",
+      "actualCpCost": 2,
+      "actualTimingColor": "橙色／投掷阶段行动／骰子图标",
+      "bodyText": "改变任意1颗骰子的数值。",
+      "sourceFrameBeforeFix": 22,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-22-source.png",
+      "sourceCropSha256": "5ea1e50e68a30d9c4c6d72037eaf3342b25f413ea8219870968d66553a0d8803",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "roll",
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "实际为card-surprise：2CP、改变任意1骰；expected card-unexpected为3CP、改变任意2骰。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 21,
+      "cardId": "card-worthy-of-me",
+      "sourceNumber": 12,
+      "actualTitle": "不愧是我！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "你或1名队友可以重掷\n至多2颗骰子\n（可以是同一颗骰子重掷2次或两颗骰子各重掷1次）。",
+      "sourceFrameBeforeFix": 20,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-20-source.png",
+      "sourceCropSha256": "7c7dad5a4a7382d2779d21bdf933574d9cf6b64635b3e3fa4e85f3ddae5abf1d",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "roll",
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "expected为card-surprise／惊不惊喜？！／2CP／改变任意1骰；实际为不愧是我！／1CP／你或队友重掷至多2骰。标题、费用及核心效果均指向runtime-cards.json中的card-worthy-of-me（当前index21）。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 22,
+      "cardId": "card-unexpected",
+      "sourceNumber": 11,
+      "actualTitle": "意不意外？！",
+      "actualCpCost": 3,
+      "actualTimingColor": "橙色；投掷阶段行动；星形行动图标、骰子标记",
+      "bodyText": "改变任意2颗骰子的数值。",
+      "sourceFrameBeforeFix": 21,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-21-source.png",
+      "sourceCropSha256": "1378e9adc07d34b915944694e698bf1ff30ca5d4b87908964d60867aebfc02a9",
+      "runtimeCpCost": 3,
+      "runtimeTiming": "roll",
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "expected为card-worthy-of-me／不愧是我！／1CP／重掷至多2骰；实际为意不意外？！／3CP／改变任意2骰。标题、费用及核心效果均指向runtime-cards.json中的card-unexpected（当前index22）。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 23,
+      "cardId": "card-next-time",
+      "sourceNumber": 10,
+      "actualTitle": "下次一定！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色／投掷阶段行动／骰子图标",
+      "bodyText": "一名玩家防止[盾牌6：6点]即将受到的伤害。",
+      "sourceFrameBeforeFix": 23,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-23-source.png",
+      "sourceCropSha256": "735dd21bd1b722aa1407899104fc5b0ddbc84ed9c8b14e97bf46c201f5930f10",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "instant",
+      "discrepancies": [
+        {
+          "kind": "same-card-title-difference",
+          "detail": "图面标题为下次一定！，expected本地化名称为这次不算！；费用1CP与防止一名玩家6伤害的身份一致，不归类为索引错配。"
+        },
+        {
+          "kind": "same-card-timing-difference",
+          "detail": "图面左侧明确写投掷阶段行动且橙框／骰子图标；expected timing=instant。"
+        },
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面目标是一名玩家；expected.description一致，expected.effects.action.target=self。是否由结算交互扩展目标尚未核对，不凭声明认定实际规则错误。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 24,
+      "cardId": "card-boss-generous",
+      "sourceNumber": 9,
+      "actualTitle": "老板大气！",
+      "actualCpCost": 0,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "获得[2CP]。",
+      "sourceFrameBeforeFix": 24,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-24-source.png",
+      "sourceCropSha256": "f2b9f14dacc6b19b47aac4f5a207d67bfbf09a7f822c3ddeabf634d624941fcd",
+      "runtimeCpCost": 0,
+      "runtimeTiming": "instant",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 25,
+      "cardId": "card-flick",
+      "sourceNumber": 8,
+      "actualTitle": "弹一手！",
+      "actualCpCost": 1,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "增加或减少任意1颗骰子的数值1点（数值1无法再减少，数值6无法再增加）。",
+      "sourceFrameBeforeFix": 25,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-25-source.png",
+      "sourceCropSha256": "486b40a16eca0f761c6fbf953e30e36313a2765774054a8689970d2d40280a8f",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "instant",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 26,
+      "cardId": "card-bye-bye",
+      "sourceNumber": 7,
+      "actualTitle": "拜拜了您内！",
+      "actualCpCost": 2,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "从1名玩家身上移除1个状态效果。",
+      "sourceFrameBeforeFix": 26,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-26-source.png",
+      "sourceCropSha256": "be9bb12c82da74cb5a23b0e14727d6802afba0e765ba82c59f0abbbb5d1ea4e4",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "instant",
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面和expected.description均是一名玩家；expected custom remove-status-1的action.target=self，真实目标选择消费未核对，不认定为图序差异。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 27,
+      "cardId": "card-double",
+      "sourceNumber": 6,
+      "actualTitle": "加倍！",
+      "actualCpCost": 1,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "抽取[牌张图标2：2张牌]。",
+      "sourceFrameBeforeFix": 27,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-27-source.png",
+      "sourceCropSha256": "4c6477260d6ab00c9541c90f37721578187da5d69399d0a0788858660a19ac10",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "instant",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 28,
+      "cardId": "card-super-double",
+      "sourceNumber": 5,
+      "actualTitle": "超级加倍！",
+      "actualCpCost": 2,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "抽取[牌张图标3：3张牌]。",
+      "sourceFrameBeforeFix": 28,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-28-source.png",
+      "sourceCropSha256": "81ca2aa54608cf9c7cac8a4863024f09bdcde4d55e9133d33b898cfebb4afe8d",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "instant",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 29,
+      "cardId": "card-get-away",
+      "sourceNumber": 4,
+      "actualTitle": "起开！",
+      "actualCpCost": 1,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "从1名玩家身上移除1个状态效果。",
+      "sourceFrameBeforeFix": 29,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-29-source.png",
+      "sourceCropSha256": "fd879a03dcc9d6a51ed9c8d695056fc34e20c00b55e2b1a3f1b07b334238b2b9",
+      "runtimeCpCost": 1,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 30,
+      "cardId": "card-one-throw-fortune",
+      "sourceNumber": 3,
+      "actualTitle": "一掷千金！",
+      "actualCpCost": 0,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "投掷1[骰子图标]：获得½数值的[CP]（向上取整）。",
+      "sourceFrameBeforeFix": 30,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-30-source.png",
+      "sourceCropSha256": "9d4c19cfbf24eb5de8cc2a361eefa54ed0376a2f13ece0a1a92af13a5b37ae60",
+      "runtimeCpCost": 0,
+      "runtimeTiming": "main",
+      "discrepancies": [],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 31,
+      "cardId": "card-what-status",
+      "sourceNumber": 2,
+      "actualTitle": "状什么态？",
+      "actualCpCost": 2,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "移除1名玩家的所有状态效果。",
+      "sourceFrameBeforeFix": 31,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-31-source.png",
+      "sourceCropSha256": "f9d1d775a34e1c9ce1a43b9a2460baf83fd83120a98b9becbe9937be71e95dd5",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面和expected.description均是一名玩家的所有状态；expected custom remove-all-status的action.target=self，真实目标选择消费未核对，不认定为图序差异。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    },
+    {
+      "index": 32,
+      "cardId": "card-transfer-status",
+      "sourceNumber": 1,
+      "actualTitle": "乾坤大挪移！",
+      "actualCpCost": 2,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "将1名玩家身上的1个状态效果转移至另1名玩家。",
+      "sourceFrameBeforeFix": 32,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-32-source.png",
+      "sourceCropSha256": "d83d296a202303a11ba53fc05da8ce6a524d9a0238bf9a68fdadec6904d68493",
+      "runtimeCpCost": 2,
+      "runtimeTiming": "main",
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面为从一名玩家转移一个状态至另一名玩家；expected.description一致，custom transfer-status的action.target=self，真实来源／目标选择未核对，不认定为图序差异。"
+        }
+      ],
+      "mappingStatus": "locked",
+      "sourceDisposition": "runtime",
+      "cropDisposition": "reference"
+    }
+  ]
+}

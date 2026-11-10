@@ -9,10 +9,38 @@ import {
 } from '../ui/runtimeRegionOwnership';
 import { getQidahenRuntimeRegionIdsForPrintedRegionId, QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from '../ui/mapGraph';
 import { buildRegionOwnershipOverlayPixels } from '../ui/regionMaskOverlay';
+import printedMapOcclusions from '../data/printed-map-occlusions.json';
+import { QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID, QIDAHEN_REGION_GRAPH_NODE_BY_ID } from '../ui/mapGraph';
 
 const REGION_MASK_PATH = resolve(process.cwd(), 'src/games/qidahen/data/region-mask.png');
 
 describe('qidahen runtime region ownership', () => {
+    it('巴林印刷说明不能命中地区，旁边可见土地及邻区保持原归属，图谱面积与质心同源', async () => {
+        const { data, info } = await sharp(REGION_MASK_PATH).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+        const ownership = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), info.width, info.height);
+        expect([info.width, info.height]).toEqual([printedMapOcclusions.width, printedMapOcclusions.height]);
+        for (const rect of printedMapOcclusions.rectangles) {
+            let unexpected = 0;
+            for (let y = rect.top; y <= rect.bottom; y++) for (let x = rect.left; x <= rect.right; x++) {
+                if (ownership[y * info.width + x] !== null) unexpected++;
+            }
+            expect(unexpected, rect.id).toBe(0);
+        }
+        for (const [x, y] of [[92, 130], [101, 130], [102, 215], [100, 250], [95, 320], [200, 50], [225, 375], [478, 201]]) {
+            expect(ownership[y * info.width + x], `保留裸露地面 (${x},${y})`).toBe('city-region-8');
+        }
+        for (const [x, y, id] of [[499, 63, 'city-region-2'], [636, 193, 'city-region-6'], [579, 353, 'city-region-14'], [409, 356, 'city-region-16']] as const) {
+            expect(ownership[y * info.width + x], `保留相邻地区 (${x},${y})`).toBe(id);
+        }
+        let count = 0, sumX = 0, sumY = 0;
+        ownership.forEach((id, index) => {
+            if (id !== 'city-region-8') return;
+            count++; sumX += index % info.width; sumY += Math.floor(index / info.width);
+        });
+        const expected = { pixelCount: count, center: { x: Math.round(sumX / count), y: Math.round(sumY / count) } };
+        expect(QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID.get('city-region-8')).toMatchObject(expected);
+        expect(QIDAHEN_REGION_GRAPH_NODE_BY_ID.get('city-region-8')).toMatchObject(expected);
+    });
     it('地区提示沿真实命中像素保留凹口，不把包围盒或相邻地区涂成目标', () => {
         const ownership = [
             'a', 'a', null, null,

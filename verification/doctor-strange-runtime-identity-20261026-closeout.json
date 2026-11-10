@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-26T07:03:28.577Z",
+  "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+  "runtimeFrontendSourceHash": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+  "backendInputsMatch": true,
+  "runtimeId": "D:\\gongzuo\\webgame\\BoardGame::shared-single",
+  "ownerPid": 274204,
+  "consumerPids": [
+    287044
+  ],
+  "servicePids": [
+    147524,
+    291452,
+    246652
+  ],
+  "ports": {
+    "frontend": 6174,
+    "gameServer": 20000,
+    "apiServer": 21000
+  },
+  "createdAt": "2026-10-26T06:52:45.860Z",
+  "sessionId": "e2e-1792997531872-feplm0",
+  "log": "verification/doctor-strange-e2e-final-current-20261026-run14.log"
+}

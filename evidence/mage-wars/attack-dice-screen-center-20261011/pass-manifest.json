@@ -1,0 +1,82 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "mage-wars",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-11T18:30:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "攻击骰、近战攻击标题和伤害文案落在玩家整屏中央，参照物是整张窗口而不是石板。",
+      "status": "PASS",
+      "evidence": [
+        "中态图标题、两颗红骰和三点伤害叠在整窗正中黑底区，不在石板中右、右上或标志旁。",
+        "真实页面近战攻击隔离端到端断言结算层铺满整窗并相对窗口中心居中。"
+      ]
+    },
+    {
+      "requirement": "投骰不改镜头、不影响底图，玩家当前平移保持原位。",
+      "status": "PASS",
+      "evidence": [
+        "前态、中态、后态石板都在画面右侧，战斗始终在石板左下，未见镜头被拉回整图中心。",
+        "端到端在投骰前后读取竞技场摄像机并断言平移与缩放不变。"
+      ]
+    },
+    {
+      "requirement": "骰子播放前后底图战斗双方仍在原位，结算层可独立出现和退场。",
+      "status": "PASS",
+      "evidence": [
+        "前态无骰子，中态有骰子，后态骰子退场；山猫与牧师位置与投骰前一致。",
+        "动效连续播放证明骰子出现又消失时底图没有被带走。"
+      ]
+    },
+    {
+      "requirement": "独立子代理按整屏中央合同完成逐图玩家视角审计并返回通过。",
+      "status": "PASS",
+      "evidence": [
+        "visual-review.json 记录子代理全量交互界面审计，分数九十六，范围内硬失败为空，并写明石板中右、右上、标志旁视为失败。"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewFile": "visual-review.json",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "01a12a72-24e2-7fc0-aea9-a6ac740892d3"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "npx vitest run src/games/mage-wars/__tests__/Board.fx.test.tsx --reporter=dot"
+    ],
+    "evidence": [
+      "Board.fx.test.tsx：75 tests passed"
+    ]
+  },
+  "e2eVerification": {
+    "command": "node scripts/infra/run-e2e-single.mjs isolated e2e/mage-wars/online-runtime.e2e.ts \"正式页面近战攻击实际动效独立证据覆盖\"",
+    "result": "1 passed",
+    "sourceRun": "1791713197393-14132-a7afea39-dc0c-44fb-9ad6-c5f29154906c"
+  },
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/mage-wars/attack-dice-screen-center-20261011/00-近战攻击实际动效.gif",
+    "D:/gongzuo/webgame/BoardGame/evidence/mage-wars/attack-dice-screen-center-20261011/01-投骰前玩家当前镜头.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/mage-wars/attack-dice-screen-center-20261011/02-攻击骰在玩家屏幕中央.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/mage-wars/attack-dice-screen-center-20261011/03-投骰后底图镜头仍在原位.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "notes": [
+    "本目录是局部回归切片，只证明攻击骰在玩家整屏中央且不改镜头。",
+    "可见石板居中切片不得再交付。石板中右、右上、标志旁视为失败。"
+  ]
+}

@@ -9,33 +9,13 @@ import './map-surface.css';
 import { fateTokenAsset } from './identityArtwork';
 import {legalFateDeploymentSlots,nextFateDeploymentSlot} from '../domain/deployment';
 import {useTranslation} from 'react-i18next';
+import { FATE_DEPLOYMENT_SLOTS as DEPLOYMENT_SLOTS, FATE_MAP_ROOMS as ROOMS, fatePawnPosition } from './fateMapGeometry';
 const WIDTH = 1927, HEIGHT = 1179;
 // Printed E movement-cost/arrow rectangles, measured on the original Fuyuki board.
 const MOVEMENT_EXITS: Partial<Record<LocationId, {x:number;y:number;w:number;h:number}>> = {
     workshop:{x:1216,y:318,w:199,h:51},
     miyama:{x:1216,y:697,w:199,h:53},
     shinto:{x:1216,y:1077,w:199,h:53},
-};
-const DEPLOYMENT_SLOTS: Partial<Record<LocationId, readonly {x:number;y:number;w:number;h:number;pawnX:number;pawnY:number}[]>> = {
-    workshop:[
-        {x:1010,y:119,w:199,h:94,pawnX:1163,pawnY:166}, {x:1216,y:119,w:199,h:94,pawnX:1368,pawnY:166},
-        {x:1010,y:218,w:199,h:94,pawnX:1163,pawnY:265}, {x:1216,y:218,w:199,h:94,pawnX:1368,pawnY:265},
-    ],
-    miyama:[{x:1216,y:500,w:199,h:96,pawnX:1367,pawnY:547},{x:1216,y:598,w:199,h:95,pawnX:1367,pawnY:643}],
-    shinto:[{x:1216,y:880,w:199,h:96,pawnX:1367,pawnY:926},{x:1216,y:977,w:199,h:96,pawnX:1367,pawnY:1023}],
-};
-const ROOMS: Record<LocationId, {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    pawnX: number;
-    pawnY: number;
-}> = {
-    workshop: { x: 397, y: 30, w: 1036, h: 359, pawnX: 1158, pawnY: 166 },
-    miyama: { x: 397, y: 410, w: 1036, h: 357, pawnX: 1358, pawnY: 548 },
-    shinto: { x: 397, y: 790, w: 1036, h: 357, pawnX: 1358, pawnY: 923 },
-    recon: { x: 34, y: 788, w: 344, h: 358, pawnX: 212, pawnY: 958 },
 };
 // Empty DOM bounds over printed map text let tutorial placement avoid covering the data being taught.
 const TUTORIAL_MAP_LANDMARKS = [
@@ -58,13 +38,16 @@ interface Props {
     onLocation: (id: LocationId, slot?:number|null) => void;
     canUseLocation?: (id:LocationId,slot?:number|null)=>boolean;
     onInspect: (assetPath: string, name: string) => void;
+    onBattleAnchorChange?: (locationId: LocationId, element: HTMLDivElement | null) => void;
 }
 /** Shared Pixi camera owns world transforms. Accessible controls consume that displayed pose. */
-export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, canUseLocation=()=>true, onInspect, movablePlayerId, moving, onPawn, movementOrigin }: Props) {
+export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocation, canUseLocation=()=>true, onInspect, movablePlayerId, moving, onPawn, movementOrigin, onBattleAnchorChange }: Props) {
     const { t } = useTranslation('game-fate-domination');
     const canInspectHiddenShinto=canViewFateHiddenShinto(core,viewerId);
     const [host, setHost] = React.useState<HTMLDivElement | null>(null);
     const overlay = React.useRef<HTMLDivElement>(null);
+    const miyamaAnchor = React.useCallback((element: HTMLDivElement | null) => onBattleAnchorChange?.('miyama', element), [onBattleAnchorChange]);
+    const shintoAnchor = React.useCallback((element: HTMLDivElement | null) => onBattleAnchorChange?.('shinto', element), [onBattleAnchorChange]);
     const [size, setSize] = React.useState({ w: 0, h: 0 });
     const [pose, setPose] = React.useState<MapViewportState>({ zoom: .65, panX: 0, panY: 0 });
     const previousFit = React.useRef<MapViewportState | null>(null);
@@ -113,6 +96,9 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
     return <div className="fd-runtime-map" data-tutorial-id="fate-map" ref={setHost}>
         <PixiMapSceneHost inputElement={host} sprites={sprites} mapWidth={WIDTH} mapHeight={HEIGHT} viewport={pose} onViewportChange={setPose} onDisplayViewportChange={project} minimumZoom={.25} maximumZoom={2.5} interactive regionSelectionEnabled={false} canvasTestId="fate-pixi-map-canvas" ariaLabel="冬木市地图，可拖动和缩放"/>
         <div ref={overlay} className="fd-runtime-map-overlay" data-moving={moving ? 'true' : undefined} style={{ width: WIDTH, height: HEIGHT, transform: `translate(${pose.panX}px, ${pose.panY}px) scale(${pose.zoom})` }}>
+            {(['miyama', 'shinto'] as const).map(id => <div key={`battle-${id}`} ref={id === 'miyama' ? miyamaAnchor : shintoAnchor}
+                className="fd-fgo-battle-anchor" data-testid={`fate-fgo-anchor-${id}`}
+                style={{ left: ROOMS[id].x, top: ROOMS[id].y, width: ROOMS[id].w, height: ROOMS[id].h }} />)}
             {TUTORIAL_MAP_LANDMARKS.map(({id,...bounds}) => <span key={id} aria-hidden="true" data-tutorial-map-landmark={id} className="fd-runtime-map-landmark" style={bounds}/>) }
             {movementOrigin && !moving && MOVEMENT_EXITS[movementOrigin] && <button type="button" className="fd-runtime-movement-exit" aria-label={`从${core.battlefield[movementOrigin].label}开始常规移动`} onClick={onPawn} style={{left:MOVEMENT_EXITS[movementOrigin]!.x,top:MOVEMENT_EXITS[movementOrigin]!.y,width:MOVEMENT_EXITS[movementOrigin]!.w,height:MOVEMENT_EXITS[movementOrigin]!.h}}/>}
             {Object.entries(ROOMS).map(([key, rect]) => {
@@ -127,12 +113,7 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
                         <button type="button" className={`fd-runtime-location fd-runtime-deployment-slot${canUseLocation(id,index)?'':' is-tutorial-unavailable'}`} data-tutorial-blocked={!canUseLocation(id,index)} disabled={!legalSlots.includes(index)} data-fate-destination={id} data-fate-slot={index} style={{left:slot.pawnX-44,top:slot.pawnY-44,width:88,height:88}} data-testid={index === nextSlot ? `fate-domination-location-${id}` : `fate-domination-slot-${id}-${index}`} aria-label={`部署到${core.battlefield[id].label}第${index+1}点位`} onClick={() => onLocation(id,index)}/></React.Fragment>)
                         : <button type="button" className={`fd-runtime-location${deployment ? ' fd-runtime-deployment-slot' : ''}${canUseLocation(id,deployment?null:undefined)?'':' is-tutorial-unavailable'}`} data-tutorial-blocked={!canUseLocation(id,deployment?null:undefined)} data-fate-destination={id} data-fate-slot={deployment?'none':undefined} style={deployment ? {left:rect.x+705,top:rect.y+46,width:88,height:88} : { left: rect.x, top: rect.y, width: rect.w, height: rect.h }} data-tutorial-id={deployment ? `fate-deployment-${id}` : `fate-location-${id}`} data-testid={`fate-domination-location-${id}`} aria-label={`选择${core.battlefield[id].label}`} onClick={() => deployment ? onLocation(id,null) : onLocation(id)}/>) }
                     {core.battlefield[id].playerIds.map(playerId => {
-                        const slot = core.players[playerId].deploymentSlot;
-                        const anchor = slot !== null ? DEPLOYMENT_SLOTS[id]?.[slot] : undefined;
-                        const unbonused = core.battlefield[id].playerIds.filter(pid => core.players[pid].deploymentSlot === null);
-                        const freeIndex = unbonused.indexOf(playerId);
-                        const pawnX = anchor?.pawnX ?? (id === 'recon' ? rect.pawnX : 1150 - (Math.max(0,freeIndex) % 2) * 90);
-                        const pawnY = anchor?.pawnY ?? (id === 'recon' ? rect.pawnY : rect.y + 90 + Math.floor(Math.max(0,freeIndex) / 2) * 90);
+                        const { x: pawnX, y: pawnY } = fatePawnPosition(core,id,playerId);
                         return <React.Fragment key={playerId}>
                             <button type="button" data-fate-drag-source={playerId===movablePlayerId?playerId:undefined} data-tutorial-id={`fate-pawn-${playerId}`} className="fd-runtime-pawn" disabled={playerId !== movablePlayerId} aria-pressed={playerId === movablePlayerId && moving} onClick={onPawn} style={{ left: pawnX, top: pawnY }} aria-label={`玩家${Number(playerId) + 1}位于${core.battlefield[id].label}`}><OptimizedImage draggable={false} src={fateTokenAsset(core.players[playerId].masterId)} alt={`玩家${Number(playerId)+1}棋子`} /></button></React.Fragment>; })}
                 </React.Fragment>;

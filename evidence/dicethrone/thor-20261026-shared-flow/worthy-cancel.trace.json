@@ -1,0 +1,621 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "worthy-cancel",
+  "sourceRun": "e2e-1793036760545-ahqi4o",
+  "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+  "status": "PASS",
+  "outcome": "预览首骰为4后取消，权威骰仍为五个1，CP恢复5且卡牌返回手牌。",
+  "steps": [
+    {
+      "id": "worthy-cancel-01",
+      "action": "真实拖出当之无愧并用原加号预览首骰4",
+      "before": {
+        "visible": {
+          "text": "🛠️\nP2\n武僧\n50\n2\n0\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n4\n手动响应\n牌堆\n29\n<\n完成\n-\n+\n取消\n确认\n结算攻击\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌",
+          "viewport": {
+            "width": 1920,
+            "height": 1080,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "protectedHeader": {
+            "top": 17.265625,
+            "bottom": 105.5625
+          },
+          "scrollers": [],
+          "handCards": []
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hp": 50,
+              "cp": 4,
+              "tokens": {
+                "guard_break": 0,
+                "electrokinesis": 0,
+                "mjolnir": 1
+              },
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hp": 50,
+              "cp": 2,
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "hand": []
+            }
+          },
+          "pendingAttack": null,
+          "currentRollContext": {
+            "id": "roll:offensive:0:1",
+            "kind": "offensive",
+            "ownerPlayerId": "0",
+            "phase": "offensiveRoll",
+            "dice": [
+              {
+                "id": 0,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              }
+            ],
+            "status": "open",
+            "policy": {
+              "modifiableBy": "owner",
+              "rerollableBy": "owner",
+              "allowPassiveReroll": true,
+              "allowDiceCardTargeting": true,
+              "ultimateLocked": false,
+              "blocksPhaseFlow": true
+            },
+            "settlement": {
+              "mode": "selectAttack"
+            },
+            "display": {
+              "surface": "diceTray",
+              "replayOnly": false
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "🛠️\nP2\n武僧\n50\n2\n0\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n4\n手动响应\n牌堆\n29\n<\n完成\n-\n+\n取消\n确认\n结算攻击\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌",
+          "viewport": {
+            "width": 1920,
+            "height": 1080,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "protectedHeader": {
+            "top": 17.265625,
+            "bottom": 105.5625
+          },
+          "scrollers": [],
+          "handCards": []
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hp": 50,
+              "cp": 4,
+              "tokens": {
+                "guard_break": 0,
+                "electrokinesis": 0,
+                "mjolnir": 1
+              },
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hp": 50,
+              "cp": 2,
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "hand": []
+            }
+          },
+          "pendingAttack": null,
+          "currentRollContext": {
+            "id": "roll:offensive:0:1",
+            "kind": "offensive",
+            "ownerPlayerId": "0",
+            "phase": "offensiveRoll",
+            "dice": [
+              {
+                "id": 0,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              }
+            ],
+            "status": "open",
+            "policy": {
+              "modifiableBy": "owner",
+              "rerollableBy": "owner",
+              "allowPassiveReroll": true,
+              "allowDiceCardTargeting": true,
+              "ultimateLocked": false,
+              "blocksPhaseFlow": true
+            },
+            "settlement": {
+              "mode": "selectAttack"
+            },
+            "display": {
+              "surface": "diceTray",
+              "replayOnly": false
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "cp",
+          "actual": 4,
+          "expected": 4,
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "hand-count",
+          "actual": 0,
+          "expected": 0,
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "authoritative-dice-unchanged",
+          "actual": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "expected": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "protected-header-top-valid",
+          "actual": true,
+          "expected": true,
+          "evidence": "state-sidecar"
+        }
+      ],
+      "sourceScreenshot": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧取消预览后不提交改骰/_runs/e2e-1793036760545-ahqi4o/01-当之无愧取消前的四点预览.png"
+    },
+    {
+      "id": "worthy-cancel-02",
+      "action": "点击原取消入口，退出预览并退还手牌与CP",
+      "before": {
+        "visible": {
+          "text": "🛠️\nP2\n武僧\n50\n2\n0\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n4\n手动响应\n牌堆\n29\n<\n完成\n-\n+\n取消\n确认\n结算攻击\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌",
+          "viewport": {
+            "width": 1920,
+            "height": 1080,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "protectedHeader": {
+            "top": 17.265625,
+            "bottom": 105.5625
+          },
+          "scrollers": [],
+          "handCards": []
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hp": 50,
+              "cp": 4,
+              "tokens": {
+                "guard_break": 0,
+                "electrokinesis": 0,
+                "mjolnir": 1
+              },
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hp": 50,
+              "cp": 2,
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "hand": []
+            }
+          },
+          "pendingAttack": null,
+          "currentRollContext": {
+            "id": "roll:offensive:0:1",
+            "kind": "offensive",
+            "ownerPlayerId": "0",
+            "phase": "offensiveRoll",
+            "dice": [
+              {
+                "id": 0,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              }
+            ],
+            "status": "open",
+            "policy": {
+              "modifiableBy": "owner",
+              "rerollableBy": "owner",
+              "allowPassiveReroll": true,
+              "allowDiceCardTargeting": true,
+              "ultimateLocked": false,
+              "blocksPhaseFlow": true
+            },
+            "settlement": {
+              "mode": "selectAttack"
+            },
+            "display": {
+              "surface": "diceTray",
+              "replayOnly": false
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "🛠️\nP2\n武僧\n50\n2\n0\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n5\n手动响应\n牌堆\n29\n<\n投掷\n确认\n结算攻击\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n弃牌堆\n1",
+          "viewport": {
+            "width": 1920,
+            "height": 1080,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "protectedHeader": {
+            "top": 17.265625,
+            "bottom": 105.5625
+          },
+          "scrollers": [],
+          "handCards": [
+            "card-thor-worthy"
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hp": 50,
+              "cp": 5,
+              "tokens": {
+                "guard_break": 0,
+                "electrokinesis": 0,
+                "mjolnir": 1
+              },
+              "hand": [
+                "card-thor-worthy"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "hp": 50,
+              "cp": 2,
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "hand": []
+            }
+          },
+          "pendingAttack": null,
+          "currentRollContext": {
+            "id": "roll:offensive:0:1",
+            "kind": "offensive",
+            "ownerPlayerId": "0",
+            "phase": "offensiveRoll",
+            "dice": [
+              {
+                "id": 0,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 1,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 2,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 3,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              },
+              {
+                "id": 4,
+                "definitionId": "thor-dice",
+                "value": 1,
+                "symbol": "thor_hammer",
+                "symbols": [
+                  "thor_hammer"
+                ],
+                "isKept": false,
+                "ownerId": "0"
+              }
+            ],
+            "status": "open",
+            "policy": {
+              "modifiableBy": "owner",
+              "rerollableBy": "owner",
+              "allowPassiveReroll": true,
+              "allowDiceCardTargeting": true,
+              "ultimateLocked": false,
+              "blocksPhaseFlow": true
+            },
+            "settlement": {
+              "mode": "selectAttack"
+            },
+            "display": {
+              "surface": "diceTray",
+              "replayOnly": false
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "cp",
+          "actual": 5,
+          "expected": 5,
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "card-returned",
+          "actual": [
+            "card-thor-worthy"
+          ],
+          "expected": [
+            "card-thor-worthy"
+          ],
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "dice-values",
+          "actual": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "expected": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "evidence": "state-sidecar"
+        },
+        {
+          "name": "protected-header-top-valid",
+          "actual": true,
+          "expected": true,
+          "evidence": "state-sidecar"
+        }
+      ],
+      "sourceScreenshot": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧取消预览后不提交改骰/_runs/e2e-1793036760545-ahqi4o/02-取消改骰后骰面保持且卡牌资源退回.png"
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "worthy-cancel-01-ui",
+      "stepId": "worthy-cancel-01",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "9f272bb99e5bf846c68b76aec8b7591600bc98d61cfe78fc0e25e309d3fe7943"
+    },
+    {
+      "id": "worthy-cancel-02-ui",
+      "stepId": "worthy-cancel-02",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "3e099cadcf92e4e7f3ae643132c2a3cc1aed65c3c59f02cdf33b357caa755946"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "连续正常对局与核心行动",
+      "status": "PASS",
+      "baselineSource": "R128被否定的旧图只作职责对照；当前revision22中文课程、正常因果表及两端79步trace。",
+      "preservedInformation": "保留轮盘、手牌与落点行动及扩军补给目标。",
+      "preservedActions": "保留征召、军屯、开垦与真实结束回合。",
+      "changes": "补同格分别执行与辽东3人口3兵开垦后4人口3兵的税赋理由。",
+      "duplicateDecision": "地图与正式菜单承载目标和确认，教程补前后因果。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-09-开垦地区选择.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "出兵来源部队目标与战术",
+      "status": "PASS",
+      "baselineSource": "亲读旧新出兵选中原图，并对照当前中文战斗节点和trace顺序。",
+      "preservedInformation": "保留辽北到叶赫部、跨河宽度2、炮兵不占宽度和鸳鸯阵用途。",
+      "preservedActions": "保留来源、两步兵一炮兵选择确认、目标、守方响应与战术出牌。",
+      "changes": "明确步兵来自新征召，炮兵为辽北原有部队；守方响应改完成态。",
+      "duplicateDecision": "兵牌高亮、已选3支与确认负责输入，教程解释身份和用途。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-15-已选部队与确认出兵.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "真实掷骰与分段结果",
+      "status": "PASS",
+      "baselineSource": "亲读旧新炮兵白骰原帧，并核中文battle-roll及当前trace；完整动态另有独立录屏审查。",
+      "preservedInformation": "保留来源目标、炮兵阶段、骰型及炮骑步顺序和损伤规则。",
+      "preservedActions": "保留真实投掷入口、分段结算和占领，不以新增播报卡代替。",
+      "changes": "战斗前接研发与战术，战后接叶赫驻军补给；原帧中骰子及阶段可见。",
+      "duplicateDecision": "正式动画和结果面板表达掷骰结果；静帧本身不单独证明连续动效。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-17-炮兵白骰真实投掷.jpg"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-19-炮兵白骰真实投掷.jpg"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "年中和新年结算",
+      "status": "PASS",
+      "baselineSource": "亲读旧年中、新年中与新年整屏，核当前中文年度结算链。",
+      "preservedInformation": "保留税赋漕运、朝贡、防线维护、耗损、纪年和人物。",
+      "preservedActions": "保留弃6牌、维护山海关、补给或移除、领取纪年和人物选择。",
+      "changes": "明确对手已完成行动、辽东开垦收益和雇佣后超人口耗损；年中、新年提示依轮盘，不再框纪年卡。",
+      "duplicateDecision": "季节由轮盘时标表达；正式手牌计数和维护菜单承担输入数值。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-10-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-32-新年朝贡与结算顺序.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "requirement": "地图候选手牌与检视",
+      "status": "PASS",
+      "baselineSource": "亲读旧新银两检视整屏与开垦、出兵候选整屏。",
+      "preservedInformation": "保留银两作为费用、保留鸳鸯阵及放大镜和触屏长按说明。",
+      "preservedActions": "保留完整牌面检视、关闭检视、地图选区选兵和确认。",
+      "changes": "候选输入结构保留，开垦文案补当前人口与兵力理由。",
+      "duplicateDecision": "放大牌面继续使用共享检视，不另建教程预览。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-03-共享放大镜检视征召手牌.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-04-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-09-开垦地区选择.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/4"
+    },
+    {
+      "requirement": "进度生命周期与次年继续",
+      "status": "PASS",
+      "baselineSource": "亲读旧结束与当前47-finish；当前revision22 lifecycle四项PASS，两端trace最终结果已核。",
+      "preservedInformation": "保留完整年度总结、三种胜利目标和继续同局入口。",
+      "preservedActions": "重载继续、上一步重做、重开与旧版本进度处理四项断言均成立；两端nextInputAccepted为true。",
+      "changes": "次年训练实际使用4次基础行动后结束，支付1牌、保留1牌；最终tutorialActive为false。",
+      "duplicateDecision": "生命周期由实际验证负责，结束图只引用真实47-finish，不以人物检视图替代。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-47-完整年度教程结束并继续对局.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/5"
+    },
+    {
+      "requirement": "整条教程前因后果",
+      "status": "PASS",
+      "baselineSource": "正常因果表、当前年度中文全量文案、两端79步次序和亲读关键旧新原图相互核对。",
+      "preservedInformation": "保留扩军补给、渡河作战、外交雇佣、年度收支及次年训练的原职责。",
+      "preservedActions": "保留同一合法连续对局及正式输入链，包含纪年领取、人物选择和4次训练。",
+      "changes": "接通军屯→同格开垦→税赋，外交→同格雇佣→耗损，战斗→叶赫补给，纪年→人物→余牌训练。",
+      "duplicateDecision": "只补局面原因、来源和后果；重复选牌、后续同规则训练仍由正式候选承接。",
+      "changeAuthority": "用户本轮要求整条教程前因后果重构",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-09-开垦地区选择.png",
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-10-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-32-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-20261031-causality-r131-final/media/桌面-47-完整年度教程结束并继续对局.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-r131-current-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/6"
+    }
+  ]
+}

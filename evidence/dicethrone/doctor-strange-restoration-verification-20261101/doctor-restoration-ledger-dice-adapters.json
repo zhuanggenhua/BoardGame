@@ -1,0 +1,235 @@
+{
+  "scope": "只读补审其余4个UI/适配源码，以c057旧源和恢复前快照逐hunk比对；未改产品/测试，未运行或干涉E2E，未生成PASS。",
+  "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "createdAt": "2026-11-01T12:01:58.404848+00:00",
+  "summary": "4文件以原合同接线和Thor新规则适配为主；DiceTray三项未授权选中皮肤差异待恢复旧Check、旧selected语义及旧不可操作明度；保留合法重复与数据计数。",
+  "limitations": [
+    "本报告不构成当前运行或视觉通过。",
+    "未命中本聊天直接写入的hunk标未证明归属，不把批量提交当所有权证据。",
+    "DiceActions不应为了恢复外观生成cancelPolicy禁止的取消动作。"
+  ],
+  "records": [
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "imports/getDtMeta/getCompletedDiceStepCount/props",
+      "oldOwnerAndNormalSource": "原DiceTray内自行读InteractionDescriptor及多步state",
+      "change": "改消费同一diceInteraction合同；删除本组件重复meta解析和计数",
+      "origin": "合同重构；精确聊天写入未证明",
+      "authorizationOrRealBlocker": "正式owner仍DiceTray/DiceActions；未新增骰盘或独立选择状态",
+      "disposition": "保留接线",
+      "reverification": "普通改骰、普通重投、奖励骰回同骰盘；源候选和完成计数同权威状态"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "dtMeta/result/completedDieIds/allowedDieIds",
+      "oldOwnerAndNormalSource": "原骰盘已有选择ring与check",
+      "change": "已完成骰保留选中标记；合法集合与owner共同控制可操作；重复选骰计数包含已完成与未提交次数",
+      "origin": "合同能力接入；本聊天具体引入归属未证明",
+      "authorizationOrRealBlocker": "原规则区分已完成、未完成、同骰可重复，不能恢复成让非法骰可点",
+      "disposition": "保留行为与原选中边界",
+      "reverification": "0/1/2选择、同骰重复、已完成非重复禁止再点；原骰尺寸/间距不变"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "handleRailDieClick优先级与handleAdjust",
+      "oldOwnerAndNormalSource": "原同一骰子本体点击→多步controller",
+      "change": "多步优先于被动/奖励重投；在原controller发step前检查实际owner/allowed/completed/targetValue",
+      "origin": "合同修复；具体归属未证明",
+      "authorizationOrRealBlocker": "新合法选择不能被旧奖励单击立即重投截走；不是皮肤改版",
+      "disposition": "保留最窄行为修复",
+      "reverification": "合法/非法骰点击分开；奖励组必须提交后重投；普通锁骰不变"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "fixedTargetValues/chooseValue数值行",
+      "oldOwnerAndNormalSource": "原DiceTray无允许多个固定值的先选数值操作；固定单值旧分支仍存在",
+      "change": "仅allowedValues出现时新增数值候选，按原dtUnit生成小按钮；未选targetValue前不能直接选骰",
+      "origin": "Thor规则新能力；src/games/dicethrone/domain/customActions/thor.ts:283发起allowedValues [4,5]",
+      "authorizationOrRealBlocker": "正式雷神thor-worthy需要先选4/5；属新增合法候选，不是博士借任务改旧骰盘",
+      "disposition": "保留；不得把此行泛化到旧固定值/普通重投",
+      "reverification": "只在Thor [4,5]态出现；普通重投、旧固定值态无该行；原骰盘外壳不换皮"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "hasSelectionMarker/ring/data-selection-count",
+      "oldOwnerAndNormalSource": "原selected已有ring-2/ring-offset/scale-105",
+      "change": "扩大原marker条件到已完成或重复次数>0；原ring样式未改",
+      "origin": "新完成状态消费",
+      "authorizationOrRealBlocker": "父代理补核历史：8/19旧重投已支持重复；原hint已有0/2→1/2→完成，无证据必须用新数字徽/已完成常亮。用户整组恢复旧UI优先，不能以更直观替代授权。",
+      "disposition": "待恢复：还原c057旧Check、旧selected判断及旧不可操作明度；仅保留合法同骰重复队列、合同预算与data-selection-count真实计数。",
+      "reverification": "真实同骰重复选择和原Check皮肤；合法计数保留2，原不可操作明度及确认文案恢复；新截图证明。"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "重复选择badge Check→次数",
+      "oldOwnerAndNormalSource": "原selectedBadgeClassName/selectedBadgeStyle",
+      "change": "仅allowRepeatedDieSelection时在原badge写次数、0.65单位粗字；其它模式仍原Check",
+      "origin": "合同支持的新状态表示；精确引入归属未证明",
+      "authorizationOrRealBlocker": "父代理补核历史：8/19旧重投已支持重复；原hint已有0/2→1/2→完成，无证据必须用新数字徽/已完成常亮。用户整组恢复旧UI优先，不能以更直观替代授权。",
+      "disposition": "待恢复：还原c057旧Check、旧selected判断及旧不可操作明度；仅保留合法同骰重复队列、合同预算与data-selection-count真实计数。",
+      "reverification": "真实同骰重复选择和原Check皮肤；合法计数保留2，原不可操作明度及确认文案恢复；新截图证明。"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "选满/已完成marker不再opacity-50",
+      "oldOwnerAndNormalSource": "原不可再点分支把所有非clickable元素压暗",
+      "change": "仅已有selectionMarker的骰避免opacity-50，保留原ring；不使其重新可点",
+      "origin": "本聊天原始补丁rollout73188明确仅此行",
+      "authorizationOrRealBlocker": "父代理补核历史：8/19旧重投已支持重复；原hint已有0/2→1/2→完成，无证据必须用新数字徽/已完成常亮。用户整组恢复旧UI优先，不能以更直观替代授权。",
+      "disposition": "待恢复：还原c057旧Check、旧selected判断及旧不可操作明度；仅保留合法同骰重复队列、合同预算与data-selection-count真实计数。",
+      "reverification": "真实同骰重复选择和原Check皮肤；合法计数保留2，原不可操作明度及确认文案恢复；新截图证明。"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "DiceActions合同动作与label",
+      "oldOwnerAndNormalSource": "原cancel/confirm由isInteractionMode决定",
+      "change": "left/right从同一合同指定cancel/submitSelection/settlement；原button tokens与皮肤保持",
+      "origin": "合同扩展；普通重投label被本聊天改过，父代理已恢复",
+      "authorizationOrRealBlocker": "Thor组重投须提交选组而非取消；普通重投原确认标签应common.confirm",
+      "disposition": "保留动作接线；普通重投恢复原取消/确认与完成提示，勿保留confirm_reroll/finish_reroll等擅改文案",
+      "reverification": "普通重投0/1/2为原双按钮及原label；Thor组模式单独证明合法动作"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "showLeftButton/useSingleActionColumn",
+      "oldOwnerAndNormalSource": "旧bonus settlement本来单列；普通多步本来双列",
+      "change": "没有合法left时才隐藏该按钮并单列；有left则原双列",
+      "origin": "合同动作合法性消费；精确引入归属未证明",
+      "authorizationOrRealBlocker": "cancelPolicy=forbidden不允许因旧双列外观生成非法取消；settlement单列沿用旧结构",
+      "disposition": "保留按真实动作分支；不泛化到普通可取消多步",
+      "reverification": "普通重投有cancel保持旧两列；forbidden与bonus无left仅确认；主按钮不因辅助检视移动"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "hunk": "handleConfirmClick suppress位置/disabled/variants/testhooks",
+      "oldOwnerAndNormalSource": "原防连击计时、原GameButton skin tokens",
+      "change": "从实际动作kind决定confirm/controller；防连击先守卫；非交互roll逻辑及token值未改",
+      "origin": "行为接线；具体归属未证明",
+      "authorizationOrRealBlocker": "没有更换按钮外观参数；修复必须保持权威动作与动画时序",
+      "disposition": "保留",
+      "reverification": "确认一次仅一个权威命令；普通roll动画/禁用/按钮皮肤原样"
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "hunk": "parseDiceInteractionContract与数据类型",
+      "oldOwnerAndNormalSource": "原客户端重建JSON丢失的reducer/toCommands函数",
+      "change": "改用唯一parser读meta/completed/allowed；invalid抛明确错误；纯类型及domain import迁移",
+      "origin": "合同集中化；本聊天根rollout只有记录消费，无直接写入证据",
+      "authorizationOrRealBlocker": "本文件无JSX/DOM/styles，不承载可见皮肤；不把schema断言当旧UI已恢复",
+      "disposition": "保留",
+      "reverification": "旧合法多步JSON恢复同结果；invalid仍暴露原错误，不吞错"
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "hunk": "modifyDie localReducer/toCommands/validateStep",
+      "oldOwnerAndNormalSource": "原diceModifyReducer/ToCommands",
+      "change": "用remainingCount并禁止非法/已完成骰重复修改；选择目标值步骤仍进同reducer",
+      "origin": "合法候选接线",
+      "authorizationOrRealBlocker": "具体合法输入来自领域，不新增影子状态",
+      "disposition": "保留",
+      "reverification": "owner/allowed/completed合法性；旧set/copy/adjust/any各原命令"
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "hunk": "selectDie/submitBatch/repeatedConfirm",
+      "oldOwnerAndNormalSource": "原diceSelectReducer及既有重复骰重投batch",
+      "change": "次数采用唯一parsed；批量同骰不提前执行；完成后空确认用于结束",
+      "origin": "原重投行为修复/合同能力，非皮肤",
+      "authorizationOrRealBlocker": "本文件不改变可见构图；权威结算仍领域owner",
+      "disposition": "保留",
+      "reverification": "选同骰两次→确认→真实两次命令；未确认前不重投；完成空确认退出"
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "hunk": "bonusGroupReroll分支与createClientBonusDiceGroupRerollInteraction",
+      "oldOwnerAndNormalSource": "原dt:bonus-dice权威settlement",
+      "change": "仅真实groupReroll+当前owner+匹配interaction id投影；selected ids映射一个REROLL_BONUS_DIE dieIndices命令",
+      "origin": "Thor新合法组重投；abilities.ts:92及customActions/thor.ts真实发起",
+      "authorizationOrRealBlocker": "客户端只是投影原settlement，不另持第二规则源；非博士旧UI重设计",
+      "disposition": "保留",
+      "reverification": "Thor组选择/提交/结束；非group、无权限、不匹配id不投影；原单骰结算保留"
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceCombinationChoice.ts",
+      "hunk": "全文件纯候选识别/映射",
+      "oldOwnerAndNormalSource": "旧simple-choice server authored options；新的Thor dicePreview组合来自domain/customActions/thor.ts:221",
+      "change": "识别同源完整等大小组合、每骰值一致、无重复组合；返回骰盘可见骰+原optionId映射",
+      "origin": "Thor合法组合到既有DiceTray，具体聊天写入归属未证明",
+      "authorizationOrRealBlocker": "纯函数无JSX/style/可执行规则结果；只有完整组合可无损映射；没有擅改皮肤",
+      "disposition": "保留",
+      "reverification": "Thor现存全部两骰组合可回原optionId；禁用/不全/不一致组合继续原ChoiceModal，不造结果"
+    },
+    {
+      "file": "src/games/dicethrone/ui/handDiscardInteractionContract.ts",
+      "hunk": "全文件单张当前手牌弃置合同",
+      "oldOwnerAndNormalSource": "原HandArea与原selectHandCard领域interaction",
+      "change": "只匹配当前owner、可操作、指定弃牌title、selectCount=1；交集真实手牌候选；选择派原interaction id；可选取消服从allowCancel",
+      "origin": "本聊天复用必要合同；具体写入补丁未独立定位",
+      "authorizationOrRealBlocker": "用户要求复用原组件；此文件无JSX/styles，不足以授权HandArea缩放/提示重画；复数保持旧卡池",
+      "disposition": "保留合同；它的HandArea/提示消费者视觉由cards/父代理分项恢复",
+      "reverification": "一张合法当前手牌点本体弃置；候选外不可提交；取消有无服从权威；复数/对手/其它title不接管"
+    }
+  ],
+  "snapshotIdentity": [
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "snapshotSHA256": "f59c1dee7f030808a346287dd18e9655c736119ff9e6c14a4948c87dec16bb4d",
+      "baselineExists": true,
+      "currentMatchesSnapshot": true,
+      "hunks": [
+        "@@ -4,33 +4,10 @@",
+        "@@ -113,25 +90,4 @@",
+        "@@ -143,6 +99,5 @@",
+        "@@ -157,6 +112,5 @@",
+        "@@ -189,13 +143,14 @@",
+        "@@ -207,6 +162,12 @@",
+        "@@ -214,15 +175,23 @@",
+        "@@ -261,46 +230,51 @@",
+        "@@ -331,16 +305,42 @@",
+        "@@ -385,5 +385,7 @@",
+        "@@ -394,7 +396,7 @@",
+        "@@ -416,7 +418,15 @@",
+        "@@ -464,7 +474,5 @@",
+        "@@ -479,13 +487,17 @@",
+        "@@ -522,6 +534,10 @@",
+        "@@ -538,10 +554,12 @@",
+        "@@ -563,31 +581,33 @@",
+        "@@ -601,8 +621,12 @@",
+        "@@ -625,11 +649,13 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "snapshotSHA256": "59722d33f3ffcc92f8bc20e782c031702bcfbe139875e8380ea35ef0f460ce00",
+      "baselineExists": true,
+      "currentMatchesSnapshot": true,
+      "hunks": [
+        "@@ -1,3 +1,5 @@",
+        "@@ -9,36 +11,35 @@",
+        "@@ -51,6 +52,12 @@",
+        "@@ -58,5 +65,6 @@",
+        "@@ -64,15 +72,11 @@",
+        "@@ -83,17 +87,47 @@",
+        "@@ -103,2 +137,45 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceCombinationChoice.ts",
+      "snapshotSHA256": "bd1fa618641a0114c62c311bf662b7384e430603faaf55251a748bf3f52119aa",
+      "baselineExists": false,
+      "currentMatchesSnapshot": true,
+      "hunks": [
+        "@@ -0,0 +1,97 @@"
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/handDiscardInteractionContract.ts",
+      "snapshotSHA256": "8bfff1f0c04002edd4df231d6449b2cb9feaa7f12496b616941e7935896b7c58",
+      "baselineExists": false,
+      "currentMatchesSnapshot": true,
+      "hunks": [
+        "@@ -0,0 +1,82 @@"
+      ]
+    }
+  ]
+}

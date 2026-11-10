@@ -1,0 +1,9 @@
+{
+  "source": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+  "snapshotSourceHash": "dd23ba9f40c3ea0d933fe1bb345f4431c5acfe0e569c46ed1b0a17f659ec962c",
+  "reconstructedSourceHash": "dd23ba9f40c3ea0d933fe1bb345f4431c5acfe0e569c46ed1b0a17f659ec962c",
+  "snapshotMatch": true,
+  "previousEmittedHash": "516daf2af5b549f89434c2da48a020ff9d62b45bcde2f0161627693fade1f4c4",
+  "currentEmittedHash": "516daf2af5b549f89434c2da48a020ff9d62b45bcde2f0161627693fade1f4c4",
+  "emittedEqual": true
+}

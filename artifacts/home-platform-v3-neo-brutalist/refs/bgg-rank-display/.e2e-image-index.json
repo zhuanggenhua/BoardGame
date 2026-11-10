@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "media": [
+    {
+      "path": "01-rank-list.png",
+      "chainId": "bgg-rank-display",
+      "chainStep": "1",
+      "sourceRun": "bgg-look-step",
+      "sourceDir": "artifacts/home-platform-v3-neo-brutalist/refs/bgg-rank-display",
+      "stage": "起点",
+      "role": "reference",
+      "viewport": "desktop",
+      "transition": "打开 BGG 游戏数据库排行列表",
+      "description": "只有游戏有 Rank。Geek Rating 是用来排名的分数，Average 是平均分，彩色格是玩家给这款游戏的评分"
+    },
+    {
+      "path": "02-how-ranked.png",
+      "chainId": "bgg-rank-display",
+      "chainStep": "2",
+      "sourceRun": "bgg-look-step",
+      "sourceDir": "artifacts/home-platform-v3-neo-brutalist/refs/bgg-rank-display",
+      "stage": "中态",
+      "role": "reference",
+      "viewport": "desktop",
+      "transition": "从游戏榜进到排行种类页",
+      "description": "Top Ranked / Most Rated / Most Played 全是游戏榜，没有玩家排行"
+    },
+    {
+      "path": "03-rating-a-game.png",
+      "chainId": "bgg-rank-display",
+      "chainStep": "3",
+      "sourceRun": "bgg-look-step",
+      "sourceDir": "artifacts/home-platform-v3-neo-brutalist/refs/bgg-rank-display",
+      "stage": "中态",
+      "role": "reference",
+      "viewport": "desktop",
+      "transition": "点进一款游戏的资料页",
+      "description": "大数字和 Avg. Rating 属于这款游戏。My rating 是玩家给游戏打的分。Overall Rank 是游戏位次"
+    },
+    {
+      "path": "04-game-stats.png",
+      "chainId": "bgg-rank-display",
+      "chainStep": "4",
+      "sourceRun": "bgg-look-step",
+      "sourceDir": "artifacts/home-platform-v3-neo-brutalist/refs/bgg-rank-display",
+      "stage": "中态",
+      "role": "reference",
+      "viewport": "desktop",
+      "transition": "同一游戏切到 Stats",
+      "description": "Stats 仍是游戏统计：平均分、评分数、Overall Rank。不是玩家主页字段"
+    },
+    {
+      "path": "05-user-profile.jpg",
+      "chainId": "bgg-rank-display",
+      "chainStep": "5",
+      "sourceRun": "bgg-look-step",
+      "sourceDir": "artifacts/home-platform-v3-neo-brutalist/refs/bgg-rank-display",
+      "stage": "收口",
+      "role": "reference",
+      "viewport": "desktop",
+      "transition": "对照 BGG 用户资料",
+      "description": "用户资料是身份和徽章，没有玩家排行，也没有当前正在游戏"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "reviewFile": "required-review.json",
+  "reviewerKind": "subagent",
+  "requiredStates": [
+    { "chainId": "saber-medusa", "uiStateId": "saber-medusa-before", "viewport": "desktop", "reason": "战斗结算前的可操作牌桌" },
+    { "chainId": "saber-medusa", "uiStateId": "saber-medusa-motion", "viewport": "desktop", "reason": "胜者攻击与对手受击的演出" },
+    { "chainId": "saber-medusa", "uiStateId": "saber-medusa-after", "viewport": "desktop", "reason": "战斗演出退场后的牌桌" },
+    { "chainId": "cu-saber", "uiStateId": "cu-saber-motion", "viewport": "desktop", "reason": "库丘林胜出时的攻击与受击" },
+    { "chainId": "cu-saber", "uiStateId": "cu-saber-after", "viewport": "desktop", "reason": "库丘林战斗演出退场后的牌桌" },
+    { "chainId": "medusa-saber", "uiStateId": "medusa-saber-motion", "viewport": "desktop", "reason": "美杜莎胜出时的攻击与受击" },
+    { "chainId": "medusa-saber", "uiStateId": "medusa-saber-after", "viewport": "desktop", "reason": "美杜莎战斗演出退场后的牌桌" },
+    { "chainId": "saber-noble", "uiStateId": "saber-noble-before", "viewport": "desktop", "reason": "玩家确认宝具前的真实牌桌" },
+    { "chainId": "saber-noble", "uiStateId": "saber-noble-release", "viewport": "desktop", "reason": "宝具释放过程" },
+    { "chainId": "saber-noble", "uiStateId": "saber-noble-beam", "viewport": "desktop", "reason": "宝具光束过程" },
+    { "chainId": "saber-noble", "uiStateId": "saber-noble-after", "viewport": "desktop", "reason": "宝具演出退场后的牌桌" }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "属性变化只用玩家可见结果字/浮动反馈表达，不弹出无意义卡牌特写或确认投掷。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts：state-injected composite 真实页面操作后验证事件骰盘自动收口",
+        "同次录屏 00:12-00:24：事件骰盘停稳、结果字可见，无事件卡特写、无确认按钮"
+      ]
+    },
+    {
+      "requirement": "物品获得保留玩家需要的返回牌桌动作，预兆作祟保留真实多人确认窗口。",
+      "status": "PASS",
+      "evidence": [
+        "同次录屏 00:30：物品/交易真实交互仍有玩家确认入口",
+        "同次录屏 00:36-01:12：预兆作祟骰盘与确认 0/3 窗口可见"
+      ]
+    },
+    {
+      "requirement": "黄金链从真实开局进入，状态注入只发生在上一段正式结算完成后，目标动作仍由真实页面完成。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts：completeMummyScenarioFromRealEntry -> assertReadyForStateInjection -> injectCore",
+        "同次录屏覆盖开局、三类发现、作祟、木乃伊行动和叛徒终局"
+      ]
+    },
+    {
+      "requirement": "同次运行录屏可完整回放并以终局朗读稳定收口。",
+      "status": "PASS",
+      "evidence": [
+        "Playwright：1 passed (2.4m)",
+        "同次录屏时长约 133.44s，末帧为终局朗读，未见残留阻塞层"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-木乃伊怪物行动真实入口\\20261001-黄金端到端-完整录屏.webm"
+  ]
+}
+

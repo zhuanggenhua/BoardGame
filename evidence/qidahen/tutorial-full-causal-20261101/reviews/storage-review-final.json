@@ -1,0 +1,160 @@
+{
+  "status": "PASS_WITH_LIMITATIONS",
+  "reviewer": { "kind": "subagent", "id": "/root/r142_late" },
+  "reviewKind": "independent-readonly-local-session-storage-review",
+  "claimScope": "仅当前源码静态审查、指定既有单测/浏览器诊断记录和直接调用当前codec的Node性能测量。支持单键owner不变、明文v1兼容、指定晚期存档JSON语义无损读回；不代表整链晚期刷新、后续随机结果、全设备容量或性能验收通过。",
+  "codeModified": false,
+  "fullCausalLateRefreshPass": false,
+  "reviewRefresh": {
+    "reason": "手工诊断spec新增真实defender/occupy恢复、战报命中检查及CPU采样；只更新该spec hash和诊断执行范围记录。",
+    "productionSourceAndCodecTestsUnchanged": true,
+    "previousDiagnosticSpecSha256": "eafad4c958336e95370c488e90bae115efcb1b98daa6130719a0e23a8dee7c9c",
+    "currentDiagnosticSpecSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+    "storageConclusionAndPerformanceLimitsRetained": true,
+    "r144LateRefreshClaimed": false
+  },
+  "sourceHashes": {
+    "src/engine/transport/localSessionCodec.ts": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+    "src/engine/transport/localSession.ts": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+    "src/engine/transport/__tests__/localSessionCodec.test.ts": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+    "src/engine/transport/useLocalProviderSession.ts": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+    "src/engine/transport/localProviderBootstrap.ts": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+    "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01"
+  },
+  "evidence": [
+    {
+      "path": "test-results/qidahen-layout-diagnostic/late-storage.json",
+      "sha256": "7592d1601c481e9c4f60bb66ae78e215d26fe974e60985e1b154706e2c5625b1",
+      "observed": { "sourceBytes": 23620438, "encodedChars": 3264354, "storedStep": "training-recruit-target", "allStatePreserved": true, "cursorPreserved": true, "allCheckpointsPreserved": true },
+      "proves": "指定真实晚期快照经当前持久化owner同步写入浏览器localStorage并读回，目标步骤、state、checkpoints和游标相同。"
+    },
+    {
+      "path": "test-results/qidahen-layout-storage-final.log",
+      "sha256": "4723599b78d2adc6619e685d9d0a79ee2462b8d19e1235985114b98aaf275643",
+      "observed": "4 passed，包含晚期完整存储及两个保存点恢复布局诊断。",
+      "limitation": "这份日志仍仅覆盖当时执行的4项：晚期完整存储、锦州恢复布局、训练征兵恢复布局、年中恢复布局；不是从开场运行到晚期再真实刷新。日志没有采集源码hash；当前spec后来新增defender/occupy恢复与CPU采样，新增项由各自grep日志证明执行范围，不能倒称整份当前spec已由此4-pass日志覆盖。"
+    },
+    {
+      "path": "test-results/qidahen-local-storage-unit.log",
+      "sha256": "103d148d78e7a9178530200251ce03de226082c90ad3d7eba5136cbf840f1657",
+      "observed": "3 files、36 tests passed，其中localSessionCodec 5 tests；日志含ECONNRESET输出，不能称无错误日志。",
+      "limitation": "仅审阅已有测试记录；本次未重跑单测。历史日志未固化源码hash，当前源码和测试由本报告另锁hash。"
+    },
+    {
+      "path": "test-results/qidahen-actual-annual-checkpoints/training-recruit-target.json",
+      "sha256": "32fc3d000d83b0425cacaa727f1f783ae365098ee7d11b1c0e8ea891f58fec5b",
+      "role": "指定23,620,438字节实际快照；本次codec直接测量输入。"
+    },
+    {
+      "path": "test-results/qidahen-defender-diagnostic.log",
+      "sha256": "783f42b1d9583107db441f618cb3b2ea72126521bd5122a71a53b7bb251d0d10",
+      "observed": "--grep=下一步，1 passed (38.4s)；真实defender-response保存点恢复后下一步可点击用例执行30.8s。",
+      "limitation": "只覆盖该保存点的恢复和前进到tactic-card，不覆盖新增occupy采样、原4项存储布局、codec性能或完整主链。日志未固化执行时源码hash。"
+    },
+    {
+      "path": "test-results/qidahen-report-diagnostic.log",
+      "sha256": "3d825b4f15a524e2ba5fdb975bf1196bbe30179932b54dce546eb6c9180c8f87",
+      "observed": "--grep=战后保存点，1 passed (1.3m)；真实occupy保存点展开战报命中检查执行1.1m。",
+      "limitation": "仅其当时版本单个occupy诊断；不倒推后来添加的CPU采样已由本日志执行，也不替代原存储诊断或完整主链。"
+    },
+    {
+      "path": "test-results/qidahen-report-cpu-before.log",
+      "sha256": "b4f926d04387cbd1c6cf7aeda1ef99710b2a9ad5ffbbec10c65253d09980792c",
+      "observed": "--grep=战后保存点，1 passed (1.5m)；occupy恢复/战报及CPU采样诊断执行1.4m。",
+      "limitation": "整体测试耗时不是存档编码时长，也不是R144整链结果。"
+    },
+    {
+      "path": "test-results/qidahen-report-cpu-after.log",
+      "sha256": "ef615b021f120792341e54e301b3439c7b672a34e2f5730a8df9f952dbc9922b",
+      "observed": "--grep=战后保存点，1 passed (24.5s)；occupy恢复/战报及CPU采样诊断执行18.1s。",
+      "limitation": "仅新增occupy诊断的当前执行记录；没有执行其余spec用例，不证明codec更快或晚期刷新整链通过。"
+    },
+    {
+      "path": "test-results/qidahen-layout-diagnostic/occupy-performance-before.json",
+      "sha256": "4ccc3f52183a9510d4904191aed8a1c4e6f1625743d4287fb829b5ee079770f8",
+      "observed": { "elapsedMs": 3005.6895, "scriptDurationDeltaSeconds": 2.872179, "taskDurationDeltaSeconds": 3.00143, "topHotspot": "TutorialOverlay.tsx" },
+      "limitation": "战报展开后的3秒静置窗口，采样热点是教程布局；不在该窗口主动执行晚期codec写入或刷新。"
+    },
+    {
+      "path": "test-results/qidahen-layout-diagnostic/occupy-performance-after.json",
+      "sha256": "718adf5e560e021a9b3684abd4436869f48be571f5d3d0e06a32d851a86d3d35",
+      "observed": { "elapsedMs": 3005.8521, "scriptDurationDeltaSeconds": 0.081512, "taskDurationDeltaSeconds": 0.229368, "topHotspot": "(idle)" },
+      "limitation": "该场景静置CPU占用下降与存档codec优化是不同对象；保留原level6同步编码741.8至928.3ms风险，不用本采样消除该性能局限。"
+    }
+  ],
+  "checks": [
+    {
+      "id": "single-owner-and-key",
+      "status": "PASS-static",
+      "observation": "localSession.ts diff只有JSON编解码调用替换及codec导入；键仍是local_match_snapshot_v1:<gameId>:<seed>，setItem仍在既有同步persistLocalMatchSnapshot。codec不读写Storage、不新增进度键或第二份状态。"
+    },
+    {
+      "id": "plaintext-v1-compatibility",
+      "status": "PASS-static-and-unit-record",
+      "observation": "小于1,048,576个JS字符串字符保留原JSON；decode先JSON.parse，仅识别gzip-base64-v1封装后解压。旧明文对象原样交回原版本、gameId、seed、人数、游标和state形状校验；5个codec用例包含旧v1 owner读取及损坏数据/不兼容版本拒绝。旧代码反向读取新压缩格式不在兼容承诺内。"
+    },
+    {
+      "id": "state-and-history-losslessness",
+      "status": "PASS-for-json-serializable-state-and-specified-snapshot",
+      "observation": "编码完整JSON.stringify(snapshot)后UTF-8/gzip/base64，无字段挑选、历史上限或checkpoint删除；解码逐层逆变换。实际诊断对state与checkpoints分别做JSON串相等，本次直接调用当前codec三次也保持state相等。无损范围是既有JSON序列化语义，不承诺undefined、循环引用或非JSON对象的额外保真。"
+    },
+    {
+      "id": "rng-continuity",
+      "status": "PASS-serialized-seed-and-cursor; STATIC-resume-wiring",
+      "observation": "snapshot保存原seed/randomCursor；codec不调用随机源。useLocalProviderSession以保存seed/cursor创建createLocalProviderRandom，后者按cursor推进seeded random，既有恢复消费路径未被此修改改动。实际诊断和当前codec测量确认游标相等；本报告没有执行刷新前后下一次掷骰序列对照。"
+    },
+    {
+      "id": "capacity",
+      "status": "PASS-for-one-diagnostic-browser-sample",
+      "observation": "23,620,438字节输入在既有浏览器诊断中存为3,264,354个字符并成功读回。该事实只覆盖当次浏览器origin实际剩余配额；没有证明其它存档、其它设备、其它origin已有数据量或更晚更大快照始终可装入。"
+    }
+  ],
+  "performance": {
+    "status": "NOT-PASSED-as-responsiveness-acceptance",
+    "measurementKind": "本次Node v24.1.0直接import当前localSessionCodec.ts，调用原encode/decode函数，未改写算法，连续三次。",
+    "compressionLevel": 6,
+    "sourceBytes": 23620438,
+    "samples": [
+      { "encodeMs": 928.3188, "decodeMs": 459.2249, "encodedChars": 3264330, "allStatePreserved": true, "cursorPreserved": true },
+      { "encodeMs": 814.2520, "decodeMs": 510.2049, "encodedChars": 3264330, "allStatePreserved": true, "cursorPreserved": true },
+      { "encodeMs": 741.7675, "decodeMs": 501.0670, "encodedChars": 3264330, "allStatePreserved": true, "cursorPreserved": true }
+    ],
+    "limits": [
+      "编码时长包含JSON.stringify、UTF-8、level6 gzip、base64封装；解码包含JSON/base64、gunzip、UTF-8和JSON.parse。未计localStorage同步I/O、React提交、恢复归一化或RNG重放。",
+      "useLocalProviderSession.ts:82-95在state依赖改变后同步持久化；useEffect不会把gzip移到worker。新增大存档压缩存在显著主线程长任务风险，不能称为性能修复或交互流畅通过。",
+      "Node数字不能冒充Chromium、移动端或低端硬件测量；诊断日志11.9秒是整条测试耗时，不是存档写入耗时。",
+      "编码与解码均会同时持有大JSON、字节和压缩/展开副本；本次未测峰值内存、GC、重复交互长任务或第1MiB门槛附近行为。",
+      "直接codec测量保留原savedAt；persist owner会更新savedAt，因此比浏览器诊断少24个编码字符不表示丢state。"
+    ]
+  },
+  "findings": [
+    {
+      "id": "S1",
+      "severity": "P2",
+      "location": "src/engine/transport/localSessionCodec.ts:9-16; src/engine/transport/useLocalProviderSession.ts:82-95",
+      "title": "大存档每次同步压缩有明显停顿风险",
+      "evidence": "当前23.62MB快照原codec在Node三次编码741.8至928.3ms；实际保存调用位于state变更后的主线程useEffect。",
+      "impact": "容量恢复后，晚期连续玩家操作仍可能被同步序列化/压缩阻塞。新增战后静置CPU采样测的是教程布局，不是晚期codec保存或输入延迟；不能宣称该风险已经消除。",
+      "recommendation": "先在目标浏览器及目标设备记录实际晚期保存/恢复长任务与输入延迟，再在保持完整历史、单一owner和确定保存合同前提下单独评估性能调整。",
+      "blocksNarrowLosslessCapacityClaim": false
+    },
+    {
+      "id": "S2",
+      "severity": "known-existing-limit",
+      "location": "src/engine/transport/localSession.ts:106-108",
+      "title": "压缩仍不提供无上限容量或失败可见性",
+      "evidence": "setItem仍可能因origin配额、已有键或低压缩率快照失败；既有catch吞掉写入异常，不反馈保存失败。",
+      "impact": "本次真实样本成功不保证更大存档继续成功；容量不足时旧快照可能继续存在，不能把运行中的进度误称已保存。",
+      "recommendation": "对外只声明本次23.62MB样本写入读回成功，保留配额和失败反馈边界；若任务要求所有晚期对局可靠存储，需另补容量失败行为及可见保存状态验收。",
+      "introducedByThisPatch": false,
+      "blocksNarrowLosslessCapacityClaim": false
+    }
+  ],
+  "notCovered": [
+    "R142在defender-response、R143在occupy失败，未抵达真实后段刷新点；R144晚期刷新尚待主线程真实late-progress独立证明，不提前记整链late刷新PASS。",
+    "本次没有重新运行浏览器诊断，没有查看或审批图面，不承担UI视觉结论。",
+    "未覆盖所有游戏、所有数据分布、多个大存档争用origin配额、浏览器存储策略或移动设备。",
+    "未验证刷新后实际下一次随机结果与刷新前分支一致，也未验证每个checkpoint都可逐一执行回退。"
+  ],
+  "conclusion": "指定晚期快照的容量修复与JSON语义无损存取有静态、既有单测和浏览器诊断支持；当前直接codec测量再次确认state/cursor相同。同步性能、通用容量保证和整链晚期刷新仍未通过验收。"
+}

@@ -1,0 +1,38 @@
+{
+  "sourceRun": "20261026-r27-fixed-hand-action-final",
+  "sourceRevisions": [
+    "sha256:f3eb817821dffa85cc83a584ef4fac9cab38d64c2097978295ff6e761cbc3831"
+  ],
+  "mediaCount": 31,
+  "chainCount": 7,
+  "requirements": [
+    {
+      "requirement": "入口与胜利条件及固定手牌首步",
+      "media": 2
+    },
+    {
+      "requirement": "川兵征召结果",
+      "media": 1
+    },
+    {
+      "requirement": "炮兵征召结果",
+      "media": 1
+    },
+    {
+      "requirement": "移动端长按检视手牌",
+      "media": 5
+    },
+    {
+      "requirement": "一格开垦与同局继续",
+      "media": 2
+    },
+    {
+      "requirement": "征召后两格轮盘行动",
+      "media": 11
+    },
+    {
+      "requirement": "三格轮盘征兵训练与继续",
+      "media": 9
+    }
+  ]
+}

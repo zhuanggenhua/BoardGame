@@ -1,0 +1,95 @@
+{
+  "objective": "核查九月十日前的历史源码回放是否能够提供可恢复的 DiceThrone 手机 HUD 正常基线。",
+  "reviewer": { "kind": "subagent", "id": "/root/hud_media_audit" },
+  "status": "partial",
+  "evidenceRole": "历史浏览器回放定位证据，不是安卓 App 原始反馈验收。",
+  "lastKnownGood": "尚未锁定可整体恢复的手机正常历史基线。",
+  "summary": {
+    "originalImagesRead": 9,
+    "d41a8f6ImagesRead": 6,
+    "d3e0af9ImagesRead": 3,
+    "conclusion": "较大历史阶段栏已经存在挤走底部牌堆的问题，更早的小字历史版本也存在低可读性及压力态牌堆出屏问题；不能把日期较早或仅阶段可读等同于整屏正常。"
+  },
+  "items": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d41a8f6-evidence/1920x1080-normal.png",
+      "sha256": "413778E1E53629A37CA66586CC175E06AE1A5A01F1089E3069DD2964666B1271",
+      "status": "partial",
+      "proves": "桌面七阶段完整可读，阶段栏左上锚点稳定，资源、牌堆及中央玩家板和提示板可见。",
+      "baselineUse": "可作该版本桌面左侧 HUD 的局部几何和外观参考，不能证明安卓 App 或手机正常。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d41a8f6-evidence/1920x1080-pressure.png",
+      "sha256": "0154586F86DFF9CA2553A301FC271F0C158434EFE62662367F7CF5346D34C921",
+      "status": "partial",
+      "proves": "桌面状态齐全时阶段栏、状态图标、资源和牌堆均仍可见，阶段与状态图标不相交。",
+      "baselineUse": "可作桌面左侧状态槽位的局部参考，不承担手机或整屏所有功能验收。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d41a8f6-evidence/936x432-normal.png",
+      "sha256": "18F3FE21C462D36E61737DD85B0D65A9F5F7B1AA97AFBD6E3021EE73BB370A69",
+      "status": "REVISE",
+      "proves": "手机阶段文字明显比十月十八日修前图大，七阶段完整；阶段栏纵向占屏显著，左下牌堆已被屏幕底边截断。",
+      "baselineUse": "仅可参考历史阶段字高、宽度和高亮外观，不能整体当作最后正常版本恢复。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d41a8f6-evidence/936x432-pressure.png",
+      "sha256": "373C0F82576580D3BA44DCD033FA8DD2BABDF44DFEAFF40A84B1B61C04B036E0",
+      "status": "REVISE",
+      "proves": "阶段与状态图标本体未相交，但状态区域将资源和牌堆进一步向下推，牌堆几乎全部出屏，底部手动响应入口也贴近并受屏幕底边限制。",
+      "baselineUse": "已知坏的旧压力态，仅用作容量缺陷定位证据。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d41a8f6-evidence/812x375-normal.png",
+      "sha256": "3311C5849A17CD1E8DAEFB9EB7666CE9C603960F58DD3696CA9ABEF4B15E8FAD",
+      "status": "REVISE",
+      "proves": "较窄横屏七阶段完整且比十月十八日修前图容易辨认，但阶段栏占据左侧大部分高度，底部牌堆被屏幕下缘截断。",
+      "baselineUse": "仅可参考较大历史阶段栏的外观，不能作为完整正常手机基线。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d41a8f6-evidence/812x375-pressure.png",
+      "sha256": "0FDFA8E13111CC8ED739C1677E02BA7AE2B5A8311A061693BE7892D4130DAB3E",
+      "status": "REVISE",
+      "proves": "较窄横屏阶段与状态图标未直接相交，但资源和手动响应被推向屏幕底部，牌堆几乎出屏。",
+      "baselineUse": "已知坏的旧压力态，不得作为正常恢复目标。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d3e0af9-evidence/936x432-normal.png",
+      "sha256": "B9A3DD106277919B83326BD826E197EE3F738A842A895B9BE033FE352CD56703",
+      "status": "partial",
+      "proves": "更早版本常态牌堆完整处于屏内，阶段栏更紧凑，中央玩家板、提示板和手牌保持原构图；阶段文字本身仍小，不能仅凭牌堆完整判整体正常。",
+      "baselineUse": "可作旧构图、常态牌堆可见和承载关系的局部参考，不是手机可读性正常证明。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d3e0af9-evidence/936x432-pressure.png",
+      "sha256": "CD706D6C201834845698BC702BFA1261D517F945DA356A575F142AE0AF134FE2",
+      "status": "REVISE",
+      "proves": "更早版本阶段文字仍小，阶段与状态图标未直接相交，但压力态牌堆下半部分已被屏幕底边截断。",
+      "baselineUse": "已知坏的旧压力态，仅用于确认底部溢出并非九月十日之后首次出现。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d3e0af9-evidence/812x375-normal.png",
+      "sha256": "DCD1CB45D106FF8E37432062CBF2D45BB62C67B8E7B4A849143BCCB47F9FEF02",
+      "status": "REVISE",
+      "proves": "更早版本较窄横屏阶段文字极小，与十月十八日修前图存在同类低可读性，牌堆常态虽在屏内也不能抵消阶段文字问题。",
+      "baselineUse": "不是可读性正常基线，仅能证明小字现象在更早历史版本已存在。"
+    }
+  ],
+  "comparisonWithOctober18": {
+    "source": "使用本审查者此前实际读取的十月十八日原始整屏图结论，不重新赋予通过效力。",
+    "before01": "十月十八日第一张图阶段文字约五至六像素，明显小于 d41a8f6 手机阶段栏；d3e0af9 的较窄手机图同样存在极小阶段字，因此不能据此断言所有历史手机界面都较大。",
+    "candidate02": "十月十八日第二张局部放大候选的阶段行高和总高度显著小于 d41a8f6，虽然字高较大，但不是对历史阶段栏整体外观与占屏的等价恢复；用户否决后仅保留诊断角色。",
+    "crossVersionLimit": "两组历史回放的中央板尺寸与当前截图不同，不能把跨版本整屏差异全部归因于阶段字号或底层缩放。"
+  },
+  "notRead": [
+    "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d3e0af9-evidence/1920x1080-normal.png",
+    "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d3e0af9-evidence/1920x1080-pressure.png",
+    "D:/gongzuo/webgame/BoardGame/.tmp/dt-history-d3e0af9-evidence/812x375-pressure.png"
+  ],
+  "limits": [
+    "当前九张图是历史源码的浏览器回放，不能替代用户安卓 App 版本、实际视口、安全区、系统缩放及同源现场。",
+    "没有找到同时满足手机阶段可读、状态齐全且牌堆完整的历史正常版本，因此不能按整屏恢复旧版本收口。",
+    "尚未核验安卓 App 的最后正常安装包及当前问题包，不支持实施新的正式修复或宣称反馈已解决。",
+    "不使用日期较早、元素不相交、截图存在或旧测试通过来推导历史界面正常。"
+  ]
+}

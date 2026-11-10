@@ -1,0 +1,5941 @@
+{
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "chainId": "fate-touch-inspection-close-and-continue",
+  "chains": [
+    {
+      "id": "fate-inline-play-area-restoration",
+      "sourceRevision": "c7edc387f96abed6013922ac1fb7635ad41ce50b3869b7036a5f219ac43e9da3",
+      "steps": [
+        "stage-real-card",
+        "retract-real-card",
+        "open-riding-choice",
+        "cancel-riding-choice",
+        "dense-direct-card-zone",
+        "empty-attack-hand",
+        "narrow-viewport",
+        "mobile-full-card-inspection"
+      ]
+    },
+    {
+      "id": "fate-desktop-narrow-resting-state",
+      "sourceRevision": "c7edc387f96abed6013922ac1fb7635ad41ce50b3869b7036a5f219ac43e9da3",
+      "steps": [
+        "desktop-narrow-resting-state",
+        "desktop-opponent-cards-open",
+        "desktop-opponent-card-inspection",
+        "desktop-player-detail-open",
+        "desktop-self-detail-compact",
+        "desktop-eliminated-detail"
+      ]
+    },
+    {
+      "id": "fate-touch-inspection-close-and-continue",
+      "sourceRevision": "43108aec837c047cb8968f58bcd352b727cac7ea23379d64a50af1639b4fe2ab",
+      "steps": [
+        "touch-hand-longpress",
+        "touch-inspection-open",
+        "touch-inspection-close-normal",
+        "touch-continue-action-after-close"
+      ]
+    }
+  ],
+  "sourceRun": "1793669005543-376880-d712cb51-3859-4c90-b7b6-2aee354dab22",
+  "sourceRevision": "43108aec837c047cb8968f58bcd352b727cac7ea23379d64a50af1639b4fe2ab",
+  "status": "PASS",
+  "outcome": "真实 Board 的行动手牌经正常准备/部署阶段进入行动；手牌本体选择后在上方原牌区暂选，卡牌本体撤回并返回手牌；真实普通攻击批次激活伊斯坎达尔骑乘，打开并取消骑乘选择后继续；密集代表态继续在原区浏览。独立桌面窄视口在指针离牌、检视关闭后核验全部席位和两类手牌；另一个同源真实 hasTouch/isMobile 上下文以真实准备、部署、基础攻击进入触屏检视，关闭后仍无悬停残留并继续提交结束行动。地图相机不随HUD、骑乘模式、出牌数量或检视窗口改变。密集状态使用真实卡牌定义，其中超过本局剩余卡数的实例由测试夹具补齐，不代表自然对局或游戏数量上限。",
+  "fixtureBoundary": {
+    "kind": "representative-layout-fixture-after-real-board-setup",
+    "ruleBehaviorClaim": false,
+    "cardDefinitionsAreReal": true,
+    "liveGameCardCount": 12,
+    "layoutOnlyInstanceCount": 8,
+    "instanceIds": [
+      "0:cardB2:3"
+    ]
+  },
+  "measurements": {
+    "emptyHandDesktop": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 512,
+        "y": 712.203125,
+        "left": 512,
+        "top": 712.203125,
+        "right": 1144.734375,
+        "bottom": 746.203125,
+        "width": 632.734375,
+        "height": 34
+      },
+      "selfDock": {
+        "x": 96,
+        "y": 616.90625,
+        "left": 96,
+        "top": 616.90625,
+        "right": 222,
+        "bottom": 984,
+        "width": 126,
+        "height": 367.09375
+      },
+      "phaseControl": {
+        "x": 1655,
+        "y": 634.671875,
+        "left": 1655,
+        "top": 634.671875,
+        "right": 1760,
+        "bottom": 764.171875,
+        "width": 105,
+        "height": 129.5
+      },
+      "skillZone": {
+        "x": 1200.734375,
+        "y": 784.546875,
+        "left": 1200.734375,
+        "top": 784.546875,
+        "right": 1824,
+        "bottom": 1080,
+        "width": 623.265625,
+        "height": 295.453125
+      },
+      "summary": {
+        "x": 340,
+        "y": 705.90625,
+        "left": 340,
+        "top": 705.90625,
+        "right": 500,
+        "bottom": 746.203125,
+        "width": 160,
+        "height": 40.296875
+      }
+    },
+    "desktopTwentyCards": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 512,
+        "y": 819.625,
+        "left": 512,
+        "top": 819.625,
+        "right": 1144.734375,
+        "bottom": 992,
+        "width": 632.734375,
+        "height": 172.375
+      },
+      "selfDock": {
+        "x": 96,
+        "y": 616.90625,
+        "left": 96,
+        "top": 616.90625,
+        "right": 222,
+        "bottom": 984,
+        "width": 126,
+        "height": 367.09375
+      },
+      "phaseControl": {
+        "x": 1681,
+        "y": 634.671875,
+        "left": 1681,
+        "top": 634.671875,
+        "right": 1760,
+        "bottom": 764.171875,
+        "width": 79,
+        "height": 129.5
+      },
+      "skillZone": {
+        "x": 1200.734375,
+        "y": 784.546875,
+        "left": 1200.734375,
+        "top": 784.546875,
+        "right": 1824,
+        "bottom": 1080,
+        "width": 623.265625,
+        "height": 295.453125
+      },
+      "rowScroll": {
+        "left": 512,
+        "right": 1144.734375,
+        "scrollLeft": 0,
+        "scrollWidth": 633,
+        "clientWidth": 633
+      },
+      "visibleCards": [
+        {
+          "id": "0:cardB2:3",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB2:2",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardluck:11",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "14",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "幸运",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB4:5",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardA2:9",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:0",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:1",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB3:4",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "blob:http://127.0.0.1:7273/c92d0c6d-3478-4e68-88df-0a904cc01d4c"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ1:6",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "0",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "翻弄",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ3:8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "2",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "瞬间的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ2:7",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "1",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高速移动",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardSurveil:10",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "13",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "急行",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-1",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "4",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "低位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-2",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-3",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "6",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-4",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "7",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-5",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-6",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-7",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "blob:http://127.0.0.1:7273/7eae1eb4-fd66-4682-9a8e-9bf50b53be6c"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        }
+      ],
+      "allVisibleCardArtLoaded": true
+    },
+    "mobileDense": {
+      "viewport": {
+        "width": 936,
+        "height": 432,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 436,
+        "y": 217.59375,
+        "left": 436,
+        "top": 217.59375,
+        "right": 602.96875,
+        "bottom": 344,
+        "width": 166.96875,
+        "height": 126.40625
+      },
+      "selfDock": {
+        "x": 40,
+        "y": 69.625,
+        "left": 40,
+        "top": 69.625,
+        "right": 166,
+        "bottom": 432,
+        "width": 126,
+        "height": 362.375
+      },
+      "phaseControl": {
+        "x": 772,
+        "y": 215.84375,
+        "left": 772,
+        "top": 215.84375,
+        "right": 896,
+        "bottom": 271.84375,
+        "width": 124,
+        "height": 56
+      },
+      "skillZone": {
+        "x": 638.96875,
+        "y": 278.125,
+        "left": 638.96875,
+        "top": 278.125,
+        "right": 896,
+        "bottom": 432,
+        "width": 257.03125,
+        "height": 153.875
+      },
+      "attackHand": {
+        "x": 284,
+        "y": 352,
+        "left": 284,
+        "top": 352,
+        "right": 602.96875,
+        "bottom": 432,
+        "width": 318.96875,
+        "height": 80
+      },
+      "summary": {
+        "x": 284,
+        "y": 284.859375,
+        "left": 284,
+        "top": 284.859375,
+        "right": 428,
+        "bottom": 344,
+        "width": 144,
+        "height": 59.140625
+      },
+      "skillHand": {
+        "x": 638.96875,
+        "y": 278.125,
+        "left": 638.96875,
+        "top": 278.125,
+        "right": 896,
+        "bottom": 432,
+        "width": 257.03125,
+        "height": 153.875
+      },
+      "summaryFontPx": "13px",
+      "playedCard": {
+        "x": 436,
+        "y": 222.171875,
+        "left": 436,
+        "top": 222.171875,
+        "right": 524,
+        "bottom": 344,
+        "width": 88,
+        "height": 121.828125
+      },
+      "phaseButton": {
+        "x": 840,
+        "y": 215.84375,
+        "left": 840,
+        "top": 215.84375,
+        "right": 896,
+        "bottom": 271.84375,
+        "width": 56,
+        "height": 56
+      },
+      "mobileShell": {
+        "x": 0,
+        "y": 0,
+        "left": 0,
+        "top": 0,
+        "right": 936,
+        "bottom": 432,
+        "width": 936,
+        "height": 432
+      },
+      "mobileShellTransform": "none",
+      "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+      "cardArtwork": [
+        {
+          "id": "0:cardB2:3",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB2:2",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardluck:11",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "14",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "幸运",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB4:5",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardA2:9",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:0",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:1",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB3:4",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-high.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ1:6",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "0",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "翻弄",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ3:8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "2",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "瞬间的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ2:7",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "1",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高速移动",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardSurveil:10",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "13",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "急行",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-1",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "4",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "低位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-2",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-3",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "6",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-4",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "7",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-5",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-6",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-7",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-high.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        }
+      ],
+      "allVisibleCardArtLoaded": true
+    },
+    "mobileCardInspection": {
+      "viewport": {
+        "width": 936,
+        "height": 432,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "faceRect": {
+        "x": 340.75,
+        "y": 32,
+        "width": 254.5,
+        "height": 367.984375
+      },
+      "closeButtonRect": {
+        "x": 543.25,
+        "y": 36,
+        "width": 48,
+        "height": 48
+      },
+      "titleFontPx": "14px",
+      "closeButtonFontPx": "14px",
+      "artwork": [
+        {
+          "complete": true,
+          "width": 541,
+          "height": 749,
+          "alt": "Card Preview"
+        }
+      ],
+      "cardCenterHit": true,
+      "closeCenterHit": true,
+      "hoverPreviewPointerEvents": "none",
+      "focusReturned": true,
+      "mapTransformBefore": "translate(114.962px, 0px) scale(0.366412)",
+      "mapTransformAfter": "translate(114.962px, 0px) scale(0.366412)"
+    },
+    "desktopNarrowNormal": {
+      "viewport": {
+        "width": 1366,
+        "height": 768,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 456,
+        "y": 355.015625,
+        "left": 456,
+        "top": 355.015625,
+        "right": 847.40625,
+        "bottom": 524.421875,
+        "width": 391.40625,
+        "height": 169.40625
+      },
+      "selfDock": {
+        "x": 40,
+        "y": 328.90625,
+        "left": 40,
+        "top": 328.90625,
+        "right": 166,
+        "bottom": 696,
+        "width": 126,
+        "height": 367.09375
+      },
+      "selfIdentity": {
+        "x": 40,
+        "y": 510.90625,
+        "left": 40,
+        "top": 510.90625,
+        "right": 166,
+        "bottom": 696,
+        "width": 126,
+        "height": 185.09375
+      },
+      "selfSeals": {
+        "x": 40,
+        "y": 380.90625,
+        "left": 40,
+        "top": 380.90625,
+        "right": 158,
+        "bottom": 500.90625,
+        "width": 118,
+        "height": 120
+      },
+      "phaseButton": {
+        "x": 1183,
+        "y": 435.875,
+        "left": 1183,
+        "top": 435.875,
+        "right": 1262,
+        "bottom": 514.875,
+        "width": 79,
+        "height": 79
+      },
+      "attackHand": {
+        "x": 284,
+        "y": 532.421875,
+        "left": 284,
+        "top": 532.421875,
+        "right": 847.40625,
+        "bottom": 768,
+        "width": 563.40625,
+        "height": 235.578125
+      },
+      "attackHandCard": {
+        "x": 283.984375,
+        "y": 540.953125,
+        "left": 283.984375,
+        "top": 540.953125,
+        "right": 447.984375,
+        "bottom": 768,
+        "width": 164,
+        "height": 227.046875
+      },
+      "skillHand": {
+        "x": 888.375,
+        "y": 534.328125,
+        "left": 888.375,
+        "top": 534.328125,
+        "right": 1326,
+        "bottom": 768,
+        "width": 437.625,
+        "height": 233.671875
+      },
+      "skillCard": null,
+      "playerRail": {
+        "x": 1108,
+        "y": 88,
+        "left": 1108,
+        "top": 88,
+        "right": 1350,
+        "bottom": 506,
+        "width": 242,
+        "height": 418
+      },
+      "seatList": {
+        "x": 1108,
+        "y": 88,
+        "left": 1108,
+        "top": 88,
+        "right": 1350,
+        "bottom": 244,
+        "width": 242,
+        "height": 156
+      },
+      "opponentSeats": [
+        {
+          "name": "AI 2 号位",
+          "rect": {
+            "x": 1112,
+            "y": 92,
+            "left": 1112,
+            "top": 92,
+            "right": 1346,
+            "bottom": 160,
+            "width": 234,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        },
+        {
+          "name": "AI 3 号位",
+          "rect": {
+            "x": 1112,
+            "y": 172,
+            "left": 1112,
+            "top": 172,
+            "right": 1346,
+            "bottom": 240,
+            "width": 234,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        }
+      ],
+      "inputCapabilities": {
+        "maxTouchPoints": 10,
+        "coarsePointer": false,
+        "hoverPointer": true
+      },
+      "hoverVisible": false
+    },
+    "touchNormal": {
+      "viewport": {
+        "width": 936,
+        "height": 432,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "selfDock": {
+        "x": 40,
+        "y": 69.625,
+        "left": 40,
+        "top": 69.625,
+        "right": 166,
+        "bottom": 432,
+        "width": 126,
+        "height": 362.375
+      },
+      "selfIdentity": {
+        "x": 40,
+        "y": 243.625,
+        "left": 40,
+        "top": 243.625,
+        "right": 166,
+        "bottom": 432,
+        "width": 126,
+        "height": 188.375
+      },
+      "selfSeals": {
+        "x": 40,
+        "y": 69.625,
+        "left": 40,
+        "top": 69.625,
+        "right": 158,
+        "bottom": 189.625,
+        "width": 118,
+        "height": 120
+      },
+      "selfSealArtwork": [
+        {
+          "x": 40,
+          "y": 79.625,
+          "left": 40,
+          "top": 79.625,
+          "right": 118,
+          "bottom": 188.8125,
+          "width": 78,
+          "height": 109.1875
+        },
+        {
+          "x": 58,
+          "y": 74.625,
+          "left": 58,
+          "top": 74.625,
+          "right": 136,
+          "bottom": 183.8125,
+          "width": 78,
+          "height": 109.1875
+        },
+        {
+          "x": 76,
+          "y": 69.625,
+          "left": 76,
+          "top": 69.625,
+          "right": 154,
+          "bottom": 178.8125,
+          "width": 78,
+          "height": 109.1875
+        }
+      ],
+      "phaseControl": {
+        "x": 772,
+        "y": 215.84375,
+        "left": 772,
+        "top": 215.84375,
+        "right": 896,
+        "bottom": 271.84375,
+        "width": 124,
+        "height": 56
+      },
+      "phaseButton": {
+        "x": 840,
+        "y": 215.84375,
+        "left": 840,
+        "top": 215.84375,
+        "right": 896,
+        "bottom": 271.84375,
+        "width": 56,
+        "height": 56
+      },
+      "attackHand": {
+        "x": 284,
+        "y": 280.8125,
+        "left": 284,
+        "top": 280.8125,
+        "right": 602.96875,
+        "bottom": 432,
+        "width": 318.96875,
+        "height": 151.1875
+      },
+      "attackHandCard": {
+        "x": 389.484375,
+        "y": 280.8125,
+        "left": 389.484375,
+        "top": 280.8125,
+        "right": 497.484375,
+        "bottom": 432,
+        "width": 108,
+        "height": 151.1875
+      },
+      "attackHandCardCenterHit": true,
+      "skillHand": {
+        "x": 638.96875,
+        "y": 278.125,
+        "left": 638.96875,
+        "top": 278.125,
+        "right": 896,
+        "bottom": 432,
+        "width": 257.03125,
+        "height": 153.875
+      },
+      "skillCard": null,
+      "skillHandCardCenterHit": true,
+      "playerRail": {
+        "x": 696,
+        "y": 64,
+        "left": 696,
+        "top": 64,
+        "right": 926,
+        "bottom": 228,
+        "width": 230,
+        "height": 164
+      },
+      "seatList": {
+        "x": 696,
+        "y": 64,
+        "left": 696,
+        "top": 64,
+        "right": 926,
+        "bottom": 220,
+        "width": 230,
+        "height": 156
+      },
+      "seatListScroll": {
+        "clientHeight": 156,
+        "scrollHeight": 156
+      },
+      "opponentSeats": [
+        {
+          "name": "AI 2 号位",
+          "rect": {
+            "x": 700,
+            "y": 68,
+            "left": 700,
+            "top": 68,
+            "right": 922,
+            "bottom": 136,
+            "width": 222,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        },
+        {
+          "name": "AI 3 号位",
+          "rect": {
+            "x": 700,
+            "y": 148,
+            "left": 700,
+            "top": 148,
+            "right": 922,
+            "bottom": 216,
+            "width": 222,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        }
+      ],
+      "inputCapabilities": {
+        "maxTouchPoints": 1,
+        "coarsePointer": true,
+        "hoverPointer": false
+      },
+      "dialogCount": 0
+    }
+  },
+  "reviewFailures": [],
+  "steps": [
+    {
+      "id": "touch-hand-longpress",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "action": "原生触控长按手牌、抬手后完整检视保持打开，权威状态不变",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 199.71875,
+            "left": 284,
+            "top": 199.71875,
+            "right": 602.96875,
+            "bottom": 237.3125,
+            "width": 318.96875,
+            "height": 37.59375
+          },
+          "summary": {
+            "x": 284,
+            "y": 199.71875,
+            "left": 284,
+            "top": 199.71875,
+            "right": 428,
+            "bottom": 237.3125,
+            "width": 144,
+            "height": 37.59375
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 203.3125,
+            "left": 436,
+            "top": 203.3125,
+            "right": 602.96875,
+            "bottom": 237.3125,
+            "width": 166.96875,
+            "height": 34
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 727,
+            "y": 215.84375,
+            "left": 727,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 169,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": null,
+          "handCard": {
+            "x": 284,
+            "y": 282.484375,
+            "left": 284,
+            "top": 282.484375,
+            "right": 392,
+            "bottom": 432,
+            "width": 108,
+            "height": 149.515625
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<b>行动</b>",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [],
+          "cardArtwork": [],
+          "handCount": 3,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [],
+          "activeSkills": [],
+          "normalAttackPlayed": false,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 199.71875,
+            "left": 284,
+            "top": 199.71875,
+            "right": 602.96875,
+            "bottom": 237.3125,
+            "width": 318.96875,
+            "height": 37.59375
+          },
+          "summary": {
+            "x": 284,
+            "y": 199.71875,
+            "left": 284,
+            "top": 199.71875,
+            "right": 428,
+            "bottom": 237.3125,
+            "width": 144,
+            "height": 37.59375
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 203.3125,
+            "left": 436,
+            "top": 203.3125,
+            "right": 602.96875,
+            "bottom": 237.3125,
+            "width": 166.96875,
+            "height": 34
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 727,
+            "y": 215.84375,
+            "left": 727,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 169,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": null,
+          "handCard": {
+            "x": 284,
+            "y": 282.484375,
+            "left": 284,
+            "top": 282.484375,
+            "right": 392,
+            "bottom": 432,
+            "width": 108,
+            "height": 149.515625
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fd-inspection-backdrop\" data-opponent-open=\"false\" role=\"dialog\" aria-modal=\"true\" aria-label=\"强打卡牌检视\" style=\"z-index: 2200;\"><div data-tutorial-id=\"fate-inspection\" class=\"fd-runtime-inspection is-pinned\" data-testid=\"fate-runtime-inspection\"><div class=\"fd-inspection-card-face\" data-testid=\"fate-inspection-card-face\"><img alt=\"Card Preview\" aria-label=\"Card Preview\" draggable=\"false\"",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [],
+          "cardArtwork": [],
+          "handCount": 3,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [],
+          "activeSkills": [],
+          "normalAttackPlayed": false,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "longpress-release-keeps-inspection-open",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "longpress-does-not-select-or-pay",
+          "actual": {
+            "gameId": "fate-domination",
+            "round": 1,
+            "phase": "action",
+            "currentPlayerId": "0",
+            "playerIds": [
+              "0",
+              "1",
+              "2"
+            ],
+            "players": {
+              "0": {
+                "id": "0",
+                "masterId": "m_waver",
+                "servantId": "servant-rider",
+                "locationId": "workshop",
+                "deploymentSlot": 0,
+                "mana": 6,
+                "victoryPoints": 0,
+                "commandSpells": 3,
+                "hand": [
+                  {
+                    "id": "0:cardB2:3",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "0:cardB2:2",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "0:cardluck:11",
+                    "definitionId": "cardluck"
+                  }
+                ],
+                "selectedAttackIds": [],
+                "selectedFaceDownIds": [],
+                "faceDownAttackIds": [],
+                "forcedRevealedHand": [],
+                "activeAttackIds": [],
+                "discard": [],
+                "deck": [
+                  {
+                    "id": "0:cardB4:5",
+                    "definitionId": "cardB4"
+                  },
+                  {
+                    "id": "0:cardA2:9",
+                    "definitionId": "cardA2"
+                  },
+                  {
+                    "id": "0:cardB1:0",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "0:cardB1:1",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "0:cardB3:4",
+                    "definitionId": "cardB3"
+                  },
+                  {
+                    "id": "0:cardQ1:6",
+                    "definitionId": "cardQ1"
+                  },
+                  {
+                    "id": "0:cardQ3:8",
+                    "definitionId": "cardQ3"
+                  },
+                  {
+                    "id": "0:cardQ2:7",
+                    "definitionId": "cardQ2"
+                  },
+                  {
+                    "id": "0:cardSurveil:10",
+                    "definitionId": "cardSurveil"
+                  }
+                ],
+                "hasPassedAction": false,
+                "eliminated": false,
+                "defeatMarkers": [],
+                "eliminationProtectionUsed": false,
+                "isRevealed": false,
+                "activeSkills": [],
+                "usedAbilityIds": [],
+                "revealedSkillIds": [],
+                "normalAttackPlayed": false,
+                "normalMoveCompleted": false,
+                "skills": [
+                  {
+                    "id": "s1:0",
+                    "name": "鉴识眼",
+                    "type": "被动",
+                    "desc": "你可观看背面朝上的事件牌。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s2:1",
+                    "name": "战略部署",
+                    "type": "前哨阶段",
+                    "cost": 1,
+                    "desc": "你能支付1魔力来抽2张牌。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s3:2",
+                    "name": "调查",
+                    "type": "前哨阶段",
+                    "cost": 0,
+                    "desc": "查看一位玩家的手牌。你可选择其中一张牌放于其拥有的牌库顶部，若如此，下回合你不可进行【调查】。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "sc_iskandar_1:3",
+                    "name": "骑乘",
+                    "cost": 3,
+                    "req": 3,
+                    "power": 0,
+                    "type": "特殊",
+                    "desc": "打出时：若此牌与一张基础攻击一同打出，抽一张牌。\n坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。"
+                  },
+                  {
+                    "id": "sc_iskandar_2:4",
+                    "name": "神威车轮",
+                    "cost": 4,
+                    "req": 4,
+                    "power": 7,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n行动阶段：将你所在地点的一张事件牌弃置，然后抽2张新的事件牌。将其中1张作为新的事件牌，另一张洗回牌堆。"
+                  },
+                  {
+                    "id": "sc_iskandar_np:5",
+                    "name": "王之军势",
+                    "cost": 8,
+                    "req": 8,
+                    "power": 0,
+                    "type": "宝具",
+                    "desc": "【真名解放】\n行动阶段：创造并激活5张临时的威力2的力量或迅捷属性的基础攻击直至回合结束。"
+                  }
+                ]
+              },
+              "1": {
+                "id": "1",
+                "masterId": "m_shinji",
+                "servantId": "servant-heracles",
+                "locationId": "workshop",
+                "deploymentSlot": 1,
+                "mana": 5,
+                "victoryPoints": 0,
+                "commandSpells": 3,
+                "hand": [
+                  {
+                    "id": "1:cardluck:10",
+                    "definitionId": "cardluck"
+                  },
+                  {
+                    "id": "1:cardQ5:9",
+                    "definitionId": "cardQ5"
+                  },
+                  {
+                    "id": "1:cardB5:5",
+                    "definitionId": "cardB5"
+                  }
+                ],
+                "selectedAttackIds": [],
+                "selectedFaceDownIds": [],
+                "faceDownAttackIds": [],
+                "forcedRevealedHand": [],
+                "activeAttackIds": [],
+                "discard": [],
+                "deck": [
+                  {
+                    "id": "1:cardB2:2",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "1:cardB4:3",
+                    "definitionId": "cardB4"
+                  },
+                  {
+                    "id": "1:cardB1:1",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "1:cardB1:0",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "1:cardQ1:7",
+                    "definitionId": "cardQ1"
+                  },
+                  {
+                    "id": "1:cardB6:6",
+                    "definitionId": "cardB6"
+                  },
+                  {
+                    "id": "1:cardQ3:8",
+                    "definitionId": "cardQ3"
+                  },
+                  {
+                    "id": "1:cardB4:4",
+                    "definitionId": "cardB4"
+                  },
+                  {
+                    "id": "1:cardluck:11",
+                    "definitionId": "cardluck"
+                  }
+                ],
+                "hasPassedAction": false,
+                "eliminated": false,
+                "defeatMarkers": [],
+                "eliminationProtectionUsed": false,
+                "isRevealed": false,
+                "activeSkills": [],
+                "usedAbilityIds": [],
+                "revealedSkillIds": [],
+                "normalAttackPlayed": false,
+                "normalMoveCompleted": false,
+                "skills": [
+                  {
+                    "id": "s1:0",
+                    "name": "吸魔命令",
+                    "type": "被动",
+                    "desc": "进入深山町时，获得1点魔力。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s2:1",
+                    "name": "无用之人",
+                    "type": "被动",
+                    "desc": "开局获得【伪臣之书】。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s3:2",
+                    "name": "小丑",
+                    "type": "被动",
+                    "desc": "当你战败时，失去一枚令咒。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s4:3",
+                    "name": "伪臣之书",
+                    "type": "被动",
+                    "desc": "当间桐樱在场时：当你第一次失去所有令咒时，在该回合结束时，将从者替换为一个随机的，未被使用的从者。重新获得3令咒。\n当间桐樱不在场时：当你第一次失去所有令咒时，在该回合结束时，将你的御主替换为【间桐樱】。重置你的魔力，获得2令咒，保持战果不变。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "sc_herc_1:4",
+                    "name": "十二试炼",
+                    "cost": 1,
+                    "req": 1,
+                    "power": 5,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n若你战败，获得3点战果并令此战斗的所有胜者分别失去3点战果，然后将此牌移除游戏并令你的其他【十二试炼】获得+3威力直至游戏结束。"
+                  },
+                  {
+                    "id": "sc_herc_2:5",
+                    "name": "十二试炼",
+                    "cost": 1,
+                    "req": 1,
+                    "power": 5,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n若你战败，获得3点战果并令此战斗的所有胜者分别失去3点战果，然后将此牌移除游戏并令你的其他【十二试炼】获得+3威力直至游戏结束。"
+                  },
+                  {
+                    "id": "sc_herc_3:6",
+                    "name": "十二试炼",
+                    "cost": 1,
+                    "req": 1,
+                    "power": 5,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n若你战败，获得3点战果并令此战斗的所有胜者分别失去3点战果，然后将此牌移除游戏并令你的其他【十二试炼】获得+3威力直至游戏结束。"
+                  }
+                ]
+              },
+              "2": {
+                "id": "2",
+                "masterId": "m_shirou_emiya",
+                "servantId": "servant-gilgamesh",
+                "locationId": "workshop",
+                "deploymentSlot": 2,
+                "mana": 3,
+                "victoryPoints": 0,
+                "commandSpells": 3,
+                "hand": [
+                  {
+                    "id": "2:cardA3:8",
+                    "definitionId": "cardA3"
+                  },
+                  {
+                    "id": "2:cardB2:1",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "2:cardB1:0",
+                    "definitionId": "cardB1"
+                  }
+                ],
+                "selectedAttackIds": [],
+                "selectedFaceDownIds": [],
+                "faceDownAttackIds": [],
+                "forcedRevealedHand": [],
+                "activeAttackIds": [],
+                "discard": [],
+                "deck": [
+                  {
+                    "id": "2:cardA1:6",
+                    "definitionId": "cardA1"
+                  },
+                  {
+                    "id": "2:cardPreparation:9",
+                    "definitionId": "cardPreparation"
+                  },
+                  {
+                    "id": "2:cardA2:7",
+                    "definitionId": "cardA2"
+                  },
+                  {
+                    "id": "2:cardQ1:3",
+                    "definitionId": "cardQ1"
+                  },
+                  {
+                    "id": "2:cardluck:11",
+                    "definitionId": "cardluck"
+                  },
+                  {
+                    "id": "2:cardluck:10",
+                    "definitionId": "cardluck"
+                  },
+                  {
+                    "id": "2:cardB3:2",
+                    "definitionId": "cardB3"
+                  },
+                  {
+                    "id": "2:cardQ2:4",
+                    "definitionId": "cardQ2"
+                  },
+                  {
+                    "id": "2:cardQ3:5",
+                    "definitionId": "cardQ3"
+                  }
+                ],
+                "hasPassedAction": false,
+                "eliminated": false,
+                "defeatMarkers": [],
+                "eliminationProtectionUsed": false,
+                "isRevealed": false,
+                "activeSkills": [],
+                "usedAbilityIds": [],
+                "revealedSkillIds": [],
+                "normalAttackPlayed": false,
+                "normalMoveCompleted": false,
+                "skills": [
+                  {
+                    "id": "s1:0",
+                    "name": "未熟",
+                    "type": "被动",
+                    "desc": "你的魔力初始值为2。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s2:1",
+                    "name": "投影",
+                    "type": "被动",
+                    "desc": "将【干将·莫邪】加入你的技能区。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s3:2",
+                    "name": "远离尘世的理想乡",
+                    "type": "被动",
+                    "desc": "当你首次被淘汰时你将失去所有的魔力来继续游戏。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "sc_gil_1:3",
+                    "name": "单独行动",
+                    "cost": 0,
+                    "req": 0,
+                    "power": 6,
+                    "type": "特殊",
+                    "desc": "当你的行动顺位为当前回合前半数时（向下取整），你才能使用此牌。\n行动阶段：你获得3点战果。\n如果你本回合战斗失败，失去5点战果，此效果不能被任何方法阻止。"
+                  },
+                  {
+                    "id": "sc_gil_2:4",
+                    "name": "巴比伦之门",
+                    "cost": 0,
+                    "req": 0,
+                    "power": 4,
+                    "type": "宝具",
+                    "desc": "【真名解放】\n打出时：自由选择X（作为魔力消耗）。此牌获得X种非特殊属性（由你选择）。\n行动阶段：翻倍你的地利。"
+                  },
+                  {
+                    "id": "sc_gil_np:5",
+                    "name": "天地乖离开辟之星",
+                    "cost": 9,
+                    "req": 9,
+                    "power": 15,
+                    "type": "宝具",
+                    "desc": "【真名解放】\n切裂世界-战斗阶段：令所有控制特殊属性宝具的交战对手【败北】。"
+                  }
+                ]
+              }
+            },
+            "battlefield": {
+              "workshop": {
+                "id": "workshop",
+                "label": "魔术工房",
+                "movementCost": 0,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 0,
+                "capacity": 4,
+                "playerIds": [
+                  "0",
+                  "1",
+                  "2"
+                ],
+                "eventCards": []
+              },
+              "miyama": {
+                "id": "miyama",
+                "label": "深山町",
+                "movementCost": 1,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 2,
+                "capacity": null,
+                "playerIds": [],
+                "eventCards": [
+                  {
+                    "id": "fuyuki_E9",
+                    "name": "光荣的决斗",
+                    "victoryPoints": 2,
+                    "effectSummary": "力量攻击于此战场获得威力+2。",
+                    "sourceStatus": "verified",
+                    "assetPath": "fate-domination/events/glorious-duel"
+                  }
+                ]
+              },
+              "shinto": {
+                "id": "shinto",
+                "label": "新都",
+                "movementCost": 2,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 3,
+                "capacity": null,
+                "playerIds": [],
+                "eventCards": [
+                  {
+                    "id": "fuyuki_E16",
+                    "name": "固有结界",
+                    "victoryPoints": 2,
+                    "effectSummary": "特殊攻击于此战场禁止打出。所有玩家不能移动至此地点也不能离开此地点。",
+                    "sourceStatus": "verified",
+                    "assetPath": "fate-domination/events/reality-marble"
+                  }
+                ]
+              },
+              "recon": {
+                "id": "recon",
+                "label": "侦察",
+                "movementCost": 0,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 0,
+                "capacity": 1,
+                "playerIds": [],
+                "eventCards": []
+              }
+            },
+            "situation": {
+              "id": "sit9",
+              "name": "安哥拉·曼纽的诅咒",
+              "assetPath": "fate-domination/situations/angra-curse",
+              "printedMana": 0,
+              "sourceStatus": "verified",
+              "effectSummary": "力量攻击于深山町和新都获得威力+1。宝具禁止使用",
+              "climax": false
+            },
+            "situationDeck": [
+              {
+                "id": "sit3",
+                "name": "深山町的杀人魔",
+                "assetPath": "fate-domination/situations/miyama-killer",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "于深山町增加一张正面事件牌。恢复2点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit5",
+                "name": "暴风雨前的宁静",
+                "assetPath": "fate-domination/situations/calm-before-storm",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "迅捷攻击于深山町和新都获得威力+2。恢复两点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit1",
+                "name": "转机",
+                "assetPath": "fate-domination/situations/turning-point",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "于深山町和新都各增加一张正面事件牌。恢复2点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit2",
+                "name": "新都之战",
+                "assetPath": "fate-domination/situations/new-city-battle",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "于新都增加一张正面事件牌。恢复2点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit6",
+                "name": "完美的流动",
+                "assetPath": "fate-domination/situations/perfect-flow",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "魔法攻击于深山町和新都获得威力+2。恢复两点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit8",
+                "name": "安哥拉·曼纽的阴影",
+                "assetPath": "fate-domination/situations/angra-shadow",
+                "printedMana": 0,
+                "sourceStatus": "verified",
+                "effectSummary": "迅捷攻击于深山町和新都获得威力+1。宝具禁止使用",
+                "climax": false
+              },
+              {
+                "id": "sit7",
+                "name": "安哥拉·曼纽的实质",
+                "assetPath": "fate-domination/situations/angra-substance",
+                "printedMana": 0,
+                "sourceStatus": "verified",
+                "effectSummary": "魔法攻击于深山町和新都获得威力+1。宝具禁止使用",
+                "climax": false
+              }
+            ],
+            "miyamaEvent": {
+              "id": "fuyuki_E9",
+              "name": "光荣的决斗",
+              "victoryPoints": 2,
+              "effectSummary": "力量攻击于此战场获得威力+2。",
+              "sourceStatus": "verified",
+              "assetPath": "fate-domination/events/glorious-duel"
+            },
+            "shintoEventFaceDown": false,
+            "situationDeckCount": 7,
+            "eventDeckCount": 18,
+            "eventDiscardCount": 0,
+            "pendingChoice": {
+              "kind": "attack-cards",
+              "playerId": "0",
+              "minimum": 2,
+              "maximum": 2
+            },
+            "battleResult": null,
+            "actionNotice": "行动阶段：可移动或出牌。",
+            "turnOrder": [
+              "0",
+              "1",
+              "2"
+            ],
+            "phaseCompletedPlayerIds": [],
+            "initialAttackHandDealtPlayerIds": [
+              "0",
+              "1",
+              "2"
+            ],
+            "currentTurnIndex": 0,
+            "actionLimit": 2,
+            "actionCount": 0,
+            "resolvedLocations": [],
+            "resolvedResults": [],
+            "eventDeck": [
+              {
+                "id": "fuyuki_E19",
+                "name": "地脉",
+                "victoryPoints": 2,
+                "effectSummary": "位于此战场的玩家在此战场发生战斗后，获得2点魔力。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/leyline"
+              },
+              {
+                "id": "fuyuki_E18",
+                "name": "地脉",
+                "victoryPoints": 2,
+                "effectSummary": "位于此战场的玩家在此战场发生战斗后，获得2点魔力。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/leyline"
+              },
+              {
+                "id": "fuyuki_E2",
+                "name": "铤而走险",
+                "victoryPoints": 4,
+                "effectSummary": "战果排名倒数第一者于此战场+12合计威力，倒数第二+8合计威力，倒数第三+4合计威力。（分数相同时，假设末位为A、B，倒数第二为C，第三为D，则A、B各+12，C+4，D+0）",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/risk-it-all"
+              },
+              {
+                "id": "fuyuki_E8",
+                "name": "归零地",
+                "victoryPoints": 3,
+                "effectSummary": "此战场的地利位置不提供地利。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ground-zero"
+              },
+              {
+                "id": "fuyuki_E11",
+                "name": "险恶地形",
+                "victoryPoints": 2,
+                "effectSummary": "迅捷攻击于此战场获得威力+2。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/treacherous-ground"
+              },
+              {
+                "id": "fuyuki_E7",
+                "name": "占领高地",
+                "victoryPoints": 3,
+                "effectSummary": "位于此战场的玩家计算战力时，将其地利翻倍。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/high-ground"
+              },
+              {
+                "id": "fuyuki_E6",
+                "name": "命运之战",
+                "victoryPoints": 2,
+                "effectSummary": "此战场上基本威力1和2的攻击基本威力增加至5。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/fate-battle"
+              },
+              {
+                "id": "fuyuki_E0",
+                "name": "夺回伊莉雅",
+                "victoryPoints": 5,
+                "effectSummary": "",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/reclaim-illya"
+              },
+              {
+                "id": "fuyuki_E17",
+                "name": "固有结界",
+                "victoryPoints": 2,
+                "effectSummary": "特殊攻击于此战场禁止打出。所有玩家不能移动至此地点也不能离开此地点。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/reality-marble"
+              },
+              {
+                "id": "fuyuki_E3",
+                "name": "圣地",
+                "victoryPoints": 3,
+                "effectSummary": "魔术攻击于此战场获得威力+3。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/holy-ground"
+              },
+              {
+                "id": "fuyuki_E4",
+                "name": "火力压制",
+                "victoryPoints": 3,
+                "effectSummary": "迅捷攻击于此战场获得威力+3。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/fire-suppression"
+              },
+              {
+                "id": "fuyuki_E15",
+                "name": "协同",
+                "victoryPoints": 2,
+                "effectSummary": "于此战场的玩家，其所有攻击若至少有一种属性相同，则合计威力+4。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/synergy"
+              },
+              {
+                "id": "fuyuki_E14",
+                "name": "偷袭",
+                "victoryPoints": 2,
+                "effectSummary": "从者真名隐藏的玩家于此战场合计威力+5。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ambush"
+              },
+              {
+                "id": "fuyuki_E13",
+                "name": "偷袭",
+                "victoryPoints": 2,
+                "effectSummary": "从者真名隐藏的玩家于此战场合计威力+5。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ambush"
+              },
+              {
+                "id": "fuyuki_E12",
+                "name": "遏制第三方威胁",
+                "victoryPoints": 2,
+                "effectSummary": "基本威力4及以上的攻击于此战场获得+1威力。此战场的胜者可以恢复1枚令咒。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/suppress-threat"
+              },
+              {
+                "id": "fuyuki_E10",
+                "name": "祭祀之地",
+                "victoryPoints": 2,
+                "effectSummary": "魔术攻击于此战场获得威力+2。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ritual-site"
+              },
+              {
+                "id": "fuyuki_E1",
+                "name": "铤而走险",
+                "victoryPoints": 4,
+                "effectSummary": "战果排名倒数第一者于此战场+12合计威力，倒数第二+8合计威力，倒数第三+4合计威力。（分数相同时，假设末位为A、B，倒数第二为C，第三为D，则A、B各+12，C+4，D+0）",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/risk-it-all"
+              },
+              {
+                "id": "fuyuki_E5",
+                "name": "强度测验",
+                "victoryPoints": 3,
+                "effectSummary": "力量攻击于此战场获得威力+3。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/power-test"
+              }
+            ],
+            "eventDiscard": [],
+            "currentEvents": {
+              "miyama": [
+                {
+                  "id": "fuyuki_E9",
+                  "name": "光荣的决斗",
+                  "victoryPoints": 2,
+                  "effectSummary": "力量攻击于此战场获得威力+2。",
+                  "sourceStatus": "verified",
+                  "assetPath": "fate-domination/events/glorious-duel"
+                }
+              ],
+              "shinto": [
+                {
+                  "id": "fuyuki_E16",
+                  "name": "固有结界",
+                  "victoryPoints": 2,
+                  "effectSummary": "特殊攻击于此战场禁止打出。所有玩家不能移动至此地点也不能离开此地点。",
+                  "sourceStatus": "verified",
+                  "assetPath": "fate-domination/events/reality-marble"
+                }
+              ]
+            },
+            "ruleState": {
+              "modifiers": [],
+              "delayed": [],
+              "copies": []
+            },
+            "seatControllers": {
+              "0": {
+                "type": "human"
+              },
+              "1": {
+                "type": "local-ai",
+                "difficulty": "normal"
+              },
+              "2": {
+                "type": "local-ai",
+                "difficulty": "normal"
+              }
+            }
+          },
+          "expected": {
+            "gameId": "fate-domination",
+            "round": 1,
+            "phase": "action",
+            "currentPlayerId": "0",
+            "playerIds": [
+              "0",
+              "1",
+              "2"
+            ],
+            "players": {
+              "0": {
+                "id": "0",
+                "masterId": "m_waver",
+                "servantId": "servant-rider",
+                "locationId": "workshop",
+                "deploymentSlot": 0,
+                "mana": 6,
+                "victoryPoints": 0,
+                "commandSpells": 3,
+                "hand": [
+                  {
+                    "id": "0:cardB2:3",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "0:cardB2:2",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "0:cardluck:11",
+                    "definitionId": "cardluck"
+                  }
+                ],
+                "selectedAttackIds": [],
+                "selectedFaceDownIds": [],
+                "faceDownAttackIds": [],
+                "forcedRevealedHand": [],
+                "activeAttackIds": [],
+                "discard": [],
+                "deck": [
+                  {
+                    "id": "0:cardB4:5",
+                    "definitionId": "cardB4"
+                  },
+                  {
+                    "id": "0:cardA2:9",
+                    "definitionId": "cardA2"
+                  },
+                  {
+                    "id": "0:cardB1:0",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "0:cardB1:1",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "0:cardB3:4",
+                    "definitionId": "cardB3"
+                  },
+                  {
+                    "id": "0:cardQ1:6",
+                    "definitionId": "cardQ1"
+                  },
+                  {
+                    "id": "0:cardQ3:8",
+                    "definitionId": "cardQ3"
+                  },
+                  {
+                    "id": "0:cardQ2:7",
+                    "definitionId": "cardQ2"
+                  },
+                  {
+                    "id": "0:cardSurveil:10",
+                    "definitionId": "cardSurveil"
+                  }
+                ],
+                "hasPassedAction": false,
+                "eliminated": false,
+                "defeatMarkers": [],
+                "eliminationProtectionUsed": false,
+                "isRevealed": false,
+                "activeSkills": [],
+                "usedAbilityIds": [],
+                "revealedSkillIds": [],
+                "normalAttackPlayed": false,
+                "normalMoveCompleted": false,
+                "skills": [
+                  {
+                    "id": "s1:0",
+                    "name": "鉴识眼",
+                    "type": "被动",
+                    "desc": "你可观看背面朝上的事件牌。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s2:1",
+                    "name": "战略部署",
+                    "type": "前哨阶段",
+                    "cost": 1,
+                    "desc": "你能支付1魔力来抽2张牌。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s3:2",
+                    "name": "调查",
+                    "type": "前哨阶段",
+                    "cost": 0,
+                    "desc": "查看一位玩家的手牌。你可选择其中一张牌放于其拥有的牌库顶部，若如此，下回合你不可进行【调查】。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "sc_iskandar_1:3",
+                    "name": "骑乘",
+                    "cost": 3,
+                    "req": 3,
+                    "power": 0,
+                    "type": "特殊",
+                    "desc": "打出时：若此牌与一张基础攻击一同打出，抽一张牌。\n坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。"
+                  },
+                  {
+                    "id": "sc_iskandar_2:4",
+                    "name": "神威车轮",
+                    "cost": 4,
+                    "req": 4,
+                    "power": 7,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n行动阶段：将你所在地点的一张事件牌弃置，然后抽2张新的事件牌。将其中1张作为新的事件牌，另一张洗回牌堆。"
+                  },
+                  {
+                    "id": "sc_iskandar_np:5",
+                    "name": "王之军势",
+                    "cost": 8,
+                    "req": 8,
+                    "power": 0,
+                    "type": "宝具",
+                    "desc": "【真名解放】\n行动阶段：创造并激活5张临时的威力2的力量或迅捷属性的基础攻击直至回合结束。"
+                  }
+                ]
+              },
+              "1": {
+                "id": "1",
+                "masterId": "m_shinji",
+                "servantId": "servant-heracles",
+                "locationId": "workshop",
+                "deploymentSlot": 1,
+                "mana": 5,
+                "victoryPoints": 0,
+                "commandSpells": 3,
+                "hand": [
+                  {
+                    "id": "1:cardluck:10",
+                    "definitionId": "cardluck"
+                  },
+                  {
+                    "id": "1:cardQ5:9",
+                    "definitionId": "cardQ5"
+                  },
+                  {
+                    "id": "1:cardB5:5",
+                    "definitionId": "cardB5"
+                  }
+                ],
+                "selectedAttackIds": [],
+                "selectedFaceDownIds": [],
+                "faceDownAttackIds": [],
+                "forcedRevealedHand": [],
+                "activeAttackIds": [],
+                "discard": [],
+                "deck": [
+                  {
+                    "id": "1:cardB2:2",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "1:cardB4:3",
+                    "definitionId": "cardB4"
+                  },
+                  {
+                    "id": "1:cardB1:1",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "1:cardB1:0",
+                    "definitionId": "cardB1"
+                  },
+                  {
+                    "id": "1:cardQ1:7",
+                    "definitionId": "cardQ1"
+                  },
+                  {
+                    "id": "1:cardB6:6",
+                    "definitionId": "cardB6"
+                  },
+                  {
+                    "id": "1:cardQ3:8",
+                    "definitionId": "cardQ3"
+                  },
+                  {
+                    "id": "1:cardB4:4",
+                    "definitionId": "cardB4"
+                  },
+                  {
+                    "id": "1:cardluck:11",
+                    "definitionId": "cardluck"
+                  }
+                ],
+                "hasPassedAction": false,
+                "eliminated": false,
+                "defeatMarkers": [],
+                "eliminationProtectionUsed": false,
+                "isRevealed": false,
+                "activeSkills": [],
+                "usedAbilityIds": [],
+                "revealedSkillIds": [],
+                "normalAttackPlayed": false,
+                "normalMoveCompleted": false,
+                "skills": [
+                  {
+                    "id": "s1:0",
+                    "name": "吸魔命令",
+                    "type": "被动",
+                    "desc": "进入深山町时，获得1点魔力。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s2:1",
+                    "name": "无用之人",
+                    "type": "被动",
+                    "desc": "开局获得【伪臣之书】。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s3:2",
+                    "name": "小丑",
+                    "type": "被动",
+                    "desc": "当你战败时，失去一枚令咒。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s4:3",
+                    "name": "伪臣之书",
+                    "type": "被动",
+                    "desc": "当间桐樱在场时：当你第一次失去所有令咒时，在该回合结束时，将从者替换为一个随机的，未被使用的从者。重新获得3令咒。\n当间桐樱不在场时：当你第一次失去所有令咒时，在该回合结束时，将你的御主替换为【间桐樱】。重置你的魔力，获得2令咒，保持战果不变。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "sc_herc_1:4",
+                    "name": "十二试炼",
+                    "cost": 1,
+                    "req": 1,
+                    "power": 5,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n若你战败，获得3点战果并令此战斗的所有胜者分别失去3点战果，然后将此牌移除游戏并令你的其他【十二试炼】获得+3威力直至游戏结束。"
+                  },
+                  {
+                    "id": "sc_herc_2:5",
+                    "name": "十二试炼",
+                    "cost": 1,
+                    "req": 1,
+                    "power": 5,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n若你战败，获得3点战果并令此战斗的所有胜者分别失去3点战果，然后将此牌移除游戏并令你的其他【十二试炼】获得+3威力直至游戏结束。"
+                  },
+                  {
+                    "id": "sc_herc_3:6",
+                    "name": "十二试炼",
+                    "cost": 1,
+                    "req": 1,
+                    "power": 5,
+                    "type": "力量/宝具",
+                    "desc": "【真名解放】\n若你战败，获得3点战果并令此战斗的所有胜者分别失去3点战果，然后将此牌移除游戏并令你的其他【十二试炼】获得+3威力直至游戏结束。"
+                  }
+                ]
+              },
+              "2": {
+                "id": "2",
+                "masterId": "m_shirou_emiya",
+                "servantId": "servant-gilgamesh",
+                "locationId": "workshop",
+                "deploymentSlot": 2,
+                "mana": 3,
+                "victoryPoints": 0,
+                "commandSpells": 3,
+                "hand": [
+                  {
+                    "id": "2:cardA3:8",
+                    "definitionId": "cardA3"
+                  },
+                  {
+                    "id": "2:cardB2:1",
+                    "definitionId": "cardB2"
+                  },
+                  {
+                    "id": "2:cardB1:0",
+                    "definitionId": "cardB1"
+                  }
+                ],
+                "selectedAttackIds": [],
+                "selectedFaceDownIds": [],
+                "faceDownAttackIds": [],
+                "forcedRevealedHand": [],
+                "activeAttackIds": [],
+                "discard": [],
+                "deck": [
+                  {
+                    "id": "2:cardA1:6",
+                    "definitionId": "cardA1"
+                  },
+                  {
+                    "id": "2:cardPreparation:9",
+                    "definitionId": "cardPreparation"
+                  },
+                  {
+                    "id": "2:cardA2:7",
+                    "definitionId": "cardA2"
+                  },
+                  {
+                    "id": "2:cardQ1:3",
+                    "definitionId": "cardQ1"
+                  },
+                  {
+                    "id": "2:cardluck:11",
+                    "definitionId": "cardluck"
+                  },
+                  {
+                    "id": "2:cardluck:10",
+                    "definitionId": "cardluck"
+                  },
+                  {
+                    "id": "2:cardB3:2",
+                    "definitionId": "cardB3"
+                  },
+                  {
+                    "id": "2:cardQ2:4",
+                    "definitionId": "cardQ2"
+                  },
+                  {
+                    "id": "2:cardQ3:5",
+                    "definitionId": "cardQ3"
+                  }
+                ],
+                "hasPassedAction": false,
+                "eliminated": false,
+                "defeatMarkers": [],
+                "eliminationProtectionUsed": false,
+                "isRevealed": false,
+                "activeSkills": [],
+                "usedAbilityIds": [],
+                "revealedSkillIds": [],
+                "normalAttackPlayed": false,
+                "normalMoveCompleted": false,
+                "skills": [
+                  {
+                    "id": "s1:0",
+                    "name": "未熟",
+                    "type": "被动",
+                    "desc": "你的魔力初始值为2。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s2:1",
+                    "name": "投影",
+                    "type": "被动",
+                    "desc": "将【干将·莫邪】加入你的技能区。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "s3:2",
+                    "name": "远离尘世的理想乡",
+                    "type": "被动",
+                    "desc": "当你首次被淘汰时你将失去所有的魔力来继续游戏。",
+                    "isMasterSkill": true
+                  },
+                  {
+                    "id": "sc_gil_1:3",
+                    "name": "单独行动",
+                    "cost": 0,
+                    "req": 0,
+                    "power": 6,
+                    "type": "特殊",
+                    "desc": "当你的行动顺位为当前回合前半数时（向下取整），你才能使用此牌。\n行动阶段：你获得3点战果。\n如果你本回合战斗失败，失去5点战果，此效果不能被任何方法阻止。"
+                  },
+                  {
+                    "id": "sc_gil_2:4",
+                    "name": "巴比伦之门",
+                    "cost": 0,
+                    "req": 0,
+                    "power": 4,
+                    "type": "宝具",
+                    "desc": "【真名解放】\n打出时：自由选择X（作为魔力消耗）。此牌获得X种非特殊属性（由你选择）。\n行动阶段：翻倍你的地利。"
+                  },
+                  {
+                    "id": "sc_gil_np:5",
+                    "name": "天地乖离开辟之星",
+                    "cost": 9,
+                    "req": 9,
+                    "power": 15,
+                    "type": "宝具",
+                    "desc": "【真名解放】\n切裂世界-战斗阶段：令所有控制特殊属性宝具的交战对手【败北】。"
+                  }
+                ]
+              }
+            },
+            "battlefield": {
+              "workshop": {
+                "id": "workshop",
+                "label": "魔术工房",
+                "movementCost": 0,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 0,
+                "capacity": 4,
+                "playerIds": [
+                  "0",
+                  "1",
+                  "2"
+                ],
+                "eventCards": []
+              },
+              "miyama": {
+                "id": "miyama",
+                "label": "深山町",
+                "movementCost": 1,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 2,
+                "capacity": null,
+                "playerIds": [],
+                "eventCards": [
+                  {
+                    "id": "fuyuki_E9",
+                    "name": "光荣的决斗",
+                    "victoryPoints": 2,
+                    "effectSummary": "力量攻击于此战场获得威力+2。",
+                    "sourceStatus": "verified",
+                    "assetPath": "fate-domination/events/glorious-duel"
+                  }
+                ]
+              },
+              "shinto": {
+                "id": "shinto",
+                "label": "新都",
+                "movementCost": 2,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 3,
+                "capacity": null,
+                "playerIds": [],
+                "eventCards": [
+                  {
+                    "id": "fuyuki_E16",
+                    "name": "固有结界",
+                    "victoryPoints": 2,
+                    "effectSummary": "特殊攻击于此战场禁止打出。所有玩家不能移动至此地点也不能离开此地点。",
+                    "sourceStatus": "verified",
+                    "assetPath": "fate-domination/events/reality-marble"
+                  }
+                ]
+              },
+              "recon": {
+                "id": "recon",
+                "label": "侦察",
+                "movementCost": 0,
+                "terrainPower": 0,
+                "competitionVictoryPoints": 0,
+                "capacity": 1,
+                "playerIds": [],
+                "eventCards": []
+              }
+            },
+            "situation": {
+              "id": "sit9",
+              "name": "安哥拉·曼纽的诅咒",
+              "assetPath": "fate-domination/situations/angra-curse",
+              "printedMana": 0,
+              "sourceStatus": "verified",
+              "effectSummary": "力量攻击于深山町和新都获得威力+1。宝具禁止使用",
+              "climax": false
+            },
+            "situationDeck": [
+              {
+                "id": "sit3",
+                "name": "深山町的杀人魔",
+                "assetPath": "fate-domination/situations/miyama-killer",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "于深山町增加一张正面事件牌。恢复2点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit5",
+                "name": "暴风雨前的宁静",
+                "assetPath": "fate-domination/situations/calm-before-storm",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "迅捷攻击于深山町和新都获得威力+2。恢复两点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit1",
+                "name": "转机",
+                "assetPath": "fate-domination/situations/turning-point",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "于深山町和新都各增加一张正面事件牌。恢复2点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit2",
+                "name": "新都之战",
+                "assetPath": "fate-domination/situations/new-city-battle",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "于新都增加一张正面事件牌。恢复2点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit6",
+                "name": "完美的流动",
+                "assetPath": "fate-domination/situations/perfect-flow",
+                "printedMana": 2,
+                "sourceStatus": "verified",
+                "effectSummary": "魔法攻击于深山町和新都获得威力+2。恢复两点魔力",
+                "climax": false
+              },
+              {
+                "id": "sit8",
+                "name": "安哥拉·曼纽的阴影",
+                "assetPath": "fate-domination/situations/angra-shadow",
+                "printedMana": 0,
+                "sourceStatus": "verified",
+                "effectSummary": "迅捷攻击于深山町和新都获得威力+1。宝具禁止使用",
+                "climax": false
+              },
+              {
+                "id": "sit7",
+                "name": "安哥拉·曼纽的实质",
+                "assetPath": "fate-domination/situations/angra-substance",
+                "printedMana": 0,
+                "sourceStatus": "verified",
+                "effectSummary": "魔法攻击于深山町和新都获得威力+1。宝具禁止使用",
+                "climax": false
+              }
+            ],
+            "miyamaEvent": {
+              "id": "fuyuki_E9",
+              "name": "光荣的决斗",
+              "victoryPoints": 2,
+              "effectSummary": "力量攻击于此战场获得威力+2。",
+              "sourceStatus": "verified",
+              "assetPath": "fate-domination/events/glorious-duel"
+            },
+            "shintoEventFaceDown": false,
+            "situationDeckCount": 7,
+            "eventDeckCount": 18,
+            "eventDiscardCount": 0,
+            "pendingChoice": {
+              "kind": "attack-cards",
+              "playerId": "0",
+              "minimum": 2,
+              "maximum": 2
+            },
+            "battleResult": null,
+            "actionNotice": "行动阶段：可移动或出牌。",
+            "turnOrder": [
+              "0",
+              "1",
+              "2"
+            ],
+            "phaseCompletedPlayerIds": [],
+            "initialAttackHandDealtPlayerIds": [
+              "0",
+              "1",
+              "2"
+            ],
+            "currentTurnIndex": 0,
+            "actionLimit": 2,
+            "actionCount": 0,
+            "resolvedLocations": [],
+            "resolvedResults": [],
+            "eventDeck": [
+              {
+                "id": "fuyuki_E19",
+                "name": "地脉",
+                "victoryPoints": 2,
+                "effectSummary": "位于此战场的玩家在此战场发生战斗后，获得2点魔力。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/leyline"
+              },
+              {
+                "id": "fuyuki_E18",
+                "name": "地脉",
+                "victoryPoints": 2,
+                "effectSummary": "位于此战场的玩家在此战场发生战斗后，获得2点魔力。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/leyline"
+              },
+              {
+                "id": "fuyuki_E2",
+                "name": "铤而走险",
+                "victoryPoints": 4,
+                "effectSummary": "战果排名倒数第一者于此战场+12合计威力，倒数第二+8合计威力，倒数第三+4合计威力。（分数相同时，假设末位为A、B，倒数第二为C，第三为D，则A、B各+12，C+4，D+0）",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/risk-it-all"
+              },
+              {
+                "id": "fuyuki_E8",
+                "name": "归零地",
+                "victoryPoints": 3,
+                "effectSummary": "此战场的地利位置不提供地利。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ground-zero"
+              },
+              {
+                "id": "fuyuki_E11",
+                "name": "险恶地形",
+                "victoryPoints": 2,
+                "effectSummary": "迅捷攻击于此战场获得威力+2。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/treacherous-ground"
+              },
+              {
+                "id": "fuyuki_E7",
+                "name": "占领高地",
+                "victoryPoints": 3,
+                "effectSummary": "位于此战场的玩家计算战力时，将其地利翻倍。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/high-ground"
+              },
+              {
+                "id": "fuyuki_E6",
+                "name": "命运之战",
+                "victoryPoints": 2,
+                "effectSummary": "此战场上基本威力1和2的攻击基本威力增加至5。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/fate-battle"
+              },
+              {
+                "id": "fuyuki_E0",
+                "name": "夺回伊莉雅",
+                "victoryPoints": 5,
+                "effectSummary": "",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/reclaim-illya"
+              },
+              {
+                "id": "fuyuki_E17",
+                "name": "固有结界",
+                "victoryPoints": 2,
+                "effectSummary": "特殊攻击于此战场禁止打出。所有玩家不能移动至此地点也不能离开此地点。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/reality-marble"
+              },
+              {
+                "id": "fuyuki_E3",
+                "name": "圣地",
+                "victoryPoints": 3,
+                "effectSummary": "魔术攻击于此战场获得威力+3。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/holy-ground"
+              },
+              {
+                "id": "fuyuki_E4",
+                "name": "火力压制",
+                "victoryPoints": 3,
+                "effectSummary": "迅捷攻击于此战场获得威力+3。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/fire-suppression"
+              },
+              {
+                "id": "fuyuki_E15",
+                "name": "协同",
+                "victoryPoints": 2,
+                "effectSummary": "于此战场的玩家，其所有攻击若至少有一种属性相同，则合计威力+4。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/synergy"
+              },
+              {
+                "id": "fuyuki_E14",
+                "name": "偷袭",
+                "victoryPoints": 2,
+                "effectSummary": "从者真名隐藏的玩家于此战场合计威力+5。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ambush"
+              },
+              {
+                "id": "fuyuki_E13",
+                "name": "偷袭",
+                "victoryPoints": 2,
+                "effectSummary": "从者真名隐藏的玩家于此战场合计威力+5。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ambush"
+              },
+              {
+                "id": "fuyuki_E12",
+                "name": "遏制第三方威胁",
+                "victoryPoints": 2,
+                "effectSummary": "基本威力4及以上的攻击于此战场获得+1威力。此战场的胜者可以恢复1枚令咒。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/suppress-threat"
+              },
+              {
+                "id": "fuyuki_E10",
+                "name": "祭祀之地",
+                "victoryPoints": 2,
+                "effectSummary": "魔术攻击于此战场获得威力+2。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/ritual-site"
+              },
+              {
+                "id": "fuyuki_E1",
+                "name": "铤而走险",
+                "victoryPoints": 4,
+                "effectSummary": "战果排名倒数第一者于此战场+12合计威力，倒数第二+8合计威力，倒数第三+4合计威力。（分数相同时，假设末位为A、B，倒数第二为C，第三为D，则A、B各+12，C+4，D+0）",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/risk-it-all"
+              },
+              {
+                "id": "fuyuki_E5",
+                "name": "强度测验",
+                "victoryPoints": 3,
+                "effectSummary": "力量攻击于此战场获得威力+3。",
+                "sourceStatus": "verified",
+                "assetPath": "fate-domination/events/power-test"
+              }
+            ],
+            "eventDiscard": [],
+            "currentEvents": {
+              "miyama": [
+                {
+                  "id": "fuyuki_E9",
+                  "name": "光荣的决斗",
+                  "victoryPoints": 2,
+                  "effectSummary": "力量攻击于此战场获得威力+2。",
+                  "sourceStatus": "verified",
+                  "assetPath": "fate-domination/events/glorious-duel"
+                }
+              ],
+              "shinto": [
+                {
+                  "id": "fuyuki_E16",
+                  "name": "固有结界",
+                  "victoryPoints": 2,
+                  "effectSummary": "特殊攻击于此战场禁止打出。所有玩家不能移动至此地点也不能离开此地点。",
+                  "sourceStatus": "verified",
+                  "assetPath": "fate-domination/events/reality-marble"
+                }
+              ]
+            },
+            "ruleState": {
+              "modifiers": [],
+              "delayed": [],
+              "copies": []
+            },
+            "seatControllers": {
+              "0": {
+                "type": "human"
+              },
+              "1": {
+                "type": "local-ai",
+                "difficulty": "normal"
+              },
+              "2": {
+                "type": "local-ai",
+                "difficulty": "normal"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "touch-inspection-open",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "action": "hasTouch/isMobile场景中点击一张真实已打出的基础攻击牌打开检视",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 150.984375,
+            "left": 284,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 318.96875,
+            "height": 121.828125
+          },
+          "summary": {
+            "x": 284,
+            "y": 213.671875,
+            "left": 284,
+            "top": 213.671875,
+            "right": 428,
+            "bottom": 272.8125,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 166.96875,
+            "height": 121.828125
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 772,
+            "y": 215.84375,
+            "left": 772,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 124,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 524,
+            "bottom": 272.8125,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 389.484375,
+            "y": 280.8125,
+            "left": 389.484375,
+            "top": 280.8125,
+            "right": 497.484375,
+            "bottom": 432,
+            "width": 108,
+            "height": 151.1875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<b>行动</b>",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            },
+            {
+              "id": "0:cardB2:2",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            },
+            {
+              "id": "0:cardB2:2",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 1,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardB2:2"
+          ],
+          "activeSkills": [],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 150.984375,
+            "left": 284,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 318.96875,
+            "height": 121.828125
+          },
+          "summary": {
+            "x": 284,
+            "y": 213.671875,
+            "left": 284,
+            "top": 213.671875,
+            "right": 428,
+            "bottom": 272.8125,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 166.96875,
+            "height": 121.828125
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 772,
+            "y": 215.84375,
+            "left": 772,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 124,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 524,
+            "bottom": 272.8125,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 389.484375,
+            "y": 280.8125,
+            "left": 389.484375,
+            "top": 280.8125,
+            "right": 497.484375,
+            "bottom": 432,
+            "width": 108,
+            "height": 151.1875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fd-inspection-backdrop\" data-opponent-open=\"false\" role=\"dialog\" aria-modal=\"true\" aria-label=\"强打卡牌检视\" style=\"z-index: 2200;\"><div data-tutorial-id=\"fate-inspection\" class=\"fd-runtime-inspection is-pinned\" data-testid=\"fate-runtime-inspection\"><div class=\"fd-inspection-card-face\" data-testid=\"fate-inspection-card-face\"><img alt=\"Card Preview\" aria-label=\"Card Preview\" draggable=\"false\"",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            },
+            {
+              "id": "0:cardB2:2",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            },
+            {
+              "id": "0:cardB2:2",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 1,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardB2:2"
+          ],
+          "activeSkills": [],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "touch-scene-hasTouch-and-coarse-pointer",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "touch-inspection-is-pinned-dialog",
+          "actual": 1,
+          "expected": 1
+        },
+        {
+          "name": "touch-open-does-not-create-desktop-hover-layer",
+          "actual": 0,
+          "expected": 0
+        },
+        {
+          "name": "touch-inspection-card-physical-size",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "touch-inspection-close-normal",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "action": "触屏点击检视关闭控件，回到正常可操作牌桌",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 150.984375,
+            "left": 284,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 318.96875,
+            "height": 121.828125
+          },
+          "summary": {
+            "x": 284,
+            "y": 213.671875,
+            "left": 284,
+            "top": 213.671875,
+            "right": 428,
+            "bottom": 272.8125,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 166.96875,
+            "height": 121.828125
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 772,
+            "y": 215.84375,
+            "left": 772,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 124,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 524,
+            "bottom": 272.8125,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 389.484375,
+            "y": 280.8125,
+            "left": 389.484375,
+            "top": 280.8125,
+            "right": 497.484375,
+            "bottom": 432,
+            "width": 108,
+            "height": 151.1875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fd-inspection-backdrop\" data-opponent-open=\"false\" role=\"dialog\" aria-modal=\"true\" aria-label=\"强打卡牌检视\" style=\"z-index: 2200;\"><div data-tutorial-id=\"fate-inspection\" class=\"fd-runtime-inspection is-pinned\" data-testid=\"fate-runtime-inspection\"><div class=\"fd-inspection-card-face\" data-testid=\"fate-inspection-card-face\"><img alt=\"Card Preview\" aria-label=\"Card Preview\" draggable=\"false\"",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            },
+            {
+              "id": "0:cardB2:2",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            },
+            {
+              "id": "0:cardB2:2",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 1,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardB2:2"
+          ],
+          "activeSkills": [],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 150.984375,
+            "left": 284,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 318.96875,
+            "height": 121.828125
+          },
+          "summary": {
+            "x": 284,
+            "y": 213.671875,
+            "left": 284,
+            "top": 213.671875,
+            "right": 428,
+            "bottom": 272.8125,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 166.96875,
+            "height": 121.828125
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 772,
+            "y": 215.84375,
+            "left": 772,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 124,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 524,
+            "bottom": 272.8125,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 389.484375,
+            "y": 280.8125,
+            "left": 389.484375,
+            "top": 280.8125,
+            "right": 497.484375,
+            "bottom": 432,
+            "width": 108,
+            "height": 151.1875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<b>行动</b>",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            },
+            {
+              "id": "0:cardB2:2",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            },
+            {
+              "id": "0:cardB2:2",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 1,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardB2:2"
+          ],
+          "activeSkills": [],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "touch-close-removes-pinned-inspection",
+          "actual": 0,
+          "expected": 0
+        },
+        {
+          "name": "touch-close-removes-desktop-hover-preview",
+          "actual": 0,
+          "expected": 0
+        },
+        {
+          "name": "touch-owner-hud-and-all-seats-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "touch-primary-action-and-both-hands-reachable",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "touch-close-restores-focus-to-source-card",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "touch-continue-action-after-close",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "action": "关闭检视后点击结束行动，行动权交给第二席",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 150.984375,
+            "left": 284,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 318.96875,
+            "height": 121.828125
+          },
+          "summary": {
+            "x": 284,
+            "y": 213.671875,
+            "left": 284,
+            "top": 213.671875,
+            "right": 428,
+            "bottom": 272.8125,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 166.96875,
+            "height": 121.828125
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 772,
+            "y": 215.84375,
+            "left": 772,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 124,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 524,
+            "bottom": 272.8125,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 389.484375,
+            "y": 280.8125,
+            "left": 389.484375,
+            "top": 280.8125,
+            "right": 497.484375,
+            "bottom": 432,
+            "width": 108,
+            "height": 151.1875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<b>行动</b>",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            },
+            {
+              "id": "0:cardB2:2",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            },
+            {
+              "id": "0:cardB2:2",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 1,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardB2:2"
+          ],
+          "activeSkills": [],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 150.984375,
+            "left": 284,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 318.96875,
+            "height": 121.828125
+          },
+          "summary": {
+            "x": 284,
+            "y": 213.671875,
+            "left": 284,
+            "top": 213.671875,
+            "right": 428,
+            "bottom": 272.8125,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 602.96875,
+            "bottom": 272.8125,
+            "width": 166.96875,
+            "height": 121.828125
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 280.8125,
+            "left": 284,
+            "top": 280.8125,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 151.1875
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 79.625,
+              "left": 40,
+              "top": 79.625,
+              "right": 118,
+              "bottom": 188.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 74.625,
+              "left": 58,
+              "top": 74.625,
+              "right": 136,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 76,
+              "y": 69.625,
+              "left": 76,
+              "top": 69.625,
+              "right": 154,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 772,
+            "y": 215.84375,
+            "left": 772,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 124,
+            "height": 56
+          },
+          "phaseButton": {
+            "x": 840,
+            "y": 215.84375,
+            "left": 840,
+            "top": 215.84375,
+            "right": 896,
+            "bottom": 271.84375,
+            "width": 56,
+            "height": 56
+          },
+          "playedCard": {
+            "x": 436,
+            "y": 150.984375,
+            "left": 436,
+            "top": 150.984375,
+            "right": 524,
+            "bottom": 272.8125,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 389.484375,
+            "y": 280.8125,
+            "left": 389.484375,
+            "top": 280.8125,
+            "right": 497.484375,
+            "bottom": 432,
+            "width": 108,
+            "height": 151.1875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<b>行动</b>",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            },
+            {
+              "id": "0:cardB2:2",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            },
+            {
+              "id": "0:cardB2:2",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 1,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatListScroll": {
+            "clientHeight": 164,
+            "scrollHeight": 178
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 157.5,
+                "width": 222,
+                "height": 89.5
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 169.5,
+                "left": 700,
+                "top": 169.5,
+                "right": 922,
+                "bottom": 237.5,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": false
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 1,
+            "coarsePointer": true,
+            "hoverPointer": false
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 167,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "1",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            }
+          ],
+          "deckCount": 9,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3",
+            "0:cardB2:2"
+          ],
+          "activeSkills": [],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "touch-normal-action-was-submitted",
+          "actual": "1",
+          "expected": "1"
+        },
+        {
+          "name": "touch-current-player-completed-action",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "touch-action-continuation-keeps-inspection-closed",
+          "actual": 0,
+          "expected": 0
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "touch-inspection-open",
+      "stepId": "touch-inspection-open",
+      "change": "panel",
+      "viewport": "mobile",
+      "sha256": "91fe6b6bcad864c234729f62cd0ed28ceafa1e8c79ef3de419a0f0f926161f3c"
+    },
+    {
+      "id": "touch-normal-after-inspection",
+      "stepId": "touch-inspection-close-normal",
+      "change": "layout",
+      "viewport": "mobile",
+      "sha256": "9785068a4e569565100e01ac062acdac5d1a697554d7e3a76d6492d5affd9d5f"
+    },
+    {
+      "id": "touch-continued-action",
+      "stepId": "touch-continue-action-after-close",
+      "change": "layout",
+      "viewport": "mobile",
+      "sha256": "ae41e21b4804a2c0c59fc9978de7c6e70b9f67d2fd54d46c25aacccc92ac6b1d"
+    }
+  ]
+}

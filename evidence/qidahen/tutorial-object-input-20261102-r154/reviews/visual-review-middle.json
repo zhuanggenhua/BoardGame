@@ -1,0 +1,457 @@
+{
+  "reviewer": "/root/r153_ui_middle",
+  "status": "PASS",
+  "scope": "interaction-ui",
+  "score": 95,
+  "criteriaScores": {
+    "任务清晰度": 19,
+    "视觉层级": 14,
+    "对象可识别性": 15,
+    "状态与动作载体": 14,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 9
+  },
+  "expectedMediaCount": 16,
+  "reviewedMediaCount": 16,
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/09-recruit-troops.png",
+      "sha256": "409016030073b3f4075839df1b7884f8e4e3f33c50205dde785facce48a98a87",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "征召军队的两种建军方式卡片可读；教学说明紧邻当前选择，未遮当前按钮。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/09-recruit-troops.png",
+      "readSourceSha256": "409016030073b3f4075839df1b7884f8e4e3f33c50205dde785facce48a98a87",
+      "observation": "征召军队的两种建军方式卡片可读；教学说明紧邻当前选择，未遮当前按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/10-midyear.png",
+      "sha256": "b84914f4b109bf4146cf3134584dd02267df5d80354d0950117340e65fe901b4",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "年中印刷名位于提示下方仍完整可读；当前时标在轮盘下端可见；无未来移动候选高亮。",
+        "手牌上限/需弃数量与确认弃牌入口可见。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/10-midyear.png",
+      "readSourceSha256": "b84914f4b109bf4146cf3134584dd02267df5d80354d0950117340e65fe901b4",
+      "observation": "年中印刷名位于提示下方仍完整可读；当前时标在轮盘下端可见；无未来移动候选高亮。；手牌上限/需弃数量与确认弃牌入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/11-hand-limit.png",
+      "sha256": "e9f088efc3a19e159704d733f87c9550a818d620f350db63ce446270dee524f6",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "教程要求的弃牌有本体绿色边界；保留鸳鸯阵和火炮技术的说明可读。",
+        "半露手牌为指定交互形态，不视为缺陷。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/11-hand-limit.png",
+      "readSourceSha256": "e9f088efc3a19e159704d733f87c9550a818d620f350db63ce446270dee524f6",
+      "observation": "教程要求的弃牌有本体绿色边界；保留鸳鸯阵和火炮技术的说明可读。；半露手牌为指定交互形态，不视为缺陷。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/12-upgrade-card.png",
+      "sha256": "96ba9f8c79197cdcf5ce017047834de7931884a14972ba6fc870bdafd7cd8274",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "抬起的正式火炮技术卡标明军备，标题与主要效果可读；教程说明贴近卡牌。",
+        "卡面与教程均在表达火炮技术对炮兵的加强，数值与规则正确性不由图审判断。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/12-upgrade-card.png",
+      "readSourceSha256": "96ba9f8c79197cdcf5ce017047834de7931884a14972ba6fc870bdafd7cd8274",
+      "observation": "抬起的正式火炮技术卡标明军备，标题与主要效果可读；教程说明贴近卡牌。；卡面与教程均在表达火炮技术对炮兵的加强，数值与规则正确性不由图审判断。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/13-dispatch-source.png",
+      "sha256": "3020a13d15cbf6d323d3cc96bed039c3e63135cdc14b146f205398c4f2bbcc9e",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "辽北来源地区本体边界和名称可读；选择出兵来源与确认入口清楚。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/13-dispatch-source.png",
+      "readSourceSha256": "3020a13d15cbf6d323d3cc96bed039c3e63135cdc14b146f205398c4f2bbcc9e",
+      "observation": "辽北来源地区本体边界和名称可读；选择出兵来源与确认入口清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/14-dispatch-troops.png",
+      "sha256": "6e91cd9d2685656c485be55af8a36c0685e42f885eb1794fb0b3654bfb8866ca",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "辽北放大兵牌以贴合本体的绿色边界表达候选；步骑炮可辨识，当前已选0支和灰确认清楚。",
+        "教程说明在兵牌上方，未遮当前必要兵牌。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/14-dispatch-troops.png",
+      "readSourceSha256": "6e91cd9d2685656c485be55af8a36c0685e42f885eb1794fb0b3654bfb8866ca",
+      "observation": "辽北放大兵牌以贴合本体的绿色边界表达候选；步骑炮可辨识，当前已选0支和灰确认清楚。；教程说明在兵牌上方，未遮当前必要兵牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/15-dispatch-troops-selected.png",
+      "sha256": "002266527da739a2e8bb43833d5052ce704dcf04c28d8ee09851b47fe96a62db",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "已选兵牌以明亮描边/对勾区别于绿色候选；已选3支与启用确认明确。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/15-dispatch-troops-selected.png",
+      "readSourceSha256": "002266527da739a2e8bb43833d5052ce704dcf04c28d8ee09851b47fe96a62db",
+      "observation": "已选兵牌以明亮描边/对勾区别于绿色候选；已选3支与启用确认明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/16-dispatch-target.png",
+      "sha256": "f0e24050871ef1db19128a402687a0ba9bd32a461779c4b8ab73cd20ae6d35f9",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "叶赫部标签、驻军及目标本体边界可见，教程明确选择叶赫部；右侧重新选择部队入口清楚。",
+        "提示只覆盖目标区域的非必要纹理，未遮目标识别与候选点击的主要部分。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/16-dispatch-target.png",
+      "readSourceSha256": "f0e24050871ef1db19128a402687a0ba9bd32a461779c4b8ab73cd20ae6d35f9",
+      "observation": "叶赫部标签、驻军及目标本体边界可见，教程明确选择叶赫部；右侧重新选择部队入口清楚。；提示只覆盖目标区域的非必要纹理，未遮目标识别与候选点击的主要部分。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/17-tactic-card.png",
+      "sha256": "6945a052427426843840841ef82b4188459869eea6b1d2c708063776b5218f04",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "战术牌教学、交战地区/出兵箭头和开始战斗入口可读。",
+        "手牌为用户要求的半露形态；本帧只证明候选入口，选牌后的完整牌面由18补证。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/17-tactic-card.png",
+      "readSourceSha256": "6945a052427426843840841ef82b4188459869eea6b1d2c708063776b5218f04",
+      "observation": "战术牌教学、交战地区/出兵箭头和开始战斗入口可读。；手牌为用户要求的半露形态；本帧只证明候选入口，选牌后的完整牌面由18补证。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/18-tactic-card-selected.png",
+      "sha256": "025bc1235ba511621594a225bcd17b44bcde277cd542da41d23b25692dcca7e7",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "鸳鸯阵实体卡抬起后标题/效果/已选清楚；打出战术牌与取消按钮可读。",
+        "当前交战目标、出兵来源和主战斗按钮仍可见。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/18-tactic-card-selected.png",
+      "readSourceSha256": "025bc1235ba511621594a225bcd17b44bcde277cd542da41d23b25692dcca7e7",
+      "observation": "鸳鸯阵实体卡抬起后标题/效果/已选清楚；打出战术牌与取消按钮可读。；当前交战目标、出兵来源和主战斗按钮仍可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/26-occupy.png",
+      "sha256": "599043597ec707a1f28659c3f9cc0838caf9663dd9a52a25aae6db4eb6b66d92",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/26-occupy.png",
+      "readSourceSha256": "599043597ec707a1f28659c3f9cc0838caf9663dd9a52a25aae6db4eb6b66d92",
+      "observations": [
+        "战后选择面板在右侧独立承载，辽北→叶赫部、攻方损失/幸存及占领/撤回可读。",
+        "教程与战后动作面板相邻，未遮当前按钮；战报折叠入口可见。"
+      ],
+      "observation": "战后选择面板在右侧独立承载，辽北→叶赫部、攻方损失/幸存及占领/撤回可读。；教程与战后动作面板相邻，未遮当前按钮；战报折叠入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/27-occupy-report.png",
+      "sha256": "cdaf6598dbfcafbfea37b23e61ffad6a54c52c2ed0751328da9fa0b91e116e0e",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/27-occupy-report.png",
+      "readSourceSha256": "cdaf6598dbfcafbfea37b23e61ffad6a54c52c2ed0751328da9fa0b91e116e0e",
+      "observations": [
+        "展开战报显示炮兵、骑兵、步兵阶段的双方/合计/损伤，全部文字可读且未越界。",
+        "占领/撤回仍在报告上方可见；本图只审可读性，不判定战斗数值或规则。"
+      ],
+      "observation": "展开战报显示炮兵、骑兵、步兵阶段的双方/合计/损伤，全部文字可读且未越界。；占领/撤回仍在报告上方可见；本图只审可读性，不判定战斗数值或规则。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/28-diplomacy-target.png",
+      "sha256": "b25fd1db05cf1bfb4cab23fca1460e30b236c35fcb5bd43691f135f3db23f851",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/28-diplomacy-target.png",
+      "readSourceSha256": "b25fd1db05cf1bfb4cab23fca1460e30b236c35fcb5bd43691f135f3db23f851",
+      "observations": [
+        "外喀尔喀部名称、反面蒙古标记和目标区域白色主边界清楚；教程解释友好/控制的区分并与目标相邻。",
+        "右侧外交剩余可影响处数及唯一结束外交按钮可见，没有额外确认按钮。"
+      ],
+      "observation": "外喀尔喀部名称、反面蒙古标记和目标区域白色主边界清楚；教程解释友好/控制的区分并与目标相邻。；右侧外交剩余可影响处数及唯一结束外交按钮可见，没有额外确认按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/29-diplomacy-finish.png",
+      "sha256": "939efee01088df983c72bc23277b085b336f745f7c7a24ba579aed377daa5d8c",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/29-diplomacy-finish.png",
+      "readSourceSha256": "939efee01088df983c72bc23277b085b336f745f7c7a24ba579aed377daa5d8c",
+      "observations": [
+        "外喀尔喀部标记已消失，外交还可影响2处可读；当前只有一个结束外交主按钮，没有先选择再灰确认的二次界面。",
+        "教程结束外交说明紧邻按钮，玩家下一步清楚；是否仅执行一次由主线程行为trace单独证明。"
+      ],
+      "observation": "外喀尔喀部标记已消失，外交还可影响2处可读；当前只有一个结束外交主按钮，没有先选择再灰确认的二次界面。；教程结束外交说明紧邻按钮，玩家下一步清楚；是否仅执行一次由主线程行为记录单独证明。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/30-hire-action.png",
+      "sha256": "aca8e8c3859c47508a322cd905af15e55e2314ebd348a41766f732b36aaf5caf",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/30-hire-action.png",
+      "readSourceSha256": "aca8e8c3859c47508a322cd905af15e55e2314ebd348a41766f732b36aaf5caf",
+      "observations": [
+        "轮盘雇佣印刷文字及贴合其旁的教学说明均清楚；当前时标仍可见。",
+        "绿色扇区表达当前格可用行动，未显示未来移动候选；教程未遮雇佣字或当前时标。"
+      ],
+      "observation": "轮盘雇佣印刷文字及贴合其旁的教学说明均清楚；当前时标仍可见。；绿色扇区表达当前格可用行动，未显示未来移动候选；教程未遮雇佣字或当前时标。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/31-hire-target.png",
+      "sha256": "6eea70a32bcd434d4571020cd69b0d0f844cfc9029a1565709d7de0ba2e6cebc",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/31-hire-target.png",
+      "readSourceSha256": "6eea70a32bcd434d4571020cd69b0d0f844cfc9029a1565709d7de0ba2e6cebc",
+      "observations": [
+        "选择雇佣军建立区域标题与确认入口清楚；大同本体白色主边界、名称、已有兵牌和人口可见。",
+        "教程提示在大同左上方，未遮当前必要对象；其它已控制区绿色候选可辨。"
+      ],
+      "observation": "选择雇佣军建立区域标题与确认入口清楚；大同本体白色主边界、名称、已有兵牌和人口可见。；教程提示在大同左上方，未遮当前必要对象；其它已控制区绿色候选可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "failures": [],
+  "pending": [],
+  "codeReview": {
+    "status": "PASS",
+    "method": "read-only-current-source",
+    "findings": [],
+    "observations": [
+      "useQidahenTurnInput.ts:24–26/36–38/50–58：非当前操作者（非空playerId不匹配）、disabled、教程infoStep/命令门禁在canAct和submit统一检查；disabled option不能toggle或submit；教程allowedTargets不匹配走正式教程重启。playerId为空沿用本地模式可操作语义。",
+      "useQidahenTurnInput.ts:60–63：直接选择仅限max=1且非地图/卡牌/兵牌；choose调用submit。地图、单选卡牌/兵牌与多选仍走实体草稿toggle→confirm；出兵确认另检查troopsCanReach。",
+      "QidahenTurnChoicePanel.tsx:15–16/33–42：纯直接按钮没有二次灰确认；混合实体候选选中后恢复确认；真正多选保留确认。按钮禁用状态仍消费canAct/option.disabled。",
+      "Board.tsx:5531/7266：onEnterHandAction仅在canAct、menu/finish-hand且正式hand-action option存在时注入；手牌点击另经RESPOND/hand-action教程允许检查及卡牌disabled检查，再由choose进入正式请求。",
+      "annualTutorial.ts:59/71/80/85/109：revision 26；prepare-hand锚到hand-3本体、upgrade-first锚到deck-ming-4本体；年中/新年锚到印刷标签，保护当前时标/标签，highlightFrame为none。"
+    ],
+    "sources": [
+      {
+        "path": "D:/gongzuo/webgame/BoardGame/src/games/qidahen/ui/useQidahenTurnInput.ts",
+        "sha256": "27800874a45f897d70d9ccfab03f8c8700e314714431905c887b12fdda6a1d67"
+      },
+      {
+        "path": "D:/gongzuo/webgame/BoardGame/src/games/qidahen/ui/QidahenTurnChoicePanel.tsx",
+        "sha256": "fe6f7c3fbf44f627658d28659a444b5a397a4a9b98a4fc99b63d4df829fd2dc9"
+      },
+      {
+        "path": "D:/gongzuo/webgame/BoardGame/src/games/qidahen/Board.tsx",
+        "sha256": "b015687e16b42ab45cff37856ab0d584a5b0d549e09e17004447c420ddfbfa4c"
+      },
+      {
+        "path": "D:/gongzuo/webgame/BoardGame/src/games/qidahen/annualTutorial.ts",
+        "sha256": "89ffdf57391715cddfa75ea136d40756f01792a1a9d5bee46ecf4359e5ef9a27"
+      }
+    ],
+    "limits": "只读源码结论，不代替真实原图交互验收；未执行修改或测试。"
+  },
+  "negativeImpactChecks": [
+    "半露手牌及hover抬起为用户要求，本组12/18证明当前卡牌抬起可读；底部手牌候选与左右箭头保留。",
+    "地图无关低层纹理被提示覆盖不作失败；地图当前来源/目标/兵牌/标签以及当前必要操作均逐图检查。",
+    "10/11轮盘当前时标和年中印刷名可读，无未来移动高亮。",
+    "28–29外交抽象结束动作只保留一个按钮，实体地区候选没有被文字选项替代。",
+    "30雇佣印刷字与当前标记未被提示覆盖；31大同目标名称/兵牌/人口均受保护。",
+    "26–27战后面板和报告文字没有越界；地图无关低层覆盖不影响该步骤必要动作。"
+  ],
+  "evidenceLimits": "图审仅证明玩家可见关系及易理解程度，不证明规则数值、一次执行的事件计数或未拍摄视口；运行行为计数需主线程正式trace补证。",
+  "layoutAudit": {
+    "scopeSource": "派发任务：R154 PC原图09–18及26–31；玩家易理解、当前必要对象、实体输入/确认及文案锚点。",
+    "checks": [
+      {
+        "criterion": "空间主次",
+        "status": "PASS",
+        "observation": "当前目标由地图对象/兵牌/抬起手牌承载，教程提示相邻；无用未来移动焦点不争夺本组操作。"
+      },
+      {
+        "criterion": "对齐栅格",
+        "status": "PASS",
+        "observation": "右侧选择面板按钮与标题同栏；兵牌高亮贴合本体；战后战报在同一动作槽展开。"
+      },
+      {
+        "criterion": "分组与装饰",
+        "status": "PASS",
+        "observation": "绿色候选与明亮已选边界可区分；教程与实际确认控件职责分开；结束外交仅一个直接按钮。"
+      }
+    ]
+  },
+  "targetRequirements": [
+    {
+      "requirement": "军备/火炮技术正式卡面与提示一致可读",
+      "status": "PASS",
+      "media": [
+        "12-upgrade-card.png"
+      ]
+    },
+    {
+      "requirement": "年中印刷名/当前标记可读且无未来移动高亮",
+      "status": "PASS",
+      "media": [
+        "10-midyear.png",
+        "11-hand-limit.png"
+      ]
+    },
+    {
+      "requirement": "地图/兵牌候选与选后确认明确",
+      "status": "PASS",
+      "media": [
+        "13-dispatch-source.png",
+        "14-dispatch-troops.png",
+        "15-dispatch-troops-selected.png",
+        "16-dispatch-target.png",
+        "31-hire-target.png"
+      ]
+    },
+    {
+      "requirement": "战术牌实体和打出确认可读",
+      "status": "PASS",
+      "media": [
+        "17-tactic-card.png",
+        "18-tactic-card-selected.png"
+      ]
+    },
+    {
+      "requirement": "战后结果/动作/展开战报可读",
+      "status": "PASS",
+      "media": [
+        "26-occupy.png",
+        "27-occupy-report.png"
+      ]
+    },
+    {
+      "requirement": "结束外交不再出现选项+灰确认的二次界面",
+      "status": "PASS",
+      "media": [
+        "28-diplomacy-target.png",
+        "29-diplomacy-finish.png"
+      ],
+      "limit": "一次执行的行为次数不由静态截图证明。"
+    },
+    {
+      "requirement": "雇佣提示与印刷字相邻",
+      "status": "PASS",
+      "media": [
+        "30-hire-action.png"
+      ]
+    }
+  ],
+  "elementResponsibilityAudit": {
+    "ledger": "本报告media与targetRequirements；只涵盖指定16张交互UI。",
+    "uncoveredElements": [],
+    "decisions": [
+      "教程仅解释当前规则信息；本体候选由地图、兵牌及手牌承载，选择与提交入口可见。",
+      "半露手牌继续保留，hover/选中抬起展示完整卡面；不要求改成全牌常显。",
+      "同屏牌堆/弃牌/玩家资源/手牌箭头保留；无关地图纹理被UI覆盖不列硬失败。"
+    ]
+  },
+  "reviewSummary": {
+    "actualReadR154": 12,
+    "byteIdenticalCarriedForwardFromR153": 4,
+    "all16OriginalsActuallyReadAcrossRuns": true,
+    "hardFailures": 0
+  }
+}

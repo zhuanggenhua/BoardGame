@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "20261027-natural-opening-r40",
+  "sourceRevision": "sha256:89492ce6023744333f5c2de8bd8a607f3ee9e012bc88e4219288dcbc2ab2fa97",
+  "status": "FAIL",
+  "outcome": "教程 E2E 未通过；本行为链不得用于最终 PASS。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

@@ -1,0 +1,17 @@
+{
+  "width": 1265,
+  "height": 893,
+  "regionId": "city-region-8",
+  "rectangles": [
+    { "id": "action-title", "left": 165, "top": 14, "right": 218, "bottom": 27 },
+    { "id": "action-sequence", "left": 60, "top": 31, "right": 322, "bottom": 45 },
+    { "id": "new-year-title", "left": 40, "top": 59, "right": 66, "bottom": 73 },
+    { "id": "new-year-table", "left": 14, "top": 77, "right": 90, "bottom": 241 },
+    { "id": "new-year-arrow", "left": 94, "top": 77, "right": 101, "bottom": 101 },
+    { "id": "midyear-title", "left": 41, "top": 251, "right": 65, "bottom": 265 },
+    { "id": "midyear-table", "left": 14, "top": 268, "right": 90, "bottom": 356 },
+    { "id": "midyear-arrow", "left": 94, "top": 268, "right": 101, "bottom": 292 },
+    { "id": "wheel-new-year", "left": 226, "top": 57, "right": 289, "bottom": 76 },
+    { "id": "wheel-midyear", "left": 230, "top": 358, "right": 254, "bottom": 372 }
+  ]
+}

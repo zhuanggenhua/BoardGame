@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "sourceRevision": "f777f62a04ffc57716e3ff46546b8c1e906b561e0aea7e0f94a27df61cb1835c",
+  "sourceRun": "e2e-1793172488996-3m8alv",
+  "snapshotRoot": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028",
+  "qidahenChangedAtRunEnd": [],
+  "postRunTutorialDelta": {
+    "file": "src/games/qidahen/tutorial.ts",
+    "scope": "仅战术牌教学节点新增提示避让对象，不进入本组非教程场景",
+    "testedOriginal": "sources/tutorial-tested.ts",
+    "reviewEvidence": "source-scope-equivalence-review.json"
+  },
+  "allChanged": [
+    "src/components/home/creator-center.css",
+    "src/engine/systems/TutorialSystem.ts",
+    "src/games/dicethrone/Board.tsx",
+    "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+    "src/games/dicethrone/ui/InteractionOverlay.tsx",
+    "src/games/qidahen/tutorial.ts",
+    "e2e/qidahen/qidahen-closeout.e2e.ts",
+    "e2e/qidahen/mobile-population-layout.tmp.e2e.ts"
+  ],
+  "layoutAndMapSourceHashesMatch": true,
+  "vitest": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "eslint": {
+    "errors": 0,
+    "warnings": 6
+  },
+  "e2e": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "log": "e2e-run.log"
+  },
+  "testRenameByteIdentical": false,
+  "testEmittedJavaScriptIdentical": true,
+  "testEmissionEvidence": "test-emission-equivalence.json",
+  "notes": [
+    "三项仅覆盖本轮主棋盘、支付和地图浏览代表态。",
+    "直接受测文件与工作区相同，后续教程参数和类型擦除修正依独立范围审查沿用。",
+    "其它模块差异逐项记录，全仓类型检查未通过。"
+  ],
+  "qidahenFilesCheckedAtRunEnd": 239,
+  "directlyTestedSourceFilesMatchCurrent": true,
+  "sourceScopeEquivalence": "source-scope-equivalence-review.json",
+  "postRunTutorialSystemTypeErasure": "source-scope-equivalence-review.json#/postRunTutorialSystemTypeErasure",
+  "repositoryTypecheck": {
+    "status": "FAIL",
+    "log": "D:/gongzuo/webgame/BoardGame/test-results/qidahen-r79-typecheck.log",
+    "scope": "repository",
+    "doesNotSupersedeFocusedBehaviorResult": true
+  }
+}

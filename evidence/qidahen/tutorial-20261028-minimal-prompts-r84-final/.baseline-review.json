@@ -1,0 +1,456 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "reviewLayer": "source",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "scope": "主线程核对源码、正式命令、测试日志与旧新职责；不声称主线程已读图片。图片由独立子代理逐图裁决。",
+  "sourceRun": "20261028-minimal-prompts-r84",
+  "sourceRevision": "sha256:f9f55d436cec7366a439cfae74f1c9dcbce19e8d69320dfce026f9048dfd4a94",
+  "sourceFiles": [
+    {
+      "path": "e2e/qidahen/map-selection-geometry.e2e.ts",
+      "sha256": "ca9f8192f0d57a3c7f2ea059a32d054d680ebaac05bd78a5c4fac91bc9814df4"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHoverTip.tsx",
+      "sha256": "8542b55870135923ace664070bde55d89c5d031dc426fb7369fb724de617472a"
+    },
+    {
+      "path": "src/games/qidahen/domain/interactionSelectionAccessors.ts",
+      "sha256": "1587eeecdcaef5ee841b203e29cd77e87c14be52b26b44ddb4c4802434758912"
+    },
+    {
+      "path": "src/games/qidahen/domain/victoryResolution.ts",
+      "sha256": "987ad032502e1b7e221c49aa245f7fe19ed1bf346021d995f7b89da769728134"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionEthnicity.ts",
+      "sha256": "4d1b5394ddfd0c5f5d2270aea279417325a48680c16535129beb0380179dd9a4"
+    },
+    {
+      "path": "src/games/qidahen/domain/scenarioRuntimeRegionPresets.ts",
+      "sha256": "523e46b3b847f4048673da92681716ee08a015b10c751e65886953ac08ae77f5"
+    },
+    {
+      "path": "src/games/qidahen/domain/mapTokens.ts",
+      "sha256": "8da7a5d2f993fa8433500a198df0b94791106224d193db12b6a3e5fb9465677b"
+    },
+    {
+      "path": "src/games/qidahen/tutorial.ts",
+      "sha256": "d56ccb24b242a32c943d5a9e0f323682bf31b52a5ed9b760f4d87bf70a732971"
+    },
+    {
+      "path": "src/games/qidahen/tutorialSetup.ts",
+      "sha256": "78a1088e701e68a8977a2a8acb7b1a4b2d984d592d942880fc3f480e7251e8db"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "e47e4139aa427858ef7843756a5392dc1faf069ef16873b194a1d001fc293b41"
+    },
+    {
+      "path": "src/games/qidahen/QidahenBoardShell.tsx",
+      "sha256": "651d8675033f2f8b4414265a97b1dcc2dd427988e6901d17b1b520bbdf58a5ee"
+    },
+    {
+      "path": "src/games/qidahen/ui/hudLayout.ts",
+      "sha256": "3d78cd44d14be2f7bcf9197c84e1c56aae4bda4b63b3430fdf82fc128136f19d"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx",
+      "sha256": "b7f309db0302dd5afe56f7490774b39977a4308fe5031a7a92e5bdbafc79626e"
+    },
+    {
+      "path": "src/games/qidahen/ui/populationLayout.ts",
+      "sha256": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82"
+    },
+    {
+      "path": "src/games/qidahen/domain/ordinaryHandCardIdentities.ts",
+      "sha256": "105774feab843d8d51a16d720b7d27ce37583e9475f15c64b8a4d52ac4f17b1a"
+    },
+    {
+      "path": "src/games/qidahen/domain/selectionBuilders.ts",
+      "sha256": "04d24d663fd2f5e541fe49ef770ca337680154e87f49baf9481673d6ce4615f3"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleCommittedTroops.ts",
+      "sha256": "107e3f030ad2d751a20ab957a4f8239714aa5a1e083b3f1f3a79d407ed1aa505"
+    },
+    {
+      "path": "src/games/qidahen/domain/types.ts",
+      "sha256": "6402b42cb554eecfc91e23b6c00cdd54fe5a3404d108fbdf36b0508424b5943f"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleMorale.ts",
+      "sha256": "2223142dbb9286cb81f1315571333057fdc896b8bcf0497d3a492415b005e3bb"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleRollMath.ts",
+      "sha256": "9f43fec097db04b049c988839261a2fea13889d0d597d18ba056fc01cc51dcea"
+    },
+    {
+      "path": "src/games/qidahen/domain/attackRules.ts",
+      "sha256": "c8cd3ebfe5df4179cbbe363d5fa947c04aa0f2b6dd762b09db542060e8960a03"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleForceOutcomes.ts",
+      "sha256": "e8bea6d7e62d76ca5906f05d9b05c8b48ee5f100247c7d7d68b19d1abd54f577"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleForceCommitments.ts",
+      "sha256": "68f839d4942abb5e7a21cbf10980615230c5119ed83acf40deee5e9144906425"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleCombatSupport.ts",
+      "sha256": "113860fa255efedd4c53f3d7241b3f12872afd9d44b5393133070cc466fae9b5"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetResolution.ts",
+      "sha256": "78e6985fdbcf929a34d7d18963271af0e318ae26af0cf87c5a3b7c9000861525"
+    },
+    {
+      "path": "src/games/qidahen/domain/postBattleDecisionResolution.ts",
+      "sha256": "95462d6c0719d50935e18a0305a5ffbff41a187ec96799774cc339d43f18012b"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleFlow.ts",
+      "sha256": "e45ea8eca7c6216033053219658d4fd39674aceefc680bb273ec3fe67296f472"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleState.ts",
+      "sha256": "a9f095595b7beb94967fce93f30e5381f9478d964b58d08b4fb06a41a86ee26a"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetActionBuilder.ts",
+      "sha256": "fd00c42daed45e00b3bdc4e1336dca6e000f2620a43c9a26b79c6a11200123dd"
+    },
+    {
+      "path": "src/games/qidahen/domain/previewActionReducer.ts",
+      "sha256": "663008ada11cc5fda09270ade941a689b2b44124e6ca56800655a19a5b39345e"
+    },
+    {
+      "path": "src/games/qidahen/domain/selectedActionFollowUp.ts",
+      "sha256": "a8e525e39578a1db76a98d8a13f813a6b9cbac86aba459ad546d3cd17ccd7d82"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetChoiceOptions.ts",
+      "sha256": "6c1dded8552977ab9c1e8c2006af796453d8554dc9a1300fea7b406212177101"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetChoicePayload.ts",
+      "sha256": "ee9d02586eefd7259c43791742c8f85d85a6ddb5ad91811c9574a055cca721e1"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleInteractionBuilders.ts",
+      "sha256": "d54d613dbd954567347a793055116828dc49b1c970664d37926c48e91a222efe"
+    },
+    {
+      "path": "src/games/qidahen/domain/interactionSystem.ts",
+      "sha256": "3a7d869a4881a150e924caf5b503611805340f4755a7dcd588d95088a4941bb6"
+    },
+    {
+      "path": "src/games/qidahen/domain/commands.ts",
+      "sha256": "d49db65671d5af1ac7486fcd8c5c142ea7fd2617d4cfb09b8c195ce8ef8138b8"
+    },
+    {
+      "path": "src/games/qidahen/domain/resolvedCommandEventBuilders.ts",
+      "sha256": "1edb3fc9e4169f2c3b1fc2d9eead47c5bd4b7cb0c3c69b34eb3721c5cd03e315"
+    },
+    {
+      "path": "src/games/qidahen/domain/resolvedEventReducers.ts",
+      "sha256": "177dbd29710f27718f42b3c3062831e2e7726ff73c15d868464181624bec9328"
+    },
+    {
+      "path": "src/games/qidahen/domain/commandEventBuilders.ts",
+      "sha256": "f00db7d70dbad33fe9f12a8474de5604948ea071a59ebc3d9ec60714ec0d1637"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleStateTransition.ts",
+      "sha256": "adbe8e6518d708141b2fb329ea3a6b9b8bab63e84c8ec109790974080f3519bb"
+    },
+    {
+      "path": "src/games/qidahen/domain/troopCompat.ts",
+      "sha256": "cb39156442e6db36ef3158559238a2282c86182c19c45eea7a8d78e1a0348506"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapGraph.ts",
+      "sha256": "903595803cc3748a245753eb9824f937ee23b7f142e3027387dd1f26e5b22495"
+    },
+    {
+      "path": "src/games/qidahen/ui/runtimeRegionOwnership.ts",
+      "sha256": "8a550662d3b0c90eff3db09f18fd6e473dae2019bd021ea7467280a451c6f40e"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapRegionFocus.ts",
+      "sha256": "3bfb4a08dfd101668bd5265f06a6c984b57a030fe862c6a1dc3685c03c1c1cf5"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenTutorialRegionLabel.tsx",
+      "sha256": "b6536dd61838a953ebe45490c2b279cce93f6bad3cf48312c71862f31158e00c"
+    },
+    {
+      "path": "src/games/qidahen/ui/handInteractionView.ts",
+      "sha256": "e0eb8c24d3d0e217c0fd784aace2f118a22428f5d2854d38c684ecda7aa4f554"
+    },
+    {
+      "path": "src/components/game/framework/ZoomPanViewport.tsx",
+      "sha256": "5f1b48b19267919c44d3bc7515c1aacdc79f5d309d05dc4756065d79a1a334a5"
+    },
+    {
+      "path": "src/engine/mapRenderer/PixiMapSceneHost.tsx",
+      "sha256": "598bb4a8c6003075b3e4f91be60345098c297067dd27033fb38f424b972a6822"
+    },
+    {
+      "path": "src/games/qidahen/ui/regionMaskOverlay.ts",
+      "sha256": "b8b658f9a9e2dba15d72f1a8b58fff48fa12093f08e200d41ad02ad8d6a0f204"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapSelectionCandidates.ts",
+      "sha256": "febd74acc96e82aced143e2811d61b3a387706f9940c4279b7e9410bbd048ee1"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapRegionHitTesting.ts",
+      "sha256": "ac2473bd04ebdc0b7f230e92df6f30e7d9bc72f929b5db40a9bdae9588c6842e"
+    },
+    {
+      "path": "src/games/qidahen/data/runtime-region-graph.json",
+      "sha256": "429f09428795877c1850b7b170aeee615b11fa479eaa55b746d5b5d7e0e7e634"
+    },
+    {
+      "path": "src/games/qidahen/data/region-mask.png",
+      "sha256": "2776b14fd011dae389a5a65ee7072b8db8db8cbbf774b7db208e9c1b63698136"
+    },
+    {
+      "path": "src/games/qidahen/data/region-mask-regions.json",
+      "sha256": "264fb57686cacc4b23cc13b389e7f8bf3aa55604281e5dddfa22939b4403fa20"
+    },
+    {
+      "path": "src/games/qidahen/data/runtime-region-mask-regions.json",
+      "sha256": "3fc087c63b0eaf6ddae30cec0ffcaafc8f46b363958d83b8a914e1edb907cf8e"
+    },
+    {
+      "path": "src/games/qidahen/data/region-graph.json",
+      "sha256": "4c8f2da0f2c600ae83f7f6ea548828dc813c14259c86e2d60bdf2acdf9d65a4f"
+    },
+    {
+      "path": "src/games/qidahen/data/region-authoritative-guides.json",
+      "sha256": "5f32bbbb68efde1d8b12f82774ad72113b69e89d781b385397934d859128b057"
+    },
+    {
+      "path": "src/contexts/TutorialContext.tsx",
+      "sha256": "eea82bbae8fca73fb69806c65b26aafcdedba1aac1728694ca743e377d737deb"
+    },
+    {
+      "path": "src/engine/pipeline.ts",
+      "sha256": "fdfc83d78328366bdeff5da96d76ef6da2b1855d6615769a966416da6f82ef40"
+    },
+    {
+      "path": "src/engine/types.ts",
+      "sha256": "eaf214b066828fe8362467a9c3f428fc465c8056ba541195364c3bdfabde4197"
+    },
+    {
+      "path": "src/engine/systems/TutorialSystem.ts",
+      "sha256": "8db93e7553231883371205088c4d52912c82103643c8db6839cc916d6ba0c753"
+    },
+    {
+      "path": "src/engine/transport/localDispatchCommand.ts",
+      "sha256": "9cb58af4757614a2a0eced94973c7ca1889371ce56fabad418d0255db870d87a"
+    },
+    {
+      "path": "src/games/qidahen/domain/actionWindowDispatch.ts",
+      "sha256": "37c8dfec30a0545cf33e5a2b43c73fe3e11f0097e151ebcde44db597076521d9"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionSelectionPreferences.ts",
+      "sha256": "2f75ef63c4737f3f0cb186ce1f9a81f69fb6fbaf29589808037493eacc795801"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelImmediateEffect.ts",
+      "sha256": "3102f198af5dc57561d03400133cc6d6950bf18e5b1edcd0b756adbfcc933599"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelRules.ts",
+      "sha256": "3c316f20067263a0a5adbd7b766ca83cd1ffd2bfdbe520485fe790caf0c1a837"
+    },
+    {
+      "path": "src/components/game/framework/widgets/GameHUD.tsx",
+      "sha256": "fc96a26669b81f302d4e2fd4c67786b908f181918f691cdb3b5a1369e8cc37a7"
+    },
+    {
+      "path": "src/lib/feedback/feedbackScreenshot.ts",
+      "sha256": "4262e9df3573f876820f4660dff32bc5de2495564908f21c46c6a6fecceac52e"
+    },
+    {
+      "path": "src/components/tutorial/TutorialOverlay.tsx",
+      "sha256": "8d7b23b3c0deb6c6714ac3fbd621611e2823b60cd786d2cfc3f9a43eda2c673b"
+    },
+    {
+      "path": "src/games/qidahen/qidahen-board.css",
+      "sha256": "99bb115914340cec7aa8bf9d8637cbd050f46d91b9765f83acc68fd12d5e2fc1"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "sha256": "d28d8452e5475dad08f47299cb72dd0200df7fc18be05479ef53f730004cf26f"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "c21902f5bc5b9ff9bf15b61a71e1557de6f2aa3eea1ef63ef73521be04c0929f"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "4329848eeb46d5e6cbcbd48a2b14042b5058594a63c630e29f2a5ed7b0c45e78"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-closeout.e2e.ts",
+      "sha256": "2e7e0941ac52aeaa9a12874783525900fa425f1067c440087f10aa87df5fbe68"
+    },
+    {
+      "path": "src/games/qidahen/domain/characterActionWindow.ts",
+      "sha256": "c3572e4637905d147e0c7ed636aac24e1c2f47d6f59408c3d1feab1f0e9d6a3c"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionConfig.ts",
+      "sha256": "3a5ab9a89967aad2e3ebaae35daa5653b9227fbe71bdeae43026e2e0fc47bd3e"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionRuleSemantics.ts",
+      "sha256": "fe73fd030f27f782d962f31b090f100dd28ee22c0ac309c601e7526ff67e6a03"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelRecruitTrain.ts",
+      "sha256": "b5a985eb507ef1cbce85c2ed55fcd2839f14c5d0d2344e72300785954b2f8f58"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "连续正式开局与军屯",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/03-辽北军屯结果.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-00-轮盘军屯与指定对手.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/03-辽北军屯结果.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-00-轮盘两格与指定对手.png"
+      ],
+      "baselineSource": "用户退回的R82同入口、同视口整屏，仅作历史问题对照；不是已认可的正常基线。当前源码及冻结副本逐字节核对，当前交互与媒体由本轮真实运行提供。",
+      "preservedInformation": "保留本土限制、军屯效果和两格费用；真实兵牌、手牌及地图短反馈表达结果。",
+      "preservedActions": "地图选辽北、轮盘走两格、指定后金仍由玩家完成。",
+      "changes": "删除军屯结果阅读步骤及并行摘要框，直接进入下一项真实决策；正式名称使用军屯。",
+      "duplicateDecision": "军屯规则只在首次使用前解释，结算由正式对象承接，不再同步生成教程结果卡和侧栏结果框。",
+      "changeAuthority": "用户明确指出画面已经表达的信息不需要额外描述，只提供必要信息；当前教程设计标准先裁定提示必要性，再安排教学意图。",
+      "independentReviewFile": "evidence/qidahen/.baseline-review-r84-source-final.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05a-鸳鸯阵选中与确认出牌.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/06-野战选择实际出兵部队.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/08-叶赫部占领结果.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05a-鸳鸯阵选中与确认出牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/06-野战选择实际出兵部队.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/08-叶赫部占领结果.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ],
+      "baselineSource": "用户退回的R82同入口、同视口整屏，仅作历史问题对照；不是已认可的正常基线。当前源码及冻结副本逐字节核对，当前交互与媒体由本轮真实运行提供。",
+      "preservedInformation": "保留突袭费用、目标、战术时机、骰子等级与战后选择的必要含义。",
+      "preservedActions": "选择突袭、点叶赫、弃银两、打鸳鸯阵、设置出兵、占领仍为真实输入。",
+      "changes": "删掉目标提示中已经可见的阵营与相邻关系复述，不改变支付、战斗或控制权结算。",
+      "duplicateDecision": "地图目标由候选和本体承接；教程只点名本次推荐目标及首次需要的规则，不增加一套目标摘要。",
+      "changeAuthority": "用户明确指出画面已经表达的信息不需要额外描述，只提供必要信息；当前教程设计标准先裁定提示必要性，再安排教学意图。",
+      "independentReviewFile": "evidence/qidahen/.baseline-review-r84-source-final.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "手机长按检视",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-03-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-03-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ],
+      "baselineSource": "用户退回的R82同入口、同视口整屏，仅作历史问题对照；不是已认可的正常基线。当前源码及冻结副本逐字节核对，当前交互与媒体由本轮真实运行提供。",
+      "preservedInformation": "卡面、选中态、支付确认和触屏检视入口保留。",
+      "preservedActions": "长按银两、关闭检视、轻点选牌和确认保持既有命令。",
+      "changes": "手机不增加新的结果阅读确认，沿用同一简化主线。",
+      "duplicateDecision": "真实卡面承担卡牌信息，必要手势提示只在首次检视时出现，不新增重复详情。",
+      "changeAuthority": "用户明确指出画面已经表达的信息不需要额外描述，只提供必要信息；当前教程设计标准先裁定提示必要性，再安排教学意图。",
+      "independentReviewFile": "evidence/qidahen/.baseline-review-r84-source-final.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/09-教程退出后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/09-教程退出后同局继续.png"
+      ],
+      "baselineSource": "用户退回的R82同入口、同视口整屏，仅作历史问题对照；不是已认可的正常基线。当前源码及冻结副本逐字节核对，当前交互与媒体由本轮真实运行提供。",
+      "preservedInformation": "正式开局、版本更新后的初始化、当前步骤与同局续局保持可追溯。",
+      "preservedActions": "正式入口、刷新继续、重开、退出及完成后的下一玩家输入均重新运行。",
+      "changes": "入门版本17废弃不兼容旧步骤进度，删除结果阅读节点后没有把后续玩家行动自动代做。",
+      "duplicateDecision": "教程会话仍由共享系统持有，正式对局仍由原运行时持有，没有新增进度或结果副本。",
+      "changeAuthority": "用户明确指出画面已经表达的信息不需要额外描述，只提供必要信息；当前教程设计标准先裁定提示必要性，再安排教学意图。",
+      "independentReviewFile": "evidence/qidahen/.baseline-review-r84-source-final.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "requirement": "地区轮廓与真实地图输入",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-02-突袭支付与手牌.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png"
+      ],
+      "baselineSource": "用户退回的R82同入口、同视口整屏，仅作历史问题对照；不是已认可的正常基线。当前源码及冻结副本逐字节核对，当前交互与媒体由本轮真实运行提供。",
+      "preservedInformation": "所有合法地图候选与教程推荐仍可区分；地区身份、兵牌与正式地图保持。",
+      "preservedActions": "真实地图选地、目标选择与编辑器仍读取当前同一mask。",
+      "changes": "地区浮层只保留名称和控制者，删除重复兵种列表以及非当前行动的前三个可达地区列表。",
+      "duplicateDecision": "地区身份归地区浮层，部队细节归兵牌及检视，路径选择归正式行动候选，不让一个浮层混合三种任务。",
+      "changeAuthority": "用户明确指出画面已经表达的信息不需要额外描述，只提供必要信息；当前教程设计标准先裁定提示必要性，再安排教学意图。",
+      "independentReviewFile": "evidence/qidahen/.baseline-review-r84-source-final.json",
+      "sourceReviewEntry": "/requirements/4"
+    }
+  ]
+}

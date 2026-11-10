@@ -1,0 +1,41 @@
+{
+  "title": "山屋惊魂剧本候选弹窗当前验收截图",
+  "media": [
+    {
+      "path": "01-PC-候选弹窗三按钮同排.jpg",
+      "chainId": "scenario-card-selection",
+      "chainStep": "一",
+      "sourceRun": "pc-mobile-width-comparison",
+      "sourceDir": "evidence/betrayal-scenario-actions-pc-mobile-20261006",
+      "stage": "前态",
+      "description": "电脑端候选剧本弹窗默认显示两列候选卡，底部三个操作按钮同排"
+    },
+    {
+      "path": "02-手机-候选弹窗三按钮同排.jpg",
+      "chainId": "scenario-card-selection",
+      "chainStep": "二",
+      "sourceRun": "pc-mobile-width-comparison",
+      "sourceDir": "evidence/betrayal-scenario-actions-pc-mobile-20261006",
+      "stage": "中态",
+      "description": "手机横屏等效视口默认显示两张完整候选卡，底部三个操作按钮同排"
+    },
+    {
+      "path": "03-PC-不可运行剧本被阻止.jpg",
+      "chainId": "scenario-card-selection",
+      "chainStep": "三",
+      "sourceRun": "scenario-card-selection",
+      "sourceDir": "evidence/betrayal-core-interactions/scenario-card-selection",
+      "stage": "中态",
+      "description": "选择不可运行剧本后确认入口显示不可开始状态"
+    },
+    {
+      "path": "04-PC-确认可运行剧本进入牌桌.jpg",
+      "chainId": "scenario-card-selection",
+      "chainStep": "四",
+      "sourceRun": "scenario-card-selection",
+      "sourceDir": "evidence/betrayal-core-interactions/scenario-card-selection",
+      "stage": "后态",
+      "description": "确认木乃伊横行并继续后进入作祟前牌桌"
+    }
+  ]
+}

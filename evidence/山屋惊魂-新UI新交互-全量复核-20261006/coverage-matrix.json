@@ -1,0 +1,327 @@
+{
+  "generatedAt": "2026-10-06T05:06:32.470Z",
+  "scope": "新 UI / 新交互全量复核",
+  "verdict": "REVIEW",
+  "matrix": [
+    {
+      "id": "event-card-choice",
+      "label": "事件牌选择与结算",
+      "sourceTest": "e2e/betrayal/event-choice-coverage.e2e.ts",
+      "status": "missing",
+      "cases": [
+        {
+          "slug": "标本剥制-完整链路",
+          "card": "标本剥制",
+          "evidenceCount": 2,
+          "evidence": [
+            "标本剥制-完整链路-01-探索前.jpg",
+            "标本剥制-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "小丑房间-完整链路",
+          "card": "小丑房间",
+          "evidenceCount": 2,
+          "evidence": [
+            "小丑房间-完整链路-01-探索前.jpg",
+            "小丑房间-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "咬一口-完整链路",
+          "card": "咬一口",
+          "evidenceCount": 2,
+          "evidence": [
+            "咬一口-完整链路-01-探索前.jpg",
+            "咬一口-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "电话铃声-完整链路",
+          "card": "电话铃声",
+          "evidenceCount": 8,
+          "evidence": [
+            "电话铃声-完整链路-01-探索前.jpg",
+            "电话铃声-完整链路-02-选择未知房间.jpg",
+            "电话铃声-完整链路-03-事件牌翻出已有检定.jpg",
+            "电话铃声-完整链路-04-事件骰停稳等待确认.jpg",
+            "电话铃声-完整链路-05-重新投掷伤害骰.jpg",
+            "电话铃声-完整链路-06-伤害分配面板.jpg",
+            "电话铃声-完整链路-07-结算结果可见.jpg",
+            "电话铃声-完整链路-08-关闭后.jpg"
+          ]
+        },
+        {
+          "slug": "嘎吱的木门-完整链路",
+          "card": "嘎吱的木门",
+          "evidenceCount": 2,
+          "evidence": [
+            "嘎吱的木门-完整链路-01-探索前.jpg",
+            "嘎吱的木门-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "小机器人-完整链路",
+          "card": "小机器人",
+          "evidenceCount": 6,
+          "evidence": [
+            "小机器人-完整链路-01-探索前.jpg",
+            "小机器人-完整链路-02-选择未知房间.jpg",
+            "小机器人-完整链路-03-事件牌翻出已有检定.jpg",
+            "小机器人-完整链路-04-骰盘停稳直接结算.jpg",
+            "小机器人-完整链路-05-结算结果可见.jpg",
+            "小机器人-完整链路-06-关闭后.jpg"
+          ]
+        },
+        {
+          "slug": "最深的壁橱-完整链路",
+          "card": "最深的壁橱",
+          "evidenceCount": 6,
+          "evidence": [
+            "最深的壁橱-完整链路-01-探索前.jpg",
+            "最深的壁橱-完整链路-02-选择未知房间.jpg",
+            "最深的壁橱-完整链路-03-事件牌翻出已有检定.jpg",
+            "最深的壁橱-完整链路-04-骰盘停稳直接结算.jpg",
+            "最深的壁橱-完整链路-05-结算结果可见.jpg",
+            "最深的壁橱-完整链路-06-关闭后.jpg"
+          ]
+        },
+        {
+          "slug": "磁带播放器-完整链路",
+          "card": "磁带播放器",
+          "evidenceCount": 2,
+          "evidence": [
+            "磁带播放器-完整链路-01-探索前.jpg",
+            "磁带播放器-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "在你背后-完整链路",
+          "card": "在你背后",
+          "evidenceCount": 2,
+          "evidence": [
+            "在你背后-完整链路-01-探索前.jpg",
+            "在你背后-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "一种怪异的感觉-完整链路",
+          "card": "一种怪异的感觉",
+          "evidenceCount": 2,
+          "evidence": [
+            "一种怪异的感觉-完整链路-01-探索前.jpg",
+            "一种怪异的感觉-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "葬礼-完整链路",
+          "card": "葬礼",
+          "evidenceCount": 2,
+          "evidence": [
+            "葬礼-完整链路-01-探索前.jpg",
+            "葬礼-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "上古旧宅-属性目标通用伤害",
+          "card": "上古旧宅",
+          "evidenceCount": 7,
+          "evidence": [
+            "上古旧宅-完整链路-01-探索前.jpg",
+            "上古旧宅-完整链路-02-选择未知房间.jpg",
+            "上古旧宅-完整链路-03-事件牌翻出选择前.jpg",
+            "上古旧宅-完整链路-04-选择目标后待选伤害.jpg",
+            "上古旧宅-完整链路-05-结算后.jpg",
+            "上古旧宅-完整链路-06-关闭后.jpg",
+            "上古旧宅-属性目标通用伤害-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "肉质苔癣-跳过可选效果",
+          "card": "肉质苔癣",
+          "evidenceCount": 9,
+          "evidence": [
+            "肉质苔癣-完整链路-01-探索前.jpg",
+            "肉质苔癣-完整链路-02-选择未知房间.jpg",
+            "肉质苔癣-完整链路-03-事件牌翻出可选择吸入.jpg",
+            "肉质苔癣-完整链路-04-吸入后投骰结果待确认.jpg",
+            "肉质苔癣-完整链路-04-选择吸入后骰盘停稳并出现属性选项.jpg",
+            "肉质苔癣-完整链路-05-选择知识奖励后结算结果可见.jpg",
+            "肉质苔癣-完整链路-06-关闭后回牌桌.jpg",
+            "肉质苔癣-跳过可选效果-结算后.jpg",
+            "肉质苔癣-跳过可选效果-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "大宅饿了-选择属性跳过作祟",
+          "card": "大宅饿了-选择属性跳过作祟",
+          "evidenceCount": 2,
+          "evidence": [
+            "大宅饿了-选择属性跳过作祟-结算后.jpg",
+            "大宅饿了-选择属性跳过作祟-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "蜘蛛-属性相邻房间",
+          "card": "蜘蛛",
+          "evidenceCount": 4,
+          "evidence": [
+            "蜘蛛-完整链路-01-探索前.jpg",
+            "蜘蛛-完整链路-02-选择未知房间.jpg",
+            "蜘蛛-完整链路-02a-确认房间朝向放置事件房.jpg",
+            "蜘蛛-属性相邻房间-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "吊死鬼-奖励属性",
+          "card": "吊死鬼",
+          "evidenceCount": 7,
+          "evidence": [
+            "吊死鬼-奖励属性-结算后.jpg",
+            "吊死鬼-奖励属性-选择前.jpg",
+            "吊死鬼-完整链路-01-探索前.jpg",
+            "吊死鬼-完整链路-02-选择未知房间.jpg",
+            "吊死鬼-完整链路-03-事件牌翻出四项检定全过.jpg",
+            "吊死鬼-完整链路-05-知识奖励结算结果可见.jpg",
+            "吊死鬼-完整链路-06-关闭后回牌桌.jpg"
+          ]
+        },
+        {
+          "slug": "一条秘密通道-第二目标板块",
+          "card": "一条秘密通道-第二目标板块",
+          "evidenceCount": 2,
+          "evidence": [
+            "一条秘密通道-第二目标板块-结算后.jpg",
+            "一条秘密通道-第二目标板块-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "脑状食品-奖励属性",
+          "card": "脑状食品",
+          "evidenceCount": 4,
+          "evidence": [
+            "脑状食品-奖励属性-结算后.jpg",
+            "脑状食品-奖励属性-选择前.jpg",
+            "脑状食品-完整链路-01-探索前.jpg",
+            "脑状食品-完整链路-02-选择未知房间.jpg"
+          ]
+        },
+        {
+          "slug": "脑状食品-通用伤害属性",
+          "card": "脑状食品-通用伤害属性",
+          "evidenceCount": 0,
+          "evidence": []
+        },
+        {
+          "slug": "夜幕众星-选择检定属性",
+          "card": "夜幕众星-选择检定属性",
+          "evidenceCount": 2,
+          "evidence": [
+            "夜幕众星-选择检定属性-结算后.jpg",
+            "夜幕众星-选择检定属性-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "一抹鲜红-跳过作祟伤害",
+          "card": "一抹鲜红",
+          "evidenceCount": 5,
+          "evidence": [
+            "一抹鲜红-完整链路-01-探索前.jpg",
+            "一抹鲜红-完整链路-02-选择未知房间.jpg",
+            "一抹鲜红-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+            "一抹鲜红-完整链路-04-选择作祟检定后骰盘停稳.jpg",
+            "一抹鲜红-跳过作祟伤害-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "一瓶微尘-跳过作祟双属性",
+          "card": "一瓶微尘",
+          "evidenceCount": 11,
+          "evidence": [
+            "一瓶微尘-完整链路-01-探索前.jpg",
+            "一瓶微尘-完整链路-02-选择未知房间.jpg",
+            "一瓶微尘-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+            "一瓶微尘-完整链路-04-选择作祟检定后骰盘停稳.jpg",
+            "一瓶微尘-完整链路-05-神志奖励结算结果可见.jpg",
+            "一瓶微尘-完整链路-06-关闭后回牌桌.jpg",
+            "一瓶微尘-跳过作祟-多人确认-01-发起者确认前.jpg",
+            "一瓶微尘-跳过作祟-多人确认-02-第二位玩家确认前.jpg",
+            "一瓶微尘-跳过作祟-多人确认-03-全员确认后回到牌桌.jpg",
+            "一瓶微尘-跳过作祟双属性-结算后.jpg",
+            "一瓶微尘-跳过作祟双属性-选择前.jpg"
+          ]
+        },
+        {
+          "slug": "说茄子-跳过作祟抽物品",
+          "card": "说茄子",
+          "evidenceCount": 6,
+          "evidence": [
+            "说茄子-完整链路-01-探索前.jpg",
+            "说茄子-完整链路-02-选择未知房间.jpg",
+            "说茄子-完整链路-03-事件牌翻出可选择作祟检定.jpg",
+            "说茄子-完整链路-04-选择作祟检定后骰盘停稳.jpg",
+            "说茄子-跳过作祟抽物品-结算后.jpg",
+            "说茄子-跳过作祟抽物品-选择前.jpg"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "event-confirmation",
+      "label": "事件 / 物品 / 预兆多人确认",
+      "sourceTest": "e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "confirm-fx"
+    },
+    {
+      "id": "active-possession",
+      "label": "主动持有物真实使用",
+      "sourceTest": "e2e/betrayal/first-scenario-use-possession.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "active-item"
+    },
+    {
+      "id": "trade",
+      "label": "交易目标与双方物品交互",
+      "sourceTest": "e2e/betrayal/first-scenario-trade-interaction.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "trade"
+    },
+    {
+      "id": "omen-haunt",
+      "label": "预兆牌与作祟检定承接",
+      "sourceTest": "e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts",
+      "status": "partial",
+      "evidenceGroup": "omen",
+      "note": "现有抽样链覆盖，尚未把全部预兆分支重跑到同一当前运行。"
+    },
+    {
+      "id": "monster-actions",
+      "label": "木乃伊移动、攻击、偷取与防护",
+      "sourceTest": "e2e/betrayal/mummy-rampage-monster-actions.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "monster"
+    },
+    {
+      "id": "hero-endgame",
+      "label": "找真名、驱逐与英雄胜利",
+      "sourceTest": "e2e/betrayal/mummy-rampage-hero-actions.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "hero"
+    },
+    {
+      "id": "traitor-endgame",
+      "label": "叛徒交付与叛徒胜利",
+      "sourceTest": "e2e/betrayal/mummy-rampage-traitor-actions.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "traitor"
+    },
+    {
+      "id": "roll-confirmation",
+      "label": "事件骰停稳、确认与关闭",
+      "sourceTest": "e2e/betrayal/event-choice-coverage.e2e.ts",
+      "status": "covered",
+      "evidenceGroup": "roll-confirm"
+    }
+  ]
+}

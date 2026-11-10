@@ -1,0 +1,32 @@
+{
+  "run": "e2e-1793526898908-1ye6hw",
+  "scenarioRuns": {
+    "代表态真实手牌入口覆盖四人玩家选择与公开准备区检视": "e2e-1793528190018-czrdk8",
+    "真实双人联机可选奇异博士并进入牌桌": "e2e-1793528401529-ew7yqp"
+  },
+  "media": 49,
+  "carriedForwardFromRejectedPackage": 0,
+  "sameBytesObservedWithinCurrentReaudit": 3,
+  "inventory": "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-inventory-20261101.json",
+  "baseline": "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-baselines-20261101.json",
+  "codeReview": "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-code-review-20261101.json",
+  "reviewFiles": [
+    "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-visual-a-final-20261101.json",
+    "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-visual-c-final-20261101.json",
+    "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-visual-c-rest-final-20261101.json",
+    "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-visual-d-final-20261101.json",
+    "evidence\\dicethrone\\doctor-strange-ui-verification-20261101\\doctor-full-visual-public-final-20261101.json"
+  ],
+  "audit": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md",
+  "e2eLogs": [
+    "temp/doctor-full-r6-e2e.log",
+    "temp/doctor-full-r7-public-entry-e2e.log",
+    "temp/doctor-full-r8-character-current-e2e.log"
+  ],
+  "e2eEquivalentUnchangedCases": {
+    "executedSource": "evidence/dicethrone/doctor-strange-ui-verification-20261101/doctor-full-r6-executed-e2e.ts",
+    "sha256": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+    "comparison": "除公开区用例外全文逐字节相同；公开区只使用补跑实际当前版本"
+  },
+  "priorRejected": "temp/doctor-full-previous-focused-pass-manifest.json"
+}

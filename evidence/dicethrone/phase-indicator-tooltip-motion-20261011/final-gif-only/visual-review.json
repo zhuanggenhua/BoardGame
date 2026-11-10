@@ -1,0 +1,44 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "visual_review"
+  },
+  "media": [
+    {
+      "path": "01-阶段说明tip-前态.gif",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "六帧均为提示未显示的稳定前态，阶段指示项没有位置跳变。"
+    },
+    {
+      "path": "02-阶段说明tip-原位淡入.gif",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示首次出现就位于最终矩形，后续只发生透明度淡入，没有左上方飞入。"
+    },
+    {
+      "path": "03-阶段说明tip-移出收口.gif",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "可见帧始终贴在阶段指示项右侧，移出后直接淡出收口，没有飞出位移。"
+    }
+  ]
+}

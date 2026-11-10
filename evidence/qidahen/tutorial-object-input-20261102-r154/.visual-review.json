@@ -1,0 +1,1370 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/01-PC-公开纪年与年度扩张目标.png",
+      "sha256": "49936ff833c9ea928a42bd21b89ccc4b3bf45dbf01ec4687d6273b69a99bddc6",
+      "status": "PASS",
+      "observations": [
+        "开局教程正文说明当前大明、纪年目标与本年取得叶赫部的计划；唯一“下一步”按钮明确承接阅读。",
+        "纪年卡与剧本卡本体、手牌分类/放大镜、当前势力资源与牌堆入口均可见。初始轮盘绿色部分属于后续行动范围，不冒充本帧教程推进按钮。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\00-frontier-goal.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "开局教程正文说明当前大明、纪年目标与本年取得叶赫部的计划；唯一“下一步”按钮明确承接阅读。；纪年卡与剧本卡本体、手牌分类/放大镜、当前势力资源与牌堆入口均可见。初始轮盘绿色部分属于后续行动范围，不冒充本帧教程推进按钮。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\00-frontier-goal.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/02-PC-轮盘免费前进一步.png",
+      "sha256": "0e58012ddc529c98765eccda3e3b0c1df91bff9d77f6573e9add326c9b30397e",
+      "status": "PASS",
+      "observations": [
+        "说明先读清前进格数及代价，再指向当前高亮开垦/军屯格；下一步是点击该轮盘格而非另找菜单。",
+        "当前格亮边与绿色填充分明，另外两格明显较暗；手牌及纪年信息仍保留在固定位置。",
+        "R154与已实际读取的R153原图SHA256逐字节相同，复用该原图观察；未冒称再次开图。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\01-opening-move.png",
+      "reviewMethod": "sha256-identical-reuse-of-actual-private-view",
+      "observation": "说明先读清前进格数及代价，再指向当前高亮开垦/军屯格；下一步是点击该轮盘格而非另找菜单。；当前格亮边与绿色填充分明，另外两格明显较暗；手牌及纪年信息仍保留在固定位置。；本轮与已实际读取的前一轮原图字节哈希逐字节相同，复用该原图观察；未冒称再次开图。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\01-opening-move.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/03-PC-点击轮盘军屯.png",
+      "sha256": "ba6a57692c840bb4879197e3f9668268dc696f7dece20d4fdc690b32fe1b8415",
+      "status": "PASS",
+      "observations": [
+        "教程紧贴轮盘，箭头指向印刷“军屯”；军屯文字本体具有唯一蓝色当前焦点边界，开垦没有同款蓝框。当前动作是直接点击印刷军屯。",
+        "当前轮盘格保留绿色整格底色，非当前动作未与军屯争夺蓝色主焦点；无轮盘/手牌切换菜单。放弃剩余轮盘行动仍在轮盘下方。",
+        "手牌、纪年卡及资源仍可发现；未用无关低层地图被覆盖否定本帧。",
+        "R154与已实际读取的R153原图SHA256逐字节相同，复用该原图观察；未冒称再次开图。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\02-farm-action.png",
+      "reviewMethod": "sha256-identical-reuse-of-actual-private-view",
+      "observation": "教程紧贴轮盘，箭头指向印刷“军屯”；军屯文字本体具有唯一蓝色当前焦点边界，开垦没有同款蓝框。当前动作是直接点击印刷军屯。；当前轮盘格保留绿色整格底色，非当前动作未与军屯争夺蓝色主焦点；无轮盘/手牌切换菜单。放弃剩余轮盘行动仍在轮盘下方。；手牌、纪年卡及资源仍可发现；未用无关低层地图被覆盖否定本帧。；本轮与已实际读取的前一轮原图字节哈希逐字节相同，复用该原图观察；未冒称再次开图。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\02-farm-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/04-PC-点击轮盘开垦.png",
+      "sha256": "f90b8281a771853b4938a37bc1fda9e4a992613642caa453ba03fa4d8e3fcc0a",
+      "status": "PASS",
+      "observations": [
+        "军屯后的手牌集合扩充可见；提示说明同格开垦，箭头与唯一蓝框紧贴印刷“开垦”。军屯文字本体无蓝框。",
+        "地图放大后轮盘仍锚定左上，当前动作本体未被教程正文挡住；无切换菜单，放弃剩余轮盘行动入口可见。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\03-reclaim-action.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "军屯后的手牌集合扩充可见；提示说明同格开垦，箭头与唯一蓝框紧贴印刷“开垦”。军屯文字本体无蓝框。；地图放大后轮盘仍锚定左上，当前动作本体未被教程正文挡住；无切换菜单，放弃剩余轮盘行动入口可见。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\03-reclaim-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/05-PC-开垦地区选择.png",
+      "sha256": "7d41908209c856fc887b09900b60fa4020285a8b675b85037eea8d27c91088e1",
+      "status": "PASS",
+      "observations": [
+        "开垦候选区域通过贴合地形的绿色主边界表达，当前辽东为白色边界/填色并显示辽东名称；区域与人口/部队本体可辨。",
+        "教程紧邻辽东，解释为何此处开垦；右侧“选择开垦区域（最多5处）/确认”明确承接选择。",
+        "地图可选区域与确认入口可读；纪年卡及半露手牌保持用户要求的形态，不能由静图证明其它未展示区域点击行为。",
+        "R154与已实际读取的R153原图SHA256逐字节相同，复用该原图观察；未冒称再次开图。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\04-reclaim-target.png",
+      "reviewMethod": "sha256-identical-reuse-of-actual-private-view",
+      "observation": "开垦候选区域通过贴合地形的绿色主边界表达，当前辽东为白色边界/填色并显示辽东名称；区域与人口/部队本体可辨。；教程紧邻辽东，解释为何此处开垦；右侧“选择开垦区域（最多5处）/确认”明确承接选择。；地图可选区域与确认入口可读；纪年卡及半露手牌保持用户要求的形态，不能由静图证明其它未展示区域点击行为。；本轮与已实际读取的前一轮原图字节哈希逐字节相同，复用该原图观察；未冒称再次开图。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\04-reclaim-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/06-PC-从手牌进入征召.png",
+      "sha256": "65ac50c5ed49696a25d5b9b2cac557f4f0c75c2a6a8c4e8874e138a353d707fd",
+      "status": "PASS",
+      "observations": [
+        "教程位于手牌正上方，箭头落向真实银两牌；“本回合还可执行一次手牌行动”与下方绿色手牌入口直接对应。",
+        "银两牌类别、牌名、放大镜可辨；不存在轮盘/手牌切换菜单。轮盘下仍有完成轮盘行动入口，不以删除旧菜单丢掉结束行动职责。",
+        "底部半露牌属于用户明确要求；本帧不要求常态整张牌展开，完整检视由07直接补证。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\05-prepare-hand.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "教程位于手牌正上方，箭头落向真实银两牌；“本回合还可执行一次手牌行动”与下方绿色手牌入口直接对应。；银两牌类别、牌名、放大镜可辨；不存在轮盘/手牌切换菜单。轮盘下仍有完成轮盘行动入口，不以删除旧菜单丢掉结束行动职责。；底部半露牌属于用户明确要求；本帧不要求常态整张牌展开，完整检视由07直接补证。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\05-prepare-hand.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/07-PC-征召弃牌支付.png",
+      "sha256": "7e2ef2bcc9c65a76559ffa40ab39d8b94cd95ce0b61456b812937303e14489cf",
+      "status": "PASS",
+      "observations": [
+        "银两牌是当前支付对象，教程说明使用此牌、保留其它牌，并明确放大镜查看整张牌；银两本体及放大镜均可见。",
+        "征召军队支付栏显示已选0/1张，确认执行与取消本次行动同栏分组，玩家先点银两、再确认的关系清楚。",
+        "其它手牌仍保留可识别类别与牌名；未将支付栏覆盖的无关地图当成目标遮挡。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\06-recruit-payment.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "银两牌是当前支付对象，教程说明使用此牌、保留其它牌，并明确放大镜查看整张牌；银两本体及放大镜均可见。；征召军队支付栏显示已选0/1张，确认执行与取消本次行动同栏分组，玩家先点银两、再确认的关系清楚。；其它手牌仍保留可识别类别与牌名；未将支付栏覆盖的无关地图当成目标遮挡。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\06-recruit-payment.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/08-PC-共享放大镜检视征召手牌.png",
+      "sha256": "40165558b0951a6d8974f86529ec41e9f0745f800ed7cb8a2949d38cf0735c67",
+      "status": "PASS",
+      "observations": [
+        "银两正式牌面在中央完整等比展示，牌名与银锭本体可识别，当前阅读焦点明确。",
+        "关闭叉号贴在放大牌右上边界内且清楚可见，下一步是显式关闭回支付态；底层支付与手牌留作背景。",
+        "本帧只证明可见放大和关闭位置，不证明持续时间、关闭点击结果或规则支付正确性。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "银两正式牌面在中央完整等比展示，牌名与银锭本体可识别，当前阅读焦点明确。；关闭叉号贴在放大牌右上边界内且清楚可见，下一步是显式关闭回支付态；底层支付与手牌留作背景。；本帧只证明可见放大和关闭位置，不证明持续时间、关闭点击结果或规则支付正确性。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/09-PC-征召建军地区与辽北引导.png",
+      "sha256": "920822057bf47039a715af1fffc729b93852c87890091b8e072b2b835b800306",
+      "status": "PASS",
+      "observations": [
+        "征召来源候选区域绿色主边界贴合地图，辽北白边、名称、部队与人口本体清楚；教程箭头贴近辽北。",
+        "提示说明在本土建立正规军并在辽北征召，右侧要求先点地图建军地区、再选建军方式；当前下一步是点辽北区域。",
+        "手牌、纪年卡、资源及弃牌堆仍可发现；教程覆盖的邻近无关地图不影响本帧辽北来源判断。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\08-recruit-source.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "征召来源候选区域绿色主边界贴合地图，辽北白边、名称、部队与人口本体清楚；教程箭头贴近辽北。；提示说明在本土建立正规军并在辽北征召，右侧要求先点地图建军地区、再选建军方式；当前下一步是点辽北区域。；手牌、纪年卡、资源及弃牌堆仍可发现；教程覆盖的邻近无关地图不影响本帧辽北来源判断。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\08-recruit-source.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-head.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/10-PC-辽北建军方式与完整候选.png",
+      "sha256": "409016030073b3f4075839df1b7884f8e4e3f33c50205dde785facce48a98a87",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "征召军队的两种建军方式卡片可读；教学说明紧邻当前选择，未遮当前按钮。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/09-recruit-troops.png",
+      "readSourceSha256": "409016030073b3f4075839df1b7884f8e4e3f33c50205dde785facce48a98a87",
+      "observation": "征召军队的两种建军方式卡片可读；教学说明紧邻当前选择，未遮当前按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\09-recruit-troops.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/11-PC-年中税赋与漕运.png",
+      "sha256": "b84914f4b109bf4146cf3134584dd02267df5d80354d0950117340e65fe901b4",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "年中印刷名位于提示下方仍完整可读；当前时标在轮盘下端可见；无未来移动候选高亮。",
+        "手牌上限/需弃数量与确认弃牌入口可见。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/10-midyear.png",
+      "readSourceSha256": "b84914f4b109bf4146cf3134584dd02267df5d80354d0950117340e65fe901b4",
+      "observation": "年中印刷名位于提示下方仍完整可读；当前时标在轮盘下端可见；无未来移动候选高亮。；手牌上限/需弃数量与确认弃牌入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\10-midyear.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/12-PC-年中补牌后的手牌上限处理.png",
+      "sha256": "e9f088efc3a19e159704d733f87c9550a818d620f350db63ce446270dee524f6",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "教程要求的弃牌有本体绿色边界；保留鸳鸯阵和火炮技术的说明可读。",
+        "半露手牌为指定交互形态，不视为缺陷。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/11-hand-limit.png",
+      "readSourceSha256": "e9f088efc3a19e159704d733f87c9550a818d620f350db63ce446270dee524f6",
+      "observation": "教程要求的弃牌有本体绿色边界；保留鸳鸯阵和火炮技术的说明可读。；半露手牌为指定交互形态，不视为缺陷。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\11-hand-limit.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/13-PC-火炮技术研发.png",
+      "sha256": "96ba9f8c79197cdcf5ce017047834de7931884a14972ba6fc870bdafd7cd8274",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "抬起的正式火炮技术卡标明军备，标题与主要效果可读；教程说明贴近卡牌。",
+        "卡面与教程均在表达火炮技术对炮兵的加强，数值与规则正确性不由图审判断。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/12-upgrade-card.png",
+      "readSourceSha256": "96ba9f8c79197cdcf5ce017047834de7931884a14972ba6fc870bdafd7cd8274",
+      "observation": "抬起的正式火炮技术卡标明军备，标题与主要效果可读；教程说明贴近卡牌。；卡面与教程均在表达火炮技术对炮兵的加强，数值与规则正确性不由图审判断。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\12-upgrade-card.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/14-PC-先选出兵来源.png",
+      "sha256": "3020a13d15cbf6d323d3cc96bed039c3e63135cdc14b146f205398c4f2bbcc9e",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "辽北来源地区本体边界和名称可读；选择出兵来源与确认入口清楚。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/13-dispatch-source.png",
+      "readSourceSha256": "3020a13d15cbf6d323d3cc96bed039c3e63135cdc14b146f205398c4f2bbcc9e",
+      "observation": "辽北来源地区本体边界和名称可读；选择出兵来源与确认入口清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\13-dispatch-source.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/15-PC-地图兵牌选择出兵.png",
+      "sha256": "6e91cd9d2685656c485be55af8a36c0685e42f885eb1794fb0b3654bfb8866ca",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "辽北放大兵牌以贴合本体的绿色边界表达候选；步骑炮可辨识，当前已选0支和灰确认清楚。",
+        "教程说明在兵牌上方，未遮当前必要兵牌。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/14-dispatch-troops.png",
+      "readSourceSha256": "6e91cd9d2685656c485be55af8a36c0685e42f885eb1794fb0b3654bfb8866ca",
+      "observation": "辽北放大兵牌以贴合本体的绿色边界表达候选；步骑炮可辨识，当前已选0支和灰确认清楚。；教程说明在兵牌上方，未遮当前必要兵牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\14-dispatch-troops.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/16-PC-已选部队与确认出兵.png",
+      "sha256": "002266527da739a2e8bb43833d5052ce704dcf04c28d8ee09851b47fe96a62db",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "已选兵牌以明亮描边/对勾区别于绿色候选；已选3支与启用确认明确。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/15-dispatch-troops-selected.png",
+      "readSourceSha256": "002266527da739a2e8bb43833d5052ce704dcf04c28d8ee09851b47fe96a62db",
+      "observation": "已选兵牌以明亮描边/对勾区别于绿色候选；已选3支与启用确认明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\15-dispatch-troops-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/17-PC-出兵来源到叶赫部目标.png",
+      "sha256": "f0e24050871ef1db19128a402687a0ba9bd32a461779c4b8ab73cd20ae6d35f9",
+      "status": "PASS",
+      "reviewMethod": "byte-identical-carried-forward",
+      "observations": [
+        "叶赫部标签、驻军及目标本体边界可见，教程明确选择叶赫部；右侧重新选择部队入口清楚。",
+        "提示只覆盖目标区域的非必要纹理，未遮目标识别与候选点击的主要部分。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r153-object-input-pc-20261102/desktop/16-dispatch-target.png",
+      "readSourceSha256": "f0e24050871ef1db19128a402687a0ba9bd32a461779c4b8ab73cd20ae6d35f9",
+      "observation": "叶赫部标签、驻军及目标本体边界可见，教程明确选择叶赫部；右侧重新选择部队入口清楚。；提示只覆盖目标区域的非必要纹理，未遮目标识别与候选点击的主要部分。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\16-dispatch-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/18-PC-战术牌使用前.png",
+      "sha256": "6945a052427426843840841ef82b4188459869eea6b1d2c708063776b5218f04",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "战术牌教学、交战地区/出兵箭头和开始战斗入口可读。",
+        "手牌为用户要求的半露形态；本帧只证明候选入口，选牌后的完整牌面由18补证。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/17-tactic-card.png",
+      "readSourceSha256": "6945a052427426843840841ef82b4188459869eea6b1d2c708063776b5218f04",
+      "observation": "战术牌教学、交战地区/出兵箭头和开始战斗入口可读。；手牌为用户要求的半露形态；本帧只证明候选入口，选牌后的完整牌面由18补证。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\17-tactic-card.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/19-PC-选中鸳鸯阵并确认.png",
+      "sha256": "025bc1235ba511621594a225bcd17b44bcde277cd542da41d23b25692dcca7e7",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "observations": [
+        "鸳鸯阵实体卡抬起后标题/效果/已选清楚；打出战术牌与取消按钮可读。",
+        "当前交战目标、出兵来源和主战斗按钮仍可见。"
+      ],
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/18-tactic-card-selected.png",
+      "readSourceSha256": "025bc1235ba511621594a225bcd17b44bcde277cd542da41d23b25692dcca7e7",
+      "observation": "鸳鸯阵实体卡抬起后标题/效果/已选清楚；打出战术牌与取消按钮可读。；当前交战目标、出兵来源和主战斗按钮仍可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\18-tactic-card-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/20-PC-炮兵白骰真实投掷.jpg",
+      "sha256": "23fc2963e73ae04ae5dfdd5655e01c6c4a3641968e9f9d66e4eff85e001cf4e6",
+      "status": "PASS",
+      "observations": [
+        "原始1920×1080整屏已核读；辽北→叶赫部、炮兵阶段、攻方三个标签组成明确上下文。",
+        "白色骰子完整可见，未出现把候选菜单冒充骰盘的现象；地图主区域和手牌入口保留。",
+        "动作轮盘处于低对比背景层，无下一轮候选高亮抢焦点。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始1920×1080整屏已核读；辽北→叶赫部、炮兵阶段、攻方三个标签组成明确上下文。；白色骰子完整可见，未出现把候选菜单冒充骰盘的现象；地图主区域和手牌入口保留。；动作轮盘处于低对比背景层，无下一轮候选高亮抢焦点。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-artillery-rolling.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/21-PC-炮兵停稳与结果.jpg",
+      "sha256": "6cd73b2de6b9b12217ec2adde0c2d9da8de75d343bb90b0a31baba16975728c2",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；白骰与合计/造成损伤文本同一组，阶段和攻方身份保留。",
+        "合计3、造成0损伤是图中显示事实，仅验可读，不裁决算术或规则正确性。",
+        "结果层覆盖少量低层地图，未盖住当前叶赫部区域和必要操作入口。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；白骰与合计/造成损伤文本同一组，阶段和攻方身份保留。；合计3、造成0损伤是图中显示事实，仅验可读，不裁决算术或规则正确性。；结果层覆盖少量低层地图，未盖住当前叶赫部区域和必要操作入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-artillery-damage.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/22-PC-骑兵红骰真实投掷.jpg",
+      "sha256": "7271571da0cda8c8f7e4b25de6fd293ad8b8643a91407438fc1bef8ad9ac4d77",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；骑兵阶段和守方标签明确，红色八面骰本体完整可见。",
+        "没有新增菜单、全屏遮罩或错误下一轮行动候选；当前战斗来源目标标签持续可读。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；骑兵阶段和守方标签明确，红色八面骰本体完整可见。；没有新增菜单、全屏遮罩或错误下一轮行动候选；当前战斗来源目标标签持续可读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-cavalry-rolling.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/23-PC-骑兵停稳与结果.jpg",
+      "sha256": "5325298a44f11ae8e012e22dd981064cc90e04227f20a33b741cb02ee9cefe0b",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；红骰结果与合计1、造成0损伤文本同组，守方标签明确。",
+        "文本没有被牌堆、手牌或轮盘遮住；当前地图交战信息仍能读取。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；红骰结果与合计1、造成0损伤文本同组，守方标签明确。；文本没有被牌堆、手牌或轮盘遮住；当前地图交战信息仍能读取。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-cavalry-damage.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/24-PC-步兵绿骰真实投掷.jpg",
+      "sha256": "78f552f26b5be19b9e371e11b95dbb6bd8a262a3161dff98a065febd6aec6f41",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；步兵阶段、攻方标签和两颗绿色骰子本体可见，前景运动区域与地图背景可区分。",
+        "骰子未越界裁切，无新增菜单或下一轮行动候选抢焦点。",
+        "不从本图推断规则应有骰数；实际显示数量只作为图面观察。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；步兵阶段、攻方标签和两颗绿色骰子本体可见，前景运动区域与地图背景可区分。；骰子未越界裁切，无新增菜单或下一轮行动候选抢焦点。；不从本图推断规则应有骰数；实际显示数量只作为图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-infantry-rolling.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/25-PC-步兵停稳与结果.jpg",
+      "sha256": "525043bd47e8f86f014ac664201e7cb49e05a13df7474dd2cbe50ccc6cf72a9a",
+      "status": "PASS",
+      "observations": [
+        "原始整屏已核读；两颗绿骰保持可见，合计20及造成2损伤结果可读，步兵/攻方上下文保留。",
+        "伤害文本盖住附近一处非当前决策黄数值的一部分，属于UI层覆盖低层地图，不遮死当前来源目标与必要输入，不构成本范围失败。",
+        "图面文字只证明呈现内容，不证明骰值解释或领域规则正确性。"
+      ],
+      "originalFullScreenRead": true,
+      "protectedSlots": [
+        "battle-context",
+        "phase-label",
+        "side-label",
+        "dice-body",
+        "battle-target-map",
+        "hand-entry",
+        "deck-entry"
+      ],
+      "occlusionCheck": "PASS",
+      "clippingCheck": "PASS",
+      "internalIdLeakCheck": "PASS",
+      "observation": "原始整屏已核读；两颗绿骰保持可见，合计20及造成2损伤结果可读，步兵/攻方上下文保留。；伤害文本盖住附近一处非当前决策黄数值的一部分，属于界面层覆盖低层地图，不遮死当前来源目标与必要输入，不构成本范围失败。；图面文字只证明呈现内容，不证明骰值解释或领域规则正确性。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+      "sha256": "90148f3d047b199e9af410ce60c6f94b8126e36e4bfa0757bed27c1524188a3e",
+      "status": "PASS",
+      "observations": [
+        "连续帧核读174/174；全部20张联系表均实际读取，未抽样跳帧。",
+        "炮兵白骰在14–38帧出现连续位置和朝向变化，38帧已停稳，39帧出现损伤结果；骑兵红骰68–91帧运动并停稳，92帧出现损伤结果；步兵绿骰122–145帧运动并分开停稳，146帧出现损伤结果。",
+        "39–66、92–119、146–170帧保留对应结果，不在运动中抢先切入下一轮候选。",
+        "171帧转到战后占领/撤回，172–174帧出现战后教程提示；提示未盖住占领/撤回按钮及叶赫部本体，当前操作可理解。",
+        "所有战斗帧均未出现新增菜单或下一轮盘候选抢焦点；轮盘为低对比背景。"
+      ],
+      "reviewMethod": "continuous-frame-review; no real-time playback claimed",
+      "methodDescription": "连续帧核读，不是实际播放。先按顺序将全部174张解码整帧组成20张连续联系表，每帧完整出现一次；逐张读取全部联系表。再从原视频以ffmpeg select按编码帧序号无裁切输出1920×1080原尺寸关键帧，实际读取38/39、91/92、145/146以及171/172，复核停稳→损伤和战后操作。6张最终原始JPG另行逐图读取。",
+      "frameCoverage": {
+        "reviewed": 174,
+        "total": 174,
+        "ratio": "174/174",
+        "skippedFrames": [],
+        "firstFrame": 1,
+        "lastFrame": 174,
+        "allContactSheetsActuallyRead": true
+      },
+      "contactSheets": [
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0001-0009.jpg",
+          "firstFrame": 1,
+          "lastFrame": 9
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0010-0018.jpg",
+          "firstFrame": 10,
+          "lastFrame": 18
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0019-0027.jpg",
+          "firstFrame": 19,
+          "lastFrame": 27
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0028-0036.jpg",
+          "firstFrame": 28,
+          "lastFrame": 36
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0037-0045.jpg",
+          "firstFrame": 37,
+          "lastFrame": 45
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0046-0054.jpg",
+          "firstFrame": 46,
+          "lastFrame": 54
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0055-0063.jpg",
+          "firstFrame": 55,
+          "lastFrame": 63
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0064-0072.jpg",
+          "firstFrame": 64,
+          "lastFrame": 72
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0073-0081.jpg",
+          "firstFrame": 73,
+          "lastFrame": 81
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0082-0090.jpg",
+          "firstFrame": 82,
+          "lastFrame": 90
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0091-0099.jpg",
+          "firstFrame": 91,
+          "lastFrame": 99
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0100-0108.jpg",
+          "firstFrame": 100,
+          "lastFrame": 108
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0109-0117.jpg",
+          "firstFrame": 109,
+          "lastFrame": 117
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0118-0126.jpg",
+          "firstFrame": 118,
+          "lastFrame": 126
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0127-0135.jpg",
+          "firstFrame": 127,
+          "lastFrame": 135
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0136-0144.jpg",
+          "firstFrame": 136,
+          "lastFrame": 144
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0145-0153.jpg",
+          "firstFrame": 145,
+          "lastFrame": 153
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0154-0162.jpg",
+          "firstFrame": 154,
+          "lastFrame": 162
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0163-0171.jpg",
+          "firstFrame": 163,
+          "lastFrame": 171
+        },
+        {
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\contact-0172-0174.jpg",
+          "firstFrame": 172,
+          "lastFrame": 174
+        }
+      ],
+      "keyOriginalFrameRechecks": [
+        {
+          "frame": 38,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0038.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "fa21fd93b219ed6c2769deff9193a846af954d43e62c90ebbe4637bd664691e1"
+        },
+        {
+          "frame": 39,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0039.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "5e31fba99c29322d6ec7c90e830efb11983b2ca153ab03c7e00c6df6b728f012"
+        },
+        {
+          "frame": 91,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0091.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "8df874068a566a1a79e84364f51b47d88fa3b3ca5819485ffac337545e19c10c"
+        },
+        {
+          "frame": 92,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0092.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "8e2529c8681f0909a7246c5190db0f53bdd5b180f627e0976684bdcd9e39ff50"
+        },
+        {
+          "frame": 145,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0145.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "68d27e079e6ad70a4334d0ac7175479986e573ccb88ff4c1f31f5deb740294f4"
+        },
+        {
+          "frame": 146,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0146.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "946b444c01e36169c598878b236e9a44b591c6a705b712363d1e3374bd89cf46"
+        },
+        {
+          "frame": 171,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0171.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "ec9f42318dda096e5d805aacb2f4a98bd006a1200ad081c116ece29680df030c"
+        },
+        {
+          "frame": 172,
+          "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\original-frame-0172.png",
+          "size": [
+            1920,
+            1080
+          ],
+          "sha256": "fb3afc6e477401c5e86debaf84b689952df60b7e0c8a38704a914bf2e32e816e"
+        }
+      ],
+      "decodeMetadata": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\video-private-review\\decode-meta.json",
+      "boundaries": [
+        "仅验PC录制片段内的UI、动作可读性、遮挡与阶段连续性；不覆盖手机、真实联机或其它交战分支。",
+        "视频是同一真实页面的实际整屏采样合成，原采样存在时间间隔；本报告审完174个编码帧，不能证明未采样的浏览器中间帧，也不声称播放器真实时间播放流畅度。",
+        "battle-recording.states[].phase/state/dice已辅助核对炮兵→骑兵→步兵及rolling→damage，dice是组件类型容器，不用其长度推断结果骰数。未凭图片推断应有骰数或规则数值；领域正确性需由实际phase结果数组和领域测试另证。"
+      ],
+      "observation": "连续帧核读174/174；全部20张联系表均实际读取，未抽样跳帧。；炮兵白骰在14–38帧出现连续位置和朝向变化，38帧已停稳，39帧出现损伤结果；骑兵红骰68–91帧运动并停稳，92帧出现损伤结果；步兵绿骰122–145帧运动并分开停稳，146帧出现损伤结果。；39–66、92–119、146–170帧保留对应结果，不在运动中抢先切入下一轮候选。；171帧转到战后占领/撤回，172–174帧出现战后教程提示；提示未盖住占领/撤回按钮及叶赫部本体，当前操作可理解。；所有战斗帧均未出现新增菜单或下一轮盘候选抢焦点；轮盘为低对比背景。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-real-time.webm",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-video.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/27-PC-战后占领选择.png",
+      "sha256": "599043597ec707a1f28659c3f9cc0838caf9663dd9a52a25aae6db4eb6b66d92",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/26-occupy.png",
+      "readSourceSha256": "599043597ec707a1f28659c3f9cc0838caf9663dd9a52a25aae6db4eb6b66d92",
+      "observations": [
+        "战后选择面板在右侧独立承载，辽北→叶赫部、攻方损失/幸存及占领/撤回可读。",
+        "教程与战后动作面板相邻，未遮当前按钮；战报折叠入口可见。"
+      ],
+      "observation": "战后选择面板在右侧独立承载，辽北→叶赫部、攻方损失/幸存及占领/撤回可读。；教程与战后动作面板相邻，未遮当前按钮；战报折叠入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\26-occupy.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/28-PC-主动展开只读战报.png",
+      "sha256": "cdaf6598dbfcafbfea37b23e61ffad6a54c52c2ed0751328da9fa0b91e116e0e",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/27-occupy-report.png",
+      "readSourceSha256": "cdaf6598dbfcafbfea37b23e61ffad6a54c52c2ed0751328da9fa0b91e116e0e",
+      "observations": [
+        "展开战报显示炮兵、骑兵、步兵阶段的双方/合计/损伤，全部文字可读且未越界。",
+        "占领/撤回仍在报告上方可见；本图只审可读性，不判定战斗数值或规则。"
+      ],
+      "observation": "展开战报显示炮兵、骑兵、步兵阶段的双方/合计/损伤，全部文字可读且未越界。；占领/撤回仍在报告上方可见；本图只审可读性，不判定战斗数值或规则。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\27-occupy-report.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/11"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/29-PC-外交友好标记选择.png",
+      "sha256": "b25fd1db05cf1bfb4cab23fca1460e30b236c35fcb5bd43691f135f3db23f851",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/28-diplomacy-target.png",
+      "readSourceSha256": "b25fd1db05cf1bfb4cab23fca1460e30b236c35fcb5bd43691f135f3db23f851",
+      "observations": [
+        "外喀尔喀部名称、反面蒙古标记和目标区域白色主边界清楚；教程解释友好/控制的区分并与目标相邻。",
+        "右侧外交剩余可影响处数及唯一结束外交按钮可见，没有额外确认按钮。"
+      ],
+      "observation": "外喀尔喀部名称、反面蒙古标记和目标区域白色主边界清楚；教程解释友好/控制的区分并与目标相邻。；右侧外交剩余可影响处数及唯一结束外交按钮可见，没有额外确认按钮。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\28-diplomacy-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/12"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/30-PC-外交结果与落点继续.png",
+      "sha256": "939efee01088df983c72bc23277b085b336f745f7c7a24ba579aed377daa5d8c",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/29-diplomacy-finish.png",
+      "readSourceSha256": "939efee01088df983c72bc23277b085b336f745f7c7a24ba579aed377daa5d8c",
+      "observations": [
+        "外喀尔喀部标记已消失，外交还可影响2处可读；当前只有一个结束外交主按钮，没有先选择再灰确认的二次界面。",
+        "教程结束外交说明紧邻按钮，玩家下一步清楚；是否仅执行一次由主线程行为trace单独证明。"
+      ],
+      "observation": "外喀尔喀部标记已消失，外交还可影响2处可读；当前只有一个结束外交主按钮，没有先选择再灰确认的二次界面。；教程结束外交说明紧邻按钮，玩家下一步清楚；是否仅执行一次由主线程行为记录单独证明。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\29-diplomacy-finish.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/13"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/31-PC-点击轮盘雇佣.png",
+      "sha256": "aca8e8c3859c47508a322cd905af15e55e2314ebd348a41766f732b36aaf5caf",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/30-hire-action.png",
+      "readSourceSha256": "aca8e8c3859c47508a322cd905af15e55e2314ebd348a41766f732b36aaf5caf",
+      "observations": [
+        "轮盘雇佣印刷文字及贴合其旁的教学说明均清楚；当前时标仍可见。",
+        "绿色扇区表达当前格可用行动，未显示未来移动候选；教程未遮雇佣字或当前时标。"
+      ],
+      "observation": "轮盘雇佣印刷文字及贴合其旁的教学说明均清楚；当前时标仍可见。；绿色扇区表达当前格可用行动，未显示未来移动候选；教程未遮雇佣字或当前时标。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\30-hire-action.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/14"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/32-PC-在大同建立新守军.png",
+      "sha256": "6eea70a32bcd434d4571020cd69b0d0f844cfc9029a1565709d7de0ba2e6cebc",
+      "status": "PASS",
+      "reviewMethod": "actual-view_image-original",
+      "readSource": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/31-hire-target.png",
+      "readSourceSha256": "6eea70a32bcd434d4571020cd69b0d0f844cfc9029a1565709d7de0ba2e6cebc",
+      "observations": [
+        "选择雇佣军建立区域标题与确认入口清楚；大同本体白色主边界、名称、已有兵牌和人口可见。",
+        "教程提示在大同左上方，未遮当前必要对象；其它已控制区绿色候选可辨。"
+      ],
+      "observation": "选择雇佣军建立区域标题与确认入口清楚；大同本体白色主边界、名称、已有兵牌和人口可见。；教程提示在大同左上方，未遮当前必要对象；其它已控制区绿色候选可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\31-hire-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-middle.json",
+      "sourceReviewEntry": "/media/15"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/33-PC-保留手牌结束回合.png",
+      "sha256": "4727ebab70f0a218623c96e08b56fb83d0de2c1aa979e6be5f2e46665aff0165",
+      "status": "PASS",
+      "observations": [
+        "放弃手牌行动并结束回合按钮位于手牌正上方约95px，空间归属手牌，教程在左侧且互不遮挡。",
+        "教程说明保留手牌、不再执行手牌行动，按钮同时写明结束回合，下一输入及后果清楚。"
+      ],
+      "observation": "放弃手牌行动并结束回合按钮位于手牌正上方约95像素，空间归属手牌，教程在左侧且互不遮挡。；教程说明保留手牌、不再执行手牌行动，按钮同时写明结束回合，下一输入及后果清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\32-save-hand.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/34-PC-新年结算.png",
+      "sha256": "8e8062fdd134e8334e8bcb0cd79a3ddc2e5735dadc4a30ea70d0ad46e184ec06",
+      "status": "PASS",
+      "observations": [
+        "时标和印刷新年名称可见；教程说明抽朝鲜牌、维护、耗损、纪年、人物的顺序，下一步明确。",
+        "维护山海关面板保留弃2张手牌维护与放弃维护两个直接决策，无无实体草稿的灰色确认。"
+      ],
+      "observation": "时标和印刷新年名称可见；教程说明抽朝鲜牌、维护、耗损、纪年、人物的顺序，下一步明确。；维护山海关面板保留弃2张手牌维护与放弃维护两个直接决策，无无实体草稿的灰色确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\33-new-year.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/35-PC-山海关维护选择.png",
+      "sha256": "4a84bb58b211775b1854c9c0cc19c16caee28ba0aeb78a36ceb724347c5b617a",
+      "status": "PASS",
+      "observations": [
+        "教程点明山海关与边界的关系和保留防线的原因；操作面板标题明确当前规则对象。",
+        "支付2张与放弃并列清楚，教程在左侧且不挡当前输入。"
+      ],
+      "observation": "教程点明山海关与边界的关系和保留防线的原因；操作面板标题明确当前规则对象。；支付2张与放弃并列清楚，教程在左侧且不挡当前输入。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\34-maintain-shanhai.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/36-PC-城市破败与维护取舍.png",
+      "sha256": "672ebfa8ecb6d17290dd31b57336fcc0e9f13d54aa3d4619266d2adc07b042bb",
+      "status": "PASS",
+      "observations": [
+        "维护锦州标题、2张成本及放弃维护输入可读；教程说明不维护将视为城市不存在，后果明确。",
+        "教程与按钮上下错开，当前锦州对象与控制标记可见。"
+      ],
+      "observation": "维护锦州标题、2张成本及放弃维护输入可读；教程说明不维护将视为城市不存在，后果明确。；教程与按钮上下错开，当前锦州对象与控制标记可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\35-abandon-jinzhou.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/37-PC-长城破败与边界宽度.png",
+      "sha256": "3e6564fb779fdb8330a7c9cbab8add6a9c4f043022a66672b51196ebb54bde81",
+      "status": "PASS",
+      "observations": [
+        "维护内长城标题及成本可读，教程说明城防宽度、放弃后的能力损失与保留手牌取舍。",
+        "放弃维护是当前直接选择，无多余确认；不把无关地图低层覆盖当硬失败。"
+      ],
+      "observation": "维护内长城标题及成本可读，教程说明城防宽度、放弃后的能力损失与保留手牌取舍。；放弃维护是当前直接选择，无多余确认；不把无关地图低层覆盖当硬失败。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\36-abandon-inner-wall.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/38-PC-大同撤旧兵保留新守军.png",
+      "sha256": "020d9eaa676958135a89c119426e721c8185736f32455e6df9f0ea5631139f89",
+      "status": "PASS",
+      "observations": [
+        "大同区域、三支候选兵本体与绿色边界可见，教程说明补1张或移除一支的取舍。",
+        "面板写尚需支持1支、已选0牌0兵，未选时确认灰显对应真实多选草稿，状态可理解。"
+      ],
+      "observation": "大同区域、三支候选兵本体与绿色边界可见，教程说明补1张或移除一支的取舍。；面板写尚需支持1支、已选0牌0兵，未选时确认灰显对应真实多选草稿，状态可理解。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\37-upkeep-datong.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/39-PC-叶赫部队维持费用.png",
+      "sha256": "c2630d73698ca85290e8ac56c774c0efe1fb834dc2b2668bea7da566924ebd81",
+      "status": "PASS",
+      "observations": [
+        "叶赫部区域和三支驻军可见，教程说明非汉人区补给及支付选择。",
+        "面板清楚显示尚需支持3支与当前0牌0兵，手牌类别、放大镜、横滚入口可见。"
+      ],
+      "observation": "叶赫部区域和三支驻军可见，教程说明非汉人区补给及支付选择。；面板清楚显示尚需支持3支与当前0牌0兵，手牌类别、放大镜、横滚入口可见。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\38-upkeep-yehe.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/40-PC-三张费用牌分别选中.png",
+      "sha256": "bab503a9aaddbf0d4dd70418929bbf666ae8d979628c8486a522179722c156f4",
+      "status": "PASS",
+      "observations": [
+        "三张被选手牌抬起，牌面和已选标记可识别；面板同步显示3张手牌0支部队。",
+        "确认在已满足实体支付选择后亮起，不是额外无草稿确认，当前目标兵未被选牌覆盖。"
+      ],
+      "observation": "三张被选手牌抬起，牌面和已选标记可识别；面板同步显示3张手牌0支部队。；确认在已满足实体支付选择后亮起，不是额外无草稿确认，当前目标兵未被选牌覆盖。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\39-upkeep-yehe-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/41-PC-手牌末端与翻看入口.png",
+      "sha256": "71d63d5714e8353d1c2ba83f167f23fa60e347a5b42ab5546ab268888c9adf48",
+      "status": "PASS",
+      "observations": [
+        "横滚后尾部银两及事件牌本体、分类与独立放大镜可见，前后箭头保留。",
+        "已选3牌计数仍在支持面板，半露手牌保留用户要求的结构，未因此判缺陷。"
+      ],
+      "observation": "横滚后尾部银两及事件牌本体、分类与独立放大镜可见，前后箭头保留。；已选3牌计数仍在支持面板，半露手牌保留用户要求的结构，未因此判缺陷。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\40-hand-scroll-end.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/42-PC-平壤雇佣军耗损选择.png",
+      "sha256": "a4d47c25ad5958f16dcdc24943d3ad8dfac75b8bd17180f90754cce8f9c527fd",
+      "status": "PASS",
+      "observations": [
+        "平壤区域及可移除兵本体可见，教程说明撤兵保留纪年手牌与控制权不自动改变。",
+        "尚需支持1支、0牌0兵和灰确认清楚表达当前尚待选择。"
+      ],
+      "observation": "平壤区域及可移除兵本体可见，教程说明撤兵保留纪年手牌与控制权不自动改变。；尚需支持1支、0牌0兵和灰确认清楚表达当前尚待选择。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\41-upkeep-pyongyang.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/43-PC-选中平壤耗损部队.png",
+      "sha256": "6a3d347517c15034427cf5584cfd168866c4ea3bd971d384b25a931bb395d52a",
+      "status": "PASS",
+      "observations": [
+        "所选步兵本体仍完整可辨，贴合的高亮和勾选表达选中；面板更新0牌1兵并亮起确认。",
+        "教程不挡该兵及确认，真实选兵后果与下一输入明确。"
+      ],
+      "observation": "所选步兵本体仍完整可辨，贴合的高亮和勾选表达选中；面板更新0牌1兵并亮起确认。；教程不挡该兵及确认，真实选兵后果与下一输入明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\42-upkeep-pyongyang-selected.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/44-PC-领取纪年卡的费用.png",
+      "sha256": "ded3770a495e1d0aa9c164a5bb7e9d216c887e437b3c6f3b9e262015c4b0a63c",
+      "status": "PASS",
+      "observations": [
+        "纪年卡本体被指向，教程解释领取资格、支付一半手牌、取得威望与放弃顺延。",
+        "取得本年纪年卡面板明确弃3张手牌取得或放弃资格顺延，无多余灰确认。"
+      ],
+      "observation": "纪年卡本体被指向，教程解释领取资格、支付一半手牌、取得威望与放弃顺延。；取得本年纪年卡面板明确弃3张手牌取得或放弃资格顺延，无多余灰确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\43-claim-year.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/11"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/45-PC-新纪年顺位与人物出场.png",
+      "sha256": "bac3da8062d29826b4f964520b2a0ce30344e4493ccff585b29f707290c3dc09",
+      "status": "PASS",
+      "observations": [
+        "剩余纪年卡与教程相邻，教程区分领走本年卡和用于新顺位的新年卡。",
+        "人物实体缩图、姓名及独立放大镜在右侧，当前教程下一步入口清楚。"
+      ],
+      "observation": "剩余纪年卡与教程相邻，教程区分领走本年卡和用于新顺位的新年卡。；人物实体缩图、姓名及独立放大镜在右侧，当前教程下一步入口清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\44-new-order.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/12"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/46-PC-按当前纪年选择人物.png",
+      "sha256": "06fdc6e41f4a5451c407e6ed297e511315001720a24ce15546a4cf5e344089f1",
+      "status": "PASS",
+      "observations": [
+        "毛文龙、熊廷弼、杨镐三个候选各有实体缩图及姓名，放大镜与出场按钮职责可区分。",
+        "教程说明人物不进手牌及杨镐的选择目的，指向当前候选且不挡操作。"
+      ],
+      "observation": "毛文龙、熊廷弼、杨镐三个候选各有实体缩图及姓名，放大镜与出场按钮职责可区分。；教程说明人物不进手牌及杨镐的选择目的，指向当前候选且不挡操作。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\45-year-character.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/13"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/47-PC-共享放大镜检视杨镐.png",
+      "sha256": "597d772d1beb13b5cccccb0b632264bb1e82820f7833b7cad8d3051733aa4509",
+      "status": "PASS",
+      "observations": [
+        "杨镐原卡放大完整显示名称、效果、倒戈条款，素材比例正常且可阅读。",
+        "右上显式关闭按钮清楚；背景候选、教程保留上下文。静态图不证明持久化时长。"
+      ],
+      "observation": "杨镐原卡放大完整显示名称、效果、倒戈条款，素材比例正常且可阅读。；右上显式关闭按钮清楚；背景候选、教程保留上下文。静态图不证明持久化时长。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\46-year-character-inspect.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/14"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/48-PC-同次付费的征兵与训练选项.png",
+      "sha256": "53dcce88900eb4c2be56bbde0bff770bea6b8359bb0b9245b785354979de53f2",
+      "status": "PASS",
+      "observations": [
+        "征兵训练面板显示已完成0/4次和额外训练0次，菜单明确征兵、训练、额外弃牌、完成四种输入。",
+        "各项描述承接自己的规则对象，没有独立无草稿确认。"
+      ],
+      "observation": "征兵训练面板显示已完成0/4次和额外训练0次，菜单明确征兵、训练、额外弃牌、完成四种输入。；各项描述承接自己的规则对象，没有独立无草稿确认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\47-training-kind.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/15"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/49-PC-征兵训练选择原炮兵.png",
+      "sha256": "0066eeba737fa1d4e5f069cae551e46fb80e5a941b9991bc19851a4c5b95bf96",
+      "status": "PASS",
+      "observations": [
+        "候选逐项标注地区、兵种、当前到目标等级与重复兵序号，当前叶赫部炮兵可定位。",
+        "教程解释单兵每回合限训1级及炮兵上限；列表内部滚动提示可见，教程不挡候选。"
+      ],
+      "observation": "候选逐项标注地区、兵种、当前到目标等级与重复兵序号，当前叶赫部炮兵可定位。；教程解释单兵每回合限训1级及炮兵上限；列表内部滚动提示可见，教程不挡候选。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\48-training-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/16"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/50-PC-继续训练原参战步兵.png",
+      "sha256": "3076af82d8c9cf27717e81adf0a52c7b2fd6917c9e4ee678dbe694459620aded",
+      "status": "PASS",
+      "observations": [
+        "面板显示完成1/4和前次炮兵升级反馈，已训炮兵退出当前候选。",
+        "两支叶赫部步兵分别编号、标出2到3级；教程说明继续使用基础次数，当前输入明确。"
+      ],
+      "observation": "面板显示完成1/4和前次炮兵升级反馈，已训炮兵退出当前候选。；两支叶赫部步兵分别编号、标出2到3级；教程说明继续使用基础次数，当前输入明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\49-training-second-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/17"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/51-PC-辽东征兵与新年度目标.png",
+      "sha256": "294da460750f38e727dd9a626fe968d3b2b9cb248974661b99c9c3c5ee108d06",
+      "status": "PASS",
+      "observations": [
+        "面板显示已完成3/4及前次训练结果，征兵候选列出地区和建立等级2正规军。",
+        "辽东被教程指向，人口与部队取舍说明清楚，候选按钮与教程互不挡。"
+      ],
+      "observation": "面板显示已完成3/4及前次训练结果，征兵候选列出地区和建立等级2正规军。；辽东被教程指向，人口与部队取舍说明清楚，候选按钮与教程互不挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\50-training-recruit-target.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/18"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/52-PC-四次基础行动完成并保留手牌.png",
+      "sha256": "c2304e8593e58cbdc8d8104678a9b3352f8c4736eb82418a2abf84b5b452c24a",
+      "status": "PASS",
+      "observations": [
+        "已完成4/4与新建辽东正规军反馈可读，额外训练的弃1牌成本明确。",
+        "教程说明保留最后一张并停止训练，完成征兵训练按钮就在菜单下方，下一输入清楚。"
+      ],
+      "observation": "已完成4/4与新建辽东正规军反馈可读，额外训练的弃1牌成本明确。；教程说明保留最后一张并停止训练，完成征兵训练按钮就在菜单下方，下一输入清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\51-training-finish.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/19"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-object-input-20261102-r154/media/53-PC-首点威望与下一年度目标.png",
+      "sha256": "f4334034b1adb882b4da115ee1f3655fc5bb064a2716377b24c757d86a6e8718",
+      "status": "PASS",
+      "observations": [
+        "终页说明已取得第一点威望、继续扩军并为新年留牌及胜利条件，完成并返回是明确主输入。",
+        "当前势力、轮盘可用扇区、纪年卡、真实手牌和牌堆保留；图面本身不证明完成后已接受输入，另查trace。"
+      ],
+      "observation": "终页说明已取得第一点威望、继续扩军并为新年留牌及胜利条件，完成并返回是明确主输入。；当前势力、轮盘可用扇区、纪年卡、真实手牌和牌堆保留；图面本身不证明完成后已接受输入，另查记录。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\52-finish.png",
+      "independentReviewFile": "evidence/qidahen/tutorial-object-input-20261102-r154/reviews/visual-review-tail.json",
+      "sourceReviewEntry": "/media/20"
+    }
+  ]
+}

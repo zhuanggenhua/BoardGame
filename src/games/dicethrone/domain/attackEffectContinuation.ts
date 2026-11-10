@@ -224,10 +224,12 @@ export function resumeCompletedEffectSequence(
     timestamp: number,
 ): { state: MatchState<DiceThroneCore>; events: DiceThroneEvent[] } | undefined {
     let frame = getActiveResolutionFrame(state);
-    if (frame?.kind !== FRAME_KIND || frame.status === 'blocked' || frame.status === 'suspended') return undefined;
+    if (frame?.kind !== FRAME_KIND) return undefined;
+    // 对掷完成可能同时打开结果选择；帧仍被选择阻塞时也要先保存完成信号。
     state = applyFrameCompletionSignals(state, frame, events);
     frame = getResolutionFrameById(state, frame.id);
     if (!frame) return undefined;
+    if (frame.status === 'blocked' || frame.status === 'suspended') return { state, events: [] };
     const blockers = (frame.metadata?.blockers as AttackEffectBlocker[] | undefined) ?? [];
     const completed = new Set((frame.metadata?.completedBlockerIds as string[] | undefined) ?? []);
     if (completed.size !== blockers.length || hasLiveFrameBlocker(state, frame.id, frame)) {

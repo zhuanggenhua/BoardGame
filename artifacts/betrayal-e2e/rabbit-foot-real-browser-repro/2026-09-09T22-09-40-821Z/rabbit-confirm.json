@@ -1,0 +1,767 @@
+{
+  "label": "rabbit-confirm",
+  "before": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "rabbit-foot-result",
+    "overlayText": "兔脚重掷完成。先看清新的骰面和总点数，再点“确认”确认结果；确认后如果仍失败，游戏会进入伤害分配。上一步完成当前操作继续",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 20,
+      "stepId": "rabbit-foot-result",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 20,
+      "stepId": "rabbit-foot-result",
+      "stepAllowedCommands": [
+        "FINALIZE_EVENT_ROLL"
+      ],
+      "stepInfoStep": null,
+      "stepRequireAction": true
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": {
+        "rollId": "0-标本剥制-1788991944916",
+        "playerId": "0",
+        "requiredPlayerIds": [
+          "0"
+        ],
+        "acknowledgedPlayerIds": [],
+        "requiresAcknowledgement": true
+      },
+      "recentRoll": {
+        "id": "0-标本剥制-1788991944916",
+        "kind": "eventTraitCheck",
+        "trait": "knowledge",
+        "dice": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "consumedRabbitFootCardIds": [
+          "rope"
+        ]
+      },
+      "usedCardIdsThisTurn": [
+        "omen-book",
+        "rope"
+      ],
+      "pendingDamageAllocation": null
+    },
+    "continueButton": {
+      "text": "确认 0/1",
+      "disabled": false,
+      "confirmed": "0",
+      "required": "1",
+      "rect": {
+        "x": 617,
+        "y": 642,
+        "width": 132,
+        "height": 62
+      }
+    },
+    "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"numPlayers\":3,\"randomCursor\":236,\"savedAt\":1788991970906,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1,\"snapshotCursors\":[231]},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[],\"maxEntries\":200,\"nextId\":26},\"actionLog\":{\"entries\":[{\"id\":\"betrayal-MOVE_T"
+      }
+    ]
+  },
+  "after": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "finish",
+    "overlayText": "这里选择承受 1 点物理伤害的属性，再点确认完成分配。上一步完成当前操作继续",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 21,
+      "stepId": "finish",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 21,
+      "stepId": "finish",
+      "stepAllowedCommands": [
+        "RESOLVE_DAMAGE_ALLOCATION"
+      ],
+      "stepInfoStep": null,
+      "stepRequireAction": true
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": "0",
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": {
+        "id": "0-标本剥制-1788991944916",
+        "kind": "eventTraitCheck",
+        "trait": "knowledge",
+        "dice": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "consumedRabbitFootCardIds": [
+          "rope"
+        ]
+      },
+      "usedCardIdsThisTurn": [
+        "omen-book",
+        "rope"
+      ],
+      "pendingDamageAllocation": {
+        "playerId": "0"
+      }
+    },
+    "continueButton": null,
+    "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"numPlayers\":3,\"randomCursor\":236,\"savedAt\":1788991979473,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1,\"snapshotCursors\":[231]},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[],\"maxEntries\":200,\"nextId\":26},\"actionLog\":{\"entries\":[{\"id\":\"betrayal-MOVE_T"
+      }
+    ]
+  },
+  "screenshots": {
+    "before": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-09T22-09-40-821Z\\rabbit-before-confirm.png",
+    "after": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-09T22-09-40-821Z\\rabbit-after-confirm.png"
+  },
+  "logs": [
+    {
+      "at": "2026-09-09T22:11:29.995Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T22:11:30.003Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T22:11:30.045Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T22:11:30.072Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T22:11:33.756Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T22:11:34.008Z",
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…"
+    },
+    {
+      "at": "2026-09-09T22:11:34.011Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)"
+    },
+    {
+      "at": "2026-09-09T22:11:34.015Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已停止"
+    },
+    {
+      "at": "2026-09-09T22:11:34.015Z",
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:4274/lobby-socket/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "at": "2026-09-09T22:11:34.023Z",
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…"
+    },
+    {
+      "at": "2026-09-09T22:11:34.023Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)"
+    },
+    {
+      "at": "2026-09-09T22:11:34.098Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/admin-api/stats net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.137Z",
+      "type": "log",
+      "text": "[LobbySocket] ✅ 连接成功"
+    },
+    {
+      "at": "2026-09-09T22:11:34.265Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.265Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.265Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/admin-api/stats net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.267Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-700-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-400-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-400-italic-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:11:34.268Z",
+      "type": "warning",
+      "text": "[Lobby] 加载游戏热度失败，回退固定排序 TypeError: Failed to fetch\n    at fetchAdminStats (http://127.0.0.1:4274/src/api/admin-stats.ts:25:26)\n    at http://127.0.0.1:4274/src/hooks/useGamePopularityRanking.ts:49:10\n    at Object.react_stack_bottom_frame (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:18567:20)\n    at runWithFiberInDEV (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:997:72)\n    at commitHookEffectListMount (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:9411:163)\n    at commitHookPassiveMountEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:9465:60)\n    at reconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11273:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11240:11)\n    at reconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11265:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11240:11)"
+    },
+    {
+      "at": "2026-09-09T22:11:34.295Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T22:11:34.300Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T22:11:34.306Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T22:11:34.327Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T22:11:34.560Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T22:11:34.851Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T22:11:34.850Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T22:11:34.852Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:11:34.852Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T22:11:34.855Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T22:11:34.856Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T22:11:34.896Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T22:11:34.896Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T22:11:34.896Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:11:34.896Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T22:11:35.359Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:11:35.358Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":507}"
+    },
+    {
+      "at": "2026-09-09T22:11:35.359Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T22:11:35.358Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":462}"
+    },
+    {
+      "at": "2026-09-09T22:11:38.405Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T22:11:38.404Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":3508}"
+    },
+    {
+      "at": "2026-09-09T22:11:38.431Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T22:11:38.447Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T22:11:38.447Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T22:11:38.447Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T22:11:38.448Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T22:11:38.755Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T22:11:38.755Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T22:11:39.360Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 43.9 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T22:11:43.746Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T22:11:46.551Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T22:11:53.945Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T22:11:53.945Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T22:11:53.995Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T22:12:02.461Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T22:12:02.475Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T22:12:04.269Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T22:12:05.894Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 39.6 FPS | P95 帧时 83.3ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T22:12:05.911Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:12:06.051Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:12:06.071Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T22:12:09.059Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 38.3 FPS | P95 帧时 150.1ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T22:12:09.269Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:09.269Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:09.289Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:09.378Z",
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 30600ms（11 张）"
+    },
+    {
+      "at": "2026-09-09T22:12:09.423Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:11.120Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:11.120Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:11.159Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:11.268Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:24.635Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:24.635Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:24.658Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:24.918Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:25.163Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:25.164Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:25.231Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:25.462Z",
+      "type": "warning",
+      "text": "WARNING: Multiple instances of Three.js being imported."
+    },
+    {
+      "at": "2026-09-09T22:12:25.617Z",
+      "type": "warning",
+      "text": "[.WebGL-0x1ffc0322dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-09T22:12:27.575Z",
+      "type": "warning",
+      "text": "[.WebGL-0x1ffc0322dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-09T22:12:27.919Z",
+      "type": "warning",
+      "text": "[.WebGL-0x1ffc0322dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    },
+    {
+      "at": "2026-09-09T22:12:27.919Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 14.6 FPS | P95 帧时 233.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-09T22:12:28.266Z",
+      "type": "warning",
+      "text": "[.WebGL-0x1ffc0322dc00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    },
+    {
+      "at": "2026-09-09T22:12:30.449Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:30.449Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:30.449Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:30.598Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:40.183Z",
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 28904ms（13 张）"
+    },
+    {
+      "at": "2026-09-09T22:12:49.273Z",
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 70836ms（83 张）"
+    },
+    {
+      "at": "2026-09-09T22:12:49.765Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:49.765Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:49.765Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:49.840Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:55.300Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 2.2 FPS | P95 帧时 1466.6ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-09T22:12:58.756Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:58.757Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-09T22:12:58.757Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:12:58.921Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-09T22:13:00.408Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 11.3 FPS | P95 帧时 433.3ms — 严重掉帧"
+    }
+  ]
+}

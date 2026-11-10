@@ -1,0 +1,54 @@
+{
+  "title": "大杀四方派系选择：单层绿色卡框",
+  "media": [
+    {
+      "path": "01-labeled-01-random-faction-before.png",
+      "chainId": "smashup-faction-selection-green-20261011-r3-cn",
+      "chainStep": "1",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "evidence/smashup-faction-selection-green-20261011-r3-cn",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "进入派系选择页",
+      "description": "随机派系入口和派系卡网格已显示，尚无绿色选中卡框。"
+    },
+    {
+      "path": "02-labeled-02-action-heroes-selected-green.png",
+      "chainId": "smashup-faction-selection-green-20261011-r3-cn",
+      "chainStep": "2",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "evidence/smashup-faction-selection-green-20261011-r3-cn",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击随机派系并落地为动作英雄",
+      "description": "动作英雄卡被选中；同一张卡框变绿并轻微放大上抬，红框标出目标卡。"
+    },
+    {
+      "path": "03-labeled-03-after-scroll.png",
+      "chainId": "smashup-faction-selection-green-20261011-r3-cn",
+      "chainStep": "3",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "evidence/smashup-faction-selection-green-20261011-r3-cn",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "滚动派系列表后保持选中态",
+      "description": "滚动后动作英雄目标卡仍完整可见，绿色选中卡框保持单层，红框标出目标卡。"
+    },
+    {
+      "path": "00-sequence-index.png",
+      "chainId": "smashup-faction-selection-green-20261011-r3-cn",
+      "chainStep": "4",
+      "sourceRun": "label-image-sequence",
+      "sourceDir": "evidence/smashup-faction-selection-green-20261011-r3-cn",
+      "stage": "后态",
+      "role": "auxiliary-detail",
+      "viewport": "desktop",
+      "transition": "生成前中后有序索引",
+      "description": "有序索引列出前态、中态和后态三张当前验收图，便于定位同一目标卡。"
+    }
+  ],
+  "version": 2
+}

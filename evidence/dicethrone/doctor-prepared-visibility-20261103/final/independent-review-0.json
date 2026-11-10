@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/visibility_desktop",
+  "media": [
+    {
+      "status": "PASS",
+      "sha256": "c1ce856d4f5335f8e1f996077c4bb3be2a7ac4b3cbd66af8e23f4b51cae1e044",
+      "observation": "单牌显示，眼睛图标在插画左下可辨，不遮牌名及效果文字。",
+      "hardFailures": [],
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面单张-法术显示.png"
+    },
+    {
+      "observation": "被动正文完整露出，恢复图标在文字下方可辨。",
+      "status": "PASS",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面单张-露出被动.png",
+      "sha256": "866bef691461e6b14dbebbb76deb1c44a88342d784a2c5b2ea03ca5128e9bea2",
+      "hardFailures": []
+    }
+  ]
+}

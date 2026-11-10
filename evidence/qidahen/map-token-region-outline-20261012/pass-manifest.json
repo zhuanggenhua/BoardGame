@@ -1,0 +1,82 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-12T10:55:00.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "棋子和地区要有贴合描边，不要和地图糊成一片。",
+      "status": "PASS",
+      "evidence": [
+        "独立 E2E e2e/qidahen/map-token-region-outline.e2e.ts 断言地区 overlay 有描边标记且不透明像素超过一千，棋子带描边标记。",
+        "media/前态-行动窗口棋子地区描边无多余横幅.png 可见方棋圆棋贴合墨框，各地区有深色边界。"
+      ]
+    },
+    {
+      "requirement": "行动窗口闲时不要叠多余操作横幅，也不要残留地区悬浮条。",
+      "status": "PASS",
+      "evidence": [
+        "同一用例闲时 qidahen-operation-banner 数量为 0，地区提示数量为 0。",
+        "media/前态-行动窗口棋子地区描边无多余横幅.png 顶部没有操作横幅，地图上没有地区悬浮条。"
+      ]
+    },
+    {
+      "requirement": "点选山海关后该地区比闲时更醒目，并看见山海关提示。",
+      "status": "PASS",
+      "evidence": [
+        "同一用例点选后地区提示含山海关，山海关棋子仍带描边标记。",
+        "media/中态-点选山海关地区描边与棋子描边.png 可见山海关更亮色带和地区提示。"
+      ]
+    },
+    {
+      "requirement": "悬浮皮岛后提示可见，棋子仍可从地图里辨认。",
+      "status": "PASS",
+      "evidence": [
+        "同一用例悬浮后地区提示含皮岛，棋子描边标记仍在。",
+        "media/后态-悬浮皮岛地区描边棋子仍可辨.png 可见皮岛地区提示，附近棋子仍有贴合描边。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/qidahen/map-token-region-outline-20261012/media/前态-行动窗口棋子地区描边无多余横幅.png",
+    "evidence/qidahen/map-token-region-outline-20261012/media/中态-点选山海关地区描边与棋子描边.png",
+    "evidence/qidahen/map-token-region-outline-20261012/media/后态-悬浮皮岛地区描边棋子仍可辨.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "image_acceptance_audit"
+    },
+    "reviewFile": ".visual-review.json",
+    "summary": {
+      "fullCoverage": true,
+      "totalMediaCount": 3,
+      "passCount": 3,
+      "reviseCount": 0,
+      "numericOrRuleValidation": "excluded; covered by E2E/Vitest"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/regionMaskOverlay.test.ts --config vitest.config.core.ts --configLoader native --pool forks --maxWorkers 1",
+      "node scripts/infra/run-e2e-single.mjs default e2e/qidahen/map-token-region-outline.e2e.ts \"行动窗口棋子和地区边界可从地图里分开\""
+    ],
+    "evidence": [
+      "Board.test.ts 与 regionMaskOverlay.test.ts：上一轮实现后 223 passed，本轮未改描边实现。",
+      "独立 E2E：1 passed（9.4s / 17.8s total），前态/中态/后态截图来自同一次运行。"
+    ]
+  }
+}

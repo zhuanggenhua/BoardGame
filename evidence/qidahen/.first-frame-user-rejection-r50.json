@@ -1,0 +1,118 @@
+{
+  "kind": "user-rejection-diagnostic",
+  "verdict": "REVISE",
+  "finalPass": false,
+  "reviewer": "/root/qidahen_first_frame_rejection",
+  "userWords": ["第一个图就错了", "地区什么时候是圆形选择了"],
+  "objective": "核查首张当前原图中辽东地区被圆形高亮替代的问题，区分图面事实、源码owner和可复用正式地区边界；不改实现，不继承旧PASS。",
+  "target": {
+    "index": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/.e2e-image-index.json",
+    "indexPosition": 0,
+    "image": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/00-辽东与叶赫部局面.png",
+    "imageSha256": "f09e0fac2583b4a7f28299af43b98b972cc5cfc71d2798b126b606c8a679dac1",
+    "imageSize": { "width": 1920, "height": 1080 },
+    "inspection": "实际读取同一张整屏原图，未以DOM、文件名、测试结果或旧审查替代。",
+    "imageRole": "用户点名的原始诊断证据"
+  },
+  "visualFacts": [
+    {
+      "id": "VF1",
+      "fact": "整屏中心约(960,540)有浅绿色圆形主边界和绿色半透明填色；圆外另有浅蓝色圆角正方形框。两者明显可分别辨认。",
+      "approximateBounds": { "left": 912, "top": 492, "right": 1008, "bottom": 588 }
+    },
+    {
+      "id": "VF2",
+      "fact": "圆框上方偏右有黑底金字“辽东”标签。圆圈覆盖地图内部一小片底图，圆周并不沿地图上可见的曲折/折线地区界线；不存在地图地区本身是圆形的可见依据。"
+    },
+    {
+      "id": "VF3",
+      "fact": "右侧白色教程卡写着“正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。”下方显示“上一步”和“完成当前操作继续”。该图实际在选择军屯地点，而不是显示frontier介绍文案。",
+      "approximateBounds": { "left": 1028, "top": 465, "right": 1412, "bottom": 615 }
+    },
+    {
+      "id": "VF4",
+      "fact": "左上显示地图缩放182%。当前第一眼高对比对象是带“辽东”标签的双层几何标记；玩家容易将小圆本身理解成地区选择范围，图面没有用同样清楚的边界告诉玩家辽东整片地图区域在哪里。"
+    }
+  ],
+  "sourceFacts": [
+    {
+      "id": "SF1",
+      "source": "src/games/qidahen/tutorial.ts:566",
+      "fact": "select-farm-region的highlightTarget为qidahen-map-region-focus-city-region-15-liaodong；requireAction=true，允许SELECT_REGION，只有REGION_SELECTED的regionId为city-region-15-liaodong才推进。"
+    },
+    {
+      "id": "SF2",
+      "source": "src/games/qidahen/Board.tsx:7190",
+      "fact": "从教程highlightTarget解析tutorialMapRegionFocusId，再用getTopLevelGuideRegionPoint把地区锚点投影到舞台坐标。该锚点是点，不是地区轮廓。"
+    },
+    {
+      "id": "SF3",
+      "source": "src/games/qidahen/Board.tsx:7316",
+      "fact": "专门的教程map-region-focus层在锚点左右上下48px处渲染96×96的div，borderRadius='50%'，3px浅绿边框、绿色填色和glow；其pointer-events-none。圆形来自此游戏教程focus层，既不是正式地区mask，也不是点击命中面的真实形状。"
+    },
+    {
+      "id": "SF4",
+      "source": "src/components/tutorial/TutorialOverlay.tsx:928",
+      "fact": "通用TutorialOverlay另外按目标DOMRect绘制高亮框：borderRadius='8px'，浅蓝色inset描边。它包住上述96×96圆形div，解释了原图中圆圈和蓝色方框的两层叠加。"
+    },
+    {
+      "id": "SF5",
+      "source": "src/games/qidahen/tutorial.ts:559; public/locales/zh-CN/game-qidahen.json:494",
+      "fact": "basic首节点frontier是infoStep，目标为整张qidahen-map-layer；其中文文案为“辽东驻有3支明军，邻近的叶赫部由蒙古控制。这回合从辽东进攻叶赫部，争取区域控制权；轮盘和手牌行动都尚未使用。”这段文案不在本次实际首图中，不能以源码存在当作已给玩家看见。"
+    },
+    {
+      "id": "SF6",
+      "source": "src/games/qidahen/tutorialSetup.ts:349; src/games/qidahen/tutorialSetup.ts:174",
+      "fact": "basic setup采用post-sarhu-1619正式初始setup，再由createFormalOpeningCore重置临时状态、设大明行动窗口、两类行动未使用。本诊断不据此推定截图已呈现所有开局知识。"
+    }
+  ],
+  "issues": [
+    {
+      "id": "region-shape-replaced-by-point-circle",
+      "severity": "blocking",
+      "status": "confirmed",
+      "visualEvidence": ["VF1", "VF2", "VF3", "VF4"],
+      "sourceEvidence": ["SF1", "SF2", "SF3"],
+      "impact": "当前任务是选择地图地区，却把地区锚点周围的小圆画成显著目标边界；玩家学习到的是点状/圆形地区表示，无法从该高亮识别辽东真实范围。",
+      "owner": "Board.tsx专设教程map-region-focus渲染分支",
+      "requiredCorrection": "使用已有正式运行时地区ownership mask及同一地图变换呈现地区本体轮廓。禁止将修复简化成换方框、缩小圆圈或移动圆圈。"
+    },
+    {
+      "id": "generic-tutorial-frame-wraps-fake-region-marker",
+      "severity": "blocking",
+      "status": "confirmed",
+      "visualEvidence": ["VF1"],
+      "sourceEvidence": ["SF3", "SF4"],
+      "impact": "同一个地区对象同时显示绿色圆和蓝色方框，进一步把地区空间身份变成两层UI几何框；仅移除蓝框仍不能恢复真实地区轮廓。",
+      "owner": "游戏教程focus目标与通用TutorialOverlay的组合合同",
+      "requiredCorrection": "地区本体轮廓必须成为唯一主边界；教程提示定位不得再把地区锚点标记包装为地区选择范围。"
+    }
+  ],
+  "reusableCanonicalGeometry": {
+    "formalMask": "src/games/qidahen/data/region-mask.png",
+    "runtimeRegionDefinition": "src/games/qidahen/data/runtime-region-mask-regions.json:732",
+    "runtimeRegionId": "city-region-15-liaodong",
+    "printedRegionIds": ["city-region-15"],
+    "runtimeSeed": { "x": 893, "y": 460 },
+    "ownershipBuilder": "src/games/qidahen/ui/runtimeRegionOwnership.ts:205 buildQidahenRuntimeRegionIdByPixel",
+    "ownershipDetails": "从正式mask颜色解析printedRegionId；shared printed区域按已有runtime映射和分区算法生成regionIdByPixel。辽东属于shared printed区域，不能直接拿整个printed city-region-15冒充辽东。",
+    "currentMapOwner": "src/games/qidahen/Board.tsx:1693 image.onload建立runtimeRegionOwnership和runtimeRegionIdByPixelRef；1783起同一MapLayer用此ownership绘制地区高亮。",
+    "overlayPixelBuilder": "src/games/qidahen/ui/regionMaskOverlay.ts:529 buildRegionOwnershipOverlayPixels",
+    "overlayRenderer": "src/games/qidahen/ui/regionMaskOverlay.ts:605 renderRegionOwnershipOverlay",
+    "existingCanvas": "src/games/qidahen/Board.tsx:2786 qidahen-map-region-mask-overlay",
+    "geometryScope": "正式逐像素runtime ownership是可复用地区空间身份；seed/center仅用于提示位置和镜头，不能替代空间边界。"
+  },
+  "uncertainties": [
+    "本诊断没有重新运行浏览器，不能证明修后行为、输入命中或任何修后视觉结果。",
+    "原图可证明圆框不沿可见地图界线，但无法只凭该截图精确量出shared printed区域内辽东与辽北的每个归属像素；应消费既有runtime ownership，不凭图手画第二套边界。",
+    "未把首图未显示frontier介绍文案升级为本轮额外实现问题；当前用户明确退回点是地区圆形选择。",
+    "未重新判定辽东驻军数量、叶赫兵力或整组其它帧的规则正确性；本报告不得用于这些对象的PASS。"
+  ],
+  "nextAcceptance": [
+    "回同一真实教程入口、同一select-farm-region状态和同一桌面视口，检查辽东高亮沿正式runtime ownership轮廓，随地图缩放/平移一致。",
+    "检查提示框、标签及点击都仍对应city-region-15-liaodong，且不会用圆框或矩形框代替地区本体。",
+    "检查同一map-region-focus和map-guide-target-focus分支的其它地区步骤，避免只修辽东这一帧。",
+    "读取晚于实现修正的新整屏原图后重新判定；旧PASS和本诊断文件不能恢复展示资格。"
+  ],
+  "mutationScope": "本轮只新增此诊断文件；原审查文件、原图、源码及其它报告均不修改。"
+}

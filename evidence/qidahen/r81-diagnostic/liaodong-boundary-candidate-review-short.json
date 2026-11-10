@@ -1,0 +1,61 @@
+{
+  "reviewer": {
+    "agent_id": "/root/r81_boundary_candidate",
+    "role": "独立视觉复核子代理",
+    "method": "先读取两张完整图，再对同坐标局部放大对照"
+  },
+  "objective": "仅核对辽东东侧 y410..511 河岸，以及辽北/辽东共享边界是否贴合原图印刷线",
+  "sources": [
+    {
+      "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+      "sha256": "C50C1D3CFDF8F2B09FFB403C22E31F90523F7A20C7F051C8432B93490B90FF0E"
+    },
+    {
+      "path": "evidence/qidahen/r81-diagnostic/原图辽北辽东边界候选二.png",
+      "sha256": "F4B13075A729158D1B54BBD71414343354BD5A04EE317EDC0A64542787E6E94A"
+    }
+  ],
+  "verdict": "PASS",
+  "status": "passed",
+  "observations": [
+    {
+      "area": "辽东东侧河岸",
+      "range": "原图像素 y410..511",
+      "observation": "绿色候选沿辽东侧河岸外缘转折；未见旧候选式大幅内缩，也未见用弦线切过地区内部。红箭头遮挡处结合上下连续河岸核对。",
+      "locators": [
+        [
+          1002,
+          410
+        ],
+        [
+          977,
+          430
+        ],
+        [
+          963,
+          450
+        ],
+        [
+          949,
+          470
+        ],
+        [
+          929,
+          490
+        ],
+        [
+          925,
+          511
+        ]
+      ],
+      "locator_note": "候选绿色线的行定位坐标；用于回查，不是残差测量。"
+    },
+    {
+      "area": "辽北/辽东共享边界",
+      "range": "约 x819..959、y362..395",
+      "observation": "蓝/绿共享边界沿原图棕色弯线依次下凹、回升到东侧交点；没有水平直切。"
+    }
+  ],
+  "required_corrections": [],
+  "boundary": "只证明这两段源图轮廓校准通过；不代表应用 UI、交互或教程验收。未评审其它地区。"
+}

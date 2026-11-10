@@ -1,0 +1,51 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-24",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "test-results/evidence-screenshots/betrayal/haunt-reveal-discovery-confirmation.e2e/物品展示手机横屏不越界且默认保留本地玩家持有区"
+  },
+  "tests": [
+    {
+      "command": "npm run test:e2e:file -- e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts --case \"物品展示手机横屏不越界且默认保留本地玩家持有区\"",
+      "result": "1 passed",
+      "scope": "当前行动者为其他玩家时，手机横屏物品展示、本地持有区归属和整页边界"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "默认物品栏显示本地玩家的持有物，不自动显示当前行动者的物品。",
+      "status": "PASS",
+      "evidence": [
+        "截图左下持有区显示本地玩家的地图。",
+        "测试断言物品区 data-player-id 为本地玩家 0，且不包含当前行动者获得的急救包。"
+      ],
+      "images": [
+        "物品展示-手机横屏-本地持有区与顶部边界稳定.jpg"
+      ]
+    },
+    {
+      "requirement": "物品展示卡、顶部 HUD、左侧玩家面板和持有区都保持在手机横屏视口内。",
+      "status": "PASS",
+      "evidence": [
+        "测试断言 document/body scrollWidth 不超过 936px。",
+        "测试逐项断言顶部 HUD、物品展示层、物品卡、左侧面板和持有区的四边均在 936x432 视口内。",
+        "截图显示中央急救包卡完整，顶部和左侧 UI 未被裁切。"
+      ],
+      "images": [
+        "物品展示-手机横屏-本地持有区与顶部边界稳定.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-discovery-confirmation.e2e\\物品展示手机横屏不越界且默认保留本地玩家持有区\\物品展示-手机横屏-本地持有区与顶部边界稳定.jpg"
+  ]
+}

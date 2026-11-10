@@ -1,0 +1,2167 @@
+{
+  "reviewer": "/root/doctor_visual_a_current",
+  "run": "e2e-1793526898908-1ye6hw",
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "reviewMode": "all-media",
+  "sourceTruth": "本人已对全部二十张分别以单次单图方式读取精确原始路径，并绑定对应指纹复核，不沿用批次预览作为最终判断；旧组件通过两份真实历史提交源码作比较，未声称本人看过旧版截图。",
+  "targetLock": {
+    "object": "奇异博士本次分配的二十张选择与阅读界面",
+    "source": "temp/doctor-full-assignment-a.json 所列原始截图及真实历史源码基线",
+    "environment": "当前证据运行的桌面及浏览器横屏",
+    "acceptance": "默认候选可识别可比较，已选不损其他候选，原阅读及关闭归属清楚，横向浏览保留当前提示与主动作"
+  },
+  "summary": {
+    "total": 20,
+    "pass": 20,
+    "revise": 0
+  },
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌准备选择态.png",
+      "sha256": "9fd322257db53df8a9bff30936c668accd2357a822127b9aa46dcd70e0257602",
+      "label": "01-弃牌法术候选-桌面.png",
+      "status": "PASS",
+      "observation": "弃牌提示、法瑞拉之牙完整牌面及灰色确认均在主视区；标题和两段效果可辨，底部原手牌独立保留。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌准备选择态.png",
+            "observation": "标题、单卡、确认依次居中，底部原手牌没有抢候选槽位。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌准备选择态.png",
+            "observation": "单卡中轴与标题、确认中轴重合，卡底和按钮之间留出检视槽。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌准备选择态.png",
+            "observation": "正式法术素材直接承接候选，没有额外包裹卡框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-法术卡已选待确认.png",
+      "sha256": "4c05a49921c1991b8b95b6f773487c882aa065bd6905f5aaf1accf72f7941a61",
+      "label": "02-弃牌法术已选-桌面.png",
+      "status": "PASS",
+      "observation": "法瑞拉之牙右上出现勾选，牌面与默认态等尺；牌下检视和橙色确认清楚，高亮未盖效果正文。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-法术卡已选待确认.png",
+            "observation": "已选牌仍为主体，检视贴卡下，确认再居下方。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-法术卡已选待确认.png",
+            "observation": "勾选贴右上非正文区，检视与卡中线对齐。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-法术卡已选待确认.png",
+            "observation": "暖光和勾选表达选中，没有叠加实体底框或说明横幅。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌准备选择态.png",
+      "sha256": "5ed61f78163f6d7a8f861d65c82bcdec03aeae7494e12b93b328e996d1989cb2",
+      "label": "03-弃牌法术候选-横屏.png",
+      "status": "PASS",
+      "observation": "横屏中法瑞拉之牙完整占左侧，标题和灰色确认在右侧；法术比例自然，准备及施放文字未截断。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。横屏保留同一卡池，必要适配为横向浏览及原标题确认侧栏。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌准备选择态.png",
+            "observation": "候选占横屏主体，右侧较窄栏承接标题和主动作。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌准备选择态.png",
+            "observation": "牌顶底完整，右侧两行标题在按钮上方且不跨入牌面。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌准备选择态.png",
+            "observation": "暗幕区分选择层与牌桌，没有多余封闭卡框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "候选本体完整，牌下留检视槽",
+        "当前提示及确认侧栏保留",
+        "阻塞选择态不声明底层牌桌同时可操作"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-法术卡已选待确认.png",
+      "sha256": "32228b31df04e907dd8155e526123db04197b8169a22176463931114caeb56b1",
+      "label": "04-弃牌法术已选-横屏.png",
+      "status": "PASS",
+      "observation": "横屏已选法瑞拉之牙右上勾选完整，卡下检视与右侧橙色确认可见；正文未被按钮压住。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。横屏保留同一卡池，必要适配为横向浏览及原标题确认侧栏。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-法术卡已选待确认.png",
+            "observation": "已选牌保持主体尺度，右侧确认紧跟标题。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-法术卡已选待确认.png",
+            "observation": "检视沿卡中轴落在下部槽位，勾选避开两段效果。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-法术卡已选待确认.png",
+            "observation": "暖色边缘只强调选中，未另造缩略选中栏。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "候选本体完整，牌下留检视槽",
+        "当前提示及确认侧栏保留",
+        "阻塞选择态不声明底层牌桌同时可操作"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-桌面.png",
+      "sha256": "fb98ac2d85813bef78040dbff30c03e60aa8b182e493cf666f17f690cc07aed1",
+      "label": "11-预感收入替代选项.png",
+      "status": "PASS",
+      "observation": "收入替代弹窗内三条选项纵向等宽，分别显示不用、一层及三层预感对应的抽牌选择，文案完整。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "ChoiceModal",
+          "GameModal",
+          "GameButton"
+        ],
+        "comparison": "复用旧模态容器与选项入口；必要差异为文字选项由并列改成平面等宽单列，原标题和问题归属保留。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-桌面.png",
+            "observation": "阶段问题在上、三选项在下，中央弹窗承接唯一结算任务。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-桌面.png",
+            "observation": "三按钮左右边缘、文字左起点及行间距一致。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-桌面.png",
+            "observation": "单个模态容器内使用平面按钮，没有嵌套选项面板。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "当前问题及全部选项同屏",
+        "按钮未覆盖标题",
+        "底层牌桌按阻塞选择层退后"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "问题说明当前选择对象",
+          "平面单列选项各自承接唯一动作"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-横屏.png",
+      "sha256": "27e1584ae8753c9f20677c884c4c6b72cfe1219a9daa244c1b8d83531114b371",
+      "label": "11b-预感收入替代选项-横屏.png",
+      "status": "PASS",
+      "observation": "横屏收入替代弹窗完整显示标题、阶段说明及三条选项，最下选项仍留在视口内。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "ChoiceModal",
+          "GameModal",
+          "GameButton"
+        ],
+        "comparison": "复用旧模态容器与选项入口；必要差异为文字选项由并列改成平面等宽单列，原标题和问题归属保留。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-横屏.png",
+            "observation": "三项决策同屏纵向展开，标题没有占用过高空间。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-横屏.png",
+            "observation": "按钮等宽且文字左对齐，弹窗顶底均有边距。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\收入阶段替代选项-横屏.png",
+            "observation": "灰蓝选项保持同级关系，原标题装饰未抢内容边界。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "当前问题及全部选项同屏",
+        "按钮未覆盖标题",
+        "底层牌桌按阻塞选择层退后"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "问题说明当前选择对象",
+          "平面单列选项各自承接唯一动作"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌返还选择-桌面.png",
+      "sha256": "996d0c9ece8cf930bee60bb357d8522ace4c49b14b5f34c3dc2c99e7da253731",
+      "label": "12-抽牌返还候选.png",
+      "status": "PASS",
+      "observation": "返还默认候选玩得六啊、就这、抬一手完整并列且等尺，牌名和效果可比较；标题指向放回牌库，确认灰显。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌返还选择-桌面.png",
+            "observation": "三候选在上半主区域，原手牌在下方保留，中间留主动作槽。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌返还选择-桌面.png",
+            "observation": "三卡顶底边对齐，间距一致，确认在组下中央。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌返还选择-桌面.png",
+            "observation": "印刷橙边属于素材本体，外侧未再套背景框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌已选待确认-桌面.png",
+      "sha256": "7a54dd0e370d41482f0eda8f44ae0400e393eb379d10d6a020b61a1578f1596b",
+      "label": "13-抽牌返还已选.png",
+      "status": "PASS",
+      "observation": "返还已选玩得六啊带勾选，另外两候选仍同亮同尺；首张卡下检视可见，确认转橙。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌已选待确认-桌面.png",
+            "observation": "选中反馈贴首张卡，其他候选继续供比较，确认保持原位。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌已选待确认-桌面.png",
+            "observation": "三卡上下边缘仍齐，检视落在首张中轴且与正文分离。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌已选待确认-桌面.png",
+            "observation": "暖光与勾选未盖牌名、费用和规则，未把未选卡压暗。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\选择牌库底-桌面.png",
+      "sha256": "f35d26be2fe8e40525e926a722a985507f51b53a749d2683709ef31f8a6f6d44",
+      "label": "14-牌库位置选择.png",
+      "status": "PASS",
+      "observation": "牌库位置弹窗显示放在牌库顶还是底，两个等宽文字选项上下排列，选择对象和下一步清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "ChoiceModal",
+          "GameModal",
+          "GameButton"
+        ],
+        "comparison": "复用旧模态容器与选项入口；必要差异为文字选项由并列改成平面等宽单列，原标题和问题归属保留。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\选择牌库底-桌面.png",
+            "observation": "问题居于两选项上方，两位置作为同级动作承接任务。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\选择牌库底-桌面.png",
+            "observation": "两按钮左右边缘、文字左起点一致，间隔均匀。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\选择牌库底-桌面.png",
+            "observation": "沿用单个模态容器和平面选项，无重复封闭分隔框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "当前问题及全部选项同屏",
+        "按钮未覆盖标题",
+        "底层牌桌按阻塞选择层退后"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "问题说明当前选择对象",
+          "平面单列选项各自承接唯一动作"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼顶五法术选择-桌面.png",
+      "sha256": "0f41cd06319920b62a3e7ba49b470caafed4492348bab3d7fbb09e69a93940bb",
+      "label": "15-牌库顶五法术候选.png",
+      "status": "PASS",
+      "observation": "顶五法术选择实际显示博萨特之雷和法瑞拉之牙，标题说明至多选择两个；牌下跳过可见，默认即能识别两候选。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼顶五法术选择-桌面.png",
+            "observation": "两法术并排占主视区，跳过在卡组下方，原手牌仍居下层。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼顶五法术选择-桌面.png",
+            "observation": "两法术同宽且顶底齐平，标题与跳过对齐卡组中轴。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼顶五法术选择-桌面.png",
+            "observation": "正式法术素材无额外卡壳，默认没有突出其中一张。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼次张法术已选-桌面.png",
+      "sha256": "d69bc88e71285dd4847c27174c21a4f43412ab31e76f8d739cd7667455933eaf",
+      "label": "16-牌库顶五第二张已选.png",
+      "status": "PASS",
+      "observation": "单独重读确认标题为从牌库顶五张中选择至多两个法术；法瑞拉之牙已勾选，卡下检视及橙色确认可见，正文完整。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼次张法术已选-桌面.png",
+            "observation": "顶五当前提示、剩余已选法术和确认依次居中，背景原手牌未被挤出。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼次张法术已选-桌面.png",
+            "observation": "单牌与标题、确认中轴相合，检视在卡底之外，勾选贴右上。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼次张法术已选-桌面.png",
+            "observation": "选中牌仅增加暖光与勾选，没有新增准备结果框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排剩余三张-桌面.png",
+      "sha256": "96308a1462f87767bd3f6dcf5e5ed2de1f0a3228fbdaf2740d23fd8fce60925a",
+      "label": "17-剩余牌重排候选.png",
+      "status": "PASS",
+      "observation": "重排剩余牌时三张候选完整并列，标题明确选择放回牌库顶的下一张，确认灰显，效果可直接比较。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排剩余三张-桌面.png",
+            "observation": "当前排序任务由标题和三张实牌承接，原手牌保持下部独立层。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排剩余三张-桌面.png",
+            "observation": "三卡顶底齐平且间距一致，确认位于卡组中轴下方。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排剩余三张-桌面.png",
+            "observation": "没有空排序槽或重复说明面板，原卡素材直接承接候选。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排首张已选-桌面.png",
+      "sha256": "4a85f0939ef89271ddd412a44c902d5c88e4c00667d1f31400014a9854e43a64",
+      "label": "18-剩余牌首张已选.png",
+      "status": "PASS",
+      "observation": "重排首张玩得六啊已勾选，另外两候选同尺同亮保留；检视与橙色确认清楚，剩余牌可比较。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排首张已选-桌面.png",
+            "observation": "选中状态贴本体，确认在组下，其余候选没有退出主层。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排首张已选-桌面.png",
+            "observation": "勾选贴首张右上，检视沿首张中线下置，三卡边缘齐平。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼重排首张已选-桌面.png",
+            "observation": "暖光没有覆盖印刷边框内文字，未增加外置选中列表。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼攻击后施法选择-桌面.png",
+      "sha256": "722eb922f14dae8d79d52566aa8f5a440ee0894ce33da5ede778f187fd39909a",
+      "label": "19-准备区法术施放候选.png",
+      "status": "PASS",
+      "observation": "施法候选法尔特之焰、博萨特之雷、法瑞拉之牙完整并列，三卡效果与首张特殊标记可辨，跳过清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼攻击后施法选择-桌面.png",
+            "observation": "三张可施放法术占主选择区，原手牌和骰盘留在背景层。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼攻击后施法选择-桌面.png",
+            "observation": "三法术同宽且顶底齐平，跳过居卡组下方中央。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼攻击后施法选择-桌面.png",
+            "observation": "保持真实法术黑底与原比例，没有另加规则说明壳。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼准备区法术已选-桌面.png",
+      "sha256": "978831df6aa14a782e8a66571e4b020fcefbf6b0f9ca90d57e3bd83b07ff1c1f",
+      "label": "20-准备区法术已选.png",
+      "status": "PASS",
+      "observation": "施法已选法瑞拉之牙右上勾选，其余两法术完整同尺；检视在已选卡下，橙色确认在组中轴下。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼准备区法术已选-桌面.png",
+            "observation": "已选法术与确认关联清楚，其余合法候选继续留在同层。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼准备区法术已选-桌面.png",
+            "observation": "三卡顶底齐平，勾选避开标题，检视独占卡下槽。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼准备区法术已选-桌面.png",
+            "observation": "边缘变亮未盖准备及施放效果，也未把其他法术弱化消失。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "提示、候选、检视槽及确认分层",
+        "底部原手牌保持可见，未顶入候选",
+        "阶段、资源、骰盘及牌堆保持背景原位"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌复用放大阅读-桌面.png",
+      "sha256": "791941bc13bda53bf0b1eb16c57281dd86e9e7753dedc063fe62c2a2af47b646",
+      "label": "29-卡牌候选复用放大阅读.png",
+      "status": "PASS",
+      "observation": "玩得六啊在原阅读浮层完整放大，从标题到规则底部可读，右上关闭归属于阅读层，背后候选只作上下文。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "BoardOverlays",
+          "MagnifyOverlay",
+          "CardInspectButton"
+        ],
+        "comparison": "原单卡放大层继续承接阅读及右上关闭；必要差异为按素材真实比例和可用高度约束尺寸，候选检视复用共享按钮，没有另造阅读状态。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌复用放大阅读-桌面.png",
+            "observation": "阅读大卡为前景主体，候选退到背景，本图不当作直接选择态。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌复用放大阅读-桌面.png",
+            "observation": "大卡居中且上下完整，关闭落在右上标题侧空白处。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\本次抽牌复用放大阅读-桌面.png",
+            "observation": "复用原单卡阅读轮廓与关闭，没有第二套选择或说明面板。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "阅读牌名及规则正文完整",
+        "关闭归属原阅读层",
+        "底层选择只作阅读上下文，本图不证明关闭恢复"
+      ],
+      "negativeImpactChecks": [
+        "正式牌面完整无破图或明显拉伸",
+        "关闭未压主要牌名或规则",
+        "单张静态图不证明阅读时长、重同步或关闭后的行为"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式大卡是唯一阅读主体",
+          "原右上关闭负责结束阅读"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌候选原阅读界面.png",
+      "sha256": "eccf4266c3f2003d4d2f17d08b886e5ce0944aad76d48a8ea02339d7eb262220",
+      "label": "43-手机横屏-弃牌候选原阅读界面.png",
+      "status": "PASS",
+      "observation": "横屏原阅读层显示完整法瑞拉之牙，右上关闭清楚；后方候选及右侧选择提示仍可辨，正文没有底边裁断。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "BoardOverlays",
+          "MagnifyOverlay",
+          "CardInspectButton"
+        ],
+        "comparison": "原单卡放大层继续承接阅读及右上关闭；必要差异为按素材真实比例和可用高度约束尺寸，候选检视复用共享按钮，没有另造阅读状态。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌候选原阅读界面.png",
+            "observation": "阅读牌在前景中部，底层候选退后，右侧原选择栏保持位置。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌候选原阅读界面.png",
+            "observation": "阅读牌上下完整落在视口内，关闭贴其右上并避开主要标题字。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\手机横屏-弃牌候选原阅读界面.png",
+            "observation": "原阅读卡面与关闭独立承接阅读，没有新文字面板替代法术图。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "阅读牌名及规则正文完整",
+        "关闭归属原阅读层",
+        "底层选择只作阅读上下文，本图不证明关闭恢复"
+      ],
+      "negativeImpactChecks": [
+        "正式牌面完整无破图或明显拉伸",
+        "关闭未压主要牌名或规则",
+        "单张静态图不证明阅读时长、重同步或关闭后的行为"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式大卡是唯一阅读主体",
+          "原右上关闭负责结束阅读"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌候选原阅读界面.png",
+      "sha256": "f1c443ad6035a4b63bbc0a75fed3301a33626ff49b70d94d216c0552dd3cac84",
+      "label": "45-桌面-弃牌候选原阅读界面.png",
+      "status": "PASS",
+      "observation": "桌面法瑞拉之牙通过原阅读层放大，准备效果、法术图及施放效果均完整可读，右上关闭明确。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "BoardOverlays",
+          "MagnifyOverlay",
+          "CardInspectButton"
+        ],
+        "comparison": "原单卡放大层继续承接阅读及右上关闭；必要差异为按素材真实比例和可用高度约束尺寸，候选检视复用共享按钮，没有另造阅读状态。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌候选原阅读界面.png",
+            "observation": "大卡占阅读中心，关闭与其同层，手牌和骰盘维持背景。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌候选原阅读界面.png",
+            "observation": "大卡居中并有上下边距，关闭落在右上暗色空白区域。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793526898908-1ye6hw\\桌面-弃牌候选原阅读界面.png",
+            "observation": "保留原阅读轮廓和暗幕，未增加包裹卡框或外置关闭栏。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "阅读牌名及规则正文完整",
+        "关闭归属原阅读层",
+        "底层选择只作阅读上下文，本图不证明关闭恢复"
+      ],
+      "negativeImpactChecks": [
+        "正式牌面完整无破图或明显拉伸",
+        "关闭未压主要牌名或规则",
+        "单张静态图不证明阅读时长、重同步或关闭后的行为"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式大卡是唯一阅读主体",
+          "原右上关闭负责结束阅读"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还多卡候选-横屏.png",
+      "sha256": "f56bf2f0658198f33d26bc9df715cf72346a6306b59e56078f031aa7de5f9fd5",
+      "label": "46-预感返还多卡候选-横屏.png",
+      "status": "PASS",
+      "observation": "横屏三张返还候选完整，名称和效果可比较；右侧选择放回牌库的牌标题及灰色确认可见，候选没有缩成只露角入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。横屏保留同一卡池，必要适配为横向浏览及原标题确认侧栏。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还多卡候选-横屏.png",
+            "observation": "卡牌占主体宽度，右侧只承接当前任务和主动作。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还多卡候选-横屏.png",
+            "observation": "三卡顶底齐平且间距近似一致，侧栏标题与确认上下分开。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还多卡候选-横屏.png",
+            "observation": "正式卡牌印刷橙边之外没有额外卡框，侧栏未抢卡面边界。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "候选本体完整，牌下留检视槽",
+        "当前提示及确认侧栏保留",
+        "阻塞选择态不声明底层牌桌同时可操作"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还横向浏览末张-横屏.png",
+      "sha256": "b5de1bc9a77ad0e6df675f9170577e97349f5e457e025f64214e596c27d81b43",
+      "label": "47-预感返还横向浏览末张-横屏.png",
+      "status": "PASS",
+      "observation": "单独重读确认横向浏览末张后右侧标题及灰色确认仍在原位；抬一手完整显示，三候选效果可比较，中间牌下检视未盖正文。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "components": [
+          "InteractionOverlay",
+          "HandArea",
+          "CardInspectButton"
+        ],
+        "comparison": "复用旧选择浮层、原手牌和确认语法；必要差异为候选共享手牌十二单位尺度、保留素材比例、去额外底框，检视移至牌下三十六像素槽。横屏保留同一卡池，必要适配为横向浏览及原标题确认侧栏。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还横向浏览末张-横屏.png",
+            "observation": "横向浏览仍由左侧卡池承接候选，右侧固定任务和确认，主动作未随卡池滚走。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还横向浏览末张-横屏.png",
+            "observation": "末张右边缘留在卡池内，三卡仍为一行，检视落中间牌下，侧栏标题和确认与前态对应。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还横向浏览末张-横屏.png",
+            "observation": "没有额外卡框或重复阅读状态，右侧空白实际承接标题和确认，不是丢失内容的死区。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务清晰度",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "对象可识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "操作人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        "候选本体完整，牌下留检视槽",
+        "当前提示及确认侧栏保留",
+        "阻塞选择态不声明底层牌桌同时可操作"
+      ],
+      "negativeImpactChecks": [
+        "目标层未见破图、错误提示或内部标识",
+        "状态标记未盖正文，其余候选仍可辨",
+        "不以当前图证明规则数值或实体触摸"
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-baseline-diff-20261101.json#componentLedger",
+        "uncoveredElements": [],
+        "decisions": [
+          "正式卡面承接候选身份及效果比较",
+          "勾选承接选中，检视承接阅读，确认承接提交"
+        ]
+      },
+      "hardFailures": []
+    }
+  ],
+  "corrections": [
+    {
+      "label": "16-牌库顶五第二张已选.png",
+      "initialMisread": "批次初读把标题误读为从弃牌堆选择一个法术并准备。",
+      "singleImageCorrection": "单独读取精确原图后，实际标题为从牌库顶五张中选择至多两个法术；已选法瑞拉之牙和确认均清楚。",
+      "disposition": "撤回误读，未改产品，最终判断只采单图原始证据。"
+    },
+    {
+      "label": "47-预感返还横向浏览末张-横屏.png",
+      "initialMisread": "批次初读误判右侧标题和确认消失，并暂定退回。",
+      "singleImageCorrection": "单独读取精确原图后，右侧标题及灰色确认均在原位，第三张完整且检视位于中间卡下。",
+      "disposition": "撤回误读造成的暂定退回，未改产品，最终判断只采单图原始证据。"
+    }
+  ],
+  "coverageNotes": [
+    "阅读截图只证明本体、比例、正文及关闭归属，不替代持续阅读或关闭恢复的动作验证。",
+    "截图及其视觉分数只覆盖交互界面，不替代端到端测试、规则测试或玩家验收。"
+  ],
+  "scope": "桌面及浏览器横屏；不声明实体手机触摸、自然开局、规则数值或生产验收。",
+  "reviewProtocol": {
+    "mode": "single-image-exact-source",
+    "reviewedCurrentOriginals": 20,
+    "hashMatches": 20,
+    "previousReportBackup": "temp/doctor-full-a-before-current-single-image-review-20261101.json",
+    "technicalEvidenceBoundary": "指纹匹配只证明路径与文件绑定，视觉结论来自本人逐张原图审查。"
+  }
+}

@@ -1,4 +1,5 @@
 import type { MatchState } from '../../engine/types';
+import type { FeedbackReplayTriggerReference } from '../../engine/transport/feedbackReplayCaptureTypes';
 import type { FeedbackCommandSummary } from './feedbackPayload';
 
 type GameFeedbackContext = {
@@ -160,5 +161,23 @@ export const getCurrentGameFeedbackDiagnosticContext = (): GameFeedbackDiagnosti
         randomCursor: context.randomCursor ?? command?.afterRandomCursor ?? command?.randomCursor,
         commandTraceTail: context.recentCommands,
         lastCommand,
+    };
+};
+
+/** Stable pointer to the last submitted command; the server resolves the private payload and authoritative states. */
+export const getCurrentGameFeedbackReplayTriggerReference = (): FeedbackReplayTriggerReference | undefined => {
+    const context = currentGameFeedbackContext;
+    const command = context?.latestCommand;
+    const playerId = typeof command?.playerId === 'string'
+        ? command.playerId
+        : typeof context?.playerId === 'string' ? context.playerId : undefined;
+    if (!command || !playerId || typeof command.stateId !== 'number' || !command.commandType) return undefined;
+    const diagnosticContext = getCurrentGameFeedbackDiagnosticContext();
+    return {
+        commandType: command.commandType,
+        playerId,
+        stateIdBefore: command.stateId,
+        ...(typeof command.randomCursor === 'number' ? { randomCursorBefore: command.randomCursor } : {}),
+        ...(diagnosticContext.requestId ? { requestId: diagnosticContext.requestId } : {}),
     };
 };

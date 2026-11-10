@@ -1,0 +1,66 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-11T15:40:00.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "七大恨右侧行动按钮悬浮时，出现可见功能说明，而不只是浏览器原生标题。",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 /play/qidahen?tutorialSetup=basic-opening 悬浮赐印招安后，qidahen-action-tooltip-grant-pardon 可见并含功能说明。",
+        "media/09-行动按钮-悬浮显示功能提示.png 可见赐印招安功能正文：指定1个对手，将相邻部队改为大明控制。"
+      ]
+    },
+    {
+      "requirement": "七大恨轮盘扇区或走格悬浮时，出现可见功能说明，走格同时显示花费。",
+      "status": "PASS",
+      "evidence": [
+        "同一入口悬浮走2后，qidahen-wheel-tip 可见并含进攻调度、一名对手抽 2，走 2、指挥最多 6 个部队。",
+        "media/11-轮盘扇区-悬浮显示功能提示.png 可见轮盘右侧功能说明浮层。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/qidahen/wheel-action-hover-tip-20261011/media/00-行动窗口-悬浮前无功能提示.png",
+    "evidence/qidahen/wheel-action-hover-tip-20261011/media/09-行动按钮-悬浮显示功能提示.png",
+    "evidence/qidahen/wheel-action-hover-tip-20261011/media/11-轮盘扇区-悬浮显示功能提示.png",
+    "evidence/qidahen/wheel-action-hover-tip-20261011/media/12-移出后功能提示关闭.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "image_acceptance_audit"
+    },
+    "reviewFile": ".visual-review.json",
+    "summary": {
+      "fullCoverage": true,
+      "totalMediaCount": 4,
+      "passCount": 4,
+      "reviseCount": 0,
+      "numericOrRuleValidation": "excluded; covered by E2E/Vitest"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/Board.test.ts --config vitest.config.core.ts --configLoader native --pool forks --maxWorkers 1"
+    ],
+    "evidence": [
+      "Board.test.ts：204 tests passed。",
+      "聚焦用例教程直入行动窗口：行动按钮与轮盘悬浮断言均已通过，功能说明、进攻调度、走格花费均可见。"
+    ]
+  }
+}

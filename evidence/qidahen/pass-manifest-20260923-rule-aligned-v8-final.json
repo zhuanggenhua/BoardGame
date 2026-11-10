@@ -1,0 +1,98 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "blockingFindings": [
+    "当前截图只高亮轮盘结算摘要，没有让玩家在地图本体看到宣府兵力从结算前到结算后的可核对变化。",
+    "E2E 当前验证了运行状态中的宣府兵力与军备等级，但没有验证玩家可见地图区域提示或地图兵力结果。"
+  ],
+  "requirements": [
+    {
+      "requirement": "七大恨教程桌面端按真实规则流程完成全流程截图。",
+      "status": "PASS",
+      "evidence": [
+        "正式 E2E：e2e/qidahen/qidahen-closeout.e2e.ts 17/17 passed。",
+        "2026-09-23-rule-aligned-v8-final 目录含 59 张桌面端最终 PNG，按玩家顺序覆盖开局、轮盘、军备、事件、进攻、战斗、撤退、攻城、外交、跨年和朝鲜流程。",
+        "基础教程起手 3 张手牌、上限 15 张；未超限时不弃牌。",
+        "轮盘推进、征兵训练、赐印招安费用、部队移动与阵营变化均有规则解释和结果截图。"
+      ]
+    },
+    {
+      "requirement": "七大恨移动端手牌检视闭环完成截图。",
+      "status": "PASS",
+      "evidence": [
+        "2026-09-23-rule-aligned-v8-final 目录含 3 张移动端最终 PNG，覆盖长按手牌打开检视、检视态和关闭后回到牌桌。",
+        "移动端截图来自同一正式教程 E2E 流程。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/00-教程目录-先选择章节.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/01-开场-阅读三种胜利条件.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/02-开局检查-3张手牌未超过15张不弃牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/03-轮盘选择-1格2格3格规则.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/04-轮盘结算-征兵训练建立部队并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/05-手牌行动-赐印招安规则.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/06-赐印招安-支付3张手牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/07-赐印招安-锦州部队移入山海关.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/08-赐印招安-部队位置与阵营变化.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/09-首回合-规则链完成.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/14a-轮盘第2a步-先选择参与进攻的部队.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15-轮盘第3步-进入进攻调度落点.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15a-开垦第1步-先把轮盘推进到开垦.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15b-开垦第2步-看己方控制区人口增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15c-军屯第1步-先把轮盘推进到军屯.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15d-军屯第2步-看补牌并建立正规军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15e-征兵训练第1步-先把轮盘推进到征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/15f-征兵训练第2步-看加兵并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/16-军备第1步-先点升级军备.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/17-军备第2步-点击底部手牌支付2张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/18-军备第3步-看火炮技术升到2级.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/19-事件第1步-先点大汗令箭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/20-事件第2步-点击底部手牌支付1张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/21-事件第3步-选择征兵训练效果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/22-事件第4步-看蒙古兵力增加到4.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/23-进攻第1步-点击突袭作战入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/24-进攻第2步-弃1张手牌支付突袭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/25-进攻第3步-支付后进入察哈尔野战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/26a-进攻第4a步-看断后后的战后处理.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/27-进攻第5步-看战败标记与战后选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/27a-进攻第6步-看占领结果摘要.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/28-撤退第1步-先看断后和溃退入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/30-攻城第1步-真实守城宣告入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/30a-攻城第1a步-右侧断后结算城战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/31-攻城第2步-选择围城该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/31a-攻城第3步-同章选择占领该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/32-外交第1步-从轮盘进入外交雇佣.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/33-外交第2步-先放置友好标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/33a-外交第2a步-翻为附庸.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/33b-外交第2b步-移除他方控制标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/34-外交第3步-结束并结算雇佣军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/35-外交第4步-看完外交与雇佣的合并收益.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/36-跨年第1步-推进到年中并查看税赋与人物.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/37-跨年第2步-先看新年朝鲜朝贡.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/38-跨年第3步-进入新年防线维护.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/39-跨年第4步-看纪年卡与争分结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/40-跨年第5步-看新顺位与人物刷新.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/41-跨年第6步-看到新年结算与新年份.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/44-朝鲜第3步-看海路与船锚区域关系.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/移动-01-移动教程-手牌检视前.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/移动-02-移动教程-长按手牌打开检视.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-09-23-rule-aligned-v8-final/移动-03-移动教程-关闭检视回到牌桌.png"
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "值得拥有-来源卡等待玩家关闭.png",
+      "chainId": "值得拥有来源卡阅读",
+      "chainStep": "等待主动关闭",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-worthy-source-reading",
+      "behaviorStepId": "worthy-source-card-reading",
+      "description": "队友打出的来源卡保持完整显示，等待玩家主动关闭后选择骰子。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "来源卡显示超过原自动退场时长。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "来源卡显示超过原自动退场时长。",
+      "sourceRevision": "5f5069e943315e230e03a88346334eef3081eee44e67ff8d8a1ac1c23491ced2",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793587759136-262516-cde25f9e-96fa-464b-bed3-1c21e15e1bd0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "值得拥有-投掷者骰区目标态.png",
+      "chainId": "值得拥有选择投掷者骰子",
+      "chainStep": "骰子候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-worthy-teammate-targets",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "队友牌出牌后进入骰子选择，玩家可在当前投掷者的实际骰区选择。",
+      "behaviorStepId": "worthy-teammate-dice-targets",
+      "description": "当前投掷者0拥有交互并在自己的骰区选择骰子。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "奇异博士队友真实打出该牌并进入骰子选择。",
+      "sourceRevision": "5f5069e943315e230e03a88346334eef3081eee44e67ff8d8a1ac1c23491ced2",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793587759136-262516-cde25f9e-96fa-464b-bed3-1c21e15e1bd0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "值得拥有-同骰已选一次.png",
+      "chainId": "值得拥有选择投掷者骰子",
+      "chainStep": "已选1/2",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-worthy-teammate-die-selected-once",
+      "behaviorStepId": "worthy-teammate-dice-selected-once",
+      "description": "当前投掷者选中一颗骰子后显示1/2进度；该骰仍是可再次点击的合法目标。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "第一次选中同一骰子。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "第一次选中同一骰子。",
+      "sourceRevision": "5f5069e943315e230e03a88346334eef3081eee44e67ff8d8a1ac1c23491ced2",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793587759136-262516-cde25f9e-96fa-464b-bed3-1c21e15e1bd0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "值得拥有-投掷者同骰重选两次.png",
+      "chainId": "值得拥有选择投掷者骰子",
+      "chainStep": "已选2/2待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-worthy-teammate-selected-dice",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "真实鼠标连续点击后同一颗合法骰子显示选中态且进度达到2/2。",
+      "behaviorStepId": "worthy-teammate-dice-selected",
+      "description": "同一颗骰子来自当前投掷者0，连续选择两次达到规则预算。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "将同一颗骰子重掷两次。",
+      "sourceRevision": "5f5069e943315e230e03a88346334eef3081eee44e67ff8d8a1ac1c23491ced2",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793587759136-262516-cde25f9e-96fa-464b-bed3-1c21e15e1bd0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1793587681387-h92bwx"
+    }
+  ]
+}

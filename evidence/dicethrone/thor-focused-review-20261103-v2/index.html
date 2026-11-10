@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>索尔重点交互当前整屏截图</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>索尔重点交互当前整屏截图</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-01-原手牌区选择弃牌成本.png","displayTitle":"01 · 01 · 原手牌区选择弃牌成本","description":"手牌区显示弃牌提示和取消入口","kind":"image"},{"relativePath":"02-02-取消后手牌与神锤保持.png","displayTitle":"02 · 02 · 取消后手牌与神锤保持","description":"取消后手牌与原牌桌操作恢复","kind":"image"},{"relativePath":"03-03-支付后飞掷神锤造成一点伤害.png","displayTitle":"03 · 03 · 支付后飞掷神锤造成一点伤害","description":"支付后手牌移除且对手持锤","kind":"image"},{"relativePath":"04-06-奥丁效果骰等待选择重掷骰子.png","displayTitle":"04 · 06 · 奥丁效果骰等待选择重掷骰子","description":"骰盘等待选择并提示可重掷或确认","kind":"image"},{"relativePath":"05-07-使用原整组重掷动作提交两颗所选骰子.png","displayTitle":"05 · 07 · 使用原整组重掷动作提交两颗所选骰子","description":"两颗骰子选中且重掷与确认按钮可见","kind":"image"},{"relativePath":"06-08-整组重掷一次完成并保留原确认收口.png","displayTitle":"06 · 08 · 整组重掷一次完成并保留原确认收口","description":"重掷后显示新骰面及原确认入口","kind":"image"},{"relativePath":"07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png","displayTitle":"07 · 03 · 合法代表态 · 不愧是我同骰两次 · 队友出牌后索尔本人操作旧骰盘选骰","description":"索尔本人在原骰盘选择重投骰子","kind":"image"},{"relativePath":"08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png","displayTitle":"08 · 04 · 合法代表态 · 不愧是我同骰两次 · 原有提示和双按钮确认","description":"选满后显示完成提示和确认按钮","kind":"image"},{"relativePath":"09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png","displayTitle":"09 · 05 · 合法代表态 · 不愧是我同骰两次 · 服务端记录对应骰子重掷并关闭选骰交互","description":"确认后返回骰盘并显示重掷结果","kind":"image"},{"relativePath":"10-03-当之无愧直接选择固定目标四或五.png","displayTitle":"10 · 03 · 当之无愧直接选择固定目标四或五","description":"骰盘上方显示四和五两个固定候选","kind":"image"},{"relativePath":"11-04-选择四后沿原固定值流程点选骰子.png","displayTitle":"11 · 04 · 选择四后沿原固定值流程点选骰子","description":"选择四后提示继续点击目标骰子","kind":"image"},{"relativePath":"12-05-改为四且其余骰子保持.png","displayTitle":"12 · 05 · 改为四且其余骰子保持","description":"目标骰子显示四且其他骰子保持原样","kind":"image"},{"relativePath":"13-01-旧固定值和任意编辑各自提示与控件.png","displayTitle":"13 · 01 · 旧固定值和任意编辑各自提示与控件","description":"原骰盘每颗骰子旁显示加减入口","kind":"image"},{"relativePath":"14-02-任意编辑保留原加减预览和手动确认.png","displayTitle":"14 · 02 · 任意编辑保留原加减预览和手动确认","description":"修改后显示骰面预览和原确认按钮","kind":"image"},{"relativePath":"15-03-旧流程提交后只修改一颗骰子.png","displayTitle":"15 · 03 · 旧流程提交后只修改一颗骰子","description":"确认后原骰盘显示已修改的骰面","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -4,6 +4,33 @@ import { Matrix4, Quaternion, Vector3 } from 'three';
 import { DiceBoxThreeEngine } from '../dice-box-threejs/engine';
 
 describe('DiceBoxThreeEngine contained throw animation', () => {
+    it('只有显式启用时增加投掷位移和弹跳，最终仍回到同一权威骰面', async () => {
+        let clock = 0;
+        const now = vi.spyOn(performance, 'now').mockImplementation(() => clock);
+        const original = window.requestAnimationFrame;
+        window.requestAnimationFrame = callback => window.setTimeout(() => { clock += 60; callback(clock); }, 0);
+        const run = async (profile: Record<string, number>) => {
+            clock = 0;
+            const die = { position: { x: 0, y: 0, z: 0 }, quaternion: { x: 0, y: 0, z: 0, w: 1 }, updateMatrixWorld: vi.fn() };
+            const engine = Object.create(DiceBoxThreeEngine.prototype) as any;
+            engine.styleProfile = { baseScale: 84, ...profile };
+            engine.box = { diceList: [die], renderer: { domElement: { clientWidth: 0, clientHeight: 0 } }, scene: { updateMatrixWorld: vi.fn() } };
+            engine.syncDiceHighlightShells = vi.fn();
+            const positions: Array<{ x: number; z: number }> = [];
+            engine.renderFrame = vi.fn(() => positions.push({ x: die.position.x, z: die.position.z }));
+            await engine.playContainedRollToSettledTransforms(new Map([[0, { position: { x: 1, y: 1, z: 1 }, quaternion: { x: 0, y: 0, z: 0, w: 1 } }]]), 360);
+            return { positions, die };
+        };
+        try {
+            const normal = await run({});
+            const thrown = await run({ throwTravelDiceSizes: 0.9, throwBounceDiceSizes: 0.35 });
+            expect(normal.positions[0].x).toBe(0);
+            expect(thrown.positions[0].x).toBeCloseTo(-75.6);
+            expect(Math.max(...thrown.positions.map(position => position.z))).toBeGreaterThan(Math.max(...normal.positions.map(position => position.z)) + 10);
+            expect(thrown.die.position).toEqual(normal.die.position);
+            expect(thrown.die.quaternion).toEqual(normal.die.quaternion);
+        } finally { window.requestAnimationFrame = original; now.mockRestore(); }
+    });
     it.each([[0.99, 0.99, 0.8, 0.4], [0.15, 0.72, 0.94, 0.25], [0.32, 0.18, 0.66, 0.6]])(
         '原生随机投掷轴生成纯旋转，首帧不放大骰体：%j', (x, y, z, angle) => {
             const rawRotation = new Quaternion().setFromAxisAngle(new Vector3(x, y, z), angle * Math.PI * 2);

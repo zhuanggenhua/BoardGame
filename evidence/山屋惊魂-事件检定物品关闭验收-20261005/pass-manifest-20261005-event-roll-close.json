@@ -1,0 +1,107 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-05",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005"
+  },
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"手电筒真实链路从外星几何翻牌到事件检定额外加骰结算关闭\"",
+      "result": "1 passed",
+      "scope": "真实浏览器页面：手电筒事件检定加骰，停稳后点击返回牌桌并回到牌桌"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"灯笼真实链路从外星几何翻牌到事件检定额外加骰结算关闭\"",
+      "result": "1 passed",
+      "scope": "真实浏览器页面：灯笼事件检定加骰，停稳后点击返回牌桌并回到牌桌"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"魔法相机真实链路从外星几何翻牌到知识检定改用神志结算关闭\"",
+      "result": "1 passed",
+      "scope": "真实浏览器页面：魔法相机替代检定，停稳后点击返回牌桌并回到牌桌"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"书本真实链路从本体使用到小丑房间非战斗检定替代结算关闭\"",
+      "result": "1 passed",
+      "scope": "真实浏览器页面：书本替代检定，停稳后点击返回牌桌并回到牌桌"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "手电筒骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "手电筒定向 E2E：1 passed",
+        "本次运行截图包含停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "灯笼骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "灯笼定向 E2E：1 passed",
+        "本次运行截图包含停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "魔法相机替代检定骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "魔法相机定向 E2E：1 passed",
+        "本次运行截图包含停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "书本替代检定骰盘停稳后保留可点击的返回牌桌入口，点击后回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "书本定向 E2E：1 passed",
+        "本次运行截图包含停稳可关闭与关闭后牌桌恢复"
+      ]
+    },
+    {
+      "requirement": "本次四条链路的截图来自当前运行，并覆盖前置、投掷、停稳可关闭、结果和牌桌恢复",
+      "status": "PASS",
+      "evidence": [
+        "四条定向 E2E 均为 1 passed",
+        "24 张截图均为 2026-10-05 本次运行生成或晋升的最终展示副本"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-事件检定物品关闭验收-20261005\\"
+  ]
+}

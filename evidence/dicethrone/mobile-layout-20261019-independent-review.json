@@ -1,0 +1,223 @@
+{
+  "verdict": "PASS",
+  "score": 94,
+  "threshold": 90,
+  "reviewer": {
+    "kind": "subagent",
+    "task": "/root/fixed_content_visual_audit"
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui"
+  },
+  "scope": "本地同源网页整体对象尺寸、历史阶段字号与留白、七阶段/状态/资源/牌堆滚动可达性、安全区、触控常显两处面板放大镜。不是安卓真机，不含Fab展开。",
+  "method": "07-16本轮已逐张读取冻结的原始整屏截图；17-20稳定补拍后再次逐张私下读取原始整屏来源。01-06按父线程交接沿用独立审查并核对哈希。未修改原图、业务代码或旧REVISE报告。19/20原文件2340×1080，工具展示整体缩放至2048×945，未以局部裁图替代整屏。",
+  "summary": {
+    "total": 20,
+    "newlyReviewed": 14,
+    "carriedForward": 6,
+    "passed": 14,
+    "revised": 0
+  },
+  "scores": {
+    "taskClarity": 19,
+    "visualHierarchy": 14,
+    "objectRecognizability": 14,
+    "stateAndActionCarrier": 14,
+    "layoutIntegrity": 14,
+    "assetIntegrity": 10,
+    "ergonomics": 9
+  },
+  "target_requirements": [
+    {
+      "requirement": "整体对象恢复，中央板、提示板、手牌与骰盘不因左上角局部修复而缩小",
+      "status": "PASS",
+      "evidence": "07-20均保留中央主板/手牌、左右区域和右侧骰盘/主动作构图；PC07/12无本轮新增风格或结构改造。"
+    },
+    {
+      "requirement": "七阶段文字、各行padding/gap与按钮留白可读",
+      "status": "PASS",
+      "evidence": "08-18七阶段逐行可辨、当前阶段橙色主承载清楚，文字不挤行边；19/20触控整屏同样成立。"
+    },
+    {
+      "requirement": "状态/资源与完整牌堆经真实滚动可达",
+      "status": "PASS",
+      "evidence": "08/09、10/11、13/14、15/16前后配对；滚后牌堆29完整，资源/状态须滚回查看，不能宣称一直同屏。"
+    },
+    {
+      "requirement": "无说明浮层或开发控件占用资源、提示板与主动作保护槽位",
+      "status": "PASS",
+      "evidence": "新13生命50/CP3不再被意外hover说明遮挡；新17/18工具扳手已消失，提示板正文/骰面图例完整；五骰与下一阶段保持可见。"
+    },
+    {
+      "requirement": "安全区切换及触控常态的手牌均稳定为正面",
+      "status": "PASS",
+      "evidence": "最终17-20四张正面手牌均已稳定展开，不再有近侧面薄片或窄竖牌背。"
+    },
+    {
+      "requirement": "两处真实放大镜触控常显、图形与圆边留白正常",
+      "status": "PASS",
+      "evidence": "19/20中央玩家板右上player-board-magnify-button及提示板右上tip-board-magnify-button图形清楚居中、圆边留白足够，没有顶满或越边。08-18非hover鼠标图不用于证明图标可见。"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    "七阶段保留且在移动滚后图可读；17标题部分、18标题完全滚出上缘是记录中的真实滚动后态，七阶段本体没有裁掉。",
+    "资源/状态/牌堆是原纵列滚动分时查看；常态同样需要滚动。牌堆没有缩小挤入；滚后生命/CP和状态不在当前帧，需要滚回初始位置恢复查看。",
+    "中央玩家板/提示板、手牌、五骰和下一阶段按钮保持原承载，不因本轮左栏恢复而迁移或缩小。",
+    "旧13资源数值遮挡与旧17/18提示板工具遮挡在本轮候选消失；旧REVISE仍保留历史事实，不改判旧失败图。",
+    "两个面板放大镜位于各自宿主右上方，白色图形和圆形有明显留白；没有拿退出圆、折叠箭头或开发扳手代替目标。",
+    "最终17-20翻面过渡结束；手牌仍保留原扇形互叠与底边构图，本报告不声称每张牌的全部正文无需展开即可阅读。"
+  ],
+  "playerFirstAction": "第一眼先从橙色主要阶段与右侧下一阶段识别当前流程；需要读板面细节时使用对应板面右上的放大镜；需查看牌堆时滚动左侧原纵列，读资源/状态再滚回。",
+  "issues": [],
+  "limitations": [
+    "仅证明本地同源网页与hasTouch/isMobile触控浏览器，不证明安卓WebView或安卓真机恢复。",
+    "不覆盖Fab展开；此前失败展开候选不在本组范围内。",
+    "代表态由正式夹具预置并包含真实滚动前后，不能证明完整自然对局生命周期。",
+    "放大镜常显只由19/20触控图覆盖；本报告不将08-18无hover鼠标状态的透明图标算作可见证据。",
+    "生命/CP、状态与完整牌堆不是持续同时同屏，需在原纵列滚动往返。"
+  ],
+  "items": [
+    {
+      "number": 1,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-桌面-常态.png",
+      "shaPrefix": "5d8f72f6906d",
+      "status": "carried-forward",
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。"
+    },
+    {
+      "number": 2,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/02-修复前-手机横屏-常态.png",
+      "shaPrefix": "fc78f54629a1",
+      "status": "carried-forward",
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。"
+    },
+    {
+      "number": 3,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/03-修复前-较窄手机横屏-常态.png",
+      "shaPrefix": "fac381a2f4cf",
+      "status": "carried-forward",
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。"
+    },
+    {
+      "number": 4,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/04-修复前-桌面-状态齐全.png",
+      "shaPrefix": "863c3a609104",
+      "status": "carried-forward",
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。"
+    },
+    {
+      "number": 5,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/05-修复前-手机横屏-状态齐全.png",
+      "shaPrefix": "e9e7c7b7242b",
+      "status": "carried-forward",
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。"
+    },
+    {
+      "number": 6,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/06-修复前-较窄手机横屏-状态齐全.png",
+      "shaPrefix": "6db97cf2ef1b",
+      "status": "carried-forward",
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。"
+    },
+    {
+      "number": 7,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/07-修复后-桌面-常态.png",
+      "shaPrefix": "fabb9ff0d0b3",
+      "status": "PASS",
+      "observation": "桌面常态：七阶段、生命50/CP3、完整牌堆29、中央板、提示板、手牌与五骰/主动作保持原构图与素材比例。开发扳手不在图中，没有重做风格或结构。"
+    },
+    {
+      "number": 8,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/08-修复后-手机横屏936-常态.png",
+      "shaPrefix": "fc7f966d3c4b",
+      "status": "PASS",
+      "observation": "936常态：阶段字与行内留白清楚，生命/CP可读，中央板与提示板、手牌、五骰和主动作分区明确；本帧牌堆下端出内区，须结合09滚后查看。未hover的鼠标环境不证明放大镜可见。"
+    },
+    {
+      "number": 9,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/09-修复后-手机横屏936-常态-滚后完整牌堆.png",
+      "shaPrefix": "2fb61a5b901e",
+      "status": "PASS",
+      "observation": "936常态滚后：完整牌堆与29可读，七阶段仍完整；生命/CP/手动响应滚出当前内区，必须滚回08查看。中央板/手牌/提示板/骰盘未随左栏缩小。"
+    },
+    {
+      "number": 10,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/10-修复后-较窄手机横屏812-常态.png",
+      "shaPrefix": "8a04f06d5bff",
+      "status": "PASS",
+      "observation": "812常态：七阶段与生命/CP可读，留白未把阶段字压成蚂蚁字；中央板、提示板、手牌、骰盘和主动作均在原分区。牌堆须结合11滚后图，非本帧完整同屏。"
+    },
+    {
+      "number": 11,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/11-修复后-较窄手机横屏812-常态-滚后完整牌堆.png",
+      "shaPrefix": "15d6e765d429",
+      "status": "PASS",
+      "observation": "812常态滚后：完整牌堆29与七阶段可见，资源需滚回10查看；中央/右侧对象未被左栏滚动挤压。"
+    },
+    {
+      "number": 12,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/12-修复后-桌面-状态齐全.png",
+      "shaPrefix": "69cc5927ff65",
+      "status": "PASS",
+      "observation": "桌面压力态：十个状态图标与数量、生命50/CP3、完整牌堆29、七阶段均可见；意外阶段Tooltip已退出，没有浮层盖住主板；原构图和正式素材保持。"
+    },
+    {
+      "number": 13,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/13-修复后-手机横屏936-状态齐全.png",
+      "shaPrefix": "df1b506af5d5",
+      "status": "PASS",
+      "observation": "936压力态：十个状态图标、数量、生命50/CP3与七阶段清楚；上轮遮挡资源数值的状态说明浮层已消失。牌堆需结合14滚后查看，未将状态/资源缩小挤入。"
+    },
+    {
+      "number": 14,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/14-修复后-手机横屏936-状态齐全-滚后完整牌堆.png",
+      "shaPrefix": "cc88cb6e9bb0",
+      "status": "PASS",
+      "observation": "936压力滚后：完整牌堆29、七阶段可见，中央/右侧不受影响；状态/生命/CP需滚回13恢复查看，不宣称持续同屏。"
+    },
+    {
+      "number": 15,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/15-修复后-较窄手机横屏812-状态齐全.png",
+      "shaPrefix": "e9d4cf9ccfc8",
+      "status": "PASS",
+      "observation": "812压力态：十个状态图标、数量、生命50/CP3和七阶段可见；中央板、提示板、手牌、骰盘与主动作位置分明。牌堆通过16滚动后恢复完整查看。"
+    },
+    {
+      "number": 16,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/16-修复后-较窄手机横屏812-状态齐全-滚后完整牌堆.png",
+      "shaPrefix": "083e5dea5089",
+      "status": "PASS",
+      "observation": "812压力滚后：完整牌堆29和七阶段可见，状态/资源须滚回15查看；没有新浮层侵占中央板/提示板或骰盘。"
+    },
+    {
+      "number": 17,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/17-修复后-较窄手机横屏812-顶部16底部0安全区-滚动后.png",
+      "shaPrefix": "3a9968ec0cc3",
+      "status": "PASS",
+      "observation": "顶部16/底部0安全区真实滚后：七阶段与完整牌堆29可见，回合顺序标题部分滚出上缘；四张手牌均已稳定正面展开，无近侧面薄片/牌背。开发扳手已消失，提示板正文/图例、中央板/骰盘/主动作无新增遮挡；资源/状态需滚回查看。"
+    },
+    {
+      "number": 18,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/18-修复后-较窄手机横屏812-顶部16底部20安全区-滚动后.png",
+      "shaPrefix": "cf2120788566",
+      "status": "PASS",
+      "observation": "顶部16/底部20安全区真实滚后：七阶段与完整牌堆29可见，回合顺序标题已滚出上缘；四张手牌均为稳定正面。工具方块不再覆盖提示板，中央板/提示板/五骰/主动作保持原分区与尺寸；资源/状态需滚回查看。"
+    },
+    {
+      "number": 19,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/19-修复后-触控横屏DPR2.5-常态.jpg",
+      "shaPrefix": "ae4a14059f2b",
+      "status": "PASS",
+      "observation": "936×432 CSS、DPR2.5触控常态：两个真实放大镜分别位于中央玩家板右上和提示板右上，白色图形居中，圆边留白清楚，未顶满圆面或遮住正文。四张手牌已稳定为正面，不再出现两张窄竖牌背；七阶段、生命50/CP3、中央板、提示板和五骰/下一阶段清楚。牌堆下部须滚动查看。"
+    },
+    {
+      "number": 20,
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/20-修复后-触控横屏DPR2.5-状态齐全.jpg",
+      "shaPrefix": "067f74f4b708",
+      "status": "PASS",
+      "observation": "936×432 CSS、DPR2.5触控压力态：两个真实放大镜常显，图形居中且留白一致；四张手牌稳定正面。七阶段、十个状态图标与数量、生命50/CP3可读，中央板、提示板和五骰/下一阶段保留；牌堆仍需原纵列滚动查看。"
+    }
+  ]
+}

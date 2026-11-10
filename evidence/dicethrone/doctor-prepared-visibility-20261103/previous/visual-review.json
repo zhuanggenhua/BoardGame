@@ -1,0 +1,199 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\01-桌面单张.png",
+      "sha256": "7b60453963f5c6a68b71fb3200eab7b89da7382d911e2b265159581694fc0e75",
+      "status": "PASS",
+      "observation": "单牌主体完整等比覆盖左下槽，高度铺满，未见额外底框，也未遮挡右侧邻槽；无需翻页控件。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面单张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\02-桌面两张.png",
+      "sha256": "7d246d9aee83dad7677c9d64f5fd2304aefed1f07a9d4d4f36a46b0dfcdc45a8",
+      "status": "PASS",
+      "observation": "首张完整，主体等比覆盖槽位，未见额外底框或遮挡邻槽；1/2 与向右箭头可辨。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面两张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\03-桌面两张浏览末张.png",
+      "sha256": "e5567b015998c40297918c2d44ad8e8a4fbebb136da3678934ff0e95cc5d23f9",
+      "status": "PASS",
+      "observation": "末张主体完整等比覆盖槽位，无额外底框或邻槽遮挡；2/2 与向左箭头可辨。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面两张-浏览末张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\04-桌面三张.png",
+      "sha256": "09baa73b7d4b0413f43672781791e3b6030b1ce419e8aa6ca69639b19a90fbfe",
+      "status": "PASS",
+      "observation": "首张完整等比覆盖槽位，无额外底框或邻槽遮挡；1/3 与向右箭头可辨。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面三张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\05-桌面三张浏览末张.png",
+      "sha256": "653cc9137b5c8e25f9f80364fbd201c3ff73d06272ea83879895b5e9708f2aa2",
+      "status": "PASS",
+      "observation": "末张主体完整等比覆盖槽位，无额外底框或邻槽遮挡；3/3 与向左箭头可辨。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面三张-浏览末张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-0.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\06-横屏三张.png",
+      "sha256": "93f75b5bef8440023ab263f86aa43b7a799199a855dd1d7f69cc51efe3931ad0",
+      "observation": "三张首页显示首张，牌面形状正常覆盖技能槽，无新增底框；1/3 与右箭头可辨，邻槽未被遮挡。",
+      "status": "PASS",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏三张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-1.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "sha256": "c897e503a5d722d5dc732e8b21574576dfffd9dfbc9cba5f482317f30d8ce029",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\07-横屏三张浏览末张.png",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "末张绿色牌完整呈现，3/3 与左箭头可辨；牌面比例正常，无额外底框或邻槽遮挡。",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏三张-浏览末张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-1.json",
+      "sourceReviewEntry": "/media/1"
+    },
+    {
+      "hardFailures": [],
+      "status": "PASS",
+      "sha256": "37d5295fc39dc7194d4c97f00824125537813596a205bef71dc092458ef8ecff",
+      "observation": "换牌后首页显示首张及 1/2，右箭头可辨；牌面等比、完整，无新增底框和邻槽遮挡。",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\08-横屏换牌两张.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏换牌两张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-1.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "observation": "第二张蓝色牌完整显示，2/2 与左箭头可辨；牌面等比，无新增底框和邻槽遮挡。",
+      "hardFailures": [],
+      "sha256": "a16bb0cc7ed8adba4bab70f1b97d1f51f4adaf79291a5538d659cee89ef8183d",
+      "status": "PASS",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\09-横屏换牌两张浏览末张.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏换牌两张-浏览末张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-1.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "sha256": "ed4ecd91288db0167e63c2972a92e48c096ad8409b167c6a868f02685064c3f3",
+      "hardFailures": [],
+      "observation": "牌组恢复三张后首页回到首张，1/3 与右箭头可辨；牌面比例正常，邻槽无遮挡。",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\10-横屏恢复三张.png",
+      "status": "PASS",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏恢复三张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-1.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\12-横屏触控三张.png",
+      "sha256": "eef830b094192b42da21adca09ea599ab98607545216cef3ff5df22d344cdee5",
+      "status": "PASS",
+      "observation": "首张显示 1/3，法术牌比例正常并覆盖左下槽位，无额外底框；页码及箭头可辨，未见遮挡关键文字或侵入相邻槽。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-touch-capture-20261103\\横屏触控三张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-2.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\13-横屏触控末张.png",
+      "sha256": "c9c1448df94f3033d22abd2cec8c12a5b80135b220f6c2498193dc1dfead4dfa",
+      "status": "PASS",
+      "observation": "末张显示 3/3，法术牌比例正常并覆盖左下槽位，无额外底框；页码及箭头可辨，未见遮挡关键文字或侵入相邻槽。",
+      "hardFailures": [],
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-touch-capture-20261103\\横屏触控末张.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-review-2.json",
+      "sourceReviewEntry": "/media/1"
+    }
+  ]
+}

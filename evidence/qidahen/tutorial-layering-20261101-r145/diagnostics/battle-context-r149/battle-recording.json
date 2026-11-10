@@ -1,0 +1,3417 @@
+{
+  "frames": [
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00000.jpg",
+      "at": 1793538731.9629998,
+      "startedAt": 1793538731.942,
+      "endedAt": 1793538731.984
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00001.jpg",
+      "at": 1793538732.0295,
+      "startedAt": 1793538732.008,
+      "endedAt": 1793538732.051
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00002.jpg",
+      "at": 1793538733.1535,
+      "startedAt": 1793538732.068,
+      "endedAt": 1793538734.239
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00003.jpg",
+      "at": 1793538734.2655,
+      "startedAt": 1793538734.242,
+      "endedAt": 1793538734.289
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00004.jpg",
+      "at": 1793538734.3365002,
+      "startedAt": 1793538734.315,
+      "endedAt": 1793538734.358
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00005.jpg",
+      "at": 1793538734.417,
+      "startedAt": 1793538734.378,
+      "endedAt": 1793538734.456
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00006.jpg",
+      "at": 1793538734.5925002,
+      "startedAt": 1793538734.459,
+      "endedAt": 1793538734.726
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00007.jpg",
+      "at": 1793538734.7540002,
+      "startedAt": 1793538734.729,
+      "endedAt": 1793538734.779
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00008.jpg",
+      "at": 1793538734.8195,
+      "startedAt": 1793538734.796,
+      "endedAt": 1793538734.843
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00009.jpg",
+      "at": 1793538734.8815,
+      "startedAt": 1793538734.858,
+      "endedAt": 1793538734.905
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00010.jpg",
+      "at": 1793538734.9455,
+      "startedAt": 1793538734.92,
+      "endedAt": 1793538734.971
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00011.jpg",
+      "at": 1793538735.006,
+      "startedAt": 1793538734.982,
+      "endedAt": 1793538735.03
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00012.jpg",
+      "at": 1793538735.0665,
+      "startedAt": 1793538735.043,
+      "endedAt": 1793538735.09
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00013.jpg",
+      "at": 1793538735.128,
+      "startedAt": 1793538735.105,
+      "endedAt": 1793538735.151
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00014.jpg",
+      "at": 1793538735.196,
+      "startedAt": 1793538735.167,
+      "endedAt": 1793538735.225
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00015.jpg",
+      "at": 1793538735.2465,
+      "startedAt": 1793538735.228,
+      "endedAt": 1793538735.265
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00016.jpg",
+      "at": 1793538735.31,
+      "startedAt": 1793538735.291,
+      "endedAt": 1793538735.329
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00017.jpg",
+      "at": 1793538735.375,
+      "startedAt": 1793538735.353,
+      "endedAt": 1793538735.397
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00018.jpg",
+      "at": 1793538735.4394999,
+      "startedAt": 1793538735.415,
+      "endedAt": 1793538735.464
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00019.jpg",
+      "at": 1793538735.4984999,
+      "startedAt": 1793538735.477,
+      "endedAt": 1793538735.52
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00020.jpg",
+      "at": 1793538735.5609999,
+      "startedAt": 1793538735.54,
+      "endedAt": 1793538735.582
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00021.jpg",
+      "at": 1793538735.6234999,
+      "startedAt": 1793538735.602,
+      "endedAt": 1793538735.645
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00022.jpg",
+      "at": 1793538735.687,
+      "startedAt": 1793538735.665,
+      "endedAt": 1793538735.709
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00023.jpg",
+      "at": 1793538735.7465,
+      "startedAt": 1793538735.726,
+      "endedAt": 1793538735.767
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00024.jpg",
+      "at": 1793538735.8175,
+      "startedAt": 1793538735.788,
+      "endedAt": 1793538735.847
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00025.jpg",
+      "at": 1793538735.8744998,
+      "startedAt": 1793538735.853,
+      "endedAt": 1793538735.896
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00026.jpg",
+      "at": 1793538735.949,
+      "startedAt": 1793538735.926,
+      "endedAt": 1793538735.972
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00027.jpg",
+      "at": 1793538736.0124998,
+      "startedAt": 1793538735.991,
+      "endedAt": 1793538736.034
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00028.jpg",
+      "at": 1793538736.0755,
+      "startedAt": 1793538736.052,
+      "endedAt": 1793538736.099
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00029.jpg",
+      "at": 1793538736.1445,
+      "startedAt": 1793538736.114,
+      "endedAt": 1793538736.175
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00030.jpg",
+      "at": 1793538736.2189999,
+      "startedAt": 1793538736.178,
+      "endedAt": 1793538736.26
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00031.jpg",
+      "at": 1793538736.3000002,
+      "startedAt": 1793538736.265,
+      "endedAt": 1793538736.335
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00032.jpg",
+      "at": 1793538736.374,
+      "startedAt": 1793538736.339,
+      "endedAt": 1793538736.409
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00033.jpg",
+      "at": 1793538736.4445,
+      "startedAt": 1793538736.414,
+      "endedAt": 1793538736.475
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00034.jpg",
+      "at": 1793538736.5,
+      "startedAt": 1793538736.478,
+      "endedAt": 1793538736.522
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00035.jpg",
+      "at": 1793538736.5700002,
+      "startedAt": 1793538736.549,
+      "endedAt": 1793538736.591
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00036.jpg",
+      "at": 1793538736.634,
+      "startedAt": 1793538736.611,
+      "endedAt": 1793538736.657
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00037.jpg",
+      "at": 1793538736.6995,
+      "startedAt": 1793538736.673,
+      "endedAt": 1793538736.726
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00038.jpg",
+      "at": 1793538736.7610002,
+      "startedAt": 1793538736.736,
+      "endedAt": 1793538736.786
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00039.jpg",
+      "at": 1793538736.8214998,
+      "startedAt": 1793538736.796,
+      "endedAt": 1793538736.847
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00040.jpg",
+      "at": 1793538736.8825,
+      "startedAt": 1793538736.86,
+      "endedAt": 1793538736.905
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00041.jpg",
+      "at": 1793538736.9499998,
+      "startedAt": 1793538736.922,
+      "endedAt": 1793538736.978
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00042.jpg",
+      "at": 1793538737.0105,
+      "startedAt": 1793538736.984,
+      "endedAt": 1793538737.037
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00043.jpg",
+      "at": 1793538737.072,
+      "startedAt": 1793538737.047,
+      "endedAt": 1793538737.097
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00044.jpg",
+      "at": 1793538737.133,
+      "startedAt": 1793538737.108,
+      "endedAt": 1793538737.158
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00045.jpg",
+      "at": 1793538737.1915002,
+      "startedAt": 1793538737.167,
+      "endedAt": 1793538737.216
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00046.jpg",
+      "at": 1793538737.2535,
+      "startedAt": 1793538737.229,
+      "endedAt": 1793538737.278
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00047.jpg",
+      "at": 1793538737.3140001,
+      "startedAt": 1793538737.292,
+      "endedAt": 1793538737.336
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00048.jpg",
+      "at": 1793538737.3755002,
+      "startedAt": 1793538737.354,
+      "endedAt": 1793538737.397
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00049.jpg",
+      "at": 1793538737.4365,
+      "startedAt": 1793538737.416,
+      "endedAt": 1793538737.457
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00050.jpg",
+      "at": 1793538737.497,
+      "startedAt": 1793538737.477,
+      "endedAt": 1793538737.517
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00051.jpg",
+      "at": 1793538737.5575,
+      "startedAt": 1793538737.537,
+      "endedAt": 1793538737.578
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00052.jpg",
+      "at": 1793538737.6175,
+      "startedAt": 1793538737.598,
+      "endedAt": 1793538737.637
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00053.jpg",
+      "at": 1793538737.676,
+      "startedAt": 1793538737.661,
+      "endedAt": 1793538737.691
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00054.jpg",
+      "at": 1793538737.744,
+      "startedAt": 1793538737.722,
+      "endedAt": 1793538737.766
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00055.jpg",
+      "at": 1793538737.8035,
+      "startedAt": 1793538737.784,
+      "endedAt": 1793538737.823
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00056.jpg",
+      "at": 1793538737.865,
+      "startedAt": 1793538737.846,
+      "endedAt": 1793538737.884
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00057.jpg",
+      "at": 1793538737.9275,
+      "startedAt": 1793538737.908,
+      "endedAt": 1793538737.947
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00058.jpg",
+      "at": 1793538737.989,
+      "startedAt": 1793538737.969,
+      "endedAt": 1793538738.009
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00059.jpg",
+      "at": 1793538738.0685,
+      "startedAt": 1793538738.031,
+      "endedAt": 1793538738.106
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00060.jpg",
+      "at": 1793538738.1465,
+      "startedAt": 1793538738.108,
+      "endedAt": 1793538738.185
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00061.jpg",
+      "at": 1793538738.209,
+      "startedAt": 1793538738.187,
+      "endedAt": 1793538738.231
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00062.jpg",
+      "at": 1793538738.268,
+      "startedAt": 1793538738.245,
+      "endedAt": 1793538738.291
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00063.jpg",
+      "at": 1793538738.3325,
+      "startedAt": 1793538738.309,
+      "endedAt": 1793538738.356
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00064.jpg",
+      "at": 1793538738.3915,
+      "startedAt": 1793538738.37,
+      "endedAt": 1793538738.413
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00065.jpg",
+      "at": 1793538738.4535,
+      "startedAt": 1793538738.431,
+      "endedAt": 1793538738.476
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00066.jpg",
+      "at": 1793538738.5149999,
+      "startedAt": 1793538738.494,
+      "endedAt": 1793538738.536
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00067.jpg",
+      "at": 1793538738.5770001,
+      "startedAt": 1793538738.555,
+      "endedAt": 1793538738.599
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00068.jpg",
+      "at": 1793538738.6339998,
+      "startedAt": 1793538738.616,
+      "endedAt": 1793538738.652
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00069.jpg",
+      "at": 1793538738.7055001,
+      "startedAt": 1793538738.678,
+      "endedAt": 1793538738.733
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00070.jpg",
+      "at": 1793538738.7585,
+      "startedAt": 1793538738.74,
+      "endedAt": 1793538738.777
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00071.jpg",
+      "at": 1793538738.8265,
+      "startedAt": 1793538738.801,
+      "endedAt": 1793538738.852
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00072.jpg",
+      "at": 1793538738.883,
+      "startedAt": 1793538738.862,
+      "endedAt": 1793538738.904
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00073.jpg",
+      "at": 1793538738.9455,
+      "startedAt": 1793538738.924,
+      "endedAt": 1793538738.967
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00074.jpg",
+      "at": 1793538739.0075002,
+      "startedAt": 1793538738.987,
+      "endedAt": 1793538739.028
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00075.jpg",
+      "at": 1793538739.067,
+      "startedAt": 1793538739.048,
+      "endedAt": 1793538739.086
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00076.jpg",
+      "at": 1793538739.1339998,
+      "startedAt": 1793538739.109,
+      "endedAt": 1793538739.159
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00077.jpg",
+      "at": 1793538739.1985002,
+      "startedAt": 1793538739.171,
+      "endedAt": 1793538739.226
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00078.jpg",
+      "at": 1793538739.263,
+      "startedAt": 1793538739.232,
+      "endedAt": 1793538739.294
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00079.jpg",
+      "at": 1793538739.3274999,
+      "startedAt": 1793538739.299,
+      "endedAt": 1793538739.356
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00080.jpg",
+      "at": 1793538739.3855,
+      "startedAt": 1793538739.36,
+      "endedAt": 1793538739.411
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00081.jpg",
+      "at": 1793538739.4615002,
+      "startedAt": 1793538739.434,
+      "endedAt": 1793538739.489
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00082.jpg",
+      "at": 1793538739.526,
+      "startedAt": 1793538739.496,
+      "endedAt": 1793538739.556
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00083.jpg",
+      "at": 1793538739.588,
+      "startedAt": 1793538739.559,
+      "endedAt": 1793538739.617
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00084.jpg",
+      "at": 1793538739.6444998,
+      "startedAt": 1793538739.62,
+      "endedAt": 1793538739.669
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00085.jpg",
+      "at": 1793538739.7195,
+      "startedAt": 1793538739.694,
+      "endedAt": 1793538739.745
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00086.jpg",
+      "at": 1793538739.7814999,
+      "startedAt": 1793538739.754,
+      "endedAt": 1793538739.809
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00087.jpg",
+      "at": 1793538739.8404999,
+      "startedAt": 1793538739.816,
+      "endedAt": 1793538739.865
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00088.jpg",
+      "at": 1793538739.9005,
+      "startedAt": 1793538739.877,
+      "endedAt": 1793538739.924
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00089.jpg",
+      "at": 1793538739.9635,
+      "startedAt": 1793538739.939,
+      "endedAt": 1793538739.988
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00090.jpg",
+      "at": 1793538740.0295,
+      "startedAt": 1793538740.002,
+      "endedAt": 1793538740.057
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00091.jpg",
+      "at": 1793538740.0855,
+      "startedAt": 1793538740.061,
+      "endedAt": 1793538740.11
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00092.jpg",
+      "at": 1793538740.149,
+      "startedAt": 1793538740.126,
+      "endedAt": 1793538740.172
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00093.jpg",
+      "at": 1793538740.2154999,
+      "startedAt": 1793538740.189,
+      "endedAt": 1793538740.242
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00094.jpg",
+      "at": 1793538740.2745,
+      "startedAt": 1793538740.25,
+      "endedAt": 1793538740.299
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00095.jpg",
+      "at": 1793538740.338,
+      "startedAt": 1793538740.312,
+      "endedAt": 1793538740.364
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00096.jpg",
+      "at": 1793538740.3990002,
+      "startedAt": 1793538740.374,
+      "endedAt": 1793538740.424
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00097.jpg",
+      "at": 1793538740.464,
+      "startedAt": 1793538740.437,
+      "endedAt": 1793538740.491
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00098.jpg",
+      "at": 1793538740.523,
+      "startedAt": 1793538740.498,
+      "endedAt": 1793538740.548
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00099.jpg",
+      "at": 1793538740.5865,
+      "startedAt": 1793538740.56,
+      "endedAt": 1793538740.613
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00100.jpg",
+      "at": 1793538740.65,
+      "startedAt": 1793538740.623,
+      "endedAt": 1793538740.677
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00101.jpg",
+      "at": 1793538740.7125,
+      "startedAt": 1793538740.685,
+      "endedAt": 1793538740.74
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00102.jpg",
+      "at": 1793538740.7745,
+      "startedAt": 1793538740.747,
+      "endedAt": 1793538740.802
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00103.jpg",
+      "at": 1793538740.8309999,
+      "startedAt": 1793538740.806,
+      "endedAt": 1793538740.856
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00104.jpg",
+      "at": 1793538740.898,
+      "startedAt": 1793538740.873,
+      "endedAt": 1793538740.923
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00105.jpg",
+      "at": 1793538740.962,
+      "startedAt": 1793538740.932,
+      "endedAt": 1793538740.992
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00106.jpg",
+      "at": 1793538741.026,
+      "startedAt": 1793538740.996,
+      "endedAt": 1793538741.056
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00107.jpg",
+      "at": 1793538741.086,
+      "startedAt": 1793538741.058,
+      "endedAt": 1793538741.114
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00108.jpg",
+      "at": 1793538741.1599998,
+      "startedAt": 1793538741.132,
+      "endedAt": 1793538741.188
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00109.jpg",
+      "at": 1793538741.217,
+      "startedAt": 1793538741.193,
+      "endedAt": 1793538741.241
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00110.jpg",
+      "at": 1793538741.2835,
+      "startedAt": 1793538741.257,
+      "endedAt": 1793538741.31
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00111.jpg",
+      "at": 1793538741.3485,
+      "startedAt": 1793538741.318,
+      "endedAt": 1793538741.379
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00112.jpg",
+      "at": 1793538741.42,
+      "startedAt": 1793538741.382,
+      "endedAt": 1793538741.458
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00113.jpg",
+      "at": 1793538741.484,
+      "startedAt": 1793538741.461,
+      "endedAt": 1793538741.507
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00114.jpg",
+      "at": 1793538741.621,
+      "startedAt": 1793538741.523,
+      "endedAt": 1793538741.719
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00115.jpg",
+      "at": 1793538741.75,
+      "startedAt": 1793538741.723,
+      "endedAt": 1793538741.777
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00116.jpg",
+      "at": 1793538741.823,
+      "startedAt": 1793538741.798,
+      "endedAt": 1793538741.848
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00117.jpg",
+      "at": 1793538741.8839998,
+      "startedAt": 1793538741.859,
+      "endedAt": 1793538741.909
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00118.jpg",
+      "at": 1793538741.9485002,
+      "startedAt": 1793538741.921,
+      "endedAt": 1793538741.976
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00119.jpg",
+      "at": 1793538742.0095,
+      "startedAt": 1793538741.983,
+      "endedAt": 1793538742.036
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00120.jpg",
+      "at": 1793538742.074,
+      "startedAt": 1793538742.045,
+      "endedAt": 1793538742.103
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00121.jpg",
+      "at": 1793538742.137,
+      "startedAt": 1793538742.106,
+      "endedAt": 1793538742.168
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00122.jpg",
+      "at": 1793538742.2005,
+      "startedAt": 1793538742.171,
+      "endedAt": 1793538742.23
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00123.jpg",
+      "at": 1793538742.2575002,
+      "startedAt": 1793538742.233,
+      "endedAt": 1793538742.282
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00124.jpg",
+      "at": 1793538742.316,
+      "startedAt": 1793538742.294,
+      "endedAt": 1793538742.338
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00125.jpg",
+      "at": 1793538742.3785,
+      "startedAt": 1793538742.356,
+      "endedAt": 1793538742.401
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00126.jpg",
+      "at": 1793538742.444,
+      "startedAt": 1793538742.418,
+      "endedAt": 1793538742.47
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00127.jpg",
+      "at": 1793538742.503,
+      "startedAt": 1793538742.479,
+      "endedAt": 1793538742.527
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00128.jpg",
+      "at": 1793538742.5644999,
+      "startedAt": 1793538742.541,
+      "endedAt": 1793538742.588
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00129.jpg",
+      "at": 1793538742.6275,
+      "startedAt": 1793538742.603,
+      "endedAt": 1793538742.652
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00130.jpg",
+      "at": 1793538742.694,
+      "startedAt": 1793538742.664,
+      "endedAt": 1793538742.724
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00131.jpg",
+      "at": 1793538742.7515001,
+      "startedAt": 1793538742.726,
+      "endedAt": 1793538742.777
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00132.jpg",
+      "at": 1793538742.8155,
+      "startedAt": 1793538742.787,
+      "endedAt": 1793538742.844
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00133.jpg",
+      "at": 1793538742.8725,
+      "startedAt": 1793538742.849,
+      "endedAt": 1793538742.896
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00134.jpg",
+      "at": 1793538742.9365,
+      "startedAt": 1793538742.91,
+      "endedAt": 1793538742.963
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00135.jpg",
+      "at": 1793538743.0019999,
+      "startedAt": 1793538742.972,
+      "endedAt": 1793538743.032
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00136.jpg",
+      "at": 1793538743.0640001,
+      "startedAt": 1793538743.036,
+      "endedAt": 1793538743.092
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00137.jpg",
+      "at": 1793538743.133,
+      "startedAt": 1793538743.111,
+      "endedAt": 1793538743.155
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00138.jpg",
+      "at": 1793538743.1985002,
+      "startedAt": 1793538743.173,
+      "endedAt": 1793538743.224
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00139.jpg",
+      "at": 1793538743.2565,
+      "startedAt": 1793538743.235,
+      "endedAt": 1793538743.278
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00140.jpg",
+      "at": 1793538743.3165,
+      "startedAt": 1793538743.296,
+      "endedAt": 1793538743.337
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00141.jpg",
+      "at": 1793538743.3805,
+      "startedAt": 1793538743.358,
+      "endedAt": 1793538743.403
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00142.jpg",
+      "at": 1793538743.441,
+      "startedAt": 1793538743.419,
+      "endedAt": 1793538743.463
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00143.jpg",
+      "at": 1793538743.5,
+      "startedAt": 1793538743.48,
+      "endedAt": 1793538743.52
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00144.jpg",
+      "at": 1793538743.5685,
+      "startedAt": 1793538743.543,
+      "endedAt": 1793538743.594
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00145.jpg",
+      "at": 1793538743.626,
+      "startedAt": 1793538743.605,
+      "endedAt": 1793538743.647
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00146.jpg",
+      "at": 1793538743.6890001,
+      "startedAt": 1793538743.668,
+      "endedAt": 1793538743.71
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00147.jpg",
+      "at": 1793538743.7515001,
+      "startedAt": 1793538743.73,
+      "endedAt": 1793538743.773
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00148.jpg",
+      "at": 1793538743.8130002,
+      "startedAt": 1793538743.792,
+      "endedAt": 1793538743.834
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00149.jpg",
+      "at": 1793538744.7259998,
+      "startedAt": 1793538743.853,
+      "endedAt": 1793538745.599
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00150.jpg",
+      "at": 1793538747.135,
+      "startedAt": 1793538745.601,
+      "endedAt": 1793538748.669
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00151.jpg",
+      "at": 1793538748.791,
+      "startedAt": 1793538748.671,
+      "endedAt": 1793538748.911
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00152.jpg",
+      "at": 1793538748.9359999,
+      "startedAt": 1793538748.914,
+      "endedAt": 1793538748.958
+    },
+    {
+      "path": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00153.jpg",
+      "at": 1793538750.277,
+      "startedAt": 1793538748.972,
+      "endedAt": 1793538751.582
+    }
+  ],
+  "states": [
+    {
+      "regionTipVisible": false,
+      "at": 1793538731.939,
+      "phase": null,
+      "state": null,
+      "text": "",
+      "labels": [],
+      "surfaces": [],
+      "dice": [],
+      "layout": {
+        "panel": null,
+        "regions": [
+          {
+            "left": 931.6318359375,
+            "top": 513.7247314453125,
+            "width": 209.4544677734375,
+            "height": 198.83001708984375
+          },
+          {
+            "left": 640.216796875,
+            "top": 146.42039489746094,
+            "width": 951.652099609375,
+            "height": 405.24896240234375
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538733.814,
+      "phase": null,
+      "state": null,
+      "text": "",
+      "labels": [],
+      "surfaces": [],
+      "dice": [],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 931.6318359375,
+            "top": 513.7247314453125,
+            "width": 209.4544677734375,
+            "height": 198.83001708984375
+          },
+          {
+            "left": 640.216796875,
+            "top": 146.42039489746094,
+            "width": 951.652099609375,
+            "height": 405.24896240234375
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538734.129,
+      "phase": "artillery",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n炮兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "炮兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d6",
+          "settled": "false",
+          "ready": "false",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538734.412,
+      "phase": "artillery",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n炮兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "炮兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d6",
+          "settled": "false",
+          "ready": "false",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538734.415,
+      "phase": "artillery",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n炮兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "炮兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d6",
+          "settled": "false",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538736.2,
+      "phase": "artillery",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n炮兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "炮兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d6",
+          "settled": "true",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538736.218,
+      "phase": "artillery",
+      "state": "damage",
+      "text": "辽北 → 叶赫部\n炮兵阶段\n攻方\n1 + 2 = 3\n合计 3\n造成 0 损伤",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "炮兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "合计 3",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "造成 0 损伤",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-0-attacker-6",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d6",
+          "settled": "true",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538738.046,
+      "phase": "cavalry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n骑兵阶段\n守方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "骑兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "defender",
+          "text": "守方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "defender-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "defender-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-defender",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d8",
+          "settled": "false",
+          "ready": "false",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538738.066,
+      "phase": "cavalry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n骑兵阶段\n守方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "骑兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "defender",
+          "text": "守方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "defender-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "defender-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-defender",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d8",
+          "settled": "false",
+          "ready": "false",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538738.069,
+      "phase": "cavalry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n骑兵阶段\n守方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "骑兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "defender",
+          "text": "守方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "defender-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "defender-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-defender",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d8",
+          "settled": "false",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538739.649,
+      "phase": "cavalry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n骑兵阶段\n守方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "骑兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "defender",
+          "text": "守方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "defender-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "defender-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-defender",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d8",
+          "settled": "true",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538739.66,
+      "phase": "cavalry",
+      "state": "damage",
+      "text": "辽北 → 叶赫部\n骑兵阶段\n守方\n合计 1\n造成 0 损伤",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "骑兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "defender",
+          "text": "守方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "defender-total",
+          "text": "合计 1",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "defender-damage",
+          "text": "造成 0 损伤",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-defender",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-1-defender-8",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d8",
+          "settled": "true",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538741.49,
+      "phase": "infantry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n步兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "步兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d10",
+          "settled": "false",
+          "ready": "false",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538741.516,
+      "phase": "infantry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n步兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "步兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d10",
+          "settled": "false",
+          "ready": "false",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538741.521,
+      "phase": "infantry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n步兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "步兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d10",
+          "settled": "false",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538743.163,
+      "phase": "infantry",
+      "state": "rolling",
+      "text": "辽北 → 叶赫部\n步兵阶段\n攻方",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "步兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "hidden",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d10",
+          "settled": "true",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538743.18,
+      "phase": "infantry",
+      "state": "damage",
+      "text": "辽北 → 叶赫部\n步兵阶段\n攻方\n0（10）0（10）\n合计 20\n造成 2 损伤",
+      "labels": [
+        {
+          "id": "context",
+          "text": "辽北 → 叶赫部",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 16px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 120,
+          "height": 32
+        },
+        {
+          "id": "phase",
+          "text": "步兵阶段",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "900 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 104,
+          "height": 32
+        },
+        {
+          "id": "attacker",
+          "text": "攻方",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 48,
+          "height": 22
+        },
+        {
+          "id": "attacker-total",
+          "text": "合计 20",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 22px / 28px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 28
+        },
+        {
+          "id": "attacker-damage",
+          "text": "造成 2 损伤",
+          "color": "rgb(255, 243, 220)",
+          "fill": "rgb(255, 243, 220)",
+          "font": "700 16px / 24px ui-serif, STSong, SimSun, serif",
+          "visibility": "visible",
+          "opacity": "1",
+          "width": 79.515625,
+          "height": 24
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "qidahen-battle-roll-sequence",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-side-attacker",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-physics-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-canvas-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        },
+        {
+          "id": "qidahen-battle-dice-calculation-2-attacker-10",
+          "background": "rgba(0, 0, 0, 0)",
+          "borderWidths": [
+            "0px",
+            "0px",
+            "0px",
+            "0px"
+          ]
+        }
+      ],
+      "dice": [
+        {
+          "type": "d10",
+          "settled": "true",
+          "ready": "true",
+          "failure": null
+        }
+      ],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538745.49,
+      "phase": null,
+      "state": null,
+      "text": "",
+      "labels": [],
+      "surfaces": [],
+      "dice": [],
+      "layout": {
+        "panel": {
+          "left": 408,
+          "top": 471,
+          "width": 620,
+          "height": 370
+        },
+        "regions": [
+          {
+            "left": 1304.2396240234375,
+            "top": 644.5386962890625,
+            "width": 192.8038330078125,
+            "height": 183.02392578125
+          },
+          {
+            "left": 1035.9908447265625,
+            "top": 306.4334716796875,
+            "width": 876,
+            "height": 373.033447265625
+          }
+        ]
+      }
+    },
+    {
+      "regionTipVisible": false,
+      "at": 1793538748.495,
+      "phase": null,
+      "state": null,
+      "text": "",
+      "labels": [],
+      "surfaces": [],
+      "dice": [],
+      "layout": {
+        "panel": null,
+        "regions": [
+          {
+            "left": 857.611572265625,
+            "top": 509.152587890625,
+            "width": 198.086181640625,
+            "height": 188.03826904296875
+          },
+          {
+            "left": 582.0135498046875,
+            "top": 161.78416442871094,
+            "width": 900,
+            "height": 383.2535400390625
+          }
+        ]
+      }
+    }
+  ],
+  "selectedFrames": [
+    {
+      "id": "battle-artillery-rolling",
+      "sourceFrameIndex": 18,
+      "sourceFramePath": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00018.jpg",
+      "captureStartedAt": 1793538735.415,
+      "captureEndedAt": 1793538735.464,
+      "windowStart": 1793538734.415,
+      "windowEnd": 1793538736.2
+    },
+    {
+      "id": "battle-artillery-damage",
+      "sourceFrameIndex": 58,
+      "sourceFramePath": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00058.jpg",
+      "captureStartedAt": 1793538737.969,
+      "captureEndedAt": 1793538738.009,
+      "windowStart": 1793538736.218,
+      "windowEnd": 1793538738.046
+    },
+    {
+      "id": "battle-cavalry-rolling",
+      "sourceFrameIndex": 72,
+      "sourceFramePath": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00072.jpg",
+      "captureStartedAt": 1793538738.862,
+      "captureEndedAt": 1793538738.904,
+      "windowStart": 1793538738.069,
+      "windowEnd": 1793538739.649
+    },
+    {
+      "id": "battle-cavalry-damage",
+      "sourceFrameIndex": 112,
+      "sourceFramePath": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00112.jpg",
+      "captureStartedAt": 1793538741.382,
+      "captureEndedAt": 1793538741.458,
+      "windowStart": 1793538739.66,
+      "windowEnd": 1793538741.49
+    },
+    {
+      "id": "battle-infantry-rolling",
+      "sourceFrameIndex": 126,
+      "sourceFramePath": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00126.jpg",
+      "captureStartedAt": 1793538742.418,
+      "captureEndedAt": 1793538742.47,
+      "windowStart": 1793538741.521,
+      "windowEnd": 1793538743.163
+    },
+    {
+      "id": "battle-infantry-damage",
+      "sourceFrameIndex": 148,
+      "sourceFramePath": "C:\\Users\\ZHUAGE~1\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\diagnostics\\battle-context-r149\\battle-frames\\00148.jpg",
+      "captureStartedAt": 1793538743.792,
+      "captureEndedAt": 1793538743.834,
+      "windowStart": 1793538743.18,
+      "windowEnd": 1793538745.49
+    }
+  ],
+  "timebase": "UTC seconds; actual capture intervals retained, timeline uses interval midpoints",
+  "captureMethod": "Continuous same-page actual composed viewport sampling; selected source frame indices disambiguate byte-identical static result frames",
+  "flow": "saved-state-diagnostic"
+}

@@ -1,0 +1,472 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "changeType": "refactor",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-10-26",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "visualReview": "36 张主链媒体逐图审查：9 张当前源直接审查，27 张按 SHA-256 与既有审查逐张沿用；截图只证明 UI / 交互，不承担规则或数值正确性。"
+  },
+  "requirements": [
+    {
+      "requirement": "入口与胜利条件",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00a-继续后-选择首个行动.png",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-entry.json"
+      ]
+    },
+    {
+      "requirement": "移动端长按检视手牌",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-01-首个行动选择-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-05-选牌后确认征召支付.png",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-mobile-hand-inspect.json"
+      ]
+    },
+    {
+      "requirement": "一格开垦分支",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-一格开垦前-选择轮盘走法.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-one-grid.json"
+      ]
+    },
+    {
+      "requirement": "手牌征召与轮盘两格行动",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02a-轮盘三格费用与落点说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/11-教程结束后同局下一位玩家可操作.png",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-artillery.json",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-chuanbing.json",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-wheel.json"
+      ]
+    },
+    {
+      "requirement": "轮盘先行顺序分支",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02d-轮盘后选择手牌行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02e-两种行动完成-征召结果.png",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-wheel.json",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-wheel-first.json"
+      ]
+    },
+    {
+      "requirement": "三格征兵训练分支",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03l-教程退场后同局继续.png",
+        "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-three-grid.json"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "basic-opening-entry",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-entry.json",
+      "requiredSteps": [
+        "basic-opening-entry-capture-001",
+        "basic-opening-entry-input-002",
+        "basic-opening-entry-capture-003"
+      ]
+    },
+    {
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-mobile-hand-inspect.json",
+      "requiredSteps": [
+        "basic-opening-mobile-hand-inspect-capture-001",
+        "basic-opening-mobile-hand-inspect-input-002",
+        "basic-opening-mobile-hand-inspect-capture-003",
+        "basic-opening-mobile-hand-inspect-input-004",
+        "basic-opening-mobile-hand-inspect-capture-005",
+        "basic-opening-mobile-hand-inspect-input-006",
+        "basic-opening-mobile-hand-inspect-capture-007",
+        "basic-opening-mobile-hand-inspect-capture-008",
+        "basic-opening-mobile-hand-inspect-input-009",
+        "basic-opening-mobile-hand-inspect-capture-010"
+      ]
+    },
+    {
+      "chainId": "basic-opening-one-grid",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-one-grid.json",
+      "requiredSteps": [
+        "basic-opening-one-grid-input-001",
+        "basic-opening-one-grid-input-002",
+        "basic-opening-one-grid-input-003",
+        "basic-opening-one-grid-input-004",
+        "basic-opening-one-grid-input-005",
+        "basic-opening-one-grid-input-006",
+        "basic-opening-one-grid-input-007",
+        "basic-opening-one-grid-capture-008",
+        "basic-opening-one-grid-input-009",
+        "basic-opening-one-grid-capture-010",
+        "basic-opening-one-grid-input-011",
+        "basic-opening-one-grid-input-012",
+        "basic-opening-one-grid-capture-013"
+      ]
+    },
+    {
+      "chainId": "basic-opening-recruit-artillery",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-artillery.json",
+      "requiredSteps": [
+        "basic-opening-recruit-artillery-input-001",
+        "basic-opening-recruit-artillery-input-002",
+        "basic-opening-recruit-artillery-input-003",
+        "basic-opening-recruit-artillery-input-004",
+        "basic-opening-recruit-artillery-input-005",
+        "basic-opening-recruit-artillery-input-006",
+        "basic-opening-recruit-artillery-capture-007"
+      ]
+    },
+    {
+      "chainId": "basic-opening-recruit-chuanbing",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-chuanbing.json",
+      "requiredSteps": [
+        "basic-opening-recruit-chuanbing-input-001",
+        "basic-opening-recruit-chuanbing-input-002",
+        "basic-opening-recruit-chuanbing-input-003",
+        "basic-opening-recruit-chuanbing-input-004",
+        "basic-opening-recruit-chuanbing-input-005",
+        "basic-opening-recruit-chuanbing-input-006",
+        "basic-opening-recruit-chuanbing-capture-007"
+      ]
+    },
+    {
+      "chainId": "basic-opening-recruit-wheel",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-wheel.json",
+      "requiredSteps": [
+        "basic-opening-recruit-wheel-capture-001",
+        "basic-opening-recruit-wheel-input-002",
+        "basic-opening-recruit-wheel-capture-003",
+        "basic-opening-recruit-wheel-input-004",
+        "basic-opening-recruit-wheel-input-005",
+        "basic-opening-recruit-wheel-capture-006",
+        "basic-opening-recruit-wheel-capture-007",
+        "basic-opening-recruit-wheel-input-008",
+        "basic-opening-recruit-wheel-capture-009",
+        "basic-opening-recruit-wheel-input-010",
+        "basic-opening-recruit-wheel-capture-011",
+        "basic-opening-recruit-wheel-input-012",
+        "basic-opening-recruit-wheel-capture-013",
+        "basic-opening-recruit-wheel-input-014",
+        "basic-opening-recruit-wheel-capture-015",
+        "basic-opening-recruit-wheel-input-016",
+        "basic-opening-recruit-wheel-capture-017",
+        "basic-opening-recruit-wheel-capture-018",
+        "basic-opening-recruit-wheel-input-019",
+        "basic-opening-recruit-wheel-capture-020",
+        "basic-opening-recruit-wheel-input-021",
+        "basic-opening-recruit-wheel-capture-022",
+        "basic-opening-recruit-wheel-input-023",
+        "basic-opening-recruit-wheel-input-024",
+        "basic-opening-recruit-wheel-capture-025"
+      ]
+    },
+    {
+      "chainId": "basic-opening-three-grid",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-three-grid.json",
+      "requiredSteps": [
+        "basic-opening-three-grid-input-001",
+        "basic-opening-three-grid-input-002",
+        "basic-opening-three-grid-input-003",
+        "basic-opening-three-grid-input-004",
+        "basic-opening-three-grid-input-005",
+        "basic-opening-three-grid-input-006",
+        "basic-opening-three-grid-input-007",
+        "basic-opening-three-grid-capture-008",
+        "basic-opening-three-grid-input-009",
+        "basic-opening-three-grid-capture-010",
+        "basic-opening-three-grid-input-011",
+        "basic-opening-three-grid-input-012",
+        "basic-opening-three-grid-capture-013",
+        "basic-opening-three-grid-input-014",
+        "basic-opening-three-grid-capture-015",
+        "basic-opening-three-grid-input-016",
+        "basic-opening-three-grid-capture-017",
+        "basic-opening-three-grid-input-018",
+        "basic-opening-three-grid-capture-019",
+        "basic-opening-three-grid-input-020",
+        "basic-opening-three-grid-input-021",
+        "basic-opening-three-grid-capture-022",
+        "basic-opening-three-grid-input-023",
+        "basic-opening-three-grid-input-024",
+        "basic-opening-three-grid-capture-025",
+        "basic-opening-three-grid-input-026",
+        "basic-opening-three-grid-input-027",
+        "basic-opening-three-grid-capture-028",
+        "basic-opening-three-grid-input-029",
+        "basic-opening-three-grid-input-030",
+        "basic-opening-three-grid-capture-031"
+      ]
+    },
+    {
+      "chainId": "basic-opening-wheel-first",
+      "sourceRun": "codex-tutorial-20261026-r18-final",
+      "sourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54",
+      "evidence": "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-wheel-first.json",
+      "requiredSteps": [
+        "basic-opening-wheel-first-input-001",
+        "basic-opening-wheel-first-capture-002",
+        "basic-opening-wheel-first-input-003",
+        "basic-opening-wheel-first-capture-004",
+        "basic-opening-wheel-first-input-005",
+        "basic-opening-wheel-first-capture-006",
+        "basic-opening-wheel-first-input-007",
+        "basic-opening-wheel-first-input-008",
+        "basic-opening-wheel-first-input-009",
+        "basic-opening-wheel-first-input-010",
+        "basic-opening-wheel-first-input-011",
+        "basic-opening-wheel-first-capture-012"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/audit_r18_changed_ui; /root/review_a1; /root/review_a2; /root/review_mobile_r09"
+    },
+    "reviewFile": "../.visual-review.json",
+    "baselineReviewFile": "../.baseline-review.json",
+    "summary": {
+      "total": 36,
+      "pass": 36,
+      "revise": 0,
+      "directlyReviewed": 9,
+      "carriedForwardBySha": 27,
+      "failedPaths": []
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "规则流程、征召分支、征兵训练、事件推进及实际部队结果由行为测试断言；截图不承担规则或数值正确性。",
+    "commands": [
+      "node_modules/.bin/vitest run src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-faction-action-effects.test.ts --reporter=dot"
+    ],
+    "evidence": [
+      "../behavioral-verification.json"
+    ],
+    "result": "七大恨教程流程 29/29 与征兵训练规则效果 50/50，共 79/79。"
+  },
+  "endToEndVerification": {
+    "status": "PASS",
+    "screenshotRunId": "codex-tutorial-20261026-r18-final",
+    "evidence": [
+      "../end-to-end-verification.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-entry.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-mobile-hand-inspect.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-one-grid.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-artillery.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-chuanbing.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-recruit-wheel.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-three-grid.json",
+      "evidence/qidahen/behavior-traces/codex-tutorial-20261026-r18-final/basic-opening-wheel-first.json"
+    ],
+    "result": "8/8 Chromium tests passed in 1.5m.",
+    "screenshots": {
+      "generated": 40,
+      "distinctUIStates": 36,
+      "duplicateCapturesExcluded": 4,
+      "desktopFiles": 34,
+      "mobileFiles": 6
+    }
+  },
+  "staticVerification": {
+    "specLint": {
+      "status": "PASS",
+      "command": "npm run spec:lint"
+    },
+    "diffCheck": {
+      "status": "PASS",
+      "command": "git diff --check"
+    },
+    "typecheck": {
+      "status": "FAIL",
+      "command": "npm run typecheck",
+      "diagnosticLines": 4871,
+      "qidahenUniqueLocations": 19,
+      "note": "全仓既有类型诊断；本轮新增 domain 类型导出错误已修复，剩余七大恨诊断位于未改动文件/代码行。"
+    },
+    "i18n": {
+      "status": "FAIL",
+      "command": "npm run i18n:check",
+      "blockers": [
+        "DiceThrone 缺少 2 个英文卡牌 key 与 7 个 zh-CN 结构 key。",
+        "七大恨保留一条动态 key 检查 warning：Board.tsx:4628；未导致七大恨翻译缺项。"
+      ]
+    }
+  },
+  "problemChain": {
+    "problemOriginal": "旧教程把多条规则塞入不对应的步骤，提示目标和真实 UI 不一致，且征兵训练没有要求玩家完成正式支付与选择。",
+    "understanding": "教程应从正式开局的当前决策开始；玩家每次只看到当前动作相关的忠实中文规则译文，通过真实输入推进，随后确认实际局面变化。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "覆盖矩阵明确区分入门主线、帮助/复习与本轮不教的规则。",
+        "只有一个玩家课程；其他教程预设只用于独立 E2E 回归。",
+        "规则译文只在对应决策前出现，征兵训练只在真实落点触发。"
+      ]
+    },
+    "currentSolution": "从正式大明开局完成一项手牌行动和一项轮盘行动，顺序由玩家选择；支付、目标、编制、轮盘步数、两格对手选择、三格征兵训练均由玩家真实操作，完成后保留同一局。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "79/79 定向 Vitest 通过。",
+        "8/8 Chromium E2E 通过，覆盖 1 / 2 / 3 格与手牌先行、轮盘先行。",
+        "36/36 主链媒体已通过 UI / 交互逐图审查。",
+        "spec:lint 与 git diff --check 通过。"
+      ]
+    },
+    "remainingBlockers": "教程流程验收无阻塞。规则边界仍有一项需正式裁决：PDF 第 3 页大明「征召军队」列 6 个等级 2 部队或 2 个等级 4 川兵；PDF 第 2 页规定炮兵须研发火炮技术且从等级 1 建立；当前运行时还提供 1 个等级 1 炮兵候选。教程如实展示当前候选和第 2 页限制，没有把炮兵候选冒称为第 3 页明列效果；炮兵候选是否属于大明手牌征召需规则维护者裁决。",
+    "specBackfill": "已更新唯一规范源 .spec/knowledge/standards/tutorial-design.md 与 .spec/skills/tutorial-workflow/SKILL.md：规则原文在教程中采用忠实中文译文，按当前教学原子裁剪；先设计合法连续流程，再实现、断言真实输入与结果、逐图验 UI。"
+  },
+  "references": [
+    {
+      "title": "七大恨规则 Ver 1.3 PDF",
+      "source": "D:/gongzuo/webgame/gameasset/七大恨 中文mod/七大恨规则.pdf",
+      "pages": [
+        2,
+        3,
+        5,
+        9
+      ],
+      "role": "formal-rules-source"
+    },
+    {
+      "title": "Board Game Arena Tutorials checklist",
+      "url": "https://en.doc.boardgamearena.com/Tutorials_checklist",
+      "inspected": true,
+      "role": "tutorial-construction-reference"
+    },
+    {
+      "title": "Every Board Game Rulebook Is Awful",
+      "url": "https://boardgametextbook.com/EBGRIA.pdf",
+      "inspected": true,
+      "relevantSections": "Wingspan app and Dized tutorial analysis",
+      "role": "tutorial-structure-reference"
+    },
+    {
+      "title": "DiceThrone revision 19 tutorial in this workspace",
+      "inspected": true,
+      "role": "internal-implementation-reference",
+      "boundary": "只借鉴信息与当前实际对象/决策绑定；不是七大恨规则来源，未声称在本轮重新完整游玩。"
+    }
+  ],
+  "media": [
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00-唯一入门入口-直接进入胜利条件.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00a-继续后-选择首个行动.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-00-开场-胜利条件说明.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-01-首个行动选择-轮盘或征召.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-02-征召支付-手牌检视前.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-03-征召支付-长按手牌打开检视.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-05-选牌后确认征召支付.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-一格开垦前-选择轮盘走法.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘一格-进入开垦并结算.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-征召支付-点击看查看牌面.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07-支付1张手牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-确认弃置手牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/08-选择宣府建军位置.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09-选择建军方式.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/10-征召结果-轮盘行动待完成.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02a-轮盘三格费用与落点说明.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03-轮盘选择-三种走法均可选择.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03a-轮盘两格-选择对手抽牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03b-轮盘两格-进入军屯并结算.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/11-教程结束后同局下一位玩家可操作.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03e-征兵训练选择行动前规则译文.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03f-训练目标选择与等级提示.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03g-征兵训练结算结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03h-征兵目标本土限制与候选区域.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03i-额外训练规则与弃牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03j-额外训练目标与结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03k-征兵训练结果与轮盘结算.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03l-教程退场后同局继续.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02d-轮盘后选择手牌行动.png",
+    "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02e-两种行动完成-征召结果.png"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/codex-tutorial-20261026-r18-final-mobile/移动-04-关闭检视-回到征召支付.png",
+      "contract": "duplicate-screenshot-exclusion",
+      "reason": "该捕获与已索引的唯一 UI 状态 SHA-256 完全一致，现有截图承担相同界面证据，按去重策略排除。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/codex-tutorial-20261026-r18-final/01-开场-阅读三种胜利条件.png",
+      "contract": "duplicate-screenshot-exclusion",
+      "reason": "该捕获与已索引的唯一 UI 状态 SHA-256 完全一致，现有截图承担相同界面证据，按去重策略排除。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/codex-tutorial-20261026-r18-final/03c-三格征兵训练前-选择轮盘走法.png",
+      "contract": "duplicate-screenshot-exclusion",
+      "reason": "该捕获与已索引的唯一 UI 状态 SHA-256 完全一致，现有截图承担相同界面证据，按去重策略排除。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/codex-tutorial-20261026-r18-final/02c-先轮盘后手牌-行动顺序选择.png",
+      "contract": "duplicate-screenshot-exclusion",
+      "reason": "该捕获与已索引的唯一 UI 状态 SHA-256 完全一致，现有截图承担相同界面证据，按去重策略排除。"
+    }
+  ],
+  "currentSourceRevision": "sha256:7a8fcae55c87def4cf1c5c09d222929a81fa1e5c10f67a765562ac0eb14dbc54"
+}

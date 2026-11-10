@@ -1,0 +1,152 @@
+{
+  "objective": "仅诊断开局行动轮盘、教程说明与本次绿色落点的关联及分层避让",
+  "scope": "私有图面审查，不展示图片；不代表整个新教程通过",
+  "criteria": [
+    "先看整屏，玩家无需额外解释即可把文案对应到轮盘及本次绿色扇区",
+    "下一步操作清楚，当前任务与同层HUD可读且无遮挡",
+    "高层提示可覆盖无关低层地图，不把此类跨层覆盖直接判失败",
+    "截图只判断可见清楚与命中面未被遮挡；真实可点由同入口行为证据另证"
+  ],
+  "verdict": "PASS",
+  "afterStatus": "已私读当前正式教程入口两张新原始整屏，均通过本次开局限定图面审查",
+  "items": [
+    {
+      "path": "C:/Users/ZHUAGE~1/AppData/Local/Temp/codex-clipboard-4f3fc7a3-61ac-48e4-8204-329a506f851b.png",
+      "sha256": "666E410DD305CF6F207AB7F1CF966FA5F2B806B3A6D66C47916FAFDE2231A616",
+      "role": "用户原图",
+      "status": "REVISE",
+      "previousPassInvalidated": true,
+      "observations": [
+        "左上轮盘的开垦、军屯扇区为绿色，右下教程说明处于地图另一端；说明没有贴轮盘形成同一阅读组，第一眼难以判断说明控制左上轮盘及其绿色落点。",
+        "右下白色教程卡贴住底边且被画面截断；当前引导文案与上一步控制被挤在屏幕边缘。",
+        "主问题是当前操作组分离及说明边缘裁切，不能以绿色扇区本身可见、截图存在或E2E通过继续维持原PASS。"
+      ],
+      "nextAction": "说明需贴近当前轮盘并分层避开同层HUD；回同一教程状态重拍。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/qidahen-layering/before/opening-move.png",
+      "sha256": "43FD7393A1ED7F8A47082DDD7DE02959605A1449FAB542962925F78853305CAE",
+      "role": "改前真实教程入口",
+      "status": "REVISE",
+      "observations": [
+        "绿色开垦、军屯扇区在左上轮盘内，说明卡却在右下，地图横在阅读与操作之间；两者没有形成同一焦点组。",
+        "说明正文能读到本次前进1格，但读完必须跨屏寻找轮盘和绿色扇区；下一步归属未由空间关系清楚表达。",
+        "轮盘扇区本体及上方玩家读数可见，不因此抵消操作组分离。无关低层地图被提示覆盖不单独作为失败。"
+      ],
+      "nextAction": "同轮盘关联构图后，以新整屏图及平移图复核。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/qidahen-layering/after-formal-pan/opening-move.png",
+      "sha256": "895689FE89FD4F0E3D866DA2853F67624318A98A28DE61E996E2009434DCFABF",
+      "role": "当前正式教程入口开局操作态",
+      "status": "PASS",
+      "score": 94,
+      "observations": [
+        "整屏第一眼先看到左上绿色轮盘扇区和紧靠其右侧的白色说明卡，二者组成同一个阅读操作组；说明卡左侧箭头指向轮盘，轮盘归属无需跨屏寻找。",
+        "文案中的本次前进1格与轮盘中唯一明亮的开垦、军屯绿色扇区互相承接；绿色扇区的白色边界和文字完整露出。玩家读完可直接点击同组绿色扇区，而不是去右下寻找操作。",
+        "说明完整显示且上一步入口在卡内，不再贴底裁断；当前轮盘及绿色扇区未被卡片遮挡。",
+        "上方三方玩家状态、左侧两张提示板、右侧牌堆、底部手牌与两端牌堆仍保留原承载，没有被说明卡迁移、收起或压住。",
+        "说明卡覆盖了低层地图的部分地名与非当前任务实体；开局当前任务在轮盘上，这种跨层覆盖不直接记为失败。"
+      ],
+      "layoutAudit": [
+        {
+          "criterion": "空间主次",
+          "status": "PASS",
+          "observation": "当前轮盘与说明集中在左上同一组；地图作为低层背景保留，当前绿色落点没有被覆盖。"
+        },
+        {
+          "criterion": "对齐栅格",
+          "status": "PASS",
+          "observation": "说明卡贴轮盘右侧，其左边缘与箭头形成明确指向；正文和上一步位于同一白色卡片内，阅读流未断。"
+        },
+        {
+          "criterion": "分组与装饰",
+          "status": "PASS",
+          "observation": "轮盘外缘承载实际交互范围，绿色扇区承载本次落点，说明白底承载阅读，三者职责可区分；没有第二处同等强度的说明争夺焦点。"
+        }
+      ],
+      "nextPlayerAction": "读完轮盘旁说明，点击轮盘上唯一高亮的开垦、军屯绿色扇区。",
+      "clickEvidenceBoundary": "图面证明当前扇区清楚、未被说明覆盖；点击结果仍以同入口E2E为独立行为证据。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/qidahen-layering/after-formal-pan/opening-move-map-panned.png",
+      "sha256": "3419E36679C12A913C2DF313C63E86C7FF2880895ABCBDC23782465463DBE108",
+      "role": "当前正式教程入口地图平移后",
+      "status": "PASS",
+      "score": 93,
+      "observations": [
+        "与前图相比地图城名、河道、军队和底图上的印刷轮盘发生位移，当前可交互轮盘及其右侧说明保持为同一组，没有追逐下层实体换到别处。",
+        "绿色开垦、军屯扇区与说明箭头仍同时清楚可见，玩家读完继续点同一绿色扇区，地图平移没有破坏本次任务归属。",
+        "顶部玩家读数、左右牌堆、底部手牌和上一步仍各在原承载区域；说明未压住这些同层HUD，也未遮住当前绿色轮盘落点。",
+        "平移后下层地图印刷轮盘有部分露出；它没有当前绿色高亮，前景可交互轮盘边界完整。当前任务归属仍由前景绿色扇区与贴旁说明明确承载，不以这个低层印刷图形单独判失败。",
+        "白色说明遮盖部分低层地图属于允许的覆盖；没有把无关低层军队和人口都升级成当前教程布局障碍。"
+      ],
+      "layoutAudit": [
+        {
+          "criterion": "空间主次",
+          "status": "PASS",
+          "observation": "平移后的场景在后，轮盘与教程说明仍在前景构成同组；绿色扇区为明确操作焦点。"
+        },
+        {
+          "criterion": "对齐栅格",
+          "status": "PASS",
+          "observation": "轮盘与说明相对位置、正文流和卡内上一步均保持，不随地图地物重新排布。"
+        },
+        {
+          "criterion": "分组与装饰",
+          "status": "PASS",
+          "observation": "前景绿色落点及白卡构成明确任务组；低层底图局部印刷轮盘未取代或遮住前景动作载体。"
+        }
+      ],
+      "nextPlayerAction": "继续点击固定在左上轮盘中的绿色扇区；无需跟随地图地物重新找说明。",
+      "clickEvidenceBoundary": "静态图仅证明平移后的可见位置与任务清晰度；真实平移及操作结果另由正式map-layer状态和E2E证明。"
+    }
+  ],
+  "coverageLimitations": [
+    "只审1362×780桌面正式教程入口的开局轮盘操作态及一次地图平移后态。",
+    "不代表整个新教程、后续战斗/招募/维修步骤或其它视口通过。",
+    "图片不单独证明命中测试、真实点击结算、可阅读时长或全流程完成；这些需对应行为证据。",
+    "未读取旧after目录作为当前最终证据，旧失败文件仍保留。"
+  ],
+  "currentEvidenceDirectory": "test-results/qidahen-layering/after-formal-pan",
+  "verdictMeaning": "PASS仅指当前两张正式新图的开局轮盘说明关联与分层避让；用户原图和before继续保留REVISE，不代表整个新教程通过。",
+  "method": "由独立子代理 /root/layering_opening_visual 私读四张原始整屏后返回文字；未向父线程传图片，未打开用户查看器。先判整屏可理解性，再查同层与当前任务；未以间距数值或E2E绿灯替代图面结论。",
+  "summary": {
+    "total": 4,
+    "PASS": 2,
+    "REVISE": 2,
+    "currentScope": "开局轮盘说明关联与分层避让",
+    "currentStatus": "PASS",
+    "fullTutorialStatus": "未审查，不能据此判PASS"
+  },
+  "negativeImpactChecks": [
+    {
+      "object": "教程说明",
+      "change": "从右下移至当前轮盘右侧",
+      "decisionRelevance": "当前教学与下一操作承接",
+      "newCarrier": "轮盘右侧白色说明卡及指向轮盘的箭头",
+      "finding": "正文和上一步完整可读；未删除说明。"
+    },
+    {
+      "object": "当前行动轮盘及绿色落点",
+      "change": "作为界面锚点保留，场景独立平移",
+      "decisionRelevance": "本次必须操作的对象",
+      "newCarrier": "左上前景轮盘原承载",
+      "finding": "两张新图中绿色扇区均完整、可辨、未被说明遮挡。"
+    },
+    {
+      "object": "同层HUD及持续持有物",
+      "change": "保留原承载",
+      "decisionRelevance": "玩家状态、牌堆和手牌",
+      "newCarrier": "顶部、左右侧与底部原槽位",
+      "finding": "没有迁移、收起、缩小来为说明让位；说明未覆盖这些槽位。"
+    },
+    {
+      "object": "无关低层地图地名、军队和人口",
+      "change": "部分可被高层说明覆盖",
+      "decisionRelevance": "当前开局轮盘教学未要求直接操作它们",
+      "newCarrier": "原地图场景",
+      "finding": "覆盖不意味着删除对象；当前仅审轮盘任务，不将全地图无遮挡列为PASS前提。"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
 import {
@@ -25,6 +26,7 @@ import {
 import { startSingleWorkerRuntime } from './single-worker-runtime.js';
 import { withE2ELocalAssetEnv } from './e2e-local-assets-env.mjs';
 import { getFrontendSourceHash, readRuntimeSourceIdentity, sourceIdentityMatches, selectRuntimeSourceIdentity } from './e2e-source-identity.mjs';
+import { assertWindowsSnapshotRoot, calculateSnapshotRevision } from './e2e-snapshot-revision.mjs';
 
 const TMP_DIR = path.join(process.cwd(), '.tmp');
 const RUNTIME_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '420000', 10);
@@ -185,6 +187,7 @@ function createRuntimeEnv(runtime) {
         PW_E2E_ENTRYPOINT: runtime.entrypoint ?? '',
         PW_E2E_COMMAND_SOURCE: runtime.commandSource ?? '',
         PW_E2E_TARGET: runtime.targetLabel ?? runtime.target ?? '',
+        ...(runtime.testApiTokenFile ? { TEST_API_TOKEN_FILE: runtime.testApiTokenFile } : {}),
         PW_PORT: String(runtime.ports.frontend),
         PW_GAME_SERVER_PORT: String(runtime.ports.gameServer),
         GAME_SERVER_PORT: String(runtime.ports.gameServer),
@@ -193,7 +196,27 @@ function createRuntimeEnv(runtime) {
     };
 }
 
-function buildSingleWorkerPlan({ preferSharedSingleRun = false, requestedScope = '', target = '' } = {}) {
+const SESSION_ENV_KEYS = new Set([
+    'PW_E2E_SESSION_ID', 'PW_E2E_CLIENT_PID', 'PW_E2E_ENTRYPOINT', 'PW_E2E_COMMAND_SOURCE',
+    'PW_E2E_TARGET', 'PW_E2E_OUTPUT_DIR', 'PW_TEST_TARGET', 'PW_RUNTIME_SCOPE', 'PW_MANAGED_RUNTIME_ID',
+    'CODEX_TOOL_CALL_ID', 'CODEX_THREAD_ID', 'CODEX_SESSION_ID', 'CODEX_APP_TOOLS_PIPE_PATH',
+    'CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY', 'CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE',
+]);
+
+/** 除每次测试独有元数据外保守绑定全部启动环境，避免后端配置不同却复用。 */
+export function getSnapshotRuntimeScope(snapshotRevision, env = process.env) {
+    const hash = createHash('sha256').update(snapshotRevision).update('\0');
+    for (const [name, value] of Object.entries(env).filter(([name]) => !SESSION_ENV_KEYS.has(name)).sort(([a], [b]) => a.localeCompare(b))) {
+        hash.update(name).update('\0').update(String(value ?? '')).update('\0');
+    }
+    return `shared-version-${hash.digest('hex')}`;
+}
+
+function buildSingleWorkerPlan({ preferSharedSingleRun = false, requestedScope = '', target = '', snapshotRevision = '' } = {}) {
+    if (snapshotRevision) {
+        if (!/^[a-f0-9]{64}$/.test(snapshotRevision)) throw new Error('快照版本必须是完整的小写 SHA-256');
+        return { scope: getSnapshotRuntimeScope(snapshotRevision), mode: 'shared-version', target, ports: null };
+    }
     if (preferSharedSingleRun) {
         return {
             scope: getSharedSingleScope(),
@@ -333,10 +356,28 @@ export async function stopManagedRuntime({ runtimeId = '', scope = '', logger = 
 }
 
 export async function ensureSingleWorkerRuntime(options = {}) {
+    if (Boolean(options.sourceRoot) !== Boolean(options.snapshotRevision)) {
+        throw new Error('快照服务必须同时指定固定源码根和版本身份');
+    }
+    if (options.sourceRoot && process.env.PW_SERVER_WATCH === 'true') {
+        throw new Error('快照服务不能启用源码监听');
+    }
+    if (options.sourceRoot) {
+        throw new Error('快照服务尚未完成租约、共享状态隔离和真实入口验证，暂不允许启动');
+    }
+    if (options.snapshotRevision && !/^[a-f0-9]{64}$/.test(options.snapshotRevision)) {
+        throw new Error('快照版本必须是完整的小写 SHA-256');
+    }
+    if (options.sourceRoot) {
+        await assertWindowsSnapshotRoot(options.sourceRoot);
+        const actualRevision = await calculateSnapshotRevision(options.sourceRoot);
+        if (actualRevision !== options.snapshotRevision) throw new Error('快照版本与实际源码内容不匹配，拒绝复用服务');
+    }
     const plan = buildSingleWorkerPlan({
         preferSharedSingleRun: options.preferSharedSingleRun === true,
         requestedScope: options.requestedScope ?? process.env.PW_RUNTIME_SCOPE ?? '',
         target: options.target ?? '',
+        snapshotRevision: options.snapshotRevision ?? '',
     });
     return withRuntimeStartupLock(plan.scope, () => ensureSingleWorkerRuntimeUnlocked(options, plan), { timeoutMs: options.timeoutMs });
 }
@@ -346,7 +387,8 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
     const target = options.target ?? '';
     const targetGameId = target.replaceAll('\\', '/').match(/^e2e\/([^/]+)\//)?.[1];
     const serverRuntime = process.env.PW_SERVER_RUNTIME || 'bundle';
-    const frontendSourceHash = getFrontendSourceHash(process.cwd());
+    const sourceRoot = options.sourceRoot ? path.resolve(options.sourceRoot) : process.cwd();
+    const frontendSourceHash = getFrontendSourceHash(sourceRoot, process.env, { relativePaths: Boolean(options.sourceRoot) });
     const currentWorktreeRoot = getWorktreeRoot(process.cwd());
 
     pruneStaleRuntimes(process.cwd(), { killOrphans: true, logger });
@@ -364,6 +406,7 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
     if (existingRuntime) {
         const inspected = await inspectManagedRuntime({ runtimeId: existingRuntime.runtimeId });
         if (inspected?.health?.ready && inspected.serverRuntime === serverRuntime
+            && (!options.snapshotRevision || inspected.snapshotRevision === options.snapshotRevision)
             && inspected.frontendSourceHash === frontendSourceHash
             && sourceIdentityMatches(selectRuntimeSourceIdentity(inspected.sourceIdentity, targetGameId))) {
             const consumerPids = [...new Set([...(inspected.consumerPids ?? []).filter(isPidAlive), Number(process.env.PW_E2E_CLIENT_PID || process.pid)])];
@@ -402,9 +445,10 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
     let controller = null;
     let provisionalRuntime = null;
     let directSourceIdentity = null;
+    const bundleScope = options.sourceRoot ? `${plan.scope}-${randomUUID()}` : plan.scope;
 
     try {
-        directSourceIdentity = serverRuntime !== 'bundle' ? readRuntimeSourceIdentity(plan.scope) : null;
+        directSourceIdentity = serverRuntime !== 'bundle' ? readRuntimeSourceIdentity(plan.scope, sourceRoot, serverRuntime) : null;
         controller = await startSingleWorkerRuntime({
             env: withE2ELocalAssetEnv({
                 ...process.env,
@@ -425,6 +469,8 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
             logFile,
             childStdio: ['ignore', 'pipe', 'pipe'],
             runtimeScope: plan.scope,
+            sourceRoot: options.sourceRoot,
+            bundleScope,
             runtimeMode: plan.mode,
             target,
             targetLabel: process.env.PW_E2E_TARGET?.trim() || target,
@@ -445,6 +491,11 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
             consumerPids: [Number(process.env.PW_E2E_CLIENT_PID || process.pid)],
             serverRuntime,
             frontendSourceHash,
+            snapshotRevision: options.snapshotRevision ?? '',
+            sourceRoot: options.sourceRoot ? sourceRoot : '',
+            bundleScope,
+            runtimeDataRoot: controller.runtimeDataRoot,
+            testApiTokenFile: controller.testApiTokenFile,
             servicePids: controller.getServicePids(),
             pids: [process.pid, ...controller.getServicePids()],
             bootstrapLogFiles: [logFile],
@@ -468,9 +519,9 @@ async function ensureSingleWorkerRuntimeUnlocked(options, plan) {
                 throw error;
             }),
         ]);
-        const sourceIdentity = directSourceIdentity ?? readRuntimeSourceIdentity(plan.scope);
+        const sourceIdentity = directSourceIdentity ?? readRuntimeSourceIdentity(bundleScope);
         if (!sourceIdentityMatches(selectRuntimeSourceIdentity(sourceIdentity, targetGameId))) throw new Error('服务启动期间目标依赖发生变化，请按当前源码重新启动。');
-        if (frontendSourceHash !== getFrontendSourceHash(process.cwd())) throw new Error('前端启动配置在服务启动期间发生变化，请按当前配置重新启动。');
+        if (frontendSourceHash !== getFrontendSourceHash(sourceRoot, process.env, { relativePaths: Boolean(options.sourceRoot) })) throw new Error('前端启动配置在服务启动期间发生变化，请按当前配置重新启动。');
         touchRuntime(plan.scope, { sourceIdentity });
         logger.log?.(`✅ E2E runtime 已就绪: ${formatRuntimeSummary(readyRuntime)}`);
 
@@ -524,7 +575,7 @@ function createLogger(quiet) {
 
 /** 共享服务独立于发起测试存活；控制连接关闭后继续承载后续测试。 */
 export async function holdRuntimeOwner(result, input = process.stdin) {
-    const keepSharedOwner = result.runtime.mode === 'shared-single' && Boolean(result.controller);
+    const keepSharedOwner = ['shared-single', 'shared-version'].includes(result.runtime.mode) && Boolean(result.controller);
     let finish;
     const released = new Promise(resolve => { finish = resolve; });
     const onInputEnd = () => { if (!keepSharedOwner) finish(); };
@@ -572,6 +623,7 @@ async function main() {
             mode: result.runtime.mode,
             ports: result.runtime.ports,
             reused: result.reused,
+            ...(result.runtime.testApiTokenFile ? { testApiTokenFile: result.runtime.testApiTokenFile } : {}),
         };
         console.log(jsonMode ? JSON.stringify(payload) : JSON.stringify(payload, null, 2));
         if (holdMode) {

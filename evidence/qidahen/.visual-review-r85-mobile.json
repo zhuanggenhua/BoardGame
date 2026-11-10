@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "reviewer": { "kind": "subagent", "id": "/root/r85_final_mobile" },
+  "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "scope": "仅逐张检查索引中第十五至第十九项的五张移动端整屏原图；不判规则或数值，不声称覆盖桌面端及其它媒体。手机保留桌面同构等比呈现是已锁定的用户要求。",
+  "score": {
+    "任务清晰度": 19,
+    "视觉层级": 14,
+    "对象可识别性": 14,
+    "状态与动作载体": 15,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 9,
+    "总体": 95
+  },
+  "negativeEffects": [
+    "提示条在目标选择时移至左下，叶赫部及上方地图候选保留于决策托盘上方；未用提示文字替代地图目标。",
+    "支付时提示条移至顶部，底部手牌仍有各自露出的标题和牌面上缘；轮盘仍可辨认，未被完全挤掉。",
+    "银两选中后单张抬起，左右其它手牌仍保留独立露出槽位；确认与取消仍在同一个支付托盘内，没有另占手牌区。",
+    "检视层居中展示整张银两，关闭入口置于右上角并且没有截断标题；该检视状态暂时压暗背景，关闭后的图中支付托盘、轮盘及手牌重新完整承接当前选择。",
+    "五张图未见删除或移动组件后留下无职责大空白、布局塌陷、正式卡面缺失或同屏重复操作指令。"
+  ],
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-00-轮盘两格与指定对手.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-00-轮盘两格与指定对手.png",
+      "sha256": "2d3f7310bd76eb770749653bf9e48b9233544b6faf982e91428d87b2ac8ff654",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "左侧抽牌决策面板清楚显示蒙古与后金两个独立按钮，右下教程指向后金；面板说明当前军屯来源，提示条承担指定目标说明，职责可区分。轮盘上部及指示分区可见，地图主体和底部半露手牌仍在；未见破图或错误遮罩。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "sha256": "95bbd1f670c277913779b8c24eaf0a999747d6f352c019b46a984424f280a017",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "地图缩放后叶赫部标题居上，多个候选区域以贴合边界的亮线显现，叶赫部区域及其节点位于支付托盘上方可直接辨认。左下提示明确目标，托盘承载支付进度、确认和取消；轮盘完整可见，底部手牌与右侧牌堆没有被整体移除。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-02-突袭支付与手牌.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-02-突袭支付与手牌.png",
+      "sha256": "5f7ea7500633d22289b64e232d21a84cef55e7c219031b5b569cf6c48060ead8",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶部提示说明选择银两、保留鸳鸯阵及放大或长按检视入口，中央支付托盘显示未选满和目标摘要。底部多张手牌分别半露，卡名及上缘可区分，未被支付托盘盖住；轮盘和地图上方候选边界仍可辨，确认按钮呈未满足状态且取消入口清楚。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-03-长按银两检视卡面.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-03-长按银两检视卡面.png",
+      "sha256": "c207f3726f240013bbab7766de6045d9f495986522ed83e645c34a9493e2bff6",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "银两检视卡面从顶边至底边完整位于屏内，标题、明字标识和银锭图案清楚，比例自然且无空白替代素材。右上黑色圆形关闭入口完整，未遮银两标题；背景压暗后轮盘、支付托盘和其它手牌仍可辨其位置，焦点明确集中于完整卡面。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "sha256": "66c51b896f8f754e41b0c7e11a6ec4b87df53262e63d2dd27248a3bca8955444",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "检视层已关闭，银两独立抬起并以亮色边界和底部选中标志反馈选择，卡面和右上放大镜入口完整可见。托盘明确显示已选银两及选满进度，确认执行按钮亮起并有聚焦边界，取消入口仍在右侧；其它手牌继续半露，轮盘保留，顶部提示承接确认弃掉选中银两这一动作。",
+      "issues": []
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "手机横屏 936x432 CSS 视口下，移动外层画布占满视口，不再出现整套 UI 缩在中间或横向溢出",
+      "status": "PASS",
+      "evidence": [
+        "E2E 指标：mobile shell 2340px，scale 0.400000，渲染矩形 936x432",
+        "E2E 指标：document/body/root scrollWidth 均为 936"
+      ]
+    },
+    {
+      "requirement": "PC 1920x1080 与手机横屏保持同一套固定构图，房间画布与房间牌按 0.4 等比缩放",
+      "status": "PASS",
+      "evidence": [
+        "E2E 指标：PC roomCanvas 936x752，手机 roomCanvas 374.4x300.8",
+        "E2E 指标：六个代表房间均 visible，包含 ground-south"
+      ]
+    },
+    {
+      "requirement": "阶段卡、左右状态栏和底部动作栏都在同一 board-shell 缩放体系内",
+      "status": "PASS",
+      "evidence": [
+        "E2E 指标：手机 phaseChip、status rails、actionRail 均有可见矩形",
+        "最终 PC/手机截图来自同一移动选目标状态"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-移动选目标.jpg"
+  ]
+}

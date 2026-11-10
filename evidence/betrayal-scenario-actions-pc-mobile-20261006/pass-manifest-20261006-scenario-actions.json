@@ -1,0 +1,52 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-06T10:05:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "“阅读完整剧本”“确认此剧本卡”“关闭”三个主操作在 PC 与手机同一排，且完整落在当前视口内。",
+      "status": "PASS",
+      "evidence": [
+        "PC/手机同状态 E2E 通过：剧本选择三项主操作在 PC 与手机保持同排和同一视觉层级。",
+        "E2E 增加了三项按钮完整可见、同排和 action row 视口内断言。",
+        "PC 与手机最终截图都能直接看到底部三按钮。"
+      ]
+    },
+    {
+      "requirement": "按钮视觉尺寸与文字比例可读，手机端不再受壳层缩放影响而出现小字。",
+      "status": "PASS",
+      "evidence": [
+        "主操作按钮统一最小高度 56px、字号 18px、同一视觉盒。",
+        "剧本选择弹窗改为真实视口 Portal，手机端字号不再随 PC 画布 0.4 倍壳层缩放。",
+        "E2E 断言 PC 与手机按钮字号一致且不低于 16px。"
+      ]
+    },
+    {
+      "requirement": "选角确认主按钮不被共享“离开”悬浮球遮挡，进入牌桌后恢复右下角布局。",
+      "status": "PASS",
+      "evidence": [
+        "Betrayal 选角阶段识别 core.phase=characterSelect，FAB 改到右上角；牌桌阶段仍为右下角。",
+        "E2E 在角色确认中心点执行 elementFromPoint，确认不再命中 FAB。",
+        "GameHUD 单测通过，覆盖 Betrayal 选角阶段 top-right 位置。"
+      ]
+    },
+    {
+      "requirement": "移动端交付同时提供同一入口、同一状态的 PC 对照。",
+      "status": "PASS",
+      "evidence": [
+        "同一工作树、同一入口、同一版本代码生成 1920x1080 PC 与 936x432 手机横屏截图。",
+        "adapt-game-mobile canonical skill 已新增 PC 对照强制门禁；spec-lint 与 skill 校验通过。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-actions-pc-mobile-20261006\\01-PC-剧本选择三按钮同排.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-actions-pc-mobile-20261006\\02-手机横屏-剧本选择三按钮同排.jpg"
+  ]
+}

@@ -51,6 +51,18 @@ export type AuthoritativeCommandSuccessCoordinatorHooks<
     broadcastState: (match: TMatch) => void;
     clearOnlineAiCircuitBreaker: (matchID: string) => void;
     persistMetadata: (match: TMatch) => Promise<void>;
+    recordFeedbackReplayCommand?: (args: {
+        match: TMatch;
+        playerId: string;
+        commandType: string;
+        commandPayload: unknown;
+        stateBefore: MatchState<unknown>;
+        stateAfter: MatchState<unknown>;
+        stateIdBefore: number;
+        stateIdAfter: number;
+        randomCursorBefore?: number;
+        randomCursorAfter?: number;
+    }) => void;
 };
 
 export type AuthoritativeCommandSuccessCoordinatorConfig<
@@ -84,6 +96,7 @@ export class AuthoritativeCommandSuccessCoordinator<
         execution: AuthoritativeCommandExecutionSuccess;
         seatControllerType: AuthoritativeCommandSeatControllerType;
         stateIdBefore: number;
+        preCommandState: MatchState<unknown>;
         progressMarkerBeforeCommand: string;
         preCommandSeatView: MatchState<unknown>;
         randomCursorBefore?: number;
@@ -150,6 +163,26 @@ export class AuthoritativeCommandSuccessCoordinator<
 
         if (!commitResult.committed) {
             return false;
+        }
+
+        try {
+            this.hooks.recordFeedbackReplayCommand?.({
+                match,
+                playerId: args.playerId,
+                commandType: args.commandType,
+                commandPayload: args.commandPayload,
+                stateBefore: args.preCommandState,
+                stateAfter: match.state,
+                stateIdBefore: args.stateIdBefore,
+                stateIdAfter: commitResult.stateIdAfter,
+                randomCursorBefore: args.randomCursorBefore,
+                randomCursorAfter: args.randomCursorAfter,
+            });
+        } catch {
+            logger.warn('[FeedbackReplay] authoritative command boundary was not recorded', {
+                matchID: match.matchID,
+                commandType: args.commandType,
+            });
         }
 
         await runAuthoritativeCommandSuccessEffects<FeedbackPayload>({

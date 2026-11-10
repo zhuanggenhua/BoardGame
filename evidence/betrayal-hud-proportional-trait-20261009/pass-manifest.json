@@ -1,0 +1,51 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-09T18:40:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "不要更新规范新增「禁止重复非必要」同义条款；现有 ui-change-gates / ui-ux 已覆盖，本轮是没执行到位。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-change-gates.md 已写同一信息只保留一个主可见承载、无差异信息不重复展示、重复 UI 要代码验收。",
+        ".spec/knowledge/standards/ui-ux.md 已写提示不复读视觉、多层视觉只能有一个贴合本体的主边界、非必要不新增 UI。",
+        "本轮未改 .spec 文件，只修 Betrayal 属性条实现以执行既有规则。"
+      ]
+    },
+    {
+      "requirement": "牌桌 HUD 字号按电脑设计等比缩放，禁止部分标签逆缩放到十六像素导致忽大忽小。",
+      "status": "PASS",
+      "evidence": [
+        "src/index.css 手机横屏 HUD 只保留 transform: scale(var(--betrayal-hud-scale))，已去掉能力摘要、阶段条、行动栏的逆缩放十六像素规则。",
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts 断言阶段条与行动栏屏幕高度等于电脑设计乘以 hudScale，能力摘要 computed 字号保持电脑十六像素。",
+        "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts 维沃横屏能力摘要字号十六、屏幕高度约二十四像素、与急救包重叠面积为零。",
+        "e2e/betrayal/basic-flow.e2e.ts 移动端横屏角色选择 1 passed：选角能力摘要保持电脑设计字号，由 board-shell 等比缩放。",
+        "02 原图可见左侧属性、能力摘要、回合条、底部行动一起缩小，没有某一块单独胀成十六像素触控字。"
+      ]
+    },
+    {
+      "requirement": "属性条当前值只用一种可见信号：金色填充。同一格禁止同时下划线和高亮。初始格绿线只在当前格离开后出现。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/traitTrackSurface.tsx 当前格只有金色渐变填充；after 绿线条件为 isStart && !isCurrent。",
+        "e2e/betrayal/trait-track-ui.e2e.ts 1 passed，测试属性 current-green / in-slot-green-band / material-slot-highlight 仍在。",
+        "01 开局图当前等于初始，四条属性当前格只有金色，没有叠绿下划线。",
+        "03 偏移图速度当前格金色、初始格另用绿线，证明两种信号不再落在同一格。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-hud-proportional-trait-20261009/01-PC-1920x1080-属性条与HUD.jpg",
+    "evidence/betrayal-hud-proportional-trait-20261009/02-Vivo-796x360-属性条与HUD等比.jpg",
+    "evidence/betrayal-hud-proportional-trait-20261009/03-PC-1920x1080-当前值与初始值分离.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

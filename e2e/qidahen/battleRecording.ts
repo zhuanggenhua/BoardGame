@@ -69,42 +69,45 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         sample();
         (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation = { states, observer };
     });
-    const frames: Array<{ path: string; at: number; startedAt: number; endedAt: number }> = [];
-    const session = await page.context().newCDPSession(page);
-    let capturing = true;
-    let captureFailure: unknown;
-    page.once('close', () => { capturing = false; });
-    // 直接读取同页实际合成视口。stream已被逐帧证实漏结果层；不混入再延长静态帧。
-    // 不走Playwright截图的字体等待，每次仍保留真实起止时间，跨阶段采集不能作关键帧。
-    const captureLoop = (async () => {
-        while (capturing) {
-            const startedAt = Date.now() / 1000;
-            const pixels = await session.send('Page.captureScreenshot', { format: 'png', fromSurface: true, optimizeForSpeed: true });
-            const endedAt = Date.now() / 1000;
-            const path = resolve(frameDirectory, `${String(frames.length).padStart(5, '0')}.png`);
-            writeFileSync(path, Buffer.from(pixels.data, 'base64'));
-            frames.push({ path, at: (startedAt + endedAt) / 2, startedAt, endedAt });
-            const remaining = Math.max(0, 60 - (Date.now() / 1000 - startedAt) * 1000);
-            if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
-        }
-    })().catch(error => { captureFailure = error; });
-    await expect.poll(() => frames.length).toBeGreaterThan(0);
+    type Frame = { path: string; at: number; startedAt: number; endedAt: number; source: 'screencast' };
+    const screencastFrames: Frame[] = [];
+    const streamSession = await page.context().newCDPSession(page);
+    let streamFailure: unknown;
+    const streamAcks: Promise<void>[] = [];
+    streamSession.on('Page.screencastFrame', event => {
+        try {
+            const at = event.metadata.timestamp;
+            if (typeof at !== 'number' || Math.abs(at - Date.now() / 1000) > 60) throw new Error('Missing or invalid compositor timestamp');
+            const path = resolve(frameDirectory, `stream-${String(screencastFrames.length).padStart(5, '0')}.jpg`);
+            writeFileSync(path, Buffer.from(event.data, 'base64'));
+            // 不抽帧：静止伤害状态可能只有一张新的合成帧，按固定间隔过滤会漏掉它。
+            screencastFrames.push({ path, at, startedAt: at, endedAt: at, source: 'screencast' });
+        } catch (error) { streamFailure = error; }
+        streamAcks.push(streamSession.send('Page.screencastFrameAck', { sessionId: event.sessionId }).then(() => undefined).catch(error => { streamFailure = error; }));
+    });
+    await streamSession.send('Page.startScreencast', { format: 'jpeg', quality: 90, everyNthFrame: 1 });
+    // 只用一条带时间戳的合成流。并发全屏截图会卡住合成器，遗漏正在投掷的实帧。
+    await expect.poll(() => screencastFrames.length).toBeGreaterThan(0);
     return async () => {
         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
         const exitAt = await page.evaluate(() => {
             const record = (window as unknown as { __annualBattleObservation: { states: State[] } }).__annualBattleObservation;
             return record.states.at(-1)!.at;
         });
-        await expect.poll(() => frames.at(-1)!.startedAt, { timeout: 10_000, message: 'actual composed viewport after dice exit must be captured' }).toBeGreaterThanOrEqual(exitAt);
-        capturing = false;
-        await captureLoop;
-        await session.detach();
-        if (captureFailure) throw captureFailure;
+        await expect.poll(() => screencastFrames.at(-1)!.at, { timeout: 10_000, message: 'actual composed viewport after dice exit must be captured' }).toBeGreaterThanOrEqual(exitAt);
+        await streamSession.send('Page.stopScreencast');
+        await Promise.all(streamAcks);
+        await streamSession.detach();
+        if (streamFailure) throw streamFailure;
         const states = await page.evaluate(() => {
             const record = (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation;
             record.observer.disconnect(); return record.states;
         });
-        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, timebase: 'UTC seconds; actual composed viewport capture interval midpoints', captureMethod: 'Continuous same-page Page.captureScreenshot sampling; every recorded frame is an actual composed viewport at real elapsed time', flow }, null, 2));
+        // 录像和关键帧统一使用同一条带时间戳的真实合成器流。
+        const frames = [...screencastFrames].sort((a, b) => a.at - b.at);
+        const captureMethod = 'Timestamped same-page compositor stream, with no concurrent full-page screenshot capture';
+        expect(frames.every((frame, index) => frame.source === 'screencast' && (index === 0 || frame.at > frames[index - 1].at)), 'video frames use a single strictly ordered timestamped source').toBe(true);
+        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, screencastFrames, timebase: 'UTC seconds; compositor timestamps', captureMethod, flow }, null, 2));
         expect(frames.length).toBeGreaterThan(15);
         expect(states.flatMap(state => state.dice).filter(die => die.failure)).toEqual([]);
         expect(states.filter(state => state.phase != null && state.regionTipVisible), 'map hover information must leave before battle playback').toEqual([]);
@@ -155,13 +158,18 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                 // 只用真实阶段/物理状态界限，不再以额外毫秒门槛丢弃已经完整位于该状态的实帧。
                 const candidates = frames.filter(item => item.startedAt >= moment!.at && item.endedAt < end!.at);
                 expect(candidates.length, phase + ' ' + state + ' painted frame inside its phase').toBeGreaterThan(0);
+                if (state === 'rolling') {
+                    expect(candidates.length, phase + ' requires multiple real rolling frames').toBeGreaterThanOrEqual(4);
+                    const gaps = candidates.slice(1).map((frame, index) => frame.at - candidates[index].at);
+                    expect(Math.max(...gaps), phase + ' rolling capture must not omit a long stretch').toBeLessThanOrEqual(0.5);
+                }
                 const frame = candidates[state === 'damage' ? candidates.length - 1 : Math.floor(candidates.length / 2)];
-                const path = resolve(directory, `battle-${phase}-${state}.png`);
+                const path = resolve(directory, `battle-${phase}-${state}.jpg`);
                 copyFileSync(frame!.path, path); pictures.push({ id: `battle-${phase}-${state}`, path });
                 selectedFrames.push({ id: `battle-${phase}-${state}`, sourceFrameIndex: frames.indexOf(frame!), sourceFramePath: frame!.path, captureStartedAt: frame!.startedAt, captureEndedAt: frame!.endedAt, windowStart: moment!.at, windowEnd: end!.at });
             }
         }
-        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, selectedFrames, timebase: 'UTC seconds; actual capture intervals retained, timeline uses interval midpoints', captureMethod: 'Continuous same-page actual composed viewport sampling; selected source frame indices disambiguate byte-identical static result frames', flow }, null, 2));
+        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, screencastFrames, selectedFrames, timebase: 'UTC seconds; compositor timestamps', captureMethod, flow }, null, 2));
         const list = resolve(frameDirectory, 'frames.txt');
         writeFileSync(list, frames.map((frame, index) => `file '${frame.path.replaceAll('\\', '/')}'\noption framerate 1000${index + 1 < frames.length ? '\nduration ' + (frames[index + 1].at - frame.at) : ''}`).join('\n'));
         const video = resolve(directory, 'battle-real-time.webm');

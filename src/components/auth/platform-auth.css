@@ -14,6 +14,9 @@
 .platform-auth .auth-form-input { min-height: 48px; padding: 10px 12px; color: #111; background: #f4f4f4; border: 2px solid #ccc; border-radius: 0; font: 400 16px/1.5 Arial, 'Microsoft YaHei', sans-serif; caret-color: #111; }
 .platform-auth .auth-form-input::placeholder { color: #767676; opacity: 1; }
 .platform-auth .auth-form-input:focus { border-color: #111; background: #fff; outline: 2px solid #d5ff00; outline-offset: 1px; }
+.classic-auth { border: 1px solid #e5e0d0; }
+.classic-auth .auth-form-input { border-bottom: 2px solid #e5e0d0; }
+.classic-auth .auth-form-input:focus { border-bottom-color: #433422; }
 .platform-auth input[type="password"] { padding-right: 44px; }
 .platform-auth [data-testid="auth-submit-button"] { min-height: 48px; border: 2px solid #111; border-radius: 0; background: #d5ff00; color: #111; font: 800 16px/1.5 Arial, 'Microsoft YaHei', sans-serif; letter-spacing: 0; box-shadow: 3px 3px #111; }
 .platform-auth [data-testid="auth-submit-button"]:hover { background: #c4ed00; }

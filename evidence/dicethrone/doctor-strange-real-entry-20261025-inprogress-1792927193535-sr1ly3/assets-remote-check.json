@@ -1,0 +1,206 @@
+{
+  "generatedAt": "2026-10-25T10:53:50.821Z",
+  "scope": "Doctor Strange runtime assets only",
+  "publicBaseUrl": "https://assets.easyboardgame.top/official/",
+  "serverInventoryObjectCount": 13404,
+  "method": "server inventory SHA-256/bytes comparison plus public GET for <=400KB objects and HEAD for larger objects",
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "objects": [
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/ability-cards.webp",
+      "localBytes": 5480868,
+      "localSha256": "ce284634e4d5a57583e0460b3b25b209bc26d34c10fd9e5affffd02c08cc6df0",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "HEAD",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 5480868,
+        "remoteSha256": null
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/combat-points-tracker.webp",
+      "localBytes": 79354,
+      "localSha256": "ec5c549be3e0da8a5174ff27a5a2aba0f937e66c9ccac361fd9a050ef4d69de0",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 79354,
+        "remoteSha256": "ec5c549be3e0da8a5174ff27a5a2aba0f937e66c9ccac361fd9a050ef4d69de0"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/dice.webp",
+      "localBytes": 34216,
+      "localSha256": "b96aa411a9be98c60f4b95e30551a4d884cb57c982ad39687115991e61135753",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 34216,
+        "remoteSha256": "b96aa411a9be98c60f4b95e30551a4d884cb57c982ad39687115991e61135753"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/health-tracker.webp",
+      "localBytes": 64788,
+      "localSha256": "234c03031003c49ba825d51102a9ef0d5b7fb462e5ebae00c75d05b442c13228",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 64788,
+        "remoteSha256": "234c03031003c49ba825d51102a9ef0d5b7fb462e5ebae00c75d05b442c13228"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/player-board.webp",
+      "localBytes": 1851812,
+      "localSha256": "904d08d279011e4c32010cfd714277cc9ac591c6ecfc2570b65b18b27ef5ea3e",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "HEAD",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 1851812,
+        "remoteSha256": null
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/status-icons-atlas.webp",
+      "localBytes": 57286,
+      "localSha256": "36477faa810218f348545ea95ca498b867ef97fdb48d36fb7598cd3524742cd7",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 57286,
+        "remoteSha256": "36477faa810218f348545ea95ca498b867ef97fdb48d36fb7598cd3524742cd7"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/tip.webp",
+      "localBytes": 1016038,
+      "localSha256": "f3b2a5a83e13088e8c62da359680c23e17ddc1fb58ef621a92bbf0ac5a06d4f5",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "HEAD",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 1016038,
+        "remoteSha256": null
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/compressed/官方qa.webp",
+      "localBytes": 970584,
+      "localSha256": "33ff05fb1d26cf3e34beec945405d6cb5ca955a02be9b124445a7417a4ac9a60",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "HEAD",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 970584,
+        "remoteSha256": null
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/status/compressed/既视感.webp",
+      "localBytes": 7262,
+      "localSha256": "c88c2e974175ddcb66a38661d9221856c77220e39d8f6cf39ef631aefb4b39e7",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 7262,
+        "remoteSha256": "c88c2e974175ddcb66a38661d9221856c77220e39d8f6cf39ef631aefb4b39e7"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/status/compressed/深红系带.webp",
+      "localBytes": 11884,
+      "localSha256": "40e4d5080d49d4dd4fd786cb229e8c60489fb37ec3af68386f3745fb5278730d",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 11884,
+        "remoteSha256": "40e4d5080d49d4dd4fd786cb229e8c60489fb37ec3af68386f3745fb5278730d"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/status/compressed/预感.webp",
+      "localBytes": 31258,
+      "localSha256": "d89d796dd69dadda840c88b39ca0b05c43258789228a0a122027f648f840585d",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "image/webp",
+        "contentLength": 31258,
+        "remoteSha256": "d89d796dd69dadda840c88b39ca0b05c43258789228a0a122027f648f840585d"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    },
+    {
+      "key": "i18n/zh-CN/dicethrone/images/doctor_strange/status-icons-atlas.json",
+      "localBytes": 538,
+      "localSha256": "ebe056fc914d03c3c7702ff478f8f83b158b80b7c07ab3f976f74ecb2d2f501d",
+      "manifestsMatch": true,
+      "serverInventoryMatch": true,
+      "directProbe": {
+        "method": "GET",
+        "status": 200,
+        "contentType": "application/json",
+        "contentLength": 538,
+        "remoteSha256": "ebe056fc914d03c3c7702ff478f8f83b158b80b7c07ab3f976f74ecb2d2f501d"
+      },
+      "directProbeMatch": true,
+      "passed": true
+    }
+  ]
+}

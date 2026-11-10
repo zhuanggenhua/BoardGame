@@ -101,9 +101,9 @@
       },
       "center": {
         "x": 743,
-        "y": 83
+        "y": 84
       },
-      "pixelCount": 35507
+      "pixelCount": 35602
     },
     {
       "id": "city-region-4",
@@ -114,9 +114,9 @@
       },
       "center": {
         "x": 1006,
-        "y": 62
+        "y": 61
       },
-      "pixelCount": 32063
+      "pixelCount": 32117
     },
     {
       "id": "city-region-5",
@@ -126,10 +126,10 @@
         "y": 125
       },
       "center": {
-        "x": 1179,
+        "x": 1177,
         "y": 126
       },
-      "pixelCount": 24571
+      "pixelCount": 25563
     },
     {
       "id": "city-region-6",
@@ -152,10 +152,10 @@
         "y": 186
       },
       "center": {
-        "x": 928,
-        "y": 181
+        "x": 890,
+        "y": 184
       },
-      "pixelCount": 28178
+      "pixelCount": 18721
     },
     {
       "id": "city-region-8",
@@ -165,10 +165,10 @@
         "y": 201
       },
       "center": {
-        "x": 229,
-        "y": 192
+        "x": 271,
+        "y": 181
       },
-      "pixelCount": 160413
+      "pixelCount": 74081
     },
     {
       "id": "city-region-9",
@@ -178,10 +178,10 @@
         "y": 181
       },
       "center": {
-        "x": 1011,
+        "x": 1010,
         "y": 183
       },
-      "pixelCount": 7841
+      "pixelCount": 7996
     },
     {
       "id": "city-region-10",
@@ -194,7 +194,7 @@
         "x": 759,
         "y": 253
       },
-      "pixelCount": 12387
+      "pixelCount": 12504
     },
     {
       "id": "city-region-11",
@@ -205,9 +205,9 @@
       },
       "center": {
         "x": 1117,
-        "y": 254
+        "y": 253
       },
-      "pixelCount": 12479
+      "pixelCount": 12653
     },
     {
       "id": "xian-xing",
@@ -233,7 +233,7 @@
         "x": 1004,
         "y": 308
       },
-      "pixelCount": 15887
+      "pixelCount": 15972
     },
     {
       "id": "city-region-14",
@@ -321,10 +321,10 @@
         "y": 471
       },
       "center": {
-        "x": 145,
-        "y": 442
+        "x": 136,
+        "y": 448
       },
-      "pixelCount": 34050
+      "pixelCount": 32826
     },
     {
       "id": "city-region-21",

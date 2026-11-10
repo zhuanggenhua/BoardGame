@@ -1,0 +1,52 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "lobby",
+  "evidenceCategory": "independent",
+  "title": "看图步骤：BGG 排行与分数怎么显示",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "kind": "named-look-step-reference"
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": { "kind": "parent", "id": "look-step-bgg-display" }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": ["看图步骤交付打开过的同一份 BGG 参考图"],
+    "evidence": [
+      "01-rank-list.png 是游戏 Rank / Geek Rating / Average",
+      "02-how-ranked.png 排行种类全是游戏",
+      "03-rating-a-game.png 与 04-game-stats.png 是游戏页分数",
+      "05-user-profile.jpg 用户资料没有玩家排行"
+    ]
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "如果看了 BGG 显示截图，把打开的同一份图交给用户看见",
+      "status": "PASS",
+      "evidence": [
+        "01-rank-list.png",
+        "02-how-ranked.png",
+        "03-rating-a-game.png",
+        "04-game-stats.png",
+        "05-user-profile.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "01-rank-list.png",
+    "02-how-ranked.png",
+    "03-rating-a-game.png",
+    "04-game-stats.png",
+    "05-user-profile.jpg"
+  ]
+}

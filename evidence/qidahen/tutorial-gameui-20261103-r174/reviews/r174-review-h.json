@@ -1,0 +1,170 @@
+{
+  "status": "PASS",
+  "score": 93,
+  "reviewer": {
+    "kind": "subagents",
+    "id": "/root/r174_h1 + /root/r174_e1"
+  },
+  "aggregation": "主线程只合并独立逐图PASS与验证当前路径/哈希/覆盖，不代替读图或评分。",
+  "sourceParts": [
+    {
+      "file": "reviews/r174-review-h1.json",
+      "sha256": "55c87773ea3dbcafb3b1e3abaa09230c11dca67f8031744febbb95530634dd5b",
+      "reviewer": "/root/r174_h1"
+    },
+    {
+      "file": "reviews/r174-review-h2.json",
+      "sha256": "ffa097b758d46193e84062ca7ebbc81ade39ad17ad3697ff2648aecf9bae3de6",
+      "reviewer": "/root/r174_e1"
+    }
+  ],
+  "media": [
+    {
+      "id": "training-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/49-training-target.png",
+      "sha256": "e3b01a89f84d748cdd2741543c3a211d5095176648bf6c600a0047ffc7062ac9",
+      "status": "PASS",
+      "observation": "训练教程说明位于目标左上方，叶赫部当前推荐炮兵以贴身白边呈现，旁边绿色步兵候选可辨认，右侧显示训练进度，底部半露手牌符合约定且未遮挡推荐炮兵。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "推荐炮兵本体、等级和贴身白边完整可见。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "教程要求直接选择炮兵，训练进度与对象操作分工清楚。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "说明、叶赫部军队和右侧进度分组可辨，固定手牌未侵占当前推荐。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "地图、兵牌、阵营标记和牌面均已渲染，未见报错或破图。"
+        }
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-review-h1.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "id": "training-pan",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/50-training-pan.png",
+      "sha256": "cf83f40aec3622cdfd8802a9458913678c5b31b55a020165b72e5f363861e586",
+      "status": "PASS",
+      "observation": "地图平移后山西及周边合法训练兵牌以绿色贴边呈现，本次查看的骑兵完整可辨，教程说明与固定进度继续可读，推荐炮兵随世界层移至画面上沿属于主动浏览约定。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "本次浏览的山西骑兵和周边候选本体完整可见，未被手牌或说明遮住。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "绿色兵牌仍直接承载候选操作，右侧进度保持可辨。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "固定轮盘、手牌与地图分层，世界层平移没有挤压固定操作区。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "地图及兵牌素材完整，无报错或破图。"
+        }
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-review-h1.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "id": "training-second-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/51-training-second-target.png",
+      "sha256": "4cb7839d7d6bc5a83af38296d1914b70062bb4c5c6116fa2e555443e751b83fc",
+      "status": "PASS",
+      "observation": "叶赫部第二次训练的推荐步兵白边完整贴合兵牌，旁侧绿色步兵仍是可选候选，炮兵已不带绿色边，说明位于部队左上方且进度显示已完成一次，下一步选择清楚。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "白边推荐步兵及旁侧绿色候选均完整可辨。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "推荐白边、合法候选绿边与已训练炮兵的普通边界清楚区分。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "教程说明没有盖住推荐兵牌，阵营、城名、军队与进度各有承载。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "地图兵牌和固定牌区均正常渲染，未见破图或错误提示。"
+        }
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-review-h1.json",
+      "sourcePartEntry": 2
+    },
+    {
+      "id": "training-recruit-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/52-training-recruit-target.png",
+      "sha256": "17278221d3245b49240dd1ae3956c57f2a5a0f21fbbfd94614bce7fef3eb4122",
+      "status": "PASS",
+      "score": 92,
+      "observation": "征兵教学贴在辽东右邻，辽东城名、人口与部队本体可见，白边推荐区域与其它绿色候选有区别；右侧选择建军地区请求显示已完成进度，当前应点击辽东建立新军，未见导航菜单或错误。",
+      "checks": [
+        "target-visible：辽东推荐区域及现有部队可辨，白边与绿色候选分开",
+        "interaction-ui：教学明确在此建立新军，右侧正式请求为选择建军地区",
+        "layout-readable：提示贴推荐区域右邻，主目标与手牌未被提示遮住",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-h2.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "id": "training-finish",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/53-training-finish.png",
+      "sha256": "825994b4b2857b6f4a2e56321242894c1d048550990ab2855250f6e967234d04",
+      "status": "PASS",
+      "score": 95,
+      "observation": "征兵训练面板清楚显示基础行动已完成，额外训练与完成征兵训练均有实体矩形按钮边界；完成按钮蓝边突出，教学卡紧邻下方说明保留最后手牌，下一步明确为完成征兵训练，未见导航菜单或错误。",
+      "checks": [
+        "target-visible：训练完成面板、两个动作按钮及最后手牌同屏可辨",
+        "interaction-ui：额外训练与完成征兵训练各有按钮外观，完成按钮明确突出",
+        "layout-readable：教学卡紧邻动作面板下方，按钮文字无裁切或相互遮挡",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-h2.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "id": "finish",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/54-finish.png",
+      "sha256": "b63dc75eabde207723fc560cb1417e0f96f3285f48028c1f23287dc37bc42c22",
+      "status": "PASS",
+      "score": 94,
+      "observation": "教学收尾说明与完成并返回按钮同处右侧卡片，地图、行动轮盘、三阵营状态和大明手牌仍在场；玩家下一步是点击完成并返回，没有新增导航菜单。此图只证明返回前收尾界面，不证明返回后续局行为。",
+      "checks": [
+        "target-visible：教学收尾正文与完成并返回按钮完整可见，牌桌仍保持大明手牌",
+        "interaction-ui：主按钮直接承接教学收尾，顶部后金当前回合与大明手牌视角可区分",
+        "layout-readable：收尾卡不遮主要辽东与叶赫部队，正文、返回按钮无裁切",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-h2.json",
+      "sourcePartEntry": 2
+    }
+  ]
+}

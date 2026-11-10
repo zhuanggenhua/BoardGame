@@ -1,0 +1,62 @@
+{
+  "objective": "逐张复核 R68 手机整屏的玩家栏、支付摘要、教程提示、银两完整性与新增问题，并对照 R66",
+  "criteria": [
+    "地区目标轮廓、玩家栏、支付摘要和按钮可见",
+    "手牌和银两卡完整，教程提示不遮盖",
+    "检视和返回状态可见；动态输入须独立证据"
+  ],
+  "runId": "20261027-region-outline-r68-mobile",
+  "comparisonRun": "20261027-region-outline-r66-mobile",
+  "agent": "/root/r66_mobile_diagnostic",
+  "dimensions": "844x390",
+  "coordinateSystem": "左上角为 (0,0)，坐标为近似像素",
+  "summary": {
+    "total": 4,
+    "pass": 1,
+    "revise": 3
+  },
+  "items": [
+    {
+      "name": "移动-00-叶赫部地图目标避开支付托盘.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-00-叶赫部地图目标避开支付托盘.png",
+      "lightweightPath": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-00-叶赫部地图目标避开支付托盘.png",
+      "sha256": "28CC466B871F231436AFD5F958496126C5E3806D97231E7EBD443BC2EA7FE515",
+      "verdict": "REVISE",
+      "observation": "叶赫部高亮轮廓约 (740,175)-(836,304) 与提示、支付栏分开；玩家栏及 0/1 支付进度、确认/取消按钮可见。银两卡右侧在 x≈525 被容器裁切；教程提示约 (8,175)-(310,270) 覆盖第一张手牌。",
+      "comparison": "该状态尚未要求选牌，目标选择区域合格；按本次逐图检查手牌完整性的口径，银两不完整。此裁切在 R66 的 00 图亦存在，之前报告只判目标选择，现补记。"
+    },
+    {
+      "name": "移动-01-突袭支付与手牌.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-01-突袭支付与手牌.png",
+      "lightweightPath": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-01-突袭支付与手牌.png",
+      "sha256": "63D1742630819EBABA946B62841CF4B0BB5B867DB968E22382BC8FC3E9F49C52",
+      "verdict": "REVISE",
+      "observation": "顶部玩家栏、支付摘要和按钮完整；银两卡约 (395,203)-(523,381) 全部可见，教程提示下缘 y≈201 与卡片上缘分开，卡底距屏幕底边约 9 px。第一张手牌在 x≈184 左边界被裁，只露约 80 px，牌名左侧与卡面缺失。",
+      "comparison": "R66 的银两右侧裁切、提示遮卡上沿、卡底触屏均已解决；第一张卡左侧裁切相对 R66 01 图为新增可见问题，须使目标视图完整显示手牌。截图无法证明是否可通过横向滚动查看。"
+    },
+    {
+      "name": "移动-02-长按银两检视卡面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-02-长按银两检视卡面.png",
+      "lightweightPath": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-02-长按银两检视卡面.png",
+      "sha256": "8668EFD606997E6AE6017CEA448355E2D0EC7E8317730782771D91F8A04D9F9D",
+      "verdict": "PASS",
+      "observation": "银两放大卡约 (290,8)-(555,378)，完整显示，右上角关闭按钮可见。背景玩家栏、提示和支付栏被检视弹窗局部覆盖，属于该弹窗的显示状态。",
+      "comparison": "检视画面与 R66 保持合格；静图不能独立证明长按触发或关闭输入的执行过程。"
+    },
+    {
+      "name": "移动-03-检视返回后轻点银两选择支付.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-03-检视返回后轻点银两选择支付.png",
+      "lightweightPath": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-region-outline-r68-mobile-mobile\\移动-03-检视返回后轻点银两选择支付.png",
+      "sha256": "5330A100CD52096BEBA09F58740CF293E5C59E1FF8FAAB35B0D0B7BF9C4B128F",
+      "verdict": "REVISE",
+      "observation": "玩家栏完整，支付摘要显示已选 1/1、已选牌银两，确认/取消按钮可见；银两卡约 (394,202)-(523,381) 连同已选标识完整可见，教程提示下缘与卡上缘分开。第一张手牌在 x≈184 被裁，约剩 80 px 可见。",
+      "comparison": "R66 的提示遮卡上沿和卡底触屏已解决，银两完整；第一张牌左侧裁切与 R66 03 相同仍未解决。静图显示返回后的选中状态，不能独立证明关闭和轻点过程。"
+    }
+  ],
+  "verdict": "REVISE",
+  "limits": [
+    "四张静态图仅直接证明显示状态，不单独证明长按、关闭、轻点或滚动动作。",
+    "00 图手牌并非当前步骤操作对象；目标轮廓本身通过，但按本轮逐图检查银两完整性的口径单图判 REVISE。",
+    "主线程抽样复核待执行；本报告为独立诊断。"
+  ]
+}

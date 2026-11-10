@@ -1,0 +1,91 @@
+{
+  "kind": "private-name-and-region-diagnostic",
+  "reviewer": "/root/qidahen_first_frame_rejection",
+  "objective": "低成本逐张实读R62两张桌面和一张手机原始整屏，诊断不规则地区边界与简体地区名称是否匹配，名称是否被提示/HUD遮挡，地图及驻军语境是否保留。",
+  "userWords": "地区什么时候是圆形选择了",
+  "verdict": "scoped-observations-recorded",
+  "finalPass": false,
+  "publishEligible": false,
+  "inspection": "实际逐张读取三张原始整屏，不以DOM、测试或源码替代图面判断；未生成图片或用户链接。",
+  "summary": {
+    "total": 3,
+    "fullyVisibleRegionPerimeter": 3,
+    "readableMatchingSimplifiedName": 3,
+    "nameOccludedByTutorialOrHud": 0,
+    "circleOrOuterRectangleSubstitute": 0,
+    "conclusion": "本次三张图中，简体地区标签均清楚贴近对应不规则地区，未被教程提示或HUD盖住；区域外围及驻军/控制标语境保留。此为限定范围诊断，不能转成产品最终PASS。"
+  },
+  "items": [
+    {
+      "id": "desktop-liaodong",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-region-outline-r62/00-辽东军屯地区选择.png",
+      "sha256": "9b031c80113cf47ac7add498c8068fc04dbaf633413912193212c8002ecea749",
+      "viewport": { "width": 1920, "height": 1080 },
+      "visualFacts": [
+        "绿色地区约x698..1193、y513..719，白色边界完整闭合，轮廓不规则，未见旧圆形选区或外层方框。",
+        "简体黑底浅字“辽东”约在x695..732、y486..507，贴近地区左上缘；标签完整可读，未被右侧教程卡、顶部HUD、行动轮盘或兵牌遮挡。",
+        "教程正文要求选择辽东，标签与当前唯一绿色地区对应；位置没有贴向另一块邻区。",
+        "地区内部大明控制标、三张红色兵牌、数字3可见，周围河流/城塞/邻区仍在；底部手牌不侵入地区主边界。"
+      ],
+      "wholePerimeterVisible": true,
+      "simplifiedNameReadable": true,
+      "nameMatchesPrompt": true,
+      "nameNearCorrectRegion": true,
+      "nameOccludedByTutorialOrHud": false,
+      "mapAndTroopContextPreserved": true,
+      "circleOrOuterRectangleSubstituteObserved": false,
+      "scopeResult": "本次点名条件未见图面失败"
+    },
+    {
+      "id": "desktop-yehe",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-region-outline-r62/04-叶赫部真实地图目标.png",
+      "sha256": "8af9b6c0d2991ee478fe0335a7e48e3887a2cd4e4a86be070a1aa7ebe3546ddc",
+      "viewport": { "width": 1920, "height": 1080 },
+      "visualFacts": [
+        "绿色地区约x858..1206、y160..606，为南北向不规则地图面；整圈白边可沿外围追踪，下端位于支付面板上方，未被该面板截断。",
+        "简体“叶赫部”标签约在x856..905、y132..154，贴近地区左上缘河道，黑底浅字清楚；顶部玩家栏止于y74左右、教程卡位于右侧x1227之后，均未挡住该标签。",
+        "提示正文点名叶赫部；该名称与绿色长形地区对应，没有指向旁边后金或蒙古另一块地区。",
+        "蒙古控制标、金色兵槽及数字2保留在绿色地区上，河流、山脉及相邻控制标/驻军槽位可见。原印刷地名上端仍被兵槽部分覆盖，但新的简体地区名完整可见，不能将两者混为同一文字可见性结论。",
+        "未见圆形地区focus、外围矩形框或路线目标角框。蒙古控制标本身为正式圆标，不是地区圆形替身。"
+      ],
+      "wholePerimeterVisible": true,
+      "simplifiedNameReadable": true,
+      "nameMatchesPrompt": true,
+      "nameNearCorrectRegion": true,
+      "nameOccludedByTutorialOrHud": false,
+      "mapAndTroopContextPreserved": true,
+      "circleOrOuterRectangleSubstituteObserved": false,
+      "scopeResult": "本次点名条件未见图面失败"
+    },
+    {
+      "id": "mobile-yehe",
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261027-region-outline-r62-mobile/移动-00-叶赫部地图目标避开支付托盘.png",
+      "sha256": "37373daa62711106f99c22f41bd9bf2c45102e9f29cfa92ce457ffd48689b909",
+      "viewport": { "width": 844, "height": 390 },
+      "visualFacts": [
+        "绿色地区位于最右侧约x740..836、y174..298，整片不规则白边可追踪；未被右屏边、左侧手牌或上方支付面板截断。",
+        "简体“叶赫部”黑底标签约在x741..788、y153..171，贴近该地区上缘。上方朝鲜弃牌HUD下缘约y149，二者间隙很小但实际未重叠；标签三个字完整可读。",
+        "左上教程卡点名叶赫部，距离右侧地区较远，但没有盖住标签或目标，名称直接落在相应地图面上方，可将提示与目标对应。",
+        "地区内蒙古控制标、金色兵槽及数字2仍可见；附近河流、山地、邻区槽位与下方明军标记保留，地图语境没有被纯底色或手牌取代。",
+        "未见地区圆圈、外围蓝方框或角框。原印刷竖向地名上端仍被金色槽位遮住，但新简体标签解决的是地区名称读出，不代表原印刷文字本身变得无遮挡。"
+      ],
+      "wholePerimeterVisible": true,
+      "simplifiedNameReadable": true,
+      "nameMatchesPrompt": true,
+      "nameNearCorrectRegion": true,
+      "nameOccludedByTutorialOrHud": false,
+      "mapAndTroopContextPreserved": true,
+      "circleOrOuterRectangleSubstituteObserved": false,
+      "watchItem": "手机叶赫标签与上方朝鲜弃牌HUD只有小间隙；当前图未重叠，后续真实视口/文本变化仍需保持此关系。",
+      "scopeResult": "本次点名条件未见图面失败"
+    }
+  ],
+  "limits": [
+    "R62后又修改支付布局，故此三图不代表当前源码的最终界面，不可沿用为最终验收。",
+    "只检查地区边界、简体名称、标签遮挡与驻军地图语境；未重新审计支付原进攻来源/战力信息或其它11张状态。",
+    "静态图不证明名称与所有运行时地区ID的全量映射，也不证明点击命中、相机行为或规则数值。",
+    "白边是mask的像素轮廓，与印刷线/河道留有间距；当前可判断宏观地区面及相邻语境，未宣称逐像素印刷一致。",
+    "本报告不生成产品PASS清单、最终验收结论或用户链接；最终完整14张仍需独立逐图验收。"
+  ],
+  "mutationScope": "仅新增本诊断JSON，不修改源码、原始图片或历史报告。"
+}

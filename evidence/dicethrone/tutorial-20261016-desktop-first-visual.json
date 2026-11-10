@@ -1,0 +1,395 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_review"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/01-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜负目标说明完整可读；双方体力、阶段、真实玩家板与右侧骰盘均可辨。说明卡占手牌中部，此图只证明开局目标介绍。",
+      "score": 87
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/02-stats.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "蓝框准确落在左侧生命、CP与响应开关区域，50和2均可读，说明在右侧未遮目标。",
+      "score": 90
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/03-phases.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左上阶段列表完整入框，当前主要阶段高亮；说明顺序与列表同屏可读，下一步可辨。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/04-player-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家板及技能槽完整入框，说明与板体相邻；正文清楚可读，左侧资源和右侧主要按钮可见。",
+      "score": 84
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/05-tip-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧真实提示板被准确框出，状态图标、说明与展开箭头可辨；教程正文在左侧且未挡住提示板主体。",
+      "score": 88
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/06-card-types.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正文点名手牌类型，但蓝框从手牌中段伸向右侧大片空区，左侧两张牌未框入；文字直接显示Markdown星号，破坏正文层级。",
+      "score": 58
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/07-hand.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌字段说明可读，但蓝框只包住右侧两张牌并框到空白处，未对齐四张真实手牌整体，卡牌本体与教学焦点不一致。",
+      "score": 61
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/08-discard.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右下弃牌槽完整入框，箭头与右侧弃牌本体对应；拖牌出售说明可读且目标未被遮挡。",
+      "score": 86
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/09-response-control.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手动响应按钮有清楚蓝框，文案也可读；但说明框从左侧资源条内部起始，遮住生命与CP右端数值，持续资源读数无法同屏读取。",
+      "score": 66
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/10-main-actions-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主要动作清单有原始Markdown星号；手牌蓝框整体偏右，框到空区而遗漏左侧手牌，正式对象与高亮范围不对应。",
+      "score": 57
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/11-sell-card-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "沉思卡位于左侧首张并被单独框出，右侧弃牌目标可见，说明没有遮住源牌与弃牌槽，出售动作方向可辨。",
+      "score": 84
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/12-sell-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧CP数值3完整可见并被框出，右侧弃牌堆显示刚出售的沉思卡；结果说明与两个公开承接物同屏。",
+      "score": 90
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/13-undo-sell-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧弃牌堆中的沉思卡完整框出，说明箭头指向同一槽位；撤回动作入口清楚。",
+      "score": 88
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/14-undo-sell.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "点击右侧弃牌堆的要求与蓝框、沉思卡本体一致，教程框没有遮住正式点击对象。",
+      "score": 90
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/15-undo-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返回手牌的沉思卡位于最右侧且在蓝框中，左侧CP读数可见；整体手牌框仍偏右，但本步点名的返回牌可辨。",
+      "score": 82
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/16-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮在右侧有唯一蓝框，正文箭头和动作描述一致；当前阶段与左右资源可见。",
+      "score": 89
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/17-dice-tray.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧五颗带数字与拳图标的骰子完整入框，投掷次数点及操作按钮可见，说明没有遮住骰子本体。",
+      "score": 89
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/18-roll-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗真实骰子完整可见并准确入框，次数规则正文可读，投掷按钮与阶段保持可见。",
+      "score": 88
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/19-dice-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "橙色投掷按钮有清楚蓝框，说明指向同一正式按钮；五骰与资源同时可见。",
+      "score": 91
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/20-dice-lock.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧骰子本体完整可辨，说明明确点骰锁定；锁定目标区与投掷、确认控件相邻且无目标遮挡。",
+      "score": 87
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/21-dice-reroll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第一颗骰子显示已锁定，其余四颗与投掷按钮清楚可见；说明指向有蓝框的投掷按钮，保留与重掷对象可区分。",
+      "score": 90
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/22-dice-symbols.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "数字与图标说明清楚，五颗骰子与右侧提示板的骰面对应表可见；当前锁定状态仍可辨。",
+      "score": 86
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/23-play-six-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "规则句与被框出的橙色改骰牌相邻，卡牌图面真实，右侧骰盘保持可见；当前效果对象清楚。",
+      "score": 86
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/24-play-six.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求点击名为来个六的牌，实际高亮卡面的标题是玩得六啊；未解释两种名称对应关系，玩家无法按正文名称直接识别目标。",
+      "score": 64
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/25-play-six-modify.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧五颗骰子完整入框，选择后确认的文字可读，底部取消和确认入口可见；弃牌堆也能看到刚打出的真实卡牌。",
+      "score": 89
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/26-dice-confirm.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认按钮框出且可见，但提示框压在右侧投掷按钮及最低骰子左缘；文案要求想继续改骰时不要确认，替代操作入口却被教程框遮挡。",
+      "score": 68
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/27-ability-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "技能需求说明直接显示Markdown星号；大框覆盖右侧骰盘大部分骰面，无法同屏把最终骰面与玩家板的需求组合对照。",
+      "score": 53
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/28-abilities.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正文要求点拳法，但玩家板左上技能标题为冲拳；蓝框围整块玩家板且多个技能同时发亮，未形成点名技能的唯一主焦点；说明框还遮住中间骰面。",
+      "score": 49
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/29-attack-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "一般伤害说明显示原始Markdown星号，文字举例的圆圈数字只呈现黑圆点；所选技能有黄色框，但教程蓝框仍围整个玩家板，且正文遮住部分骰面。",
+      "score": 62
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/30-resolve-attack.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算攻击按钮与文字、蓝框一致，左上所选冲拳槽有黄色描边，右侧总伤害读数、双方资源和弃牌均可见。",
+      "score": 90
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/31-opponent-defense.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "图中己方生命出现减四、对手头像出现减六，但正文只泛称按骰面结算效果，未承接反击来源与双方公开结果；玩家难以理解自己进攻后为何同时受伤。",
+      "score": 63
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/32-main2-intro.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第二主要阶段在左上清楚高亮，正文可读；但手牌蓝框偏到右侧，只包住部分手牌与大片空白，遗漏左侧可支配卡牌，不能准确指明当前可出牌区域。",
+      "score": 60
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import {
     it,
     vi,
 } from 'vitest';
+import { gunzipSync } from 'node:zlib';
 import { GameTransportServer } from '../server';
 import type { GameEngineConfig } from '../engineConfig';
 import * as aiModule from '../../ai';
@@ -21,6 +22,78 @@ import {
 } from './helpers/serverTestHarness';
 
 describe('GameTransportServer（command feedback reporting）', () => {
+    it('首次反馈触发可从服务端最近权威命令生成完整前后态回放', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const initialState = createStoredState();
+        initialState.G.sys.undo = { snapshots: [], maxSnapshots: 20, rollbackRevision: 0 };
+        await storage.createMatch('match-first-trigger-replay', {
+            initialState,
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => (
+                metadata.players[playerID]?.credentials === credentials
+            ),
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-first-trigger-replay');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-first-trigger-replay', '0', 'cred-0');
+        await socket.clientEmit(
+            'command',
+            'match-first-trigger-replay',
+            'PLAYER_ACTION',
+            { choiceId: 'first-trigger-choice' },
+            'cred-0',
+            { expectedStateID: 0 },
+        );
+
+        const ack = vi.fn();
+        await socket.clientEmit('feedback:capture', 'match-first-trigger-replay', {
+            phase: 'prepare',
+            trigger: {
+                commandType: 'PLAYER_ACTION',
+                playerId: '0',
+                stateIdBefore: 0,
+                requestId: 'first-trigger-request',
+            },
+        }, 'cred-0', ack);
+
+        expect(ack).toHaveBeenCalledWith(expect.objectContaining({
+            accepted: true,
+            triggerCaptured: true,
+        }));
+        const captureId = ack.mock.calls[0]?.[0]?.captureId as string;
+        const replayEntry = (server as unknown as {
+            feedbackReplayStaging: { getEntry: (id: string, matchId: string, playerId: string) => { data: string } | undefined };
+        }).feedbackReplayStaging.getEntry(captureId, 'match-first-trigger-replay', '0');
+        expect(replayEntry).toBeDefined();
+
+        const replay = JSON.parse(gunzipSync(Buffer.from(replayEntry!.data, 'base64')).toString('utf8'));
+        expect(replay).toMatchObject({
+            matchId: 'match-first-trigger-replay',
+            gameId: 'test-game',
+            stateId: 0,
+            trigger: {
+                source: 'player-command-feedback',
+                commandType: 'PLAYER_ACTION',
+                playerId: '0',
+                payload: { choiceId: 'first-trigger-choice' },
+                requestId: 'first-trigger-request',
+                stateIdBefore: 0,
+                stateIdAfter: 1,
+                stateAfter: expect.any(Object),
+            },
+        });
+        expect(replay.state).toEqual(expect.objectContaining({ core: { currentPlayer: '0' } }));
+    });
+
     it('线上形状：同一 AI 座位的旧卡牌命令与 watchdog 失败共用预算，达到预算后不再进入领域管线', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -174,8 +247,10 @@ describe('GameTransportServer（command feedback reporting）', () => {
             },
         };
 
+        const initialState = createOnlineAiRecoveryState({ phase: 'playCards' });
+        initialState.G.sys.undo = { snapshots: [], maxSnapshots: 20, rollbackRevision: 0 };
         await storage.createMatch('match-watchdog-authoritative-invalid-action', {
-            initialState: createOnlineAiRecoveryState({ phase: 'playCards' }),
+            initialState,
             metadata: createOnlineAiRecoveryMetadata(),
         });
 
@@ -246,12 +321,18 @@ describe('GameTransportServer（command feedback reporting）', () => {
             const payload = feedbackReporter.mock.calls[0]?.[0] as {
                 reason?: string;
                 stateSnapshot?: string;
+                privateReplay?: string;
             } | undefined;
-            expect(payload?.reason).toBe('手牌中没有该卡牌');
+            expect(payload?.reason).toBe('command_failed');
             const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
             expect(snapshot.feedbackSource).toBe('online-ai-watchdog');
             expect(snapshot.command).toEqual({
                 type: 'TEST_CMD',
+                payload: { cardUid: 'old-card' },
+            });
+            const privateReplay = JSON.parse(gunzipSync(Buffer.from(payload?.privateReplay ?? '', 'base64')).toString('utf8'));
+            expect(privateReplay.trigger).toMatchObject({
+                reason: '手牌中没有该卡牌',
                 payload: { cardUid: 'old-card' },
             });
         } finally {
@@ -519,7 +600,7 @@ describe('GameTransportServer（command feedback reporting）', () => {
             playerId: '0',
             incidentKind: 'command-failed',
             commandType: 'TRIGGER_PIPELINE_ERROR',
-            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+            reason: 'pipeline_error',
         }));
 
         const payload = feedbackReporter.mock.calls[0]?.[0] as {
@@ -527,12 +608,13 @@ describe('GameTransportServer（command feedback reporting）', () => {
             actionLog?: string;
             progressMarker?: string;
             incidentKey?: string;
+            privateReplay?: string;
         } | undefined;
         const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
         expect(snapshot).toMatchObject({
             kind: 'command-failure-feedback',
             commandType: 'TRIGGER_PIPELINE_ERROR',
-            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+            reason: 'pipeline_error',
             progressMarker: payload?.progressMarker,
             feedbackSource: 'player-command-failure',
         });
@@ -556,6 +638,11 @@ describe('GameTransportServer（command feedback reporting）', () => {
             });
         }
         expect(payload?.incidentKey).toContain('TRIGGER_PIPELINE_ERROR');
+        const privateReplay = JSON.parse(gunzipSync(Buffer.from(payload?.privateReplay ?? '', 'base64')).toString('utf8'));
+        expect(privateReplay.trigger).toMatchObject({
+            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+            commandType: 'TRIGGER_PIPELINE_ERROR',
+        });
     });
 
     it('领域拒绝错误码不应误报成后台自动反馈', async () => {
@@ -726,8 +813,15 @@ describe('GameTransportServer（command feedback reporting）', () => {
         expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
             matchId: 'match-batch-pipeline-feedback',
             commandType: 'TRIGGER_PIPELINE_ERROR',
-            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+            reason: 'pipeline_error',
         }));
+
+        const payload = feedbackReporter.mock.calls[0]?.[0] as { privateReplay?: string } | undefined;
+        const privateReplay = JSON.parse(gunzipSync(Buffer.from(payload?.privateReplay ?? '', 'base64')).toString('utf8'));
+        expect(privateReplay.trigger).toMatchObject({
+            reason: 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo',
+            commandType: 'TRIGGER_PIPELINE_ERROR',
+        });
     });
 
 });

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "多持有人状态候选-桌面.png",
+      "chainId": "多持有人状态选择",
+      "chainStep": "1440",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-status-multiple-1440",
+      "behaviorStepId": "status-multiple-1440",
+      "description": "本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "通过真实手牌准备瓦图姆之风。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "通过真实手牌准备瓦图姆之风。",
+      "sourceRevision": "8ef704b404d634d0f8f4b69c5c27fd105dcd3d76352d0e37fc90811d472b3b23",
+      "e2eSourceRevision": "98d1c8fb09fceed40abb3e6e03d20a1b5d00e62dd976ee13507c46cd084e04a5",
+      "requirements": [
+        "多持有人直接选择状态"
+      ],
+      "sourceRun": "1793585981491-226572-d98bc2fa-557b-4ff2-99c9-4b63faad91bd",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "多持有人状态候选-横屏.png",
+      "chainId": "多持有人状态选择",
+      "chainStep": "812",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-status-multiple-812",
+      "behaviorStepId": "status-multiple-812",
+      "description": "本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "通过真实手牌准备瓦图姆之风。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "通过真实手牌准备瓦图姆之风。",
+      "sourceRevision": "8ef704b404d634d0f8f4b69c5c27fd105dcd3d76352d0e37fc90811d472b3b23",
+      "e2eSourceRevision": "98d1c8fb09fceed40abb3e6e03d20a1b5d00e62dd976ee13507c46cd084e04a5",
+      "requirements": [
+        "多持有人直接选择状态"
+      ],
+      "sourceRun": "1793585981491-226572-d98bc2fa-557b-4ff2-99c9-4b63faad91bd",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793585718947-eq110t"
+    }
+  ]
+}

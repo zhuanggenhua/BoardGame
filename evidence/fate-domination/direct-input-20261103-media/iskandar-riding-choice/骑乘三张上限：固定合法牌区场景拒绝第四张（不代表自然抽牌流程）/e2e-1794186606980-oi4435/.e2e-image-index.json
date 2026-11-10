@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1794186606980-oi4435/骑乘三张已选满.png.jpg",
+      "chainId": "iskandar-riding-three-limit",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家在正式手牌上开启并操作骑乘选择",
+      "description": "三张手牌已选满且其余候选牌不可再选",
+      "uiStateId": "riding-three-selected",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家已选满三张，余下候选牌不再接受选择",
+      "behaviorStepId": "select-three-cards",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:619c5617f5842a6fbb845bdb6e9b1fd903baaeddbfa07f499d079f60e0656345",
+      "requirements": [
+        "骑乘三张上限"
+      ],
+      "sourceRun": "1794186696290-143788-ea30afca-d805-4ea6-bc18-8de7d35fbe2c",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘三张上限：固定合法牌区场景拒绝第四张（不代表自然抽牌流程）/_runs/e2e-1794186606980-oi4435"
+    }
+  ]
+}

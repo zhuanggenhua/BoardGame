@@ -1,0 +1,36 @@
+{
+  "kind": "html",
+  "renderer": "html",
+  "exports": ["html"],
+  "title": "Fate/Domination 开放式牌桌候选稿 v7",
+  "supportingFiles": [
+    "assets/v7/board-fuyuki.png",
+    "assets/v7/situation-turning.png",
+    "assets/v7/situation-back.webp",
+    "assets/v7/event-fate-battle.png",
+    "assets/v7/event-strength-test.png",
+    "assets/v7/event-suppression.png",
+    "assets/v7/event-sanctuary.png",
+    "assets/v7/event-back.webp",
+    "assets/v7/master-shirou.png",
+    "assets/v7/servant-arturia.png",
+    "assets/v7/skill-excalibur.png",
+    "assets/v7/skill-luck.png",
+    "assets/v7/skill-kanshou.png",
+    "assets/v7/attack-strength.webp",
+    "assets/v7/attack-magic.webp",
+    "assets/v7/attack-agility.webp",
+    "assets/v7/master-rin.png",
+    "assets/v7/master-kirei.png",
+    "assets/v7/master-shinji.png"
+  ],
+  "metadata": {
+    "gameId": "fate-domination",
+    "artifactKind": "open-design-artifact-candidate",
+    "humanReview": "not-approved",
+    "canvas": "1920x1080",
+    "mediaGenerate": false,
+    "revision": "v7-chm-board-chinese-zones-saturated-action",
+    "currentArtifact": "index-v7.html"
+  }
+}

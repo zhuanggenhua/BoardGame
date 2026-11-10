@@ -1,0 +1,704 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "codex-tutorial-20261026-r14-final",
+  "sourceRevision": "sha256:8e396240178173146b98b9862d306643381b9b55f0097c4b56eaaf5aa8100c65",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 10 个行为检查点与 5 个独特界面状态。",
+  "steps": [
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-001",
+      "action": "打开教程入口并确认棋盘与当前教程状态：移动-00-开场-胜利条件说明",
+      "before": {
+        "visible": {
+          "boardVisible": false,
+          "path": "blank",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": false,
+          "tutorialStepId": null,
+          "turnPhase": null,
+          "currentPlayer": null,
+          "selectedActionId": null,
+          "actionWheelPosition": null,
+          "factionActionUsed": null,
+          "mingHandCount": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "welcome",
+          "expected": "welcome"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-002",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "每回合各执行 1 次手牌行动和轮盘行动，先后由你决定。 轮盘由所有人共用，停下处执行对应行动：前进 1 格免费；前进 2 格让 1 名对手抽 2 张；前进 3 格让所有对手各抽 2 张。 先点右侧“征召军队”，或选一种轮盘走法。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-opening-action",
+          "expected": "choose-opening-action"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-003",
+      "action": "记录实际输入后的稳定界面：移动-01-首个行动选择-轮盘或征召",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "每回合各执行 1 次手牌行动和轮盘行动，先后由你决定。 轮盘由所有人共用，停下处执行对应行动：前进 1 格免费；前进 2 格让 1 名对手抽 2 张；前进 3 格让所有对手各抽 2 张。 先点右侧“征召军队”，或选一种轮盘走法。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "每回合各执行 1 次手牌行动和轮盘行动，先后由你决定。 轮盘由所有人共用，停下处执行对应行动：前进 1 格免费；前进 2 格让 1 名对手抽 2 张；前进 3 格让所有对手各抽 2 张。 先点右侧“征召军队”，或选一种轮盘走法。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-003-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-003-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-003-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-opening-action",
+          "expected": "choose-opening-action"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-004",
+      "action": "点击：qidahen-action-recruit",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "每回合各执行 1 次手牌行动和轮盘行动，先后由你决定。 轮盘由所有人共用，停下处执行对应行动：前进 1 格免费；前进 2 格让 1 名对手抽 2 张；前进 3 格让所有对手各抽 2 张。 先点右侧“征召军队”，或选一种轮盘走法。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-action-recruit"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-005",
+      "action": "记录实际输入后的稳定界面：移动-02-征召支付-手牌检视前",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-005-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-005-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-005-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-006",
+      "action": "触摸抬起：qidahen-hand-card-hand-1",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-hand-card-hand-1"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-007",
+      "action": "记录实际输入后的稳定界面：移动-03-征召支付-长按手牌打开检视",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-007-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-007-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-007-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-008",
+      "action": "稳定界面截图：移动-04-关闭检视-回到征召支付",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-008-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-008-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-008-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-009",
+      "action": "点击：qidahen-hand-card-hand-1",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队：弃1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵(特殊步兵)部队。 选择一张手牌。需要查看牌面时，桌面点“看”，移动端长按；关闭检视后仍回到这里。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-recruit-payment",
+          "tutorialText": "这张手牌将在确认后弃置。确认支付。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-recruit-payment",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-visible-tutorial-step-matches-authoritative-step",
+          "actual": "confirm-recruit-payment",
+          "expected": "confirm-recruit-payment"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-hand-card-hand-1"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-010",
+      "action": "记录实际输入后的稳定界面：移动-05-选牌后确认征召支付",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-recruit-payment",
+          "tutorialText": "这张手牌将在确认后弃置。确认支付。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-recruit-payment",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-recruit-payment",
+          "tutorialText": "这张手牌将在确认后弃置。确认支付。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-recruit-payment",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-010-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-010-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-010-visible-tutorial-step-matches-authoritative-step",
+          "actual": "confirm-recruit-payment",
+          "expected": "confirm-recruit-payment"
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-01",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-001",
+      "change": "panel",
+      "viewport": "mobile",
+      "sha256": "b45982affb3a7deec3f6048d5106a59f923790003729acebf065d055acc6294e",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final-mobile\\移动-00-开场-胜利条件说明.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，00，开场，胜利条件说明状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-02",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-003",
+      "change": "panel",
+      "viewport": "mobile",
+      "sha256": "8a13970fa24b421e83dc125d5b3da7766ceeac1bb1370b5be97e22118b6abea2",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final-mobile\\移动-01-首个行动选择-轮盘或征召.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，01，首个行动选择，轮盘或征召状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-03",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-005",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "a869ea1a8734bafe5d722d8ec085420bd76dea534c90af0392465cd2811265ff",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final-mobile\\移动-02-征召支付-手牌检视前.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，02，征召支付，手牌检视前状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-04",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-007",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "b8bc49b44b426afa9a0515ec64c15b911df3ccca96a7f04f0a00db868d552764",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final-mobile\\移动-03-征召支付-长按手牌打开检视.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，03，征召支付，长按手牌打开检视状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-05",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-010",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "615f5b37822e9b5f0e97405e4d5c1ef6024363b9175bd38c65b79174f8c83572",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final-mobile\\移动-05-选牌后确认征召支付.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，05，选牌后确认征召支付状态。"
+    }
+  ],
+  "skippedDuplicateScreenshots": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r14-final-mobile\\移动-04-关闭检视-回到征召支付.png",
+      "sha256": "a869ea1a8734bafe5d722d8ec085420bd76dea534c90af0392465cd2811265ff"
+    }
+  ]
+}

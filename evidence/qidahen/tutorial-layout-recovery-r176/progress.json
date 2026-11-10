@@ -1,0 +1,86 @@
+{
+  "taskStatus": "in-progress",
+  "implementation": "取景无解仍完成表现握手，无骰区时使用权威战报，保持单次播放；应急HUD避让、单层滚动和常驻继续入口。",
+  "passed": {
+    "broaderRegression": {
+      "tests": 277,
+      "files": 13
+    },
+    "latestLayoutRegression": {
+      "tests": 224,
+      "files": 3
+    },
+    "earlierNarrowBehavior": [
+      "960x540",
+      "640x480",
+      "320x200"
+    ]
+  },
+  "pending": [
+    "最新紧凑战报的窄窗重拍与逐图审查",
+    "稳定源码完整PC年度流程及生命周期复跑",
+    "最终类型和证据一致性检查"
+  ],
+  "sequencing": "总审查安排Home截图后，分配七大恨独占浏览器窗口。",
+  "historicalFailures": [
+    {
+      "kind": "resource",
+      "evidence": "checks/qidahen-gameui-pc-r176-20261104.log",
+      "result": "次年训练阶段被既有内存看护终止，不计通过。"
+    },
+    {
+      "kind": "other-game-build",
+      "evidence": "checks/qidahen-r176-layout-scroll-isolated.log",
+      "result": "DiceThrone编译阻塞已由负责会话修复，依总审查通知更新，不再视为当前阻塞。"
+    }
+  ],
+  "sources": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "011cca5d05aa268076581d631b1f1aa62e945045f72783a4d1c8c4745053f3b6"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "sha256": "36b65ebccca1c0ea5c674faa7ed6662cf90d929446e36e52d92cf54a6d0e465b"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleReport.tsx",
+      "sha256": "b3729bade08a819b2a698612106860169c9242dae8a52d614120fec66f13c004"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/Board.test.ts",
+      "sha256": "4939f8e09315f2a196c389fa61bf4203f396d56600dbf1480ea2c3798ff4669c"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/battleRollPlacement.test.tsx",
+      "sha256": "2ebf18664dd593033aa943d9b38a9a8cfb4278f95d8c8e6ac35ddfc504305441"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/mapRegionFocus.test.ts",
+      "sha256": "122835171c14e19e3942dcd4f6440ed5d4255b2f5957bf775116eb743eed68b6"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/annualTutorialFlow.test.ts",
+      "sha256": "a16630e6e5ff29863030812b66291fc135d617ef59c9b35910574ea681c1548e"
+    },
+    {
+      "path": "e2e/qidahen/battle-layout-recovery.diagnostic.ts",
+      "sha256": "9fdfe7b213482c870263824cb06ad581323bebc5f41cb572bc416a24d3cf0e65"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "0e14966cb19bc56448f28fd2c92bfe09703731b85f109e9e69cd03ee53908c2c"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "7176c9e14c7d2f85548b66ff86ca5dfb8063c101cd1b9d7177e0e7c5dd24856b"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "7abf9f241625085218905a8a0a070e41718cdf681e491498c170c6896fa94d4f"
+    }
+  ],
+  "humanSignoffRequiredForPcCompletion": false,
+  "mobile": "outside-current-pc-phase",
+  "releaseActions": "由总审查统一处理"
+}

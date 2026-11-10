@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>索尔新增交互：当前源码真实入口逐图验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>索尔新增交互：当前源码真实入口逐图验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-索尔在线角色板九槽.png","displayTitle":"01 · 索尔在线角色板九槽","description":"真实双人选角后，索尔玩家板九个技能槽与手牌区域出现在牌桌中。","kind":"image"},{"relativePath":"02-弃牌飞掷手牌区成本.png","displayTitle":"02 · 弃牌飞掷手牌区成本","description":"玩家打出弃牌飞掷后，手牌区显示选择弃置成本提示与取消入口。","kind":"image"},{"relativePath":"03-奥丁II效果骰选择.png","displayTitle":"03 · 奥丁II效果骰选择","description":"进入奥丁之力二的效果骰选择时，提示贴着原骰盘说明当前可重掷对象。","kind":"image"},{"relativePath":"04-奥丁II选择两骰保留原动作.png","displayTitle":"04 · 奥丁II选择两骰保留原动作","description":"选中两颗效果骰后，原重掷和确认按钮同时保留并显示完成进度。","kind":"image"},{"relativePath":"05-奥丁II空选原确认.png","displayTitle":"05 · 奥丁II空选原确认","description":"不额外重掷时，空选仍可通过原确认按钮收束效果骰交互。","kind":"image"},{"relativePath":"06-当之无愧选择固定四或五.png","displayTitle":"06 · 当之无愧选择固定四或五","description":"打出当之无愧后，玩家只需在固定四或五目标之间选择。","kind":"image"},{"relativePath":"07-当之无愧固定四选择目标骰.png","displayTitle":"07 · 当之无愧固定四选择目标骰","description":"选定目标四后，提示引导玩家在原骰盘点选要修改的骰子。","kind":"image"},{"relativePath":"08-当之无愧固定四提交结果.png","displayTitle":"08 · 当之无愧固定四提交结果","description":"提交后目标骰成为四，其余骰面保持原值。","kind":"image"},{"relativePath":"09-当之无愧固定五取消前.png","displayTitle":"09 · 当之无愧固定五取消前","description":"重新选择目标五但未改骰时，当前骰面保持不变且取消仍可用。","kind":"image"},{"relativePath":"10-当之无愧取消退回费用.png","displayTitle":"10 · 当之无愧取消退回费用","description":"取消改骰后，骰面未改变且已支付卡牌和资源退回。","kind":"image"},{"relativePath":"11-连锁闪电基础效果骰选择.png","displayTitle":"11 · 连锁闪电基础效果骰选择","description":"连锁闪电进入效果骰选择后，提示与效果骰共用原骰盘展示。","kind":"image"},{"relativePath":"12-连锁闪电基础选择两骰确认.png","displayTitle":"12 · 连锁闪电基础选择两骰确认","description":"选中两颗效果骰后，原确认动作启用以继续既有结算流程。","kind":"image"},{"relativePath":"13-弃牌召回成本.png","displayTitle":"13 · 弃牌召回成本","description":"选择召回弃牌成本时，原手牌区承载提示和候选，不弹出新手牌窗。","kind":"image"},{"relativePath":"14-破防失败后剩余标记.png","displayTitle":"14 · 破防失败后剩余标记","description":"第一次破防消耗失败后，界面仍允许玩家使用第二枚破防标记。","kind":"image"},{"relativePath":"15-队友不愧是我同骰两次.png","displayTitle":"15 · 队友不愧是我同骰两次","description":"队友触发不愧是我后，索尔骰盘提示显示同一骰子可被选两次。","kind":"image"},{"relativePath":"16-队友我又行了任选两骰.png","displayTitle":"16 · 队友我又行了任选两骰","description":"队友触发我又行了后，索尔骰盘提示仍显示可选择两颗不同骰子。","kind":"image"},{"relativePath":"17-队友下次一定伤害响应前.png","displayTitle":"17 · 队友下次一定伤害响应前","description":"打出下次一定前，索尔处于八点待受伤害响应并显示现有响应入口。","kind":"image"},{"relativePath":"18-队友下次一定伤害减少结果.png","displayTitle":"18 · 队友下次一定伤害减少结果","description":"队友出牌结算后，索尔待受伤害从八点降至二点并保留后续响应。","kind":"image"},{"relativePath":"19-队友就这防御骰重投.png","displayTitle":"19 · 队友就这防御骰重投","description":"队友打出就这后，索尔防御骰盘显示重投进度和原取消确认按钮。","kind":"image"},{"relativePath":"20-连锁闪电二级四骰选择.png","displayTitle":"20 · 连锁闪电二级四骰选择","description":"连锁闪电二级的四颗效果骰全部出现在原骰盘，提示说明选择两颗。","kind":"image"},{"relativePath":"21-连锁闪电二级选择两骰确认.png","displayTitle":"21 · 连锁闪电二级选择两骰确认","description":"选中两颗效果骰后，旧确认按钮启用且其余骰面仍留在原骰盘。","kind":"image"},{"relativePath":"22-原任意改值选择骰和加减控件.png","displayTitle":"22 · 原任意改值选择骰和加减控件","description":"任意改值卡进入旧流程后，五颗候选骰和原加减控件同时可见。","kind":"image"},{"relativePath":"23-原任意改值预览和手动确认.png","displayTitle":"23 · 原任意改值预览和手动确认","description":"选中一颗后，旧加减预览和手动确认仍按原流程显示。","kind":"image"},{"relativePath":"24-原任意改值提交结果.png","displayTitle":"24 · 原任意改值提交结果","description":"提交任意改值后，目标骰更新且其余骰面保持不变。","kind":"image"},{"relativePath":"25-索尔升级技能变体选择.png","displayTitle":"25 · 索尔升级技能变体选择","description":"四雷触发后，同一张升级能力出现瓶中闪电二级与连锁锤击两个规则变体供选择。","kind":"image"},{"relativePath":"26-瓶中闪电II锤子移动选择目标与停止.png","displayTitle":"26 · 瓶中闪电II锤子移动选择目标与停止","description":"选择瓶中闪电二级后，技能结算窗口显示飞掷目标与立即停止入口。","kind":"image"},{"relativePath":"27-飞掷后保留继续或停止.png","displayTitle":"27 · 飞掷后保留继续或停止","description":"一次飞掷独立造成 1 点伤害后，持锤者变化，后续选择更新为召回或停止。","kind":"image"},{"relativePath":"28-移动次数用尽后进入攻击响应.png","displayTitle":"28 · 移动次数用尽后进入攻击响应","description":"移动次数用尽后，选择窗口关闭，后续攻击响应入口恢复。","kind":"image"},{"relativePath":"29-零次停止后进入攻击响应.png","displayTitle":"29 · 零次停止后进入攻击响应","description":"基础瓶中闪电选择零次移动后，模态层关闭并进入主攻击待响应状态。","kind":"image"},{"relativePath":"30-不屈意志防御效果骰原确认.png","displayTitle":"30 · 不屈意志防御效果骰原确认","description":"索尔触发不屈意志后，效果骰沿既有骰区显示并提供原确认动作。","kind":"image"},{"relativePath":"31-飞掷一次后主动停止并保留攻击响应.png","displayTitle":"31 · 飞掷一次后主动停止并保留攻击响应","description":"飞掷一次后主动停止，移动弹层关闭并恢复攻击响应。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

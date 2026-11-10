@@ -1,0 +1,112 @@
+{
+  "targetStatus": "diagnostic-only",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "reviewer": "/root/battle_layout_preflight",
+  "date": "2026-11-01",
+  "scope": "仅真实战斗保存点点击后生成的六张桌面战斗关键态静态诊断；不代表自然整链或完整录屏验收",
+  "source": "saved-state-diagnostic",
+  "sourceReceipt": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/receipt.json",
+  "sourceRecording": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-recording.json",
+  "previousReview": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/reviews/battle-layout-preflight-r147.json",
+  "previousVerdict": "REVISE",
+  "verdict": "PASS-preflight",
+  "userMediaEligible": false,
+  "fullChainClaimed": false,
+  "fullVideoReviewed": false,
+  "summary": {
+    "total": 6,
+    "passPreflight": 6,
+    "revise": 0,
+    "observation": "六张新整屏均能看见辽北指向叶赫部的具体战斗身份，紧邻当前兵种阶段，下方对应攻方或守方，再向下阅读开放骰子与合计损伤；形成同一个明确结算组。旧图缺少具体双方身份的问题在这六态中已补足。骰子与结果所在高层组明确后，后方蒙古地图单位属于背景，不再仅凭高层覆盖背景对象判定归属混淆。"
+  },
+  "comparison": {
+    "oldObservation": "旧六图只有兵种与攻守抽象身份，没有具体来源和目标，骰子及合计损伤容易被归到下方无关地图单位。旧组保持历史退回状态。",
+    "newObservation": "新六图在同一阶段标题行清楚显示辽北指向叶赫部，来源、目标、兵种、攻守、骰子及损伤有同一阅读顺序和中心关系。没有新增封闭托盘，开放骰子风格保留，画面右部双方地区主体及地图对象仍保留原取景且未被骰子覆盖。",
+    "scopeBoundary": "仅对这次新增战斗身份后的六个可见关键态作静态诊断通过；不追认旧组通过，不证明未读取视频的连续性，不替代最终整链。"
+  },
+  "checks": [
+    {
+      "criterion": "具体参战身份与阶段同组",
+      "status": "PASS-preflight",
+      "observation": "辽北指向叶赫部的小标签与炮兵、骑兵、步兵阶段在同一标题行，六态均可见且文字清楚；攻守标签在标题下方，未与别的地图读数组成同层文字块。"
+    },
+    {
+      "criterion": "开放骰子与结果归属",
+      "status": "PASS-preflight",
+      "observation": "骰子在当前标题下方展开，损伤态的合计及损伤继续沿该结算组向下阅读；具体战斗身份持续存在，足以区分下方蒙古地图单位并非本次结算主体。"
+    },
+    {
+      "criterion": "高层阅读组完整性",
+      "status": "PASS-preflight",
+      "observation": "六态标题、攻守、骰子与结果均无彼此遮挡或屏幕裁切；没有看到需要继续返工的高层归属或文字可读性问题。"
+    },
+    {
+      "criterion": "开放风格与双方地图保留",
+      "status": "PASS-preflight",
+      "observation": "未见新封闭背景或托盘，骰子仍直接展现在地图上；双方地区图形保留在画面右侧，骰子在其左侧展开，未遮住双方地区主体。"
+    },
+    {
+      "criterion": "教程白提示与后续正式决策",
+      "status": "not-covered",
+      "observation": "六张动画关键态均无白色教程提示，也没有掷骰前按钮和占领决策控件；这些对象保持未覆盖，不用保存点记录推进成功代替其图面验收。"
+    }
+  ],
+  "items": [
+    {
+      "id": "battle-artillery-rolling",
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-artillery-rolling.jpg",
+      "sha256": "cef2096d90098fbab235695079947a7e9363e407a418fb61a6fc1151d16f7b03",
+      "actuallyReadFullScreen": true,
+      "status": "PASS-preflight",
+      "observation": "辽北指向叶赫部与炮兵阶段并列，攻方在下，白色点数骰在组内下方滚动。具体地区身份清楚，没有与其他地图读数混成同层标题；骰子、身份及阶段无遮挡，开放风格保留。"
+    },
+    {
+      "id": "battle-artillery-damage",
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-artillery-damage.jpg",
+      "sha256": "1b5ea7aa88842bbf993d4a429bca73a651a3ffd3b494ca38d1d6dc1724297faa",
+      "actuallyReadFullScreen": true,
+      "status": "PASS-preflight",
+      "observation": "具体地区身份及炮兵攻方标题持续可见，下方白骰、合计三及造成零损伤属于同一纵向结算组。与旧图相比，结果现在有清楚的具体战斗身份；低层地图仍可辨为背景，不因结果覆盖背景单位而误认本次参战对象。"
+    },
+    {
+      "id": "battle-cavalry-rolling",
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-cavalry-rolling.jpg",
+      "sha256": "b353bd8c1df80b6dd3c82cb0a7faf650c18c847c3d09f3359aa9069586065165",
+      "actuallyReadFullScreen": true,
+      "status": "PASS-preflight",
+      "observation": "辽北指向叶赫部的同一身份保留，兵种切为骑兵、角色切为守方，红色骰位于其下方。身份、兵种、攻守三个标签清楚区分本轮读法，没有高层重叠或裁切。"
+    },
+    {
+      "id": "battle-cavalry-damage",
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-cavalry-damage.jpg",
+      "sha256": "11cd450f2d694f33bddd305ba7774138bff1ce2af7afca3472bf164cc651acb4",
+      "actuallyReadFullScreen": true,
+      "status": "PASS-preflight",
+      "observation": "具体战斗身份、骑兵阶段及守方保持可读，红骰与合计一、造成零损伤沿标题下方成组。结果有明确上文，不再只能靠附近蒙古地图单位猜测归属；双方地区主体仍可见。"
+    },
+    {
+      "id": "battle-infantry-rolling",
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-infantry-rolling.jpg",
+      "sha256": "dbb8f70c18fa1aecf3e3ab68b764f8c1e18fbe5803040257021b3f31aa21b5e9",
+      "actuallyReadFullScreen": true,
+      "status": "PASS-preflight",
+      "observation": "辽北指向叶赫部与步兵阶段同排，攻方标签在下，两枚绿色骰开放展开且没有挡住标题。双骰的结算身份来自稳定标题组，后方行动盘与蒙古地图没有成为同层战斗身份。"
+    },
+    {
+      "id": "battle-infantry-damage",
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/battle-context-r149/battle-infantry-damage.jpg",
+      "sha256": "da285f072ee0e6faef288d7a907b36d20f4b8bbe4e83bb9519677eb7e99a46f4",
+      "actuallyReadFullScreen": true,
+      "status": "PASS-preflight",
+      "observation": "具体战斗身份、步兵攻方、两枚绿色骰及合计二十、造成二损伤均可见，纵向阅读顺序明确。数值组虽覆盖低层地图局部，但上方身份持续指明本次战斗，不产生新的高层归属冲突，亦无高层组内裁切遮挡。"
+    }
+  ],
+  "limitations": [
+    "逐张实际读取了六张新整屏，并与此前实际读取的六张旧整屏观察对照；没有读取完整视频或逐帧检查。",
+    "取证属于保存点诊断，不能称为从初始页面自然完成全年教程。",
+    "仅静态关键态通过，不证明阶段切换时无闪烁、无提示漂移或无短暂遮挡。",
+    "旧退回组仍为历史失败证据，本报告不赋予任何旧图或新诊断图用户媒体资格。",
+    "不改代码，不判断规则数值正确性，不声明最终整链已验收。"
+  ]
+}

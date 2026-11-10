@@ -1,0 +1,908 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "瓦图姆之风直接选择状态效果",
+  "sourceRun": "1793534744180-124440-8209b37d-46ac-43b1-871b-57ccfe33dbb4",
+  "sourceRevision": "4384e8573f60fc2bff956a464cb7ad482563dc1b25a4c90a3d5ffaa30dc47478",
+  "e2eSourceRevision": "f4280c964d416241ace6c7d157cbee4eda14b2de90c38a14114d2b2bad9ccc2e",
+  "status": "PASS",
+  "outcome": "索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。",
+  "steps": [
+    {
+      "id": "remove-status-candidate-effects",
+      "action": "准备瓦图姆之风后显示规则给出的状态候选",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-cosmic-awareness"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [
+            "瓦图姆之风 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-winds-of-watoomb"
+          ],
+          "selectedChoiceIds": [
+            "dt-discard-card-option-spell-winds-of-watoomb"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "从弃牌堆选择1个法术并准备确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "从弃牌堆选择1个法术并准备"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [
+            "premonition",
+            "deja-vu"
+          ],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-cosmic-awareness",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 2,
+                "deja-vu": 1
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-see-the-future",
+                "card-play-six"
+              ],
+              "deckCount": 28,
+              "discardCount": 1,
+              "discardIds": [
+                "spell-winds-of-watoomb"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "dazzle": 1,
+                "blinded": 1
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-cosmic-awareness",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-cosmic-awareness"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-winds-of-watoomb"
+          ],
+          "choiceLabels": [
+            "",
+            ""
+          ],
+          "choiceIds": [
+            "dt-status-effect-1-dazzle",
+            "dt-status-effect-1-blinded"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要移除的状态P2敌方P2跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要移除的状态"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [
+            "致盲"
+          ],
+          "tokenIds": [
+            "premonition",
+            "deja-vu"
+          ],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-cosmic-awareness",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 2,
+                "deja-vu": 1
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-winds-of-watoomb"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-see-the-future",
+                "card-play-six"
+              ],
+              "deckCount": 28,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "dazzle": 1,
+                "blinded": 1
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-cosmic-awareness",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "本人和对手现存的两个状态均可选择",
+          "actual": 2,
+          "expected": 2
+        }
+      ]
+    },
+    {
+      "id": "remove-status-opponent-effect-selected",
+      "action": "直接点击 P2 的眩目状态图标；一次指定持有人和状态，等待确认",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-cosmic-awareness"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-winds-of-watoomb"
+          ],
+          "choiceLabels": [
+            "",
+            ""
+          ],
+          "choiceIds": [
+            "dt-status-effect-1-dazzle",
+            "dt-status-effect-1-blinded"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要移除的状态P2敌方P2跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要移除的状态"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [
+            "致盲"
+          ],
+          "tokenIds": [
+            "premonition",
+            "deja-vu"
+          ],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-cosmic-awareness",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 2,
+                "deja-vu": 1
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-winds-of-watoomb"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-see-the-future",
+                "card-play-six"
+              ],
+              "deckCount": 28,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "dazzle": 1,
+                "blinded": 1
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-cosmic-awareness",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-cosmic-awareness"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-winds-of-watoomb"
+          ],
+          "choiceLabels": [
+            "",
+            ""
+          ],
+          "choiceIds": [
+            "dt-status-effect-1-dazzle",
+            "dt-status-effect-1-blinded"
+          ],
+          "selectedChoiceIds": [
+            "dt-status-effect-1-dazzle"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要移除的状态P2敌方P2确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要移除的状态"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [
+            "premonition",
+            "deja-vu"
+          ],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-book",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-cosmic-awareness",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 2,
+                "deja-vu": 1
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-winds-of-watoomb"
+              ],
+              "handCount": 2,
+              "handIds": [
+                "card-strange-see-the-future",
+                "card-play-six"
+              ],
+              "deckCount": 28,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "dazzle": 1,
+                "blinded": 1
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-cosmic-awareness",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "状态图标选中但效果仍未结算",
+          "actual": {
+            "selected": true,
+            "confirmVisible": true,
+            "opponentDazzleUnchanged": true,
+            "opponentBlindedUnchanged": true,
+            "spellPrepared": true
+          },
+          "expected": {
+            "selected": true,
+            "confirmVisible": true,
+            "opponentDazzleUnchanged": true,
+            "opponentBlindedUnchanged": true,
+            "spellPrepared": true
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-remove-status-candidates",
+      "stepId": "remove-status-candidate-effects",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "23c99e39c991a8d916de162efc189bad0ef5fafbcc2f8082436ba42d54e03d52"
+    },
+    {
+      "id": "doctor-strange-remove-status-selected",
+      "stepId": "remove-status-opponent-effect-selected",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "6f56acd5b35e0f35d98b5bfb83559290109f62a4b081488e17fa29083fc23f0f"
+    }
+  ]
+}

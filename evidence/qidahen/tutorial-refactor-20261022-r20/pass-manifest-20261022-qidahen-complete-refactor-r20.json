@@ -1,0 +1,132 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-10-22",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "visualReview": "25 张整屏主链媒体全覆盖；两张改写后的训练目标界面由子代理复核，其余沿用此前有效逐图 PASS。"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/qidahen_visual_batch03_retry"
+    },
+    "reviewFile": ".visual-review-20261022-qidahen-complete-refactor-r20.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "七大恨教程流程及征兵训练领域测试 39/39 通过；规则和数值断言由 Vitest 覆盖。"
+    ]
+  },
+  "endToEndVerification": {
+    "fullRun": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+      "status": "PASS",
+      "result": "20/20 Chromium tests passed",
+      "runId": "2026-10-22T12-55-34-454Z",
+      "note": "布局修复后的当前代码完整回归。"
+    },
+    "latestLayoutRun": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts \"基础教程的 3 格走法\"",
+      "status": "PASS",
+      "result": "1/1 Chromium test passed，含训练目标避让弃牌堆与完整末项可滚动断言。",
+      "runId": "2026-10-22T12-40-39-831Z"
+    },
+    "screenshotClaimScope": "截图仅验收 UI、交互可见性与布局；规则和数值由 Vitest / E2E 状态断言覆盖。"
+  },
+  "staticVerification": {
+    "typecheck": "PASS",
+    "specLint": "PASS",
+    "i18nCheck": "PASS",
+    "diffCheck": "PASS"
+  },
+  "requirements": [
+    {
+      "requirement": "玩家入口是一条连续入门主线，E2E 专项场景不显示为额外章节",
+      "status": "PASS",
+      "evidence": [
+        "src/games/qidahen/tutorial.ts 的生产目录只暴露 basic-opening；覆盖矩阵记录其余 16 个 ID 仅供 E2E 专项回归。"
+      ]
+    },
+    {
+      "requirement": "真实正式起手中完成手牌行动并选择一条轮盘走法",
+      "status": "PASS",
+      "evidence": [
+        "完整 Chromium E2E 从正式入口完成征召支付、区域与编制选择、轮盘行动并检查实际结果。"
+      ]
+    },
+    {
+      "requirement": "1、2、3 格作为互斥路线分别验证，不串成连续操作",
+      "status": "PASS",
+      "evidence": [
+        "完整 Chromium E2E 分别启动正式局面，覆盖单格、双格和三格路线及相应真实交互。"
+      ]
+    },
+    {
+      "requirement": "三格征兵训练按玩家当前选择展示规则并完成真实弃牌、目标选择和结算",
+      "status": "PASS",
+      "evidence": [
+        "39/39 定向 Vitest 通过；最新定向 Chromium E2E 1/1 通过，覆盖征兵、训练、额外训练目标及窗口布局。"
+      ]
+    },
+    {
+      "requirement": "移动端玩家实际长按手牌检视，教程结束后可继续同一局",
+      "status": "PASS",
+      "evidence": [
+        "移动端 Chromium E2E 实际长按并关闭手牌检视；主线及三格分支验证教程退场后仍可继续对局。"
+      ]
+    },
+    {
+      "requirement": "最终 25 张整屏媒体全量对账，UI 视觉验收 PASS",
+      "status": "PASS",
+      "evidence": [
+        ".e2e-image-index.json 与 PASS 清单逐图 25/25 对齐；新改的两张训练目标画面由子代理复核 PASS，未改界面沿用有效逐图 PASS。"
+      ]
+    }
+  ],
+  "media": [
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/00-唯一入门入口-直接进入胜利条件.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/00a-继续后-进入行动流程说明.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/05-选择征召军队并阅读规则.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/移动-01-移动教程-手牌检视前.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/移动-02-移动教程-长按手牌打开检视.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/07-支付1张手牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/08-选择宣府建军位置.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/09-选择建军方式.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/10-征召结果-轮盘行动待完成.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/11-教程结束后同局下一位玩家可操作.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03-轮盘选择-三种走法均可选择.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03a-轮盘两格-选择对手抽牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03b-轮盘两格-进入军屯并结算.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/02a-轮盘三格费用与落点说明.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03c-轮盘一格-进入开垦并结算.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03e-征兵训练选择行动前规则译文.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03f-训练目标选择与等级提示.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03g-征兵训练结算结果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03h-征兵目标本土限制与候选区域.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03i-额外训练规则与弃牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03j-额外训练目标与结果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03k-征兵训练结果与轮盘结算.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r20/media/03l-教程退场后同局继续.png"
+  ],
+  "boundaries": [
+    "本轮入门主线不讲战斗、攻城、年度结算和地图特例；对应内容未在当前正式开局触发，不能据此宣称入门教程覆盖这些机制。",
+    "视觉复核仅覆盖 UI 和交互画面；规则与数值以规则来源、Vitest 和 E2E 状态断言为准。"
+  ]
+}

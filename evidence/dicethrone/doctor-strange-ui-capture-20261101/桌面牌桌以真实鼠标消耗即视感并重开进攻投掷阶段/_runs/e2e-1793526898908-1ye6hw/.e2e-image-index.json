@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "即视感悬停说明态-桌面.png",
+      "chainId": "即视感状态悬停查看说明",
+      "chainStep": "状态说明悬停",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-deja-vu-token-hover",
+      "behaviorStepId": "deja-vu-token-hover",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "悬停时可操作的状态标记放大并显示说明。",
+      "description": "鼠标悬停即视感标记后，标记高亮并显示操作说明。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家将鼠标移到可用的即视感状态标记。",
+      "sourceRevision": "5669bceb32d562df218033f460a8cc7c6e189e5f3173ed96821517d755533b82",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "即视感状态操作说明交互"
+      ],
+      "sourceRun": "1793527010551-122080-e473decb-ee1e-4d92-be60-4f93539039f4",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "即视感重开后-桌面.png",
+      "chainId": "奇异博士即视感重开阶段",
+      "chainStep": "03",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-deja-vu-restarted",
+      "behaviorStepId": "deja-vu-restarted-rolls",
+      "description": "真实鼠标点击即视感后，状态标记消耗、投掷计数归零且旧阶段效果清理。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击即视感状态重开进攻投掷阶段。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击即视感状态重开进攻投掷阶段。",
+      "sourceRevision": "5669bceb32d562df218033f460a8cc7c6e189e5f3173ed96821517d755533b82",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "即视感状态操作说明交互"
+      ],
+      "sourceRun": "1793527010551-122080-e473decb-ee1e-4d92-be60-4f93539039f4",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1793526898908-1ye6hw"
+    }
+  ]
+}

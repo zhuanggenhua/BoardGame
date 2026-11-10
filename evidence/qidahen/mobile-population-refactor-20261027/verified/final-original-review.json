@@ -1,0 +1,427 @@
+{
+  "status": "PASS",
+  "verdict": "PASS",
+  "score": 93.6,
+  "sourceRevision": "9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7",
+  "claimScope": "raw-current冻结10图及采集版本的本轮视觉PASS；7图按相同SHA256沿用，3图增量审查。",
+  "reviewedAt": "2026-10-27T03:06:17.563634+00:00",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/final_visual_scoped"
+  },
+  "objective": "本轮七大恨手机横屏信息恢复、手牌/支付/目标布局与人口标记图面收口",
+  "reviewMethod": "继承已审冻结图组：01..07原始字节完全相同，按SHA256沿用PASS而未重读；仅私读08/09/10三张完整画面代理。不启动用户查看器、浏览器、网络，不重跑测试或修改生产代码。",
+  "identityCheck": {
+    "sourceManifest": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\source.json",
+    "runtimeAtEntry": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\runtime-at-entry.json",
+    "runtimeEntrySession": "e2e-1793070188813-r78wm6",
+    "frontendMatches": true,
+    "backendMatches": true,
+    "frozenBoardSnapshot": "raw-current/Board.source.tsx的SHA256与该版source.json匹配",
+    "rawMediaHashes": "10图全部重新计算；01..07与此前PASS字节相同，仅08/09/10变化并增量看图",
+    "sourceFiles": "主线程已在采集后核验当前10目标文件与本版source.json全部匹配；本视觉子任务不重复核验后续工作树",
+    "scope": "源身份以冻结manifest/Board快照/入口记录为准；主线程负责工作树持续变更边界。"
+  },
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\01-桌面常态.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "8e9a44a41c137d5994dddea3df1874cef332cc3689b19d2ab687c44cb1ef549b",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\01-桌面常态.png",
+      "proxyScale": 0.75,
+      "observation": "三席公开读数、轮盘、两张纪年、朝鲜牌库12/弃牌5、大明抽20/弃7、三张手牌及右侧动作均在。人口数字互相分离，窄区短引线与落点可辨。地图缩放/复位完整；右侧动作和工具、退出各有独立空间。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "8e9a44a41c137d5994dddea3df1874cef332cc3689b19d2ab687c44cb1ef549b",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\02-宽屏常态.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "c2133a3f118731242f227dec44588322886d9c298a647de633a0053c872d8dff",
+      "viewport": {
+        "width": 2560,
+        "height": 1304
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\02-宽屏常态.png",
+      "proxyScale": 0.5625,
+      "observation": "宽屏同构保持必要对象；手牌未随剩余空间被拉散或缩成弱入口。右侧四动作与工具/退出保持区分，地图人口块及军队不相互覆盖。",
+      "hardFailures": [],
+      "userDisplayRecommended": false,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "c2133a3f118731242f227dec44588322886d9c298a647de633a0053c872d8dff",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\03-手机横屏常态.png",
+      "status": "PASS",
+      "score": 92,
+      "sha256": "d7268fb4c884e1be488be5fdcfadd3c9192c590675f916a339e94b88f3261660",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\03-手机横屏常态.png",
+      "proxyScale": 1,
+      "observation": "936×432常态保留三席、两纪年、朝鲜实际牌库/弃牌及大明抽弃牌。手牌标题、类别和查看面分别承载；右侧动作不碰工具/退出。减号、复位、加号均完整，人口黄块与军队视觉可分。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "d7268fb4c884e1be488be5fdcfadd3c9192c590675f916a339e94b88f3261660",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\04-手机横屏支付选择.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "a7e93e8c25729f937480699cceaad88e485cf41c02ca8817206d21e16f9646c4",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\04-手机横屏支付选择.png",
+      "proxyScale": 1,
+      "observation": "先选东北大旱支付牌后，征召军队支付栏显示1/1及所选牌名，确认/取消清楚。栏下沿与选中牌上沿有间隔，未压类别、标题或查看入口，选中描边和已选状态可辨。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "a7e93e8c25729f937480699cceaad88e485cf41c02ca8817206d21e16f9646c4",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\05-手机横屏检视.png",
+      "status": "PASS",
+      "score": 95,
+      "sha256": "51d8e3a88e710641ce8dcb5fa5dc21ab628bde6b8b7ca410f31f35f8d222790e",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\05-手机横屏检视.png",
+      "proxyScale": 1,
+      "observation": "东北大旱检视牌保持比例、完整正文可读；右上黑圆白叉清晰，未另占正文行。遮罩建立阅读焦点，底层原选中牌状态仍在，具备明确关闭返回入口。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "51d8e3a88e710641ce8dcb5fa5dc21ab628bde6b8b7ca410f31f35f8d222790e",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\06-桌面支付选择.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "90d3ae240d0e0beb0e615ffbde3f84f6d08feb62efdc11692b2a468bbec83a88",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\06-桌面支付选择.png",
+      "proxyScale": 0.75,
+      "observation": "桌面支付栏与抬升选中牌上沿分离，东北大旱标题、类别、查看均无覆盖；确认/取消贴近当前手牌。公开固定界面、纪年和牌堆仍保留。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "90d3ae240d0e0beb0e615ffbde3f84f6d08feb62efdc11692b2a468bbec83a88",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\07-宽屏支付选择.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "bd3bfafa71c8157bb87a88406b9fe20d6cec8833f15d155700b3a1a244c8f017",
+      "viewport": {
+        "width": 2560,
+        "height": 1304
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\07-宽屏支付选择.png",
+      "proxyScale": 0.5625,
+      "observation": "宽屏支付栏位于手牌上方，选中牌真实上沿与栏保持间隙；三牌标题、查看和已选状态可识别，未出现异常分散或遗留占位。",
+      "hardFailures": [],
+      "userDisplayRecommended": false,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "bd3bfafa71c8157bb87a88406b9fe20d6cec8833f15d155700b3a1a244c8f017",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\08-手机横屏地图目标.png",
+      "status": "PASS",
+      "score": 93,
+      "sha256": "d5207e6021aacde8ad922e6741e5d5c3589f2ecff987d79f071f50d3b25182eb",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\current-review-proxies\\08-手机横屏地图目标.png",
+      "proxyScale": 1.0,
+      "observation": "最新招安目标态镜头更完整地容纳南侧区域；右侧能看到地图边缘底色。区域贴合描边和浅色填充清楚，控制/军队/人口本体可辨。右侧仅一处原决策提示，无重复绿色横幅；减号/复位/加号、三席、两纪年、两方牌堆均保留，提示/工具/退出互不侵占。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "reviewMethod": "incremental-full-frame-proxy-visual-review",
+      "previousSha256": "21a121ff7d114bd49a375784b9a158a9e8ded2d8efe25967d823544ea9aee6e9"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\09-桌面地图目标.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "31c8ce8eafc2ad3c20dc6385abe179f9dd148c8e18b6dcab46aaf877a9067040",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\current-review-proxies\\09-桌面地图目标.png",
+      "proxyScale": 0.75,
+      "observation": "最新桌面目标镜头使地图右边缘及下缘底色可见，当前高亮区域、人口数字、部队本体和地图区域主边界仍清楚。右侧仅原招安提示，未用按钮或横幅替代地图目标；固定固定界面、两纪年、三席与牌堆完整。空出的边缘是镜头取景露出的场景底色，没有留下被移除界面的空壳或失效槽位。",
+      "hardFailures": [],
+      "userDisplayRecommended": false,
+      "reviewMethod": "incremental-full-frame-proxy-visual-review",
+      "previousSha256": "04dad24f81bde9ff71be9dd74e4edfe47df2dafc85162d606b979805b9471b51"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\mobile-population-refactor-20261027\\raw-current\\10-手机横屏六张手牌滚动代表态.png",
+      "status": "PASS",
+      "score": 92,
+      "sha256": "098d11d5e93568e5fe6e69462bd2bbe52fca49533c3eefcd45dc59a3238654bf",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\current-review-proxies\\10-手机横屏六张手牌滚动代表态.png",
+      "proxyScale": 1.0,
+      "observation": "最新六牌滚动代表态左缘露出前牌片段；当前完整牌稳定等宽，军备/银两类别和各自查看圆面准确对应牌本体，无漂移。支付栏在牌顶上方，确认禁用与0/1进度一致；取消及牌堆数量可辨。静态图不独立证明全部6牌可达，沿用本轮最新端到端测试中的逐张横滚检视行为证据。",
+      "hardFailures": [],
+      "userDisplayRecommended": false,
+      "reviewMethod": "incremental-full-frame-proxy-visual-review",
+      "previousSha256": "81b7f0225e93035f67823930086b31545275f02a7a9f72f68c1baa75cbd7fdfd"
+    }
+  ],
+  "targetRequirements": [
+    {
+      "requirement": "必要对象守恒",
+      "status": "PASS",
+      "evidence": "01/02/03、06/07、08/09中三席、轮盘、两纪年、朝鲜实际牌库/弃牌、大明抽弃牌以及当前手牌/动作按状态存在。05用检视遮罩建立阅读层，没有永久移除底层对象。"
+    },
+    {
+      "requirement": "右侧动作与工具/退出不相撞",
+      "status": "PASS",
+      "evidence": "01/02/03动作列与工具及退出有独立槽位；10工具位置变化未侵入手牌/支付。展开组全部按钮命中能力不由静态图证明，沿用主任务行为证据。"
+    },
+    {
+      "requirement": "地图减号/复位/加号完整可见",
+      "status": "PASS",
+      "evidence": "PC与手机三控件均在画面内；手机固定于玩家条下方、轮盘右侧，没有被支付/地图提示遮住。真实viewport变化由主任务行为证据承担。"
+    },
+    {
+      "requirement": "支付不压选中牌上沿/类别/标题/查看",
+      "status": "PASS",
+      "evidence": "04/06/07/10支付栏与牌上沿有间隔；抬升后的真实上沿仍清楚，类别/查看未跨入标题。"
+    },
+    {
+      "requirement": "检视关闭入口清楚",
+      "status": "PASS",
+      "evidence": "05完整牌面与右上黑圆白叉同屏，关闭不另占正文行。持续阅读与关闭返回的行为由主任务核验。"
+    },
+    {
+      "requirement": "地图目标提示单一owner与高亮可见",
+      "status": "PASS",
+      "evidence": "08/09仅右侧原招安提示，地图候选贴合区域主边界，没有重复绿色横幅。"
+    },
+    {
+      "requirement": "人口图面不重叠、引线归属清楚",
+      "status": "PASS",
+      "evidence": "01/02/03/08/09可见数字与军队分离；01原生像素窄区裁图复核引线终点和人口完整边框。仅证明当前可见局面，37区全几何由离线测试承担。"
+    },
+    {
+      "requirement": "六牌溢出可浏览且查看对齐",
+      "status": "PASS",
+      "evidence": "10以左侧局部牌缘显示横向延续，当前牌与查看/类别一致；结合主任务6张合法手牌逐张真实横滚检视再关闭证据，代表态浏览路径成立。"
+    }
+  ],
+  "elementResponsibilityAudit": {
+    "ledger": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/README.md 的 owner 与元素职责 及 最终实现与验证补充",
+    "canonicalStandards": [
+      ".spec/knowledge/standards/ui-change-gates.md",
+      ".spec/knowledge/standards/ui-ux.md"
+    ],
+    "uncoveredElements": [],
+    "decisions": [
+      {
+        "element": "地图/区域中心/人口",
+        "decision": "保留正式底图和区域语义；人口连续读数贴区域，窄区短引线补归属；未见第二套对象或重复数字。"
+      },
+      {
+        "element": "HUD视口/三席/轮盘",
+        "decision": "玩家条收窄后仍保留身份和公开读数，轮盘为独立左上实体。"
+      },
+      {
+        "element": "纪年/朝鲜/抽弃牌",
+        "decision": "两纪年正式卡面及朝鲜实际牌堆恢复；牌堆数量与本体仍可发现，非底图空槽替代。"
+      },
+      {
+        "element": "手牌/支付",
+        "decision": "正式卡面为候选本体；类别和查看贴所属牌，支付栏只承载所选进度及确认/取消。"
+      },
+      {
+        "element": "当前决策/地图控件",
+        "decision": "动作由右侧原ActionsZone承载；地图控件由HUD承载，完整显示减号/复位/加号。"
+      },
+      {
+        "element": "放大",
+        "decision": "原阅读层呈现完整卡面，关闭叠在右上，不占正文行。"
+      },
+      {
+        "element": "招安重复提示",
+        "decision": "删除绿色重复横幅，保留右侧原决策提示与地图本体高亮。"
+      }
+    ]
+  },
+  "negativeImpactChecks": [
+    {
+      "change": "手机玩家条与轮盘缩小",
+      "ruleObject": "玩家公开读数/阶段",
+      "participates": true,
+      "newCarrier": "顶部三席及左上印刷轮盘",
+      "firstRecovery": "直接读取原对象",
+      "result": "身份、当前席与公开读数未移除。"
+    },
+    {
+      "change": "纪年/朝鲜紧凑恢复",
+      "ruleObject": "持续规则/牌堆",
+      "participates": true,
+      "newCarrier": "左侧两纪年与右上朝鲜实际牌堆",
+      "firstRecovery": "直接找到正式卡面和数量",
+      "result": "没有以底图空槽冒充实际对象。"
+    },
+    {
+      "change": "手牌增大与横向溢出",
+      "ruleObject": "可用手牌/支付候选",
+      "participates": true,
+      "newCarrier": "下方同源卡牌横排与各牌查看入口",
+      "firstRecovery": "常态直接比较三牌，多牌横滑，点看检视",
+      "result": "未将牌压成不可读叠片；六牌代表态对齐。"
+    },
+    {
+      "change": "支付栏按手牌空间定位",
+      "ruleObject": "当前支付选择",
+      "participates": true,
+      "newCarrier": "手牌上方同一支付栏",
+      "firstRecovery": "选牌后紧邻上方确认/取消",
+      "result": "未侵占所选牌类别/标题/查看。支付期间部分地图被遮，地图选择阶段08/09重新开放并高亮。"
+    },
+    {
+      "change": "地图控件迁HUD",
+      "ruleObject": "原地图viewport",
+      "participates": true,
+      "newCarrier": "独立减号/复位/加号",
+      "firstRecovery": "玩家条下方直接操作",
+      "result": "视觉完整；状态唯一性由源码与行为证据承担。"
+    },
+    {
+      "change": "人口避让与短引线",
+      "ruleObject": "区域当前人口",
+      "participates": true,
+      "newCarrier": "金色数字方块与必要短引线",
+      "firstRecovery": "直接读取区域内数字和引线终点",
+      "result": "当前可见数字未与军队/其它人口叠压，未隐藏人口换取留白。"
+    },
+    {
+      "change": "移除招安绿色横幅",
+      "ruleObject": "目标选择指令",
+      "participates": true,
+      "newCarrier": "右侧原提示与地图目标本体高亮",
+      "firstRecovery": "读右侧提示后点地图",
+      "result": "同一指令只有一处主承载。"
+    }
+  ],
+  "hardFailures": [],
+  "issues": [],
+  "playerFirstAction": "常态在右侧选行动；支付态比较下方手牌后在紧邻上方栏确认/取消；招安态读右侧唯一提示后点高亮地图；检视态读完点右上叉返回。",
+  "uncoveredScope": [
+    "手机竖屏、其它手机尺寸、其它所有游戏阶段、完整联机自然开局与全游戏规则审计。",
+    "静态图不能证明不可见热区、滚动全过程、缩放/复位状态变化、检视持久性和支付结算；相关已提供行为证据由主任务核验，审查未重跑。",
+    "37区所有人口取值与局面的几何完备性由正式蒙版/离线测试承担；图组只证明实际可见局面。",
+    "工具展开后全部子按钮未在10图中逐项展开展示；仅核图中动作/工具/退出空间，展开组命中沿用主任务证据。",
+    "采集后如仍有新的并行源码变更，其影响由主线程判断；本报告固定到sourceRevision与raw-current媒体hash。"
+  ],
+  "displaySelection": [
+    "01",
+    "03",
+    "04",
+    "05",
+    "06",
+    "08"
+  ],
+  "internalOnly": [
+    "02",
+    "07",
+    "09",
+    "10"
+  ],
+  "current_worktree_source_status": "matched_at_capture_by_parent",
+  "current_worktree_source_note": "主线程在最新采集后已核验10个目标文件匹配；本报告不将其扩称任意后续工作树始终同版。",
+  "incrementalReview": {
+    "carriedForwardCount": 7,
+    "reReviewedCount": 3,
+    "reReviewedMedia": [
+      "08-手机横屏地图目标.png",
+      "09-桌面地图目标.png",
+      "10-手机横屏六张手牌滚动代表态.png"
+    ],
+    "previousReport": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+    "previousSourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c"
+  },
+  "behaviorEvidence": {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\e2e-final-board.log",
+    "result": "1 passed (27.6s)",
+    "verification": "采用主线程提供结果，子任务未重复跑测试；视觉裁决依据媒体本体。"
+  },
+  "observationTextNormalization": {
+    "scope": "仅逐图observation的英文缩写中文归一",
+    "replacements": {
+      "HUD": "固定界面",
+      "UI": "界面",
+      "E2E": "端到端测试"
+    },
+    "changedMedia": [
+      6,
+      9,
+      10
+    ],
+    "verdictChanged": false,
+    "note": "仅文案归一，未重新开图或重审；所有事实、状态、评分、媒体哈希与采集版本保持不变。"
+  }
+}

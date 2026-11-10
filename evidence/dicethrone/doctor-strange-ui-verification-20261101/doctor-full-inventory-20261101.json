@@ -1,0 +1,2348 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-01T08:18:13.586Z",
+  "reviewer": "/root/doctor_full_inventory",
+  "verdict": "退回：覆盖不完整且有确定实现失败",
+  "userQuote": "按规范重新逐张验收所有新交互，和旧UI逐项对照，有问题直接修，别再拿测试通过当验收通过，修好给我新截图。",
+  "scopeLock": {
+    "object": "奇异博士所有新交互及其最窄共享承载影响",
+    "truthSources": [
+      "当前domain任务/规则发起者",
+      "当前Board实际消费入口",
+      "当前E2E正文",
+      "实际git历史对应组件",
+      "原30张媒体索引（仅覆盖线索）"
+    ],
+    "environment": "D:/gongzuo/webgame/BoardGame 当前脏工作区；只读生产源码；仅写本JSON",
+    "acceptance": "按独特UI/交互表达建族，每族对照旧完整UI并重新读原图；规则参数不同映射同源代表态，权限和后续状态由实际行为验证；所有旧PASS撤销不沿用",
+    "excluded": [
+      "不修改生产/测试/规范/正式任务",
+      "不虚构无现实入口prepare-hand",
+      "不把18张既有公共牌扩大为逐牌全流程截图",
+      "不把规则单测通过当视觉通过"
+    ]
+  },
+  "reportLimitations": [
+    "本报告独立核查源码、历史和覆盖，不读取截图画面，因此不对任何媒体作视觉PASS",
+    "目录和索引存在只证明媒体已登记；旧报告中的PASS全部不作为本轮结论",
+    "并发主任务可在本报告生成后改源码；具体修复/新媒体须按各自生成时间绑定当前身份"
+  ],
+  "summary": {
+    "interactionFamilies": 25,
+    "currentMediaCount": 30,
+    "mainFindings": [
+      "普通来源卡特写默认3秒自动关闭，为确定实现失败",
+      "公开准备区的查看/滚动/阅读不等同施放选择卡池，现有30图未证明",
+      "四人全目标、多持有人状态与仅skip空状态分派缺代表态",
+      "弃牌直接施放的允许skip与嵌套连续承接没有真实E2E入口",
+      "横屏放大阅读缺图；即视感仅hover图，重开后界面未进30图",
+      "预感普通/一层/三层、返顶/底、奖励骰四种骰面属同UI规则分支，行为映射即可，不需逐参数拍图"
+    ]
+  },
+  "historicalBaselines": [
+    {
+      "id": "old-card-pool",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "blob": "d5bb5de313952bd73787109a35b7cd0959a3b675",
+      "evidence": [
+        {
+          "line": 22,
+          "text": "const CARD_POOL_CARD_WIDTH = 'clamp(88px, min(7.2vw, 12.5vh), 132px)';"
+        },
+        {
+          "line": 197,
+          "text": "const isCardSelection = isHandCardSelection || isDeckCardSelection;"
+        },
+        {
+          "line": 348,
+          "text": "width: CARD_POOL_CARD_WIDTH,"
+        },
+        {
+          "line": 353,
+          "text": "data-testid=\"dt-card-pool-overlay\""
+        },
+        {
+          "line": 362,
+          "text": "data-testid=\"dt-card-pool-panel\""
+        },
+        {
+          "line": 368,
+          "text": "data-testid=\"dt-card-pool-surface\""
+        },
+        {
+          "line": 373,
+          "text": "data-testid=\"dt-card-pool-backdrop\""
+        },
+        {
+          "line": 377,
+          "text": "data-testid=\"dt-card-pool-title\""
+        },
+        {
+          "line": 384,
+          "text": "data-testid=\"dt-card-pool-search\""
+        },
+        {
+          "line": 389,
+          "text": "data-testid=\"dt-card-pool-search-leading-icon\""
+        },
+        {
+          "line": 399,
+          "text": "data-testid=\"dt-card-pool-search-input\""
+        },
+        {
+          "line": 406,
+          "text": "data-testid=\"dt-card-pool-search-clear\""
+        },
+        {
+          "line": 415,
+          "text": "data-testid=\"dt-card-pool-result-count\""
+        },
+        {
+          "line": 426,
+          "text": "data-testid=\"dt-card-pool-selection\""
+        },
+        {
+          "line": 432,
+          "text": "data-testid=\"dt-card-pool-track\""
+        },
+        {
+          "line": 437,
+          "text": "data-testid=\"dt-card-pool-empty\""
+        },
+        {
+          "line": 486,
+          "text": "data-testid=\"dt-card-pool-actions\""
+        },
+        {
+          "line": 490,
+          "text": "onClick={onCancel}"
+        },
+        {
+          "line": 497,
+          "text": "onClick={onConfirm}"
+        },
+        {
+          "line": 530,
+          "text": "onClick={onCancel}"
+        },
+        {
+          "line": 537,
+          "text": "onClick={onConfirm}"
+        }
+      ],
+      "use": "完整手牌/牌库卡池含搜索、滚动、确认、取消；当前只扩授权cardSourceZone和阅读",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "old-player-status-modal",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "blob": "d5bb5de313952bd73787109a35b7cd0959a3b675",
+      "evidence": [
+        {
+          "line": 134,
+          "text": "onSelectPlayer: (playerId: PlayerId) => void;"
+        },
+        {
+          "line": 158,
+          "text": "onSelectPlayer,"
+        },
+        {
+          "line": 512,
+          "text": "<GameModal"
+        },
+        {
+          "line": 551,
+          "text": "{targetPlayerIds.map(pid => {"
+        },
+        {
+          "line": 575,
+          "text": "onClick={canSelect ? () => onSelectPlayer(pid) : undefined}"
+        },
+        {
+          "line": 632,
+          "text": "onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}"
+        },
+        {
+          "line": 654,
+          "text": "{targetPlayerIds.map(pid => {"
+        },
+        {
+          "line": 675,
+          "text": "onClick={canSelect ? () => onSelectPlayer(pid) : undefined}"
+        }
+      ],
+      "use": "原完整玩家/状态modal；当前choice adapter不得另造列表",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "old-choice-modal",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "blob": "c61e6bf83423dab407a2e8551051782beb4ee171",
+      "evidence": [
+        {
+          "line": 143,
+          "text": "<GameModal"
+        },
+        {
+          "line": 159,
+          "text": "<GameButton"
+        },
+        {
+          "line": 170,
+          "text": "<GameButton"
+        },
+        {
+          "line": 173,
+          "text": "variant=\"secondary\""
+        },
+        {
+          "line": 224,
+          "text": "<GameButton"
+        },
+        {
+          "line": 228,
+          "text": "variant=\"secondary\""
+        },
+        {
+          "line": 267,
+          "text": "<GameButton key={option.id} variant=\"secondary\" disabled={!canResolve || option.disabled}"
+        },
+        {
+          "line": 282,
+          "text": "<GameButton"
+        },
+        {
+          "line": 486,
+          "text": "<GameButton"
+        },
+        {
+          "line": 495,
+          "text": "<GameButton"
+        },
+        {
+          "line": 498,
+          "text": "variant=\"secondary\""
+        }
+      ],
+      "use": "原文本/option/token选择及secondary按钮；用户明确要求的平面单列选项优先",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "old-dice-tray",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "blob": "f5872a827f77b2fbd7ae11f1c57e4c7185a3f65a",
+      "evidence": [
+        {
+          "line": 184,
+          "text": "const completedInteractionCount = getCompletedDiceStepCount(interaction, dtMeta);"
+        },
+        {
+          "line": 430,
+          "text": "export const DiceActions = ({"
+        },
+        {
+          "line": 603,
+          "text": "<span className=\"flex-1 text-center font-black\" style={actionTokens.interactionTextStyle}>{t('common.cancel')}</span>"
+        },
+        {
+          "line": 627,
+          "text": "data-testid={isInteractionMode ? 'dice-interaction-confirm-button' : undefined}"
+        }
+      ],
+      "use": "原骰盘/确认取消，重投进度扩展只进入该owner",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "old-dice-hint",
+      "rev": "f99d380efdf9d5a87a42d450888e0fc98baadd90",
+      "requestedRev": "22790d2c7^",
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "blob": "9b2d4147a1a83e648ab652b94ebbaf8cae29d92e",
+      "evidence": [
+        {
+          "line": 140,
+          "text": "const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = ({ interaction }) => {"
+        },
+        {
+          "line": 149,
+          "text": "data-placement=\"left-center\""
+        },
+        {
+          "line": 161,
+          "text": "className=\"w-max max-w-[calc(100vw-2rem)] rounded-xl border border-amber-400/60 bg-amber-600/90 text-center shadow-lg backdrop-blur-sm\""
+        }
+      ],
+      "use": "实际旧琥珀单行左侧居中来源；不是顶部居中",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "old-magnify",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+      "blob": "32e8ff8f95434f9825993bdba8ef87fe51f3796c",
+      "evidence": [
+        {
+          "line": 94,
+          "text": "const magnifiedCardWidth = 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';"
+        },
+        {
+          "line": 114,
+          "text": "<MagnifyOverlay"
+        },
+        {
+          "line": 117,
+          "text": "onClose={props.onCloseMagnify}"
+        },
+        {
+          "line": 151,
+          "text": "width: magnifiedCardWidth,"
+        },
+        {
+          "line": 152,
+          "text": "height: `calc(${magnifiedCardWidth} / 0.61)`,"
+        }
+      ],
+      "use": "原放大阅读和onClose；旧写死比例不是继续失真的许可",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "old-ability-choice",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/AbilityChoiceModal.tsx",
+      "blob": "1964281e6022bc1abaf6a052d5b67da96d03f18b",
+      "evidence": [
+        {
+          "line": 30,
+          "text": "export const AbilityChoiceModal: React.FC<AbilityChoiceModalProps> = ({"
+        },
+        {
+          "line": 39,
+          "text": "<GameModal"
+        },
+        {
+          "line": 55,
+          "text": "onClick={() => onSelect(opt.abilityId)}"
+        },
+        {
+          "line": 72,
+          "text": "onClick={onSkip}"
+        }
+      ],
+      "use": "原技能variant选择及skip完整组件",
+      "status": "已实际git show验证，不代表历史画面验收"
+    },
+    {
+      "id": "existing-prepared-zone",
+      "rev": "fc297a6e43133d14ff4293b9eb8f15c9e4d2877a",
+      "requestedRev": "90b7dba67^",
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "blob": "86f9c899a59f0becc9df15da241b0cf247c01d8f",
+      "evidence": [
+        {
+          "line": 169,
+          "text": "const renderPreparedSpells = () => {"
+        },
+        {
+          "line": 175,
+          "text": "data-prepared-spell-zone=\"public\""
+        },
+        {
+          "line": 190,
+          "text": "data-prepared-spell-card={card.id}"
+        },
+        {
+          "line": 192,
+          "text": "onClick={() => onMagnifyCard(card)}"
+        },
+        {
+          "line": 393,
+          "text": "{renderPreparedSpells()}"
+        }
+      ],
+      "use": "历史已存在奇异博士准备区承接；它不是成熟通用旧英雄卡区，也未被30图独立验收",
+      "status": "已实际git show验证，不代表历史画面验收"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "hand-prepare",
+      "name": "从手牌真实准备法术",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/executeCards.ts",
+          "line": 158,
+          "end": 171
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 52
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 311,
+          "end": 319
+        }
+      ],
+      "actualUiOwner": "HandArea → PLAY_CARD →正式准备区及准备效果",
+      "baseline": "existing-prepared-zone",
+      "steps": [
+        "主阶段点击真实手牌法术",
+        "按原出牌动作准备；不是先打开第二个手牌候选器",
+        "准备效果可能续接目标/状态选择"
+      ],
+      "currentMedia": [
+        "05-深红系带玩家候选.png",
+        "07-状态候选-桌面.png"
+      ],
+      "coverageFinding": "真实出牌触发已在深红/瓦图姆E2E覆盖；30图缺准备区与手牌关联常态图。",
+      "necessaryAction": "可复用深红/瓦图姆的真实触发日志，不为九张法术逐张拍图；补公开准备区阅读代表态。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-lifecycle.test.ts",
+          "line": 1403
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "discard-prepare",
+      "name": "从弃牌堆准备法术",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 55
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 58
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 132
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 293,
+          "end": 310
+        }
+      ],
+      "actualUiOwner": "Board.choiceModalEntry → ChoiceObjectSelection → InteractionOverlay",
+      "baseline": "old-card-pool",
+      "steps": [
+        "宇宙感知/魔杖后置/瓦图姆之风触发",
+        "展示合法弃牌法术",
+        "点候选/再点取消选中/确认",
+        "续接所选准备效果"
+      ],
+      "currentMedia": [
+        "01-弃牌法术候选-桌面.png",
+        "02-弃牌法术已选-桌面.png",
+        "03-弃牌法术候选-横屏.png",
+        "04-弃牌法术已选-横屏.png"
+      ],
+      "coverageFinding": "桌面/横屏候选和选中均有代表媒体；现有日志还包含再点取消、清空按钮不存在。大候选集会出现搜索/滚动，但这4图不证明该分支。",
+      "necessaryAction": "重审当前4图并映射所有相同弃牌准备入口；仅大候选集另补真实搜索/滚动代表态。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 773,
+          "end": 865
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "deck-top-five",
+      "name": "牌库顶五至多准备两张",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 371,
+          "end": 374
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 293,
+          "end": 310
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay cardSourceZone=deck",
+      "baseline": "old-card-pool",
+      "steps": [
+        "全知之眼真实结算",
+        "从顶五中的法术候选选第一张并确认",
+        "候选重新映射，选第二张/直接跳过",
+        "准备效果续接后进入重排"
+      ],
+      "currentMedia": [
+        "15-牌库顶五法术候选.png",
+        "16-牌库顶五第二张已选.png"
+      ],
+      "coverageFinding": "30图只有初始候选/第二张选中；E2E正文另采首张选中、包含再点取消选中，但并未纳入30图。零张/一张跳过有领域测试；同一候选UI不必逐数量新增图片。",
+      "necessaryAction": "把首张/第二张映射为同族；核验旧完整卡池与当前可比性，零/一/二数量和skip用行为验证。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1723,
+          "end": 1857
+        },
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+          "line": 641,
+          "end": 733
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "deck-reorder",
+      "name": "剩余牌逐张重排",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 376,
+          "end": 386
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay cardSourceZone=deck",
+      "baseline": "old-card-pool",
+      "steps": [
+        "展示尚未排序的顶五剩余牌",
+        "点下一张→确认",
+        "重复到全部排序完成",
+        "返回同一正式牌库顺序"
+      ],
+      "currentMedia": [
+        "17-剩余牌重排候选.png",
+        "18-剩余牌首张已选.png"
+      ],
+      "coverageFinding": "已有候选/首张选中代表态；全部后续排序与最终顺序由E2E/领域记录承担；30图不显示排序进度是否可理解，应由本轮实图核查。",
+      "necessaryAction": "无需每张剩余牌重复图；审标题/当前候选是否清楚表达“下一张”，核对末步确认和落回牌桌。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1858,
+          "end": 1891
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "prepared-cast",
+      "name": "公开准备区选择施放法术",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 59
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 63
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 80
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 293,
+          "end": 310
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay cardSourceZone=preparedSpells",
+      "baseline": "old-card-pool",
+      "steps": [
+        "攻击后或转瞬即逝/奖励骰触发",
+        "选准备法术→确认",
+        "下一次施放可选另张或跳过",
+        "按原卡去向回手/弃置"
+      ],
+      "currentMedia": [
+        "19-准备区法术施放候选.png",
+        "20-准备区法术已选.png"
+      ],
+      "coverageFinding": "候选/已选覆盖；E2E正文有第二次施放和skip，但30图未收其独特候选数量变化。同一完整UI可映射，不必重复图片。",
+      "necessaryAction": "保留19/20代表态，补来源/skip与后续候选行为记录；不能用这两图冒充公开准备区直接阅读通过。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1892,
+          "end": 1942
+        },
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-lifecycle.test.ts",
+          "line": 1305
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "discard-cast",
+      "name": "从弃牌堆直接施放两张不同法术",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 128,
+          "end": 133
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 293,
+          "end": 310
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay cardSourceZone=discard",
+      "baseline": "old-card-pool",
+      "steps": [
+        "施放spell-rings-of-raggadorr",
+        "显示弃牌法术候选及跳过",
+        "确认第一张并结算自身效果",
+        "只展示剩余未使用法术，确认第二张/跳过"
+      ],
+      "currentMedia": [],
+      "coverageFinding": "30图和本E2E均未真实触发该语义。视觉承载与弃牌准备相同，但施放允许skip、连续候选减少、嵌套恢复是不同承接。",
+      "necessaryAction": "最少新增一组真实触发日志；若实际标题/skip/连续承接与旧代表态等价，可仅新增一个弃牌施放代表图，不逐法术拍摄。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+          "line": 570
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "income-branches",
+      "name": "预感常规/一层/三层收入分支",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 349,
+          "end": 355
+        }
+      ],
+      "actualUiOwner": "Board → ChoiceModal → GameButton option",
+      "baseline": "old-choice-modal",
+      "steps": [
+        "有预感时进入收入",
+        "选常规抽一张不返还",
+        "或花一层抽二返一",
+        "或花三层抽三返一"
+      ],
+      "currentMedia": [
+        "11-预感收入替代选项.png",
+        "11b-预感收入替代选项-横屏.png"
+      ],
+      "coverageFinding": "已有三分支桌面/横屏代表态；E2E仅执行三层分支，常规/一层/预感不足的候选权限由现有领域测试覆盖。",
+      "necessaryAction": "重审三分支按钮单列/对比度；同UI的选项数量/资源权限变化用行为测试映射，不强制全分支新图。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1548,
+          "end": 1721
+        },
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+          "line": 365,
+          "end": 467
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "income-return-card",
+      "name": "只从本次抽牌选返还卡",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 356,
+          "end": 365
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay cardSourceZone=hand",
+      "baseline": "old-card-pool",
+      "steps": [
+        "选择预感替代收入",
+        "仅本次抽牌进入候选",
+        "检视不选择",
+        "选返还卡→确认"
+      ],
+      "currentMedia": [
+        "12-抽牌返还候选.png",
+        "13-抽牌返还已选.png",
+        "29-卡牌候选复用放大阅读.png"
+      ],
+      "coverageFinding": "这是手牌来源卡池的现实入口，不是未使用prepare-hand。3张候选覆盖桌面；横屏卡牌阅读未覆盖。",
+      "necessaryAction": "同族2张/3张不重复截图；横屏放大阅读独立补图并检查关闭回原选择。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1616,
+          "end": 1660
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "income-return-position",
+      "name": "返还牌库顶/底",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 367,
+          "end": 370
+        }
+      ],
+      "actualUiOwner": "ChoiceModal → GameButton option",
+      "baseline": "old-choice-modal",
+      "steps": [
+        "返还对象确认",
+        "出现牌库顶/牌库底两个按钮",
+        "点击任一即提交"
+      ],
+      "currentMedia": [
+        "14-牌库位置选择.png"
+      ],
+      "coverageFinding": "两个位置同屏有代表图；E2E只点击底；顶已在领域一层预感测试执行。",
+      "necessaryAction": "保留双按钮代表图；顶/底两种结果用行为覆盖，不需各拍一张。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1662,
+          "end": 1684
+        },
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+          "line": 365
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "target-opponent",
+      "name": "敌方玩家目标",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 114
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 120,
+          "end": 121
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 131
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 327,
+          "end": 330
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay selectPlayer",
+      "baseline": "old-player-status-modal",
+      "steps": [
+        "准备伤害/深红/扣CP法术或施放伤害法术",
+        "直接展示合法对手",
+        "点玩家/再点清除本地选中/确认"
+      ],
+      "currentMedia": [
+        "05-深红系带玩家候选.png",
+        "06-深红系带玩家已选.png"
+      ],
+      "coverageFinding": "两人单对手代表态存在；伤害1/3、深红、扣CP是同一完整UI不同标题/效果。2v2/混战多个对手候选没有目标选择图。",
+      "necessaryAction": "记录每种来源和候选范围，行为验证标题/权限；四人全目标代表态补图后可映射多人布局。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 2149,
+          "end": 2247
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "target-all",
+      "name": "全玩家目标：治疗与授予即视感",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 116
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 119
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 61
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 133
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 327,
+          "end": 330
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay selectPlayer",
+      "baseline": "old-player-status-modal",
+      "steps": [
+        "准备spell-vapors-of-valtorr/ spell-mists-of-morpheus或施放后者/时间回溯",
+        "展示本人、队友和敌方全部合法玩家",
+        "点候选/确认"
+      ],
+      "currentMedia": [],
+      "coverageFinding": "30图只展示单个敌方候选，无法代表四人所有候选/自己的身份、阵营和目标归属。",
+      "necessaryAction": "需四人全目标候选/已选代表态；优先时间回溯main1、CP>=2的合法手牌入口。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-lifecycle.test.ts",
+          "line": 1321
+        },
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+          "line": 468,
+          "end": 527
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "status-single",
+      "name": "直接状态选择：单持有人",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 118
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 332,
+          "end": 345
+        },
+        {
+          "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+          "line": 89,
+          "end": 99
+        }
+      ],
+      "actualUiOwner": "ChoiceObjectSelection → InteractionOverlay selectStatus → SelectableEffectsContainer",
+      "baseline": "old-player-status-modal",
+      "steps": [
+        "准备瓦图姆之风",
+        "直接列合法buff/debuff状态与持有人",
+        "hover说明/点状态/再点取消选中/确认",
+        "无选择时可跳过"
+      ],
+      "currentMedia": [
+        "07-状态候选-桌面.png",
+        "08-状态已选-桌面.png",
+        "09-状态候选-横屏.png",
+        "10-状态已选-横屏.png"
+      ],
+      "coverageFinding": "单持有人compact和tooltip避让桌面/横屏已登记；当前范围需全部重新图审，不能继承旧PASS。",
+      "necessaryAction": "保留直接点状态、确认和skip语义；复核标题/状态说明不遮挡。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 947,
+          "end": 1182
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "status-multiple",
+      "name": "直接状态选择：多持有人",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 332,
+          "end": 345
+        },
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 196
+        },
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 609,
+          "end": 724
+        }
+      ],
+      "actualUiOwner": "同一完整状态modal，宽度xl/density normal；不启用单持有人compact",
+      "baseline": "old-player-status-modal",
+      "steps": [
+        ">=2玩家有可移除状态",
+        "准备瓦图姆之风",
+        "比较不同持有人与状态",
+        "点一个持有人的状态/确认"
+      ],
+      "currentMedia": [],
+      "coverageFinding": "30图仅单持有人；多持有人走不同layout/density且tooltip无单持有人边界参数，不能用07-10代替。",
+      "necessaryAction": "需要多持有人桌面/横屏至少一个压力代表态，证明归属、候选、tooltip与确认；不逐玩家/状态拍图。",
+      "behaviorEvidencePointers": [],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "status-empty-skip",
+      "name": "没有可移除状态时跳过",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 332,
+          "end": 345
+        }
+      ],
+      "actualUiOwner": "ChoiceModal：仅skip，无object choice",
+      "baseline": "old-choice-modal",
+      "steps": [
+        "全场没有buff/debuff",
+        "准备瓦图姆之风",
+        "仅出现跳过，确认后继续"
+      ],
+      "currentMedia": [],
+      "coverageFinding": "kind=skip的单按钮会走ChoiceModal而不是ChoiceObjectSelection，属于不同UI分派；现有30图无该态。",
+      "necessaryAction": "至少补真实行为断言与一张单跳过代表态，防止空对象UI或误导的状态占位。",
+      "behaviorEvidencePointers": [],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "bonus-astral",
+      "name": "星际侵入奖励骰确认",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 65
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 72,
+          "end": 84
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 387,
+          "end": 402
+        }
+      ],
+      "actualUiOwner": "正式pendingBonusDiceSettlement → RightSidebar/DiceTray",
+      "baseline": "old-dice-tray",
+      "steps": [
+        "真实选星际侵入→结算",
+        "2颗正式奖励骰结果可见",
+        "按原骰盘确认",
+        "继续真实效果及可能的施法选择"
+      ],
+      "currentMedia": [
+        "21-星际侵入技能已选.png",
+        "22-奖励骰待确认.png"
+      ],
+      "coverageFinding": "奖励骰代表UI有媒体，单次结果不覆盖4种骰面结果；30图只覆盖Astral。",
+      "necessaryAction": "重审奖励骰与确认主体；不同骰面规则用领域测试，若tendrils/shield同DiceTray语法可映射同图。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 2006,
+          "end": 2146
+        },
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+          "line": 593
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "bonus-tendrils-shield",
+      "name": "寒冰藤蔓/塞拉芬之盾奖励骰",
+      "source": [
+        {
+          "file": "src/games/dicethrone/heroes/doctor_strange/cards.ts",
+          "line": 45,
+          "end": 47
+        },
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+          "line": 65
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/doctor_strange.ts",
+          "line": 20,
+          "end": 28
+        }
+      ],
+      "actualUiOwner": "同一DiceTray pendingBonusDiceSettlement，后者在受伤响应",
+      "baseline": "old-dice-tray",
+      "steps": [
+        "roll时打寒冰藤蔓或本人beforeDamageReceived打塞拉芬之盾",
+        "看2颗奖励骰→确认",
+        "按各来源语义续接"
+      ],
+      "currentMedia": [
+        "22-奖励骰待确认.png"
+      ],
+      "coverageFinding": "只有同构Astral媒体映射，不是这两入口已实跑；规则领域测试已有每面消费。",
+      "necessaryAction": "不因卡名/规则数值不同强制新图；补本轮实际入口/权限/确认行为验证，只有响应时布局竞争实际不同才另拍代表图。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-lifecycle.test.ts",
+          "line": 1271,
+          "end": 1303
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "reroll-repeated",
+      "name": "值得拥有：队友发起、当前投掷者同骰重投两次",
+      "source": [
+        {
+          "file": "src/games/dicethrone/heroes/doctor_strange/cards.ts",
+          "line": 12
+        },
+        {
+          "file": "src/games/dicethrone/ui/DiceTray.tsx",
+          "line": 150
+        }
+      ],
+      "actualUiOwner": "DiceTray/DiceActions + 原GameHints.DiceInteractionHint",
+      "baseline": "old-dice-tray",
+      "steps": [
+        "四人队友打card-worthy-of-me",
+        "当前投掷者点骰一次",
+        "同骰再点一次，排队2次",
+        "确认才真正重投/取消走旧取消"
+      ],
+      "currentMedia": [
+        "23-值得拥有骰子候选.png",
+        "24-值得拥有骰子已选一次.png",
+        "25-值得拥有骰子已选两次.png"
+      ],
+      "coverageFinding": "0/1/2已选代表图完整；E2E实际队友视角权限和排队进度已有断言。取消路径未在本E2E明确点击。",
+      "necessaryAction": "重审三张与22790d2c7^原琥珀左中提示；补取消行为验证，无需另造骰盘/重复图。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1185,
+          "end": 1434
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "reroll-common-existing",
+      "name": "其余公共牌骰子修改与重投",
+      "source": [
+        {
+          "file": "src/games/dicethrone/heroes/doctor_strange/cards.ts",
+          "line": 7,
+          "end": 14
+        }
+      ],
+      "actualUiOwner": "既有公共牌multistep owner → DiceTray/DiceActions",
+      "baseline": "old-dice-tray",
+      "steps": [
+        "来个六/弹一手/惊喜/大意外/俺也一样/抬一手/我又行了/就这",
+        "按原类型选择/改值/确认/取消"
+      ],
+      "currentMedia": [
+        "23-值得拥有骰子候选.png"
+      ],
+      "coverageFinding": "多数是原公共UI并非奇异博士新交互。Doctor配置新增的是09 timing、11 teammate、14 phase限制；不应扩成每公共牌重拍。",
+      "necessaryAction": "保留原完整UI和已有行为测试；仅本轮修改共享链直接影响的改值/多步/取消补代表回归。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "src/games/dicethrone/__tests__/doctor-strange-lifecycle.test.ts",
+          "line": 491,
+          "end": 839
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "deja-vu",
+      "name": "即视感：说明与点击重开进攻投掷",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/doctorStrange/rules.ts",
+          "line": 16,
+          "end": 49
+        },
+        {
+          "file": "src/games/dicethrone/Board.tsx",
+          "line": 1274,
+          "end": 1291
+        }
+      ],
+      "actualUiOwner": "原Token区域/InfoTooltip → USE_DEJA_VU →原DiceTray",
+      "baseline": "old-dice-hint",
+      "steps": [
+        "进攻投掷阶段持有即视感",
+        "悬停读说明",
+        "点击即视感",
+        "消耗并重开投掷，旧次数与选择清理"
+      ],
+      "currentMedia": [
+        "26-即视感悬停说明.png"
+      ],
+      "coverageFinding": "30图只悬停；E2E正文已有重开前后媒体但没有进30图。功能重开与hover是不同任务，不能只以26宣称全UI已审。",
+      "necessaryAction": "本轮可把E2E重开后代表态纳入一张并审真实新骰盘状态；不需每个不可用边界都拍图，边界由行为测试。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1436,
+          "end": 1546
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "skill-selection",
+      "name": "博士技能选择与分支",
+      "source": [
+        {
+          "file": "src/games/dicethrone/heroes/doctor_strange/abilities.ts",
+          "line": 20,
+          "end": 39
+        },
+        {
+          "file": "src/games/dicethrone/Board.tsx",
+          "line": 1390,
+          "end": 1422
+        }
+      ],
+      "actualUiOwner": "原CenterBoard技能槽、AbilityChoiceModal、GameHints",
+      "baseline": "old-ability-choice",
+      "steps": [
+        "点合法技能槽",
+        "有variants则原AbilityChoiceModal选分支/跳过",
+        "按原推进结算"
+      ],
+      "currentMedia": [
+        "21-星际侵入技能已选.png"
+      ],
+      "coverageFinding": "Astral已选覆盖；Cosmic/ultimate另有E2E媒体但未进30图。Bolt小/大顺是既有variant完整UI，同族无需逐技能图片。",
+      "necessaryAction": "保留原技能槽与modal，不要求为无新表达的每个技能拍图；核对来源/合法分支行为映射。",
+      "behaviorEvidencePointers": [],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "prepared-public-read",
+      "name": "公开准备区：横滚/阅读/关闭",
+      "source": [
+        {
+          "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+          "line": 169,
+          "end": 199
+        }
+      ],
+      "actualUiOwner": "CenterBoard.renderPreparedSpells → Board.setMagnifiedCard → BoardOverlays/MagnifyOverlay",
+      "baseline": "existing-prepared-zone",
+      "steps": [
+        "查看公开准备法术数量",
+        ">=3张时横向滚动找后续卡",
+        "点真实准备卡阅读",
+        "明确关闭回原牌桌"
+      ],
+      "currentMedia": [],
+      "coverageFinding": "19/20是施放选择卡池，层级不同，不能替代公开准备区。其窄容器会隐藏后续卡，需证明玩家可找回并阅读。",
+      "necessaryAction": "需新增公开区>=3张的桌面/横屏代表态，真实滚动到末卡/打开/关闭；同一准备卡阅读复用已有magnify，不新造状态。",
+      "behaviorEvidencePointers": [],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "candidate-reading",
+      "name": "候选卡检视、长按与关闭回原选择",
+      "source": [
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 512,
+          "end": 558
+        },
+        {
+          "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+          "line": 94,
+          "end": 159
+        },
+        {
+          "file": "src/games/dicethrone/Board.tsx",
+          "line": 1899
+        }
+      ],
+      "actualUiOwner": "原CardInspectButton + useTouchLongPress + Board.setMagnifiedCard + MagnifyOverlay",
+      "baseline": "old-magnify",
+      "steps": [
+        "点击检视/右键或触屏长按",
+        "原放大阅读不选择/不提交",
+        "正文保持可见",
+        "明确关闭回同一候选/原选中"
+      ],
+      "currentMedia": [
+        "29-卡牌候选复用放大阅读.png"
+      ],
+      "coverageFinding": "29只桌面未选候选；E2E有关闭后仍未选断言。缺横屏实际渲染可读尺寸、已有选中时开关、超过旧timer/重同步仍保持。",
+      "necessaryAction": "补横屏阅读唯一版式；选中守恒/明确关闭/持续性和恢复用真实操作断言。实体手机长按未覆盖须明示，不以桌面缩放冒充。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1626,
+          "end": 1648
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "source-spotlight",
+      "name": "来源卡特写持续阅读与明确关闭",
+      "source": [
+        {
+          "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+          "line": 72,
+          "end": 81
+        },
+        {
+          "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+          "line": 120,
+          "end": 129
+        }
+      ],
+      "actualUiOwner": "原CardSpotlightOverlay → SpotlightContainer",
+      "baseline": "old-magnify",
+      "steps": [
+        "真实他人/来源卡触发特写",
+        "玩家阅读超过3秒",
+        "同步/重挂载仍在",
+        "点击空白背景明确关闭"
+      ],
+      "currentMedia": [
+        "23-值得拥有骰子候选.png",
+        "24-值得拥有骰子已选一次.png",
+        "25-值得拥有骰子已选两次.png"
+      ],
+      "coverageFinding": "确定代码失败：默认autoCloseDelay=3000；单测还以3秒自动关为正确合同。已有静态截图无法证明持续阅读。",
+      "necessaryAction": "必须最窄消除普通牌桌自动关闭并纠正错误测试；补>旧timer、同步/重挂载、明确关闭真实验证，且新图绑定修后源码。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "src/games/dicethrone/ui/__tests__/CardSpotlightOverlay.test.tsx",
+          "line": 51,
+          "end": 85
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "selection-cancel-skip",
+      "name": "对象选择的再点取消/确认/跳过/禁止关闭",
+      "source": [
+        {
+          "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+          "line": 114,
+          "end": 150
+        },
+        {
+          "file": "src/games/dicethrone/Board.tsx",
+          "line": 1883,
+          "end": 1886
+        }
+      ],
+      "actualUiOwner": "同一个完整InteractionOverlay；ChoiceObjectSelection canCancel=false",
+      "baseline": "old-card-pool",
+      "steps": [
+        "未选时强制选择确认禁用/可选选择显示跳过",
+        "点击候选选中/再点取消",
+        "点击确认提交原optionId",
+        "对象选择不允许背景/Esc关闭整个规则选择"
+      ],
+      "currentMedia": [
+        "02-弃牌法术已选-桌面.png",
+        "06-深红系带玩家已选.png",
+        "08-状态已选-桌面.png",
+        "16-牌库顶五第二张已选.png",
+        "20-准备区法术已选.png"
+      ],
+      "coverageFinding": "旧记忆曾要求清空按钮，但当前实际合同明确canCancel=false，现有E2E也要求按钮不存在；不能仅凭旧记忆恢复或删除。再点取消是当前真实入口，skip属于规则option。",
+      "necessaryAction": "逐族记录再点取消/强制与可选确认；新图无需为每族重复清空，不能造一个撤销已提交规则效果的按钮。",
+      "behaviorEvidencePointers": [],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    },
+    {
+      "id": "character-sort",
+      "name": "选角完成角色在前、实施中角色后置",
+      "source": [
+        {
+          "file": "src/games/dicethrone/domain/core-types.ts",
+          "line": 157,
+          "end": 203
+        },
+        {
+          "file": "src/games/dicethrone/ui/CharacterSelectionAdapter.tsx",
+          "line": 6
+        }
+      ],
+      "actualUiOwner": "原DiceThroneHeroSelection/CharacterSelectionBadge",
+      "baseline": "old-ability-choice",
+      "steps": [
+        "打开真实选角",
+        "先看完成角色",
+        "滚动到博士实施中区",
+        "选择博士并保留实施中标记"
+      ],
+      "currentMedia": [
+        "27-角色排序-已完成角色前段.png",
+        "28-角色排序-实施中角色后段.png"
+      ],
+      "coverageFinding": "两张登记排序代表图；真实双人E2E有monk在博士前及桌面/横屏状态标记。此前全量通过被撤销，本轮仍需重新图审。",
+      "necessaryAction": "对照同一旧选角组件与当前排序derived source；无需新增选角页面。",
+      "behaviorEvidencePointers": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 2250,
+          "end": 2419
+        }
+      ],
+      "visualVerdict": "未重新读图，不作PASS判断"
+    }
+  ],
+  "currentMedia": [
+    {
+      "path": "01-弃牌法术候选-桌面.png",
+      "chainId": "宇宙感知弃牌法术-桌面",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-desktop-spell-choice",
+      "behaviorStepId": "internal-setup-choose-spell-from-discard",
+      "description": "打开桌面弃牌法术选择界面，桌面弃牌法术候选完整显示卡面、选择标题和确认操作。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家点击宇宙感知并打开法术选择",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家点击宇宙感知并打开法术选择",
+      "sourceRevision": "62d69a103501c84d586f4d52768394ae04307511bc78dff6d9a92617e04f41fe",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "桌面宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793502108114-71220-90686c96-9588-481d-b275-286c16ab77b2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术",
+      "sourceFile": "桌面-弃牌准备选择态.png",
+      "label": "独立交互组 01 · 宇宙感知桌面弃牌法术 · 弃牌法术候选-桌面",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/01-弃牌法术候选-桌面.png",
+      "sha256": "fa6b59fbd7434aa9931ce92246c0344307e079221391fec32069df9152bf1442",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "02-弃牌法术已选-桌面.png",
+      "chainId": "宇宙感知弃牌法术-桌面",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-desktop-spell-choice-selected",
+      "behaviorStepId": "internal-setup-select-spell-card",
+      "description": "点击弃牌区候选法术但暂不确认，桌面选中弃牌法术后卡面高亮且确认仍待提交。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "在弃牌候选卡池点击法术卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在弃牌候选卡池点击法术卡。",
+      "sourceRevision": "62d69a103501c84d586f4d52768394ae04307511bc78dff6d9a92617e04f41fe",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "桌面宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793502108114-71220-90686c96-9588-481d-b275-286c16ab77b2",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术",
+      "sourceFile": "桌面-法术卡已选待确认.png",
+      "label": "独立交互组 01 · 宇宙感知桌面弃牌法术 · 弃牌法术已选-桌面",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/02-弃牌法术已选-桌面.png",
+      "sha256": "25e86272e204b71ad7d2d7cdacc9eaf86a24ceef5724b47b6b1e5844e49fe9eb",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "03-弃牌法术候选-横屏.png",
+      "chainId": "宇宙感知弃牌法术-横屏",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-mobile-spell-choice",
+      "behaviorStepId": "internal-setup-choose-spell-from-discard",
+      "description": "打开横屏手机弃牌法术选择界面，横屏手机的弃牌法术候选和确认操作完整可见。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家点击宇宙感知并打开法术选择",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家点击宇宙感知并打开法术选择",
+      "sourceRevision": "62d69a103501c84d586f4d52768394ae04307511bc78dff6d9a92617e04f41fe",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793502129422-71220-665763f5-af71-4ec8-85c1-24aa3434149f",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术",
+      "sourceFile": "手机横屏-弃牌准备选择态.png",
+      "label": "独立交互组 02 · 宇宙感知横屏弃牌法术 · 弃牌法术候选-横屏",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/03-弃牌法术候选-横屏.png",
+      "sha256": "ac0e43c369bb85e54cad23dd83fa9238cbafdbc4b2530e3e769f4b5a5abbef60",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "04-弃牌法术已选-横屏.png",
+      "chainId": "宇宙感知弃牌法术-横屏",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-mobile-spell-choice-selected",
+      "behaviorStepId": "internal-setup-select-spell-card",
+      "description": "点击横屏候选法术但暂不确认，横屏手机选中法术后卡面和确认操作完整可见。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "在弃牌候选卡池点击法术卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在弃牌候选卡池点击法术卡。",
+      "sourceRevision": "62d69a103501c84d586f4d52768394ae04307511bc78dff6d9a92617e04f41fe",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "手机横屏宇宙感知与法术选择交互"
+      ],
+      "sourceRun": "1793502129422-71220-665763f5-af71-4ec8-85c1-24aa3434149f",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术",
+      "sourceFile": "手机横屏-法术卡已选待确认.png",
+      "label": "独立交互组 02 · 宇宙感知横屏弃牌法术 · 弃牌法术已选-横屏",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/04-弃牌法术已选-横屏.png",
+      "sha256": "cfab26f0000a8e507896237bbc4101c8b26bfd6766ad7e5d9bf216a95b2d5647",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "05-深红系带玩家候选.png",
+      "chainId": "深红系带目标玩家",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-crimson-bands-target",
+      "behaviorStepId": "crimson-bands-select-opponent",
+      "description": "打出深红系带法术后选择合法对手，深红系带显示合法对手候选并复用玩家选择卡片。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "打出深红系带法术后选择合法对手。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击手牌中的深红系带法术。",
+      "sourceRevision": "312cb10ae8730b6fcf76889066be9f87958989a004c518e0c411b8815c1c0a8a",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "深红系带复用玩家选择器选择目标对手",
+        "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡"
+      ],
+      "sourceRun": "1793502153646-65812-03bd0fc2-223c-47a1-b323-7eeae748e1fb",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌真实打出法术并将深红系带施加到对手",
+      "sourceFile": "深红系带目标选择-桌面.png",
+      "label": "独立交互组 03 · 深红系带目标玩家 · 深红系带玩家候选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/05-深红系带玩家候选.png",
+      "sha256": "44496827f3ecaa43b5e8a5091d109d45c12c5a019dc521f3aa81c57e994403d3",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "06-深红系带玩家已选.png",
+      "chainId": "深红系带目标玩家",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-crimson-bands-target-selected",
+      "behaviorStepId": "crimson-bands-opponent-selected",
+      "description": "点击玩家目标卡片但暂不确认，选中对手后保留确认态，法术效果尚未施加。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击玩家目标卡片但暂不确认。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在现有玩家选择面点击对手卡片。",
+      "sourceRevision": "312cb10ae8730b6fcf76889066be9f87958989a004c518e0c411b8815c1c0a8a",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "深红系带复用玩家选择器选择目标对手",
+        "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡"
+      ],
+      "sourceRun": "1793502153646-65812-03bd0fc2-223c-47a1-b323-7eeae748e1fb",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌真实打出法术并将深红系带施加到对手",
+      "sourceFile": "深红系带对手已选待确认-桌面.png",
+      "label": "独立交互组 03 · 深红系带目标玩家 · 深红系带玩家已选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/06-深红系带玩家已选.png",
+      "sha256": "7642e0016bcb58e3f1eba9ef2aa7b04a14a50957f30b370395b90a28adfae24b",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "07-状态候选-桌面.png",
+      "chainId": "瓦图姆之风状态选择-桌面",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-remove-status-candidates",
+      "behaviorStepId": "remove-status-candidate-effects",
+      "description": "打开独立状态选择器并显示可选图标，瓦图姆之风直接展示可移除状态及其持有人。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "打开独立状态选择器并显示可选图标。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选状态图标，玩家只作为状态持有人标识。",
+      "sourceRevision": "048c9f88d84f69886c79105cafd8a5e5efe8a12246f7c8ec1edf8aa1a2c90d23",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "瓦图姆之风直接选择状态图标并保留确认操作",
+        "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡",
+        "单持有人状态说明悬停不遮挡候选及确认动作，桌面与横屏均有直接证据"
+      ],
+      "sourceRun": "1793502141374-74288-829ff613-2704-4274-a21c-d317042797a7",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实状态选择器移除奇异博士法术指定的状态",
+      "sourceFile": "瓦图姆之风-状态效果候选.png",
+      "label": "独立交互组 04 · 瓦图姆之风桌面状态选择 · 状态候选-桌面",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/07-状态候选-桌面.png",
+      "sha256": "7f761b21623e160e1f2b48301dc30da454c4b267f0a742539a6dad4f8d606bcb",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "08-状态已选-桌面.png",
+      "chainId": "瓦图姆之风状态选择-桌面",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-remove-status-selected",
+      "behaviorStepId": "remove-status-opponent-effect-selected",
+      "description": "直接点击状态图标但暂不确认，状态已选中并保留确认操作，另一候选仍可见。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "直接点击状态图标但暂不确认。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "直接点击目标状态图标，一次确定持有人和效果。",
+      "sourceRevision": "048c9f88d84f69886c79105cafd8a5e5efe8a12246f7c8ec1edf8aa1a2c90d23",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "瓦图姆之风直接选择状态图标并保留确认操作",
+        "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡"
+      ],
+      "sourceRun": "1793502141374-74288-829ff613-2704-4274-a21c-d317042797a7",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实状态选择器移除奇异博士法术指定的状态",
+      "sourceFile": "瓦图姆之风-状态已选待确认.png",
+      "label": "独立交互组 04 · 瓦图姆之风桌面状态选择 · 状态已选-桌面",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/08-状态已选-桌面.png",
+      "sha256": "a96afb3796e5eeb64dbafbf759f01ccc9884f8d94528643d024cf2063e6b3d56",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "09-状态候选-横屏.png",
+      "chainId": "瓦图姆之风状态选择-横屏",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-remove-status-mobile-candidates",
+      "behaviorStepId": "remove-status-mobile-candidate-effects",
+      "description": "打开横屏手机状态选择器，横屏手机直接展示两个可点击状态图标。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "打开横屏手机状态选择器。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "桌面候选态的同一交互切换到横屏手机视口。",
+      "sourceRevision": "048c9f88d84f69886c79105cafd8a5e5efe8a12246f7c8ec1edf8aa1a2c90d23",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "瓦图姆之风直接选择状态图标并保留确认操作",
+        "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡",
+        "横屏单对象状态弹窗紧凑并保留牌桌上下文",
+        "单持有人状态说明悬停不遮挡候选及确认动作，桌面与横屏均有直接证据"
+      ],
+      "sourceRun": "1793502141374-74288-829ff613-2704-4274-a21c-d317042797a7",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实状态选择器移除奇异博士法术指定的状态",
+      "sourceFile": "瓦图姆之风-横屏-状态效果候选.png",
+      "label": "独立交互组 05 · 瓦图姆之风横屏状态选择 · 状态候选-横屏",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/09-状态候选-横屏.png",
+      "sha256": "f2456dcb953c2146bd29e6a0081a00a3eff1d3c1724ab326246d28bf5179344e",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "10-状态已选-横屏.png",
+      "chainId": "瓦图姆之风状态选择-横屏",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-remove-status-mobile-selected",
+      "behaviorStepId": "remove-status-mobile-selected-effect",
+      "description": "直接选中状态图标但暂不确认，横屏手机状态已选且标题、候选和确认完整可见。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "直接选中状态图标但暂不确认。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击眩目状态图标，一次锁定状态和持有人。",
+      "sourceRevision": "048c9f88d84f69886c79105cafd8a5e5efe8a12246f7c8ec1edf8aa1a2c90d23",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "瓦图姆之风直接选择状态图标并保留确认操作",
+        "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡",
+        "横屏单对象状态弹窗紧凑并保留牌桌上下文"
+      ],
+      "sourceRun": "1793502141374-74288-829ff613-2704-4274-a21c-d317042797a7",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实状态选择器移除奇异博士法术指定的状态",
+      "sourceFile": "瓦图姆之风-横屏-状态已选待确认.png",
+      "label": "独立交互组 05 · 瓦图姆之风横屏状态选择 · 状态已选-横屏",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/10-状态已选-横屏.png",
+      "sha256": "abcde98e6506451f55086fcfa5a599c90f837d5fd8af092c523c61e46812fb34",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "11-预感收入替代选项.png",
+      "chainId": "预感收入抽牌返还",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-income-options",
+      "behaviorStepId": "income-replacement-choice",
+      "description": "进入收入阶段并查看预感替代选项，收入阶段显示普通收入与预感替代选项。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "进入收入阶段并查看预感替代选项。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家结束维护阶段进入收入阶段。",
+      "sourceRevision": "0506ccbd91d3877a9c0a15efb976ef309f2ec9bd25e3b83066cfdaa722fb2b42",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "预感文字选项采用平面单列样式且桌面与横屏完整可读"
+      ],
+      "sourceRun": "1793502054444-65812-3e097cc3-7cf1-4709-a028-6ad37a6d4fa0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "sourceFile": "收入阶段替代选项-桌面.png",
+      "label": "独立交互组 06 · 预感收入与抽牌返还 · 预感收入替代选项",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/11-预感收入替代选项.png",
+      "sha256": "764c0d12c5291e6dbfb15c6159d327c2dd558605968245f6bf1cd09a7483240f",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "11b-预感收入替代选项-横屏.png",
+      "chainId": "预感收入选项-横屏",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-income-options",
+      "behaviorStepId": "income-replacement-choice",
+      "description": "玩家在横屏收入阶段查看预感的三个选项，三行平面选项完整可比较。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "在同一收入选择中查看横屏视口。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家结束维护阶段进入收入阶段。",
+      "sourceRevision": "0506ccbd91d3877a9c0a15efb976ef309f2ec9bd25e3b83066cfdaa722fb2b42",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "预感文字选项采用平面单列样式且桌面与横屏完整可读"
+      ],
+      "sourceRun": "1793502054444-65812-3e097cc3-7cf1-4709-a028-6ad37a6d4fa0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "sourceFile": "收入阶段替代选项-横屏.png",
+      "label": "独立交互组 06 · 预感收入与抽牌返还 · 横屏三个选项",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/11b-预感收入替代选项-横屏.png",
+      "sha256": "b0030409b81d65583314680d43b32c526c86a2e6ebe01d7b0da7408d347439ef",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "12-抽牌返还候选.png",
+      "chainId": "预感收入抽牌返还",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-income-drawn-cards",
+      "behaviorStepId": "income-return-drawn-card",
+      "description": "选择预感替代收入后显示本次抽到的牌，抽牌后显示本次获得的候选卡供返还选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择花费3层预感抽取3张牌。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择花费3层预感抽取3张牌。",
+      "sourceRevision": "0506ccbd91d3877a9c0a15efb976ef309f2ec9bd25e3b83066cfdaa722fb2b42",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793502054444-65812-3e097cc3-7cf1-4709-a028-6ad37a6d4fa0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "sourceFile": "本次抽牌返还选择-桌面.png",
+      "label": "独立交互组 06 · 预感收入与抽牌返还 · 抽牌返还候选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/12-抽牌返还候选.png",
+      "sha256": "6a9eeafc8599faa1ad03e484fe8545cd63adf6f11ce46cae5265a0cc5ac3f631",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "13-抽牌返还已选.png",
+      "chainId": "预感收入抽牌返还",
+      "chainStep": "3",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-income-drawn-card-selected",
+      "behaviorStepId": "income-return-drawn-card-selected",
+      "description": "选中本次抽到的卡牌但暂不确认，选中返还卡后保留确认操作和其他候选。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从本次抽牌候选中点击一张牌。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从本次抽牌候选中点击一张牌。",
+      "sourceRevision": "0506ccbd91d3877a9c0a15efb976ef309f2ec9bd25e3b83066cfdaa722fb2b42",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793502054444-65812-3e097cc3-7cf1-4709-a028-6ad37a6d4fa0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "sourceFile": "本次抽牌已选待确认-桌面.png",
+      "label": "独立交互组 06 · 预感收入与抽牌返还 · 抽牌返还已选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/13-抽牌返还已选.png",
+      "sha256": "ad2a81c18feb380e8b4d57acf09560f338a3930ecae456d850d924362a291656",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "14-牌库位置选择.png",
+      "chainId": "预感收入抽牌返还",
+      "chainStep": "4",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-income-return-position",
+      "behaviorStepId": "income-return-position",
+      "description": "选中返还卡后选择牌库位置，返还卡牌位置显示牌库顶与牌库底选项。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选中返还卡后选择牌库位置。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择一张本次抽牌作为返还对象。",
+      "sourceRevision": "0506ccbd91d3877a9c0a15efb976ef309f2ec9bd25e3b83066cfdaa722fb2b42",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "预感文字选项采用平面单列样式且桌面与横屏完整可读"
+      ],
+      "sourceRun": "1793502054444-65812-3e097cc3-7cf1-4709-a028-6ad37a6d4fa0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "sourceFile": "选择牌库底-桌面.png",
+      "label": "独立交互组 06 · 预感收入与抽牌返还 · 牌库位置选择",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/14-牌库位置选择.png",
+      "sha256": "91e949b25d4019f8d27f757521cb1e281319aa3662c3ef9bb67d491647899274",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "15-牌库顶五法术候选.png",
+      "chainId": "全知之眼顶五选法术",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-ultimate-top-five-choice",
+      "behaviorStepId": "ultimate-prepare-top-five",
+      "description": "打开牌库顶五的法术卡牌选择器，全知之眼展示牌库顶五法术卡牌供选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "推进按钮提交攻击结算。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "推进按钮提交攻击结算。",
+      "sourceRevision": "d547e1527d8f7bde0596543abd17c166ee013c7b52f8cd947df2ec930b9a7c3f",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793502099285-65812-da3dd7aa-d4fe-42c8-832e-ea1f608e3cf0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "sourceFile": "全知之眼顶五法术选择-桌面.png",
+      "label": "独立交互组 07 · 全知之眼顶五法术 · 牌库顶五法术候选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/15-牌库顶五法术候选.png",
+      "sha256": "28c725523286e7e69247aebc84888f4038e7368b6bdd40b9959d4db8e691da9e",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "16-牌库顶五第二张已选.png",
+      "chainId": "全知之眼顶五选法术",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-ultimate-top-five-second-selected",
+      "behaviorStepId": "ultimate-second-top-five-spell-selected",
+      "description": "从顶五候选中选中第二张法术，第二张法术选中后仍能比较其他候选。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从剩余顶五候选中选中法瑞拉之牙。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从剩余顶五候选中选中法瑞拉之牙。",
+      "sourceRevision": "d547e1527d8f7bde0596543abd17c166ee013c7b52f8cd947df2ec930b9a7c3f",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793502099285-65812-da3dd7aa-d4fe-42c8-832e-ea1f608e3cf0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "sourceFile": "全知之眼次张法术已选-桌面.png",
+      "label": "独立交互组 07 · 全知之眼顶五法术 · 牌库顶五第二张已选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/16-牌库顶五第二张已选.png",
+      "sha256": "6a81b53bf8dd3177c0d8ab3f2049088b26c3d3e5856fa2b81f5ec9ed7640f0f9",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "17-剩余牌重排候选.png",
+      "chainId": "全知之眼余牌重排",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-ultimate-reorder",
+      "behaviorStepId": "ultimate-order-remaining-cards",
+      "description": "准备两张法术后显示剩余卡牌重排界面，准备法术后显示剩余三张卡牌的排序候选。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择法瑞拉之牙的目标并完成准备效果。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择法瑞拉之牙的目标并完成准备效果。",
+      "sourceRevision": "d547e1527d8f7bde0596543abd17c166ee013c7b52f8cd947df2ec930b9a7c3f",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793502099285-65812-da3dd7aa-d4fe-42c8-832e-ea1f608e3cf0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "sourceFile": "全知之眼重排剩余三张-桌面.png",
+      "label": "独立交互组 08 · 全知之眼余牌重排 · 剩余牌重排候选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/17-剩余牌重排候选.png",
+      "sha256": "e6feebf07c58b692bc50bf6e5bf6060efefeb6052c943ff6c3b133c607e08945",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "18-剩余牌首张已选.png",
+      "chainId": "全知之眼余牌重排",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-ultimate-reorder-card-selected",
+      "behaviorStepId": "ultimate-first-reorder-card-selected",
+      "description": "选择剩余卡牌顺序中的第一张，选中第一张重排卡后保留后续确认操作。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择下一张牌库顶卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择下一张牌库顶卡。",
+      "sourceRevision": "d547e1527d8f7bde0596543abd17c166ee013c7b52f8cd947df2ec930b9a7c3f",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793502099285-65812-da3dd7aa-d4fe-42c8-832e-ea1f608e3cf0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "sourceFile": "全知之眼重排首张已选-桌面.png",
+      "label": "独立交互组 08 · 全知之眼余牌重排 · 剩余牌首张已选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/18-剩余牌首张已选.png",
+      "sha256": "01809dc1270a781ffd53288ffe65d5b15622bf944a7dbbcf3d44b9e8257442d8",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "19-准备区法术施放候选.png",
+      "chainId": "全知之眼准备区施法选择",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-ultimate-post-damage-cast",
+      "behaviorStepId": "ultimate-post-damage-cast-choice",
+      "description": "攻击结算后选择准备区法术，攻击后显示可施放法术候选和跳过操作。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "完成顶五剩余卡牌排序。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "完成顶五剩余卡牌排序。",
+      "sourceRevision": "d547e1527d8f7bde0596543abd17c166ee013c7b52f8cd947df2ec930b9a7c3f",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793502099285-65812-da3dd7aa-d4fe-42c8-832e-ea1f608e3cf0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "sourceFile": "全知之眼攻击后施法选择-桌面.png",
+      "label": "独立交互组 09 · 全知之眼准备区施法 · 准备区法术施放候选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/19-准备区法术施放候选.png",
+      "sha256": "bc79539725df39a67938f4cfa626da9f5c9638b288913d61915d81ad921988d2",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "20-准备区法术已选.png",
+      "chainId": "全知之眼准备区施法选择",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-ultimate-prepared-spell-selected",
+      "behaviorStepId": "ultimate-prepared-spell-selected",
+      "description": "点击准备区法术但暂不确认施放，准备区法术已选中并等待确认施放。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "在准备法术候选面选中法瑞拉之牙。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在准备法术候选面选中法瑞拉之牙。",
+      "sourceRevision": "d547e1527d8f7bde0596543abd17c166ee013c7b52f8cd947df2ec930b9a7c3f",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793502099285-65812-da3dd7aa-d4fe-42c8-832e-ea1f608e3cf0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "sourceFile": "全知之眼准备区法术已选-桌面.png",
+      "label": "独立交互组 09 · 全知之眼准备区施法 · 准备区法术已选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/20-准备区法术已选.png",
+      "sha256": "78695b715908efc9959e194203368855cfb9ab7c2d803733e8b537ced21455e9",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "21-星际侵入技能已选.png",
+      "chainId": "星际侵入奖励骰交互",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-astral-selected",
+      "behaviorStepId": "astral-incursion-selected",
+      "description": "选择星际侵入技能但暂不结算攻击，星际侵入技能已选并等待攻击结算。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择星际侵入技能但暂不结算攻击。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击星际侵入技能槽。",
+      "sourceRevision": "26d50470bcda9945793796d7c0c5521e3dfebef56acc41fce11229f166ee58ac",
+      "e2eSourceRevision": "f69b77522618db6878038caa612dab8498eac939ecbee8eb795bad0b0cc245ce",
+      "requirements": [
+        "星际侵入提供奖励骰并等待玩家确认"
+      ],
+      "sourceRun": "1793337216733-284284-194bef2a-3ad2-47b1-8c41-58399f108e8c",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实鼠标选择星际侵入并确认奖励骰",
+      "sourceFile": "星际侵入已选-桌面.png",
+      "label": "独立交互组 10 · 星际侵入奖励骰 · 星际侵入技能已选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/21-星际侵入技能已选.png",
+      "sha256": "8c6855645e65913d6338aef6143b8502b7159b326fd226120baf5e2d66d59186",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "22-奖励骰待确认.png",
+      "chainId": "星际侵入奖励骰交互",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-astral-bonus-dice",
+      "behaviorStepId": "astral-bonus-dice-pending",
+      "description": "结算星际侵入后查看奖励骰并等待确认，奖励骰出现后显示骰面与确认操作。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "结算星际侵入后查看奖励骰并等待确认。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "提交星际侵入攻击并生成奖励骰。",
+      "sourceRevision": "26d50470bcda9945793796d7c0c5521e3dfebef56acc41fce11229f166ee58ac",
+      "e2eSourceRevision": "f69b77522618db6878038caa612dab8498eac939ecbee8eb795bad0b0cc245ce",
+      "requirements": [
+        "星际侵入提供奖励骰并等待玩家确认"
+      ],
+      "sourceRun": "1793337216733-284284-194bef2a-3ad2-47b1-8c41-58399f108e8c",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实鼠标选择星际侵入并确认奖励骰",
+      "sourceFile": "星际侵入奖励骰待确认-桌面.png",
+      "label": "独立交互组 10 · 星际侵入奖励骰 · 奖励骰待确认",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/22-奖励骰待确认.png",
+      "sha256": "0ea653ff71b8f8610ee7a8908d840095e7515196346f00eb871e03f5eae0202b",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "23-值得拥有骰子候选.png",
+      "chainId": "值得拥有骰子重掷",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-worthy-teammate-targets",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "队友牌出牌后进入骰子选择，玩家可在当前投掷者的实际骰区选择。",
+      "behaviorStepId": "worthy-teammate-dice-targets",
+      "description": "打开目标投掷者的骰子选择界面，值得拥有显示当前投掷者的骰子候选。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "奇异博士队友真实打出该牌并进入骰子选择。",
+      "sourceRevision": "1dd8e7c6dc6ca7a1832be82d25b2adc41628601ab9660a63b192816bdf00ef57",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793502023643-65812-2a1aff74-d909-44a0-adb4-79acb6744fc1",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子",
+      "sourceFile": "值得拥有-投掷者骰区目标态.png",
+      "label": "独立交互组 11 · 值得拥有骰子重掷 · 值得拥有骰子候选",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/23-值得拥有骰子候选.png",
+      "sha256": "1d264fa92dc63728c0e8b3e8ff1bf9f5a01ab054f6624110c970aefa9a09a0d9",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "24-值得拥有骰子已选一次.png",
+      "chainId": "值得拥有骰子重掷",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-worthy-teammate-die-selected-once",
+      "behaviorStepId": "worthy-teammate-dice-selected-once",
+      "description": "选择一颗骰子后查看当前重复选择进度，第一次选择后显示重复选择进度和骰子标记。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "第一次选中同一骰子。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "第一次选中同一骰子。",
+      "sourceRevision": "1dd8e7c6dc6ca7a1832be82d25b2adc41628601ab9660a63b192816bdf00ef57",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793502023643-65812-2a1aff74-d909-44a0-adb4-79acb6744fc1",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子",
+      "sourceFile": "值得拥有-同骰已选一次.png",
+      "label": "独立交互组 11 · 值得拥有骰子重掷 · 值得拥有骰子已选一次",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/24-值得拥有骰子已选一次.png",
+      "sha256": "991a32bf7373f66da8f3a0992417910cfbcf963017c17cf125363329e013c886",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "25-值得拥有骰子已选两次.png",
+      "chainId": "值得拥有骰子重掷",
+      "chainStep": "3",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-worthy-teammate-selected-dice",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "真实鼠标连续点击后同一颗合法骰子显示选中态且进度达到2/2。",
+      "behaviorStepId": "worthy-teammate-dice-selected",
+      "description": "重复选择同一骰子两次达到上限，进度达到上限后标记完成并显示确认操作。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "将同一颗骰子重掷两次。",
+      "sourceRevision": "1dd8e7c6dc6ca7a1832be82d25b2adc41628601ab9660a63b192816bdf00ef57",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子"
+      ],
+      "sourceRun": "1793502023643-65812-2a1aff74-d909-44a0-adb4-79acb6744fc1",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子",
+      "sourceFile": "值得拥有-投掷者同骰重选两次.png",
+      "label": "独立交互组 11 · 值得拥有骰子重掷 · 值得拥有骰子已选两次",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/25-值得拥有骰子已选两次.png",
+      "sha256": "c4b0a53a1b21d3296636bf73e5b1089bd117a855c6a0e4308ef15f24184e6570",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "26-即视感悬停说明.png",
+      "chainId": "即视感状态说明",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-deja-vu-token-hover",
+      "behaviorStepId": "deja-vu-token-hover",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "悬停时可操作的状态标记放大并显示说明。",
+      "description": "悬停即视感状态标记查看说明，悬停即视感标记时显示完整效果说明。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "悬停即视感状态标记查看说明。",
+      "sourceRevision": "09c7e7d83a16c93142a2d48834a88edb18bd445bf99b3cd4ee43bb6b1d163ab5",
+      "e2eSourceRevision": "f69b77522618db6878038caa612dab8498eac939ecbee8eb795bad0b0cc245ce",
+      "requirements": [
+        "即视感状态标记提供清楚完整的操作说明"
+      ],
+      "sourceRun": "1793337071227-322072-16615b2a-57fa-47ae-8b57-dc6f3bb5b1cd",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段",
+      "sourceFile": "即视感悬停说明态-桌面.png",
+      "label": "独立交互组 12 · 即视感状态说明 · 即视感悬停说明",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/26-即视感悬停说明.png",
+      "sha256": "76435fcf8703d7e907060cb4102c80f3b576f33c109cde41c2cabedda99ce2d4",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "27-角色排序-已完成角色前段.png",
+      "chainId": "已完成角色优先与实施中标记",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-available-desktop-selection",
+      "behaviorStepId": "online-room-created-selection-visible",
+      "description": "选角列表顶部首先展示已完成角色。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "创建联机房间并显示真实角色选择界面",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "创建联机房间并显示真实角色选择界面",
+      "sourceRevision": "448abff2455e548ef5d2ea825e24b41fa72cf24f7ecaa9adf428f45383342f16",
+      "e2eSourceRevision": "667b0323fcf997f382e9e2e3c2f34045883087ef3b0ff5f0c3ec3aadace1bcf9",
+      "requirements": [
+        "奇异博士真实玩家选择界面"
+      ],
+      "sourceRun": "1793444891136-106724-dcc1e230-393b-4b59-b348-65bc3096348f",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "真实双人联机可选奇异博士并进入牌桌",
+      "sourceFile": "真实选角入口-奇异博士可选-桌面.png",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/27-角色排序-已完成角色前段.png",
+      "sha256": "8cf5b5d3ae9f594becbaa2c4051e4bd598c1db84cd03fedd2b7a087d0d5251cd",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "28-角色排序-实施中角色后段.png",
+      "chainId": "已完成角色优先与实施中标记",
+      "chainStep": "2",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-selected-by-host",
+      "behaviorStepId": "host-selects-doctor-strange",
+      "description": "滚动到列表后段，奇异博士位于实施中角色区域并显示实施中标记。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "房主点击奇异博士角色卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "房主点击奇异博士角色卡。",
+      "sourceRevision": "448abff2455e548ef5d2ea825e24b41fa72cf24f7ecaa9adf428f45383342f16",
+      "e2eSourceRevision": "667b0323fcf997f382e9e2e3c2f34045883087ef3b0ff5f0c3ec3aadace1bcf9",
+      "requirements": [
+        "奇异博士真实玩家选择界面"
+      ],
+      "sourceRun": "1793444891136-106724-dcc1e230-393b-4b59-b348-65bc3096348f",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "真实双人联机可选奇异博士并进入牌桌",
+      "sourceFile": "房主真实选择奇异博士.png",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/28-角色排序-实施中角色后段.png",
+      "sha256": "f0e6d6e9d06fb99b2ee828c69ff4627cf254f6a424c63c0da79a8eadf567bbdf",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    },
+    {
+      "path": "29-卡牌候选复用放大阅读.png",
+      "chainId": "候选卡牌复用既有放大阅读",
+      "chainStep": "1",
+      "stage": "独立代表态",
+      "uiStateId": "doctor-strange-income-card-reading",
+      "behaviorStepId": "income-return-card-reading",
+      "description": "候选使用原卡池尺寸，规则详情通过既有牌桌放大界面阅读，关闭后保持原选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从候选检视按钮进入既有卡牌放大界面。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从候选检视按钮进入既有卡牌放大界面。",
+      "sourceRevision": "0506ccbd91d3877a9c0a15efb976ef309f2ec9bd25e3b83066cfdaa722fb2b42",
+      "e2eSourceRevision": "4252c2cdd946a2a006d361e35c38643d80483c1f826818fa153dc9ae35ecfea5",
+      "requirements": [
+        "候选缩略图与规则阅读复用既有控件，检视关闭不改变选择"
+      ],
+      "sourceRun": "1793502054444-65812-3e097cc3-7cf1-4709-a028-6ad37a6d4fa0",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1",
+      "sourceScenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "sourceFile": "本次抽牌复用放大阅读-桌面.png",
+      "label": "卡牌候选 · 复用原放大阅读",
+      "sourcePath": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/奇异博士新增交互验收-20261030-r1/29-卡牌候选复用放大阅读.png",
+      "sha256": "e80c3a58f9b8ffd03d55745fbb7e1ddc05a707f9320dfae6381f5f3d1cf24502",
+      "currentVisualReview": "未重审，旧PASS已撤销"
+    }
+  ],
+  "requiredScenes": [
+    {
+      "id": "all-player-target",
+      "priority": 1,
+      "legalPrestate": "四人组队main1；博士为当前玩家；手牌card-strange-time-loop，CP>=2；四名玩家正常在场",
+      "trigger": "真实点手牌时间回溯并打出",
+      "sourceId": "card-strange-time-loop",
+      "expected": [
+        "dt-player-target-0/1/2/3",
+        "正式头像/玩家稳定标识/阵营",
+        "选中/确认与再点取消"
+      ],
+      "newMedia": "全候选与已选至少一组，桌面/横屏按实际布局差异取代表"
+    },
+    {
+      "id": "discard-direct-cast",
+      "priority": 1,
+      "legalPrestate": "沿现有全知之眼攻击后正式施法窗口，preparedSpells含spell-rings-of-raggadorr；discard含至少两张不同可施法术",
+      "trigger": "点准备区的spell-rings-of-raggadorr并确认，进入弃牌直接施放",
+      "sourceId": "父program.sourceId=strange-all-seeing-eye；所选实际卡spell-rings-of-raggadorr",
+      "expected": [
+        "dt-discard-card-option-*",
+        "标题施放法术",
+        "未选显示跳过；选中显示确认",
+        "第一次结算后排除已使用卡并可跳过"
+      ],
+      "newMedia": "至少一张真实弃牌施放独特代表态；其余同族复用"
+    },
+    {
+      "id": "multi-status",
+      "priority": 1,
+      "legalPrestate": "main1博士手牌spell-winds-of-watoomb；>=2名玩家各带至少一个tokenDefinitions中category为buff/debuff的statusEffects",
+      "trigger": "真实打出瓦图姆之风",
+      "sourceId": "spell-winds-of-watoomb",
+      "expected": [
+        "多个持有人卡及其状态图标",
+        "tooltip不遮候选/确认",
+        "直接点状态而非先点玩家",
+        "normal/xl多人布局"
+      ],
+      "newMedia": "多人候选/已选或hover代表态；横屏压力实际核查"
+    },
+    {
+      "id": "empty-status-skip",
+      "priority": 2,
+      "legalPrestate": "main1博士手牌spell-winds-of-watoomb，全场statusEffects无合法buff/debuff",
+      "trigger": "真实打出瓦图姆之风",
+      "sourceId": "spell-winds-of-watoomb",
+      "expected": [
+        "ChoiceModal仅跳过",
+        "无虚假状态占位",
+        "点跳过后继续"
+      ],
+      "newMedia": "一张与对象选择不同的单skip分派代表态"
+    },
+    {
+      "id": "prepared-public-browse",
+      "priority": 1,
+      "legalPrestate": "现有全知之眼结束后公开准备区>=3张正式法术，非正在施法弹层",
+      "trigger": "真实横滚准备区找第三张，点原卡打开阅读再明确关闭",
+      "sourceId": "CenterBoard.renderPreparedSpells / 实际card.id",
+      "expected": [
+        "prepared-spell-zone=public",
+        "数量可理解",
+        "末卡可找回并阅读",
+        "board-magnify-overlay-close"
+      ],
+      "newMedia": "公开准备区常态与打开阅读代表；813x376必须核查"
+    },
+    {
+      "id": "candidate-reader-landscape",
+      "priority": 1,
+      "legalPrestate": "813x376真实预感返还或弃牌准备候选",
+      "trigger": "点原CardInspectButton；不点击选择/提交",
+      "sourceId": "实际候选card.id / Board.setMagnifiedCard",
+      "expected": [
+        "完整正式牌面可读",
+        "明确关闭按钮",
+        "不选卡/不提交",
+        "关闭保持原选择",
+        ">旧timer/同步仍在"
+      ],
+      "newMedia": "一张横屏完整阅读态"
+    },
+    {
+      "id": "source-spotlight-persistence",
+      "priority": 0,
+      "legalPrestate": "沿四人值得拥有真实手牌入口，来源卡特写实际出现",
+      "trigger": "等待>3000ms；触发真实同步/重挂载；显式点空白背景关闭",
+      "sourceId": "card-worthy-of-me",
+      "expected": [
+        "来源卡正文持续可读",
+        "未明确关闭前不退场",
+        "明确关闭才移除队列"
+      ],
+      "newMedia": "修复后来源卡代表图；持续/同步/关闭用实际行为日志"
+    },
+    {
+      "id": "deja-vu-restarted",
+      "priority": 2,
+      "legalPrestate": "博士offensiveRoll，token deja-vu>=1，未声明攻击，次数可已用尽",
+      "trigger": "真实点击即视感token",
+      "sourceId": "USE_DEJA_VU",
+      "expected": [
+        "原DiceTray新一轮可投掷",
+        "说明与可用动作语义相符"
+      ],
+      "newMedia": "把现有E2E真实重开后媒体纳入本轮重审；不需要每个不可用阶段拍图"
+    },
+    {
+      "id": "large-candidate-pool",
+      "priority": 2,
+      "legalPrestate": "宇宙感知弃牌候选或拉格伽多尔环弃牌施放候选超出单行容量；正式来源区有充足不同法术",
+      "trigger": "真实触发后输入搜索/清除并滚动至后排/检视",
+      "sourceId": "strange-cosmic-awareness 或父正式施法sourceId",
+      "expected": [
+        "dt-card-pool-search-input",
+        "结果数量/无匹配/清除",
+        "全部授权候选能找回",
+        "标题与确认不被挤出"
+      ],
+      "newMedia": "大候选压力态至少一图；搜索空态/清除用行为验证"
+    }
+  ],
+  "nonEntryOperations": [
+    {
+      "operation": "prepare-hand",
+      "source": {
+        "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+        "line": 53
+      },
+      "finding": "rg当前生产代码仅定义，executeCards发prepare-card；没有现实发起者",
+      "decision": "不得新增影子入口或为此伪造验收场景"
+    }
+  ],
+  "behaviorOnlyMappings": [
+    {
+      "family": "预感常规/一层/三层/资源不足",
+      "source": {
+        "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+        "line": 349,
+        "end": 365
+      },
+      "evidence": {
+        "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+        "line": 365,
+        "end": 467
+      }
+    },
+    {
+      "family": "返顶与返底",
+      "source": {
+        "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+        "line": 367,
+        "end": 370
+      },
+      "evidence": {
+        "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+        "line": 365,
+        "end": 452
+      }
+    },
+    {
+      "family": "九张法术准备/施放规则与目标集合",
+      "source": {
+        "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+        "line": 112,
+        "end": 138
+      },
+      "evidence": {
+        "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+        "line": 468,
+        "end": 592
+      }
+    },
+    {
+      "family": "Astral/tendrils/shield四面奖励结果",
+      "source": {
+        "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+        "line": 72,
+        "end": 84
+      },
+      "evidence": {
+        "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+        "line": 593,
+        "end": 640
+      }
+    },
+    {
+      "family": "全知之眼0/1/2准备与连续施放去重",
+      "source": {
+        "file": "src/games/dicethrone/domain/doctorStrange/system.ts",
+        "line": 293,
+        "end": 310
+      },
+      "evidence": {
+        "file": "src/games/dicethrone/__tests__/doctor-strange-spell-system.test.ts",
+        "line": 641,
+        "end": 733
+      }
+    }
+  ],
+  "memoryUse": {
+    "role": "只作索引与历史偏好线索；当前source已验证旧记忆部分过时，未采用旧PASS/压暗/清空按钮为现行要求",
+    "citation": "MEMORY.md:593-618",
+    "rolloutId": "01a16842-fe32-7e40-9403-8ff3efc5ae1d"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "media": [
+    {
+      "path": "01-PC-角色选择.jpg",
+      "chainId": "角色与能力",
+      "chainStep": "1",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-width-comparison-20260920-board-shell",
+      "stage": "前态",
+      "description": "桌面端角色选择与探索者候选同屏可见"
+    },
+    {
+      "path": "02-手机-角色选择.jpg",
+      "chainId": "角色与能力",
+      "chainStep": "2",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-width-comparison-20260920-board-shell",
+      "stage": "中态",
+      "description": "手机端角色选择保持同构画布与选中状态"
+    },
+    {
+      "path": "03-手机-角色详情能力说明.jpg",
+      "chainId": "角色与能力",
+      "chainStep": "3",
+      "sourceRun": "e2e/betrayal/basic-flow.e2e.ts",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "手机端滚动后能力说明完整可读"
+    },
+    {
+      "path": "06-PC-剧本三按钮同排.jpg",
+      "chainId": "剧本阅读",
+      "chainStep": "1",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-scenario-actions-pc-mobile-20261006",
+      "stage": "前态",
+      "description": "桌面端剧本阅读确认关闭按钮保持同排"
+    },
+    {
+      "path": "07-手机-剧本三按钮同排.jpg",
+      "chainId": "剧本阅读",
+      "chainStep": "2",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-scenario-actions-pc-mobile-20261006",
+      "stage": "前态",
+      "description": "手机端剧本三项主操作保持同排可见"
+    },
+    {
+      "path": "08-手机-剧本阅读正文.jpg",
+      "chainId": "剧本阅读",
+      "chainStep": "3",
+      "sourceRun": "e2e/betrayal/basic-flow.e2e.ts",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "中态",
+      "description": "手机端剧本正文与翻页控件清晰可读"
+    },
+    {
+      "path": "09-手机-过场继续.jpg",
+      "chainId": "剧本阅读",
+      "chainStep": "4",
+      "sourceRun": "e2e/betrayal/basic-flow.e2e.ts",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "中态",
+      "description": "手机端过场文案下方继续按钮清晰可点"
+    },
+    {
+      "path": "10-手机-关闭剧本回选择页.jpg",
+      "chainId": "剧本阅读",
+      "chainStep": "5",
+      "sourceRun": "e2e/betrayal/basic-flow.e2e.ts",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "手机端关闭剧本后回到选择页"
+    },
+    {
+      "path": "04-PC-主牌桌常态.jpg",
+      "chainId": "桌面回归",
+      "chainStep": "1",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-width-comparison-20260920-board-shell",
+      "stage": "前态",
+      "description": "桌面端主牌桌持续区域完整可见"
+    },
+    {
+      "path": "05-手机-主牌桌常态.jpg",
+      "chainId": "桌面回归",
+      "chainStep": "2",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-width-comparison-20260920-board-shell",
+      "stage": "中态",
+      "description": "手机端主牌桌保持地图与底部行动栏"
+    },
+    {
+      "path": "11-手机-主桌面能力与HUD.jpg",
+      "chainId": "桌面回归",
+      "chainStep": "3",
+      "sourceRun": "e2e/betrayal/basic-flow.e2e.ts",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "手机端主桌面能力说明与当前回合保持右上"
+    },
+    {
+      "path": "12-PC-移动选目标.jpg",
+      "chainId": "移动聚焦",
+      "chainStep": "1",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-width-comparison-20260920-board-shell",
+      "stage": "前态",
+      "description": "桌面端移动选目标状态与玩家标记可见"
+    },
+    {
+      "path": "13-手机-移动选目标.jpg",
+      "chainId": "移动聚焦",
+      "chainStep": "2",
+      "sourceRun": "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+      "sourceDir": "evidence/betrayal-width-comparison-20260920-board-shell",
+      "stage": "中态",
+      "description": "手机端移动选目标保持地图与操作栏同屏"
+    },
+    {
+      "path": "14-手机-移动后玩家token聚焦.jpg",
+      "chainId": "移动聚焦",
+      "chainStep": "3",
+      "sourceRun": "e2e/betrayal/mobile-zoom-move-animation.e2e.ts",
+      "sourceDir": "evidence/betrayal-focus-2388x1080",
+      "stage": "后态",
+      "description": "手机端移动完成后玩家标记回到可视地图中心"
+    }
+  ]
+}

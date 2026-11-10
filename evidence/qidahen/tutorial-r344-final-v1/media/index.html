@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>七大恨连续年度教程桌面验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>七大恨连续年度教程桌面验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-00-frontier-goal.png","displayTitle":"01 · 用实际公开的控制增长条件建立本年扩张目标","description":"用实际公开的控制增长条件建立本年扩张目标。","kind":"image"},{"relativePath":"02-01-frontier-target.png","displayTitle":"02 · 提示说明从辽北夺取叶赫部以争取纪年卡","description":"提示说明从辽北夺取叶赫部以争取纪年卡，与前一步增加控制区域的目标衔接","kind":"image"},{"relativePath":"03-02-opening-move.png","displayTitle":"03 · 准备移动轮盘时","description":"准备移动轮盘时，合法走法与本次引导落点同时可见。","kind":"image"},{"relativePath":"04-03-farm-action.png","displayTitle":"04 · 轮盘当前格直接操作印刷的军屯行动","description":"轮盘当前格直接操作印刷的军屯行动。","kind":"image"},{"relativePath":"05-04-callout-region-choice.png","displayTitle":"05 · 非推荐地区选择验证","description":"右侧选择面板明确列出已选“辽西”，地图中该地区有黄色边线及“已选：辽西”标记","kind":"image"},{"relativePath":"06-05-reclaim-action.png","displayTitle":"06 · 同一落点仍可执行的开垦由印刷行动名承接","description":"同一落点仍可执行的开垦由印刷行动名承接。","kind":"image"},{"relativePath":"07-06-reclaim-target.png","displayTitle":"07 · 辽东人口与兵力相同而不能收税","description":"辽东人口与兵力相同而不能收税，选择开垦使其满足接下来年中的税赋条件。","kind":"image"},{"relativePath":"08-07-reclaim-target-selected.png","displayTitle":"08 · 辽东选择后变为醒目的黄色轮廓","description":"辽东选择后变为醒目的黄色轮廓，右侧面板列出“辽东”，与绿色轮廓候选区可区分","kind":"image"},{"relativePath":"09-08-recruit-action.png","displayTitle":"09 · 势力命令靠近手牌","description":"势力命令靠近手牌，点击即进入正式支付；事件和军备仍操作对应卡牌。","kind":"image"},{"relativePath":"10-09-recruit-payment.png","displayTitle":"10 · 选择征召后","description":"选择征召后，手牌费用选择与确认入口出现。","kind":"image"},{"relativePath":"11-10-recruit-payment-hover.png","displayTitle":"11 · 银两目标悬浮后明显抬起","description":"银两目标悬浮后明显抬起，卡名、图案和放大镜可辨","kind":"image"},{"relativePath":"12-11-recruit-payment-inspect.png","displayTitle":"12 · 检视支付手牌后","description":"检视支付手牌后，共享放大镜完整显示真实牌面。","kind":"image"},{"relativePath":"13-12-recruit-confirm.png","displayTitle":"13 · 征召军队支付栏显示已选 1/1 张及所选银两","description":"征召军队支付栏显示已选 1/1 张及所选银两，手牌中银两被抬起并标记已选","kind":"image"},{"relativePath":"14-13-recruit-source.png","displayTitle":"14 · 征召费用确认后","description":"征召费用确认后，全部合法建军地区及本次辽北引导同时可见。","kind":"image"},{"relativePath":"15-14-recruit-troops.png","displayTitle":"15 · 保留已选辽北视野","description":"保留已选辽北视野，两种真实征召效果均可比较。","kind":"image"},{"relativePath":"16-15-midyear.png","displayTitle":"16 · 两位对手已行动并触发年中","description":"两位对手已行动并触发年中；刚开垦的辽东符合税赋条件，补牌后进入大明手牌上限处理。","kind":"image"},{"relativePath":"17-16-hand-limit.png","displayTitle":"17 · 年中补牌后","description":"年中补牌后，手牌上限处理与弃牌确认入口出现。","kind":"image"},{"relativePath":"18-17-upgrade-card.png","displayTitle":"18 · 本次研发的真实火炮技术牌与待支付手牌同屏","description":"本次研发的真实火炮技术牌与待支付手牌同屏，随后用于前线战斗。","kind":"image"},{"relativePath":"19-18-dispatch-source.png","displayTitle":"19 · 支付调度费用后","description":"支付调度费用后，地图先显示可出兵的来源地区。","kind":"image"},{"relativePath":"20-19-dispatch-troops.png","displayTitle":"20 · 选定辽北后","description":"选定辽北后，可投入行动的实际兵牌全部可见。","kind":"image"},{"relativePath":"21-20-dispatch-troops-selected.png","displayTitle":"21 · 点击参战兵牌后","description":"点击参战兵牌后，选中标记与确认出兵入口同时可见。","kind":"image"},{"relativePath":"22-21-dispatch-target.png","displayTitle":"22 · 确认出兵部队后","description":"确认出兵部队后，地图显示来源与可进攻目标。","kind":"image"},{"relativePath":"23-22-tactic-card.png","displayTitle":"23 · 守方响应后","description":"守方响应后，战术窗口与可使用的手牌出现。","kind":"image"},{"relativePath":"24-23-tactic-card-selected.png","displayTitle":"24 · 选择鸳鸯阵后","description":"选择鸳鸯阵后，手牌选中反馈与战术确认入口可见。","kind":"image"},{"relativePath":"25-battle-artillery-rolling.png","displayTitle":"25 · 本阶段实际参战方的骰子直接在地图空间滚动","description":"本阶段实际参战方的骰子直接在地图空间滚动，阶段与侧别清楚。","kind":"image"},{"relativePath":"26-battle-artillery-damage.png","displayTitle":"26 · 实际骰子停稳后","description":"实际骰子停稳后，在同侧揭示本阶段的合计与造成损伤。","kind":"image"},{"relativePath":"27-battle-cavalry-rolling.png","displayTitle":"27 · 本阶段实际参战方的骰子直接在地图空间滚动","description":"本阶段实际参战方的骰子直接在地图空间滚动，阶段与侧别清楚。","kind":"image"},{"relativePath":"28-battle-cavalry-damage.png","displayTitle":"28 · 实际骰子停稳后","description":"实际骰子停稳后，在同侧揭示本阶段的合计与造成损伤。","kind":"image"},{"relativePath":"29-battle-infantry-rolling.png","displayTitle":"29 · 本阶段实际参战方的骰子直接在地图空间滚动","description":"本阶段实际参战方的骰子直接在地图空间滚动，阶段与侧别清楚。","kind":"image"},{"relativePath":"30-battle-infantry-damage.png","displayTitle":"30 · 实际骰子停稳后","description":"实际骰子停稳后，在同侧揭示本阶段的合计与造成损伤。","kind":"image"},{"relativePath":"31-battle-real-time.webm","displayTitle":"31 · 实际点击开始战斗","description":"实际点击开始战斗，连续记录炮骑步的开放投掷、停稳结果和战后退场。","kind":"video"},{"relativePath":"32-31-occupy.png","displayTitle":"32 · 真实投掷结束后","description":"真实投掷结束后，战后占领与撤回选项在首屏出现。","kind":"image"},{"relativePath":"33-32-occupy-report.png","displayTitle":"33 · 默认战后界面只留占领与撤回","description":"默认战后界面只留占领与撤回，点击战报才展开历史点数；关闭后仍可执行原战后选择。","kind":"image"},{"relativePath":"34-33-battle-finish.png","displayTitle":"34 · 战后叶赫山城区域可见明方标记及三支部队","description":"战后叶赫山城区域可见明方标记及三支部队，辽北保留明方标记","kind":"image"},{"relativePath":"35-34-diplomacy-target.png","displayTitle":"35 · 下一回合选择外交后","description":"下一回合选择外交后，地图显示可调整的友好标记。","kind":"image"},{"relativePath":"36-35-diplomacy-finish.png","displayTitle":"36 · 完成外交选择后","description":"完成外交选择后，实际标记结果与落点后续入口可见。","kind":"image"},{"relativePath":"37-36-hire-action.png","displayTitle":"37 · 外交之后","description":"外交之后，直接选择同一轮盘落点的雇佣行动。","kind":"image"},{"relativePath":"38-37-hire-target.png","displayTitle":"38 · 选择大同建立新雇佣军","description":"选择大同建立新雇佣军，承接之后的年末换防。","kind":"image"},{"relativePath":"39-38-save-hand.png","displayTitle":"39 · 当前放弃未使用的手牌行动","description":"当前放弃未使用的手牌行动，没有轮盘与手牌切换菜单。","kind":"image"},{"relativePath":"40-39-new-year.png","displayTitle":"40 · 新年标记与当前维护、耗损等正式结算承接","description":"新年标记与当前维护、耗损等正式结算承接。","kind":"image"},{"relativePath":"41-40-maintain-shanhai.png","displayTitle":"41 · 进入防线维护时","description":"进入防线维护时，山海关维护与放弃选项同时可见。","kind":"image"},{"relativePath":"42-41-abandon-jinzhou.png","displayTitle":"42 · 维护选择说明放弃城市防御的具体后果","description":"维护选择说明放弃城市防御的具体后果。","kind":"image"},{"relativePath":"43-42-abandon-inner-wall.png","displayTitle":"43 · 当前内长城沿实际印刷墙体高亮","description":"当前内长城沿实际印刷墙体高亮，名称避开地图标记，费用数字保留。","kind":"image"},{"relativePath":"44-43-abandon-outer-wall.png","displayTitle":"44 · 当前外长城沿核准的印刷墙体高亮","description":"当前外长城沿核准的印刷墙体高亮，名称和费用六可读。","kind":"image"},{"relativePath":"45-44-upkeep-datong.png","displayTitle":"45 · 旧低等级守军与新雇佣军都在真实地图中承接耗损","description":"旧低等级守军与新雇佣军都在真实地图中承接耗损选择。","kind":"image"},{"relativePath":"46-45-upkeep-yehe.png","displayTitle":"46 · 刚占领的叶赫部属于非汉人区域","description":"刚占领的叶赫部属于非汉人区域，正规军不能用当地人口补给；当前选择手牌维持前线。","kind":"image"},{"relativePath":"47-46-upkeep-yehe-selected.png","displayTitle":"47 · 逐张选择维持费用后","description":"逐张选择维持费用后，各张手牌保留独立选中反馈。","kind":"image"},{"relativePath":"48-47-hand-scroll-end.png","displayTitle":"48 · 翻到手牌末端","description":"翻到手牌末端，支付托盘仍保留已选费用牌名及确认。","kind":"image"},{"relativePath":"49-48-upkeep-pyongyang.png","displayTitle":"49 · 轮到平壤耗损时","description":"轮到平壤耗损时，地图显示可选择的实际部队。","kind":"image"},{"relativePath":"50-49-upkeep-pyongyang-selected.png","displayTitle":"50 · 点击平壤部队后","description":"点击平壤部队后，兵牌选择反馈与确认入口出现。","kind":"image"},{"relativePath":"51-50-claim-year.png","displayTitle":"51 · 纪年牌右侧直接承接领取和放弃","description":"纪年牌右侧直接承接领取和放弃，随后通过真实手牌支付。","kind":"image"},{"relativePath":"52-51-new-order.png","displayTitle":"52 · 顶部显示当前回合","description":"顶部显示当前回合；当前正式请求的面板明确本次选择所属阵营。","kind":"image"},{"relativePath":"53-52-year-character.png","displayTitle":"53 · 人物面板标明实际选择者","description":"人物面板标明实际选择者，保留真实人物与检视入口。","kind":"image"},{"relativePath":"54-53-year-character-inspect.png","displayTitle":"54 · 大明当前人物选择的完整牌面与所属身份可辨","description":"大明当前人物选择的完整牌面与所属身份可辨。","kind":"image"},{"relativePath":"55-54-training-kind.png","displayTitle":"55 · 真实模式和结束命令具有明确按钮外观","description":"真实模式和结束命令具有明确按钮外观；地区和部队仍由地图本体承接。","kind":"image"},{"relativePath":"56-55-training-target.png","displayTitle":"56 · 地图聚焦实际部队","description":"地图聚焦实际部队，兵种、等级、普通候选与本次推荐清楚可辨。","kind":"image"},{"relativePath":"57-56-training-pan.png","displayTitle":"57 · 实际拖动地图查看原本位于手牌下方的其它可训练","description":"实际拖动地图查看原本位于手牌下方的其它可训练部队；本体恢复可读可命中，规则状态不变，随后实际拖回继续主线。","kind":"image"},{"relativePath":"58-57-training-second-target.png","displayTitle":"58 · 同一费用下继续操作真实步兵","description":"同一费用下继续操作真实步兵，推荐与其它合法候选区分。","kind":"image"},{"relativePath":"59-58-training-recruit-target.png","displayTitle":"59 · 合法征兵地区保留地图高亮","description":"合法征兵地区保留地图高亮，当前引导指向辽东，不以文字地区列表代替地图。","kind":"image"},{"relativePath":"60-59-training-finish.png","displayTitle":"60 · 同一费用完成三次训练和一次征兵","description":"同一费用完成三次训练和一次征兵，决定不再额外付费。","kind":"image"},{"relativePath":"61-60-finish.png","displayTitle":"61 · 已完成约定年度循环","description":"已完成约定年度循环，衔接新公开目标及之后的资源预算。","kind":"image"},{"relativePath":"62-61-post-tutorial-continue.png","displayTitle":"62 · 画面没有教程文字框或全屏教程遮罩","description":"画面没有教程文字框或全屏教程遮罩","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

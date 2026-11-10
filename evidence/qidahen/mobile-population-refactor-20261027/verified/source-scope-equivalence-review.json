@@ -1,0 +1,140 @@
+{
+  "status": "PASS",
+  "verdict": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/review_population_code"
+  },
+  "reviewedAt": "2026-10-27T03:27:34.136586+00:00",
+  "mode": "unchanged-state-scoped-source-equivalence",
+  "capturedRevision": "9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7",
+  "claimScope": "仅允许已审10张非教程、非突袭basic-opening/征召军队支付/招安目标/六牌消费代表态沿用原图面与行为结论；不声称当前整个Board/CSS字节同版，也不验收新增教程或突袭分支。",
+  "changedFiles": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "captured": "b406d1d5c63c49cf8f89d40ee3f63bc60757a3f87147ec3e7162bfec6e2c6aaf",
+      "current": "90f077bf801510c1cd707347bdb134f83a4b0622371485886b73f7458c03984f"
+    },
+    {
+      "path": "src/games/qidahen/qidahen-board.css",
+      "captured": "7d95517e14afde9fa7809cea4e0f1fb09cf6d3409441d9a45e858f6a0e69fb4e",
+      "current": "dd024b8897d42c8e2ce475ed462258c4cbc73084725b361d7ebd13e3f39195e9"
+    }
+  ],
+  "additionalLockedFiles": [
+    {
+      "path": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "current": "929540561c5f9b14e6fbe070b26d3d41f94b3e2b320e5ee2366cfa730f9a9f0a"
+    }
+  ],
+  "unchangedFiles": [
+    {
+      "path": "src/games/qidahen/QidahenBoardShell.tsx",
+      "captured": "48243dd69c9a99e3ba88ae75f33716731688d8c4620731b8bdbd83b69126a78e",
+      "current": "48243dd69c9a99e3ba88ae75f33716731688d8c4620731b8bdbd83b69126a78e"
+    },
+    {
+      "path": "src/games/qidahen/ui/hudLayout.ts",
+      "captured": "3c8a8ed372bca8c9cfc4f5b7d8f0acd061892576281457c47081bd6a1b4da10f",
+      "current": "3c8a8ed372bca8c9cfc4f5b7d8f0acd061892576281457c47081bd6a1b4da10f"
+    },
+    {
+      "path": "src/games/qidahen/ui/MapViewportControls.tsx",
+      "captured": "2c791eae67fed974538e1ac6325864a74d89526dc6d01aaff345011968bb0eec",
+      "current": "2c791eae67fed974538e1ac6325864a74d89526dc6d01aaff345011968bb0eec"
+    },
+    {
+      "path": "src/games/qidahen/ui/populationLayout.ts",
+      "captured": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82",
+      "current": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx",
+      "captured": "b563738c799cf9db56b0b747ba9e4881ce6628d47889a5eedff0d78e6f89d1ce",
+      "current": "b563738c799cf9db56b0b747ba9e4881ce6628d47889a5eedff0d78e6f89d1ce"
+    },
+    {
+      "path": "src/games/qidahen/ui/runtimeRegionOwnership.ts",
+      "captured": "8243d7dd9d43b1d66e209501ffc69ce179757a22ddf8cae2d6173bb619faf838",
+      "current": "8243d7dd9d43b1d66e209501ffc69ce179757a22ddf8cae2d6173bb619faf838"
+    },
+    {
+      "path": "src/games/qidahen/data/runtime-region-graph.json",
+      "captured": "0f994d60cf192c7771aa88fe74d9c67c0b9c6fc341e50bdd1424545cd252cb45",
+      "current": "0f994d60cf192c7771aa88fe74d9c67c0b9c6fc341e50bdd1424545cd252cb45"
+    },
+    {
+      "path": "src/games/qidahen/data/region-mask.png",
+      "captured": "ddb87f2832a240d4811bc9257382b941d6be92c9ecfd24b841c8e7fed4dd37ad",
+      "current": "ddb87f2832a240d4811bc9257382b941d6be92c9ecfd24b841c8e7fed4dd37ad"
+    }
+  ],
+  "inactiveBranchesEvidence": [
+    {
+      "file": "src/games/qidahen/Board.tsx",
+      "branch": "tutorialRegionFocus地域名称span及focusQidahenMapRegion的reservedLabelHeight",
+      "condition": "名称渲染要求tutorialRegionBounds && tutorialRegionFocus；reservedLabelHeight只在regionId=tutorialRegionFocus?.regionId非空且tutorialRegionBounds存在的分支传入。",
+      "capturedStateFact": "用例为/play/qidahen?tutorialSetup=basic-opening...，不是/play/qidahen/tutorial/...；TestMatchRoom给GameModeProvider mode=test。useTutorial只向tutorial模式暴露教程步骤，其它模式明确返回currentStep:null及isActive:false。故本组状态tutorialStep=null，tutorialRegionFocus=null，regionId不存在；招安目标依旧走通用points聚焦else分支。",
+      "sources": [
+        "e2e/qidahen/mobile-population-layout.tmp.e2e.ts",
+        "src/pages/TestMatchRoom.tsx:343",
+        "src/contexts/TutorialContext.tsx:30",
+        "src/contexts/TutorialContext.tsx:567",
+        "src/games/qidahen/Board.tsx:7141",
+        "src/games/qidahen/Board.tsx:7172",
+        "temp/qidahen-mobile-population-20261027/later-board.diff"
+      ],
+      "result": "两个新增教程分支在本组10状态均不执行。disableTutorial设置tutorial_skip是辅助证据，裁决不单独依赖该localStorage值。"
+    },
+    {
+      "file": "src/games/qidahen/qidahen-board.css",
+      "branch": "10个mobile-landscape且data-hand-interaction-action=raid的专属样式块",
+      "condition": "每个新块均要求[data-hand-interaction-action=raid]；没有无条件通用选择器变更。",
+      "capturedStateFact": "普通常态没有托盘；本组支付、检视及六牌支付选择的动作均为征召军队，正式factionActionWindow中id=recruit；招安地图目标不处于raid支付。新选择器在所有已审状态不匹配。",
+      "mechanicalCheck": {
+        "removedBlocks": 10,
+        "normalizedSha256": "7d95517e14afde9fa7809cea4e0f1fb09cf6d3409441d9a45e858f6a0e69fb4e",
+        "capturedCssSha256": "7d95517e14afde9fa7809cea4e0f1fb09cf6d3409441d9a45e858f6a0e69fb4e",
+        "strictByteEqual": true
+      },
+      "sources": [
+        "src/games/qidahen/domain/factionActionWindow.ts:40",
+        "src/games/qidahen/ui/handInteractionView.ts:61",
+        "src/games/qidahen/qidahen-board.css:102",
+        "e2e/qidahen/mobile-population-layout.tmp.e2e.ts",
+        "temp/qidahen-mobile-population-20261027/source-drift-mechanical.json"
+      ],
+      "result": "除去这10个不匹配块后CSS与采集版字节SHA完全相同，当前受验状态样式不变。"
+    },
+    {
+      "file": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "branch": "新增动作data属性及raid非法目标提示文案",
+      "condition": "data属性只读interaction.action.id；新提示处于interaction.kind=action且interaction.action.id=raid条件内。",
+      "capturedStateFact": "征召支付时属性为recruit，未进入raid文案分支；常态或目标态没有这份支付托盘。该属性不新增状态写入/命令/输入处理器，当前使用处是上列raid专属CSS。",
+      "capturedByteIdentity": "此文件未列入原10目标文件manifest，故不伪称有采集版单文件SHA；按此前代码审查、当前条件与使用点做语义审查，并额外锁当前精确SHA防后续扩大差异。",
+      "sources": [
+        "src/games/qidahen/ui/QidahenHandInteractionTray.tsx:122",
+        "src/games/qidahen/ui/QidahenHandInteractionTray.tsx:159",
+        "src/games/qidahen/ui/handInteractionView.ts",
+        "src/games/qidahen/domain/factionActionWindow.ts:40"
+      ],
+      "result": "对本组可见布局、牌名/状态、主次按钮与回调没有活跃改变；突袭实际行为和新文案不在本次验收中。"
+    }
+  ],
+  "reason": "独立对照冻结Board与当前Board，变更仅位于教程专属渲染/聚焦分支；独立机械去除10个raid专属样式后精确复现采集CSS字节；额外动作属性和raid文案不在本组状态激活；其余8个已锁目标文件完全同SHA。依据未变化状态沿用门禁，本组既有PASS可以保留，无需因其它任务未激活分支持续改写而无限重跑。",
+  "carriedForwardEvidence": {
+    "source": "evidence/qidahen/mobile-population-refactor-20261027/raw-current/source.json",
+    "runtimeAtCapture": "evidence/qidahen/mobile-population-refactor-20261027/raw-current/runtime-at-entry.json",
+    "visualReview": "temp/qidahen-mobile-population-20261027/final-visual-review-current.json",
+    "behaviorLog": "temp/qidahen-mobile-population-20261027/e2e-final-board.log",
+    "mediaCount": 10,
+    "scope": "原采集版证据继续保留其真实revision；不得把其标签改为当前全文件同版。"
+  },
+  "notAccepted": [
+    "新增教程地区名span的视觉、遮挡、触控及聚焦保留标签高度效果",
+    "新增突袭支付10块样式、突袭提示文案及其压力态交互",
+    "当前整个Board/CSS或整个工作树与采集版完全相同",
+    "捕获日志未覆盖的其它规则、联机开局、其它手机尺寸或竖屏"
+  ],
+  "invalidatesReviewWhen": "changedFiles或additionalLockedFiles中任何文件当前SHA不同于本报告current值，或后续差异进入本组实际状态；此时构建器必须拒绝沿用，先重新限定差异影响面或重新取证。"
+}

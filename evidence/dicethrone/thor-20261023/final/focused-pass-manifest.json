@@ -1,0 +1,195 @@
+{
+  "verdict": "REVISE",
+  "scope": "independent",
+  "changeType": "new",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "requirements": [
+    {
+      "requirement": "索尔正式素材、弃牌飞掷与奥丁整组重掷",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/companion-odin.trace.json",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-01-索尔正式角色板与卡牌.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-02-弃牌飞掷选择成本.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-03-手动选择飞掷目标.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-04-飞掷后独立伤害与锤子位置.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-05-奥丁之力二级升级完成.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-06-奥丁效果骰等待任选重掷.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-07-选择两颗骰子一起重掷.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-08-整组重掷一次完成.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-09-效果骰收口后进入主攻击防御.png"
+      ]
+    },
+    {
+      "requirement": "索尔手牌可完整放大并通过当之无愧选择自己的骰子",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/worthy.trace.json",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-01-手牌放大完整阅读挥锤时刻.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-02-改骰前自己的五颗骰子.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-03-当之无愧选择四或五.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-04-选择自己的一颗骰子.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-05-改为四且其余骰子保持.png"
+      ]
+    },
+    {
+      "requirement": "索尔连锁闪电逐段选择效果骰与附属目标",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/chain.trace.json",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-01-连锁闪电触发前.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-02-三颗效果骰等待确认.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-03-手动选择两颗效果骰.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-04-独立选择附属伤害目标.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-05-独立伤害完成且主攻击保留.png"
+      ]
+    },
+    {
+      "requirement": "索尔破防连续消费失败后仍可再次使用",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/guard.trace.json",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-01-破防正式图标与消费入口.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-02-第一枚破防效果骰失败.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-03-失败后仍可使用第二枚破防.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-05-不可防御主攻击结算后收口.png"
+      ]
+    },
+    {
+      "requirement": "索尔可在真实双人房间选择并以实施中状态开局",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/online.trace.json",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/05-01-索尔真实双人选角与实施中标记.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/05-02-索尔在线开局角色板九槽与手牌.png"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "companion-odin",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "evidence": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/companion-odin.trace.json",
+      "requiredSteps": [
+        "companion-odin-01",
+        "companion-odin-02",
+        "companion-odin-03",
+        "companion-odin-04",
+        "companion-odin-05",
+        "companion-odin-06",
+        "companion-odin-07",
+        "companion-odin-08",
+        "companion-odin-09"
+      ]
+    },
+    {
+      "chainId": "worthy",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "evidence": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/worthy.trace.json",
+      "requiredSteps": [
+        "worthy-01",
+        "worthy-02",
+        "worthy-03",
+        "worthy-04",
+        "worthy-05"
+      ]
+    },
+    {
+      "chainId": "chain",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "evidence": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/chain.trace.json",
+      "requiredSteps": [
+        "chain-01",
+        "chain-02",
+        "chain-03",
+        "chain-04",
+        "chain-05"
+      ]
+    },
+    {
+      "chainId": "guard",
+      "sourceRun": "e2e-1792757343532-13ucob",
+      "sourceRevision": "6bf78b887d451917438750d6721c630b304ac3dc9c5264958d9f7257967faf00",
+      "evidence": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/guard.trace.json",
+      "requiredSteps": [
+        "guard-01",
+        "guard-02",
+        "guard-03",
+        "guard-04",
+        "guard-05"
+      ]
+    },
+    {
+      "chainId": "online",
+      "sourceRun": "e2e-1792805482044-ty51qv",
+      "sourceRevision": "0bd7ef56bb5902f1b2b71824fdde563d1b1426717b8654e0d5b49a91c40ae554",
+      "evidence": "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/online.trace.json",
+      "requiredSteps": [
+        "online-01",
+        "online-02"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "REVISE",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/thor_board_intake + /root/thor_cards_intake + /root/thor_contract_review"
+    },
+    "reviewFile": "visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/thor-flow.test.ts src/games/dicethrone/__tests__/thor-cards.test.ts src/games/dicethrone/__tests__/thor-companion.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/bonus-dice-confirmation-contract.test.ts src/games/dicethrone/__tests__/card-timing-response-boundaries.test.ts src/games/dicethrone/__tests__/criticalImageResolver.test.ts src/games/dicethrone/__tests__/token-response-window.test.ts src/games/dicethrone/__tests__/dice-assets-contract.test.ts src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "evidence/dicethrone/thor-20261023/final/validation/final-tests.log"
+    ]
+  },
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-01-索尔正式角色板与卡牌.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-02-弃牌飞掷选择成本.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-03-手动选择飞掷目标.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-04-飞掷后独立伤害与锤子位置.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-05-奥丁之力二级升级完成.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-06-奥丁效果骰等待任选重掷.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-07-选择两颗骰子一起重掷.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-08-整组重掷一次完成.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/01-09-效果骰收口后进入主攻击防御.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-01-手牌放大完整阅读挥锤时刻.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-02-改骰前自己的五颗骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-03-当之无愧选择四或五.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-04-选择自己的一颗骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/02-05-改为四且其余骰子保持.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-01-连锁闪电触发前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-02-三颗效果骰等待确认.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-03-手动选择两颗效果骰.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-04-独立选择附属伤害目标.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/03-05-独立伤害完成且主攻击保留.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-01-破防正式图标与消费入口.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-02-第一枚破防效果骰失败.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-03-失败后仍可使用第二枚破防.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/04-05-不可防御主攻击结算后收口.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/05-01-索尔真实双人选角与实施中标记.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/thor-20261023/final/05-02-索尔在线开局角色板九槽与手牌.png"
+  ],
+  "outOfScopeMedia": [],
+  "reopenNote": "2026-10-24：用户指出弃牌成本画面未复用既有手牌弃置交互，明确要求重审全部验收。旧截图与源版本不再代表当前 PASS；保留作历史记录，等待当前源码下的完整浏览器复验。"
+}\n

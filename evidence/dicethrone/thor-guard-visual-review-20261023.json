@@ -1,0 +1,218 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_contract_review"
+  },
+  "date": "2026-10-23",
+  "objective": "破防连续消费过程的整屏交互可见性审计",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "scopeBoundary": "只判断目标可见性、交互承载、布局可读性与错误表现，不判定骰值、伤害、资源增减或规则正确性。",
+  "score": 94,
+  "scoreBreakdown": {
+    "任务清晰度": 20,
+    "视觉层级": 14,
+    "对象可识别性": 14,
+    "状态与动作载体": 14,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 8
+  },
+  "target_requirements": [
+    {
+      "requirement": "正式破防图标与消费入口可识别",
+      "status": "PASS",
+      "evidence": "第一张与第三张均可见左侧正式状态图标、剩余标记和响应入口。"
+    },
+    {
+      "requirement": "两次效果骰落定后可辨认且确认入口清楚",
+      "status": "PASS",
+      "evidence": "第二张呈现正面神锤骰面，第四张呈现正面红色头盔骰面，两张确认入口均紧邻骰区。"
+    },
+    {
+      "requirement": "第一次确认后仍可发现继续使用入口",
+      "status": "PASS",
+      "evidence": "第三张保留破防图标、剩余标记和继续响应提示。"
+    },
+    {
+      "requirement": "本方生命与战斗点数区域不被悬浮说明遮挡",
+      "status": "PASS",
+      "evidence": "五张原始整屏图均未出现遮住本方资源读数的悬浮说明。"
+    },
+    {
+      "requirement": "结算后能够识别第二主要阶段及下一步入口",
+      "status": "PASS",
+      "evidence": "第五张第二主要阶段高亮，下一阶段按钮清楚可见，效果骰确认入口已经退场。"
+    }
+  ],
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757343532-13ucob/01-破防正式图标与消费入口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "正式破防图标及剩余标记位于左侧资源区上方，响应提示与跳过入口可见，当前攻击技能、骰盘、提示板和主要资源区域均可辨认。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757343532-13ucob/02-第一枚破防效果骰失败.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "第一次奖励骰已落定为正面的神锤图案及数字，确认按钮紧邻奖励骰，本方生命与战斗点数无遮挡，能够清楚识别当前需要确认的投掷对象。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757343532-13ucob/03-失败后仍可使用第二枚破防.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "第一次效果骰确认后，左侧仍显示破防图标及剩余标记，继续响应与跳过入口可见，本方生命、战斗点数、骰盘与技能区域无遮挡。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757343532-13ucob/04-第二枚破防效果骰成功.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "第二次奖励骰已落定为正面的红色头盔图案及数字，与第一次结果可由画面直接区分，确认按钮清晰可见，本方资源区没有悬浮说明遮挡。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792757343532-13ucob/05-不可防御主攻击结算后收口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 94,
+      "observation": "第二主要阶段高亮且下一阶段入口可见，效果骰确认入口已退场，破防操作区已经收口，本方资源读数清楚；对手栏出现贴近受击者的伤害反馈。"
+    }
+  ],
+  "element_responsibility_audit": {
+    "ledger": "本报告的元素职责审计",
+    "uncovered_elements": [],
+    "decisions": [
+      {
+        "element": "破防图标与剩余标记",
+        "responsibility": "承载状态身份与持续消费入口",
+        "decision": "保留；第一张与第三张的正式图标和剩余标记均清楚。"
+      },
+      {
+        "element": "奖励骰与确认按钮",
+        "responsibility": "承载本次效果投掷结果与玩家确认",
+        "decision": "保留；第二张与第四张均为落定正面，确认按钮紧邻骰区。"
+      },
+      {
+        "element": "响应提示与跳过按钮",
+        "responsibility": "承载可继续响应的时机与放弃入口",
+        "decision": "保留；不替代正式状态图标。"
+      },
+      {
+        "element": "本方生命与战斗点数",
+        "responsibility": "持续承载玩家主要资源",
+        "decision": "保留原槽位；全部截图均无悬浮说明遮住读数。"
+      },
+      {
+        "element": "玩家板、提示板与阶段栏",
+        "responsibility": "承载技能来源、规则参考与当前流程",
+        "decision": "保留；本轮只审查其与破防交互的同屏关系。"
+      },
+      {
+        "element": "牌堆与弃牌区",
+        "responsibility": "保留持续可支配对象的入口和集合位置",
+        "decision": "保留；截图中的手牌为空，不将其扩充为有手牌压力态通过。"
+      },
+      {
+        "element": "对手栏伤害反馈",
+        "responsibility": "承载受击反馈并贴近受击者",
+        "decision": "保留；第五张反馈未挡住本轮操作入口和阶段收口判定，不据此验证伤害数值。"
+      }
+    ]
+  },
+  "negative_impact_checks": [
+    {
+      "target": "本方主要资源保护槽位",
+      "status": "PASS",
+      "observation": "五张原始截图中的生命和战斗点数均无悬浮说明遮挡。"
+    },
+    {
+      "target": "当前技能与奖励骰确认入口",
+      "status": "PASS",
+      "observation": "技能来源、右侧落定骰面及确认按钮可识别，没有同伴说明或状态说明压住操作区域。"
+    },
+    {
+      "target": "持续对象入口",
+      "status": "PASS",
+      "observation": "牌堆、弃牌区与提示板位置保留；未把空手牌截图扩充为有手牌布局证明。"
+    }
+  ],
+  "hard_failures": [],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "revise": 0
+  },
+  "verdictReason": "五张同次运行的原始整屏图均已逐一审查，前次悬浮说明遮挡及转动中取证问题在新组中消失；本结论仅证明破防过程的交互界面可读性，不证明规则或数值正确性。",
+  "runId": "e2e-1792757343532-13ucob",
+  "previousRejectedReview": "evidence/dicethrone/thor-guard-visual-review-20261023-history-e2e-1792757026110-7clqr1.json",
+  "uncovered": [
+    "移动端与其它视口",
+    "有手牌时的布局压力态",
+    "规则与数值正确性",
+    "其它技能与状态的交互"
+  ]
+}

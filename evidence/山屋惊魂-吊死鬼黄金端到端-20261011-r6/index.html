@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂 · 吊死鬼黄金端到端 · 20261011 · r6</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂 · 吊死鬼黄金端到端 · 20261011 · r6</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"吊死鬼-完整链路-01-探索前.jpg","displayTitle":"吊死鬼 · 完整链路 · 01 · 探索前","description":"吊死鬼要求玩家依次检定力量速度知识和神志，全部通过后选择一项属性加一。","kind":"image"},{"relativePath":"吊死鬼-完整链路-02-选择未知房间.jpg","displayTitle":"吊死鬼 · 完整链路 · 02 · 选择未知房间","description":"玩家点击探索后看到两个未知房间候选，手电筒和事件牌区域保持可读。","kind":"image"},{"relativePath":"吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg","displayTitle":"吊死鬼 · 完整链路 · 03 · 未知房间已选中等待放置确认","description":"玩家选中未知房间后进入放置确认，房间候选保持高亮且确认动作位于底部。","kind":"image"},{"relativePath":"吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg","displayTitle":"吊死鬼 · 完整链路 · 04 · 事件牌翻出等待逐项检定","description":"事件牌翻出后四项属性候选同时出现，玩家尚未开始第一项检定。","kind":"image"},{"relativePath":"吊死鬼-完整链路-05-力量检定滚动中.jpg","displayTitle":"吊死鬼 · 完整链路 · 05 · 力量检定滚动中","description":"玩家点击力量后骰子处于真实滚动中，结果数字和继续按钮尚未出现。","kind":"image"},{"relativePath":"吊死鬼-完整链路-05-力量检定停稳等待继续.jpg","displayTitle":"吊死鬼 · 完整链路 · 05 · 力量检定停稳等待继续","description":"力量骰子停稳后，稳定骰面、检定结果和底部继续按钮同屏可见，下一项尚未开始。","kind":"image"},{"relativePath":"吊死鬼-完整链路-06-速度检定滚动中.jpg","displayTitle":"吊死鬼 · 完整链路 · 06 · 速度检定滚动中","description":"上一项收口后玩家点击速度，第二次骰子进入独立滚动过程。","kind":"image"},{"relativePath":"吊死鬼-完整链路-06-速度检定停稳等待继续.jpg","displayTitle":"吊死鬼 · 完整链路 · 06 · 速度检定停稳等待继续","description":"速度骰子停稳后，稳定骰面、检定结果和底部继续按钮同屏可见，下一项尚未开始。","kind":"image"},{"relativePath":"吊死鬼-完整链路-07-知识检定滚动中.jpg","displayTitle":"吊死鬼 · 完整链路 · 07 · 知识检定滚动中","description":"玩家点击知识后第三次骰子真实滚动，之前结果没有被复用。","kind":"image"},{"relativePath":"吊死鬼-完整链路-07-知识检定停稳等待继续.jpg","displayTitle":"吊死鬼 · 完整链路 · 07 · 知识检定停稳等待继续","description":"知识骰子停稳后，稳定骰面、检定结果和底部继续按钮同屏可见，下一项尚未开始。","kind":"image"},{"relativePath":"吊死鬼-完整链路-08-神志检定滚动中.jpg","displayTitle":"吊死鬼 · 完整链路 · 08 · 神志检定滚动中","description":"玩家点击神志后第四次骰子进入真实滚动过程，结果尚未提前结算。","kind":"image"},{"relativePath":"吊死鬼-完整链路-08-神志检定停稳等待继续.jpg","displayTitle":"吊死鬼 · 完整链路 · 08 · 神志检定停稳等待继续","description":"神志骰子停稳后，稳定骰面、检定结果和底部继续按钮同屏可见，奖励选择尚未出现。","kind":"image"},{"relativePath":"吊死鬼-完整链路-09-四项检定完成选择奖励.jpg","displayTitle":"吊死鬼 · 完整链路 · 09 · 四项检定完成选择奖励","description":"四项检定完成后奖励属性候选位于事件牌和骰盘下方，底部只保留一个确认动作。","kind":"image"},{"relativePath":"吊死鬼-完整链路-10-知识奖励结算等待确认.jpg","displayTitle":"吊死鬼 · 完整链路 · 10 · 知识奖励结算等待确认","description":"玩家确认知识奖励后看到结算结果，上一项属性骰盘已经收起并等待最终关闭。","kind":"image"},{"relativePath":"吊死鬼-完整链路-11-确认后回牌桌.jpg","displayTitle":"吊死鬼 · 完整链路 · 11 · 确认后回牌桌","description":"玩家关闭最后一个临时窗口后回到牌桌，事件面板和骰盘均已退出。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

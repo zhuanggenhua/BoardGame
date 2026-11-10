@@ -1,0 +1,339 @@
+{
+  "runId": "20261027-natural-opening-r43",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_r43_full_visual_audit"
+  },
+  "reviewedAt": "2026-10-26T17:40:55.478477+00:00",
+  "sourceRevision": "sha256:a949faa6bf6a70e84b85aab094023531c6e83237e99c37ff38c8c2583da53dc3",
+  "coverage": {
+    "desktop": 10,
+    "mobile": 4,
+    "actualOriginalImagesRead": 14,
+    "sampling": false,
+    "decodeFailures": []
+  },
+  "summary": {
+    "total": 14,
+    "pass": 11,
+    "revise": 3,
+    "failedPaths": [
+      "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-01-突袭支付与手牌.png",
+      "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-03-检视返回后轻点银两选择支付.png"
+    ]
+  },
+  "findings": [
+    {
+      "id": "MOBILE_TARGET_NAME_OCCLUDED",
+      "priority": "P1",
+      "paths": [
+        "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-00-叶赫部地图目标避开支付托盘.png"
+      ],
+      "evidence": "手机目标圈约位于横向四百至四百四十三、纵向六十五至一百零八；顶部玩家条覆盖圈上方的地区名。",
+      "minimalFix": "把这一窄空档中的地区名称放到目标圈侧边，保留圈本体真实地图输入；不要让可见支付托盘透点。"
+    },
+    {
+      "id": "MOBILE_CURRENT_PLAYER_RAIL_OCCLUDED",
+      "priority": "P1",
+      "paths": [
+        "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-01-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-03-检视返回后轻点银两选择支付.png"
+      ],
+      "evidence": "普通支付和确认支付画面的白色教程卡位于左上，覆盖当前大明玩家条及手牌读数；这两屏没有进入阅读模态。",
+      "minimalFix": "调整手机操作态提示的占位，保留当前玩家条。可以精简无操作价值的禁用下一步行，使提示在玩家条下方和支付托盘上方可读；不要迁走手牌或盖住支付确认。"
+    }
+  ],
+  "protectionSlotReview": [
+    "桌面十图的本次目标、当前行动入口、手牌与牌堆保持可见；部分提示覆盖非当前决策地图背景，没有看到当前必须输入对象被盖住。",
+    "手机地图目标已避开支付面板，但其名称没有避开玩家条，因此不能用真实点击通过替代目标身份的视觉通过。",
+    "手机普通支付和确认态的当前玩家条被提示卡占位；手牌本体和确认按钮可见不能抵消该资源读数遮挡。",
+    "手机银两阅读模态允许临时覆盖背景；卡面和明确退出入口完整，退出后的普通确认态仍须恢复保护槽位。",
+    "手机图中的朝鲜和纪年区域不属于当前地图支付与检视决策，本报告不据此声称这些区域的手机适配已通过。"
+  ],
+  "limitations": [
+    "仅验玩家可见界面、交互状态和布局；不以图片判定数值、规则或结算正确性。",
+    "截图不能单独证明真实点击命中，真实输入由同次端到端日志承担。",
+    "本报告不代表用户已验收，整组存在返工项，禁止作为最终通过图组交付。"
+  ],
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/00-辽东与叶赫部局面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "辽东目标圈和地区名完整可读，正文指向建军地点；手牌与地图仍可见，右侧征召悬浮说明没有遮住本次目标或正文。",
+      "sha256": "29c37ec23c2a7482385e6a1fb58bb1f13cba26f9b29d7362bb18bf1b1d944421",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\00-辽东与叶赫部局面.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "轮盘军屯扇区的高亮框与实际扇区贴合，前进两格的教程文字完整，提示没有遮住该轮盘入口；手牌仍有可见检视入口。",
+      "sha256": "462abac2110504baa47251d0ad34366462870a5eb7f0146aaf9011395e4d3e78",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\01-轮盘前进两格与军屯落点.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "指定对手的小面板、蒙古和后金两个按钮都完整露出，正文贴近该选择面板，军屯建军地的文字可读，没有按钮或说明互相遮挡。",
+      "sha256": "619f5de8e969e3667448fbf7877f9de9a80fb352397456b178fba8a294071c09",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\02-指定后金抽牌.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/03-辽东军屯结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "军屯摘要在右侧独立高亮，提示卡和下一步完整；地图上的前线部队、展开的手牌行及牌堆均可见，没有可见报错或乱码。",
+      "sha256": "aa1ca74cb187114ae056bd13d5bb714c8a6ef8d541cac384294c5f3631067f4e",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\03-辽东军屯结果.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/04-叶赫部真实地图目标.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "叶赫部的目标圈、地区名与提示保持对应，目标中心露出；支付托盘位于下方，没有遮住目标圈中心，手牌行仍完整可见。",
+      "sha256": "0d4c7d3a0bc28ddcb3e6df9ef366d5a8217653592d986f554124354e0dffa397",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\04-叶赫部真实地图目标.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "银两与鸳鸯阵的卡面标题和检视入口可区分，蓝色框覆盖手牌行；支付进度及确认入口可读，正文置于手牌上方右侧，没有盖住当前选牌对象。",
+      "sha256": "60e7e822a052863e9b884e2dd087cbd58574f7c4472ddbf95fe9b90e6382ce0a",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\05-银两支付与鸳鸯阵手牌.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/06-野战出兵与战术牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "来源地区兵牌、进攻路径、当前出兵摘要和开始战斗按钮可见，按钮高亮完整；正文与右侧交战面板分开，剩余手牌有清楚的检视入口。",
+      "sha256": "04a9728b38e235f1a998fed527d8b3b6db4a4e3b837a6269dca67f544a85d0c9",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\06-野战出兵与战术牌.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/07-战后幸存部队与占领选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "战后面板展示的阶段骰面与文字可读，占领和撤回两个真实入口完整露出；提示卡没有压住这些选项，地图目标区域仍可辨认。",
+      "sha256": "cc822718073e56a7c827d8877a96b7debeecc390ea19ff311463d2231c91d2a9",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\07-战后幸存部队与占领选择.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "叶赫部控制标记和部队可见，结束提示与完成并返回按钮完整；下一玩家的手牌及行动区域仍在同一棋盘中，没有新的全屏阻塞层。",
+      "sha256": "5a141d37c79647a4d6176824ca4da26a3529fd28924ac287ca4f87cb04828593",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\08-叶赫部占领结果.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/09-教程退出后同局继续.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "教程提示和高亮已经退场，同一棋盘保留，下一玩家的征兵训练弃牌托盘与确认入口可读，手牌、抽牌堆和弃牌堆仍可见。",
+      "sha256": "d1fbec388feeb325daeef689de10398e88d80fcfb8aa618810fc060c04a1af00",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43\\09-教程退出后同局继续.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [
+        "target-visible",
+        "layout-readable"
+      ],
+      "observation": "叶赫部目标圈本体完整，已经避开支付托盘；但圈上方的地区名称被顶部玩家条完全遮住，地图印刷名称又被支付托盘覆盖，当前目标身份无法直观看清。",
+      "sha256": "a6acc651f1fdc9948ba9e92396a042b64dd3cc7ce178433ee88a3371a445ee94",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43-mobile\\移动-00-叶赫部地图目标避开支付托盘.png",
+      "dimensions": [
+        844,
+        390
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-01-突袭支付与手牌.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [
+        "layout-readable"
+      ],
+      "observation": "支付托盘、手牌卡面和检视入口清楚，蓝框覆盖手牌行；但白色教程卡占据左上方，完全盖住当前大明玩家条及其中的手牌读数，普通支付态存在保护槽位遮挡。",
+      "sha256": "43a11f5df8a81cacff5b079a503fcc9cd33d2393205420025a31460c66540756",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43-mobile\\移动-01-突袭支付与手牌.png",
+      "dimensions": [
+        844,
+        390
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-02-长按银两检视卡面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [],
+      "observation": "长按后银两整张卡面在中央完整展开，牌名、主体图案和明确关闭按钮均可见，卡面没有被边缘裁切；此处是玩家主动进入的阅读模态，背景暂时覆盖不计作普通操作态遮挡。",
+      "sha256": "40f6899562f0899607335266000a52e23de9196816daa6e83019453104fa3ad6",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43-mobile\\移动-02-长按银两检视卡面.png",
+      "dimensions": [
+        844,
+        390
+      ],
+      "readMode": "逐张完整原图实际读取"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-natural-opening-20261027-final/media/移动-03-检视返回后轻点银两选择支付.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "failedChecks": [
+        "layout-readable"
+      ],
+      "observation": "选中的银两有明确高亮及已选标记，支付托盘中的确认执行按钮露出且高亮，正文与当前确认动作对应；但白色教程卡仍盖住当前大明玩家条，普通确认态的资源保护槽位没有恢复可见。",
+      "sha256": "9279f99509101622c258fe26b57b2237ab1d0f4361e174637b5275bc67e39e38",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r43-mobile\\移动-03-检视返回后轻点银两选择支付.png",
+      "dimensions": [
+        844,
+        390
+      ],
+      "readMode": "逐张完整原图实际读取"
+    }
+  ]
+}

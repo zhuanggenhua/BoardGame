@@ -1,0 +1,278 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "sourceRevision": "sha256:f9f55d436cec7366a439cfae74f1c9dcbce19e8d69320dfce026f9048dfd4a94",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r84_desktop_final_fresh"
+  },
+  "method": "本轮逐张亲读两张变化桌面整屏图，另外九张只核验当前文件与上一轮已实读原图的哈希及比较记录，并沿用原读者结论。逐项检查提示必要性、当前对象与操作一致性、布局可读及遮挡，不判数值与规则结算，不宣称亲读沿用的九张。",
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/00-辽北军屯地区选择.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/00-辽北军屯地区选择.png",
+      "sha256": "dd43266aed9a4c2def55e8bf0187770ceb9bdc4bee4c69960be3cc11a67758b4",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本土地块轮廓与辽北名称可辨，当前提示补足正规军建立地点的限制并指定练习目标，未把各地部队与远期调度路线列成文字。轮盘、地图兵牌与手牌继续由正式对象承载。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/0",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/01-轮盘前进两格与军屯落点.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/01-轮盘前进两格与军屯落点.png",
+      "sha256": "411016e5ec683796b92c06bdf5ace3f55793465bf5e760b3d1565095530b187a",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘军屯落点和前进候选可见，提示保留指定对手抽牌、停在军屯时的效果与本次输入之间的关系。辽北浮层只显示地区及归属，军种清单与两组调度目的地已消失，没有把信息搬到另一块摘要。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/1",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/02-指定后金抽牌.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/02-指定后金抽牌.png",
+      "sha256": "b467e50db7783effc5654e0e4e4e80b8f97be3746528e56f8e3f99ae8e6cf2cd",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式选择面板保留蒙古与后金两个真实候选及军屯地点，教程只指定本次练习的后金目标与抽牌数量，没有重复播报辽北兵力或列举无关路线。候选按钮与当前决策相邻且未被提示遮住。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/2",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/03-辽北军屯结果.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/03-辽北军屯结果.png",
+      "sha256": "46680ab589c36d0e5fef11621b4528fce6da800701ec6ae3ab5fcecb6991e400",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本轮亲读整屏：辽北地区的真实兵牌、地图加一短反馈与底部手牌可见，军屯结果没有另设文字摘要或兵力副本。提示已转入突袭，只补弃牌费用和不能调度的限制，并指向右侧突袭作战按钮；操作对象、兵牌和手牌没有被提示遮住，也未出现轮盘军屯这一拼接称谓。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r84_desktop_final_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r84-desktop.json",
+      "actualReaderEntry": "/entries/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/04-叶赫部真实地图目标.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/04-叶赫部真实地图目标.png",
+      "sha256": "44dacceea401b72841a951668dacff80eabef88ec0db9ea7cf94a1158bd855dc",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部真实地图区域及候选边界可辨，当前提示只补足本次练习的目标选择。行动托盘保留支付进度与真实确认入口，未将地图选择复制为地区列表，当前对象没有因删减提示而消失。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/4",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "sha256": "9f666b1c4d058eb157c7cc633f73b1b45b7fbc23a28e454a92a5ee9a576f8160",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两与鸳鸯阵仍以实际手牌同屏呈现，支付托盘保留已选进度和目标线路。提示说明保留战术牌的当前取舍，并交代桌面检视与触屏长按这一必要入口，没有恢复地区调度清单或军屯结果播报。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/5",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "sha256": "ccd3d90c8f3f67105a3f84bcf855256ce87021c421a498f288389d09e346e02f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本轮亲读整屏：鸳鸯阵本牌抬升并带清楚选中标记，紧邻上方的打出战术牌与取消按钮可辨。教程补首次用牌的战斗限制及当前野战适用关系，正式托盘补确认输入，没有重述军屯结果；地图来源兵牌、目标箭头与战斗面板仍可见，当前牌和确认入口未受遮挡。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r84_desktop_final_fresh"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r84-desktop.json",
+      "actualReaderEntry": "/entries/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/06-野战选择实际出兵部队.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/06-野战选择实际出兵部队.png",
+      "sha256": "198ecd6b9762b979b6a20c2d9bb48a42f8464f9cbee910d28c71599464a72c41",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "来源兵牌的选中状态与目标箭头可见，正式战斗面板承接实际出兵和开始战斗。教程补足地图兵牌切换这一输入方式，以及兵种结算顺序、同时结算与损伤含义，没有以结果数字摘要代替真实兵牌。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/7",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/07-战后幸存部队与占领选择.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/07-战后幸存部队与占领选择.png",
+      "sha256": "de5b9392112fbcad507f8d5ce753488d5c2e0d3dd21fecda4c3bb993716a86d1",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战后面板保留本次掷骰、幸存信息和占领或撤回两项真实选择。教程解释未由骰面直接表达的胜负判定口径，并引导联系幸存部队与占领决定，没有另写一段具体损伤和幸存数量的重复播报。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/8",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/08-叶赫部占领结果.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/08-叶赫部占领结果.png",
+      "sha256": "378af208a5bb0098315f7b96c3ef3f0ff5f6af1e9acfd8a7b26bd340d5ae337a",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部的大明归属标志与占领后地图状态直接可见，军屯及占领结果未被另设摘要重复承载。结束提示只补足霸权胜利的条件和继续本局的去向，不复述已经呈现的领地与部队读数。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/9",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/09-教程退出后同局继续.png",
+      "source": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/09-教程退出后同局继续.png",
+      "sha256": "646538d439906e9c109fb68a1d4addbb4c7fbcabdeb73443f5ad295f620d2107",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程提示和教学框已退场，地图保留占领后的大明归属，当前蒙古手牌和正式征兵训练弃牌托盘同屏。下一步输入由真实手牌与确认弃牌按钮承担，没有残留军屯结果节点或并行说明条。",
+      "issues": [],
+      "actualReader": {
+        "kind": "subagent",
+        "id": "/root/r83_reference_image_review"
+      },
+      "actualReaderReport": "evidence/qidahen/.visual-review-r83-desktop.json",
+      "actualReaderEntry": "/entries/10",
+      "unchangedEvidence": "当前截图与上一轮已实读通过的同名原始截图哈希一致，比较记录也确认字节一致；本轮只核验文件并沿用原观察，没有重复读取图片。",
+      "unchangedEvidenceFiles": [
+        "evidence/qidahen/.visual-hash-comparison-r84.json",
+        "evidence/qidahen/.visual-review-r83-desktop.json"
+      ]
+    }
+  ]
+}

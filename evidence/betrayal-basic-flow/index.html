@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>betrayal · basic · flow</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>betrayal · basic · flow</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-山屋惊魂-基本流程-角色确认前.jpg","displayTitle":"01 · 山屋惊魂 · 基本流程 · 角色确认前","description":"","kind":"image"},{"relativePath":"01b-山屋惊魂-角色详情滚动后看到特性.jpg","displayTitle":"01b · 山屋惊魂 · 角色详情滚动后看到特性","description":"","kind":"image"},{"relativePath":"02a-山屋惊魂-基本流程-剧本弹窗入口.jpg","displayTitle":"02a · 山屋惊魂 · 基本流程 · 剧本弹窗入口","description":"","kind":"image"},{"relativePath":"02b-山屋惊魂-基本流程-书本式剧本阅读首页.jpg","displayTitle":"02b · 山屋惊魂 · 基本流程 · 书本式剧本阅读首页","description":"","kind":"image"},{"relativePath":"02c-山屋惊魂-基本流程-书本式剧本翻页中.jpg","displayTitle":"02c · 山屋惊魂 · 基本流程 · 书本式剧本翻页中","description":"","kind":"image"},{"relativePath":"02d-山屋惊魂-基本流程-书本式剧本下一正文页.jpg","displayTitle":"02d · 山屋惊魂 · 基本流程 · 书本式剧本下一正文页","description":"","kind":"image"},{"relativePath":"02e-山屋惊魂-基本流程-书本式剧本阅读末页.jpg","displayTitle":"02e · 山屋惊魂 · 基本流程 · 书本式剧本阅读末页","description":"","kind":"image"},{"relativePath":"03-山屋惊魂-基本流程-运行时.jpg","displayTitle":"03 · 山屋惊魂 · 基本流程 · 运行时","description":"","kind":"image"},{"relativePath":"03a-山屋惊魂-开始剧本后开局过场.jpg","displayTitle":"03a · 山屋惊魂 · 开始剧本后开局过场","description":"","kind":"image"},{"relativePath":"06-山屋惊魂-基本流程-移动选目标.jpg","displayTitle":"06 · 山屋惊魂 · 基本流程 · 移动选目标","description":"","kind":"image"},{"relativePath":"07-山屋惊魂-基本流程-移动后.jpg","displayTitle":"07 · 山屋惊魂 · 基本流程 · 移动后","description":"","kind":"image"},{"relativePath":"07a-山屋惊魂-基本流程-移动到门厅动画中.jpg","displayTitle":"07a · 山屋惊魂 · 基本流程 · 移动到门厅动画中","description":"","kind":"image"},{"relativePath":"07b-山屋惊魂-基本流程-不取消连续移动到大阶梯.jpg","displayTitle":"07b · 山屋惊魂 · 基本流程 · 不取消连续移动到大阶梯","description":"","kind":"image"},{"relativePath":"07c-山屋惊魂-运行时-移动模式选择门厅.jpg","displayTitle":"07c · 山屋惊魂 · 运行时 · 移动模式选择门厅","description":"","kind":"image"},{"relativePath":"07d-山屋惊魂-运行时-移动后仍可继续选择大阶梯.jpg","displayTitle":"07d · 山屋惊魂 · 运行时 · 移动后仍可继续选择大阶梯","description":"","kind":"image"},{"relativePath":"07e-山屋惊魂-运行时-不取消连续移动完成.jpg","displayTitle":"07e · 山屋惊魂 · 运行时 · 不取消连续移动完成","description":"","kind":"image"},{"relativePath":"08-山屋惊魂-移动端横屏-角色竖向滚动选中与能力提示.jpg","displayTitle":"08 · 山屋惊魂 · 移动端横屏 · 角色竖向滚动选中与能力提示","description":"","kind":"image"},{"relativePath":"09a-山屋惊魂-移动端横屏-剧本弹窗入口.jpg","displayTitle":"09a · 山屋惊魂 · 移动端横屏 · 剧本弹窗入口","description":"","kind":"image"},{"relativePath":"09b-山屋惊魂-移动端横屏-书本式剧本阅读首页.jpg","displayTitle":"09b · 山屋惊魂 · 移动端横屏 · 书本式剧本阅读首页","description":"","kind":"image"},{"relativePath":"09c-山屋惊魂-移动端横屏-书本式剧本翻页中.jpg","displayTitle":"09c · 山屋惊魂 · 移动端横屏 · 书本式剧本翻页中","description":"","kind":"image"},{"relativePath":"09d-山屋惊魂-移动端横屏-书本式剧本阅读末页.jpg","displayTitle":"09d · 山屋惊魂 · 移动端横屏 · 书本式剧本阅读末页","description":"","kind":"image"},{"relativePath":"09e-山屋惊魂-移动端横屏-关闭剧本回选择页.jpg","displayTitle":"09e · 山屋惊魂 · 移动端横屏 · 关闭剧本回选择页","description":"","kind":"image"},{"relativePath":"10-山屋惊魂-队友面板详情不切视角.jpg","displayTitle":"10 · 山屋惊魂 · 队友面板详情不切视角","description":"","kind":"image"},{"relativePath":"11-山屋惊魂-地图token详情图像一致.jpg","displayTitle":"11 · 山屋惊魂 · 地图token详情图像一致","description":"","kind":"image"},{"relativePath":"12-山屋惊魂-换行动者不自动跟踪视角.jpg","displayTitle":"12 · 山屋惊魂 · 换行动者不自动跟踪视角","description":"","kind":"image"},{"relativePath":"zz-山屋惊魂-剧本阅读验收联系图.png","displayTitle":"zz · 山屋惊魂 · 剧本阅读验收联系图","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

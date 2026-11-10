@@ -1,0 +1,42 @@
+{
+  "hint": {
+    "x": 1160,
+    "y": 270.875,
+    "width": 310,
+    "height": 238.25,
+    "top": 270.875,
+    "right": 1470,
+    "bottom": 509.125,
+    "left": 1160
+  },
+  "anchor": {
+    "id": "qidahen-post-battle-selection",
+    "bounds": {
+      "x": 1490,
+      "y": 288,
+      "width": 358,
+      "height": 204,
+      "top": 288,
+      "right": 1848,
+      "bottom": 492,
+      "left": 1490
+    }
+  },
+  "surfaces": [
+    {
+      "id": "qidahen-post-battle-selection",
+      "bounds": {
+        "x": 1490,
+        "y": 288,
+        "width": 358,
+        "height": 204,
+        "top": 288,
+        "right": 1848,
+        "bottom": 492,
+        "left": 1490
+      }
+    }
+  ],
+  "gap": 20,
+  "fullChainClaimed": false
+}

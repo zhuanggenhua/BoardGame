@@ -1,0 +1,32 @@
+{
+  "title": "大杀四方派系选择：已选卡片标注",
+  "media": [
+    {
+      "path": "01-faction-before.png",
+      "chainId": "smashup-faction-selection-annotated",
+      "chainStep": "一",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "前态",
+      "description": "玩家进入派系选择界面，随机派系卡和候选派系卡都处于未选择状态。"
+    },
+    {
+      "path": "02-faction-selected-annotated.png",
+      "chainId": "smashup-faction-selection-annotated",
+      "chainStep": "二",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "中态",
+      "description": "随机派系落地为动作英雄，红框和箭头明确指出原图底部第 4 行第 3 列的已选卡片。"
+    },
+    {
+      "path": "03-faction-after-scroll.png",
+      "chainId": "smashup-faction-selection-annotated",
+      "chainStep": "三",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "后态",
+      "description": "玩家滚动派系列表后，列表仍能继续选择，流程状态保持不变。"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "mode": "source-review",
+  "productAcceptance": "not-claimed",
+  "url": "http://127.0.0.1:4867/?key=1688080bedc7",
+  "media": 8,
+  "allServerBytesMatch": true
+}

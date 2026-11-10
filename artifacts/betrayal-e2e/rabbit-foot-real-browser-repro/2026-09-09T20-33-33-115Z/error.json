@@ -1,0 +1,4 @@
+{
+  "message": "locator.waitFor: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"betrayal-rabbit-foot-die-option\"]').first() to be visible\u001b[22m\n",
+  "stack": "locator.waitFor: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"betrayal-rabbit-foot-die-option\"]').first() to be visible\u001b[22m\n\n    at runRabbitConfirm (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:267:81)\n    at async main (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:296:28)"
+}

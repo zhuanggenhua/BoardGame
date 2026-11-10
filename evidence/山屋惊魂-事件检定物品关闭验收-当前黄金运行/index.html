@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂 · 小黑屋黄金端到端 · 四件物品事件检定关闭链</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂 · 小黑屋黄金端到端 · 四件物品事件检定关闭链</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-手电筒-01-手电筒加骰前牌桌可操作.jpg","displayTitle":"手电筒 · 01","description":"手电筒使事件属性检定额外投掷 2 枚骰子。","kind":"image"},{"relativePath":"02-手电筒-02-选择未知房间前.jpg","displayTitle":"手电筒 · 02","description":"手电筒仍在持有区，未知房间选择界面已打开。","kind":"image"},{"relativePath":"03-手电筒-03-外星几何翻出等待投掷.jpg","displayTitle":"手电筒 · 03","description":"事件牌“外星几何”和投掷入口已出现。","kind":"image"},{"relativePath":"04-手电筒-04-滚动中-结果未提前出现.jpg","displayTitle":"手电筒 · 04","description":"5 枚骰子正在滚动，结果尚未结算。","kind":"image"},{"relativePath":"05-手电筒-05-5骰事件检定骰盘停稳-返回牌桌可见-物品效果已生效.jpg","displayTitle":"手电筒 · 05","description":"骰子已停稳，总点数为 10，手电筒效果已计入检定。","kind":"image"},{"relativePath":"06-手电筒-06-返回牌桌后加骰结算结果可见.jpg","displayTitle":"手电筒 · 06","description":"检定窗口已关闭，玩家回到牌桌，手电筒仍在持有区。","kind":"image"},{"relativePath":"07-手电筒-07-关闭后回牌桌状态清空.jpg","displayTitle":"手电筒 · 07","description":"临时窗口已关闭，牌桌恢复可操作。","kind":"image"},{"relativePath":"08-灯笼-01-灯笼加骰前牌桌可操作.jpg","displayTitle":"灯笼 · 01","description":"灯笼使事件属性检定额外投掷 2 枚骰子。","kind":"image"},{"relativePath":"09-灯笼-02-选择未知房间前.jpg","displayTitle":"灯笼 · 02","description":"灯笼仍在持有区，未知房间选择界面已打开。","kind":"image"},{"relativePath":"10-灯笼-03-外星几何翻出等待投掷.jpg","displayTitle":"灯笼 · 03","description":"事件牌“外星几何”和投掷入口已出现。","kind":"image"},{"relativePath":"11-灯笼-04-滚动中-结果未提前出现.jpg","displayTitle":"灯笼 · 04","description":"5 枚骰子正在滚动，结果尚未结算。","kind":"image"},{"relativePath":"12-灯笼-05-5骰事件检定骰盘停稳-返回牌桌可见-物品效果已生效.jpg","displayTitle":"灯笼 · 05","description":"骰子已停稳，总点数为 10，灯笼效果已计入检定。","kind":"image"},{"relativePath":"13-灯笼-06-返回牌桌后加骰结算结果可见.jpg","displayTitle":"灯笼 · 06","description":"检定窗口已关闭，玩家回到牌桌，灯笼仍在持有区。","kind":"image"},{"relativePath":"14-灯笼-07-关闭后回牌桌状态清空.jpg","displayTitle":"灯笼 · 07","description":"临时窗口已关闭，牌桌恢复可操作。","kind":"image"},{"relativePath":"15-魔法相机-01-魔法相机替代前牌桌可操作.jpg","displayTitle":"魔法相机 · 01","description":"魔法相机使知识检定改用神志值计算。","kind":"image"},{"relativePath":"16-魔法相机-02-选择未知房间前.jpg","displayTitle":"魔法相机 · 02","description":"魔法相机仍在持有区，未知房间选择界面已打开。","kind":"image"},{"relativePath":"17-魔法相机-03-外星几何翻出等待投掷.jpg","displayTitle":"魔法相机 · 03","description":"事件牌“外星几何”和投掷入口已出现。","kind":"image"},{"relativePath":"18-魔法相机-04-滚动中-结果未提前出现.jpg","displayTitle":"魔法相机 · 04","description":"5 枚骰子正在滚动，结果尚未结算。","kind":"image"},{"relativePath":"19-魔法相机-05-5骰相机替代检定骰盘停稳-返回牌桌可见-物品效果已生效.jpg","displayTitle":"魔法相机 · 05","description":"骰子已停稳，魔法相机效果已生效。","kind":"image"},{"relativePath":"20-魔法相机-06-返回牌桌后魔法相机替代检定结算结果可见.jpg","displayTitle":"魔法相机 · 06","description":"检定窗口已关闭，知识由 3 变为 4，神志保持 5。","kind":"image"},{"relativePath":"21-魔法相机-07-关闭后回牌桌状态清空.jpg","displayTitle":"魔法相机 · 07","description":"临时窗口已关闭，牌桌恢复可操作。","kind":"image"},{"relativePath":"22-书本-01-书本使用前牌桌可操作.jpg","displayTitle":"书本 · 01","description":"书本支付 1 点神志，使下一次非战斗检定改用知识。","kind":"image"},{"relativePath":"23-书本-02-书本本体已选中准备使用.jpg","displayTitle":"书本 · 02","description":"书本已被选中，准备使用。","kind":"image"},{"relativePath":"24-书本-03-书本已使用并选择未知房间前.jpg","displayTitle":"书本 · 03","description":"书本已使用，未知房间选择尚未完成。","kind":"image"},{"relativePath":"25-书本-04-滚动中-结果未提前出现.jpg","displayTitle":"书本 · 04","description":"5 枚骰子正在滚动，结果尚未结算。","kind":"image"},{"relativePath":"26-书本-05-小丑房间5骰神志检定停稳-返回牌桌可见-物品效果已生效.jpg","displayTitle":"书本 · 05","description":"骰子已停稳，书本效果已在本次检定中使用。","kind":"image"},{"relativePath":"27-书本-06-返回牌桌后书本替代检定结算结果可见.jpg","displayTitle":"书本 · 06","description":"检定窗口已关闭，神志由 2 变为 1，替代状态已清空。","kind":"image"},{"relativePath":"28-书本-07-关闭后回牌桌状态清空.jpg","displayTitle":"书本 · 07","description":"临时窗口已关闭，牌桌恢复可操作。","kind":"image"},{"relativePath":"29-手电筒-完整链路.webm","displayTitle":"手电筒 · 完整链路录屏","description":"录屏展示手电筒从投掷到返回牌桌的完整流程。","kind":"video"},{"relativePath":"30-灯笼-完整链路.webm","displayTitle":"灯笼 · 完整链路录屏","description":"录屏展示灯笼从投掷到返回牌桌的完整流程。","kind":"video"},{"relativePath":"31-魔法相机-完整链路.webm","displayTitle":"魔法相机 · 完整链路录屏","description":"录屏展示魔法相机从投掷到返回牌桌的完整流程。","kind":"video"},{"relativePath":"32-书本-完整链路.webm","displayTitle":"书本 · 完整链路录屏","description":"录屏展示书本从使用到返回牌桌的完整流程。","kind":"video"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

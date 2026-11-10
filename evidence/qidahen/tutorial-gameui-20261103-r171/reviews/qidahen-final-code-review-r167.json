@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "reviewer": {
+    "id": "/root/r167_scope_code",
+    "identitySource": "本独立子代理 canonical task name",
+    "independence": "未参与实现；只读源码审查，仅写本审查 JSON"
+  },
+  "reviewedAtUtc": "2026-11-03T01:05:00.565Z",
+  "target": "R167 限定增量：自动地图取景 HUD MutationObserver 过滤；ActionsZone 非 payment 收缩；对应真实鼠标 E2E",
+  "verdict": "PASS",
+  "conclusion": "通过（仅限定源码范围）",
+  "sourceHashes": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "c6892d7a74573344768224e3b9c0916e11de5824bfc2c82d8ea2e2f13786c0a9"
+    },
+    {
+      "path": "e2e/qidahen/mapCandidateRecovery.ts",
+      "sha256": "757f4cb63f2a0e71fecb3ed5cc4d4e2a225e06e34857f0ddafe380cbc8a3a406"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "5d6b6194d1657c0832613c7d632abe6b4d930b55f97ca70ff8c352eae1cc12d9"
+    }
+  ],
+  "findings": [],
+  "checks": [
+    {
+      "name": "hud-mutation-filter",
+      "location": "src/games/qidahen/Board.tsx:6757-6764",
+      "result": "仅增删节点自身或子树匹配同一组取景 selectors 时重新观察 HUD 并安排取景；地图标签、教程箭头本身不在 selectors，不再因其普通增删直接重置拖动。未改规则状态和地图输入处理。"
+    },
+    {
+      "name": "observer-lifecycle",
+      "location": "src/games/qidahen/Board.tsx:6747-6773",
+      "result": "新 HUD 挂载后使用同一 ResizeObserver 注册；effect 清理断开 ResizeObserver 和 MutationObserver、移除 resize listener、取消待执行 RAF。未发现本增量明确生命周期阻塞缺陷。"
+    },
+    {
+      "name": "action-hit-area",
+      "location": "src/games/qidahen/Board.tsx:3952-3966",
+      "result": "wheelRecruitTrainProgress 存在且 phase 非 payment 时容器 height:auto，action-slot flex-none/overflow-visible，取消原固定高度与 flex-1 透明填充区；其余分支保留原固定高度与 flex-1/overflow-y-auto。该条件不改命令、候选或状态。"
+    },
+    {
+      "name": "real-pan-proof-source",
+      "location": "e2e/qidahen/mapCandidateRecovery.ts:7-77",
+      "result": "evaluate 仅规划/读取几何、读取 core 和 hit test；真正平移通过 mouse.move/down/move/up。恢复后要求候选中心 elementFromPoint 属于目标，截图回调执行后比较 core；真实反向拖动后比较 panY 误差<2 与 core 相等。未合成点击或写规则状态。"
+    },
+    {
+      "name": "mandatory-main-flow-assertion",
+      "location": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:653-655",
+      "result": "桌面 training-target 强制要求恢复 helper 返回 true；helper 没找到被挡候选返回 false 会被 assertEqual 的真实 expect 断言拒绝，不会静默绕过。"
+    },
+    {
+      "name": "card-click-authenticity",
+      "location": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts:52-107",
+      "result": "先定位实际可命中点并移动鼠标、等待有限动画，再复核原悬停点仍命中目标，使用同一点 mouse.down/up。最多五次循环只调整点击前悬停；按下/抬起后立即 break，无重试提交。选择变化以实际 selected 属性验证。evaluate 中滚动手牌 dock 属浏览位置调整，未用 JS 合成 click 或写选择。"
+    }
+  ],
+  "limits": [
+    "未读图、未启动浏览器、未运行任何测试；本 PASS 不证明 R167 完整 PC 流程、视觉或部署通过。",
+    "审查范围仅上述两处生产增量及对应鼠标测试真实性，不重新背书 R164 或其他当前工作区改动。",
+    "恢复测试直接证明候选中心可命中，没有实际点击该非推荐候选；core 相等不单独证明所有本地 UI 临时状态未变。",
+    "恢复测试返程容差仅断言 panY<2，未断言 panX 或 zoom；不能据此称为完整镜头全维度恢复。",
+    "初始被遮挡候选通过边界框重叠筛选；该筛选不单独证明初始中心实际被遮挡。最终中心命中有 elementFromPoint 断言。",
+    "主代理描述的已完成运行诊断仅作为任务线索，本审查未独立重跑或核图。"
+  ],
+  "verificationCommands": [
+    "Get-Content / rg：限定源码与直接消费点",
+    "git diff -- src/games/qidahen/Board.tsx：限定 hunk",
+    "Get-FileHash -Algorithm SHA256：3 个被审查源码/测试文件"
+  ],
+  "filesModifiedByReviewer": [
+    ".tmp/qidahen-final-code-review-r167.json"
+  ],
+  "remainingRisk": "限定增量无已知确定缺陷；实际 PC 运行、连续操作与视觉验收由主代理完成。"
+}

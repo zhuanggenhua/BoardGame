@@ -889,6 +889,7 @@
     {
       "id": "city-region-19-liaoxi",
       "name": "辽西",
+      "labelBounds": { "left": 697, "top": 432, "width": 23, "height": 40 },
       "color": "#4d64d5",
       "seed": {
         "x": 724,
@@ -912,6 +913,7 @@
     {
       "id": "duoyan",
       "name": "朵颜部",
+      "labelBounds": { "left": 590, "top": 445, "width": 25, "height": 57 },
       "color": "#8ece4c",
       "seed": {
         "x": 602,

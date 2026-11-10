@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂 · 事件检定物品关闭验收 · 20261005 · v2</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂 · 事件检定物品关闭验收 · 20261005 · v2</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-手电筒-01-手电筒加骰前牌桌可操作.jpg","displayTitle":"01 · 手电筒 · 01 · 手电筒加骰前牌桌可操作","description":"","kind":"image"},{"relativePath":"02-手电筒-02-选择未知房间前.jpg","displayTitle":"02 · 手电筒 · 02 · 选择未知房间前","description":"","kind":"image"},{"relativePath":"03-手电筒-03-外星几何翻出等待投掷.jpg","displayTitle":"03 · 手电筒 · 03 · 外星几何翻出等待投掷","description":"","kind":"image"},{"relativePath":"04-手电筒-04-5骰事件检定骰盘停稳-返回牌桌可见.jpg","displayTitle":"04 · 手电筒 · 04 · 5骰事件检定骰盘停稳 · 返回牌桌可见","description":"","kind":"image"},{"relativePath":"05-手电筒-05-返回牌桌后加骰结算结果可见.jpg","displayTitle":"05 · 手电筒 · 05 · 返回牌桌后加骰结算结果可见","description":"","kind":"image"},{"relativePath":"06-手电筒-06-关闭后回牌桌状态清空.jpg","displayTitle":"06 · 手电筒 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"07-灯笼-01-灯笼加骰前牌桌可操作.jpg","displayTitle":"07 · 灯笼 · 01 · 灯笼加骰前牌桌可操作","description":"","kind":"image"},{"relativePath":"08-灯笼-02-选择未知房间前.jpg","displayTitle":"08 · 灯笼 · 02 · 选择未知房间前","description":"","kind":"image"},{"relativePath":"09-灯笼-03-外星几何翻出等待投掷.jpg","displayTitle":"09 · 灯笼 · 03 · 外星几何翻出等待投掷","description":"","kind":"image"},{"relativePath":"10-灯笼-04-5骰事件检定骰盘停稳-返回牌桌可见.jpg","displayTitle":"10 · 灯笼 · 04 · 5骰事件检定骰盘停稳 · 返回牌桌可见","description":"","kind":"image"},{"relativePath":"11-灯笼-05-返回牌桌后加骰结算结果可见.jpg","displayTitle":"11 · 灯笼 · 05 · 返回牌桌后加骰结算结果可见","description":"","kind":"image"},{"relativePath":"12-灯笼-06-关闭后回牌桌状态清空.jpg","displayTitle":"12 · 灯笼 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"13-魔法相机-01-魔法相机替代前牌桌可操作.jpg","displayTitle":"13 · 魔法相机 · 01 · 魔法相机替代前牌桌可操作","description":"","kind":"image"},{"relativePath":"14-魔法相机-02-选择未知房间前.jpg","displayTitle":"14 · 魔法相机 · 02 · 选择未知房间前","description":"","kind":"image"},{"relativePath":"15-魔法相机-03-外星几何翻出等待投掷.jpg","displayTitle":"15 · 魔法相机 · 03 · 外星几何翻出等待投掷","description":"","kind":"image"},{"relativePath":"16-魔法相机-04-5骰相机替代检定骰盘停稳-返回牌桌可见.jpg","displayTitle":"16 · 魔法相机 · 04 · 5骰相机替代检定骰盘停稳 · 返回牌桌可见","description":"","kind":"image"},{"relativePath":"17-魔法相机-05-返回牌桌后魔法相机替代检定结算结果可见.jpg","displayTitle":"17 · 魔法相机 · 05 · 返回牌桌后魔法相机替代检定结算结果可见","description":"","kind":"image"},{"relativePath":"18-魔法相机-06-关闭后回牌桌状态清空.jpg","displayTitle":"18 · 魔法相机 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"},{"relativePath":"19-书本-01-书本使用前牌桌可操作.jpg","displayTitle":"19 · 书本 · 01 · 书本使用前牌桌可操作","description":"","kind":"image"},{"relativePath":"20-书本-02-书本本体已选中准备使用.jpg","displayTitle":"20 · 书本 · 02 · 书本本体已选中准备使用","description":"","kind":"image"},{"relativePath":"21-书本-03-书本已使用并选择未知房间前.jpg","displayTitle":"21 · 书本 · 03 · 书本已使用并选择未知房间前","description":"","kind":"image"},{"relativePath":"22-书本-04-小丑房间5骰神志检定停稳-返回牌桌可见.jpg","displayTitle":"22 · 书本 · 04 · 小丑房间5骰神志检定停稳 · 返回牌桌可见","description":"","kind":"image"},{"relativePath":"23-书本-05-返回牌桌后书本替代检定结算结果可见.jpg","displayTitle":"23 · 书本 · 05 · 返回牌桌后书本替代检定结算结果可见","description":"","kind":"image"},{"relativePath":"24-书本-06-关闭后回牌桌状态清空.jpg","displayTitle":"24 · 书本 · 06 · 关闭后回牌桌状态清空","description":"","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

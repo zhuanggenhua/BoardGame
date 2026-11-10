@@ -1,0 +1,68 @@
+{
+  "url": "http://8.148.71.102/admin-api/feedback?page=1&limit=100&reporterType=user",
+  "totalHuman": 295,
+  "scanned": 100,
+  "matches": [
+    {
+      "_id": "6ac6ed278ae0d30b1f5631b5",
+      "content": "想玩宝可梦的那个卡牌游戏，不知道能不能实现",
+      "status": "closed",
+      "reporterType": "user",
+      "createdAt": "2026-10-08T01:08:55.032Z"
+    },
+    {
+      "_id": "6ac5879820524b0f4888d946",
+      "content": "一些提示结算的时点无法缩小退出查看游戏过程对方使用的卡牌或者技能状态，手牌无法在一些关键时点使用",
+      "status": "resolved",
+      "reporterType": "user",
+      "gameName": "dicethrone",
+      "gameId": "dicethrone",
+      "createdAt": "2026-10-06T23:43:20.410Z"
+    },
+    {
+      "_id": "6ab6c61353f9291a46439f4e",
+      "content": "翘课天才的卡牌描述是等同于我所有仆从的名字，那我打出扒手的话，应该能触发其效果，当有另一张扒手时，抽一张宝藏\n\n",
+      "status": "resolved",
+      "reporterType": "user",
+      "gameName": "smashup",
+      "gameId": "smashup",
+      "createdAt": "2026-09-25T19:05:55.539Z"
+    },
+    {
+      "_id": "6a8ea42103143df8b7954df8",
+      "content": "卡牌描述是0 CP就能升级",
+      "status": "resolved",
+      "reporterType": "user",
+      "gameName": "dicethrone",
+      "gameId": "dicethrone",
+      "createdAt": "2026-08-26T08:30:25.786Z"
+    },
+    {
+      "_id": "6a87ebe23d0fef1e2e4e4be4",
+      "content": "火法在圣骑士防御骰后不断重复攻击，直接给50血我秒了",
+      "status": "resolved",
+      "reporterType": "user",
+      "gameName": "dicethrone",
+      "gameId": "dicethrone",
+      "createdAt": "2026-08-21T06:10:42.814Z"
+    },
+    {
+      "_id": "6a7b4278131271b4217d88bc",
+      "content": "圣骑士打出圣光术后投掷2无法结算，一直在投\n\n",
+      "status": "resolved",
+      "reporterType": "user",
+      "gameName": "dicethrone",
+      "gameId": "dicethrone",
+      "createdAt": "2026-08-11T15:40:40.252Z"
+    },
+    {
+      "_id": "6a789c84919fb2af54c00650",
+      "content": "这张卡的cp花费和卡面上的不同\n\n",
+      "status": "resolved",
+      "reporterType": "user",
+      "gameName": "dicethrone",
+      "gameId": "dicethrone",
+      "createdAt": "2026-08-09T15:28:04.133Z"
+    }
+  ]
+}

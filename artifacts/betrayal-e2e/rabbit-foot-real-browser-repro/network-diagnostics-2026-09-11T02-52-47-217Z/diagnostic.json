@@ -1,0 +1,784 @@
+{
+  "out": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\network-diagnostics-2026-09-11T02-52-47-217Z",
+  "shot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\network-diagnostics-2026-09-11T02-52-47-217Z\\current-page.png",
+  "snap": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "readyState": "complete",
+    "bodyText": "正在准备对局…\n\n加载游戏模块…",
+    "board": false,
+    "select": false,
+    "loading": true
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-11T02:53:05.333Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-11T02:53:05.334Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-11T02:53:05.949Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-11T02:53:05.950Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 37.1 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-11T02:53:22.554Z\",\"stage\":\"load-http-fallback-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":16605}"
+    }
+  ],
+  "requests": [
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomEntityLayerSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231490,
+      "pending": false,
+      "elapsedMs": 16513
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/cinematicNarrationSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214975,
+      "finished": 1789095231479,
+      "pending": false,
+      "elapsedMs": 16504
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/scenarioBookTurnSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214975,
+      "finished": 1789095231477,
+      "pending": false,
+      "elapsedMs": 16502
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomFloorSwitcherSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231477,
+      "pending": false,
+      "elapsedMs": 16500
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomPlacementSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231456,
+      "pending": false,
+      "elapsedMs": 16479
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomMarkerSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231426,
+      "pending": false,
+      "elapsedMs": 16449
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/attackImpactPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231420,
+      "pending": false,
+      "elapsedMs": 16443
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/attackLineOfSightSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231412,
+      "pending": false,
+      "elapsedMs": 16435
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomTileSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214977,
+      "finished": 1789095231411,
+      "pending": false,
+      "elapsedMs": 16434
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/entityTokenSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214976,
+      "finished": 1789095231404,
+      "pending": false,
+      "elapsedMs": 16428
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/entityPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214976,
+      "finished": 1789095231404,
+      "pending": false,
+      "elapsedMs": 16428
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/inventoryCardSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214804,
+      "finished": 1789095230357,
+      "pending": false,
+      "elapsedMs": 15553
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/traitTrackSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214828,
+      "finished": 1789095230328,
+      "pending": false,
+      "elapsedMs": 15500
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/recentRollSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214919,
+      "finished": 1789095230344,
+      "pending": false,
+      "elapsedMs": 15425
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/atlasFrameSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214919,
+      "finished": 1789095230320,
+      "pending": false,
+      "elapsedMs": 15401
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/components/game/framework/widgets/GameDebugPanel.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095214975,
+      "finished": 1789095230313,
+      "pending": false,
+      "elapsedMs": 15338
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/Board.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185340,
+      "finished": 1789095200445,
+      "pending": false,
+      "elapsedMs": 15105
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/playerStatusRailSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214979,
+      "pending": false,
+      "elapsedMs": 14532
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/previewStateModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214979,
+      "pending": false,
+      "elapsedMs": 14532
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/mobileActionRailSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214979,
+      "pending": false,
+      "elapsedMs": 14532
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/latestDiscoverySurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214979,
+      "pending": false,
+      "elapsedMs": 14532
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/tutorialRuntimeSyncKey.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214979,
+      "pending": false,
+      "elapsedMs": 14532
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomMapSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214977,
+      "pending": false,
+      "elapsedMs": 14531
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/visualTransitionSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214977,
+      "pending": false,
+      "elapsedMs": 14531
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/previewOverlaySurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214978,
+      "pending": false,
+      "elapsedMs": 14531
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/scenarioStartOpeningStageSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214978,
+      "pending": false,
+      "elapsedMs": 14531
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/recentRollReviewSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214976,
+      "pending": false,
+      "elapsedMs": 14530
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/referenceOverlaySurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214977,
+      "pending": false,
+      "elapsedMs": 14530
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/referenceQuickActionsSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200447,
+      "finished": 1789095214977,
+      "pending": false,
+      "elapsedMs": 14530
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/confirmButtonSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214975,
+      "pending": false,
+      "elapsedMs": 14529
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/debugPanelSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214975,
+      "pending": false,
+      "elapsedMs": 14529
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/endgameScreen.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214975,
+      "pending": false,
+      "elapsedMs": 14529
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/characterSelectSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214975,
+      "pending": false,
+      "elapsedMs": 14529
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/entityDetailsSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214975,
+      "pending": false,
+      "elapsedMs": 14529
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/actionCueReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/tradeCardSelectorSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/tradeFlowReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/dustHauntPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/hauntTargetGuideReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/explorerTargetSelectionReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/hauntActionContextReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214945,
+      "pending": false,
+      "elapsedMs": 14499
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/actionBarReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214944,
+      "pending": false,
+      "elapsedMs": 14498
+    },
+    {
+      "url": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "method": "GET",
+      "resourceType": "document",
+      "started": 1789095169224,
+      "finished": 1789095183715,
+      "pending": false,
+      "elapsedMs": 14491
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/eventChoiceSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214919,
+      "pending": false,
+      "elapsedMs": 14473
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/tableActionCueSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214919,
+      "pending": false,
+      "elapsedMs": 14473
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/actionDockSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214919,
+      "pending": false,
+      "elapsedMs": 14473
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/topPromptStackSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214893,
+      "pending": false,
+      "elapsedMs": 14447
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/attackRewardActionSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214893,
+      "pending": false,
+      "elapsedMs": 14447
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/activityPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214873,
+      "pending": false,
+      "elapsedMs": 14427
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/damageAllocationSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214827,
+      "pending": false,
+      "elapsedMs": 14381
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/damageAllocationReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214827,
+      "pending": false,
+      "elapsedMs": 14381
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/scenarioReader.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214804,
+      "pending": false,
+      "elapsedMs": 14359
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/traitAssets.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214804,
+      "pending": false,
+      "elapsedMs": 14358
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/uiAssets.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214804,
+      "pending": false,
+      "elapsedMs": 14358
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/inventoryRailSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214804,
+      "pending": false,
+      "elapsedMs": 14358
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/eventChoicePreview.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214795,
+      "pending": false,
+      "elapsedMs": 14349
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/coreSnapshotGuard.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214761,
+      "pending": false,
+      "elapsedMs": 14315
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/latestDiscoveryPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214761,
+      "pending": false,
+      "elapsedMs": 14315
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/attackLineOfSightPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214761,
+      "pending": false,
+      "elapsedMs": 14315
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/scenarioReaderPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214720,
+      "pending": false,
+      "elapsedMs": 14275
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/deckStatusRailSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214720,
+      "pending": false,
+      "elapsedMs": 14274
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/inventoryPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214675,
+      "pending": false,
+      "elapsedMs": 14229
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/roomPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214635,
+      "pending": false,
+      "elapsedMs": 14190
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/hauntTokenModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214612,
+      "pending": false,
+      "elapsedMs": 14167
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/referencePresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200446,
+      "finished": 1789095214570,
+      "pending": false,
+      "elapsedMs": 14124
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/hauntRevealCueSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214506,
+      "pending": false,
+      "elapsedMs": 14061
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/deckPresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214403,
+      "pending": false,
+      "elapsedMs": 13958
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/monsterActionSelectionReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095200445,
+      "finished": 1789095214243,
+      "pending": false,
+      "elapsedMs": 13798
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/houseDicePresentation.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095230344,
+      "pending": true,
+      "elapsedMs": 13385
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/houseDiceSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095230344,
+      "pending": true,
+      "elapsedMs": 13385
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/components/home-v2/FoldLinePageFlipStage.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095231477,
+      "pending": true,
+      "elapsedMs": 12252
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/attackImpactSurface.tsx",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095231491,
+      "pending": true,
+      "elapsedMs": 12238
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/bloodFromStoneHauntStateModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185990,
+      "finished": 1789095195923,
+      "pending": false,
+      "elapsedMs": 9933
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/attackRules.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185994,
+      "finished": 1789095195684,
+      "pending": false,
+      "elapsedMs": 9690
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/trade.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185994,
+      "finished": 1789095195684,
+      "pending": false,
+      "elapsedMs": 9690
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/turnOrderReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185994,
+      "finished": 1789095195684,
+      "pending": false,
+      "elapsedMs": 9690
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/recommendedActionReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185994,
+      "finished": 1789095195684,
+      "pending": false,
+      "elapsedMs": 9690
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/domain/monsterDefinitions.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185995,
+      "finished": 1789095195684,
+      "pending": false,
+      "elapsedMs": 9689
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/audio.config.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185995,
+      "finished": 1789095195684,
+      "pending": false,
+      "elapsedMs": 9689
+    },
+    {
+      "url": "http://127.0.0.1:4274/src/games/betrayal/movementReadModel.ts",
+      "method": "GET",
+      "resourceType": "script",
+      "started": 1789095185994,
+      "finished": 1789095195675,
+      "pending": false,
+      "elapsedMs": 9681
+    }
+  ]
+}

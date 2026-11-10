@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂切层贴底与属性飘字居中验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂切层贴底与属性飘字居中验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-PC-1920x1080-开局无飘字切层贴底.jpg","displayTitle":"01 · PC · 1920x1080 · 开局无飘字切层贴底","description":"电脑开局牌桌，门厅棋子上方没有属性飘字，楼层切换贴在地图右下角，与继续按钮同一底边，没有给悬浮球留空。","kind":"image"},{"relativePath":"02-Vivo-796x360-开局无飘字切层贴底.jpg","displayTitle":"02 · Vivo · 796x360 · 开局无飘字切层贴底","description":"手机横屏同一开局，门厅没有属性飘字，楼层切换仍贴地图右下角，与继续按钮重叠在底边。","kind":"image"},{"relativePath":"03-PC-1920x1080-一层切换后切层仍贴底.jpg","displayTitle":"03 · PC · 1920x1080 · 一层切换后切层仍贴底","description":"玩家切到一层后，楼层切换仍是右下角上下箭头加一层字样，贴着地图底边，没有抬高去躲继续按钮。","kind":"image"},{"relativePath":"04-PC-1920x1080-属性飘字出现前.jpg","displayTitle":"04 · PC · 1920x1080 · 属性飘字出现前","description":"门厅两名探索者叠在一起，棋子上方没有属性飘字，牌桌处于变化前的稳定开局。","kind":"image"},{"relativePath":"05-PC-1920x1080-属性飘字贴棋子居中.jpg","displayTitle":"05 · PC · 1920x1080 · 属性飘字贴棋子居中","description":"只改当前玩家力量后，减一力量飘字出现在该棋子正上方并水平居中，没有落到房间左上角。","kind":"image"},{"relativePath":"06-PC-1920x1080-属性飘字消退后.jpg","displayTitle":"06 · PC · 1920x1080 · 属性飘字消退后","description":"属性飘字消退后门厅只剩两枚棋子，没有残留品红数字。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

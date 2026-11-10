@@ -1,4 +1,6 @@
 import { applyQidahenBattlePieceSelection } from './battlePieceSelection';
+import { buildPublicBattleReport } from './battleVisualEvent';
+import { buildQidahenFeignedRetreatSelection } from './feignedRetreatSelection';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { QIDAHEN_COMMANDS } from './commands';
 import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenEventCharacterTargetSelectionForCore, getQidahenEventOpponentHandChoiceSelectionForCore, getQidahenGrantPardonSelectionForCore, getQidahenInternalDispatchSelectionForCore, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenPendingTargetActionForCore, getQidahenPostBattleSelectionForCore, getQidahenRecruitSelectionForCore } from './interactionSelectionAccessors';
@@ -348,6 +350,21 @@ const buildQidahenPendingActionResolvedEvent = (
         ? applyQidahenBattlePieceSelection(state.core, countSelectedPendingAction, command.payload.selectedPieceIds)
         : countSelectedPendingAction;
 
+    const awaitingFeignedResponse = pendingTargetAction && buildQidahenFeignedRetreatSelection(state.core, pendingTargetAction,
+        { playerId: command.playerId, attackerCavalryPlunder: command.payload.attackerCavalryPlunder });
+    const battleRolls = pendingTargetAction?.resolvedBattleRolls ?? (pendingTargetAction && pendingTargetAction.battleStep !== 'defender-declaration' && !awaitingFeignedResponse
+        ? dependencies.createStructuredBattleRolls(state.core, pendingTargetAction, random, {
+            defenderSortieBattle: (pendingTargetAction.defenderDeclaration?.defenderSortieBattle ?? command.payload.defenderSortieBattle) === true,
+            defenderHoldCity: (pendingTargetAction.defenderDeclaration?.defenderHoldCity ?? command.payload.defenderHoldCity) === true,
+            defenderCavalryEvasion: command.payload.defenderCavalryEvasion === true,
+            attackerCavalryPlunder: command.payload.attackerCavalryPlunder === true,
+        }) : null);
+    // 劫掠可能先进入诈败响应，不提前公开战斗快照。
+    const battleVisualReport = pendingTargetAction && battleRolls && !pendingTargetAction.resolvedBattleRolls
+        && !command.payload.attackerCavalryPlunder
+        ? buildPublicBattleReport(state.core, pendingTargetAction, battleRolls,
+            `${state.sys.matchId ?? ''}:${state.sys.revision ?? 0}:legacy:${pendingTargetAction.battleMode ?? 'field'}`)
+        : undefined;
     return {
         type: 'PENDING_ACTION_RESOLVED',
         payload: {
@@ -363,14 +380,7 @@ const buildQidahenPendingActionResolvedEvent = (
             attackerCavalryPlunderSource: command.payload.attackerCavalryPlunderSource,
             attackerCasualtyPriority: command.payload.attackerCasualtyPriority,
             defenderCasualtyPriority: command.payload.defenderCasualtyPriority,
-            battleRolls: pendingTargetAction?.resolvedBattleRolls ?? (pendingTargetAction && pendingTargetAction.battleStep !== 'defender-declaration'
-                ? dependencies.createStructuredBattleRolls(state.core, pendingTargetAction, random, {
-                    defenderSortieBattle: (pendingTargetAction.defenderDeclaration?.defenderSortieBattle ?? command.payload.defenderSortieBattle) === true,
-                    defenderHoldCity: (pendingTargetAction.defenderDeclaration?.defenderHoldCity ?? command.payload.defenderHoldCity) === true,
-                    defenderCavalryEvasion: command.payload.defenderCavalryEvasion === true,
-                    attackerCavalryPlunder: command.payload.attackerCavalryPlunder === true,
-                })
-                : null),
+            battleRolls, battleVisualReport,
         },
         sourceCommandType: command.type,
         timestamp,

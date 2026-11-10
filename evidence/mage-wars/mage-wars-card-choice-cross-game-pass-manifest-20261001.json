@@ -1,0 +1,77 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "title": "Mage Wars 卡牌选择 UI 跨游戏端到端对照验收",
+  "generatedAt": "2026-10-01T15:23:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "requirements": [
+    {
+      "requirement": "参考游戏真实端到端选择态已运行并可用于抽象裁决。",
+      "status": "REVISE",
+      "evidence": [
+        "DiceThrone 参考链真实在线 E2E：1 passed",
+        "Smash Up 牌库卡牌多选真实 E2E：1 passed",
+        "参考截图来自当前工作树同类选择态"
+      ]
+    },
+    {
+      "requirement": "Mage Wars 法师魔杖与元素魔杖选择链继续使用共享卡牌选择壳。",
+      "status": "REVISE",
+      "evidence": [
+        "法师魔杖真实 E2E：1 passed",
+        "元素魔杖真实 E2E：1 passed",
+        "两条链均覆盖施放 / 绑定选择 / 快速重绑 / 结算"
+      ]
+    },
+    {
+      "requirement": "卡牌本体是唯一视觉信息 owner，卡外不重复渲染牌名、费用、类型或效果。",
+      "status": "REVISE",
+      "evidence": [
+        "CardChoiceOverlay.test.tsx 断言卡名不进入可见文本",
+        "DiceThrone 参考 E2E 断言卡牌可见且卡外不复制牌名",
+        "Mage Wars E2E 断言选择项不包含重复法术名"
+      ]
+    },
+    {
+      "requirement": "共享组件同时支持单选即时提交和多选确认，不把游戏特例写入通用层。",
+      "status": "REVISE",
+      "evidence": [
+        "CardChoiceOverlay 已支持单选取消、选中态、多选计数和确认栏",
+        "共享组件单测：2 passed",
+        "跨游戏裁决记录在 mage-wars-card-choice-cross-game-audit-20261001.md"
+      ]
+    },
+    {
+      "requirement": "最终对照图已逐图验收后再交付查看器。",
+      "status": "REVISE",
+      "evidence": [
+        "5 张原始截图逐图检查通过",
+        "截图目录只包含本轮对照媒体",
+        "未用旧 Mage Wars PASS 图组替代当前对照"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/card-choice-cross-game-audit-20261001/01-DiceThrone-真实手牌卡牌选择.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-cross-game-audit-20261001/02-SmashUp-真实牌库卡牌多选.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-cross-game-audit-20261001/03-MageWars-法师魔杖绑定选择.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-cross-game-audit-20261001/04-MageWars-法师魔杖快速重绑.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-cross-game-audit-20261001/05-MageWars-元素魔杖绑定选择.png"
+  ],
+  "visualAudit": {
+    "document": "evidence/mage-wars/mage-wars-card-choice-cross-game-audit-20261001.md",
+    "mediaCount": 5,
+    "passCount": 0,
+    "reviseCount": 5
+  },
+  "notes": [
+    "上一版 PASS 已作废：参考图和 Mage Wars 图均暴露出可读性、重复承载或选择态证据问题。",
+    "共享层只抽取卡牌选择的稳定不变量，保留各游戏自己的搜索、揭示、排序、放大和规则命令。",
+    "图面验收与功能测试分开记录，不能互相替代。"
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "reviewer": "/root/strategy_reference_review",
+  "mode": "read-only-code-review",
+  "objective": "七大恨本轮真实手牌入口、征兵训练地图交互和其权威链路审查",
+  "verdict": "静态增量审查通过，原P1代码原因已消除；当前图审与实际交互验收另行完成",
+  "findings": [],
+  "scopeFiles": [
+    {
+      "path": "src/games/qidahen/domain/turnResolutionChoices.ts",
+      "sha256": "3ddb285977f23259a4d3710d3c39bd23e6c570ca4f0d656c2be2335fb68ad41d"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionTypes.ts",
+      "sha256": "d523fc7ec559c48003825e28bbbf31f0578a557af4490a56c22c7819f04d6490"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionFacts.ts",
+      "sha256": "e701fd3cdb320aaa62e5c05513431a16d32fd09e3ce978325ed79b8f6ab4e551"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionProgress.ts",
+      "sha256": "32b75bcd2a532fb3233322d76133a2dd73c6a5651bd1d064b02076673c025ce0"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionSystem.ts",
+      "sha256": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc"
+    },
+    {
+      "path": "src/games/qidahen/domain/previewActionReducer.ts",
+      "sha256": "9e329b1c58234c19460ef44e4979e67d3c643e2e58b2c0198ac062cbc38163fe"
+    },
+    {
+      "path": "src/games/qidahen/domain/factionActionWindow.ts",
+      "sha256": "88568b5ba5c2d9a8f87b035699d4bf0a80578515af3cf15bf70b64064630733e"
+    },
+    {
+      "path": "src/games/qidahen/domain/commands.ts",
+      "sha256": "922f4daaa61f2325f0611e9c468e09748822d72ff3548abe6ad17090b12efad1"
+    },
+    {
+      "path": "src/games/qidahen/domain/mapTokens.ts",
+      "sha256": "532edceff05e0874bb4d42c078d547f2fc5bb7db35bed9e9ed7825510c67c8fd"
+    },
+    {
+      "path": "src/games/qidahen/ui/useQidahenTurnInput.ts",
+      "sha256": "0dbc82f21ead00bb2449aebe48e9fdbf5dbd02b335971c8bc6250b28e3cde157"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHandActionControls.tsx",
+      "sha256": "2635eee66c95f92c1a25830c69408f9abdc0df8460458c9cafd665d488eace8d"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenFactionActionButton.tsx",
+      "sha256": "7958cb3acea6a560408f7ca18290a23f51f57b911f9d2a6c71475c9b71adea4d"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenWheelTurnControls.tsx",
+      "sha256": "cb0b2b47d226f3af8de43c7e37f0fda32ea6ce5e8cbafbdde212714d79eed74d"
+    },
+    {
+      "path": "src/games/qidahen/ui/recruitTrainMapInput.ts",
+      "sha256": "97a1aa6075aeb57015b63a652c8267291d1fea49d5e26dc9f4cd8ce54dd4dc16"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenRecruitTrainingPanel.tsx",
+      "sha256": "a33c7447651e2b96bf3281876703e08862cdab684d09e9b1e10a4fd438f041a1"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "5c1a2230e105c558e7a5e63cb212ee7cb3aeb17d52bd06265bc4dc56c4d74498"
+    },
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "027c3321414986d293e3f2d1a8c869ed044b33c1412205f8c9e3b5a861ae3633"
+    },
+    {
+      "path": "src/games/qidahen/ui/handInteractionView.ts",
+      "sha256": "d66a6c14f5c3f17148de79f9d749d69ac6ad6c6cc139db6bb62f1c3cd132b801"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "sha256": "8446ff9f83e7aacbbce472b25faeef6d07ddfea7a3896487982401486dbee53f"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenTurnChoicePanel.tsx",
+      "sha256": "9377f401e3818cd1fe5f7cf61604b619a39bc8d338265869383ec5216c1d5bda"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHoverTip.tsx",
+      "sha256": "970eb4232bbaf15d37b8b10d3e5a4123ded2db4dc510d3a23402dc144c224f6b"
+    },
+    {
+      "path": "src/games/qidahen/tutorialSetup.ts",
+      "sha256": "bd1bf96436c3404412dd9e892967b8ccc3a36ab5070c30d73f0ac9d105579658"
+    },
+    {
+      "path": "src/games/qidahen/qidahen-board.css",
+      "sha256": "5b660f8ee10866a080b5413db97d673e7cb09d9479e47cc0bd9297295e344972"
+    }
+  ],
+  "checked": [
+    {
+      "item": "来源卡身份",
+      "evidence": [
+        "turnResolutionChoices.ts:48-60 按当前正式牌产生hand-card候选及sourceHandCardId",
+        "commands.ts:372-379、turnResolutionSystem.ts:38-44 重建正式候选并验证操作者和候选",
+        "turnResolutionFacts.ts:36调用同一applyQidahenPreviewAction",
+        "previewActionReducer.ts:39-59再次按阵营/可用状态/对应动作查实际来源并记录selectedHandActionCardId"
+      ],
+      "result": "没有把任意卡当模式切换；来源保留且没有第二套预览结算"
+    },
+    {
+      "item": "重复行动限制",
+      "evidence": [
+        "factionActionWindow.ts:198导出唯一wouldRepeatLastFactionAction",
+        "commands.ts原本地重复实现删除并import该owner",
+        "turnResolutionChoices.ts:49,55候选使用相同限制"
+      ],
+      "result": "迁移表达式与旧逻辑等价，没有看到绕过重复行动的新正式候选"
+    },
+    {
+      "item": "多人和教程权限",
+      "evidence": [
+        "useQidahenTurnInput.ts canAct依当前请求playerId；chooseHandCard仍经submit和当前interactionId",
+        "Board.tsx:6340训练目标先验证当前玩家/战斗播放锁/教程choiceId",
+        "commands.ts对应RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE仍走正式候选校验"
+      ],
+      "result": "未发现新权限绕过；沿用playerID=null本地控制模式不作为本轮新问题"
+    },
+    {
+      "item": "训练具体实体与泛化实体",
+      "evidence": [
+        "recruitTrainMapInput.ts:12-23优先pieceId精确对应；无pieceId才按同地区同位置fallback兵牌映射",
+        "wheelRecruitTrain.ts:46-56泛化候选排除已训练ID",
+        "wheelRecruitTrain.ts:413-443泛化训练转为具有原pieceId的特殊兵栈；随后同步正式地图实体",
+        "Board.tsx:2714-2717正式兵牌回调携tokenId"
+      ],
+      "result": "未发现重复训练同一实体；泛化训练后会转实体并重投影，不应误报为候选过滤造成同token再次训练"
+    },
+    {
+      "item": "旧入口及owner",
+      "evidence": [
+        "Board.tsx不存在onEnterHandAction",
+        "annualTutorial.ts不存在prepare-hand/upgrade-first",
+        "QidahenWheelTurnControls.ts:13排除choose-hand，不把新手牌候选误画到轮盘",
+        "QidahenRecruitTrainingPanel.ts:16排除地区与部队候选，只留模式/追加支付/完成",
+        "ActionButton正式实现唯一在QidahenFactionActionButton.tsx，旧Board使用处import复用"
+      ],
+      "result": "当前新入口没有残留原先任意卡激活手牌模式；未见新增影子状态"
+    },
+    {
+      "item": "规则建军包与参考边界",
+      "evidence": [
+        "Board.tsx招募仍先真实地区再choices；未改造正式两招募包",
+        "参考文明六只支持实体上下文命令/候选比较/目标锚点，不支持照抄规则或禁止全部按钮"
+      ],
+      "result": "保留规则的两效果候选合理，不应为了无按钮把两包合并或自动代选"
+    }
+  ],
+  "validation": {
+    "executedTests": [],
+    "reason": "此子代理只读审查，不与主线程真实流程和测试抢资源；已读取recruitTrainMapInput.test.ts及turnResolution.test.ts、tutorialTurnInput.test.tsx相应测试源，未把读源码冒充测试执行"
+  },
+  "remainingRisks": [
+    "本报告不证明PC视觉易理解或图面不遮挡；由独立逐图审查负责",
+    "34单位间距与等级标记须当前饱和地图图面验证，本报告仅核owner和信息隐藏：revealFront=false不显示等级",
+    "annualTutorial revision27的完整事件推进及退出/重启由主线程实际测试证明",
+    "生产代码正在被主线程继续修改，审查以scopeFiles列出的字节快照为准，后续有意义变更需增量核对"
+  ],
+  "incrementalReview": {
+    "mode": "只读源码增量审查，无浏览器/测试/图审",
+    "checks": [
+      "新行动行居中改独立transform，不再给按钮继承负横移变量；按钮独立CSS仅垂直位移，未改共享PostCSS",
+      "年度手牌投影直接读turnInput草稿，托盘复用turnInput.confirm；右侧面板同一cardIds>0分支隐藏，没有第二套支付/确认状态",
+      "learnerFaction只在教学active时影响viewerFactionId，未改currentPlayer、actor、命令权限；背面部队level仍受revealFront控制",
+      "dispatch-target的committedPieceIds来自正式frame，兵牌标记读同一实体集合，不新建已选状态",
+      "原P1已消除：不再对已变换的shell重复预测抬升；同一owner按实际锚点动画跟随，没有新增草稿或结算状态，数字gap调用语义保留。"
+    ]
+  },
+  "resolvedFindings": [
+    {
+      "priority": "P1",
+      "file": "src/games/qidahen/Board.tsx",
+      "line": 5122,
+      "title": "战术弹层间距重复计算选中兵牌的抬升与缩放",
+      "evidence": "锚点是qidahen-hand-card-shell；其本体在qidahen-board.css:572-580已translateY(-rest-lift)和scale。HoverTip读取getBoundingClientRect包含变换后的实际位置；gap函数又减半牌高、selectedLift及scale增量。动画结束后的重渲染/滚动会在已抬升rect上再次预测抬升，把确认推离牌。",
+      "consequence": "新方案可能重复产生用户已否决的远距离战术确认；若靠动画开始时旧rect定位，后续更新坐标也不稳定。",
+      "minimumFix": "以同一坐标系的实际卡上沿配短gap，并同步选中transform完成后的定位；或用未变换布局坐标计算一次最终上沿。不得在已变换rect上重复减lift。",
+      "verification": "需要实际选中完成态、滚动/再次渲染后的rect与当前图审证明，不能仅靠源码或合成click。",
+      "status": "resolved-in-code",
+      "resolution": "Board战术gap改为固定10；QidahenHoverTip恢复数字API，用同一实际anchor.getBoundingClientRect定位。打开时监听anchor的transitionrun/animationstart，仅动画running期间请求下一帧；结束停止，卸载取消帧并移除监听。待真实图面与事件流程核验。"
+    }
+  ]
+}

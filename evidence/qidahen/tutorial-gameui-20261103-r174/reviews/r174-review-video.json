@@ -1,0 +1,242 @@
+{
+  "status": "PASS",
+  "score": 92,
+  "reviewer": {
+    "kind": "subagents",
+    "id": "/root/r174_video_a + /root/r174_video_b1 + /root/r174_video_b2 + /root/r174_video_c1 + /root/r174_video_c2"
+  },
+  "aggregation": {
+    "method": "独立子代理逐段真实读图，主线程只校验原录屏哈希、连续帧覆盖与报告；不代替视觉判断。",
+    "decodedFromOriginalVideo": true,
+    "frameCount": 127,
+    "uniqueReadFrames": 127,
+    "parts": [
+      {
+        "file": "reviews/r174-video-part-a.json",
+        "sha256": "58b0a6f40fcd57c3cacb3165a1a8cde173a5c3da4a2d20600b95ae036c792a9f",
+        "reviewer": "/root/r174_video_a",
+        "firstFrame": 0,
+        "lastFrame": 29,
+        "observation": "本段实际覆盖零至二十九帧。零至二帧为全局开场，三至四帧放大到交战地图；五至十六帧白色炮兵骰连续改变面向和位置，十六至十七帧收束停稳；十八至二十三帧保留稳定骰面并显示结果，二十四至二十九帧进入下一段红骰运动，因此只确认本段炮兵投掷的运动至停稳，不声称其余帧或全场完成。两张原始整屏可直接识别大明攻方骰子列、辽北至叶赫部交战、带蒙古标记的真实守军骑兵及对蒙古造成损伤的结果文字；骰子列靠近后金背景，但列头和结果明确所属，不把后金背牌当参战者。参战对象和读数未被骰子遮挡，交战地图顶边没有空白。"
+      },
+      {
+        "file": "reviews/r174-video-part-b1.json",
+        "sha256": "5147e86dc9c7aa0cf30911a818adfc3fd6d5a3411737fbc5f09ada78bd71963c",
+        "reviewer": "/root/r174_video_b1",
+        "firstFrame": 27,
+        "lastFrame": 62,
+        "observation": "仅亲读本批三张连续联系表的帧二十七至六十二及骑兵投掷原始整屏。连续画面呈现红骰位移翻转、逐渐停稳与结果小标出现并持续，地图和参战兵牌持续可见。原始整屏确认当前骑兵投掷属于蒙古守方。结果小标的详细文字与承受阵营不凭联系表缩略图判定，需由负责骑兵结果原始整图的批次核对；本批结论不代表整片或其余阶段完成。"
+      },
+      {
+        "file": "reviews/r174-video-part-b2.json",
+        "sha256": "a913b6ea981f904303a29affb6eca1af004c417772e3e67ad0b14aed98421fb6",
+        "reviewer": "/root/r174_video_b2",
+        "firstFrame": 51,
+        "lastFrame": 80,
+        "observation": "仅亲读所分配的第五十一至八十帧连续联系表及骑兵结果原始整屏。骑兵骰子停稳并持续展示结果，随后自然切换步兵阶段，绿色骰子持续移动旋转；蒙古守方和大明承受损伤由整屏文字及原有阵营标记可理解，参战兵牌可辨。此段不覆盖骑兵起掷或步兵最终结果，也不判断骰数与伤害规则。"
+      },
+      {
+        "file": "reviews/r174-video-part-c1.json",
+        "sha256": "3c4c43e12dc07eee13c60e2b15231d675585b4ee273159fc9b3e18eef24c5fcd",
+        "reviewer": "/root/r174_video_c1",
+        "firstFrame": 78,
+        "lastFrame": 113,
+        "observation": "仅亲读本批第七十八至第一百一十三帧。绿色骰子连续移动并改变朝向，随后停稳，结果文字出现并持续保持；没有突发遮罩、黑屏、顶部空白或可见错误。本批原始整屏核对步兵投掷态的大明攻方标记、蒙古骑兵及地图背景层级；最终结果的归属文字不以缩略联系表代替原始结果图验收，交由负责结果原图的批次核对。"
+      },
+      {
+        "file": "reviews/r174-video-part-c2.json",
+        "sha256": "432b06415504acfa29acb710c7eba30e4ab7d86f65e78c465c1fc739826827de",
+        "reviewer": "/root/r174_video_c2",
+        "firstFrame": 102,
+        "lastFrame": 126,
+        "observation": "仅亲读本批第一百零二至第一百二十六帧：步兵结果停留后回到缩小地图并出现下一步面板和教学说明，画面连续，没有跳黑或报错。此末段未覆盖骰体运动或停止瞬间，不声称前段及整片已审。阵营、参战牌与结果承受方的文字判定来自本批当前原始整屏。"
+      }
+    ]
+  },
+  "media": [
+    {
+      "status": "PASS",
+      "observation": "辽北至叶赫部的交战标题与炮兵阶段明确，大明攻方列头带原有明字阵营标记；开放的白骰倾斜显示投掷中状态，大明辽北兵牌与北侧带蒙古标记的蒙古骑兵完整可见，骰子未遮挡参战兵牌或读数。列头控制骰子列，邻近后金背牌仍是隐藏的非参战背景。地图顶边连续填满，未见顶部空白或错误。",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-rolling.jpg",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "sha256": "9f27dfc9187952230517787e07ee19495e68d760ce6b9cc1f2860f81c1646c3e",
+      "reviewer": "/root/r174_video_a",
+      "sourcePartFile": "reviews/r174-video-part-a.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵结果保留在大明攻方骰子列下，结果正文明确写出对蒙古造成损伤，承受阵营直接可读；北侧蒙古骑兵及其蒙古标记、大明辽北兵牌保持显露，右侧非参战后金背牌没有被揭露。地图铺满顶部，骰子和结果没有遮住真实参战兵牌或其读数，画面未见错误。这里只确认归属文字，不据图验证结算数值。",
+      "status": "PASS",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-damage.jpg",
+      "reviewer": "/root/r174_video_a",
+      "sourcePartFile": "reviews/r174-video-part-a.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "067e80f3f37a27b635017d4e83e0272dce1e689681ae942eb1d6a9b40966246d",
+      "status": "PASS",
+      "observation": "骑兵投掷整屏中，蒙古守方文字与原有蒙古标记贴近骰区，大明辽北兵群与叶赫蒙古骑兵实牌可辨，后金背景背牌没有被误作参战兵；未见遮挡、顶部空白或可见报错。",
+      "checks": [
+        {
+          "id": "target-visible",
+          "status": "PASS",
+          "observation": "大明参战兵牌与叶赫蒙古骑兵牌面可辨，邻近后金背面保持隐藏。"
+        },
+        {
+          "id": "interaction-ui",
+          "status": "PASS",
+          "observation": "骑兵阶段与辽北至叶赫部交战标题可读，黄色蒙古原标记及蒙古守方标题明确当前掷骰归属。"
+        },
+        {
+          "id": "layout-readable",
+          "status": "PASS",
+          "observation": "骰子在地图开放区域显示，当前阶段标题未遮住参战兵牌，顶部无异常空白。"
+        },
+        {
+          "id": "no-error",
+          "status": "PASS",
+          "observation": "未见空白素材、错误提示或报错覆盖。"
+        }
+      ],
+      "reviewer": "/root/r174_video_b1",
+      "sourcePartFile": "reviews/r174-video-part-b1.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "status": "PASS",
+      "observation": "骑兵结果整屏可读，蒙古原有阵营标记及守方列头贴近骰子，损伤文字明确指向大明；蒙古骑兵正面及大明兵牌可辨，邻近后金背牌属于背景，未见遮挡目标、顶部留白或可见报错。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "reviewer": "/root/r174_video_b2",
+      "sourcePartFile": "reviews/r174-video-part-b2.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "9d457bff7e4957475b294fae8b6d702dabadc41c50b6d0614c373e7f4e1c86ae",
+      "status": "PASS",
+      "observation": "步兵阶段标题与辽北至叶赫部的进攻方向可读，骰子列头显示红色明标及大明攻方，绿色骰子直接在地图上投掷；地图北侧蒙古骑兵及黄色蒙标显露，大明参战兵牌可辨。邻近蓝色金标与背牌是地图背景，未据此误认守军。地图铺满顶部，手牌与牌堆保持可见，无可见报错。本张为投掷态，不据此判定最终损伤归属。",
+      "checks": [
+        {
+          "check": "target-visible",
+          "status": "PASS"
+        },
+        {
+          "check": "interaction-ui",
+          "status": "PASS"
+        },
+        {
+          "check": "layout-readable",
+          "status": "PASS"
+        },
+        {
+          "check": "no-error",
+          "status": "PASS"
+        }
+      ],
+      "reviewer": "/root/r174_video_c1",
+      "sourcePartFile": "reviews/r174-video-part-c1.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "status": "PASS",
+      "observation": "步兵阶段在地图上显示大明攻方及明字原标记，绿色实体骰与合计结果相邻，结果明确写对蒙古造成损伤；大明步兵及蒙古标记旁的骑兵牌正面可见，邻近后金背牌仍为非参战背景。顶部阵营条、底部手牌和地图完整，没有新增顶部空白、结果遮挡或报错。",
+      "checks": [
+        {
+          "name": "target-visible",
+          "status": "PASS"
+        },
+        {
+          "name": "interaction-ui",
+          "status": "PASS"
+        },
+        {
+          "name": "layout-readable",
+          "status": "PASS"
+        },
+        {
+          "name": "no-error",
+          "status": "PASS"
+        }
+      ],
+      "reviewer": "/root/r174_video_c2",
+      "sourcePartFile": "reviews/r174-video-part-c2.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+      "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五个独立短批次按连续重叠区间核完原录屏全部127帧；本段实际覆盖零至二十九帧。零至二帧为全局开场，三至四帧放大到交战地图；五至十六帧白色炮兵骰连续改变面向和位置，十六至十七帧收束停稳；十八至二十三帧保留稳定骰面并显示结果，二十四至二十九帧进入下一段红骰运动，因此只确认本段炮兵投掷的运动至停稳，不声称其余帧或全场完成。两张原始整屏可直接识别大明攻方骰子列、辽北至叶赫部交战、带蒙古标记的真实守军骑兵及对蒙古造成损伤的结果文字；骰子列靠近后金背景，但列头和结果明确所属，不把后金背牌当参战者。参战对象和读数未被骰子遮挡，交战地图顶边没有空白。；仅亲读本批三张连续联系表的帧二十七至六十二及骑兵投掷原始整屏。连续画面呈现红骰位移翻转、逐渐停稳与结果小标出现并持续，地图和参战兵牌持续可见。原始整屏确认当前骑兵投掷属于蒙古守方。结果小标的详细文字与承受阵营不凭联系表缩略图判定，需由负责骑兵结果原始整图的批次核对；本批结论不代表整片或其余阶段完成。；仅亲读所分配的第五十一至八十帧连续联系表及骑兵结果原始整屏。骑兵骰子停稳并持续展示结果，随后自然切换步兵阶段，绿色骰子持续移动旋转；蒙古守方和大明承受损伤由整屏文字及原有阵营标记可理解，参战兵牌可辨。此段不覆盖骑兵起掷或步兵最终结果，也不判断骰数与伤害规则。；仅亲读本批第七十八至第一百一十三帧。绿色骰子连续移动并改变朝向，随后停稳，结果文字出现并持续保持；没有突发遮罩、黑屏、顶部空白或可见错误。本批原始整屏核对步兵投掷态的大明攻方标记、蒙古骑兵及地图背景层级；最终结果的归属文字不以缩略联系表代替原始结果图验收，交由负责结果原图的批次核对。；仅亲读本批第一百零二至第一百二十六帧：步兵结果停留后回到缩小地图并出现下一步面板和教学说明，画面连续，没有跳黑或报错。此末段未覆盖骰体运动或停止瞬间，不声称前段及整片已审。阵营、参战牌与结果承受方的文字判定来自本批当前原始整屏。",
+      "sourceParts": [
+        {
+          "file": "reviews/r174-video-part-a.json",
+          "sha256": "58b0a6f40fcd57c3cacb3165a1a8cde173a5c3da4a2d20600b95ae036c792a9f",
+          "reviewer": "/root/r174_video_a",
+          "firstFrame": 0,
+          "lastFrame": 29,
+          "observation": "本段实际覆盖零至二十九帧。零至二帧为全局开场，三至四帧放大到交战地图；五至十六帧白色炮兵骰连续改变面向和位置，十六至十七帧收束停稳；十八至二十三帧保留稳定骰面并显示结果，二十四至二十九帧进入下一段红骰运动，因此只确认本段炮兵投掷的运动至停稳，不声称其余帧或全场完成。两张原始整屏可直接识别大明攻方骰子列、辽北至叶赫部交战、带蒙古标记的真实守军骑兵及对蒙古造成损伤的结果文字；骰子列靠近后金背景，但列头和结果明确所属，不把后金背牌当参战者。参战对象和读数未被骰子遮挡，交战地图顶边没有空白。"
+        },
+        {
+          "file": "reviews/r174-video-part-b1.json",
+          "sha256": "5147e86dc9c7aa0cf30911a818adfc3fd6d5a3411737fbc5f09ada78bd71963c",
+          "reviewer": "/root/r174_video_b1",
+          "firstFrame": 27,
+          "lastFrame": 62,
+          "observation": "仅亲读本批三张连续联系表的帧二十七至六十二及骑兵投掷原始整屏。连续画面呈现红骰位移翻转、逐渐停稳与结果小标出现并持续，地图和参战兵牌持续可见。原始整屏确认当前骑兵投掷属于蒙古守方。结果小标的详细文字与承受阵营不凭联系表缩略图判定，需由负责骑兵结果原始整图的批次核对；本批结论不代表整片或其余阶段完成。"
+        },
+        {
+          "file": "reviews/r174-video-part-b2.json",
+          "sha256": "a913b6ea981f904303a29affb6eca1af004c417772e3e67ad0b14aed98421fb6",
+          "reviewer": "/root/r174_video_b2",
+          "firstFrame": 51,
+          "lastFrame": 80,
+          "observation": "仅亲读所分配的第五十一至八十帧连续联系表及骑兵结果原始整屏。骑兵骰子停稳并持续展示结果，随后自然切换步兵阶段，绿色骰子持续移动旋转；蒙古守方和大明承受损伤由整屏文字及原有阵营标记可理解，参战兵牌可辨。此段不覆盖骑兵起掷或步兵最终结果，也不判断骰数与伤害规则。"
+        },
+        {
+          "file": "reviews/r174-video-part-c1.json",
+          "sha256": "3c4c43e12dc07eee13c60e2b15231d675585b4ee273159fc9b3e18eef24c5fcd",
+          "reviewer": "/root/r174_video_c1",
+          "firstFrame": 78,
+          "lastFrame": 113,
+          "observation": "仅亲读本批第七十八至第一百一十三帧。绿色骰子连续移动并改变朝向，随后停稳，结果文字出现并持续保持；没有突发遮罩、黑屏、顶部空白或可见错误。本批原始整屏核对步兵投掷态的大明攻方标记、蒙古骑兵及地图背景层级；最终结果的归属文字不以缩略联系表代替原始结果图验收，交由负责结果原图的批次核对。"
+        },
+        {
+          "file": "reviews/r174-video-part-c2.json",
+          "sha256": "432b06415504acfa29acb710c7eba30e4ab7d86f65e78c465c1fc739826827de",
+          "reviewer": "/root/r174_video_c2",
+          "firstFrame": 102,
+          "lastFrame": 126,
+          "observation": "仅亲读本批第一百零二至第一百二十六帧：步兵结果停留后回到缩小地图并出现下一步面板和教学说明，画面连续，没有跳黑或报错。此末段未覆盖骰体运动或停止瞬间，不声称前段及整片已审。阵营、参战牌与结果承受方的文字判定来自本批当前原始整屏。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "多持有人状态候选-桌面.png",
+      "chainId": "多持有人状态选择",
+      "chainStep": "1440",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-status-multiple-1440",
+      "behaviorStepId": "status-multiple-1440",
+      "description": "本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "通过真实手牌准备瓦图姆之风。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "通过真实手牌准备瓦图姆之风。",
+      "sourceRevision": "9c0da589ae46b4b67f50519ac379c95284963f7c30ea237a82a0236a4a55e73f",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "多持有人直接选择状态"
+      ],
+      "sourceRun": "1793609096974-289884-a9d08da8-80e3-4dd5-86e7-bf0c326bd2e3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "多持有人状态候选-横屏.png",
+      "chainId": "多持有人状态选择",
+      "chainStep": "812",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-status-multiple-812",
+      "behaviorStepId": "status-multiple-812",
+      "description": "本人和对手的状态分别归属原持有人，说明与状态候选同屏显示。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "通过真实手牌准备瓦图姆之风。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "通过真实手牌准备瓦图姆之风。",
+      "sourceRevision": "9c0da589ae46b4b67f50519ac379c95284963f7c30ea237a82a0236a4a55e73f",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "多持有人直接选择状态"
+      ],
+      "sourceRun": "1793609096974-289884-a9d08da8-80e3-4dd5-86e7-bf0c326bd2e3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793608899966-80c5g9"
+    }
+  ]
+}

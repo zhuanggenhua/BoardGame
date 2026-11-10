@@ -1,0 +1,31 @@
+{
+  "media": [
+    {
+      "path": "smashup-faction-before.png",
+      "chainId": "派系选中视觉",
+      "chainStep": "派系列表初始态",
+      "sourceRun": "smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "description": "派系列表初始展示，候选卡片保持原始外框层级。",
+      "stage": "前态"
+    },
+    {
+      "path": "smashup-faction-selected-current.png",
+      "chainId": "派系选中视觉",
+      "chainStep": "随机派系落地选中",
+      "sourceRun": "smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "description": "随机派系落地后，选中卡片仅保留外框颜色和缩放抬升。",
+      "stage": "中态"
+    },
+    {
+      "path": "smashup-faction-after-scroll.png",
+      "chainId": "派系选中视觉",
+      "chainStep": "派系列表滚动后",
+      "sourceRun": "smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "description": "派系列表滚动后，选中态仍保留且没有内层重复描边。",
+      "stage": "后态"
+    }
+  ]
+}

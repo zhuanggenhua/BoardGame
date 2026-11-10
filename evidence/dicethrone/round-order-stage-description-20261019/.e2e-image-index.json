@@ -1,0 +1,40 @@
+{
+  "media": [
+    {
+      "path": "01-PC-1920x960-阶段说明.png",
+      "chainId": "dicethrone-round-order-stage-description-cross-device",
+      "chainStep": "1",
+      "sourceRun": "20261019-dicethrone-left-sidebar-mobile-regression",
+      "sourceDir": "evidence/dicethrone/round-order-stage-description-20261019",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从桌面参考视口核对悬停阶段名称后出现的说明。",
+      "description": "桌面端悬停回合阶段名称后，阶段说明完整显示在阶段列表旁。"
+    },
+    {
+      "path": "02-手机等效796x360-阶段说明.png",
+      "chainId": "dicethrone-round-order-stage-description-cross-device",
+      "chainStep": "2",
+      "sourceRun": "20261019-dicethrone-left-sidebar-mobile-regression",
+      "sourceDir": "evidence/dicethrone/round-order-stage-description-20261019",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "对照桌面后切到手机等效视口并点按阶段名称。",
+      "description": "手机等效横屏点按当前回合阶段后，阶段说明完整显示且没有超出屏幕。"
+    },
+    {
+      "path": "03-安卓真机2388x1080-阶段说明.png",
+      "chainId": "dicethrone-round-order-stage-description-cross-device",
+      "chainStep": "3",
+      "sourceRun": "20261019-dicethrone-left-sidebar-mobile-regression",
+      "sourceDir": "evidence/dicethrone/round-order-stage-description-20261019",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "再核对真实安卓横屏中点按当前阶段后的说明显示。",
+      "description": "安卓真机横屏点按当前回合阶段后，阶段说明保持清晰并完整留在屏内。"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-12T12:30:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "真实页面完成探索、未知房间选择和放置确认",
+      "status": "PASS",
+      "evidence": [
+        "同次运行截图覆盖探索、未知房间选择和放置确认",
+        "同次录屏包含对应真实点击顺序"
+      ]
+    },
+    {
+      "requirement": "四项属性检定逐次触发，每次骰子真实滚动后停稳再进入下一项",
+      "status": "PASS",
+      "evidence": [
+        "力量、速度、知识、神志各有滚动中与停稳截图",
+        "同次录屏覆盖四次点击与滚动时间过程"
+      ]
+    },
+    {
+      "requirement": "四项检定完成后只进行一次奖励属性选择并完成结算",
+      "status": "PASS",
+      "evidence": [
+        "四项检定完成后奖励候选高亮并选择知识加一",
+        "同次录屏覆盖奖励选择和结算关闭"
+      ]
+    },
+    {
+      "requirement": "结算窗口关闭后回到稳定牌桌",
+      "status": "PASS",
+      "evidence": [
+        "确认后回牌桌截图和同次录屏末段可见稳定牌桌"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-01-探索前.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-02-选择未知房间.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-05-力量检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-06-速度检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-07-知识检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-08-神志检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-11-确认后回牌桌.jpg"
+  ],
+  "media": [
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-01-探索前.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-02-选择未知房间.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-05-力量检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-06-速度检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-07-知识检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-08-神志检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-11-确认后回牌桌.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261012-r8/吊死鬼-完整链路-录屏.webm"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/eventResolutionStateModel.test.ts --configLoader native"
+    ],
+    "evidence": [
+      "同一毫秒连续属性检定轮次标识回归测试通过"
+    ]
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/inspect_betrayal_screenshots"
+    },
+    "reviewFile": "visual-review-20261012-r8.json"
+  }
+}

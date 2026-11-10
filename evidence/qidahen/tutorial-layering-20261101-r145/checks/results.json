@@ -1,0 +1,12 @@
+{
+  "unit": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-layering-20261101-r145/checks/unit.log",
+    "passed": 343,
+    "files": 17
+  },
+  "typecheck": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-layering-20261101-r145/checks/typecheck.log"
+  }
+}

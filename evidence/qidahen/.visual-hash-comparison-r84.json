@@ -1,0 +1,98 @@
+[
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/00-辽北军屯地区选择.png",
+    "sha256": "dd43266aed9a4c2def55e8bf0187770ceb9bdc4bee4c69960be3cc11a67758b4",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/00-辽北军屯地区选择.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/01-轮盘前进两格与军屯落点.png",
+    "sha256": "411016e5ec683796b92c06bdf5ace3f55793465bf5e760b3d1565095530b187a",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/01-轮盘前进两格与军屯落点.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/02-指定后金抽牌.png",
+    "sha256": "b467e50db7783effc5654e0e4e4e80b8f97be3746528e56f8e3f99ae8e6cf2cd",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/02-指定后金抽牌.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/03-辽北军屯结果.png",
+    "sha256": "46680ab589c36d0e5fef11621b4528fce6da800701ec6ae3ab5fcecb6991e400",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/03-辽北军屯结果.png",
+    "sameBytes": false
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/04-叶赫部真实地图目标.png",
+    "sha256": "44dacceea401b72841a951668dacff80eabef88ec0db9ea7cf94a1158bd855dc",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/04-叶赫部真实地图目标.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05-银两支付与鸳鸯阵手牌.png",
+    "sha256": "9f666b1c4d058eb157c7cc633f73b1b45b7fbc23a28e454a92a5ee9a576f8160",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/05-银两支付与鸳鸯阵手牌.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05a-鸳鸯阵选中与确认出牌.png",
+    "sha256": "ccd3d90c8f3f67105a3f84bcf855256ce87021c421a498f288389d09e346e02f",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/05a-鸳鸯阵选中与确认出牌.png",
+    "sameBytes": false
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/06-野战选择实际出兵部队.png",
+    "sha256": "198ecd6b9762b979b6a20c2d9bb48a42f8464f9cbee910d28c71599464a72c41",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/06-野战选择实际出兵部队.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/07-战后幸存部队与占领选择.png",
+    "sha256": "de5b9392112fbcad507f8d5ce753488d5c2e0d3dd21fecda4c3bb993716a86d1",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/07-战后幸存部队与占领选择.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/08-叶赫部占领结果.png",
+    "sha256": "378af208a5bb0098315f7b96c3ef3f0ff5f6af1e9acfd8a7b26bd340d5ae337a",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/08-叶赫部占领结果.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/09-教程退出后同局继续.png",
+    "sha256": "646538d439906e9c109fb68a1d4addbb4c7fbcabdeb73443f5ad295f620d2107",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/09-教程退出后同局继续.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-00-轮盘两格与指定对手.png",
+    "sha256": "c5d79dc5b224f691dedc39aafe7de9bef1affe42f573044df5824102e88f1da0",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/移动-00-轮盘两格与指定对手.png",
+    "sameBytes": true
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+    "sha256": "74697e972b54ee443272b6f843220eeeee9ea77fe0c822c5172c0a20b317b5fd",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+    "sameBytes": false
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+    "sha256": "a7249af4c6354922bf294320ea57ab0b659fae9c406936ed9209d897f529b0ab",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/移动-02-突袭支付与手牌.png",
+    "sameBytes": false
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-03-长按银两检视卡面.png",
+    "sha256": "9cd5ea59bf2350e00d906cc2896d90919572d69f5895db0078c729ece22b8283",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/移动-03-长按银两检视卡面.png",
+    "sameBytes": false
+  },
+  {
+    "path": "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png",
+    "sha256": "84bf648b2cae2990589835d9f8d71e3fa3b9d15b6052e4185af912894f2fb71d",
+    "previousPath": "evidence/qidahen/tutorial-20261028-minimal-prompts-r83-final/media/移动-04-检视返回后轻点银两选择支付.png",
+    "sameBytes": false
+  }
+]

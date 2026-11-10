@@ -1,0 +1,55 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs isolated e2e/betrayal/event-choice-coverage.e2e.ts \"吊死鬼真实链路从探索翻牌到四项检定后选奖励关闭\"",
+      "result": "同一真实浏览器运行通过，1 passed (59.0s)",
+      "scope": "吊死鬼四项属性检定、奖励选择、结算文案和关闭回牌桌。"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "吊死鬼逐项检定和奖励选择链路",
+      "status": "PASS",
+      "evidence": [
+        "力量、速度、知识、神志四次真实投掷均停稳并显示结果",
+        "四项完成后只出现一次奖励确认",
+        "结算文案显示每项属性均通过；知识加一"
+      ]
+    },
+    {
+      "requirement": "结果层收口和回牌桌",
+      "status": "PASS",
+      "evidence": [
+        "最终奖励截图不再显示上一项属性骰盘",
+        "确认后临时面板关闭并回到可操作牌桌"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-01-探索前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-02-选择未知房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-03-事件牌翻出等待逐项检定.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-04-力量检定停稳.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-05-速度检定停稳.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-06-关闭后回牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-06-知识检定停稳.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-07-神志检定停稳.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-08-四项检定完成选择奖励.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261010-r3\\吊死鬼-完整链路-09-知识奖励结算结果可见.jpg"
+  ]
+}

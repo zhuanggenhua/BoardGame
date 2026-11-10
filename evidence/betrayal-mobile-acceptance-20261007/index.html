@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>betrayal · mobile · acceptance · 20261007</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>betrayal · mobile · acceptance · 20261007</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-PC-角色选择.jpg","displayTitle":"01 · PC · 角色选择","description":"桌面端角色选择与探索者候选同屏可见","kind":"image"},{"relativePath":"02-手机-角色选择.jpg","displayTitle":"02 · 手机 · 角色选择","description":"手机端角色选择保持同构画布与选中状态","kind":"image"},{"relativePath":"03-手机-角色详情能力说明.jpg","displayTitle":"03 · 手机 · 角色详情能力说明","description":"手机端滚动后能力说明完整可读","kind":"image"},{"relativePath":"04-PC-主牌桌常态.jpg","displayTitle":"04 · PC · 主牌桌常态","description":"桌面端主牌桌持续区域完整可见","kind":"image"},{"relativePath":"05-手机-主牌桌常态.jpg","displayTitle":"05 · 手机 · 主牌桌常态","description":"手机端主牌桌保持地图与底部行动栏","kind":"image"},{"relativePath":"06-PC-剧本三按钮同排.jpg","displayTitle":"06 · PC · 剧本三按钮同排","description":"桌面端剧本阅读确认关闭按钮保持同排","kind":"image"},{"relativePath":"07-手机-剧本三按钮同排.jpg","displayTitle":"07 · 手机 · 剧本三按钮同排","description":"手机端剧本三项主操作保持同排可见","kind":"image"},{"relativePath":"08-手机-剧本阅读正文.jpg","displayTitle":"08 · 手机 · 剧本阅读正文","description":"手机端剧本正文与翻页控件清晰可读","kind":"image"},{"relativePath":"09-手机-过场继续.jpg","displayTitle":"09 · 手机 · 过场继续","description":"手机端过场文案下方继续按钮清晰可点","kind":"image"},{"relativePath":"10-手机-关闭剧本回选择页.jpg","displayTitle":"10 · 手机 · 关闭剧本回选择页","description":"手机端关闭剧本后回到选择页","kind":"image"},{"relativePath":"11-手机-主桌面能力与HUD.jpg","displayTitle":"11 · 手机 · 主桌面能力与HUD","description":"手机端主桌面能力说明与当前回合保持右上","kind":"image"},{"relativePath":"12-PC-移动选目标.jpg","displayTitle":"12 · PC · 移动选目标","description":"桌面端移动选目标状态与玩家标记可见","kind":"image"},{"relativePath":"13-手机-移动选目标.jpg","displayTitle":"13 · 手机 · 移动选目标","description":"手机端移动选目标保持地图与操作栏同屏","kind":"image"},{"relativePath":"14-手机-移动后玩家token聚焦.jpg","displayTitle":"14 · 手机 · 移动后玩家token聚焦","description":"手机端移动完成后玩家标记回到可视地图中心","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

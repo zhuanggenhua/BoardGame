@@ -1,0 +1,47 @@
+{
+  "checkedAt": "2026-10-26T00:06:43.5137545+08:00",
+  "assets": [
+    {
+      "asset": "player-board.webp",
+      "httpStatus": 200,
+      "localBytes": 2210036,
+      "remoteBytes": 2210036,
+      "lengthMatches": true
+    },
+    {
+      "asset": "tip.webp",
+      "httpStatus": 200,
+      "localBytes": 1026300,
+      "remoteBytes": 1026300,
+      "lengthMatches": true
+    },
+    {
+      "asset": "ability-cards.webp",
+      "httpStatus": 200,
+      "localBytes": 5697612,
+      "remoteBytes": 5697612,
+      "lengthMatches": true
+    },
+    {
+      "asset": "dice.webp",
+      "httpStatus": 200,
+      "localBytes": 52514,
+      "remoteBytes": 52514,
+      "lengthMatches": true
+    },
+    {
+      "asset": "status-icons-atlas.webp",
+      "httpStatus": 200,
+      "localBytes": 233066,
+      "remoteBytes": 233066,
+      "lengthMatches": true
+    },
+    {
+      "asset": "portrait.webp",
+      "httpStatus": 200,
+      "localBytes": 194472,
+      "remoteBytes": 194472,
+      "lengthMatches": true
+    }
+  ]
+}

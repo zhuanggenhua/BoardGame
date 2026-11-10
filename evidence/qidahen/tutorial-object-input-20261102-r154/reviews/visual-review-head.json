@@ -1,0 +1,243 @@
+{
+  "reviewer": "/root/r153_ui_head",
+  "status": "PASS",
+  "scope": "interaction-ui",
+  "score": 94,
+  "criteriaScores": {
+    "任务清晰度": {
+      "score": 19,
+      "max": 20
+    },
+    "视觉层级": {
+      "score": 14,
+      "max": 15
+    },
+    "对象可识别性": {
+      "score": 14,
+      "max": 15
+    },
+    "状态与动作载体": {
+      "score": 14,
+      "max": 15
+    },
+    "布局完整性": {
+      "score": 14,
+      "max": 15
+    },
+    "素材完整性": {
+      "score": 10,
+      "max": 10
+    },
+    "操作人体工学": {
+      "score": 9,
+      "max": 10
+    }
+  },
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\00-frontier-goal.png",
+      "sha256": "49936ff833c9ea928a42bd21b89ccc4b3bf45dbf01ec4687d6273b69a99bddc6",
+      "status": "PASS",
+      "observations": [
+        "开局教程正文说明当前大明、纪年目标与本年取得叶赫部的计划；唯一“下一步”按钮明确承接阅读。",
+        "纪年卡与剧本卡本体、手牌分类/放大镜、当前势力资源与牌堆入口均可见。初始轮盘绿色部分属于后续行动范围，不冒充本帧教程推进按钮。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\00-frontier-goal.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "开局教程正文说明当前大明、纪年目标与本年取得叶赫部的计划；唯一“下一步”按钮明确承接阅读。；纪年卡与剧本卡本体、手牌分类/放大镜、当前势力资源与牌堆入口均可见。初始轮盘绿色部分属于后续行动范围，不冒充本帧教程推进按钮。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\01-opening-move.png",
+      "sha256": "0e58012ddc529c98765eccda3e3b0c1df91bff9d77f6573e9add326c9b30397e",
+      "status": "PASS",
+      "observations": [
+        "说明先读清前进格数及代价，再指向当前高亮开垦/军屯格；下一步是点击该轮盘格而非另找菜单。",
+        "当前格亮边与绿色填充分明，另外两格明显较暗；手牌及纪年信息仍保留在固定位置。",
+        "R154与已实际读取的R153原图SHA256逐字节相同，复用该原图观察；未冒称再次开图。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\01-opening-move.png",
+      "reviewMethod": "sha256-identical-reuse-of-actual-private-view",
+      "observation": "说明先读清前进格数及代价，再指向当前高亮开垦/军屯格；下一步是点击该轮盘格而非另找菜单。；当前格亮边与绿色填充分明，另外两格明显较暗；手牌及纪年信息仍保留在固定位置。；本轮与已实际读取的前一轮原图字节哈希逐字节相同，复用该原图观察；未冒称再次开图。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\02-farm-action.png",
+      "sha256": "ba6a57692c840bb4879197e3f9668268dc696f7dece20d4fdc690b32fe1b8415",
+      "status": "PASS",
+      "observations": [
+        "教程紧贴轮盘，箭头指向印刷“军屯”；军屯文字本体具有唯一蓝色当前焦点边界，开垦没有同款蓝框。当前动作是直接点击印刷军屯。",
+        "当前轮盘格保留绿色整格底色，非当前动作未与军屯争夺蓝色主焦点；无轮盘/手牌切换菜单。放弃剩余轮盘行动仍在轮盘下方。",
+        "手牌、纪年卡及资源仍可发现；未用无关低层地图被覆盖否定本帧。",
+        "R154与已实际读取的R153原图SHA256逐字节相同，复用该原图观察；未冒称再次开图。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\02-farm-action.png",
+      "reviewMethod": "sha256-identical-reuse-of-actual-private-view",
+      "observation": "教程紧贴轮盘，箭头指向印刷“军屯”；军屯文字本体具有唯一蓝色当前焦点边界，开垦没有同款蓝框。当前动作是直接点击印刷军屯。；当前轮盘格保留绿色整格底色，非当前动作未与军屯争夺蓝色主焦点；无轮盘/手牌切换菜单。放弃剩余轮盘行动仍在轮盘下方。；手牌、纪年卡及资源仍可发现；未用无关低层地图被覆盖否定本帧。；本轮与已实际读取的前一轮原图字节哈希逐字节相同，复用该原图观察；未冒称再次开图。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\03-reclaim-action.png",
+      "sha256": "f90b8281a771853b4938a37bc1fda9e4a992613642caa453ba03fa4d8e3fcc0a",
+      "status": "PASS",
+      "observations": [
+        "军屯后的手牌集合扩充可见；提示说明同格开垦，箭头与唯一蓝框紧贴印刷“开垦”。军屯文字本体无蓝框。",
+        "地图放大后轮盘仍锚定左上，当前动作本体未被教程正文挡住；无切换菜单，放弃剩余轮盘行动入口可见。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\03-reclaim-action.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "军屯后的手牌集合扩充可见；提示说明同格开垦，箭头与唯一蓝框紧贴印刷“开垦”。军屯文字本体无蓝框。；地图放大后轮盘仍锚定左上，当前动作本体未被教程正文挡住；无切换菜单，放弃剩余轮盘行动入口可见。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\04-reclaim-target.png",
+      "sha256": "7d41908209c856fc887b09900b60fa4020285a8b675b85037eea8d27c91088e1",
+      "status": "PASS",
+      "observations": [
+        "开垦候选区域通过贴合地形的绿色主边界表达，当前辽东为白色边界/填色并显示辽东名称；区域与人口/部队本体可辨。",
+        "教程紧邻辽东，解释为何此处开垦；右侧“选择开垦区域（最多5处）/确认”明确承接选择。",
+        "地图可选区域与确认入口可读；纪年卡及半露手牌保持用户要求的形态，不能由静图证明其它未展示区域点击行为。",
+        "R154与已实际读取的R153原图SHA256逐字节相同，复用该原图观察；未冒称再次开图。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\04-reclaim-target.png",
+      "reviewMethod": "sha256-identical-reuse-of-actual-private-view",
+      "observation": "开垦候选区域通过贴合地形的绿色主边界表达，当前辽东为白色边界/填色并显示辽东名称；区域与人口/部队本体可辨。；教程紧邻辽东，解释为何此处开垦；右侧“选择开垦区域（最多5处）/确认”明确承接选择。；地图可选区域与确认入口可读；纪年卡及半露手牌保持用户要求的形态，不能由静图证明其它未展示区域点击行为。；本轮与已实际读取的前一轮原图字节哈希逐字节相同，复用该原图观察；未冒称再次开图。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\05-prepare-hand.png",
+      "sha256": "65ac50c5ed49696a25d5b9b2cac557f4f0c75c2a6a8c4e8874e138a353d707fd",
+      "status": "PASS",
+      "observations": [
+        "教程位于手牌正上方，箭头落向真实银两牌；“本回合还可执行一次手牌行动”与下方绿色手牌入口直接对应。",
+        "银两牌类别、牌名、放大镜可辨；不存在轮盘/手牌切换菜单。轮盘下仍有完成轮盘行动入口，不以删除旧菜单丢掉结束行动职责。",
+        "底部半露牌属于用户明确要求；本帧不要求常态整张牌展开，完整检视由07直接补证。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\05-prepare-hand.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "教程位于手牌正上方，箭头落向真实银两牌；“本回合还可执行一次手牌行动”与下方绿色手牌入口直接对应。；银两牌类别、牌名、放大镜可辨；不存在轮盘/手牌切换菜单。轮盘下仍有完成轮盘行动入口，不以删除旧菜单丢掉结束行动职责。；底部半露牌属于用户明确要求；本帧不要求常态整张牌展开，完整检视由07直接补证。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\06-recruit-payment.png",
+      "sha256": "7e2ef2bcc9c65a76559ffa40ab39d8b94cd95ce0b61456b812937303e14489cf",
+      "status": "PASS",
+      "observations": [
+        "银两牌是当前支付对象，教程说明使用此牌、保留其它牌，并明确放大镜查看整张牌；银两本体及放大镜均可见。",
+        "征召军队支付栏显示已选0/1张，确认执行与取消本次行动同栏分组，玩家先点银两、再确认的关系清楚。",
+        "其它手牌仍保留可识别类别与牌名；未将支付栏覆盖的无关地图当成目标遮挡。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\06-recruit-payment.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "银两牌是当前支付对象，教程说明使用此牌、保留其它牌，并明确放大镜查看整张牌；银两本体及放大镜均可见。；征召军队支付栏显示已选0/1张，确认执行与取消本次行动同栏分组，玩家先点银两、再确认的关系清楚。；其它手牌仍保留可识别类别与牌名；未将支付栏覆盖的无关地图当成目标遮挡。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+      "sha256": "40165558b0951a6d8974f86529ec41e9f0745f800ed7cb8a2949d38cf0735c67",
+      "status": "PASS",
+      "observations": [
+        "银两正式牌面在中央完整等比展示，牌名与银锭本体可识别，当前阅读焦点明确。",
+        "关闭叉号贴在放大牌右上边界内且清楚可见，下一步是显式关闭回支付态；底层支付与手牌留作背景。",
+        "本帧只证明可见放大和关闭位置，不证明持续时间、关闭点击结果或规则支付正确性。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "银两正式牌面在中央完整等比展示，牌名与银锭本体可识别，当前阅读焦点明确。；关闭叉号贴在放大牌右上边界内且清楚可见，下一步是显式关闭回支付态；底层支付与手牌留作背景。；本帧只证明可见放大和关闭位置，不证明持续时间、关闭点击结果或规则支付正确性。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\08-recruit-source.png",
+      "sha256": "920822057bf47039a715af1fffc729b93852c87890091b8e072b2b835b800306",
+      "status": "PASS",
+      "observations": [
+        "征召来源候选区域绿色主边界贴合地图，辽北白边、名称、部队与人口本体清楚；教程箭头贴近辽北。",
+        "提示说明在本土建立正规军并在辽北征召，右侧要求先点地图建军地区、再选建军方式；当前下一步是点辽北区域。",
+        "手牌、纪年卡、资源及弃牌堆仍可发现；教程覆盖的邻近无关地图不影响本帧辽北来源判断。",
+        "已实际私有读取本R154原图；与R153字节不同，重新核验后仍满足上述图面观察。"
+      ],
+      "readSource": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\08-recruit-source.png",
+      "reviewMethod": "actual-private-view_image-r154-original",
+      "observation": "征召来源候选区域绿色主边界贴合地图，辽北白边、名称、部队与人口本体清楚；教程箭头贴近辽北。；提示说明在本土建立正规军并在辽北征召，右侧要求先点地图建军地区、再选建军方式；当前下一步是点辽北区域。；手牌、纪年卡、资源及弃牌堆仍可发现；教程覆盖的邻近无关地图不影响本帧辽北来源判断。；已实际私有读取本轮原图；与前一轮字节不同，重新核验后仍满足上述图面观察。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "failures": [],
+  "layoutAudit": {
+    "空间主次": "PASS：当前教程箭头与实际轮盘/手牌/地图对象建立直接关系；07仅阅读牌面为主焦点。",
+    "对齐栅格": "PASS：轮盘、资源、手牌、牌堆保持稳定锚点；支付栏内部操作成组。",
+    "分组与装饰": "PASS：蓝框限定当前印刷动作，地图区域边界承载候选，教程承担教学而非替代动作菜单。"
+  },
+  "negativeImpactChecks": [
+    "删除的轮盘菜单曾承担开垦/军屯选择、手牌入口及结束行动；本组图中分别迁移到印刷名称、真实手牌、轮盘下完成/放弃入口。仅判可发现性与图面关系。",
+    "手牌半露为用户要求，类别/牌名/独立放大镜维持可发现；07已显示完整银两牌面。",
+    "教程迁到当前决策对象旁，未抹除纪年卡、手牌、资源与相关地图候选。"
+  ],
+  "limitations": [
+    "仅审00–08九张PC静图的交互UI易理解性，不覆盖09–16，不证明整条教程通过。",
+    "规则数值、全部合法动作、放大持续时间与点击真实结果另由领域测试及真实入口行为证据证明。",
+    "R154新增save-hand截图不在本子审查00–08范围；由主线程安排对应责任审查。"
+  ],
+  "incrementalReview": {
+    "priorActualReadReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r153-object-input-pc-20261102\\desktop\\visual-review-head.json",
+    "hashCompared": 9,
+    "identicalReuse": 3,
+    "differentActuallyViewed": 6,
+    "identicalNames": [
+      "01-opening-move.png",
+      "02-farm-action.png",
+      "04-reclaim-target.png"
+    ]
+  },
+  "formatNormalization": "仅将单数观察字段中的轮次及哈希技术标识映射为中文；原观察数组、来源、哈希、检查项与视觉裁决保持不变。"
+}

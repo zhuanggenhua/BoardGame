@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>smashup · 20261006</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>smashup · 20261006</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-6a1118-before-time-box.jpg","displayTitle":"时间盒反应前","description":"反应前可见时间盒本体与四枚计数。","kind":"image"},{"relativePath":"02-6a1118-during-time-box-reaction.jpg","displayTitle":"时间盒反应选项","description":"时间盒反应窗口同时展示两个真实选项。","kind":"image"},{"relativePath":"03-6a1118-after-pass.jpg","displayTitle":"时间盒跳过收口","description":"跳过提交后反应窗口已收口。","kind":"image"},{"relativePath":"04-69a2ed9-before-probe.jpg","displayTitle":"外星人探究入口","description":"探究动作牌在真实手牌入口可见。","kind":"image"},{"relativePath":"05-69a2ed9-during-target-choice.jpg","displayTitle":"外星人探究选目标","description":"探究已进入目标选择交互窗口。","kind":"image"},{"relativePath":"06-69a2ed9-after-discard.jpg","displayTitle":"外星人探究弃牌结果","description":"探究效果已消费目标随从并完成弃牌。","kind":"image"},{"relativePath":"07-69c93-before-pirate-cove-r3.jpg","displayTitle":"海盗湾前态关联不足","description":"三基地计分前画面可见，但海盗湾身份未由画面直接确认。","kind":"image"},{"relativePath":"07-69c93-before-pirate-cove.jpg","displayTitle":"海盗湾前态关联不足","description":"三基地计分前画面可见，但海盗湾身份未由画面直接确认。","kind":"image"},{"relativePath":"08-69c93-during-pirate-cove-r3.jpg","displayTitle":"海盗湾响应关联不足","description":"计分过程可见，但海盗湾移动随从响应窗口没有清楚入镜。","kind":"image"},{"relativePath":"08-69c93-during-pirate-cove.jpg","displayTitle":"海盗湾响应关联不足","description":"计分过程可见，但海盗湾移动随从响应窗口没有清楚入镜。","kind":"image"},{"relativePath":"09-69c93-after-rescore.jpg","displayTitle":"海盗湾结果关联不足","description":"计分结果可见，但移动随从去向与二次计分没有清楚入镜。","kind":"image"},{"relativePath":"09-69c93-during-pirate-cove-target-r3.jpg","displayTitle":"海盗湾结果关联不足","description":"计分结果可见，但移动随从去向与二次计分没有清楚入镜。","kind":"image"},{"relativePath":"10-69c75-before-tortuga.jpg","displayTitle":"托尔图加移动前","description":"托尔图加移动链前置条件成立。","kind":"image"},{"relativePath":"10-69c93-after-pirate-cove-r3.jpg","displayTitle":"托尔图加移动前","description":"托尔图加移动链前置条件成立。","kind":"image"},{"relativePath":"11-69c75-during-tortuga-choice.jpg","displayTitle":"托尔图加选择随从","description":"结算后的随从选择窗口与来源基地清晰可见。","kind":"image"},{"relativePath":"12-69c75-after-tortuga-move.jpg","displayTitle":"托尔图加移动结果","description":"移动结果与对象归属稳定，随从没有消失。","kind":"image"},{"relativePath":"15-69c903-visual-before.jpg","displayTitle":"人工智能计分视觉前态","description":"受控代表态清楚展示三基地与人工智能二号位。","kind":"image"},{"relativePath":"16-69c903-visual-during.jpg","displayTitle":"人工智能计分视觉中态","description":"受控代表态清楚展示基地选择与高亮状态。","kind":"image"},{"relativePath":"17-69c903-visual-after.jpg","displayTitle":"人工智能计分视觉后态","description":"受控代表态清楚展示交互收口并回到出牌阶段。","kind":"image"},{"relativePath":"18-69c903-online-before-r2.jpg","displayTitle":"在线人工智能计分前","description":"真实在线人工智能三基地计分进入前置状态，海盗湾与双方随从可见。","kind":"image"},{"relativePath":"19-69c903-online-during-r2.jpg","displayTitle":"在线人工智能计分中","description":"真实在线人工智能仍处于三基地计分阶段，尚未收口。","kind":"image"},{"relativePath":"20-69c903-online-after-r2.jpg","displayTitle":"在线人工智能计分后","description":"真实在线人工智能完成计分、移动随从、换基地并回到出牌阶段。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

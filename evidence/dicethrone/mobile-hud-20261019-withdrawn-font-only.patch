@@ -1,0 +1,494 @@
+diff --git a/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts b/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts
+index c40cd5ac7..56e6a4baa 100644
+--- a/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts
++++ b/e2e/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e.ts
+@@ -95,8 +95,11 @@ const JPEG_START_OF_FRAME_MARKERS = new Set([
+     0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+ ]);
+ 
+-const readJpegDimensions = async (path: string): Promise<ImageDimensions> => {
++const readImageDimensions = async (path: string): Promise<ImageDimensions> => {
+     const buffer = await readFile(path);
++    if (buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
++        return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
++    }
+     if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+         throw new Error(`截图不是有效 JPEG 文件：${path}`);
+     }
+@@ -210,6 +213,8 @@ type HudLayoutSnapshot = {
+     phaseItemFontSizes: number[];
+     phaseItemRenderedFontSizes: number[];
+     phaseItemHeights: number[];
++    truncatedPhaseLabels: string[];
++    hudFonts: Record<string, number[]>;
+     overlaps: {
+         phaseStatusTokens: boolean;
+         phaseStats: boolean;
+@@ -287,11 +292,11 @@ const saveEvidenceScreenshot = async (
+     name: string,
+ ): Promise<string> => {
+     const path = getEvidenceScreenshotPath(testInfo, name, {
+-        filename: `${name}.jpg`,
++        filename: `${name}.png`,
+         requireChineseName: true,
+     });
+     await mkdir(dirname(path), { recursive: true });
+-    await page.screenshot({ path, fullPage: false, type: 'jpeg', quality: 90 });
++    await page.screenshot({ path, fullPage: false, type: 'png' });
+     return path;
+ };
+ 
+@@ -331,6 +336,19 @@ const waitForLeftHudState = async (page: Page, stateCase: HudStateCase): Promise
+     await expect(page.locator('[data-tutorial-id="status-tokens"] [data-status-id]')).toHaveCount(stateCase.expectedStatuses);
+     await expect(page.getByTestId('dt-player-stats-panel')).toBeVisible({ timeout: 10000 });
+     await expect(page.locator('[data-tutorial-id="draw-deck"]')).toBeVisible({ timeout: 10000 });
++    await page.waitForFunction(() => {
++        const images = Array.from(document.querySelectorAll<HTMLImageElement>('[data-testid="player-board-surface"] img, [data-testid="dt-draw-deck-card"] img'));
++        return images.length >= 2 && images.every((image) => image.complete && image.naturalWidth > 0);
++    }, undefined, { timeout: 20000 });
++    await page.waitForFunction(() => {
++        const fronts = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="hand-area"] [data-card-face="front"]'));
++        return fronts.length > 0 && fronts.every((front) => {
++            const flip = front.parentElement;
++            if (!flip) return false;
++            const matrix = new DOMMatrixReadOnly(getComputedStyle(flip).transform);
++            return Math.abs(matrix.m11 - 1) < 0.0001 && Math.abs(matrix.m13) < 0.0001;
++        });
++    }, undefined, { timeout: 15000 });
+     await page.waitForTimeout(300);
+ };
+ 
+@@ -372,7 +390,7 @@ const readHudLayout = async (page: Page): Promise<HudLayoutSnapshot> => page.eva
+     const deck = document.querySelector('[data-tutorial-id="draw-deck"]');
+     const deckCard = document.querySelector('[data-testid="dt-draw-deck-card"]');
+     const playerBoard = document.querySelector('[data-testid="player-board-surface"]');
+-    const handToggle = document.querySelector('[data-testid="dicethrone-hand-visibility-toggle"]');
++    const handToggle = document.querySelector('[data-testid="dicethrone-hand-visibility-visual"]');
+     const handToggleHitArea = document.querySelector('[data-testid="dicethrone-hand-visibility-hit-area"]');
+     const phaseItems = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="dt-phase-indicator"] [data-dt-phase-item="true"]'));
+     const protectedIcons = Array.from(document.querySelectorAll('[data-tutorial-id="status-tokens"] [data-token-id], [data-tutorial-id="status-tokens"] [data-status-id]'));
+@@ -441,6 +459,14 @@ const readHudLayout = async (page: Page): Promise<HudLayoutSnapshot> => page.eva
+         phaseItemFontSizes: phaseItems.map((item) => Number.parseFloat(window.getComputedStyle(item).fontSize)),
+         phaseItemRenderedFontSizes: phaseItems.map(renderedFontSize),
+         phaseItemHeights: phaseItems.map((item) => item.getBoundingClientRect().height),
++        truncatedPhaseLabels: phaseItems.filter((item) => item.scrollWidth > item.clientWidth + 1).map((item) => item.textContent ?? ''),
++        hudFonts: Object.fromEntries(Object.entries({
++            resources: '.dt-player-stats__panel [style*="font-size"]',
++            opponent: '[data-testid^="dt-top-header-"] [style*="font-size"]',
++            action: '[data-tutorial-id="advance-phase-button"]',
++            deck: '[data-testid="dt-draw-deck-card"] [style*="font-size"]',
++            response: '[data-testid="response-toggle-group"] [style*="font-size"]',
++        }).map(([key, selector]) => [key, Array.from(document.querySelectorAll<HTMLElement>(selector)).map(renderedFontSize)])),
+         overlaps: {
+             phaseStatusTokens: overlaps(phaseRect, statusTokensRect),
+             phaseStats: overlaps(phaseRect, statsRect),
+@@ -487,6 +513,8 @@ const summariseLayout = (layout: HudLayoutSnapshot) => ({
+     phaseFontSizes: layout.phaseItemFontSizes,
+     phaseRenderedFontSizes: layout.phaseItemRenderedFontSizes,
+     phaseItemHeights: layout.phaseItemHeights,
++    truncatedPhaseLabels: layout.truncatedPhaseLabels,
++    hudFonts: layout.hudFonts,
+     gaps: layout.gaps,
+     overlaps: layout.overlaps,
+ });
+@@ -514,16 +542,14 @@ const expectPhaseKeepsViewportProportion = (
+     pcLayout: HudLayoutSnapshot,
+     stateCase: HudStateCase,
+ ): void => {
+-    const expectedScale = Number.parseFloat(layout.cssVars.boardShellScale) || (viewportCase.width / PC_BASELINE_WIDTH);
+-    const actualFontScale = Math.min(...layout.phaseItemRenderedFontSizes) / Math.min(...pcLayout.phaseItemFontSizes);
+-    const actualTitleScale = layout.phaseTitleRenderedFontSize / pcLayout.phaseTitleFontSize;
+-    const renderedPhaseScale = layout.phase!.height / pcLayout.phase!.height;
+-
+-    expect(actualFontScale, `${viewportCase.label} ${stateCase.label} 阶段字号必须按 board-shell 缩放等比，不得 clamp 成另一套移动字号`).toBeGreaterThanOrEqual(expectedScale * 0.96);
+-    expect(actualFontScale, `${viewportCase.label} ${stateCase.label} 阶段字号必须按 board-shell 缩放等比，不得 clamp 成另一套移动字号`).toBeLessThanOrEqual(expectedScale * 1.04);
+-    expect(actualTitleScale, `${viewportCase.label} ${stateCase.label} 阶段标题字号必须按 board-shell 缩放等比`).toBeGreaterThanOrEqual(expectedScale * 0.96);
+-    expect(actualTitleScale, `${viewportCase.label} ${stateCase.label} 阶段标题字号必须按 board-shell 缩放等比`).toBeLessThanOrEqual(expectedScale * 1.04);
+-    expect(renderedPhaseScale, `${viewportCase.label} ${stateCase.label} 阶段区最终屏幕高度不得膨胀成手机专用重排`).toBeLessThanOrEqual(expectedScale * 1.08);
++    const historicalViewportScale = viewportCase.width / 940;
++    const historicalPhaseFont = 12 * historicalViewportScale;
++    const historicalTitleFont = 13 * historicalViewportScale;
++    expect(Math.min(...layout.phaseItemRenderedFontSizes), `${viewportCase.label} ${stateCase.label} 阶段文字应接近迁移前的屏幕字号`).toBeGreaterThanOrEqual(historicalPhaseFont * 0.90);
++    expect(layout.phaseTitleRenderedFontSize, `${viewportCase.label} ${stateCase.label} 阶段标题应接近迁移前的屏幕字号`).toBeGreaterThanOrEqual(historicalTitleFont * 0.94);
++    expect(layout.phase!.width / viewportCase.width, `${viewportCase.label} ${stateCase.label} 阶段栏保留历史约百分之十四的宽度`).toBeGreaterThanOrEqual(0.137);
++    expect(layout.phase!.width / viewportCase.width, `${viewportCase.label} ${stateCase.label} 阶段栏不得由文字任意撑宽`).toBeLessThanOrEqual(0.143);
++    expect(pcLayout.phaseItemFontSizes[0], 'PC 字号不应被手机修复改变').toBeCloseTo(14.4, 1);
+ };
+ 
+ const expectCenterBoardKeepsPcProportion = (
+@@ -547,6 +573,7 @@ const expectLeftHudLayout = (
+ ): void => {
+     expect(layout.gamePageDataset.gameId).toBe('dicethrone');
+     expect(layout.phaseItemCount, `${viewportCase.label} ${stateCase.label} 阶段提示必须保留完整 7 项`).toBe(7);
++    expect(layout.truncatedPhaseLabels, `${viewportCase.label} ${stateCase.label} 七阶段名称不得被省略号截断`).toEqual([]);
+     expect(layout.activePhaseItemCount, `${viewportCase.label} ${stateCase.label} 当前高亮必须为 1 个；总阶段项由上一条断言锁定为 7 个`).toBe(1);
+     expect(layout.visibleTokenCount, `${viewportCase.label} ${stateCase.label} Token 数量必须和该状态一致`).toBe(stateCase.expectedTokens);
+     expect(layout.visibleStatusCount, `${viewportCase.label} ${stateCase.label} 状态图标数量必须和该状态一致`).toBe(stateCase.expectedStatuses);
+@@ -620,6 +647,15 @@ const expectLeftHudLayout = (
+     if (pcLayout) {
+         expectPhaseKeepsViewportProportion(layout, viewportCase, pcLayout, stateCase);
+         expectCenterBoardKeepsPcProportion(layout, viewportCase, pcLayout, stateCase);
++        for (const [key, fonts] of Object.entries(layout.hudFonts)) {
++            const pcFonts = pcLayout.hudFonts[key];
++            expect(fonts.length, `${key} 同源 HUD 文字承载量不得变化`).toBe(pcFonts.length);
++            for (const [index, font] of fonts.entries()) {
++                const historicalViewportFont = pcFonts[index] * viewportCase.width / PC_BASELINE_WIDTH;
++                expect(font / historicalViewportFont, `${key} 第 ${index + 1} 个 HUD 字号应恢复迁移前的视口比例`).toBeGreaterThanOrEqual(0.96);
++                expect(font / historicalViewportFont, `${key} 第 ${index + 1} 个 HUD 字号不得单独膨胀`).toBeLessThanOrEqual(1.04);
++            }
++        }
+     }
+ };
+ 
+@@ -709,7 +745,7 @@ test.describe('DiceThrone 左侧 HUD 手机横屏回归', () => {
+ 
+                 const screenshotName = `${String(screenshotPaths.length + 1).padStart(2, '0')}-${trueDeviceMobileViewportCase.screenshotPrefix}-${stateCase.screenshotLabel}-左侧阶段与Token对照`;
+                 const screenshotPath = await saveEvidenceScreenshot(page, testInfo, screenshotName);
+-                const dimensions = await readJpegDimensions(screenshotPath);
++                const dimensions = await readImageDimensions(screenshotPath);
+                 expect(dimensions, 'DPR 2.5 手机横屏截图必须是 2340x1080 原图尺寸').toEqual({
+                     width: TRUE_DEVICE_SCREENSHOT_WIDTH,
+                     height: TRUE_DEVICE_SCREENSHOT_HEIGHT,
+diff --git a/src/games/dicethrone/ui/AutoResponseToggle.tsx b/src/games/dicethrone/ui/AutoResponseToggle.tsx
+index da7e8b3a2..b8d0b1b66 100644
+--- a/src/games/dicethrone/ui/AutoResponseToggle.tsx
++++ b/src/games/dicethrone/ui/AutoResponseToggle.tsx
+@@ -5,7 +5,7 @@ import {
+     AUTO_RESPONSE_KEY,
+     getAutoResponseEnabled,
+ } from './responsePreferences';
+-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
++import { buildBoardShellViewportInlineUnitValue as buildHudFontSize, buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+ 
+ /**
+  * 响应窗口显示开关组件
+@@ -74,7 +74,7 @@ export const AutoResponseToggle = ({
+                 )}
+                 <span
+                     className={`leading-none font-bold ${enabled ? 'text-emerald-300' : 'text-slate-400'}`}
+-                    style={{ fontSize: buildBoardShellInlineUnitValue(0.56) }}
++                    style={{ fontSize: buildHudFontSize(0.56) }}
+                 >
+                     {enabled ? t('hud.manualResponse') : t('hud.autoResponse')}
+                 </span>
+diff --git a/src/games/dicethrone/ui/DrawDeck.tsx b/src/games/dicethrone/ui/DrawDeck.tsx
+index fefffbf51..4bdb25274 100644
+--- a/src/games/dicethrone/ui/DrawDeck.tsx
++++ b/src/games/dicethrone/ui/DrawDeck.tsx
+@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
+ import { ChevronDown, ChevronUp } from 'lucide-react';
+ import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+ import { ASSETS } from './assets';
+-import { buildBoardShellInlineUnitValue, buildBoardShellScreenPixelValue } from '../../../shared/runtimeLayoutUnits';
++import { buildBoardShellViewportInlineUnitValue as buildHudFontSize, buildBoardShellInlineUnitValue, buildBoardShellScreenPixelValue } from '../../../shared/runtimeLayoutUnits';
+ 
+ const DECK_WIDTH = buildBoardShellInlineUnitValue(10.2);
+ const CARD_ASPECT_RATIO = 0.7;
+@@ -68,11 +68,11 @@ export const DrawDeck = React.forwardRef<HTMLDivElement, {
+                 <div className="absolute inset-0 flex flex-col items-center justify-center font-bold text-slate-100">
+                     <span
+                         className="tracking-widest text-slate-200 drop-shadow-sm"
+-                        style={{ fontSize: buildBoardShellInlineUnitValue(0.6), marginBottom: buildBoardShellInlineUnitValue(0.2) }}
++                        style={{ fontSize: buildHudFontSize(0.6), marginBottom: buildBoardShellInlineUnitValue(0.2) }}
+                     >
+                         {t('hud.deck')}
+                     </span>
+-                    <span className="text-white leading-none drop-shadow-md" style={{ fontSize: buildBoardShellInlineUnitValue(1.8) }}>
++                    <span className="text-white leading-none drop-shadow-md" style={{ fontSize: buildHudFontSize(1.8) }}>
+                         {count}
+                     </span>
+                 </div>
+diff --git a/src/games/dicethrone/ui/OpponentHeader.tsx b/src/games/dicethrone/ui/OpponentHeader.tsx
+index b5739c404..001a41b6f 100644
+--- a/src/games/dicethrone/ui/OpponentHeader.tsx
++++ b/src/games/dicethrone/ui/OpponentHeader.tsx
+@@ -13,7 +13,7 @@ import {
+ } from '../../../components/common/animations';
+ import { StatusEffectsContainer, TokensContainer, type StatusAtlases } from './statusEffects';
+ import { getPortraitStyle } from './assets';
+-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
++import { buildBoardShellViewportInlineUnitValue as buildHudFontSize, buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+ 
+ type ViewMode = 'self' | 'opponent';
+ type HeaderTone = 'enemy' | 'ally';
+@@ -137,12 +137,12 @@ export const OpponentHeader = ({
+         ? 'font-black tracking-wider truncate'
+         : 'font-black tracking-wider truncate';
+     const nameStyle: CSSProperties = compact
+-        ? { fontSize: dtUnit(0.72), maxWidth: dtUnit(7.5) }
+-        : { fontSize: dtUnit(0.9), maxWidth: dtUnit(10) };
++        ? { fontSize: buildHudFontSize(0.72), maxWidth: dtUnit(7.5) }
++        : { fontSize: buildHudFontSize(0.9), maxWidth: dtUnit(10) };
+     const badgeStyle: CSSProperties = compact
+-        ? { paddingInline: dtUnit(0.24), paddingBlock: dtUnit(0.08), fontSize: dtUnit(0.48) }
+-        : { paddingInline: dtUnit(0.3), paddingBlock: dtUnit(0.1), fontSize: dtUnit(0.55) };
+-    const statStyle: CSSProperties = { fontSize: compact ? dtUnit(0.66) : dtUnit(0.75) };
++        ? { paddingInline: dtUnit(0.24), paddingBlock: dtUnit(0.08), fontSize: buildHudFontSize(0.48) }
++        : { paddingInline: dtUnit(0.3), paddingBlock: dtUnit(0.1), fontSize: buildHudFontSize(0.55) };
++    const statStyle: CSSProperties = { fontSize: compact ? buildHudFontSize(0.66) : buildHudFontSize(0.75) };
+     const resourceStatClassName = 'relative flex items-center justify-center';
+     const resourceStatStyle: CSSProperties = compact
+         ? {
+@@ -150,7 +150,7 @@ export const OpponentHeader = ({
+             minWidth: dtUnit(1.45),
+             gap: dtUnit(0.16),
+             paddingInline: dtUnit(0.08),
+-            fontSize: dtUnit(0.68),
++            fontSize: buildHudFontSize(0.68),
+             filter: `drop-shadow(0 1px ${dtUnit(0.35)} rgba(0,0,0,0.9))`,
+         }
+         : {
+@@ -158,7 +158,7 @@ export const OpponentHeader = ({
+             minWidth: dtUnit(1.72),
+             gap: dtUnit(0.2),
+             paddingInline: dtUnit(0.1),
+-            fontSize: dtUnit(0.78),
++            fontSize: buildHudFontSize(0.78),
+             filter: `drop-shadow(0 1px ${dtUnit(0.35)} rgba(0,0,0,0.9))`,
+         };
+     const resourceDotStyle: CSSProperties = compact
+@@ -171,7 +171,7 @@ export const OpponentHeader = ({
+     const shieldStyle: CSSProperties = compact
+         ? { width: dtUnit(0.95), height: dtUnit(0.95) }
+         : { width: dtUnit(1.1), height: dtUnit(1.1) };
+-    const shieldTextStyle: CSSProperties = { fontSize: compact ? dtUnit(0.42) : dtUnit(0.5) };
++    const shieldTextStyle: CSSProperties = { fontSize: compact ? buildHudFontSize(0.42) : buildHudFontSize(0.5) };
+     const eyeStyle: CSSProperties = compact
+         ? { width: dtUnit(1.25), height: dtUnit(1.25), filter: accent.eyeFilter }
+         : { width: dtUnit(1.6), height: dtUnit(1.6), filter: accent.eyeFilter };
+@@ -182,7 +182,7 @@ export const OpponentHeader = ({
+     const headerErrorStyle: CSSProperties = {
+         paddingInline: dtUnit(1.2),
+         paddingBlock: dtUnit(0.4),
+-        fontSize: dtUnit(0.8),
++        fontSize: buildHudFontSize(0.8),
+         gap: dtUnit(0.35),
+     };
+ 
+diff --git a/src/games/dicethrone/ui/PassiveAbilityPanel.tsx b/src/games/dicethrone/ui/PassiveAbilityPanel.tsx
+index 5687bb45e..c8e011439 100644
+--- a/src/games/dicethrone/ui/PassiveAbilityPanel.tsx
++++ b/src/games/dicethrone/ui/PassiveAbilityPanel.tsx
+@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
+ import { Dices, BookOpen, Sparkles } from 'lucide-react';
+ import { GameButton } from './components/GameButton';
+ import type { PassiveAbilityDef, PassiveActionDef } from '../domain/passiveAbility';
+-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
++import { buildBoardShellViewportInlineUnitValue as buildHudFontSize, buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+ 
+ const dtUnit = buildBoardShellInlineUnitValue;
+ 
+@@ -148,7 +148,7 @@ const PassiveActionButton: React.FC<{
+         >
+             <div className="flex min-w-0 items-center" style={{ gap: dtUnit(0.2) }}>
+                 {icon}
+-                <span className="truncate whitespace-nowrap font-bold" style={{ fontSize: dtUnit(0.6) }}>
++                <span className="truncate whitespace-nowrap font-bold" style={{ fontSize: buildHudFontSize(0.6) }}>
+                     {isSelecting ? t('passive.action.cancel') : label}
+                 </span>
+             </div>
+diff --git a/src/games/dicethrone/ui/PhaseIndicator.tsx b/src/games/dicethrone/ui/PhaseIndicator.tsx
+index 3d192c3ef..e6d111131 100644
+--- a/src/games/dicethrone/ui/PhaseIndicator.tsx
++++ b/src/games/dicethrone/ui/PhaseIndicator.tsx
+@@ -7,6 +7,7 @@ import type { PhaseInfo } from '../../../core/ui';
+ import { UI_Z_INDEX } from '../../../core';
+ import { resolveI18nList, type TranslateFn } from './utils';
+ import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
++import './hudSizing.css';
+ 
+ /** 构建阶段信息列表 */
+ const buildPhases = (t: TranslateFn): Array<PhaseInfo & { desc: string[] }> => {
+@@ -25,7 +26,7 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
+ 
+     return (
+         <div
+-            className="flex flex-col pointer-events-auto opacity-100 w-full"
++            className="dt-phase-indicator flex flex-col pointer-events-auto opacity-100 w-full"
+             style={{ zIndex: UI_Z_INDEX.hud, gap: buildBoardShellInlineUnitValue(0.4) }}
+             data-testid="dt-phase-indicator"
+             data-tutorial-id="phase-indicator"
+@@ -33,7 +34,8 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
+             <h3
+                 className="dt-phase-indicator__title font-black text-slate-300/80 tracking-[0.2em] uppercase truncate drop-shadow-md"
+                 style={{
+-                    fontSize: buildBoardShellInlineUnitValue(1),
++                    fontSize: `var(--dt-phase-title-font-size, ${buildBoardShellInlineUnitValue(1)})`,
++                    lineHeight: 'var(--dt-phase-line-height, inherit)',
+                     marginBottom: buildBoardShellInlineUnitValue(0.4),
+                     marginLeft: buildBoardShellInlineUnitValue(0.3),
+                 }}
+@@ -65,13 +67,14 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
+                                         : 'bg-slate-900/60 text-slate-400 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/80 hover:text-slate-200 hover:border-slate-500'}
+                                 `}
+                                 style={{
+-                                    paddingInline: buildBoardShellInlineUnitValue(0.8),
+-                                    paddingBlock: buildBoardShellInlineUnitValue(0.5),
+-                                    fontSize: buildBoardShellInlineUnitValue(0.75),
+-                                    borderTopRightRadius: buildBoardShellInlineUnitValue(0.6),
+-                                    borderBottomRightRadius: buildBoardShellInlineUnitValue(0.6),
+-                                    borderLeftWidth: buildBoardShellInlineUnitValue(0.3),
+-                                    transform: isActive ? `translateX(${buildBoardShellInlineUnitValue(0.5)})` : undefined,
++                                    paddingInline: `var(--dt-phase-item-padding-inline, ${buildBoardShellInlineUnitValue(0.8)})`,
++                                    paddingBlock: `var(--dt-phase-item-padding-block, ${buildBoardShellInlineUnitValue(0.5)})`,
++                                    fontSize: `var(--dt-phase-item-font-size, ${buildBoardShellInlineUnitValue(0.75)})`,
++                                    lineHeight: 'var(--dt-phase-line-height, inherit)',
++                                    borderTopRightRadius: `var(--dt-phase-item-radius, ${buildBoardShellInlineUnitValue(0.6)})`,
++                                    borderBottomRightRadius: `var(--dt-phase-item-radius, ${buildBoardShellInlineUnitValue(0.6)})`,
++                                    borderLeftWidth: `var(--dt-phase-item-border, ${buildBoardShellInlineUnitValue(0.3)})`,
++                                    transform: isActive ? `translateX(var(--dt-phase-active-offset, ${buildBoardShellInlineUnitValue(0.5)}))` : undefined,
+                                 }}
+                             >
+                                 {phase.label}
+diff --git a/src/games/dicethrone/ui/PlayerStats.tsx b/src/games/dicethrone/ui/PlayerStats.tsx
+index 6b84cffff..df9e0121b 100644
+--- a/src/games/dicethrone/ui/PlayerStats.tsx
++++ b/src/games/dicethrone/ui/PlayerStats.tsx
+@@ -11,7 +11,7 @@ import {
+     type HitStopConfig,
+ } from '../../../components/common/animations';
+ import { ShakeContainer } from '../../../components/common/animations/ShakeContainer';
+-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
++import { buildBoardShellViewportInlineUnitValue as buildHudFontSize, buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+ 
+ /** 护盾图标组件 */
+ const ShieldIcon = ({ value }: { value: number }) => (
+@@ -28,7 +28,7 @@ const ShieldIcon = ({ value }: { value: number }) => (
+         </svg>
+         <span
+             className="absolute inset-0 flex items-center justify-center font-bold text-white drop-shadow-md"
+-            style={{ fontSize: buildBoardShellInlineUnitValue(0.8) }}
++            style={{ fontSize: buildHudFontSize(0.8) }}
+         >
+             {value}
+         </span>
+@@ -138,11 +138,11 @@ export const PlayerStats = ({
+                 >
+                     <span
+                         className={`font-black uppercase tracking-[0.08em] ${config.labelClassName}`}
+-                        style={{ fontSize: buildBoardShellInlineUnitValue(0.78) }}
++                        style={{ fontSize: buildHudFontSize(0.78) }}
+                     >
+                         {config.label}
+                     </span>
+-                    <span className="font-black text-white drop-shadow-md" style={{ fontSize: buildBoardShellInlineUnitValue(1.08) }}>{value}</span>
++                    <span className="font-black text-white drop-shadow-md" style={{ fontSize: buildHudFontSize(1.08) }}>{value}</span>
+                 </div>
+             </div>
+         );
+diff --git a/src/games/dicethrone/ui/RightSidebar.tsx b/src/games/dicethrone/ui/RightSidebar.tsx
+index 607e04ea8..39628ae2e 100644
+--- a/src/games/dicethrone/ui/RightSidebar.tsx
++++ b/src/games/dicethrone/ui/RightSidebar.tsx
+@@ -14,7 +14,7 @@ import { ActiveModifierBadge } from './ActiveModifierBadge';
+ import type { ActiveModifier } from '../hooks/useActiveModifiers';
+ import { PassiveAbilityPanel, type PassiveAbilityPanelProps } from './PassiveAbilityPanel';
+ import { resolveCharacterIdFromDiceDefinitionId } from './assets';
+-import {
++import { buildBoardShellViewportInlineUnitValue as buildHudFontSize,
+     buildBoardShellInlineUnitValue,
+ } from '../../../shared/runtimeLayoutUnits';
+ 
+@@ -169,7 +169,7 @@ export const RightSidebar = ({
+         paddingInline: buildBoardShellInlineUnitValue(0.5),
+         paddingBlock: 0,
+         borderRadius: buildBoardShellInlineUnitValue(0.5),
+-        fontSize: buildBoardShellInlineUnitValue(0.75),
++        fontSize: buildHudFontSize(0.75),
+     };
+     const modifierBadgeRowStyle: CSSProperties = {
+         zIndex: UI_Z_INDEX.hint,
+@@ -197,7 +197,7 @@ export const RightSidebar = ({
+         height: buildBoardShellInlineUnitValue(1),
+     };
+     const hintTextStyle: CSSProperties = {
+-        fontSize: buildBoardShellInlineUnitValue(0.75),
++        fontSize: buildHudFontSize(0.75),
+         maxWidth: '100%',
+         whiteSpace: 'normal',
+         overflowWrap: 'anywhere',
+@@ -212,7 +212,7 @@ export const RightSidebar = ({
+         borderRadius: buildBoardShellInlineUnitValue(0.5),
+         paddingInline: buildBoardShellInlineUnitValue(0.55),
+         paddingBlock: buildBoardShellInlineUnitValue(0.3),
+-        fontSize: buildBoardShellInlineUnitValue(0.68),
++        fontSize: buildHudFontSize(0.68),
+     };
+     const hasCurrentDamageSummary = typeof damageSummary?.currentDamage === 'number' && Number.isFinite(damageSummary.currentDamage);
+     const hasModifierBadgeRow = Boolean(
+diff --git a/src/hooks/ui/__tests__/useRuntimeViewport.test.ts b/src/hooks/ui/__tests__/useRuntimeViewport.test.ts
+index 99b2affa2..d7f33e77c 100644
+--- a/src/hooks/ui/__tests__/useRuntimeViewport.test.ts
++++ b/src/hooks/ui/__tests__/useRuntimeViewport.test.ts
+@@ -17,6 +17,7 @@ describe('applyRuntimeViewportCssVars', () => {
+         style.removeProperty('--mobile-board-shell-inverse-scale');
+         style.removeProperty('--mobile-board-shell-logical-height');
+         style.removeProperty('--mobile-board-shell-inline-unit');
++        style.removeProperty('--mobile-board-shell-viewport-inline-unit');
+         style.removeProperty('--mobile-board-shell-block-unit');
+         style.removeProperty('--mobile-board-shell-offset-x');
+         style.removeProperty('--mobile-board-shell-offset-y');
+@@ -36,6 +37,7 @@ describe('applyRuntimeViewportCssVars', () => {
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1160px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-height')).toBe('');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.806897');
++        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-viewport-inline-unit')).toBe('11.6000px');
+     });
+ 
+     it('board-shell uses manifest-provided design dimensions instead of the shared default width', () => {
+@@ -53,6 +55,7 @@ describe('applyRuntimeViewportCssVars', () => {
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1920px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-height')).toBe('1080px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.400000');
++        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-viewport-inline-unit')).toBe('19.2000px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('84.000px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-y')).toBe('0.000px');
+     });
+@@ -77,8 +80,12 @@ describe('applyRuntimeViewportCssVars', () => {
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-reference-height')).toBe('1080px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.400000');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-inline-unit')).toBe('19.2000px');
++        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-viewport-inline-unit')).toBe('23.4000px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-block-unit')).toBe('10.8000px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('0.000px');
+         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-y')).toBe('0.000px');
++
++        applyRuntimeViewportCssVars({ width: 1920, height: 1080 });
++        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-viewport-inline-unit')).toBe('');
+     });
+ });
+diff --git a/src/hooks/ui/useRuntimeViewport.ts b/src/hooks/ui/useRuntimeViewport.ts
+index b0748f6d3..9781b828b 100644
+--- a/src/hooks/ui/useRuntimeViewport.ts
++++ b/src/hooks/ui/useRuntimeViewport.ts
+@@ -188,6 +188,7 @@ const clearBoardShellVars = (root: HTMLElement) => {
+     root.style.removeProperty('--mobile-board-shell-inverse-scale');
+     root.style.removeProperty('--mobile-board-shell-logical-height');
+     root.style.removeProperty('--mobile-board-shell-inline-unit');
++    root.style.removeProperty('--mobile-board-shell-viewport-inline-unit');
+     root.style.removeProperty('--mobile-board-shell-block-unit');
+     root.style.removeProperty('--mobile-board-shell-offset-x');
+     root.style.removeProperty('--mobile-board-shell-offset-y');
+@@ -357,6 +358,7 @@ export const applyRuntimeViewportCssVars = (
+     root.style.setProperty('--mobile-board-shell-inverse-scale', shellScaleMetrics.inverseScale.toFixed(6));
+     root.style.setProperty('--mobile-board-shell-logical-height', `${shellScaleMetrics.logicalHeight.toFixed(3)}px`);
+     root.style.setProperty('--mobile-board-shell-inline-unit', `${shellScaleMetrics.inlineUnit.toFixed(4)}px`);
++    root.style.setProperty('--mobile-board-shell-viewport-inline-unit', `${(shellScaleMetrics.designWidth / 100).toFixed(4)}px`);
+     root.style.setProperty('--mobile-board-shell-block-unit', `${shellScaleMetrics.blockUnit.toFixed(4)}px`);
+     root.style.setProperty('--mobile-board-shell-offset-x', `${shellScaleMetrics.offsetX.toFixed(3)}px`);
+     root.style.setProperty('--mobile-board-shell-offset-y', `${shellScaleMetrics.offsetY.toFixed(3)}px`);
+diff --git a/src/shared/runtimeLayoutUnits.ts b/src/shared/runtimeLayoutUnits.ts
+index 0590242de..dfcd82d78 100644
+--- a/src/shared/runtimeLayoutUnits.ts
++++ b/src/shared/runtimeLayoutUnits.ts
+@@ -16,6 +16,10 @@ export const buildRuntimeBlockUnitValue = (multiplier: number, fallback = '1vh')
+ export const buildBoardShellInlineUnitValue = (multiplier: number, fallback = '1vw') =>
+     `calc(var(--mobile-board-shell-inline-unit, ${fallback}) * ${formatRuntimeUnitMultiplier(multiplier)})`;
+ 
++/** 跟随壳层可视画布宽度的单位，供 HUD 文字使用，不改变棋盘参考坐标。 */
++export const buildBoardShellViewportInlineUnitValue = (multiplier: number, fallback = '1vw') =>
++    `calc(var(--mobile-board-shell-viewport-inline-unit, ${fallback}) * ${formatRuntimeUnitMultiplier(multiplier)})`;
++
+ export const buildBoardShellBlockUnitValue = (multiplier: number, fallback = '1vh') =>
+     `calc(var(--mobile-board-shell-block-unit, ${fallback}) * ${formatRuntimeUnitMultiplier(multiplier)})`;
+ 

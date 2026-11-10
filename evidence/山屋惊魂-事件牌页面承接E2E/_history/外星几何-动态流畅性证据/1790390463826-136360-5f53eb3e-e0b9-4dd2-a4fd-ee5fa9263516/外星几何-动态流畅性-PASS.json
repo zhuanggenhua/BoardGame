@@ -1,0 +1,110 @@
+{
+  "verdict": "PASS",
+  "scope": "betrayal-small-room-ui-dynamic-evidence",
+  "generatedAt": "2026-09-25T16:39:53.907Z",
+  "test": {
+    "file": "e2e/betrayal/event-choice-coverage.e2e.ts",
+    "title": "外星几何真实链路从探索翻牌到投掷事件结算关闭",
+    "entry": "/play/betrayal",
+    "flowMode": "representative-state"
+  },
+  "stateInjection": "createRuntimeCore + pinGroundNorthToEventRoom + injectCore + scripted random queue",
+  "playerActions": [
+    "点击移动并选择门厅",
+    "点击探索并选择未知房间",
+    "点击投掷事件骰",
+    "等待物理骰子运动到停稳结果",
+    "确认并关闭事件特写",
+    "从房间本体拖拽地图",
+    "点击普通房间打开预览并关闭预览"
+  ],
+  "timingSource": "Chromium Page.screencastFrame 真实页面帧到达时间",
+  "markers": [
+    {
+      "label": "卡牌特写开始",
+      "atMs": 1790354299017,
+      "frameCount": 22
+    },
+    {
+      "label": "卡牌特写交互入口可见",
+      "atMs": 1790354299677,
+      "frameCount": 33
+    },
+    {
+      "label": "物理骰子开始",
+      "atMs": 1790354299962,
+      "frameCount": 38
+    },
+    {
+      "label": "物理骰子结束",
+      "atMs": 1790354302916,
+      "frameCount": 67
+    },
+    {
+      "label": "卡牌特写稳定退场",
+      "atMs": 1790354303735,
+      "frameCount": 78
+    },
+    {
+      "label": "房间拖拽开始",
+      "atMs": 1790354303940,
+      "frameCount": 79
+    },
+    {
+      "label": "房间拖拽稳定收口",
+      "atMs": 1790354304485,
+      "frameCount": 91
+    }
+  ],
+  "segments": [
+    {
+      "key": "card-spotlight",
+      "gifPath": "外星几何-卡牌特写完整过程.gif",
+      "frameCount": 61,
+      "durationMs": 5632,
+      "startMarker": "卡牌特写开始",
+      "endMarker": "卡牌特写稳定退场"
+    },
+    {
+      "key": "physical-dice",
+      "gifPath": "外星几何-物理骰子完整过程.gif",
+      "frameCount": 38,
+      "durationMs": 3703,
+      "startMarker": "物理骰子开始",
+      "endMarker": "物理骰子结束"
+    },
+    {
+      "key": "room-drag",
+      "gifPath": "外星几何-房间本体拖拽完整过程.gif",
+      "frameCount": 17,
+      "durationMs": 1084,
+      "startMarker": "房间拖拽开始",
+      "endMarker": "房间拖拽稳定收口"
+    }
+  ],
+  "screenshots": [
+    "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-03-事件牌翻出投掷入口.jpg",
+    "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-05-骰盘停稳直接结算.jpg",
+    "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-06-结算结果可见.jpg",
+    "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-07-关闭后.jpg",
+    "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-08-房间本体拖拽.jpg",
+    "evidence/山屋惊魂-事件牌页面承接E2E/外星几何-完整链路-09-房间点击放大.jpg"
+  ],
+  "assertions": [
+    "发现特写存在时地图点击不穿透",
+    "事件牌特写出现投掷入口且结果层不重复描述检定过程",
+    "物理骰子可见、分离且最终停稳",
+    "事件特写关闭后地图恢复可交互",
+    "房间本体作为拖拽起点时地图 transform 真实改变",
+    "拖拽完成不误开预览，普通房间点击可打开预览"
+  ],
+  "media": [
+    "外星几何-卡牌特写完整过程.gif",
+    "外星几何-物理骰子完整过程.gif",
+    "外星几何-房间本体拖拽完整过程.gif"
+  ],
+  "limitations": [
+    "本组从正式 Betrayal 页面开始，但使用合法代表态注入事件牌与骰子前置状态。",
+    "GIF 证明同次真实浏览器运行中的时间连续性与状态切换；素材审美仍需单独 UI 图面复核。"
+  ]
+}

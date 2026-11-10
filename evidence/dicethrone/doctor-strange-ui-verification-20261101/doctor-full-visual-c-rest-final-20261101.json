@@ -1,0 +1,1486 @@
+{
+  "reviewer": "/root/doctor_visual_c_current",
+  "run": "e2e-1793526898908-1ye6hw",
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "objective": "逐张审查十二张当前原始整屏图，对照旧完整组件，判断操作对象、下一步、可读性与保护槽位。",
+  "scope": "仅当前桌面浏览器横屏代表态；历史对照来自锁定旧提交源码，未声称获得旧整屏截图。",
+  "readMethod": "每次只私有读取一个原始整屏图；逐张绑定源路径和校验值；未使用拼图或测试结果替代看图。",
+  "limitations": [
+    "不证明规则数值、资源消耗、实体手机触摸、重连或生产状态。",
+    "静图不独立证明自动关闭时长或明确点击关闭成功，相关源码和行为证据须由主审另行关联。",
+    "不把既有非候选手牌的底边展开程度升级为本次选骰硬失败。"
+  ],
+  "media": [
+    {
+      "label": "05-深红系带玩家候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png",
+      "sha256": "6fa028171894f8784719f7df875de71efb128a0b1949f68ca0e64c775f05cc74",
+      "status": "PASS",
+      "observation": "中央标题明确要求选择施加深红系带的对手，下方唯一敌方玩家卡完整可见，未选时确认按钮为灰色；先点玩家卡再确认的顺序可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 InteractionOverlay 玩家卡分支、GameModal 正常密度和 GameButton 主按钮；保留中央标题、敌方卡、下方确认的完整承接。必要差异是按规则仅列对手且不能整段取消，未另造文字选项弹窗。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "标题、敌方卡和灰色确认自上而下形成单一选择任务，暗化牌桌退居背景。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "标题中心、敌方卡中心和确认按钮中心共用竖直中轴，弹窗四边均在屏内。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "弹窗外框承载阻塞层，玩家卡底板承载候选边界；未选状态无额外选中光圈。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        {
+          "slot": "敌方玩家卡及所属标识完整可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+        },
+        {
+          "slot": "弹窗标题与确认按钮不被骰盘或手牌遮住",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+        },
+        {
+          "slot": "牌桌背景被压暗，未与候选争夺主焦点",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见候选被放大卡覆盖",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+        },
+        {
+          "observation": "未见标题或按钮裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+        },
+        {
+          "observation": "未见内部标识或错误文案",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带目标选择-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "弹窗外框承载阻塞层，玩家卡底板承载候选边界；未选状态无额外选中光圈。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "06-深红系带玩家已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png",
+      "sha256": "84343b8795ccf4c769a036f6e97ad4dd8b822669e0acb3b030a915515726aa8f",
+      "status": "PASS",
+      "observation": "敌方玩家卡出现贴合卡身的琥珀边界，玩家名称和敌方关系仍清楚；下方确认变成亮黄色，已选目标和提交动作能连续辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 InteractionOverlay 玩家卡与 GameModal、GameButton；沿用旧完整玩家选择版式和下方主确认。新增已选状态仍贴候选本体，没有用提示条替代玩家卡。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "唯一亮色候选与下方亮色确认组成操作链，暗背景不干扰识别。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "选中边界完整贴合玩家卡，确认中心仍对齐玩家卡和标题中心。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "琥珀边界仅说明当前已选玩家，未扩成第二个离体目标框。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 97
+      },
+      "protectedSlots": [
+        {
+          "slot": "玩家卡内名称与敌方关系保持可读",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+        },
+        {
+          "slot": "确认按钮完整位于候选下方",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+        },
+        {
+          "slot": "背景骰盘不侵入弹窗主操作区",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见选中效果遮住候选文字",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+        },
+        {
+          "observation": "未见按钮归属混淆",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+        },
+        {
+          "observation": "未见当前层裁切或错误文案",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793526898908-1ye6hw\\深红系带对手已选待确认-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "琥珀边界仅说明当前已选玩家，未扩成第二个离体目标框。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "21-星际侵入技能已选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png",
+      "sha256": "1a3ab7e0de7cf3b554e8f9ed8a41f10720dcda75a000e2c64f33fe2177ed5aa1",
+      "status": "PASS",
+      "observation": "星际侵入原技能槽以贴边红框和右上对勾表示已选，技能名称与主要牌面仍可辨；右侧锁定骰和结束攻击按钮保持独立，未出现替代技能列表。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的玩家板技能槽及 DiceTray；选择仍落在原星际侵入技能槽，确认和结束攻击仍在旧骰盘动作区。当前图只证明技能本体已选可见，不证明攻击数值或结算正确。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "主对象是左下已选技能槽，右侧骰盘继续承接投掷状态，手牌位于下方原层。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "红色选择边界贴合星际侵入槽外缘，对勾贴其右上角；骰盘竖列及下方按钮齐列。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "红框表达技能已选，对勾补充状态而未遮住技能标题；未加独立选项壳。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 94
+      },
+      "protectedSlots": [
+        {
+          "slot": "星际侵入标题与主体规则区域可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+        },
+        {
+          "slot": "右侧锁定骰、骰盘确认与结束攻击仍在原区域",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+        },
+        {
+          "slot": "下方手牌未覆盖技能名称或已选对勾",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见技能候选被特写遮住",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+        },
+        {
+          "observation": "未见高亮明显偏离技能本体",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+        },
+        {
+          "observation": "未见新提示挤占骰盘主动作",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入已选-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "红框表达技能已选，对勾补充状态而未遮住技能标题；未加独立选项壳。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "22-奖励骰待确认.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png",
+      "sha256": "dfa216da28688dc1b18e40990dc18c2554b3bef73047f78e21b5d83d8d79104b",
+      "status": "PASS",
+      "observation": "右侧奖励骰立体结果清楚可见，确认提示位于其上方，亮黄色确认按钮紧贴骰盘下方；星际侵入已选标记保留，可沿来源技能到奖励骰再到确认阅读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的原 DiceTray 奖励骰与 DiceActions、GameButton，保留骰盘内结果和盘下确认；来源仍为原技能槽。提示说明等待确认，不增加第二个结果弹窗。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "奖励骰和其下亮色确认成为当前焦点，已选技能负责来源关联。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "奖励骰完整落在原右侧骰盘内，确认按钮位于其下且未压住骰体。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "提示底板承载确认说明，奖励骰外壳与原骰盘边界各有对象职责。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "protectedSlots": [
+        {
+          "slot": "奖励骰整体及其结果可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+        },
+        {
+          "slot": "星际侵入已选槽位仍可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+        },
+        {
+          "slot": "确认按钮与当前奖励骰靠近且无遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见奖励骰被提示或悬停层挡住",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+        },
+        {
+          "observation": "未见确认跑到远离结果的角落",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+        },
+        {
+          "observation": "未见奖励结果越出骰盘或错误文本",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793526898908-1ye6hw\\星际侵入奖励骰待确认-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "提示底板承载确认说明，奖励骰外壳与原骰盘边界各有对象职责。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "23-值得拥有骰子候选.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png",
+      "sha256": "30389e33f143a7401966284b40565bd64e4fd999cf64fcd653e5527935705f31",
+      "status": "PASS",
+      "observation": "左侧垂直居中的琥珀单行提示显示尚未选骰，右侧五颗骰子本体完整排列；骰盘下取消和跳过重掷并列，玩家可直接从骰子开始选择。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照 22790d2c7^ 的 GameHints 普通选骰左侧居中锚点与琥珀单行，并对照两份旧基线的 DiceTray 与 DiceActions；当前保持此旧提示和原骰盘动作，没有新增顶部双行。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "左侧提示说明任务，右侧骰子承接实际选择，按钮紧随骰列下方。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "五骰左右外缘形成整齐竖列，取消和跳过重掷同一行，提示位于屏高中央。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "琥珀提示只承担选骰与计数，不额外包裹骰子；骰盘原边界不与候选争抢。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "protectedSlots": [
+        {
+          "slot": "五颗目标骰与点数全部可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+        },
+        {
+          "slot": "取消及跳过重掷位于骰列下方",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+        },
+        {
+          "slot": "队友栏、阶段和当前生命资源保持在原槽位",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见来源卡继续遮住选骰对象",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+        },
+        {
+          "observation": "未见新增顶部双行或重复指令",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+        },
+        {
+          "observation": "下方手牌非本次选骰候选，不用其现有展开程度替代骰子审查",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者骰区目标态.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "琥珀提示只承担选骰与计数，不额外包裹骰子；骰盘原边界不与候选争抢。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "24-值得拥有骰子已选一次.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png",
+      "sha256": "6e50fa203276c6f66836f66d943a67e7e1eabce310de019a6bda2fa9a85bc8dd",
+      "status": "PASS",
+      "observation": "首颗骰子以贴身琥珀边界和右上一次角标表示已选，左侧计数同步为已选一次；其余四骰仍清楚，原骰盘下方已显示确认重掷。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照 22790d2c7^ 的左侧琥珀普通选骰提示及两份旧基线的 DiceTray 本体选择、DiceActions；一次标记直接落在原骰子上，未改用新列表或顶部双行。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "被选首骰、左侧一次计数和盘下确认各有明确职责，首骰是当前操作对象。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "首骰高亮围绕自身边缘，次数角标贴右上角，未漂到第二颗骰子。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "一层琥珀边界标选择，微小次数角标标累计次数，均未遮住点数和骰面。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        {
+          "slot": "被选骰子点数与拳头骰面可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+        },
+        {
+          "slot": "其它四骰本体完整可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+        },
+        {
+          "slot": "确认重掷和取消保持骰盘下方原行",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见角标压住骰面主体",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+        },
+        {
+          "observation": "未见首骰因高亮缩小或被裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+        },
+        {
+          "observation": "未见提示占用顶部或重复为两段",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-同骰已选一次.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "一层琥珀边界标选择，微小次数角标标累计次数，均未遮住点数和骰面。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "25-值得拥有骰子已选两次.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png",
+      "sha256": "9ce5ab7011010345ae3f9a6a036b90117b8627b5ae93f1a23f55bc98aa88885f",
+      "status": "PASS",
+      "observation": "同一首骰的右上角标显示两次，左侧单行提示显示重投选择已就绪且次数用满；其余骰子降低亮度但本体仍可见，确认重掷成为明确下一步。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照 22790d2c7^ 的 GameHints 左侧琥珀单行及两份旧基线的 DiceTray 与 DiceActions；两次状态继续复用同一骰体、原次数角标与原确认，没有新造第二颗替身骰。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "首骰两次标记和左侧就绪提示共同说明当前完成度，亮色确认承接下一步。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "次数角标仍贴首骰右上角，骰列边缘整齐，确认按钮保持在骰列下方。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "减亮表达未选其它骰，琥珀边界仍只有当前首骰一层，未形成双目标框。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 97
+      },
+      "protectedSlots": [
+        {
+          "slot": "首骰点数、骰面和两次角标可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+        },
+        {
+          "slot": "其它骰子虽减亮仍有清楚轮廓",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+        },
+        {
+          "slot": "左侧提示与确认重掷均无遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见把同一骰的两次选择画成两个骰子",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+        },
+        {
+          "observation": "未见就绪提示脱离左侧旧锚点",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+        },
+        {
+          "observation": "未见确认按钮被骰盘外控件遮住",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-投掷者同骰重选两次.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "减亮表达未选其它骰，琥珀边界仍只有当前首骰一层，未形成双目标框。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "26-即视感悬停说明.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png",
+      "sha256": "9ad592c5963d0be5832c610dc734837a8087718882a8264d5dd30e23453046e6",
+      "status": "PASS",
+      "observation": "即视感说明框位于左侧状态标记上方，标题、发动时机和重开投掷的正文完整落在屏内；对应黄色状态标记仍在下方可见，右侧骰盘未被说明层覆盖。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 statusEffects 状态图标及 InfoTooltip 阅读层；当前仍以原状态标记悬停读取正文，没有另造即视感决策弹窗。图面只能证明说明可读和对象位置关系。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "说明框只占状态区上方，标题先于正文，原状态标记作为说明来源保持可见。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "说明框左缘在屏内，正文行尾未越界，状态标记和生命资源区之间保有间隔。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "深色说明底板承担阅读对比，状态标记的金色边缘承担可用提示，没有新添重复说明条。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        {
+          "slot": "即视感标记及其说明标题可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+        },
+        {
+          "slot": "说明正文完整且未被生命栏裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+        },
+        {
+          "slot": "右侧锁定骰和结束攻击动作保持独立",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见说明框触碰左侧屏界裁字",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+        },
+        {
+          "observation": "未见悬停框遮住对应状态标记",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+        },
+        {
+          "observation": "未见用正文替代真实状态操作入口",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感悬停说明态-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "深色说明底板承担阅读对比，状态标记的金色边缘承担可用提示，没有新添重复说明条。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "27-角色排序-已完成角色前段.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png",
+      "sha256": "7a81c86eb09718aaba97c07d48e8d70c0b79e64decc4e680564cd7ee174ca526",
+      "status": "PASS",
+      "observation": "选角左栏前段以两列显示武僧、狂战士等已完成角色，未附实施中条幅；中央武僧完整玩家板和右侧提示板仍可见，底部双方席位清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 DiceThroneHeroSelection 原两列滚动角色栏、中央玩家板及底部席位；当前沿用该完整入口。排序来自 core-types 当前目录完成优先，图中前段无实施中条幅。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "左栏承担候选浏览，中央与右侧承担所看角色的玩家板和提示板，底部承接席位。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "角色卡两列的左右边缘与行距一致，中央玩家板与右侧提示板未互相覆盖。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "旧选择边界承载当前预览区，角色缩略卡未增加新外壳或同质状态文字。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 94
+      },
+      "protectedSlots": [
+        {
+          "slot": "前段已完成角色名称可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "slot": "中央武僧玩家板与右侧提示板完整",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "slot": "底部双方席位未被角色栏压住",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见已完成角色误挂实施中条幅",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "observation": "未见排序入口变成另一套角色列表",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "observation": "列表底边部分露出下一行是滚动列表边界，不是目标候选被浮层遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\真实选角入口-奇异博士可选-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "旧选择边界承载当前预览区，角色缩略卡未增加新外壳或同质状态文字。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "28-角色排序-实施中角色后段.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png",
+      "sha256": "6f036565d5aafe7f0889524c0371142140ef9c1b90429016283231d9ad020570",
+      "status": "PASS",
+      "observation": "向后浏览时奇异博士位于实施中角色段，卡上实施中条幅仍可见；选中后头像恢复彩色并带本方席位标记，中央玩家板、右侧提示板和底部所选角色名相互对应。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 DiceThroneHeroSelection 角色卡选择反馈、实施中徽条和底部席位；保留旧组件完整链路。当前仅调整目录完成优先，奇异博士保持实施中身份，没有冒称完成。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "左侧已选奇异博士与中央大玩家板建立来源关系，底部席位显示相同角色作为选择结果。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "左栏两列保持相同宽度，实施中条幅位于各自卡内，中央板右缘和提示板左缘互不压住。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "彩色头像与琥珀选择框仅标当前本方选择，实施中斜条承担进度身份，未以新提示条重复。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "protectedSlots": [
+        {
+          "slot": "奇异博士名称、实施中条幅和本方标记可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+        },
+        {
+          "slot": "奇异博士玩家板及提示板保持完整",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+        },
+        {
+          "slot": "底部本方角色名和对方等待状态清楚",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见奇异博士的实施中标记丢失",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+        },
+        {
+          "observation": "未见预览板错配相邻角色",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+        },
+        {
+          "observation": "未见已选卡边框裁掉姓名或进度条幅",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793526898908-1ye6hw\\房主真实选择奇异博士.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "彩色头像与琥珀选择框仅标当前本方选择，实施中斜条承担进度身份，未以新提示条重复。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "42-值得拥有-来源卡等待玩家关闭.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png",
+      "sha256": "3c1882656b2d655c58595d6556968e1b069477821da5d2d86b5b599fdc306319",
+      "status": "PASS",
+      "observation": "中央来源特写显示不愧是我整张牌，标题、图案和可对同一骰重掷两次的正文可读；右侧五骰、盘下动作和左侧选骰计数仍完整露出，卡外有明确空白区域。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 CardSpotlightOverlay 与 SpotlightContainer，保留原特写宽度、居中阅读位置和空白点击关闭路径；必要差异为取消默认三秒关闭、按源图比例显示及去多余外框。静图不独立证明停留时长或实际关闭行为。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "中央特写承担读来源牌，右侧骰列承接后续目标，两者没有互相遮挡。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "整张来源牌四边均在屏内，牌下缘高于手牌主体；右侧五骰与盘下按钮保持旧竖列和动作行。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "印刷卡边界已清楚分离卡面，不再叠金色装饰框；卡外空白是原关闭承接区域。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 95
+      },
+      "protectedSlots": [
+        {
+          "slot": "来源牌标题和完整规则正文可读",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+        },
+        {
+          "slot": "右侧五颗目标骰及动作按钮无遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+        },
+        {
+          "slot": "左侧计数提示未被来源特写覆盖",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见阅读特写遮住骰子候选",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+        },
+        {
+          "observation": "未见来源牌规则正文裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+        },
+        {
+          "observation": "图面不用于证明超过三秒停留或点击关闭已执行",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793526898908-1ye6hw\\值得拥有-来源卡等待玩家关闭.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "印刷卡边界已清楚分离卡面，不再叠金色装饰框；卡外空白是原关闭承接区域。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "44-即视感重开后-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png",
+      "sha256": "de074175906e1ce12a19df86f590114b01e9cb878d3049baafdb9f294b59191d",
+      "status": "PASS",
+      "observation": "即视感重开后的当前进攻投掷阶段仍在左侧高亮，右侧五骰回到未锁定的统一展示，投掷按钮亮起而确认仍为灰色；玩家下一步应回原骰盘投掷。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "历史源码组件对照，非旧截图像素对照",
+        "observation": "对照两份旧基线的 DiceTray 普通进攻投掷态与 DiceActions、GameButton；重开后回到原骰盘投掷与确认按钮，未新增专属重开界面。静图只证明这些可见状态，不判断资源消耗或规则结算。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "右侧亮色投掷按钮和五骰构成当前动作链，左侧阶段条说明所属阶段。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "五骰仍在同一竖列，投掷与确认并列位于骰盘下方，结束攻击独占其下一行。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "旧琥珀主按钮强调当前可投掷，灰色确认区分不可确认；没有残留的状态说明浮层争抢焦点。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "protectedSlots": [
+        {
+          "slot": "右侧五骰完整且无锁定标签",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+        },
+        {
+          "slot": "投掷和确认按钮均可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+        },
+        {
+          "slot": "阶段、玩家板与资源继续保留原槽位",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见即视感悬停框残留挡住投掷",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+        },
+        {
+          "observation": "未见第二套重开入口或重复确认",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+        },
+        {
+          "observation": "未见骰列或下一步按钮被裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793526898908-1ye6hw\\即视感重开后-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "旧琥珀主按钮强调当前可投掷，灰色确认区分不可确认；没有残留的状态说明浮层争抢焦点。"
+      },
+      "hardFailures": []
+    }
+  ],
+  "summary": {
+    "total": 12,
+    "pass": 12,
+    "revise": 0,
+    "minScore": 94
+  }
+}

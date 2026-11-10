@@ -1,0 +1,53 @@
+{
+  "title": "DiceThrone 阶段说明 tip 真实悬浮对象对齐",
+  "media": [
+    {
+      "path": "media/01-阶段项-未悬浮.jpg",
+      "chainId": "phase-tooltip-visibility",
+      "chainStep": "1",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-real-entry.tmp.e2e.ts",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/media",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "静止",
+      "description": "阶段列表可见但没有悬浮说明框，作为目标对象出现前的真实牌桌状态。"
+    },
+    {
+      "path": "media/02-阶段说明tip-稳定态.jpg",
+      "chainId": "phase-tooltip-visibility",
+      "chainStep": "2",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-real-entry.tmp.e2e.ts",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/media",
+      "stage": "中态",
+      "role": "auxiliary-detail",
+      "viewport": "desktop",
+      "transition": "悬浮稳定",
+      "description": "真实悬浮阶段项后说明浮层稳定可读，原图用于和圈选标注图逐像素对应。"
+    },
+    {
+      "path": "labeled/02-labeled-phase-indicator-tooltip.png",
+      "chainId": "phase-tooltip-visibility",
+      "chainStep": "3",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-real-entry.tmp.e2e.ts",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/labeled",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "悬浮显示",
+      "description": "真实悬浮阶段项后，红框圈出右侧显示阶段含义的说明浮层，手牌和牌池均不是圈选目标。"
+    },
+    {
+      "path": "media/03-阶段项-移出后.jpg",
+      "chainId": "phase-tooltip-visibility",
+      "chainStep": "4",
+      "sourceRun": "e2e/dicethrone/phase-indicator-tooltip-real-entry.tmp.e2e.ts",
+      "sourceDir": "evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/media",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "移出收口",
+      "description": "鼠标移出阶段项后说明浮层消失，牌桌回到可继续操作的稳定状态。"
+    }
+  ]
+}

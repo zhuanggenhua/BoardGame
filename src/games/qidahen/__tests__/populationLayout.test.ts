@@ -21,6 +21,13 @@ beforeAll(async () => {
 });
 
 describe('七大恨人口标记的区域归属与占位', () => {
+    it('部队展开区不遮挡其他地区的人口标记', () => {
+        const area = { left: 520, top: 300, width: 120, height: 100 };
+        const placements = layoutQidahenPopulation(sites, regions, [], width, height, [area]);
+        const half = QIDAHEN_POPULATION_SIZE / 2;
+        for (const { point } of placements) expect(point.x + half <= area.left || point.x - half >= area.left + area.width
+            || point.y + half <= area.top || point.y - half >= area.top + area.height).toBe(true);
+    });
     it('土地地区中心与内部锚点归属正确；完整方块留在本区，窄区引线指回本区且所有方块互不重叠', () => {
         const placements = layoutQidahenPopulation(sites, regions, [], width, height);
         expect(placements.map(placement => placement.regionId).sort()).toEqual(regions.map(region => region.id).sort());

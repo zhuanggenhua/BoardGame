@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "feedbackId": "feedback-replay-contract-20261006",
+  "gameId": "feedback-management",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-06",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": "feedback-replay-contract.e2e-image-index.json",
+  "test": {
+    "file": "e2e/admin-feedback.e2e.ts",
+    "command": "npm run test:e2e:ci:file -- admin-feedback.e2e.ts 反馈页可展示分诊上下文并复制 AI 诊断包",
+    "result": "passed",
+    "entry": "隔离测试服务和真实浏览器后台反馈入口",
+    "productMutation": "none"
+  },
+  "requirements": [
+    {
+      "requirement": "前中后证据属于同一反馈现场链",
+      "status": "PASS",
+      "evidence": [
+        "三张截图使用同一故障链编号和同一后台反馈入口。",
+        "前态锁定目标反馈，中态展示现场包，后态验证诊断包交付。"
+      ]
+    },
+    {
+      "requirement": "截图用中文说明反馈现场",
+      "status": "PASS",
+      "evidence": [
+        "证据索引的三条描述均为中文，并通过中文描述校验。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/feedback-packet-chain-20261006/01-前态-反馈列表显示目标反馈.png",
+    "test-results/evidence-screenshots/feedback-packet-chain-20261006/02-中态-详情显示现场包关联键.png",
+    "test-results/evidence-screenshots/feedback-packet-chain-20261006/03-后态-复制诊断包完成.png"
+  ]
+}
+
+
+

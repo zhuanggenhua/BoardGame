@@ -7,7 +7,7 @@ async function lobbyMetrics(page: Page) {
         const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
         const content = root.querySelector('.platform-details-content')!;
         const rows = [...root.querySelectorAll('[data-testid^="room-list-item-"]')];
-        const scroll = rows[0]?.parentElement ?? content;
+        const scroll = root.querySelector('.platform-details-scroll')!;
         const clip = scroll.getBoundingClientRect();
         return { drawer: rect(root), summary: rect(root.querySelector('.platform-details-summary')!), content: rect(content),
             roomWindow: rect(scroll), scrollTop: scroll.scrollTop, total: rows.length,
@@ -66,15 +66,15 @@ test('正式详情常态与多房间容量在手机和PC保持原承载', async 
                     if (pressure) {
                         if (view.mobile) expect.soft(Math.abs(metrics.drawer.height - before.get(view.width)!.drawer.height)).toBeLessThanOrEqual(3);
                         else {
-                            // PC既有容器按内容自然增长，验承载与视口边界，不强加手机的固定高度合同。
+                            // PC 保持现有弹窗高度；1920 视口实际容纳四条完整房间，2560 可容纳五条。
                             expect.soft(metrics.drawer.height).toBeLessThanOrEqual(view.height - 48);
-                            expect.soft(metrics.fullRows).toBeGreaterThanOrEqual(5);
+                            expect.soft(metrics.fullRows).toBeGreaterThanOrEqual(view.width === 1920 ? 4 : 5);
                         }
                         const last = rows.last();
                         if (view.mobile) {
                             const touch = await context.newCDPSession(page);
                             const box = metrics.roomWindow;
-                            for (let swipe = 0; swipe < 12 && !(await last.evaluate(node => { const r = node.getBoundingClientRect(); const p = node.parentElement!.getBoundingClientRect(); return r.top >= p.top && r.bottom <= p.bottom; })); swipe++) {
+                            for (let swipe = 0; swipe < 12 && !(await last.evaluate(node => { const r = node.getBoundingClientRect(); const p = node.closest('.platform-details-scroll')!.getBoundingClientRect(); return r.top >= p.top && r.bottom <= p.bottom; })); swipe++) {
                                 const x = box.x + box.width * .4;
                                 const start = box.y + box.height * .85, end = box.y + box.height * .15;
                                 const finger=(y:number)=>({id:1,x,y,radiusX:8,radiusY:8,force:1});

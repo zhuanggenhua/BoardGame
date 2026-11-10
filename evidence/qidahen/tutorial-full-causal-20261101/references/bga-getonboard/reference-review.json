@@ -1,0 +1,24 @@
+{
+  "status": "PASS-complete-tutorial-process-only",
+  "reviewer": "/root/complete_tutorial_ck3",
+  "source": "https://en.boardgamearena.com/tutorial?game=getonboard&tutorial=967",
+  "author": "Nekonyancer",
+  "authorship": "BGA-hosted community tutorial linked from BGA official announcement",
+  "records": 56,
+  "uniquePrompts": 52,
+  "formalGameObjectClicks": 16,
+  "startRecord": 0,
+  "terminalRecord": 54,
+  "terminalImageRecord": 55,
+  "terminalDescription": "BGA first-game invitation, no Continue; observed on round 7 of 12",
+  "gameCompleted": false,
+  "tutorialCompleted": true,
+  "stateLogHash": "e49496ab7b038069e3c3bbd9841bff06989816dbbf5a4753d9381a529e12ce2e",
+  "frame": "https://en.boardgamearena.com/tutorial/tutorial/frame.html?game=getonboard&tutorial=967",
+  "limitations": [
+    "Community-authored, not publisher-authored",
+    "Course ends in round 7; source explicitly skips round 5",
+    "No claim full match/all branches/tooltip verification",
+    "No Qidahen acceptance implied"
+  ]
+}

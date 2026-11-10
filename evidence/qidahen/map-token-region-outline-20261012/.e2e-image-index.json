@@ -1,0 +1,43 @@
+{
+  "title": "七大恨棋子与地区描边",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "media/前态-行动窗口棋子地区描边无多余横幅.png",
+      "chainId": "qidahen-map-token-region-outline",
+      "chainStep": "1",
+      "sourceRun": "e2e/qidahen/map-token-region-outline.e2e.ts:行动窗口棋子和地区边界可从地图里分开",
+      "sourceDir": "evidence/qidahen/map-token-region-outline-20261012/media",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "进入行动窗口闲时",
+      "description": "玩家进入行动窗口后棋子有贴合描边、地区有深色边界，顶部没有操作横幅也没有地区悬浮条。"
+    },
+    {
+      "path": "media/中态-点选山海关地区描边与棋子描边.png",
+      "chainId": "qidahen-map-token-region-outline",
+      "chainStep": "2",
+      "sourceRun": "e2e/qidahen/map-token-region-outline.e2e.ts:行动窗口棋子和地区边界可从地图里分开",
+      "sourceDir": "evidence/qidahen/map-token-region-outline-20261012/media",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点选山海关",
+      "description": "玩家点选山海关后该地区出现更亮色带和地区提示，棋子描边仍在。"
+    },
+    {
+      "path": "media/后态-悬浮皮岛地区描边棋子仍可辨.png",
+      "chainId": "qidahen-map-token-region-outline",
+      "chainStep": "3",
+      "sourceRun": "e2e/qidahen/map-token-region-outline.e2e.ts:行动窗口棋子和地区边界可从地图里分开",
+      "sourceDir": "evidence/qidahen/map-token-region-outline-20261012/media",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "悬浮皮岛",
+      "description": "玩家悬浮皮岛后出现皮岛地区提示，附近棋子仍能从地图中辨认。"
+    }
+  ]
+}

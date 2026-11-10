@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂能力查看与剧本书对照验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂能力查看与剧本书对照验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-PC-1920x1080-能力与物品栏.jpg","displayTitle":"01 · PC · 1920x1080 · 能力与物品栏","description":"桌面牌桌显示角色完整能力说明与急救包，作为手机对照起点。","kind":"image"},{"relativePath":"02-Vivo-796x360-DPR3-能力与物品栏.jpg","displayTitle":"02 · Vivo · 796x360 · DPR3 · 能力与物品栏","description":"从桌面切到手机后，能力说明收成放大入口，急救包仍完整露出。","kind":"image"},{"relativePath":"03-Vivo-796x360-DPR3-点击后的能力详情.jpg","displayTitle":"03 · Vivo · 796x360 · DPR3 · 点击后的能力详情","description":"点击手机放大入口后，完整能力正文清晰展开，关闭键仍可见。","kind":"image"},{"relativePath":"04-PC-1920x1080-剧本书正文无额外标题.jpg","displayTitle":"04 · PC · 1920x1080 · 剧本书正文无额外标题","description":"从能力状态转到剧本选择并打开读本，桌面书页只显示原有章节内容。","kind":"image"},{"relativePath":"05-Vivo-796x360-DPR3-剧本书正文无额外标题.jpg","displayTitle":"05 · Vivo · 796x360 · DPR3 · 剧本书正文无额外标题","description":"从桌面切到手机读本后，两页原文仍清晰，未出现额外剧本名标题。","kind":"image"},{"relativePath":"06-Vivo-796x360-DPR3-关闭剧本书返回选择页.jpg","displayTitle":"06 · Vivo · 796x360 · DPR3 · 关闭剧本书返回选择页","description":"点击手机读本关闭键后返回剧本选择页，剧本名仍属于候选卡。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

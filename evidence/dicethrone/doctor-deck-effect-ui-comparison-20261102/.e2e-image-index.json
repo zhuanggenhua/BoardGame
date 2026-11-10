@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "title": "来源核查：血色杀戮旧组件重放、当前效果与博士界面对比（不是产品验收）",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceStatus": "not-claimed",
+  "productAcceptance": "not-claimed",
+  "media": [
+    {
+      "path": "01-1-01-血色杀戮-真实抽牌堆候选.png",
+      "description": "用户确认的原选择器组件带正式卡图重放；不是原时历史截图；真实完整抽牌堆候选。",
+      "chainId": "历史组件重放非历史原图",
+      "chainStep": "1",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "6421bc6bedce8205658094fce2f5e8ebdce08e312d503db9ee53230d47923bae"
+    },
+    {
+      "path": "01-2-02-血色杀戮-搜索命中.png",
+      "description": "用户确认的原选择器组件带正式卡图重放；不是原时历史截图；相同搜索词命中单张。",
+      "chainId": "历史组件重放非历史原图",
+      "chainStep": "2",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\02-血色杀戮-搜索命中.png",
+      "sha256": "76eb73ed3613d47e607c77c5fd946e6325e8cd2882678fd59a611cec5dc3bbe5"
+    },
+    {
+      "path": "01-3-03-血色杀戮-已选待确认.png",
+      "description": "用户确认的原选择器组件带正式卡图重放；不是原时历史截图；相同目标已选待确认。",
+      "chainId": "历史组件重放非历史原图",
+      "chainStep": "3",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\03-血色杀戮-已选待确认.png",
+      "sha256": "16559e64bfa75b529072d2c874fab56df88ea6efdfe1ba7a23748e390ef2da34"
+    },
+    {
+      "path": "02-1-01-血色杀戮-真实抽牌堆候选.png",
+      "description": "恢复后的血色杀戮真实入口；复用原完整布局和响应式；真实完整抽牌堆候选。",
+      "chainId": "当前血色杀戮已被改动",
+      "chainStep": "1",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "7212f945fae32e1dad471e46adb9972580d99b65cb15ea75b16c2fc2dfb3c801"
+    },
+    {
+      "path": "02-2-02-血色杀戮-搜索命中.png",
+      "description": "恢复后的血色杀戮真实入口；复用原完整布局和响应式；相同搜索词命中单张。",
+      "chainId": "当前血色杀戮已被改动",
+      "chainStep": "2",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\02-血色杀戮-搜索命中.png",
+      "sha256": "cacdf03a4bd92960cc744d16c62bd789fa5bf5617c01ff8f0d50c4fdf7348306"
+    },
+    {
+      "path": "02-3-03-血色杀戮-已选待确认.png",
+      "description": "恢复后的血色杀戮真实入口；复用原完整布局和响应式；相同目标已选待确认。",
+      "chainId": "当前血色杀戮已被改动",
+      "chainStep": "3",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\03-血色杀戮-已选待确认.png",
+      "sha256": "33cb9fabefaef7f3c922898b74c0b44b24ffb0c296be2491a6f5e5ae44d8a72b"
+    },
+    {
+      "path": "03-01-弃牌法术候选-桌面.png",
+      "description": "当前博士弃牌准备候选；与血色杀戮规则来源和候选数量不同，只比较共享承载，不当成同一规则动作。",
+      "chainId": "当前博士不同规则来源",
+      "chainStep": "1",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793605092812-5jro9s\\桌面-弃牌准备选择态.png",
+      "sha256": "2c7209ca214c8a99e9766668b24bff0287d4929cd8194bc8c3f41f3d0df8bb99"
+    },
+    {
+      "path": "03-02-弃牌法术已选-桌面.png",
+      "description": "当前博士弃牌法术已选待确认；不是用户指定原效果的历史图。",
+      "chainId": "当前博士不同规则来源",
+      "chainStep": "2",
+      "stage": "来源核查",
+      "sourceRun": "doctor-deck-effect-source-comparison-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793605092812-5jro9s\\桌面-法术卡已选待确认.png",
+      "sha256": "1a2716d3f3b7cf9ac4b27e07873af4903fa6c6c5198f7007a79039f4838e78c5"
+    }
+  ]
+}

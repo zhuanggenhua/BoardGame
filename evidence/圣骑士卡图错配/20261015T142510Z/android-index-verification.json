@@ -1,0 +1,70 @@
+[
+  {
+    "channel": "edge",
+    "version": "0.6.4-dicethrone-idx-b0e4d91c8c08",
+    "checksumMatches": true,
+    "checks": [
+      {
+        "asset": "ability-cards",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp",
+          "hash": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+          "size": 2040596
+        },
+        "matches": true
+      },
+      {
+        "asset": "player-board",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp",
+          "hash": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+          "size": 859280
+        },
+        "matches": true
+      },
+      {
+        "asset": "tip",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp",
+          "hash": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+          "size": 186676
+        },
+        "matches": true
+      }
+    ]
+  },
+  {
+    "channel": "stable",
+    "version": "0.6.4-dicethrone-idx-b0e4d91c8c08",
+    "checksumMatches": true,
+    "checks": [
+      {
+        "asset": "ability-cards",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/ability-cards.webp",
+          "hash": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+          "size": 2040596
+        },
+        "matches": true
+      },
+      {
+        "asset": "player-board",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp",
+          "hash": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+          "size": 859280
+        },
+        "matches": true
+      },
+      {
+        "asset": "tip",
+        "entry": {
+          "path": "i18n/zh-CN/dicethrone/images/paladin/compressed/tip.webp",
+          "hash": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+          "size": 186676
+        },
+        "matches": true
+      }
+    ]
+  }
+]

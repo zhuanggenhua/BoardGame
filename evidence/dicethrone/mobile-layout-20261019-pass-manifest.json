@@ -1,0 +1,168 @@
+{
+  "verdict": "REVISE",
+  "withdrawal": {
+    "date": "2026-10-19",
+    "previousVerdict": "PASS",
+    "reason": "用户否决移动端独立字号及新增滚动方案；原验收跳过阶段面板高度等比断言，不能证明PC构图与Token槽位保持。旧测试、原图和局部生命周期事实保留，但不再作为整体移动端布局通过结论。",
+    "productUiAccepted": false
+  },
+  "scope": "independent",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "evidenceMode": "regression-comparison",
+  "evidenceIndex": "../../test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/.e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "scopeNote": "20张真实整屏比较，只覆盖当前本地修复。左上角只是整体样本；普通鼠标图不证明透明放大镜可见，19/20触控图才覆盖。17/18是注入安全区的浏览器滚动，不是安卓设备；常态及压力态为预置代表态，不是完整自然对局。开发扳手只在测试入口关闭，正式构建本不显示；未隐藏玩家对象。四张修前手机产品仍REVISE。手机最新OTA754已验包，包含旧SVG修复，本轮新代码尚未发布；安卓报告仍成立，不能说整个任务完成。Fab展开菜单红测不被此PASS吸收。",
+  "requirements": [
+    {
+      "requirement": "恢复整个牌桌共同对象尺度，保留PC结构与表现",
+      "status": "PASS",
+      "evidence": [
+        "九类对象、三视口、两状态的同入口宽高矩形；936中央板388→473、牌堆78→95；恢复940策略而保留设计单位迁移。",
+        "整组字号/行高/内边距/项间距按九月九日源码及回放恢复，不仅放大字体。PC几何保护通过；新图排除正式构建本无的开发工具。"
+      ]
+    },
+    {
+      "requirement": "容量不足时不缩小对象，完整牌堆与44px真实入口可达",
+      "status": "PASS",
+      "evidence": [
+        "8/9、10/11、13/14、15/16为原下方区域真实滚动配对；17/18顶部16、底部0/20的真实内外往返。",
+        "回到七阶段、六Token四状态；圆形热区四向与中心命中、边缘点击隐藏/恢复手牌；资源状态需滚回，不声称持续同时同屏。"
+      ]
+    },
+    {
+      "requirement": "固定图标与初始化字体按真实刷新链验收",
+      "status": "PASS",
+      "evidence": [
+        "19/20触控整屏两个真正放大镜常显、图标及圆内留白通过，手牌正面稳定。",
+        "同视口布局属性变化的hook先红后绿；先写CSS再触发读取者render，原Fab公式不改。移动hasTouch不resize验证约18.4px；初始化14px CSS/22.75px行高保持，不用resize1px绕路。"
+      ]
+    },
+    {
+      "requirement": "先保留真实修前，再给当前整屏对比与独立审查",
+      "status": "PASS",
+      "evidence": [
+        "1–6原始修前哈希保持，四张手机仍为失败产品比较；7–20当前独立逐张核验。",
+        "旧REVISE和过渡帧另存档，仅4变化图增量重拍复核，最终全量20图账本，不沿用旧SHA的PASS。"
+      ]
+    },
+    {
+      "requirement": "通用规范防止示例收窄、孤立尺寸补偿及resize掩盖",
+      "status": "PASS",
+      "evidence": [
+        "conversation-handoff-target-lock与regression-closeout两个既有唯一主源更新；README仅索引。",
+        "spec:lint、独立规范/代码审查通过；代码回到原整屏及不变视口入口验证，不以lint替业务结果。"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/fixed_content_visual_audit"
+    },
+    "reviewFile": "mobile-layout-20261019-visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/hooks/ui/__tests__/useRuntimeViewport.test.ts src/games/__tests__/mobileSupport.test.ts src/components/__tests__/GameHUDChatPreview.test.ts src/components/system/__tests__/GlobalErrorBoundary.test.tsx src/games/dicethrone/ui/__tests__/LeftSidebar.test.tsx src/games/dicethrone/ui/__tests__/compatLayout.test.tsx src/games/dicethrone/ui/__tests__/compatSource.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      ".tmp/dt-viewport-lifecycle-final-vitest.log：7文件114项通过；.tmp/dt-mobile-final-current-runtime.log：5 E2E通过40.9s；.tmp/dt-mobile-stable-supplement.log：3项稳定补拍通过24.4s；.tmp/dt-fixed-current-runtime-final.log：3项目标用例通过23.6s。",
+      ".tmp/dt-fab-retained-unresolved-red.log另有展开菜单失败，不计入通过；不宣称整库全绿、安卓真机或线上已修复。"
+    ]
+  },
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-桌面-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/02-修复前-手机横屏-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/03-修复前-较窄手机横屏-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/04-修复前-桌面-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/05-修复前-手机横屏-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/06-修复前-较窄手机横屏-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/07-修复后-桌面-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/08-修复后-手机横屏936-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/09-修复后-手机横屏936-常态-滚后完整牌堆.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/10-修复后-较窄手机横屏812-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/11-修复后-较窄手机横屏812-常态-滚后完整牌堆.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/12-修复后-桌面-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/13-修复后-手机横屏936-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/14-修复后-手机横屏936-状态齐全-滚后完整牌堆.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/15-修复后-较窄手机横屏812-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/16-修复后-较窄手机横屏812-状态齐全-滚后完整牌堆.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/17-修复后-较窄手机横屏812-顶部16底部0安全区-滚动后.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/18-修复后-较窄手机横屏812-顶部16底部20安全区-滚动后.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/19-修复后-触控横屏DPR2.5-常态.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/20-修复后-触控横屏DPR2.5-状态齐全.jpg"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/01-PC-1920x1080-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "legacy-sidebar-space",
+      "reason": "同运行的空间比例合同，不混入当前稳定整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/02-手机横屏936x432-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "legacy-sidebar-space",
+      "reason": "同运行的空间比例合同，不混入当前稳定整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/03-手机横屏812x375-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "legacy-sidebar-space",
+      "reason": "同运行的空间比例合同，不混入当前稳定整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/04-PC-1920x1080-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "legacy-sidebar-space",
+      "reason": "同运行的空间比例合同，不混入当前稳定整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/05-手机横屏936x432-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "legacy-sidebar-space",
+      "reason": "同运行的空间比例合同，不混入当前稳定整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/06-手机横屏812x375-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "legacy-sidebar-space",
+      "reason": "同运行的空间比例合同，不混入当前稳定整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/侧栏滚动不裁切阶段与Token详情/812-Token详情-侧栏外完整显示.png",
+      "contract": "sidebar-tooltip-overflow",
+      "reason": "独立Tooltip新增裁切合同；6图已独立核实无新增裁切，但既有坐标偏移未修，不并入常态整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/侧栏滚动不裁切阶段与Token详情/812-侧栏滚后阶段详情.png",
+      "contract": "sidebar-tooltip-overflow",
+      "reason": "独立Tooltip新增裁切合同；6图已独立核实无新增裁切，但既有坐标偏移未修，不并入常态整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/侧栏滚动不裁切阶段与Token详情/812-阶段详情-侧栏外完整显示.png",
+      "contract": "sidebar-tooltip-overflow",
+      "reason": "独立Tooltip新增裁切合同；6图已独立核实无新增裁切，但既有坐标偏移未修，不并入常态整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/侧栏滚动不裁切阶段与Token详情/936-Token详情-侧栏外完整显示.png",
+      "contract": "sidebar-tooltip-overflow",
+      "reason": "独立Tooltip新增裁切合同；6图已独立核实无新增裁切，但既有坐标偏移未修，不并入常态整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/侧栏滚动不裁切阶段与Token详情/936-侧栏滚后阶段详情.png",
+      "contract": "sidebar-tooltip-overflow",
+      "reason": "独立Tooltip新增裁切合同；6图已独立核实无新增裁切，但既有坐标偏移未修，不并入常态整屏比较。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/侧栏滚动不裁切阶段与Token详情/936-阶段详情-侧栏外完整显示.png",
+      "contract": "sidebar-tooltip-overflow",
+      "reason": "独立Tooltip新增裁切合同；6图已独立核实无新增裁切，但既有坐标偏移未修，不并入常态整屏比较。"
+    }
+  ]
+}

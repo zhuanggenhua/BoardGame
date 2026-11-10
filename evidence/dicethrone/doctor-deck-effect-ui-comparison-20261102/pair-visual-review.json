@@ -1,0 +1,160 @@
+{
+  "objective": "用户确认的血色杀戮原完整牌库选择UI与恢复后UI的私有截图对照；附博士共享承载形态检查",
+  "userExpected": "保持原PC布局、尺寸、密度、锚点与操作行，仅保留搜索单清空差异；博士卡图不加额外底框、不变形。",
+  "sourceManifest": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-deck-effect-ui-comparison-20261102\\source-review-manifest.json",
+  "reviewerAgent": "/root/confirmed_deck_pair_visual",
+  "method": "逐张通过view_image以detail original实际私有读取8张1440×900整屏PNG；未拼图、未裁图、未展示给用户；Get-FileHash SHA256核对8/8一致。",
+  "productAcceptance": "not-claimed",
+  "pairVisualVerdict": "PASS",
+  "verdictScope": "仅这8张固定1440×900截图所直接覆盖的可见布局及资源加载对照；不包含实际交互、移动端、规则结算或发布。",
+  "reason": "血色杀戮三组同视口同状态对照的卡框尺寸、9列密度、上方锚点、滚动窗可见边界和按钮状态一致。搜索态可见差异为原双清空到恢复后单圆形清空；博士图正式法术图无可见变形或额外底框，选中与确认可见。",
+  "criteria": [
+    {
+      "criterion": "正式卡图和角色背景加载，无灰骨架",
+      "status": "passed",
+      "evidence": "8张原图均肉眼读到彩色正式卡图和对应角色棋盘/人物背景。"
+    },
+    {
+      "criterion": "血色杀戮全候选PC布局、大小、密度、锚点及动作行一致",
+      "status": "passed",
+      "evidence": "图1对图4首排9列、两排可见窗、33/33计数、卡框及取消/禁用确认行一致；manifest测量首卡103.671875×169.703125且x195.90625/y203.5相同。"
+    },
+    {
+      "criterion": "血色杀戮搜索和已选态同目标位置、尺寸及确认状态一致",
+      "status": "passed",
+      "evidence": "图2对图5、图3对图6均为血流如注1/33，单卡上方居中、取消/确认行相同，选中金边与启用确认相同；manifest测量x668.15625/y203.5及卡幅相同。"
+    },
+    {
+      "criterion": "保留搜索单清空差异",
+      "status": "passed",
+      "evidence": "原搜索态为蓝色小×及圆形×；恢复后搜索态仅右侧单圆形×。已选态恢复后亦仅单圆形×。"
+    },
+    {
+      "criterion": "博士卡图无额外底框和可见变形、卡面及确认按钮可见",
+      "status": "passed",
+      "evidence": "图7和8为单张法瑞拉之牙细长原比例图，选中只加薄金边，灰/金确认按钮位于卡下且完整。"
+    },
+    {
+      "criterion": "真实滚动、长按/右键读牌、确认执行和规则结算",
+      "status": "not-covered",
+      "evidence": "8张静态图没有这些实际动作的连续证据，不能由视觉对照推断。"
+    },
+    {
+      "criterion": "响应式及移动端原布局保持",
+      "status": "not-covered",
+      "evidence": "全部为1440×900桌面图，没有其他视口。"
+    }
+  ],
+  "limitations": [
+    "前3张为用户指定原组件在当前完整应用重放，不是原时历史整应用截图，不认定为最后正常版本。",
+    "后2张博士图与血色杀戮的规则卡区及候选数量不同，只核对共享承载视觉，不把其认作同一效果或33张牌库替代证据。",
+    "全候选图只能看见当前滚动窗内约两排，33/33计数可见，但不能证明屏外剩余卡图或实际滚动均已验收。",
+    "静态卡面与确认按钮可见不证明右键/长按读牌、点击确认后规则结果或选项身份正确；这些须由独立行为证据证明。",
+    "8图中未发现本轮可见对照目标失败；此PASS不构成产品整体PASS。"
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "blocked": 0,
+    "partial": 0
+  },
+  "items": [
+    {
+      "file": "01-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "6421bc6bedce8205658094fce2f5e8ebdce08e312d503db9ee53230d47923bae",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\01-血色杀戮-真实抽牌堆候选.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "正式吸血鬼卡图均已加载，首排9张完整卡框、第二排9张在滚动窗底部按原窗口截断；标题居中且位于牌桌上方，搜索框、33/33计数、横向密集换行、下方取消及禁用确认可见。吸血鬼角色棋盘与底部手牌、左下33张牌堆卡背均为完整图像，无灰骨架。原牌框约103.67×169.70，首卡左上约195.91/203.5。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "01-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\02-血色杀戮-搜索命中.png",
+      "sha256": "76eb73ed3613d47e607c77c5fd946e6325e8cd2882678fd59a611cec5dc3bbe5",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\02-血色杀戮-搜索命中.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "正式血流如注卡图在上方居中，显示1/33；搜索词血流如注可见。搜索输入右侧有蓝色小×，其右下另有圆形×，这是原重放中双清空的可见差异。取消/灰色确认行位于单卡下方。吸血鬼人物、技能卡与底部手牌图已加载，无灰骨架。卡框约103.67×169.70，左上约668.16/203.5。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "01-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\03-血色杀戮-已选待确认.png",
+      "sha256": "16559e64bfa75b529072d2c874fab56df88ea6efdfe1ba7a23748e390ef2da34",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-baseline-routed\\03-血色杀戮-已选待确认.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "同一血流如注正式卡图居中、1/33，金色选择框清晰，取消按钮与亮金确认按钮均可见；搜索词未消失，圆形清空×可见。标题、卡位与操作行未移位。吸血鬼角色背景和牌桌图像已加载，无灰骨架。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "02-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "7212f945fae32e1dad471e46adb9972580d99b65cb15ea75b16c2fc2dfb3c801",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\01-血色杀戮-真实抽牌堆候选.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "恢复后正式卡图与原重放同样首排9列、次排9列，33/33计数相同；标题、搜索框、卡框、滚动窗口底部截断和取消/禁用确认的行位置肉眼一致。吸血鬼背景、卡背和手牌均已加载，无灰骨架；首卡约103.67×169.70，左上约195.91/203.5。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "02-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\02-血色杀戮-搜索命中.png",
+      "sha256": "cacdf03a4bd92960cc744d16c62bd789fa5bf5617c01ff8f0d50c4fdf7348306",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\02-血色杀戮-搜索命中.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "恢复后血流如注正式卡图、1/33计数、搜索词、单卡位置及取消/禁用确认操作行与原搜索态一致。输入框右端只剩一个居中的圆形×，原蓝色小×已消失。吸血鬼背景和牌桌图已加载，无灰骨架；卡框约103.67×169.70，左上约668.16/203.5。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "02-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\03-血色杀戮-已选待确认.png",
+      "sha256": "33cb9fabefaef7f3c922898b74c0b44b24ffb0c296be2491a6f5e5ae44d8a72b",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\confirmed-final\\03-血色杀戮-已选待确认.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "恢复后同一血流如注卡图金边选中、亮金确认按钮和取消按钮完整可见；单卡位置、原大小、面板上方锚点和原选中态一致。清空为右端单圆形×。吸血鬼角色背景、正式卡图无缺图、无灰骨架。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "03-01-弃牌法术候选-桌面.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793605092812-5jro9s\\桌面-弃牌准备选择态.png",
+      "sha256": "2c7209ca214c8a99e9766668b24bff0287d4929cd8194bc8c3f41f3d0df8bb99",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793605092812-5jro9s\\桌面-弃牌准备选择态.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "博士标题为从弃牌堆选择1个法术并准备；只有法瑞拉之牙单张法术正式卡图，图像细长比例自然，周围没有额外卡片底框。单卡下灰色确认按钮完整可见。博士角色人物、技能棋盘、下方两张手牌与弃牌区卡图已加载，无灰骨架。该卡区/数量不同，不能对照血色杀戮33张完整牌库。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    },
+    {
+      "file": "03-02-弃牌法术已选-桌面.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793605092812-5jro9s\\桌面-法术卡已选待确认.png",
+      "sha256": "1a2716d3f3b7cf9ac4b27e07873af4903fa6c6c5198f7007a79039f4838e78c5",
+      "hashMatchesManifest": true,
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793605092812-5jro9s\\桌面-法术卡已选待确认.png",
+      "readMode": "view_image original full-screen",
+      "status": "passed",
+      "observation": "博士同一法瑞拉之牙正式卡图获得薄金色选中边，图像比例未变，没有新增大底框；下方亮金确认按钮完整可见。博士人物背景、棋盘和手牌均完整加载，无灰骨架。卡面在当前缩放可识别名称、红色法阵及上下规则区，但此图没有读牌放大层。",
+      "imagesLoaded": true,
+      "graySkeletonObserved": false
+    }
+  ]
+}

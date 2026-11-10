@@ -1,0 +1,337 @@
+{
+  "status": "PASS",
+  "viewerUrl": "http://127.0.0.1:4867/?key=9a9a03105538",
+  "openedBrowser": false,
+  "pageStatus": 200,
+  "healthStatus": 200,
+  "listingStatus": 200,
+  "mediaCount": 54,
+  "mediaAllSameBytes": true,
+  "checkedAt": "2026-11-02T08:54:13.934Z",
+  "media": [
+    {
+      "path": "01-弃牌法术候选-桌面.png",
+      "status": 200,
+      "bytes": 1196328,
+      "sha256": "4a8fa19994aa5b672500d355e374d888bfcf60f92bd8f0b0ab00b41a520aff5d"
+    },
+    {
+      "path": "02-弃牌法术已选-桌面.png",
+      "status": 200,
+      "bytes": 1197640,
+      "sha256": "c71eebbfb7f8b232137c0da4927288fcbd1eb89e3c71c356ebea2f9397593bac"
+    },
+    {
+      "path": "03-弃牌法术候选-横屏.png",
+      "status": 200,
+      "bytes": 314802,
+      "sha256": "f9f3c58ebc52d6effcbd3573443330be4e8c74d8a36b32032c2c063a87f2626c"
+    },
+    {
+      "path": "04-弃牌法术已选-横屏.png",
+      "status": 200,
+      "bytes": 314036,
+      "sha256": "c6daf4cf12b3bf470969198a8570a968c736b71cf103104239a5df7690face58"
+    },
+    {
+      "path": "05-深红系带玩家候选.png",
+      "status": 200,
+      "bytes": 801056,
+      "sha256": "6fa028171894f8784719f7df875de71efb128a0b1949f68ca0e64c775f05cc74"
+    },
+    {
+      "path": "06-深红系带玩家已选.png",
+      "status": 200,
+      "bytes": 804949,
+      "sha256": "84343b8795ccf4c769a036f6e97ad4dd8b822669e0acb3b030a915515726aa8f"
+    },
+    {
+      "path": "07-状态候选-桌面.png",
+      "status": 200,
+      "bytes": 1096467,
+      "sha256": "c1c6fdf1960698425278f01ef780fda9d1b976944a6e711a4815ca090453d163"
+    },
+    {
+      "path": "08-状态已选-桌面.png",
+      "status": 200,
+      "bytes": 1130314,
+      "sha256": "6f56acd5b35e0f35d98b5bfb83559290109f62a4b081488e17fa29083fc23f0f"
+    },
+    {
+      "path": "09-状态候选-横屏.png",
+      "status": 200,
+      "bytes": 216582,
+      "sha256": "faeae9950e325b9079e7c4e269a060aa5cb89816c882f16e13b3b2d255161426"
+    },
+    {
+      "path": "10-状态已选-横屏.png",
+      "status": 200,
+      "bytes": 223734,
+      "sha256": "0dd6bcb88a49ba8ef9d511bad697507b0d01c349d37195cfb75cc4799a63880d"
+    },
+    {
+      "path": "11-预感收入替代选项.png",
+      "status": 200,
+      "bytes": 226042,
+      "sha256": "68248e07f02f380bc3702b92429db161e8037a79521394d69f7b6a25c9f3016f"
+    },
+    {
+      "path": "11b-预感收入替代选项-横屏.png",
+      "status": 200,
+      "bytes": 51990,
+      "sha256": "0847a513b9338bb10b31b17be783cfdf88853480da4c35b0e0f30ae4fc3b0dc6"
+    },
+    {
+      "path": "12-抽牌返还候选.png",
+      "status": 200,
+      "bytes": 1173376,
+      "sha256": "41b1ae432d43a6ee32cd3aa22aac4f27a8832982209da1949e1fd76dc303926e"
+    },
+    {
+      "path": "13-抽牌返还已选.png",
+      "status": 200,
+      "bytes": 1234987,
+      "sha256": "588e55da90cf970b9ddea1be224e8ddf19a9b21f6abcfaaafc33789a4eadab99"
+    },
+    {
+      "path": "14-牌库位置选择.png",
+      "status": 200,
+      "bytes": 260304,
+      "sha256": "9e609baa3766bd692b7f3eea67e4d20c98346c1cdf4ac36e284be5ff9e246ad5"
+    },
+    {
+      "path": "15-牌库顶五法术候选.png",
+      "status": 200,
+      "bytes": 1226526,
+      "sha256": "b5702196c272aa9cb64829e90d3c54bf003d4f6a0204581dcdbca7f63a1459f4"
+    },
+    {
+      "path": "16-牌库顶五第二张已选.png",
+      "status": 200,
+      "bytes": 1206452,
+      "sha256": "3106f14cf1af7f4fe473c74db706ce3fc149447c5fc9cf21f5f6cd6ac2ce1071"
+    },
+    {
+      "path": "17-剩余牌重排候选.png",
+      "status": 200,
+      "bytes": 1228656,
+      "sha256": "e8de223f0ef3c36b46772810742a23103e951c5bb34ff1796739265aca825beb"
+    },
+    {
+      "path": "18-剩余牌首张已选.png",
+      "status": 200,
+      "bytes": 1228604,
+      "sha256": "4592f69f542c39b89f71e767262e74e58a71543fab96abdf8bd02913ee09ebb7"
+    },
+    {
+      "path": "19-准备区法术施放候选.png",
+      "status": 200,
+      "bytes": 1246863,
+      "sha256": "3f8e899dc2722bf2954e965b7d0e35da8b9b7806d86e4c8e736af7b09eda85c8"
+    },
+    {
+      "path": "20-准备区法术已选.png",
+      "status": 200,
+      "bytes": 1247863,
+      "sha256": "96e064caa8ba088a3f87583fb18014a7b4da309eb886d757e707f4e43c0a1257"
+    },
+    {
+      "path": "21-星际侵入技能已选.png",
+      "status": 200,
+      "bytes": 1526728,
+      "sha256": "1caf64283be7bee21d8df238d0d920a1d367516dc1bfc1874dfe5a440239a10b"
+    },
+    {
+      "path": "22-奖励骰待确认.png",
+      "status": 200,
+      "bytes": 1527931,
+      "sha256": "71920aed8ce711253042272c1c62e57d0986032aef128090b96e6f12a7e63111"
+    },
+    {
+      "path": "23-值得拥有骰子候选.png",
+      "status": 200,
+      "bytes": 1507903,
+      "sha256": "4835ced6d7b57083a0ac25b5e53806059a1fd6dec507a8335f37c36fe52ca055"
+    },
+    {
+      "path": "24-值得拥有骰子已选一次.png",
+      "status": 200,
+      "bytes": 1508369,
+      "sha256": "e8d0014a54de47f3684d592ee4b2fe2c2c4c3b01a99832d1dabdbcd4715e3057"
+    },
+    {
+      "path": "25-值得拥有骰子已选两次.png",
+      "status": 200,
+      "bytes": 1506760,
+      "sha256": "2bb5e80026b50997480185dcf6054fa43c6f192561f38917c92f518db4c2259d"
+    },
+    {
+      "path": "26-即视感悬停说明.png",
+      "status": 200,
+      "bytes": 1528226,
+      "sha256": "df34a47953a3225acf5c70778436ea2aeb08d6d37ddfe860508f2cb7da75a335"
+    },
+    {
+      "path": "27-角色排序-已完成角色前段.png",
+      "status": 200,
+      "bytes": 1616954,
+      "sha256": "03bcfe0ab182226a710d39480a5f12bcf93354108c8d97db59d6c073218f5261"
+    },
+    {
+      "path": "28-角色排序-实施中角色后段.png",
+      "status": 200,
+      "bytes": 1668505,
+      "sha256": "f2e836c0555218ca6dc75eab19df9a10894945ec40d33134794fdce5db9da9b5"
+    },
+    {
+      "path": "29-卡牌候选复用放大阅读.png",
+      "status": 200,
+      "bytes": 1113705,
+      "sha256": "981f5e428d32dbf9506b11b12723376899d7554dba1a9cd9813abc3d8a4bce10"
+    },
+    {
+      "path": "30-公开准备区三张法术-桌面.png",
+      "status": 200,
+      "bytes": 1501014,
+      "sha256": "07f8221b468ca199c0b64c3e59ba0f7f559a9c640e4bdf4a00c6c70e3154b47b"
+    },
+    {
+      "path": "31-公开准备区原卡阅读-桌面.png",
+      "status": 200,
+      "bytes": 1369929,
+      "sha256": "10e0ab32552dfcc88a1fcd69e87ce25fc39e2541094f838b6a3f9f4aad0ed2dd"
+    },
+    {
+      "path": "32-公开准备区横向找到第三张-横屏.png",
+      "status": 200,
+      "bytes": 436875,
+      "sha256": "460934643d188fb06e0d85255e2ea8f8e3c475c6392127aaf3cc865bb99b1173"
+    },
+    {
+      "path": "33-公开准备区原卡阅读-横屏.png",
+      "status": 200,
+      "bytes": 398907,
+      "sha256": "8862205bc8aa2e4b38550281d4270e480e939a99c6cc88cbdc76cddf56dd3779"
+    },
+    {
+      "path": "34-所有玩家目标候选-桌面.png",
+      "status": 200,
+      "bytes": 803326,
+      "sha256": "52fa4124491ab4c861672dc39f955802a4fa958b8b43bc0d145846b11834b501"
+    },
+    {
+      "path": "35-所有玩家队友已选-桌面.png",
+      "status": 200,
+      "bytes": 807472,
+      "sha256": "1e0fbe1342273d77e7816d064e3c83da06ead00bff692df5d035754b8c004fe4"
+    },
+    {
+      "path": "36-多持有人状态候选-桌面.png",
+      "status": 200,
+      "bytes": 750313,
+      "sha256": "7a7352045b07ca89faa6b38328c32fd55e8c9c9a202a55203238689e84508bef"
+    },
+    {
+      "path": "37-多持有人状态候选-横屏.png",
+      "status": 200,
+      "bytes": 68474,
+      "sha256": "b1bf9c61f1a6411dd719796866182ed23dd2c08a3478790b1bfb49841c601c94"
+    },
+    {
+      "path": "38-无合法状态仅跳过-桌面.png",
+      "status": 200,
+      "bytes": 223227,
+      "sha256": "9f84e4683e522f7820be7f24ac09292196f3717061dbc457006f8f8c294b46b4"
+    },
+    {
+      "path": "39-秘术雷击原技能分支-桌面.png",
+      "status": 200,
+      "bytes": 233219,
+      "sha256": "5dfdca4c679c50d3648890ff12320951519c33229d35b3d09721dddbc30fba61"
+    },
+    {
+      "path": "40-弃牌直接施放完整候选-桌面.png",
+      "status": 200,
+      "bytes": 1234281,
+      "sha256": "f3ca8074f120f6181cda041879ad6cb6a14c7cafc710e2baa3ecb0047c508018"
+    },
+    {
+      "path": "41-弃牌直接施放八牌候选-横屏.png",
+      "status": 200,
+      "bytes": 388709,
+      "sha256": "5dbc2b3bff00ece81b2fb083f8bf00dacf6d87b411b69ece11cf806ca0147659"
+    },
+    {
+      "path": "41b-弃牌直接施放法术已选-横屏.png",
+      "status": 200,
+      "bytes": 388375,
+      "sha256": "310c6c5aee424987ff911fbf02f41cd818c5378cc893c719b1eab9a193a0dc94"
+    },
+    {
+      "path": "42-弃牌搜索无匹配可清除-横屏.png",
+      "status": 200,
+      "bytes": 281402,
+      "sha256": "8a6fe9e53eff654299de547a6e76f6483163e0345e58af9174cd0062d5de8a68"
+    },
+    {
+      "path": "43-值得拥有-来源卡等待玩家关闭.png",
+      "status": 200,
+      "bytes": 1471231,
+      "sha256": "a683c1769adb051757f4c98c8081128eed11f902df0b1fb91c650dcab3af39c9"
+    },
+    {
+      "path": "44-手机横屏-弃牌候选原阅读界面.png",
+      "status": 200,
+      "bytes": 318158,
+      "sha256": "4bf99f50238ea2de41dbb6da388fbe2850f40ae0bb503eea84ea538a917494df"
+    },
+    {
+      "path": "45-即视感重开后-桌面.png",
+      "status": 200,
+      "bytes": 1534874,
+      "sha256": "80121164ee74f3abb414db94a8220ce2639d67cb04d29af92d9dd0ced5312f8c"
+    },
+    {
+      "path": "46-桌面-弃牌候选原阅读界面.png",
+      "status": 200,
+      "bytes": 1170106,
+      "sha256": "94cac4f91f41b6f5fbec29eaee9cb0439671c45b66265bed0dda6cc4d2d8055a"
+    },
+    {
+      "path": "47-预感返还多卡候选-横屏.png",
+      "status": 200,
+      "bytes": 322948,
+      "sha256": "6e66b22221ba175cdd24403fad0b8fbce1f457c378b95afeb9843396e34d357a"
+    },
+    {
+      "path": "50-手机横屏-宇宙感知已选待结算.png",
+      "status": 200,
+      "bytes": 434290,
+      "sha256": "f246e1326563db3ce6b51e0ca000a27e0e893fd46b56a0ad4676886d1db71aab"
+    },
+    {
+      "path": "51-旧共有牌再见-状态候选.png",
+      "status": 200,
+      "bytes": 785400,
+      "sha256": "a254a9ccd6d80c9b605d75fa9468e0ca7cce3afc058a1aaff70dc54ad5b72f5c"
+    },
+    {
+      "path": "52-旧共有牌再见-实际持有人已选.png",
+      "status": 200,
+      "bytes": 788420,
+      "sha256": "88533e431006db9b20c3ed501474474362d63736114b9a427f7b3d38e9ec47c2"
+    },
+    {
+      "path": "53-桌面-宇宙感知已选待结算.png",
+      "status": 200,
+      "bytes": 1511343,
+      "sha256": "c2490845c677e5ea98d53c46dfdde5ad02d74e06344fa0238d8e3285037d0ddf"
+    },
+    {
+      "path": "54-重投左中与上方攻击修正同屏.png",
+      "status": 200,
+      "bytes": 1425342,
+      "sha256": "2b36c6ad828bb7de331a2fb0f0db6ed9f2f468a70d103de212c5269887d4ac16"
+    }
+  ]
+}

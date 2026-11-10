@@ -12,6 +12,7 @@
 import fc from 'fast-check';
 import { describe, it, expect } from 'vitest';
 import { GameTransportServer } from '../server';
+import { createInitialSystemState } from '../../pipeline';
 import type { GameEngineConfig } from '../engineConfig';
 import type {
     CreateMatchData,
@@ -247,10 +248,12 @@ const createMutableEngineConfig = (): GameEngineConfig => ({
     systems: [],
 });
 
+const createTestSystemState = () => ({ ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 });
+
 const createStoredState = (core?: Record<string, unknown>): StoredMatchState => ({
     G: {
         core: core ?? { currentPlayer: '0', counter: 0 },
-        sys: { phase: 'main', turnNumber: 1 },
+        sys: createTestSystemState(),
     },
     _stateID: 0,
     randomSeed: 'test-seed',
@@ -512,7 +515,7 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
                             // 注入新状态（应清空缓存）
                             await server.injectState(matchID, {
                                 core: { currentPlayer: '0', counter: 999 },
-                                sys: { phase: 'main', turnNumber: 1 },
+                                sys: createTestSystemState(),
                             } as any);
 
                             // injectState 内部调用 broadcastState，缓存为空 → 应发送 state:update
@@ -702,7 +705,7 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
             try {
                 await server.injectState(matchID, {
                     core: { currentPlayer: '0', counter: 0 },
-                    sys: { phase: 'main', turnNumber: 1 },
+                    sys: createTestSystemState(),
                 } as any);
                 // injectState 清空缓存 → broadcastState 发送 state:update（全量回退路径）
                 const updateEvents = getEvents(socket, 'state:update');
@@ -734,7 +737,7 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
                 const injectedCore = { currentPlayer: '0', counter: 42 };
                 await server.injectState(matchID, {
                     core: injectedCore,
-                    sys: { phase: 'main', turnNumber: 1 },
+                    sys: createTestSystemState(),
                 } as any);
 
                 // 应收到 state:update（全量），而非 state:patch

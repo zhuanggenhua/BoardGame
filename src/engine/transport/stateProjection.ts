@@ -148,7 +148,7 @@ export function buildTransportMatchPlayers(
     }));
 }
 
-export function emitStateToSockets(args: {
+function emitStateToSockets(args: {
     io: IOServer;
     match: Pick<TransportStateProjectionMatch, 'matchID' | 'lastBroadcastedViews'>;
     viewState: unknown;
@@ -178,7 +178,8 @@ export function emitStateToSockets(args: {
         }
     }
 
-    args.match.lastBroadcastedViews.set(args.cacheKey, serializeTransportState(args.viewState));
+    // 广播视图已由 stripStateForTransport 独立复制，可直接作为下一次差量基线。
+    args.match.lastBroadcastedViews.set(args.cacheKey, args.viewState);
 }
 
 export function broadcastProjectedMatchState(args: {

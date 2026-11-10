@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1793528886516-vprzro/骑乘费用不足且候选不可选.png.jpg",
+      "chainId": "iskandar-riding-unaffordable",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家在正式手牌上开启并操作骑乘选择",
+      "description": "行动阶段手牌进入骑乘选牌模式",
+      "uiStateId": "riding-unaffordable",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "行动阶段激活骑乘后，手牌切换为专用多选模式",
+      "behaviorStepId": "reject-unaffordable-card",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:d6ec909a3bc24676478459cd9ab329fbb52d003b27034f608be1f9a54086c095",
+      "requirements": [
+        "骑乘费用不足拒绝"
+      ],
+      "sourceRun": "1793529004105-135348-4e44b691-6f87-43d1-af47-78959001d3a8",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘魔力不足时拒绝费用牌且取消不消费能力/_runs/e2e-1793528886516-vprzro"
+    }
+  ]
+}

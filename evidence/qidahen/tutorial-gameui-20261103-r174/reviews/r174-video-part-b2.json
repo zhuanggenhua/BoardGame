@@ -1,0 +1,82 @@
+{
+  "status": "PASS",
+  "score": 94,
+  "reviewer": "/root/r174_video_b2",
+  "issues": [],
+  "actualReadCount": 4,
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "status": "PASS",
+      "observation": "骑兵结果整屏可读，蒙古原有阵营标记及守方列头贴近骰子，损伤文字明确指向大明；蒙古骑兵正面及大明兵牌可辨，邻近后金背牌属于背景，未见遮挡目标、顶部留白或可见报错。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "videoPart": {
+    "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+    "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+    "status": "PASS",
+    "readSheets": [
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\b-02.png",
+        "sha256": "feb043566ea72003cde44951ceb553f18149aa4b879f915ffa61a32d61814fa6",
+        "observation": "第51至62帧地图连续微移，骑兵阶段战斗槽和骰子可见；文字与归属待本批整屏核对。"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\b-03.png",
+        "sha256": "b1d017afb020da3ef4f915cb5d4da888d6dc10e2f58e953ce2b475bfb7cd2f24",
+        "observation": "第63至73帧骑兵结果保持，第74帧切到步兵阶段并出现新骰子；阶段切换没有空白或报错。"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\b-04.png",
+        "sha256": "ff7e9dc92ebbd50137a04d1746b540895f161f727e47621b744f76e2d7529a67",
+        "observation": "第75至80帧绿色骰子横向移动并旋转，步兵阶段标签随战场对象保持，地图没有闪白或错误覆盖。"
+      }
+    ],
+    "readFrameIndices": [
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80
+    ],
+    "observation": "仅亲读所分配的第五十一至八十帧连续联系表及骑兵结果原始整屏。骑兵骰子停稳并持续展示结果，随后自然切换步兵阶段，绿色骰子持续移动旋转；蒙古守方和大明承受损伤由整屏文字及原有阵营标记可理解，参战兵牌可辨。此段不覆盖骑兵起掷或步兵最终结果，也不判断骰数与伤害规则。",
+    "checks": [
+      "target-visible",
+      "interaction-ui",
+      "layout-readable",
+      "no-error"
+    ]
+  }
+}

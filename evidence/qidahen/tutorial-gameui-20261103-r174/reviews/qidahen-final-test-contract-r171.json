@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "reviewer": {
+    "id": "/root/r169_test_contract",
+    "identitySource": "实际执行 R171 增量独立审查的既有子代理 canonical task name",
+    "independence": "未参与实现；仅只读源码并写本报告；未跑测试或浏览器、未读图、未改生产"
+  },
+  "reviewedAtUtc": "2026-11-03T02:12:25.6755834Z",
+  "target": "R171 初始/返程推荐兵牌共用断言与真实鼠标减速拖拽增量",
+  "verdict": "PASS",
+  "conclusion": "限定源码测试合同通过。R170 唯一初始推荐命中缺口已补齐；真实减速输入没有取消惯性、写相机或绕过命中/规则验证。覆盖仅为有意慢速结束的鼠标拖拽，不证明甩动惯性或完整年度/视觉验收。",
+  "sourceHashes": [
+    {
+      "path": "e2e/qidahen/mapCandidateRecovery.ts",
+      "sha256": "52144428543ee03b81db355f16c968f86c10b096a08dd34203a49f416564775e"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "132c26a524241e97b88fabb261cfdd9fc08283a0950d6c79268ec7844a78bc6e"
+    },
+    {
+      "path": "e2e/qidahen/visualReady.ts",
+      "sha256": "28e219ce2135ab50abb0a8ea112aa80d604cc2fc85a7528176906611218a5a03"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "c6892d7a74573344768224e3b9c0916e11de5824bfc2c82d8ea2e2f13786c0a9"
+    },
+    {
+      "path": "src/components/game/framework/ZoomPanViewport.tsx",
+      "sha256": "5f1b48b19267919c44d3bc7515c1aacdc79f5d309d05dc4756065d79a1a334a5"
+    },
+    {
+      "path": ".tmp/qidahen-final-test-contract-r170.json",
+      "sha256": "904dbe5f3e9ee42cf71fb2acc39141b823e69932e80f4b5bd399835064844398"
+    },
+    {
+      "path": ".tmp/qidahen-final-test-contract-r169.json",
+      "sha256": "8e6d6733088c0f4166c1aded43f6516a86dc0dab213562db04d73a15a7c12615"
+    },
+    {
+      "path": ".tmp/qidahen-final-code-review-r167.json",
+      "sha256": "0d4dcb6d1af85bb797bf30d72b750740c2b7ccdaad677601789bd6cb8c2a4644"
+    }
+  ],
+  "findings": [],
+  "resolvedFindings": [
+    {
+      "report": ".tmp/qidahen-final-test-contract-r170.json",
+      "id": "R170-initial-recommended-hit-contract",
+      "status": "resolved-in-source",
+      "location": "e2e/qidahen/mapCandidateRecovery.ts:6-14,88,92",
+      "evidence": "共同 assertRecommendedReadable 先完整在屏 ratio=1，再 elementFromPoint 中心命中；第14行在候选规划和所有 false 返回之前 await，返程第88行再次 await。年度宽度>=44 断言仍存在且文件哈希未变。"
+    }
+  ],
+  "standards": [
+    {
+      "path": ".spec/knowledge/standards/code-design.md",
+      "applied": "真实行为合同与唯一状态 owner；不得用静默成功或测试旁路掩盖失败。"
+    },
+    {
+      "path": ".spec/knowledge/standards/e2e-verification.md",
+      "applied": "真实输入、同源动作与断言；源码、运行、图面结论分层。"
+    },
+    {
+      "path": ".spec/knowledge/standards/ui-change-gates.md",
+      "applied": "地图允许玩家自由查看；当前对象命中、拖动后状态不变与原操作态返程分别验收，不强制全球候选同时同屏。"
+    }
+  ],
+  "checks": [
+    {
+      "name": "initial-and-return-recommended",
+      "location": "e2e/qidahen/mapCandidateRecovery.ts:6-14,88,92",
+      "result": "初始完整在屏及中心实际命中已成为无条件前置，故 no-overlap=false 分支也不能略过推荐目标初始命中；有 plan 时返程复用同一断言。"
+    },
+    {
+      "name": "real-decelerating-drag",
+      "location": "e2e/qidahen/mapCandidateRecovery.ts:51-71",
+      "result": "仍使用真实 page.mouse.move/down/up。主段移动后按位移方向留下最多8px尾段，以每步约1px、每步先等待80ms结束，然后真实抬起；去程和返程调用同一输入 helper。evaluate 只规划/读取，不写 viewport/core，不发 zoompan:cancel-inertia/reset-center、自定义事件或合成 click，不禁用生产惯性。",
+      "boundary": "这是主动慢速停止的鼠标拖拽合同；80ms 是输入节奏而非用等待吞掉失败。能否在当前实际缩放和调度下达到返程误差要求，仍须由真实运行断言决定。"
+    },
+    {
+      "name": "production-inertia-source",
+      "location": "src/components/game/framework/ZoomPanViewport.tsx:16-18,168,689-702,713-717；src/games/qidahen/Board.tsx:2431-2444",
+      "result": "直接 owner 显示 inertiaEnabled 默认 true，速度由真实 pointer 位移/时间平滑计算，速度低于阈值不启动惯性。Board 正式 ZoomPanViewport 没有在本 helper 中被重新配置；末端减速是正式输入语义，不是关闭惯性。",
+      "boundary": "此源码说明支持存在惯性及减速的机制依据，不能独立归因主线程报告的44.97偏移；该实际诊断未由本审查复现。"
+    },
+    {
+      "name": "assertions-retained",
+      "location": "e2e/qidahen/mapCandidateRecovery.ts:72-89",
+      "result": "恢复目标中心 elementFromPoint 命中、onRecovered 完成后 core 深等和 DOM 已选身份深等均保留。真实返程后 panX/panY 各自误差<2、zoom严格相等、DOM已选身份相等、推荐目标完整在屏/中心命中、core再深等全部仍强制；任何规划/输入/断言失败继续抛错。"
+    },
+    {
+      "name": "conditional-no-overlap",
+      "location": "e2e/qidahen/mapCandidateRecovery.ts:14-38,92；e2e/qidahen/qidahen-annual-tutorial.e2e.ts:655-657",
+      "result": "完成初始推荐检查后，只有没有符合现有几何范围的 buried 才 false；年度标签保留 no-onscreen-candidate-overlaps-visible-hand-cards。找到候选但无规划空间仍报错，不把失败降级为 false。"
+    }
+  ],
+  "inherited": [
+    {
+      "report": ".tmp/qidahen-final-test-contract-r169.json",
+      "reviewer": "/root/r169_test_contract",
+      "currentHashesMatch": true,
+      "sourceFiles": [
+        "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+        "e2e/qidahen/visualReady.ts"
+      ],
+      "reusedChecks": [
+        "clickCard-real-input",
+        "native-png-and-failure-bound",
+        "annual-call-and-record"
+      ],
+      "reason": "调用方、真实选牌输入和原生PNG捕获及等待源码哈希未变。"
+    },
+    {
+      "report": ".tmp/qidahen-final-code-review-r167.json",
+      "reviewer": "/root/r167_scope_code",
+      "currentHashesMatch": true,
+      "sourceFiles": [
+        "src/games/qidahen/Board.tsx"
+      ],
+      "reusedChecks": [
+        "hud-mutation-filter",
+        "observer-lifecycle",
+        "action-hit-area"
+      ],
+      "reason": "Board完整哈希未变，沿用指定生产增量源码结论，不重新背书全Board。"
+    },
+    {
+      "report": ".tmp/qidahen-final-test-contract-r170.json",
+      "reviewer": "/root/r169_test_contract",
+      "reusedChecks": [
+        "free-map-contract",
+        "non-global-candidate-scope"
+      ],
+      "reason": "自由浏览期间不必把推荐兵牌同时留屏；R170初始缺口由本报告resolvedFindings明确取代，未直接沿用其REVISE为当前结论。"
+    }
+  ],
+  "limits": [
+    "仅源码审查；未跑测试、浏览器或读图，不宣称主线程同一正式续局存档复验已经通过，不证明年度 E2E、视觉或生产发布。",
+    "主线程报告的真实平移成功、返程x偏44.97及惯性诊断仅为审查线索；本子代理没有独立复现或读取该运行证据。",
+    "有意慢速结束拖拽不覆盖快速甩动的惯性轨迹、停稳时间、边界衰减、惯性期间命中和误点击抑制；不能因此声称惯性相关问题已修复或已验收。",
+    "80ms节奏不保证所有浏览器调度、缩放及坐标换算条件下惯性都不启动；保留的返程误差断言会对实际结果失败，不以输入节奏证明结果。",
+    "panX/panY是分别采样轮询的小于2误差检查，未证明连续所有帧稳定；zoom严格相等，未增加放大缩小行为覆盖。",
+    "DOM已选身份只覆盖 data-pending-committed-selected=true 的testid集合，core深等不证明所有本地临时状态。",
+    "推荐检查采用首个推荐DOM对象；完整在屏与中心命中、既有width>=44不替代肉眼可读性、素材质量或多推荐对象全集图审。",
+    "恢复目标仅中心可命中，未实际点击；初始遮挡仍按手牌shell边界框相交判断。",
+    "false分支表示现有筛选范围没有适用恢复对象，不证明本次执行了拖动，不扩展为部分裁切、屏外、推荐候选或非手牌HUD遮挡已覆盖。",
+    "规划九个落点、拖动九个起点仍非穷尽，找不到空间或起点明确报错；本报告不保证所有正式场景规划均能成功。",
+    "clickCard和capture有界等待边界沿用R169；30秒只约束原生captureScreenshot请求，不覆盖此前所有等待。"
+  ],
+  "verificationCommands": [
+    "Get-Content / rg：当前 helper、直接调用、ZoomPanViewport 惯性 owner及Board接线",
+    "Get-FileHash -Algorithm SHA256：当前目标、直接依赖与沿用报告"
+  ],
+  "filesModifiedByReviewer": [
+    ".tmp/qidahen-final-test-contract-r171.json"
+  ]
+}

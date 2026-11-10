@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "media": [
+    {
+      "path": "01-betrayal-01-before-alt.png",
+      "chainId": "betrayal-pc-alt",
+      "chainStep": "1",
+      "sourceRun": "pc-alt-object-magnifier-20261012013401061",
+      "sourceDir": "evidence/pc-alt-object-magnifier-20261011",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "移动到目标对象后、尚未按下 Alt",
+      "description": "背叛目标对象在放大前的完整桌面画面"
+    },
+    {
+      "path": "01-betrayal-02-alt-2.60.png",
+      "chainId": "betrayal-pc-alt",
+      "chainStep": "2",
+      "sourceRun": "pc-alt-object-magnifier-20261012013401061",
+      "sourceDir": "evidence/pc-alt-object-magnifier-20261011",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按住 Alt 显示默认放大层",
+      "description": "背叛按住快捷键后对象放大层清晰可见"
+    },
+    {
+      "path": "01-betrayal-03-alt-2.80.png",
+      "chainId": "betrayal-pc-alt",
+      "chainStep": "3",
+      "sourceRun": "pc-alt-object-magnifier-20261012013401061",
+      "sourceDir": "evidence/pc-alt-object-magnifier-20261011",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按住 Alt 向上滚轮调大倍率",
+      "description": "背叛滚轮调大后放大对象仍完整可读"
+    },
+    {
+      "path": "02-dicethrone-01-before-alt.png",
+      "chainId": "dicethrone-pc-alt",
+      "chainStep": "1",
+      "sourceRun": "pc-alt-object-magnifier-20261012013401061",
+      "sourceDir": "evidence/pc-alt-object-magnifier-20261011",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "移动到目标对象后、尚未按下 Alt",
+      "description": "骰子王座目标对象在放大前的完整桌面画面"
+    },
+    {
+      "path": "02-dicethrone-02-alt-2.60.png",
+      "chainId": "dicethrone-pc-alt",
+      "chainStep": "2",
+      "sourceRun": "pc-alt-object-magnifier-20261012013401061",
+      "sourceDir": "evidence/pc-alt-object-magnifier-20261011",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按住 Alt 显示默认放大层",
+      "description": "骰子王座按住快捷键后对象放大层清晰可见"
+    },
+    {
+      "path": "02-dicethrone-03-alt-2.80.png",
+      "chainId": "dicethrone-pc-alt",
+      "chainStep": "3",
+      "sourceRun": "pc-alt-object-magnifier-20261012013401061",
+      "sourceDir": "evidence/pc-alt-object-magnifier-20261011",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按住 Alt 向上滚轮调大倍率",
+      "description": "骰子王座滚轮调大后放大对象仍完整可读"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>奇异博士法术牌显示与被动查看</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>奇异博士法术牌显示与被动查看</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-桌面单张-法术显示.png","displayTitle":"01 · 桌面单张 · 法术显示","description":"已准备法术显示在技能槽中，槽外控制片可用于查看被动。","kind":"image"},{"relativePath":"02-桌面单张-露出被动.png","displayTitle":"02 · 桌面单张 · 露出被动","description":"玩家收起已准备法术，露出下方被动能力。","kind":"image"},{"relativePath":"04-桌面多张-法术显示.png","displayTitle":"04 · 桌面多张 · 法术显示","description":"已准备法术显示在技能槽中，槽外控制片可用于查看被动。","kind":"image"},{"relativePath":"05-桌面多张-露出被动.png","displayTitle":"05 · 桌面多张 · 露出被动","description":"玩家收起已准备法术，露出下方被动能力。","kind":"image"},{"relativePath":"06-桌面多张-恢复法术.png","displayTitle":"06 · 桌面多张 · 恢复法术","description":"玩家恢复显示已准备法术，按钮留在槽位左下外侧。","kind":"image"},{"relativePath":"07-横屏单张-法术显示.png","displayTitle":"07 · 横屏单张 · 法术显示","description":"已准备法术显示在技能槽中，槽外控制片可用于查看被动。","kind":"image"},{"relativePath":"08-横屏单张-露出被动.png","displayTitle":"08 · 横屏单张 · 露出被动","description":"玩家收起已准备法术，露出下方被动能力。","kind":"image"},{"relativePath":"09-横屏单张-恢复法术.png","displayTitle":"09 · 横屏单张 · 恢复法术","description":"玩家恢复显示已准备法术，按钮留在槽位左下外侧。","kind":"image"},{"relativePath":"10-横屏多张-法术显示.png","displayTitle":"10 · 横屏多张 · 法术显示","description":"已准备法术显示在技能槽中，槽外控制片可用于查看被动。","kind":"image"},{"relativePath":"11-横屏多张-露出被动.png","displayTitle":"11 · 横屏多张 · 露出被动","description":"玩家收起已准备法术，露出下方被动能力。","kind":"image"},{"relativePath":"12-横屏多张-恢复法术.png","displayTitle":"12 · 横屏多张 · 恢复法术","description":"玩家恢复显示已准备法术，按钮留在槽位左下外侧。","kind":"image"},{"relativePath":"13-横屏触控三张.png","displayTitle":"13 · 横屏触控三张","description":"已准备法术显示在技能槽中，槽外控制片可用于查看被动。","kind":"image"},{"relativePath":"14-横屏触控末张.png","displayTitle":"14 · 横屏触控末张","description":"玩家翻到最后一张已准备法术，槽外控制片保持可见。","kind":"image"},{"relativePath":"15-横屏触控露出被动.png","displayTitle":"15 · 横屏触控露出被动","description":"玩家收起已准备法术，露出下方被动能力。","kind":"image"},{"relativePath":"16-横屏触控恢复法术.png","displayTitle":"16 · 横屏触控恢复法术","description":"玩家恢复显示已准备法术，按钮留在槽位左下外侧。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

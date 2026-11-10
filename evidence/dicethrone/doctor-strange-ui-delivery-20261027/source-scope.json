@@ -1,0 +1,69 @@
+{
+  "capturedAt": "2026-10-27T04:30:06.966Z",
+  "target": "奇异博士新增交互截图交付",
+  "entryHash": "05d64a78cedc8c833855185c4a6fd5796c97a2be4aa36bf17d80a02f14f6af5c",
+  "beforeSourceRevision": "f11ba425e3c8c1f12e78c21d449124ac467fd16313aff2fca954b7f271bf277d",
+  "afterSourceRevision": "86e915d22701516c865b812671292369492bf56660b4a1e5e820575aadfdf9d2",
+  "runtimeFrontendSourceHash": "86e915d22701516c865b812671292369492bf56660b4a1e5e820575aadfdf9d2",
+  "changedBackend": [],
+  "interpretation": "九链原运行后首页和骰子选择客户端有改动，重新验证双人入口与队友骰两链，其余七链沿用对应原始图及逐图审查；每条链保留自身截图和trace来源。实际服务源身份匹配，依赖范围自服务核验后至运行结束稳定。",
+  "sourceIdentityRecord": [
+    "verification/doctor-strange-runtime-identity-20261027-delivery-final.json",
+    "verification/doctor-strange-runtime-identity-20261027-delivery-refresh.json"
+  ],
+  "incrementalChanges": [
+    {
+      "path": "src/components/home/platform-upload.css",
+      "hash": "40f2175686ceab09f685433d945e95472428811b8ebc62021577e33a31c4a03c",
+      "modifiedAt": "2026-10-27T04:05:14.147Z",
+      "scope": "online-entry"
+    },
+    {
+      "path": "src/components/home/PlatformGameCard.tsx",
+      "hash": "2897583008df58f2ea99abc57d380c75165c666968ab40e15e9bf84482a1ebcb",
+      "modifiedAt": "2026-10-27T03:54:26.150Z",
+      "scope": "online-entry"
+    },
+    {
+      "path": "src/components/home/PlatformGameCatalog.tsx",
+      "hash": "8101851cd24366fa75d9a7850679dddb82a00e6558542d6a380fbde6bd31fd96",
+      "modifiedAt": "2026-10-27T03:54:26.159Z",
+      "scope": "online-entry"
+    },
+    {
+      "path": "src/components/home/PlatformUploadWorkspace.tsx",
+      "hash": "64ce3c977a812fb669b0f7fdabc20c5eef6dd9ee766d507bc05101d00ae33145",
+      "modifiedAt": "2026-10-27T03:57:52.766Z",
+      "scope": "online-entry"
+    },
+    {
+      "path": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "hash": "20235107cdef9cb08be0b2f25d8ef91e5109c4af6025e841d9fe45649f7ffea2",
+      "modifiedAt": "2026-10-27T04:05:08.551Z",
+      "scope": "board-and-entry"
+    },
+    {
+      "path": "src/pages/admin/creator-review.css",
+      "hash": "be520b5c905925a456d3e494dfc9d34ec95e941f90f72c106b70d7253ba8d5cd",
+      "modifiedAt": "2026-10-27T04:07:09.540Z",
+      "scope": "board-and-entry"
+    },
+    {
+      "path": "src/pages/admin/CreatorReview.tsx",
+      "hash": "80661e2b0661d7e4f545af0b0d6ab888d22533fabffa4409d6a09ae7a325e670",
+      "modifiedAt": "2026-10-27T04:02:56.920Z",
+      "scope": "board-and-entry"
+    },
+    {
+      "path": "src/pages/ExternalGamePage.tsx",
+      "hash": "b80c257bdc0f29ae39ad91a9a76a1b0fc7eafbeb6bb86c9011a8cd3d9388bac1",
+      "modifiedAt": "2026-10-27T04:07:09.537Z",
+      "scope": "board-and-entry"
+    }
+  ],
+  "runId": "e2e-1793074343243-jx871f",
+  "currentEntryHash": "05d64a78cedc8c833855185c4a6fd5796c97a2be4aa36bf17d80a02f14f6af5c",
+  "postRunDelta": [],
+  "postRunImpact": "封装时范围内文件无后续改动。",
+  "incrementalRationale": "首页卡片变化由双人入口补验；客户端多步骰子选择变化由队友骰链补验；上传、后台审核和外部游戏页面未出现在本轮入口和牌桌。"
+}

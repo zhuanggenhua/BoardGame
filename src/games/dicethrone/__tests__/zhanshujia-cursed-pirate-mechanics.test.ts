@@ -659,7 +659,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.offensiveRollAttackMadeThisTurn?.['0']).toBe(countsAsAttack ? true : undefined);
     });
 
-    it('纯状态技能不算发动攻击：陨石雨保留眩晕，咒缚海盗仍施加火药桶', () => {
+    it('纯状态技能不算发动攻击：陨石雨触发额外进攻，咒缚海盗仍施加火药桶', () => {
         const state = createHeroMatchup('pyromancer', 'cursed_pirate')(['0', '1'], fixedRandom);
         setPlayerBoardFace(state, '1', 'cursed');
         state.sys.phase = 'offensiveRoll';
@@ -700,9 +700,9 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         expect(advanced.success).toBe(true);
         if (!advanced.success) return;
-        expect(advanced.state.sys.phase).toBe('main2');
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
         expect(advanced.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
-        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.DAZE]).toBe(1);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.DAZE]).toBe(0);
         expect(advanced.state.core.players['0'].resources.hp).toBe(INITIAL_HEALTH);
     });
 

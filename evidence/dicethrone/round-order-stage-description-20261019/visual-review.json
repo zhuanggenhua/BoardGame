@@ -1,0 +1,30 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root",
+    "reason": "主代理逐张查看三张原始整屏截图并核对阶段说明的可读性、完整性与遮挡。"
+  },
+  "media": [
+    {
+      "path": "01-PC-1920x960-阶段说明.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "阶段说明已完全显示，文字层级与桌面排版协调，画面没有遮挡或裁切。"
+    },
+    {
+      "path": "02-手机等效796x360-阶段说明.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "点按后阶段说明按真实屏幕字号显示，文字完整且说明框位于视口内。"
+    },
+    {
+      "path": "03-安卓真机2388x1080-阶段说明.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "真机点按后阶段说明完整出现在列表旁，背景铺满屏幕且说明可读。"
+    }
+  ]
+}

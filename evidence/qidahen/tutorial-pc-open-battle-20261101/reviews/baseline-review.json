@@ -1,0 +1,232 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r134_final_baseline",
+  "requirements": [
+    {
+      "requirement": "PC单独送验与人工批准顺序",
+      "status": "PASS",
+      "baselineSource": "用户原话要求PC未经人工验收不考虑移动端；主规范ui-change-gates的PC主基线优先为唯一批准顺序来源。旧R131只是被否定样式及原操作对照，绝非人工批准基线。",
+      "preservedInformation": "保留当前PC版本、正式教程入口和图组身份；人工认可状态明确待定，AI图审与测试不代替人工批准。",
+      "preservedActions": "本轮只供PC单独送验；用户可浏览当前PC图组后决定是否认可，认可之前不推进移动端适配或采集。",
+      "changes": "主规范明确人工认可须对应当前PC图组及用户回复；设计工作流只引用主源；当前49媒体均为桌面。",
+      "duplicateDecision": "人工批准语义仅保留在主规范，设计技能不复制正文；旧混合双端图组不再承载本轮PC送验。",
+      "changeAuthority": "用户明确质疑双端顺序并要求更新规范；本项通过只证明顺序与单独送验准备，人工批准仍待定。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-19-炮兵白骰真实投掷.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-26-战后占领选择.png"
+      ],
+      "after": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png"
+      ]
+    },
+    {
+      "requirement": "开放骰子与必要结果",
+      "status": "PASS",
+      "baselineSource": "用户明确否定封闭骰子小窗并要求去Game UI Database参考；任务记录保留Armello实际投掷及命中原图查证，规则仍为正式PDF Ver1.3。独立审查亲读旧R131与新R134炮兵滚动、默认占领两对完整原图。",
+      "preservedInformation": "保留阶段、实际投掷侧别、真实骰面、停稳后的侧别合计与造成损伤、修正值与十面骰零面解释；地图单位、顶部状态、手牌和牌堆仍在。停稳结果及其它阶段通过五份原图审报告继承，本审查未亲读全部媒体。",
+      "preservedActions": "保留正式物理投掷与战后占领、撤回选择；历史骰果通过战报按需展开和关闭，不修改正式骰果、随机或领域结算。",
+      "changes": "去除总背板、边框与按骰种分盒；按实际投掷侧分区，无投掷的一侧不占空盘；战报默认折叠，结果数量冗余读数删除。",
+      "duplicateDecision": "DiceBoxPhysicsSource继续承载物理骰面；普通骰点不再用文字复写。历史明细集中于唯一QidahenBattleReport，删除Board旧内联显示owner。",
+      "changeAuthority": "用户明确授权开放骰子重构；采用商业参考中的开放舞台及归属关系，不复制全屏换场和外观，不改变PDF规则。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-19-炮兵白骰真实投掷.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-26-战后占领选择.png"
+      ],
+      "after": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png"
+      ]
+    },
+    {
+      "requirement": "完整PC教程与原有操作保留",
+      "status": "PASS",
+      "baselineSource": "正式当前behavior-trace.json共79记录、49媒体，五份原图审报告为逐媒体视觉来源。旧R131占领图用于原信息和操作对照，不代表旧教程已获人工认可。",
+      "preservedInformation": "现成trace状态通过、断言无失败，结尾教程关闭、年份一、已领纪年一三零一、后续输入被接受。开局与结束图分别依据head-first8和tail-b原图审报告，本审查未亲读开局及结束原图。",
+      "preservedActions": "连续正式教程保留征召支付、地区与部队选择、手牌检视、调度进攻、战术牌、占领或撤回、外交雇佣、年中与新年维护、领纪年与人物及训练；战报真实打开关闭后core不变的年度E2E断言保留。",
+      "changes": "年度E2E补战报默认折叠、展开、关闭与只读断言；录制只采集正式页面并补标签及表面观察，不注入或重演投掷。",
+      "duplicateDecision": "行为结果由trace证明，逐媒体视觉结论继承原图审报告；222定向测试和机器健康仅作各自范围证据，不越权替代视觉、人工认可或全规则验收。",
+      "changeAuthority": "用户要求完整PC教程验证并交付PC链接；独立真实消费分析证明唯一字节漂移只涉及本链未消费的导出分支，原79记录与49媒体继续有效。保留原哈希和一项漂移，不宣称716源零漂移。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-19-炮兵白骰真实投掷.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-26-战后占领选择.png"
+      ],
+      "after": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\00-frontier-goal.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\48-finish.png"
+      ]
+    }
+  ],
+  "humanPcApproval": "pending",
+  "codeReview": {
+    "status": "通过",
+    "findings": [],
+    "reviewedFiles": [
+      "src/games/qidahen/ui/QidahenBattleRollSequence.tsx",
+      "src/games/qidahen/ui/QidahenBattleReport.tsx",
+      "src/games/qidahen/Board.tsx限定导入、旧owner删除、两个引用与结果数量hunk",
+      "e2e/qidahen/battleRecording.ts",
+      "e2e/qidahen/qidahen-annual-tutorial.e2e.ts限定战报及源身份hunk"
+    ],
+    "implementationFinding": "限定UI代码无须退回问题；原按整模块哈希差异失效的归因已依据实际导出消费及日志挂载路径纠正，精确适用范围见独立影响审查。",
+    "resolvedFindings": [
+      {
+        "title": "CardPreview模块字节漂移",
+        "resolution": "独立消费分析后确认未影响本条目标链；保留一项字节漂移及全部原始哈希。",
+        "evidenceFile": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\cardpreview-drift-impact-review.json"
+      }
+    ]
+  },
+  "reviewScope": {
+    "personallyReadFullOriginalImages": [
+      "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-19-炮兵白骰真实投掷.jpg",
+      "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-20261031-causality-r131-final\\media\\桌面-26-战后占领选择.png",
+      "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png"
+    ],
+    "inheritedVisualReports": [
+      {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-head-first8.json",
+        "sha256": "af58138c8d3ebef867cac4261b88536e8afe89c56d711d40b83b0aef74d27e10",
+        "status": "PASS",
+        "mediaCount": 8
+      },
+      {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-head-remaining.json",
+        "sha256": "31b11b786a4fa702641bd792dfebd2e60c6293e1de8238dde03da8f935181b1b",
+        "status": "PASS",
+        "mediaCount": 13
+      },
+      {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-tail-a.json",
+        "sha256": "a1195d6db2731f0147e0bbf2d6899ee8a6d21bc4488633616b254b659ced71a9",
+        "status": "PASS",
+        "mediaCount": 11
+      },
+      {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-tail-b.json",
+        "sha256": "6618f0e7ba1ae6e12646860e6e7b3b0d78054ec12aa0c7485f6dbf957535ed17",
+        "status": "PASS",
+        "mediaCount": 10
+      },
+      {
+        "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle.json",
+        "sha256": "f0a16a9b4bc2f9e21f6585a77dbf399098e8cb28e36c72a3901d85daa1baf4ca",
+        "status": "PASS",
+        "mediaCount": 7
+      }
+    ],
+    "delegation": "本审查未再委派；其余47媒体依据五份原报告，本审查核路径、哈希和映射，未冒称亲读全量。",
+    "videoReaders": [
+      {
+        "reviewer": "/root/r134_battle_resume",
+        "videoFrameRange": [
+          1,
+          50
+        ],
+        "videoFrameCount": 50,
+        "stillImageCount": 6,
+        "sourceReports": [
+          "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+          "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\visual-review-battle-stills-a.json"
+        ]
+      },
+      {
+        "reviewer": "/root/r134_battle_last_five",
+        "videoFrameRange": [
+          51,
+          55
+        ],
+        "videoFrameCount": 5,
+        "fullOriginalFramesRead": [
+          51,
+          55
+        ],
+        "originalPixelCropsRead": [
+          51,
+          52,
+          53,
+          54,
+          55
+        ],
+        "sourceReports": [
+          "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json"
+        ]
+      },
+      {
+        "reviewer": "/root/r134_battle_b",
+        "videoFrameRange": [
+          56,
+          104
+        ],
+        "videoFrameCount": 49,
+        "sourceReports": [
+          "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-b-review.json"
+        ]
+      },
+      {
+        "reviewer": "/root/r134_battle_last_frame",
+        "videoFrameRange": [
+          105,
+          105
+        ],
+        "videoFrameCount": 1,
+        "sourceReports": [
+          "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-b-last-frame.json"
+        ]
+      }
+    ],
+    "videoScope": "一百零五帧由原四位读图者分段负责，保留其各自完整原帧或原像素裁片阅读范围，本审查不重读视频。"
+  },
+  "integrity": {
+    "status": "PASS",
+    "reportMediaCount": 49,
+    "traceMediaCount": 49,
+    "traceStatus": "PASS",
+    "behaviorRecords": 79,
+    "failedAssertions": [],
+    "sourceFiles": 716,
+    "sourceDrift": [
+      {
+        "path": "src/components/common/media/CardPreview.tsx",
+        "capturedRawHash": "c3bbb402d95283e8681410537b4f9ff5100bf4bad3c0d0670731dd8088000c28",
+        "currentRawHash": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269"
+      }
+    ],
+    "pointerChecks": 12,
+    "mediaAndReportHashErrors": [],
+    "outcome": {
+      "tutorialActive": false,
+      "year": 1,
+      "claimed": [
+        1301
+      ],
+      "nextInputAccepted": true
+    },
+    "actualByteDrift": 1,
+    "otherSourceFilesUnchanged": 715,
+    "reviewedUnconsumedExportDrift": "src/components/common/media/CardPreview.tsx",
+    "driftImpactReviewFile": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\cardpreview-drift-impact-review.json",
+    "scope": "媒体、原报告和行为映射有效；当前源存在一项已审明不相交的导出变化，不等于716源零字节漂移。"
+  },
+  "verification": {
+    "focusedTests": "222项通过",
+    "typecheck": "退出码零",
+    "specLint": "通过",
+    "openSpec": "严格校验通过",
+    "machineHealth": "既有机器检查通过，仅证明采集时48整屏图、一视频、79记录、716依赖的完整性",
+    "localesFocused": "本游戏新增战报和结果中英文键通过",
+    "globalI18n": "其它文件八条告警，仍失败",
+    "extraArmamentDomain": "既有军备领域套件七项失败，本轮不宣称全规则通过"
+  },
+  "boundaries": [
+    "未启动浏览器、E2E或移动端流程；只读审查后仅写本报告。",
+    "未提交、推送或发布；没有用户人工PC认可。",
+    "没有用测试替代视觉，也没有修改原图审报告或校验器。",
+    "商业参考阅读由任务记录及原委派证据支持，本审查未重新访问外站。",
+    "源码影响裁决仅覆盖CardPreview所列精确旧新哈希；未知后续差异仍阻止相关链，不覆盖未来日志预览专项。"
+  ],
+  "reviewCorrection": "此前把已加载模块的任意字节差异直接视为本链失效，范围过宽；本次依据主规范、精确旧新语义与真实消费路径纠正，不改采集哈希或媒体裁决。"
+}

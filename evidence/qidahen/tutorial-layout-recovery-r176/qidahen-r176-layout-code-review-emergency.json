@@ -1,0 +1,40 @@
+{
+  "verdict": "SOURCE_AND_TEST_CONTRACT_PASS",
+  "scope": "仅源码及测试合同增量审查，未读图、未运行浏览器、未修改生产或测试。",
+  "findings": [],
+  "reviewed": [
+    {
+      "file": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "owner": "measureReportFrame",
+      "conclusion": "读取真实FabMenu computed zIndex，只避让高于UI_Z_INDEX.modalContent的可见实际矩形。使用正式空位计算器，8px边距，宽度最多620。当前GameHUD正式常量emergencyHud=2400，modalContent=2200，与本轮遮挡对象吻合。"
+    },
+    {
+      "file": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "owner": "BattleLayoutReport",
+      "conclusion": "挂getHudPortalRoot正式HUD入口，层级modalContent。header及continue均shrink-0且在滚动区之外，内容min-h-0 overflow-y-auto，父flex-col overflow-hidden且maxHeight受可用空间限制。只有此内容层负责战报滚动。滚动提示基于scrollHeight>clientHeight，ResizeObserver及resize/style监听均有清理。"
+    },
+    {
+      "file": "src/games/qidahen/ui/QidahenBattleReport.tsx",
+      "owner": "compact分支",
+      "conclusion": "compact直接返回expanded div，避开details折叠。compact正文py-1，不含max-height或overflow滚动，阶段h4 sticky top-0。普通历史报告仍用details及既有正文滚动。消费同一battleRolls，不引入新结算状态。"
+    },
+    {
+      "file": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "owner": "播放生命周期",
+      "conclusion": "spaceUnavailable latch仍只从false到true，测量effect依赖该值并在true时早退，cleanup移除观察器和调度帧。战报继续调用原onComplete。未见本次增量恢复重播路径或领域状态写入。"
+    }
+  ],
+  "test_contract": {
+    "file": "src/games/qidahen/__tests__/battleRollPlacement.test.tsx",
+    "conclusion": "最新7项包含实际hud-root容器、zIndex2402应急菜单、战报挂入hud-root、菜单左边界留8px、expanded模式、权威骰果不变及点击才complete，保留双rAF及Sequence mount计数防重播回归。",
+    "limit": "jsdom矩形及样式断言不证明真实字体下header/continue完整可见、滚动可用、sticky读数和遮挡视觉已通过。当前源码合同足够进入浏览器复验。",
+    "execution": "主线程报告当前源码224项通过。本次仅只读测试合同，未独立重跑；旧.tmp/qidahen-r176-regression-final.log时间23:53:35不可单凭文件存在映射本次emergency最新修改。"
+  },
+  "remaining_gate": {
+    "status": "真实浏览器重拍待恢复",
+    "reported_blocker": "主线程报告DiceThrone attack.ts重复postDamageEvents导致编译失败。此次未触碰或独立诊断该文件。",
+    "consequence": "无法用当前浏览器截图证明本轮应急层遮挡修复和窄窗阅读效果。",
+    "minimum_next_step": "由负责该编译改动的线程恢复可编译后，重拍当前源码960/640/320相关分支，核对FabMenu留位、常驻继续、单层滚动及真实mode→choice→confirm。"
+  },
+  "overall": "本轮增量未发现确定源码缺陷，源码/测试合同审查可放行。不能据此判UI整体PASS。旧审查及旧缺陷事实保持原文件。"
+}

@@ -1,0 +1,32 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "移动端事件结果页保留明确的底部主操作按钮",
+      "status": "PASS",
+      "evidence": [
+        "当前移动端横屏截图中可见底部主操作按钮",
+        "E2E：移动端事件检定复核不能隐藏整套牌桌 UI 通过"
+      ]
+    },
+    {
+      "requirement": "截图来自当前工作树并覆盖本轮移动端验收入口",
+      "status": "PASS",
+      "evidence": [
+        "截图生成时间：2026-10-03 19:58:22",
+        "Playwright 运行结果：1 passed"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/移动端横屏-事件检定复核保留牌桌-01-事件检定复核.jpg"
+  ]
+}
+

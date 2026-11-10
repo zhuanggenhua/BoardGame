@@ -1,0 +1,451 @@
+{
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/strange_ui_delivery_b"
+  },
+  "reviewedAt": "2026-10-27T02:58:46.316Z",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击前-桌面.png",
+      "sha256": "111a5ffef227bd3522f73f2e6aa155d7be9c5860a946a704d12abd3bc03982db",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗护身符骰面、全知之眼技能槽及结束攻击按钮同时可见；准备区位于左下书槽，生命和CP未被遮挡。",
+      "userDescription": "起始牌桌显示全知之眼技能、五颗护身符骰面和公开准备区。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-ready",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "visibleConsequence": "五颗护身符骰面、全知之眼技能槽及结束攻击按钮同时可见；准备区位于左下书槽，生命和CP未被遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼已选待结算-桌面.png",
+      "sha256": "7fa3b0837de2a225639ed217b5905306c707ea82b8084d7fcaf9e47e9e4d327d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "全知之眼槽出现粉色选中边框，右侧显示总伤害提示；技能槽、骰区和结束攻击入口完整可见。",
+      "userDescription": "玩家选择全知之眼后，技能槽出现粉色边框。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-selected",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击前-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼已选待结算-桌面.png"
+        ],
+        "visibleConsequence": "全知之眼槽出现粉色选中边框，右侧显示总伤害提示；技能槽、骰区和结束攻击入口完整可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+      "sha256": "390b926a1efbf2e3b5d909095a7733c73ff077b205d2182abb00a572cce29294",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "居中弹窗呈现两张不同法术的正式卡图、名称和跳过按钮；两张候选均未被遮挡或裁切。",
+      "userDescription": "提交全知之眼后，弹窗显示两张可准备法术和跳过入口。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-top-five-choice",
+        "before": [
+          "images/all-seeing-eye__全知之眼已选待结算-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png"
+        ],
+        "visibleConsequence": "居中弹窗呈现两张不同法术的正式卡图、名称和跳过按钮；两张候选均未被遮挡或裁切。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+      "sha256": "d09d7c2243bff66705c925a986f63577486926d57dec09eee7cfb965d3e37b47",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "法术准备后弹出玩家选择，P2武僧头像及选择按钮清晰可见；单一候选仍有明确点击入口。",
+      "userDescription": "准备法术后，弹窗显示武僧头像供玩家选择目标。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-prepare-target",
+        "before": [
+          "images/all-seeing-eye__全知之眼顶五法术选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png"
+        ],
+        "visibleConsequence": "法术准备后弹出玩家选择，P2武僧头像及选择按钮清晰可见；单一候选仍有明确点击入口。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+      "sha256": "3398d55c08db2334917768ea37f1ba71c15770fb4d05346326de10db8c8eb56a",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张剩余卡牌在弹窗中并排完整呈现，排序提示清楚，当前悬停卡有黄色边框；候选没有相互遮挡。",
+      "userDescription": "选完准备法术后，弹窗显示三张待排序卡牌。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-reorder",
+        "before": [
+          "images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png"
+        ],
+        "visibleConsequence": "三张剩余卡牌在弹窗中并排完整呈现，排序提示清楚，当前悬停卡有黄色边框；候选没有相互遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "unchangedEvidence": "当前整屏原图与前轮已逐图审查原图SHA256字节完全相同，目标及本次验收口径未变。",
+      "unchangedEvidenceFiles": [
+        "evidence/dicethrone/doctor-strange-ui-delivery-20261027/review-b-before-refresh.json"
+      ]
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+      "sha256": "79a3a550b8b17bb7a10dc58d8ab8ec6df9878c2d546c68b64e2e743bcf36f42d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "施放选择弹窗并排呈现三张准备法术及跳过按钮；法术卡图、名称和当前黄色反馈边框均可辨识。",
+      "userDescription": "完成排序后，弹窗显示三张法术供玩家选择施放或跳过。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-post-damage-cast",
+        "before": [
+          "images/all-seeing-eye__全知之眼重排剩余三张-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png"
+        ],
+        "visibleConsequence": "施放选择弹窗并排呈现三张准备法术及跳过按钮；法术卡图、名称和当前黄色反馈边框均可辨识。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/all-seeing-eye__全知之眼攻击结算-桌面.png",
+      "sha256": "b83a78a8a9476c04f632b5aecc8e4e24ace04b0dcc1bb0f2d3f17c5611afe4d3",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "跳过施法后弹窗关闭，主要阶段二高亮；准备区标题显示三张，当前横向窗口中可见两张卡图，技能、提示板和资源读数保持可见。",
+      "userDescription": "玩家跳过施法后，弹窗关闭并回到主要阶段二。",
+      "uiAudit": {
+        "target": "doctor-strange-ultimate-settled",
+        "before": [
+          "images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png"
+        ],
+        "after": [
+          "images/all-seeing-eye__全知之眼攻击结算-桌面.png"
+        ],
+        "visibleConsequence": "跳过施法后弹窗关闭，主要阶段二高亮；准备区标题显示三张，当前横向窗口中可见两张卡图，技能、提示板和资源读数保持可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "准备区采用横向窗口，只直接看见前两张，标题数量可见；本图不证明第三张卡的滚动恢复路径。其余技能、骰盘和资源未被准备区遮挡。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      },
+      "unchangedEvidence": "当前整屏原图与前轮已逐图审查原图SHA256字节完全相同，目标及本次验收口径未变。",
+      "unchangedEvidenceFiles": [
+        "evidence/dicethrone/doctor-strange-ui-delivery-20261027/review-b-before-refresh.json"
+      ]
+    },
+    {
+      "path": "images/astral-invasion__星际侵入前-桌面.png",
+      "sha256": "0fc94db85e0e87e32ed2be0e15864db6a8c69030a0b32966507721a7191d2b1e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入槽、五颗锁定骰面及结束攻击入口可见；四张手牌主体已正面呈现，未遮挡本链技能或骰区。",
+      "userDescription": "起始牌桌显示星际侵入技能与锁定的骰面。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-ready",
+        "before": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "visibleConsequence": "星际侵入槽、五颗锁定骰面及结束攻击入口可见；四张手牌主体已正面呈现，未遮挡本链技能或骰区。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入已选-桌面.png",
+      "sha256": "f8786cd82088ad1c5c09ad389d995bd5051e38bfcd91f047b8f4a04eb1e6fc94",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入槽显示粉色选中边框，右侧总伤害提示可见；结束攻击按钮仍在骰盘下方清楚呈现。",
+      "userDescription": "玩家选择星际侵入后，技能槽出现粉色边框。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-selected",
+        "before": [
+          "images/astral-invasion__星际侵入前-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入已选-桌面.png"
+        ],
+        "visibleConsequence": "星际侵入槽显示粉色选中边框，右侧总伤害提示可见；结束攻击按钮仍在骰盘下方清楚呈现。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入奖励骰待确认-桌面.png",
+      "sha256": "959996d913535979f848d02fdd1e23dff279a6b79db52435c1905ca8008e945e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提交技能后，右侧奖励骰处于旋转过程，黄色确认按钮可见且未被覆盖；本帧不判定最终骰值。",
+      "userDescription": "提交星际侵入后，奖励骰旋转并显示确认入口。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-bonus-dice",
+        "before": [
+          "images/astral-invasion__星际侵入已选-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入奖励骰待确认-桌面.png"
+        ],
+        "visibleConsequence": "提交技能后，右侧奖励骰处于旋转过程，黄色确认按钮可见且未被覆盖；本帧不判定最终骰值。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "奖励骰为旋转过程，骰子立体面有正常重叠；确认按钮未被覆盖。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/astral-invasion__星际侵入奖励骰确认-桌面.png",
+      "sha256": "d32b11802414bef4186c0a83522cca583b444b02d3af9b270d5336710a1619eb",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "奖励骰确认后切换至武僧防御玩家板，防御阶段高亮、当前攻击提示及状态图标可见；没有残留选择弹窗。",
+      "userDescription": "玩家确认奖励骰后，牌桌切换到防御视角。",
+      "uiAudit": {
+        "target": "doctor-strange-astral-bonus-confirmed",
+        "before": [
+          "images/astral-invasion__星际侵入奖励骰待确认-桌面.png"
+        ],
+        "after": [
+          "images/astral-invasion__星际侵入奖励骰确认-桌面.png"
+        ],
+        "visibleConsequence": "奖励骰确认后切换至武僧防御玩家板，防御阶段高亮、当前攻击提示及状态图标可见；没有残留选择弹窗。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/crimson-bands__深红系带手牌-桌面.png",
+      "sha256": "f9c54d17ac7d778ca704db1185b7186349ad64ef36ac69a8f0b50d82a5935e7a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主阶段手牌显示深红系带法术的卡名与主体图案，底部部分卡面沿视口边缘延伸；出牌本体和下一阶段入口未被遮挡。",
+      "userDescription": "主阶段手牌显示可操作的深红系带法术。",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-hand",
+        "before": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "visibleConsequence": "主阶段手牌显示深红系带法术的卡名与主体图案，底部部分卡面沿视口边缘延伸；出牌本体和下一阶段入口未被遮挡。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "法术手牌下端随常规手牌沿底缘延伸；卡名及操作本体可见，未压住准备区、技能或骰盘。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/crimson-bands__深红系带目标选择-桌面.png",
+      "sha256": "e585774fb540afea57abc8973951a65b505fc9ea106258673e747c5a2a18805c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "打出法术后，居中弹窗稳定显示武僧头像、P2及选择按钮；单一候选和提示均清楚可见，未被遮挡或裁切。",
+      "userDescription": "玩家打出深红系带后，弹窗显示对手目标。",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-target",
+        "before": [
+          "images/crimson-bands__深红系带手牌-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带目标选择-桌面.png"
+        ],
+        "visibleConsequence": "打出法术后，居中弹窗稳定显示武僧头像、P2及选择按钮；单一候选和提示均清楚可见，未被遮挡或裁切。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    },
+    {
+      "path": "images/crimson-bands__深红系带已施加-桌面.png",
+      "sha256": "1399e71a410b9d81441ac3deb7c3ee6ea3dafbd359b008dea83aad33163b7f8f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择目标后弹窗关闭，顶部对手区域显示红色系带状态图标，准备区显示两张正式法术图，下一阶段入口仍可见。",
+      "userDescription": "玩家选择对手后，其状态区出现深红系带图标。",
+      "uiAudit": {
+        "target": "doctor-strange-crimson-bands-granted",
+        "before": [
+          "images/crimson-bands__深红系带目标选择-桌面.png"
+        ],
+        "after": [
+          "images/crimson-bands__深红系带已施加-桌面.png"
+        ],
+        "visibleConsequence": "选择目标后弹窗关闭，顶部对手区域显示红色系带状态图标，准备区显示两张正式法术图，下一阶段入口仍可见。",
+        "protectedSlots": [
+          "技能与准备区",
+          "HP和CP",
+          "骰盘和当前选择"
+        ],
+        "cropAndOcclusion": "目标候选、弹窗或本链操作入口未越界裁切，准备区未遮挡同屏技能和生命/CP。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2是玩家席位显示。"
+      }
+    }
+  ],
+  "issues": [],
+  "boundaries": [
+    "只审本次十四张整屏交互图，不以图面证明规则、伤害、资源或骰值正确性。",
+    "全知之眼结果态准备区数量三可见，但横向窗口只直接显示前两张；本报告不证明第三张的恢复浏览路径。",
+    "奖励骰待确认帧仍是立体旋转姿态，确认入口可见；不把该帧标注为最终骰值。",
+    "常规手牌底缘延伸未阻断本次技能、目标选择或确认入口。"
+  ],
+  "sourceSessionId": "e2e-1793068172032-v6tdos",
+  "refresh": {
+    "newOriginalsRead": 12,
+    "byteIdenticalCarried": 2,
+    "priorReview": "evidence/dicethrone/doctor-strange-ui-delivery-20261027/review-b-before-refresh.json"
+  }
+}

@@ -241,7 +241,7 @@ export const GameListCard = ({
                     <h3 className="text-sm font-serif font-bold text-parchment-base-text leading-tight mb-0.5">
                         {title}
                     </h3>
-                    <p className="text-[11px] text-parchment-light-text leading-tight line-clamp-2 min-h-[2.1rem]">
+                    <p className="text-[11px] text-parchment-light-text leading-tight line-clamp-2 min-h-[2.5em]">
                         {resolveGameDescription(game, t, '')}
                     </p>
                 </div>

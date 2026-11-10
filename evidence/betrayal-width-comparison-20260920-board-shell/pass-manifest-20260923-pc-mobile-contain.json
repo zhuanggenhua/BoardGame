@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "当前代码生成了 PC 与手机横屏同一主牌桌状态的成对原图",
+      "status": "PASS",
+      "evidence": [
+        "正式 E2E：pc-mobile-width-comparison.e2e.ts 1 passed",
+        "PC 1920x1080 与手机 CSS 视口 936x432 截图均于 2026-09-23 20:40:01 生成"
+      ]
+    },
+    {
+      "requirement": "手机端使用 PC 1920x1080 固定构图等比缩放并居中，不裁切主牌桌内容",
+      "status": "PASS",
+      "evidence": [
+        "手机 shell：1920px 逻辑宽度，scale 0.400000，渲染矩形 768x432，左右边界 84/852",
+        "地图房间、顶部阶段区、左右状态区和底部动作栏均位于可见区域"
+      ]
+    },
+    {
+      "requirement": "手机端没有切换成移动专用地图或移动专用动作栏",
+      "status": "PASS",
+      "evidence": [
+        "E2E layoutMode：desktop-board",
+        "E2E nativeMobileUi：layout 0、actionRail 0、roles 0"
+      ]
+    },
+    {
+      "requirement": "当前持有区在 PC 与手机端保持同一相对位置和尺寸比例",
+      "status": "PASS",
+      "evidence": [
+        "PC 持有区：top 861、bottom 1072、height 211，占 PC 高度 19.54%",
+        "手机持有区：top 344.4、bottom 428.8、height 84.4，占手机高度 19.54%",
+        "手机持有区矩形为 PC 矩形按 shell scale 0.4 缩放后加左右居中留边，正式 E2E 已逐项断言"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-移动选目标.jpg"
+  ]
+}

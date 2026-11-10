@@ -1,0 +1,70 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "修改前后的截图都要有，比较部队归属、兵牌布局和相关画面是否退步",
+  "productAcceptance": "not-claimed",
+  "media": [
+    {
+      "file": "01-修改前-开局控制章重叠.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-token-r298\\frontier-goal.png",
+      "sha256": "479c9c3d81cf57837da3facfe82e9aec12f70ad7f63f2c127bb528983440d90c",
+      "description": "修改前：朵颜部与山海关控制章重叠。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "02-修改后-开局控制章.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\00-frontier-goal.png",
+      "sha256": "1ced14ee96eca2e9c3c9eb187705caaf9149c3e23a31a1121f5b069165f602b1",
+      "description": "修改后：同一开局状态的控制章与地名。",
+      "priorVerdict": "PASS"
+    },
+    {
+      "file": "02b-修改后-前线目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\01-frontier-target.png",
+      "sha256": "cd30d49b01bd90954478144727d53c1ff7c5fc67cc03376f3098f4274e5c49eb",
+      "description": "修改后：紧接年度目标的前线目标步骤，保留辽北与叶赫部的关系。",
+      "priorVerdict": "PASS"
+    },
+    {
+      "file": "03-修改前-进攻目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r297-gameui-pc-20261108\\desktop\\17-dispatch-target.png",
+      "sha256": "1c3ec2506430c2b170ad87416144677750ba93377df43c2f306015b2f6a3f1e6",
+      "description": "修改前：进攻目标状态下辽北兵牌面板受轮盘遮挡。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "04-修改后-进攻目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\21-dispatch-target.png",
+      "sha256": "ecdbc165c886f3d32f13897fcd9bcea93f38e90af691163ebd7e4920002eb638",
+      "description": "修改后：同一步骤的来源、兵牌面板与叶赫部目标。",
+      "priorVerdict": "PASS"
+    },
+    {
+      "file": "05-修改前-外长城维护.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-wall-r292\\abandon-outer-wall.png",
+      "sha256": "e0f68546d69ba3cfc0061abbe19e31fadb354aaf1c9d1bac8a1d160d6aaae5b7",
+      "description": "修改前：外长城墙线被固定牌堆及纪年牌遮挡。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "06-修改后-外长城维护.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\43-abandon-outer-wall.png",
+      "sha256": "cae87ea9068de6f44213a3546ce5067037979ba6c723cb04416dc2861c6a26f6",
+      "description": "修改后：同一维护步骤的墙线及牌堆布局。",
+      "priorVerdict": "PASS"
+    },
+    {
+      "file": "07-修改前-征兵地图.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r329-surfaces\\training-recruit-target.png",
+      "sha256": "4779bc43fd7d82e48830b92b26d259df77c07e3859c52016bc2f9ddae5532137",
+      "description": "修改前：辽北兵组被屏幕边缘、牌堆和提示遮挡。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "08-修改后-征兵地图.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\58-training-recruit-target.png",
+      "sha256": "7d5d169566eba1b64037c637ad35982750317c3f97b4fa143c4f8300c387ee26",
+      "description": "修改后：同一步骤的辽北兵组、归属线及辽东目标。",
+      "priorVerdict": "PASS"
+    }
+  ]
+}

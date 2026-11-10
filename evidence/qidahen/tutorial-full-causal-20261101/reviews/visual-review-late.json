@@ -1,0 +1,202 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "id": "/root/r144_visual_late",
+    "kind": "subagent"
+  },
+  "claimScope": "interaction-ui",
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\36-upkeep-datong.png",
+      "sha256": "2f924fe059dd2ef9fe2bfb5d96c280333e3c5f6970f11550757ae9bfe5a7c35e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "大同区域白边与三支绿色候选部队居中可见，明控制标记和人口方标不被教程遮挡；右侧支持选择与确认控件完整，教程位于部队右下空处。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\37-upkeep-yehe.png",
+      "sha256": "60e9394221857fb5b17139b3e36004f16f28e77594c4724676782ec3b9ead04b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部区域轮廓、三支绿边部队、明控制标记与人口方标同时可见；右栏支持面板与下方教程分层，手牌顶部及两侧翻页入口可见。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\38-upkeep-yehe-selected.png",
+      "sha256": "2066632a8a212194fd3fc0692fc208b98b182e500e3e931bcb77d57fd606769c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三张支付手牌向上抬升，完整牌面有亮边与已选角标；叶赫部三支军队本体仍可见，右栏显示已选3张且确认可读，教程不遮牌或候选。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\39-hand-scroll-end.png",
+      "sha256": "356fc4011a10db99796c7ebdb51054ec4b8cc9f4892bf6a56c342fd8f1f4495a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌横向滚动到末端后可见战术、银两与事件牌的顶部牌名及放大镜，左右翻页入口保留；右栏仍保留已选3张与确认，地图当前叶赫部部队未被遮挡。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\40-upkeep-pyongyang.png",
+      "sha256": "ca80f5bbe7dbb249023726dc78e6584b84544f68533d0c20b2ebc4239f293643",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "平壤城名、绿边步兵、明控制标记清楚可见，右栏支持选择面板可读；教程在城左侧，与当前步兵保持间隔，手牌入口与人口相关方标未被其压住。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\41-upkeep-pyongyang-selected.png",
+      "sha256": "fdbee225876ee123fc623015bc6da195cb5acaf52cb923d928f2f26cadd125ed",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "平壤步兵选中后出现贴合本体亮边及右上勾标；右栏显示已选1支部队且确认启用，教程与明标记、部队、当前确认均分开。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\42-claim-year.png",
+      "sha256": "a3c5fbce12540ed25ee9bb4f5781de1346ebdbd1643c29f15656b1c8490bf5d2",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧纪年卡与相邻卡完整可见并被同一蓝框定位；右侧取得本年纪年卡面板有弃3张和放弃选项及确认，教程位于卡右侧，不覆盖卡面。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\43-new-order.png",
+      "sha256": "dc3b2faeeecbedac0d7a58d69ea7145f0efe224991c139c2244ee7bb0adf9b9d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧纪年卡保留蓝框；教程位于轮盘右方并显示下一步，右侧人物列表三个卡面缩图、放大镜、姓名及不打出人物入口均可辨。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\44-year-character.png",
+      "sha256": "bba62080bcb6ec55bbe1a65a7a3f77fccbe11c8704bfeb046e8036aff68eaf28",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "人物面板中毛文龙、熊廷弼、杨镐及不打出人物分行可读，杨镐行蓝边推荐明确；教程在列表左下，与三张缩图和放大镜、确认入口分离。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\45-year-character-inspect.png",
+      "sha256": "76b71d3590386304a2f21cfab1e6e79b738c3e99ff79ed7ae75524aa5b9d31d7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "杨镐原卡放大到整屏中央，标题、能力正文、人物测定段与右上关闭钮可见；背景人物列表和教程处于阅读遮罩后，本图只证明人物检视阅读态。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\46-training-kind.png",
+      "sha256": "e7b80d61bd5400acfc5848e522f30985086a8ba6801ef7be3bb7d2f23c36af8a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征兵训练面板中进度、征兵、训练、额外训练与完成入口垂直分组可读；轮盘、顶部当前玩家、底部剩余银两手牌与左纪年卡可见，未出现教程抢占候选。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\47-training-target.png",
+      "sha256": "c0a9169236008a7a89b74d306ad123cac54b4feeb453390ce7069f03a5cc9cf6",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练面板固定标题和说明在候选列表上方，叶赫部炮兵行有蓝色推荐边；叶赫部原有三部队及明标记在地图上方可见，教程位于面板左下，不压候选行。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\48-training-second-target.png",
+      "sha256": "7f8b624414036517b8b6c3e8f05769b5b37f805a8c07e2e1890273d2cca2ace7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练后面板显示完成1/4与本次炮兵训练记录，叶赫部步兵候选行蓝边可见，顶部原三部队仍可辨；列表与固定说明分开，教程位于右下而未覆盖候选。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\49-training-recruit-target.png",
+      "sha256": "b39fabac7740099f77e45df12e5396668bcd5575b6d01e5437d3c1772bbc07a3",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实刷新继续后的征兵列表滚动到辽东：顶部固定标题、完成3/4、上次训练记录和选择说明清楚，列表起于其下的独立正文；辽东推荐行完整蓝边可见，未压住固定标题，教程在面板左下分离。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\50-training-finish.png",
+      "sha256": "d6106bb32b8feb56ebb45e3a6571456368c6dd37e13f62fd85fd47bb7ed5a532",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完成4/4及辽东征兵记录可读，面板保留额外训练和完成征兵训练两个入口，完成项蓝边明确；教程在下方地图空处，底部最后银两手牌可见。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\51-finish.png",
+      "sha256": "ac31511e70fdfa1b405939bd6f767121a87920075e3175f301433aed767b52bd",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完成页教程全文与完成并返回按钮完整可读，顶部当前玩家已切后金；后金手牌、牌库弃牌和地图控制标记可见，大明部队改示背面属于当前他方视角，本图不据此推断规则数值。"
+    }
+  ]
+}

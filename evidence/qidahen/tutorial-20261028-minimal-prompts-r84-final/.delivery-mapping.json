@@ -1,0 +1,60 @@
+{
+  "runId": "20261028-minimal-prompts-r84",
+  "sourceRevision": "sha256:f9f55d436cec7366a439cfae74f1c9dcbce19e8d69320dfce026f9048dfd4a94",
+  "requirements": [
+    {
+      "requirement": "连续正式开局与军屯",
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/03-辽北军屯结果.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-00-轮盘两格与指定对手.png"
+      ]
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05a-鸳鸯阵选中与确认出牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/06-野战选择实际出兵部队.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/08-叶赫部占领结果.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ]
+    },
+    {
+      "requirement": "手机长按检视",
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-03-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-04-检视返回后轻点银两选择支付.png"
+      ]
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/09-教程退出后同局继续.png"
+      ]
+    },
+    {
+      "requirement": "地区轮廓与真实地图输入",
+      "after": [
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/00-辽北军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261028-minimal-prompts-r84-final/media/移动-02-突袭支付与手牌.png"
+      ]
+    }
+  ],
+  "traceFiles": [
+    "evidence/qidahen/behavior-traces/20261028-minimal-prompts-r84/basic-opening-entry.json",
+    "evidence/qidahen/behavior-traces/20261028-minimal-prompts-r84/basic-opening-natural-raid.json",
+    "evidence/qidahen/behavior-traces/20261028-minimal-prompts-r84/basic-opening-mobile-hand-inspect.json"
+  ]
+}

@@ -1,0 +1,1178 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-01T09:30:05.911Z",
+  "reviewer": {
+    "kind": "independent-agent",
+    "id": "/root/doctor_full_inventory"
+  },
+  "scope": "D组全部十二张当前原图逐张私人视觉审查；只写本人报告，不修改产品/其它报告，不向用户展示",
+  "userQuote": "按规范重新逐张验收所有新交互，和旧UI逐项对照，有问题直接修，别再拿测试通过当验收通过，修好给我新截图。",
+  "sourceRun": "e2e-1793524146786-j4wkg5",
+  "baselineSource": "temp/doctor-full-baselines-20261101.json；已直接解析90b7dba67^原完整组件相关分支；25族清单与本轮full-ui-reaudit范围",
+  "verdict": "REVISE",
+  "summary": {
+    "total": 12,
+    "PASS": 9,
+    "REVISE": 3
+  },
+  "items": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区三张法术-桌面.png",
+      "sha256": "ce79d693cbea7d4c83ab91bf7329a3b4bc675537b4df92d723ca5511249e88f1",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "维山帝之书的数量为三，当前窗口显示两张可识别的正式小卡；牌桌阶段、资源、骰盘和手牌入口保持原位置。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原正式卡面、候选授权、搜索与原确认或跳过；短屏只重排同一选择层。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区三张法术-桌面.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区三张法术-桌面.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区三张法术-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 18,
+        "visualHierarchy": 14,
+        "objectRecognition": 13,
+        "stateAndActions": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 92
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区三张法术-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区三张法术-桌面.png"
+        }
+      ],
+      "playerFirstAction": "先根据数量定位准备区，再横向找回第三张并点击原卡阅读。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "公开准备区显示数量与正式小卡身份，正文通过原卡点击检视恢复；本图不声称三张同时完整可读。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "第三张需横向找回，图中数量说明仍存在；真实滚动与点开由同源行为轨迹证明，不能由这张常态图单独外推。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": [
+        {
+          "severity": "范围边界",
+          "observation": "常态图不证明第三张完整牌面或滚动命中；这些由同源行为和后续阅读图分别承担。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-桌面.png",
+      "sha256": "e02c347cd0108ddd5c6399c560fe71e1eeb14fb4717879f9b07efdec515b85c3",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "瓦尔托尔之汽在原居中阅读层完整展开，准备和施放正文清楚，关闭按钮位于牌面右上；背景准备区已经显示被找到的绿色法术。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+          "finding": "沿用原放大阅读与明确关闭，单卡比例从原固定值改为正式帧比例。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-桌面.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-桌面.png",
+            "observation": "整张阅读卡居中，关闭位于其右上边缘。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 15,
+        "objectRecognition": 15,
+        "stateAndActions": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 96
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-桌面.png"
+        }
+      ],
+      "playerFirstAction": "阅读正文后点击右上关闭返回公开准备区。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "阅读层暂时居中覆盖背景，通过原明确关闭返回牌桌；本图不证明关闭后的规则结果。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "只在原阅读层查看正式卡，关闭回原选择；横屏图来自桌面已打开后调整视口，不证明实体触控入口。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "保留原正式卡面与唯一关闭控件；不新增第二套阅读状态。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-横屏.png",
+      "sha256": "90c9cea49cb9b00fad5f4a66bbaf39e8bb5a59a312b206d68f2c3b38a2bd2d48",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "横屏中的整张绿色法术与上下正文完整可读，关闭按钮独立清楚，牌面未拉伸或被下边裁掉。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+          "finding": "沿用原放大阅读与明确关闭，单卡比例从原固定值改为正式帧比例。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-横屏.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-横屏.png",
+            "observation": "整张阅读卡居中，关闭位于其右上边缘。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-横屏.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 15,
+        "stateAndActions": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 95
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-横屏.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/公开准备区原卡阅读-横屏.png"
+        }
+      ],
+      "playerFirstAction": "阅读后用原关闭控件返回牌桌。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "阅读层暂时居中覆盖背景，通过原明确关闭返回牌桌；本图不证明关闭后的规则结果。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "只在原阅读层查看正式卡，关闭回原选择；横屏图来自桌面已打开后调整视口，不证明实体触控入口。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "保留原正式卡面与唯一关闭控件；不新增第二套阅读状态。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": [
+        {
+          "severity": "范围边界",
+          "observation": "这张图由桌面已打开的阅读层切换视口获得，不证明横屏原卡触控或实体手机长按。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家目标候选-桌面.png",
+      "sha256": "7976c9e4a633fc580bdc82a9db30964cc3525f651b1a859566b00aacbfc9ba63",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "本人、队友和两名敌方四个席位同屏可见，关系色与文字能区分归属；未选时确认是灰色，下一步应先点一个玩家。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原完整玩家选择卡、关系标签、席位标识与确认；原选择卡本身不包含头像，未把未存在的旧头像当本轮要求。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家目标候选-桌面.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家目标候选-桌面.png",
+            "observation": "玩家卡按同宽行列排列，末项居中，确认位于候选组下方。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家目标候选-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActions": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 94
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家目标候选-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家目标候选-桌面.png"
+        }
+      ],
+      "playerFirstAction": "点击需要获得即视感的玩家卡，再使用原确认按钮。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "背景生命、战斗点数、阶段和骰盘仍可定位；当前来源牌在原弃牌区，手牌保持原扇形。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "没有删除授权候选；滚动和搜索只改变可见窗口，数量与原恢复入口仍在。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家队友已选-桌面.png",
+      "sha256": "6ec9c6dcc15c36424e2615bff96d114f333a0f0ec8244fe6d3dbe77435f4fd12",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "队友玩家卡以贴边金色边界标记，其他三个候选保持可见可比较，原确认按钮已高亮，归属没有跳到敌方。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原完整玩家选择卡、关系标签、席位标识与确认；原选择卡本身不包含头像，未把未存在的旧头像当本轮要求。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家队友已选-桌面.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家队友已选-桌面.png",
+            "observation": "玩家卡按同宽行列排列，末项居中，确认位于候选组下方。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家队友已选-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActions": 15,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 95
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家队友已选-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793524146786-j4wkg5/所有玩家队友已选-桌面.png"
+        }
+      ],
+      "playerFirstAction": "核对队友归属后点击下方确认。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "背景生命、战斗点数、阶段和骰盘仍可定位；当前来源牌在原弃牌区，手牌保持原扇形。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "没有删除授权候选；滚动和搜索只改变可见窗口，数量与原恢复入口仍在。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-桌面.png",
+      "sha256": "113f5acbd87ddf0e34ac0424f2a6be7a226f5c00094e3ad40dda17ea7a48c857",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "REVISE",
+      "observation": "悬停本人的致盲状态时，说明框向右覆盖敌方眩目图标，只剩金色上弧；候选归属卡仍在，但另一个实际状态不能辨认。",
+      "checks": [
+        "目标本体未全部可见，另一持有人状态被说明遮住",
+        "下一步操作与当前状态可辨",
+        "范围内可读性存在明确缺口",
+        "候选保护槽位失败，不能按测试通过放行"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原完整状态持有人、状态图标及说明；多人说明方向未避让其它候选，复用旧组件不能豁免遮挡。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "REVISE",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-桌面.png",
+            "observation": "说明盖在另一候选上，辅助说明侵占主决策对象。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-桌面.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "REVISE",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-桌面.png",
+            "observation": "持有人卡分组明确，但说明跨进相邻持有人的状态区域。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 16,
+        "visualHierarchy": 11,
+        "objectRecognition": 10,
+        "stateAndActions": 12,
+        "layoutIntegrity": 8,
+        "assetIntegrity": 10,
+        "ergonomics": 8,
+        "total": 75
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "REVISE",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "REVISE",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-桌面.png"
+        }
+      ],
+      "playerFirstAction": "必须先修复说明避让，再比较并选择状态。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "REVISE",
+          "finding": "最关键的相邻状态候选被说明遮住，原持有人信息仍在但不足以替代状态本体。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "REVISE",
+          "finding": "说明从辅助信息变成遮挡相邻状态的覆盖物，必须返工。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "持有人负责归属、图标负责选择、说明只解释；说明不得替代被挡住的候选。",
+        "uncoveredElements": [
+          "被遮住的另一状态候选"
+        ]
+      },
+      "hardFailures": [
+        "选择态候选本体被说明浮层遮挡"
+      ],
+      "issues": [
+        {
+          "severity": "硬失败",
+          "observation": "辅助说明盖住另一个合法状态候选本体。",
+          "impact": "玩家不能比较敌方状态，也无法可靠点到被盖住的图标。",
+          "fix": "复用原说明组件的定位和避让能力，保持标题、两个状态候选及跳过按钮同时可见。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-横屏.png",
+      "sha256": "79b9c14b32e75e0b8d4500439d4190562c87fa6fc2ca1b7fecb4ee24dfd0e806",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "REVISE",
+      "observation": "横屏中说明框仍从本人图标伸入敌方卡，敌方状态本体被遮住；标题和跳过虽能读，但不能抵消候选缺失。",
+      "checks": [
+        "目标本体未全部可见，另一持有人状态被说明遮住",
+        "下一步操作与当前状态可辨",
+        "范围内可读性存在明确缺口",
+        "候选保护槽位失败，不能按测试通过放行"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原完整状态持有人、状态图标及说明；多人说明方向未避让其它候选，复用旧组件不能豁免遮挡。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "REVISE",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-横屏.png",
+            "observation": "说明盖在另一候选上，辅助说明侵占主决策对象。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-横屏.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "REVISE",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-横屏.png",
+            "observation": "持有人卡分组明确，但说明跨进相邻持有人的状态区域。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 16,
+        "visualHierarchy": 11,
+        "objectRecognition": 10,
+        "stateAndActions": 12,
+        "layoutIntegrity": 8,
+        "assetIntegrity": 10,
+        "ergonomics": 8,
+        "total": 75
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "REVISE",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-横屏.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "REVISE",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖多个状态持有人/_runs/e2e-1793524146786-j4wkg5/多持有人状态候选-横屏.png"
+        }
+      ],
+      "playerFirstAction": "修复多人说明定位后再进行状态选择。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "REVISE",
+          "finding": "最关键的相邻状态候选被说明遮住，原持有人信息仍在但不足以替代状态本体。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "REVISE",
+          "finding": "说明从辅助信息变成遮挡相邻状态的覆盖物，必须返工。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "持有人负责归属、图标负责选择、说明只解释；说明不得替代被挡住的候选。",
+        "uncoveredElements": [
+          "被遮住的另一状态候选"
+        ]
+      },
+      "hardFailures": [
+        "选择态候选本体被说明浮层遮挡"
+      ],
+      "issues": [
+        {
+          "severity": "硬失败",
+          "observation": "另一持有人的状态图标被说明覆盖。",
+          "impact": "窄屏上只有一个实际状态可辨认。",
+          "fix": "说明必须避开整组候选、标题与原动作，不能仅把方向改到标题上。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793524146786-j4wkg5/无合法状态仅跳过-桌面.png",
+      "sha256": "9f84e4683e522f7820be7f24ac09292196f3717061dbc457006f8f8c294b46b4",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "中央只有原技能选择窗、状态选择任务和跳过按钮，没有虚假状态图标、空玩家卡或错误的确认对象。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+          "finding": "沿用原文字选择窗与跳过选项，没有伪造状态或空对象卡。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793524146786-j4wkg5/无合法状态仅跳过-桌面.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793524146786-j4wkg5/无合法状态仅跳过-桌面.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793524146786-j4wkg5/无合法状态仅跳过-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActions": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 94
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793524146786-j4wkg5/无合法状态仅跳过-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实打出瓦图姆之风覆盖无合法状态跳过/_runs/e2e-1793524146786-j4wkg5/无合法状态仅跳过-桌面.png"
+        }
+      ],
+      "playerFirstAction": "点击唯一的跳过按钮继续原结算。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "当前临时选择层保护标题、候选与原动作；被暗化的牌桌仍由关闭或完成当前选择返回。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "没有删除授权候选；滚动和搜索只改变可见窗口，数量与原恢复入口仍在。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/神秘飞弹原技能分支-桌面.png",
+      "sha256": "fb7f9ca49bb2d5c2d1eb3d8d85a0e8f9b74e1329b66cc7bbbd6263d7bb01fa10",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "REVISE",
+      "observation": "秘术雷击的小顺子与大顺子按钮可分别点击，但两段正文完全相同，只写攻击伤害与施放法术，没有六点和九点的实际差异。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "分支操作可见，但实际伤害差异缺失",
+        "范围内可读性存在明确缺口",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/AbilityChoiceModal.tsx",
+          "finding": "沿用原技能分支窗口，问题是新增博士变体正文没有提供差异，不要求重画旧组件。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "REVISE",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/神秘飞弹原技能分支-桌面.png",
+            "observation": "分支按钮有明确主次，但正文没有承接实际差异。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/神秘飞弹原技能分支-桌面.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/神秘飞弹原技能分支-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 15,
+        "visualHierarchy": 14,
+        "objectRecognition": 13,
+        "stateAndActions": 10,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 85
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "REVISE",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/神秘飞弹原技能分支-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "REVISE",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/神秘飞弹原技能分支-桌面.png"
+        }
+      ],
+      "playerFirstAction": "先让原分支正文承接两种实际伤害，再选择本次进攻。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "当前临时选择层保护标题、候选与原动作；被暗化的牌桌仍由关闭或完成当前选择返回。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "REVISE",
+          "finding": "复用旧弹窗时把不同数值压成相同摘要，丢失实际决策差异。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "每个分支负责展示其实际效果差异，不能只显示两个不同触发名称。",
+        "uncoveredElements": [
+          "两个变体实际伤害差异"
+        ]
+      },
+      "hardFailures": [
+        "当前独立分支的实际效果差异缺失，不能比较两个合法选择"
+      ],
+      "issues": [
+        {
+          "severity": "信息缺口",
+          "observation": "两段独立规则效果被压成相同摘要。",
+          "impact": "玩家在选择面上不能比较小顺子和大顺子的实际伤害。",
+          "fix": "按锁定玩家板合同只补博士两个变体的原语言名称与说明键，保留原分支组件与规则。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放完整候选-桌面.png",
+      "sha256": "803edcaa1b99caa87b6b84bf903e46b9cb27034ac040b0785f1e92a9736ff390",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "标题明确选择施放法术，搜索和八张总量可见；首行五张正式牌面完整，下行三张露出上部，当前比较窗口可纵向浏览，跳过位于原候选下方。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原正式卡面、候选授权、搜索与原确认或跳过；短屏只重排同一选择层。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放完整候选-桌面.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放完整候选-桌面.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放完整候选-桌面.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 18,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActions": 14,
+        "layoutIntegrity": 13,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 92
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放完整候选-桌面.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放完整候选-桌面.png"
+        }
+      ],
+      "playerFirstAction": "阅读当前牌面，必要时搜索或纵向找回后排，再选择法术或跳过。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "当前临时选择层保护标题、候选与原动作；被暗化的牌桌仍由关闭或完成当前选择返回。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "没有删除授权候选；滚动和搜索只改变可见窗口，数量与原恢复入口仍在。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": [
+        {
+          "severity": "范围边界",
+          "observation": "这张图只证明八张候选的集合与当前可见窗口，不证明后排三张正文同时可读；找回后排由同源真实滚动及原阅读动作另证。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放八牌候选-横屏.png",
+      "sha256": "9676009ce25decaaec6e4efdda6a1a5c87728e92fe7184534b45c7e1aaee866f",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "横屏左侧三张正式法术以可读尺度横向展开，右侧保留施放标题、搜索、八张总量和跳过；正文没有被检视按钮压住。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原正式卡面、候选授权、搜索与原确认或跳过；短屏只重排同一选择层。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放八牌候选-横屏.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放八牌候选-横屏.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放八牌候选-横屏.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 18,
+        "visualHierarchy": 14,
+        "objectRecognition": 15,
+        "stateAndActions": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 94
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放八牌候选-横屏.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌直接施放八牌候选-横屏.png"
+        }
+      ],
+      "playerFirstAction": "横向浏览其余法术，或通过右侧搜索定位，再选择或跳过。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "当前临时选择层保护标题、候选与原动作；被暗化的牌桌仍由关闭或完成当前选择返回。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "没有删除授权候选；滚动和搜索只改变可见窗口，数量与原恢复入口仍在。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": [
+        {
+          "severity": "范围边界",
+          "observation": "图中只显示当前三张窗口，其余五张的恢复由原横向滚动与搜索承接；不证明实体触控手势。"
+        }
+      ]
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌搜索无匹配可清除-横屏.png",
+      "sha256": "2cc5b959e143266bb8c7ca10bd9f64fbd719c65c6d9419b70e2965b73bb4163d",
+      "sourceRun": "e2e-1793524146786-j4wkg5",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "status": "PASS",
+      "observation": "搜索无匹配时左侧明确提示没有匹配的牌，右侧保留搜索清除、零张结果计数与跳过，没有把空集合画成虚假法术。",
+      "checks": [
+        "目标本体可见，当前操作层能识别",
+        "下一步操作与当前状态可辨",
+        "当前原图的主体、阅读与关键控件无越界",
+        "图面仅承担交互与布局判断，行为结果另证"
+      ],
+      "oldUiComparison": [
+        {
+          "baseline": "90b7dba67^",
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "finding": "沿用原正式卡面、候选授权、搜索与原确认或跳过；短屏只重排同一选择层。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "用户全部新交互逐张验收原话与doctor-strange-full-ui-reaudit-20261101.md",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌搜索无匹配可清除-横屏.png",
+            "observation": "主体和关键动作处于同一任务焦点，背景牌桌没有抢走当前操作。"
+          },
+          {
+            "criterion": "对齐栅格",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌搜索无匹配可清除-横屏.png",
+            "observation": "标题、对象与原操作区域边缘规整，没有无来源漂移。"
+          },
+          {
+            "criterion": "分组与装饰",
+            "status": "PASS",
+            "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌搜索无匹配可清除-横屏.png",
+            "observation": "保留旧弹窗或正式卡面边界，未以第二层印刷套框代替对象。"
+          }
+        ]
+      },
+      "scores": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateAndActions": 14,
+        "layoutIntegrity": 13,
+        "assetIntegrity": 10,
+        "ergonomics": 9,
+        "total": 93
+      },
+      "targetRequirements": [
+        {
+          "requirement": "所有新交互使用真实对象并可理解下一步",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌搜索无匹配可清除-横屏.png"
+        },
+        {
+          "requirement": "对照旧完整组件保留原信息与阅读路径",
+          "status": "PASS",
+          "evidence": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793524146786-j4wkg5/弃牌搜索无匹配可清除-横屏.png"
+        }
+      ],
+      "playerFirstAction": "清除搜索恢复原八张候选，或选择跳过。",
+      "protectedSlots": [
+        {
+          "objects": "玩家身份、状态资源、阶段、骰盘、手牌与牌堆",
+          "status": "PASS",
+          "finding": "当前临时选择层保护标题、候选与原动作；被暗化的牌桌仍由关闭或完成当前选择返回。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "object": "本轮移动、缩放或临时覆盖区域",
+          "status": "PASS",
+          "finding": "没有删除授权候选；滚动和搜索只改变可见窗口，数量与原恢复入口仍在。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "scope": "同一份全部新交互职责总账与本报告当前媒体",
+        "decisions": "正式卡或玩家对象承担选择，原标题和原确认承担任务与提交。",
+        "uncoveredElements": []
+      },
+      "hardFailures": [],
+      "issues": [
+        {
+          "severity": "既有非阻塞细节",
+          "observation": "搜索框中原生清除与原圆形清除标记同时出现；恢复入口仍可辨识，本项不外推共享搜索组件已经重做。"
+        }
+      ]
+    }
+  ],
+  "recheckHistory": [],
+  "limitations": [
+    "原图仅证明交互与可读性，不证明规则和数值正确；六点九点差异的依据另由locked规则合同核对",
+    "公开准备区数量/当前正式小卡与滚动、点开、关闭的行为证明分开；常态图不证明所有卡正文同屏",
+    "横屏阅读来自桌面打开后调整视口，不证明横屏原入口可点或实体触控",
+    "R4全批实际十通过四失败不作为视觉通过依据；本组只读取当前十二张真实原图，不读取失败截图替代",
+    "本报告不继承任何旧PASS，所有本轮条目均由本人实际读图后独立判定"
+  ]
+}

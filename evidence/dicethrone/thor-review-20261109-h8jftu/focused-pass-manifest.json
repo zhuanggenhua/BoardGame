@@ -1,0 +1,277 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "refactor",
+  "subject": "thor-focused-interactions",
+  "sourceBaseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "baselinePixelsAvailable": true,
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "acceptanceReason": "覆盖本轮已逐图查看的桌面交互代表场景；行为验证另行执行，移动端未覆盖。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\01-02-弃牌飞掷选择成本.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\02-03-取消弃牌支付且资源未扣.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\03-04-手牌区弃置成本后飞掷结算.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\04-06-奥丁效果骰等待选择重掷骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\05-07-使用原整组重掷动作提交两颗所选骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\06-08-整组重掷一次完成并保留原确认收口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\10-03-当之无愧直接选择固定目标四或五.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\11-04-选择四后沿原固定值流程点选骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\12-05-改为四且其余骰子保持.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\13-01-旧固定值和任意编辑各自提示与控件.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\14-02-任意编辑保留原加减预览和手动确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\15-03-旧流程提交后只修改一颗骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\16-01-原骰盘选择复制来源.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\17-02-来源骰选定后选择目标骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\18-03-复制完成且锁定骰点数更新.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\19-03-原骰盘直接展示四骰与组合选择提示.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\20-04-选中两颗后原确认动作启用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\21-05-玩家选低值组合后三附属伤害与主攻击分别保留.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\22-02-可选移动窗口保留立即停止入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\23-03-一次飞掷独立扣一生命后可继续或停止.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\24-05-飞掷一次后主动停止并进入攻击响应.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\25-03-合法代表态-我又行了任选两骰-队友出牌后索尔本人操作旧骰盘选骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\26-04-合法代表态-我又行了任选两骰-原有提示和双按钮确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\27-05-合法代表态-我又行了任选两骰-服务端记录对应骰子重掷并关闭选骰交互.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\28-03-合法代表态-就这防御骰重掷-队友出牌后索尔本人操作旧骰盘选骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\29-04-合法代表态-就这防御骰重掷-原有提示和双按钮确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\30-05-合法代表态-就这防御骰重掷-服务端记录对应骰子重掷并关闭选骰交互.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\31-08-合法代表态-莲花掌五点伤害到达索尔或队友的响应窗口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\32-10-合法代表态-退出卡牌特写后仍可从旧响应界面继续结算.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\33-11-合法代表态-确认继续后五点伤害均被防止且索尔生命保持五十.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\34-01-敌方八伤攻击前态与防御原入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\35-02-实际投出对应数量防御骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\36-03-防御减伤和每组神锤移动后结算生命.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\37-01-原骰盘显示两骰调整入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\38-02-两颗骰子预览后沿原按钮确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\39-03-确认后仅两颗骰子改变.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\40-01-效果骰结果在原骰盘待确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\41-02-确认后获得对应CP.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\42-01-效果骰结果在原骰盘待确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\43-02-确认后获得对应CP.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\44-01-起开沿原状态选择入口显示对手气.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\45-02-选中对手气后原确认入口可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\46-03-确认后只移除一层气并完成出牌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\47-01-选择转移来源且神锤不可转移.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\48-02-来源锁定后选择索尔为目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\49-03-选中目标后原确认入口可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\50-04-转移一层后神锤仍归索尔.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\51-01-原玩家选择入口显示有状态的对手.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\52-02-选中对手后原确认入口可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\53-03-确认后对手状态清除且神锤仍在.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\54-01-对手已确认骰面后原骰盘选择目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\55-02-选中对手骰后原确认入口可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\56-03-确认后仅选中对手骰重投.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\57-01-对手已确认后原骰盘允许修改.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\58-02-两颗对手骰预览后原确认可用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\59-03-确认后仅两颗对手骰改变.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "弃牌飞掷沿原手牌区选择和取消",
+      "evidence": [
+        "01-02-弃牌飞掷选择成本.png",
+        "02-03-取消弃牌支付且资源未扣.png",
+        "03-04-手牌区弃置成本后飞掷结算.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "奥丁效果骰沿原骰盘组选重掷",
+      "evidence": [
+        "04-06-奥丁效果骰等待选择重掷骰子.png",
+        "05-07-使用原整组重掷动作提交两颗所选骰子.png",
+        "06-08-整组重掷一次完成并保留原确认收口.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "队友出牌后索尔同骰选择两次",
+      "evidence": [
+        "07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png",
+        "09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "当之无愧固定改为四或五",
+      "evidence": [
+        "10-03-当之无愧直接选择固定目标四或五.png",
+        "11-04-选择四后沿原固定值流程点选骰子.png",
+        "12-05-改为四且其余骰子保持.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "任意改骰保留加减预览和确认",
+      "evidence": [
+        "13-01-旧固定值和任意编辑各自提示与控件.png",
+        "14-02-任意编辑保留原加减预览和手动确认.png",
+        "15-03-旧流程提交后只修改一颗骰子.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "复制锁定骰",
+      "evidence": [
+        "16-01-原骰盘选择复制来源.png",
+        "17-02-来源骰选定后选择目标骰.png",
+        "18-03-复制完成且锁定骰点数更新.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "连锁闪电四骰选两骰",
+      "evidence": [
+        "19-03-原骰盘直接展示四骰与组合选择提示.png",
+        "20-04-选中两颗后原确认动作启用.png",
+        "21-05-玩家选低值组合后三附属伤害与主攻击分别保留.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "瓶中闪电逐次飞掷与停止",
+      "evidence": [
+        "22-02-可选移动窗口保留立即停止入口.png",
+        "23-03-一次飞掷独立扣一生命后可继续或停止.png",
+        "24-05-飞掷一次后主动停止并进入攻击响应.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "多人队友额外重投两骰",
+      "evidence": [
+        "25-03-合法代表态-我又行了任选两骰-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "26-04-合法代表态-我又行了任选两骰-原有提示和双按钮确认.png",
+        "27-05-合法代表态-我又行了任选两骰-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "多人队友防御骰重投",
+      "evidence": [
+        "28-03-合法代表态-就这防御骰重掷-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "29-04-合法代表态-就这防御骰重掷-原有提示和双按钮确认.png",
+        "30-05-合法代表态-就这防御骰重掷-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "多人队友响应防伤",
+      "evidence": [
+        "31-08-合法代表态-莲花掌五点伤害到达索尔或队友的响应窗口.png",
+        "32-10-合法代表态-退出卡牌特写后仍可从旧响应界面继续结算.png",
+        "33-11-合法代表态-确认继续后五点伤害均被防止且索尔生命保持五十.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "雷电之轮原防御流程",
+      "evidence": [
+        "34-01-敌方八伤攻击前态与防御原入口.png",
+        "35-02-实际投出对应数量防御骰.png",
+        "36-03-防御减伤和每组神锤移动后结算生命.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "一次改变两颗骰",
+      "evidence": [
+        "37-01-原骰盘显示两骰调整入口.png",
+        "38-02-两颗骰子预览后沿原按钮确认.png",
+        "39-03-确认后仅两颗骰子改变.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "一掷千金效果骰一",
+      "evidence": [
+        "40-01-效果骰结果在原骰盘待确认.png",
+        "41-02-确认后获得对应CP.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "一掷千金效果骰六",
+      "evidence": [
+        "42-01-效果骰结果在原骰盘待确认.png",
+        "43-02-确认后获得对应CP.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "选状态并移除一层",
+      "evidence": [
+        "44-01-起开沿原状态选择入口显示对手气.png",
+        "45-02-选中对手气后原确认入口可用.png",
+        "46-03-确认后只移除一层气并完成出牌.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "选择转移状态与目标",
+      "evidence": [
+        "47-01-选择转移来源且神锤不可转移.png",
+        "48-02-来源锁定后选择索尔为目标.png",
+        "49-03-选中目标后原确认入口可用.png",
+        "50-04-转移一层后神锤仍归索尔.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "选择玩家移除状态",
+      "evidence": [
+        "51-01-原玩家选择入口显示有状态的对手.png",
+        "52-02-选中对手后原确认入口可用.png",
+        "53-03-确认后对手状态清除且神锤仍在.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "强制重投对手骰",
+      "evidence": [
+        "54-01-对手已确认骰面后原骰盘选择目标.png",
+        "55-02-选中对手骰后原确认入口可用.png",
+        "56-03-确认后仅选中对手骰重投.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "修改对手两颗骰",
+      "evidence": [
+        "57-01-对手已确认后原骰盘允许修改.png",
+        "58-02-两颗对手骰预览后原确认可用.png",
+        "59-03-确认后仅两颗对手骰改变.png"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "behavioralVerification": {
+    "status": "not-claimed",
+    "reason": "图包只声明逐图视觉结果，同轮真实浏览器行为测试另行记录。"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

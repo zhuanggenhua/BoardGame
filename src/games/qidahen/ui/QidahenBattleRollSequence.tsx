@@ -129,7 +129,7 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attac
             <div className={`mt-1 grid min-h-[52px] shrink-0 gap-6 text-center font-bold ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`} data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
                 {sides.map(side => <div key={side} data-testid={`qidahen-battle-result-${side}`} style={{ ...battleLabelStyle, justifySelf: 'center' }}>
                     <div data-qidahen-battle-label={`${side}-total`} className="text-[22px] leading-7">{t('board.battleRoll.total', { total: side === 'attacker' ? stage.attackerTotal : stage.defenderTotal })}</div>
-                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[16px] leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: actors[side === 'attacker' ? 'defender' : 'attacker'].name })}</div>
+                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[16px] leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: t('board.battleRoll.regionFaction', { region: side === 'attacker' ? targetName : sourceName, faction: actors[side === 'attacker' ? 'defender' : 'attacker'].name }) })}</div>
                 </div>)}
             </div>
         </section>

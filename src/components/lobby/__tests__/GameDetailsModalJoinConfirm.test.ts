@@ -1126,6 +1126,14 @@ describe('GameDetailsModal create room ai entry', () => {
         thumbnail: createElement('div'),
     };
 
+    it('经典游戏详情沿用经典布局并保留建房入口', () => {
+        render(createElement(GameDetailsModal, { ...baseProps, homeStyle: 'classic' }));
+
+        expect(screen.getByTestId('game-details-sidebar')).toBeInTheDocument();
+        expect(screen.getByTestId('game-details-open-create-room')).toBeInTheDocument();
+        expect(document.querySelector('.platform-game-details')).toBeNull();
+    });
+
     it('打开详情弹窗时会提前预热联机房间冷加载依赖', async () => {
         render(createElement(GameDetailsModal, baseProps));
 
@@ -2650,7 +2658,7 @@ describe('GameDetailsModal create room ai entry', () => {
         render(createElement(GameDetailsModal, baseProps));
 
         expect(screen.queryByTestId('game-details-open-create-room')).toBeNull();
-        expect(screen.getByText('activeMatch.notice')).toBeInTheDocument();
+        expect(screen.queryByText('activeMatch.notice')).toBeNull();
         expect(screen.getByText('activeMatch.return')).toBeInTheDocument();
         expect(screen.getByText('actions.forceExit')).toBeInTheDocument();
     });
@@ -2669,7 +2677,7 @@ describe('GameDetailsModal create room ai entry', () => {
         render(createElement(GameDetailsModal, baseProps));
 
         expect(screen.queryByTestId('game-details-open-create-room')).toBeNull();
-        expect(screen.getByText('activeMatch.notice')).toBeInTheDocument();
+        expect(screen.queryByText('activeMatch.notice')).toBeNull();
         expect(screen.getByText('activeMatch.return')).toBeInTheDocument();
         expect(screen.getByText('actions.destroy')).toBeInTheDocument();
     });

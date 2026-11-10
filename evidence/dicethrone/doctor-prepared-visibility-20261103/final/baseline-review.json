@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "status": "PASS",
+      "requirement": "增加可逆按钮隐藏准备法术上层，以查看下方被动能力。",
+      "baselineSource": "此前交付的桌面、横屏和触屏准备法术截图及其独立图审，作为新增按钮前的旧版参考；本轮五份独立图审和当前源码。",
+      "preservedInformation": "保留原技能槽覆盖、牌面及被动正文与相邻槽；隐藏只改变显示，不移除准备法术数据。",
+      "preservedActions": "恢复后保留原浏览位置与卡牌放大；鼠标和触屏行为由浏览器用例验证，图片仅用于视觉判断。",
+      "changes": "增加隐藏和恢复按钮；鼠标按钮在槽内左侧，触屏采用槽内圆形 44 像素命中区，图标位置适配触屏。",
+      "duplicateDecision": "16 张按 SHA-256 去重为 14 张；桌面及横屏单张恢复图分别与显示图一致，保留显示图。",
+      "changeAuthority": "用户要求加按钮关闭上层牌显示以查看被动。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\01-桌面单张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\06-横屏三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\12-横屏触控三张.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\01-桌面单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\02-桌面单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\04-桌面多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\05-桌面多张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\06-桌面多张-恢复法术.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\07-横屏单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\08-横屏单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\10-横屏多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\11-横屏多张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\12-横屏多张-恢复法术.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\13-横屏触控三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\14-横屏触控末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\15-横屏触控露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\16-横屏触控恢复法术.png"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\independent-baseline.json",
+      "sourceReviewEntry": "/baselineRequirements/0"
+    }
+  ]
+}

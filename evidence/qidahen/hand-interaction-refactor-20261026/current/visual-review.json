@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/review_qidahen_tray"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current/01-桌面支付确认与取消.png",
+      "status": "PASS",
+      "score": 94,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏可见征召军队、已选1/1和东北大军名称。确认执行保留纸色实底，取消本次行动采用次级无实底表达，主次清楚。托盘与已选卡顶有间隔，三张手牌及各自查看入口可见；地图、玩家条和牌堆未被本轮新增结构挤出。未见目标组件破图或裁切。",
+      "sha256": "364b85de2d2676b65f8e44802705cfe546bd4c6ec1493b0773712f9e8d3b200d",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/01-桌面支付确认与取消.png",
+      "hardFailures": [],
+      "issues": [],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/review-original.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current/02-手机横屏支付确认与取消.png",
+      "status": "PASS",
+      "score": 93,
+      "viewport": {
+        "width": 932,
+        "height": 430
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付托盘下缘已上移至纵坐标约236，已选手牌顶位于纵坐标约261，形成可见间隔；不再压住事件标签、卡头或看按钮。确认执行与取消本次行动均完整可见、文字清楚，支付进度已选1/1和选牌名称可读。三张真实手牌与地图同屏，已选标记清晰；本轮移动未挤掉手牌操作入口。截图只证明可见性，真实可点击与取消行为由独立端到端断言证明。",
+      "sha256": "e6e7b09ad547478266eb87884690464d1dd5ab53c7730c616355917e435ecb65",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/02-手机横屏支付确认与取消.png",
+      "hardFailures": [],
+      "issues": [],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/review-original.json",
+      "sourceReviewEntry": "/media/1"
+    }
+  ],
+  "limitations": [
+    "仅桌面1920x1080与手机横屏932x430的征召军队已选1/1局部代表态",
+    "不证明轮盘支付、超手牌上限、孙元化科技的其它代表态",
+    "不证明竖屏或整游戏/教程全流程视觉通过",
+    "截图不单独证明数值结算与命令正确性"
+  ]
+}

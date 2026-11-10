@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1794120943099-andl33/骑乘单张费用牌.png.jpg",
+      "chainId": "iskandar-riding-one-card",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家在正式手牌上开启并操作骑乘选择",
+      "description": "一张手牌被选中并显示批次实付魔力",
+      "uiStateId": "riding-one-selected",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "手牌本体呈现已选中牌及本批实际费用",
+      "behaviorStepId": "select-paid-card",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:619c5617f5842a6fbb845bdb6e9b1fd903baaeddbfa07f499d079f60e0656345",
+      "requirements": [
+        "骑乘一张费用牌"
+      ],
+      "sourceRun": "1794121007586-26064-921fcb05-0cd6-4514-98cf-f0eebb09fdfc",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘单张按印刷魔耗结算且不结束行动/_runs/e2e-1794120943099-andl33"
+    }
+  ]
+}

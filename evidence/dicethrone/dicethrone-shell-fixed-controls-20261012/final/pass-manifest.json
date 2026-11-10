@@ -1,0 +1,143 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-12T11:21:37.003Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "真实 Dice Throne 横屏入口中，提示卡已加载并与玩家面板同屏可见。",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E：手机横屏用例通过；提示卡图片 naturalWidth/naturalHeight 已验证。",
+        "00-壳内固定控件-提示卡已加载-整屏.jpg 为整屏原图，视觉审查确认不是空壳、无裁切。"
+      ]
+    },
+    {
+      "requirement": "玩家面板放大镜的视觉圆形锚定在玩家面板右上角，透明命中区不改变视觉位置。",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 几何断言：visualRightGap < 8px、visualTopGap < 16px、visualWidth 14-24px、SVG 宽度 >= 12px 且小于视觉圆形。",
+        "src/games/dicethrone/ui/CenterBoard.tsx 已将视觉层改为 absolute top-0 right-0，SVG 恢复 0.72 壳内单位。"
+      ]
+    },
+    {
+      "requirement": "提示卡放大镜独立锚定在提示卡右上角，SVG 保持小图标尺寸。",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 对 tip-board-surface 独立读取并通过同一组几何断言。",
+        "02-壳内固定控件-提示卡放大镜-整屏.jpg 为整屏原图，视觉审查确认放大镜在提示卡右上角且没有被透明命中区放大。"
+      ]
+    },
+    {
+      "requirement": "同类 Dice Throne 固定控件继续遵守命中区与视觉盒分离契约。",
+      "status": "PASS",
+      "evidence": [
+        "compatSource.test.ts 已覆盖 CenterBoard、AbilityOverlays、DiscardPile、DrawDeck 的固定控件契约。",
+        "定向 Vitest：3 个文件 44 tests passed。",
+        "真实 Playwright：2 tests passed。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final/00-壳内固定控件-提示卡已加载-整屏.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final/01-壳内固定控件-玩家面板放大镜-整屏.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final/02-壳内固定控件-提示卡放大镜-整屏.jpg"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final/00-壳内固定控件-提示卡已加载-整屏.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final/01-壳内固定控件-玩家面板放大镜-整屏.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final/02-壳内固定控件-提示卡放大镜-整屏.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/dt_visual_review"
+    },
+    "report": "visual-review.json",
+    "media": [
+      {
+        "path": "00-壳内固定控件-提示卡已加载-整屏.jpg",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "提示卡不是空壳，右侧卡面文字、图标和放大镜均已加载；整屏无裁切、空白或错误。玩家面板与提示卡右上角各自有独立的小型圆形放大镜，未见命中区导致的可视放大。"
+      },
+      {
+        "path": "01-壳内固定控件-玩家面板放大镜-整屏.jpg",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "玩家面板放大镜位于玩家面板上方右侧，保持小图标尺寸；完整棋盘、提示卡、手牌和主操作区均保留，没有被挤动或遮挡。"
+      },
+      {
+        "path": "02-壳内固定控件-提示卡放大镜-整屏.jpg",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "提示卡放大镜位于提示卡右上角，仍是小型清晰图标；提示卡处于当前交互显示状态但没有变成空壳，整屏上下文完整，未见裁切、空白或错误截图。"
+      }
+    ],
+    "sourceRun": "20261012-dicethrone-shell-fixed-controls-r8"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/ui/__tests__/compatSource.test.ts src/games/dicethrone/ui/__tests__/compatLayout.test.tsx src/games/dicethrone/ui/__tests__/AbilityOverlays.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "npm run test:e2e:file -- e2e/dicethrone/dicethrone-board-magnify-ability-selection.e2e.ts"
+    ],
+    "evidence": [
+      "3 个 Vitest 文件通过，44/44 tests passed。",
+      "真实 Dice Throne Playwright 用例通过，2/2 tests passed。"
+    ]
+  },
+  "audit": {
+    "verdictReason": "根因是提示卡复用了玩家面板的 boardUiTuning.magnifyButtonTop=1.85，导致按钮视觉层在提示卡内下移；本轮按对象职责拆出 tipBoardOverlayButtonStyle，提示卡独立使用 top/right=0.25 壳内单位，保留 board-shell 外层等比缩放和透明命中区与视觉层分离契约。",
+    "targetObject": "Dice Throne 玩家面板与提示卡右上角放大镜",
+    "excludedObjects": [
+      "DrawDeck 手牌显隐按钮：位于牌堆外侧，中心对齐是其独立语义，不属于牌面右上角放大镜。"
+    ],
+    "codeModified": true,
+    "changedFiles": [
+      "src/games/dicethrone/ui/CenterBoard.tsx",
+      "src/games/dicethrone/ui/AbilityOverlays.tsx",
+      "src/games/dicethrone/ui/DiscardPile.tsx",
+      "src/games/dicethrone/ui/__tests__/compatSource.test.ts",
+      "e2e/dicethrone/dicethrone-board-magnify-ability-selection.e2e.ts"
+    ],
+    "similarControlAudit": [
+      "玩家面板、提示卡、升级卡和弃牌堆已统一采用命中区与视觉层分离；前三类放大镜视觉层均右上角锚定。",
+      "DrawDeck 已审查，保留牌堆外侧显隐按钮的中心视觉，不误套右上角规则。"
+    ],
+    "rootCause": {
+      "type": "wrong-anchor-reuse",
+      "source": "boardUiTuning.magnifyButtonTop",
+      "playerBoardTop": 1.85,
+      "tipBoardTop": 0.25,
+      "tipBoardRight": 0.25
+    }
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-06T20:43:41.5049197+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "PC 与移动端同一入口、同一状态对照：角色选择文字与滚动框保持可读，滚动框结构比例稳定。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+        "PC / 手机角色选择截图：01-pc-character-select.jpg、02-mobile-character-select.jpg",
+        "移动端正文与能力描述字体断言 >= 16px"
+      ]
+    },
+    {
+      "requirement": "剧本候选页三个主按钮在 PC 与移动端同排、可见、文字与按钮视觉比例可读。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+        "PC / 手机剧本候选截图：03-pc-scenario-actions.jpg、04-mobile-scenario-actions.jpg",
+        "按钮最小高度 56px，字号 18px"
+      ]
+    },
+    {
+      "requirement": "剧本书首页、翻页、末页、关闭返回选择页、过程文案继续按钮均覆盖真实入口。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/basic-flow.e2e.ts",
+        "PC / 手机剧本书截图：05-至12-*.jpg",
+        "继续按钮真实热区与字体断言通过"
+      ]
+    },
+    {
+      "requirement": "主桌面保持 HUD 锚点，移动端关闭剧本后回到主桌面；PC / 手机一级区域对照通过。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts",
+        "移动端主桌面截图：13-mobile-main-board.jpg",
+        "当前回合 HUD 保持右上角，悬浮球保持右下角"
+      ]
+    },
+    {
+      "requirement": "同分辨率等效 2388x1080 下，缩放→平移→移动后，玩家自己的 token 回到可视地图中心。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mobile-zoom-move-animation.e2e.ts",
+        "visibleMapResidualX = -4.6217803955078125 CSS px",
+        "聚焦截图：14-focus-before.jpg、15-focus-after-zoom-pan.jpg、16-focus-after-move.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "01-pc-character-select.jpg",
+    "02-mobile-character-select.jpg",
+    "03-pc-scenario-actions.jpg",
+    "04-mobile-scenario-actions.jpg",
+    "05-pc-script-home.jpg",
+    "06-pc-script-page.jpg",
+    "07-pc-script-last.jpg",
+    "08-mobile-script-home.jpg",
+    "09-mobile-script-page.jpg",
+    "10-mobile-script-last.jpg",
+    "11-mobile-script-return.jpg",
+    "12-mobile-transition-continue.jpg",
+    "13-mobile-main-board.jpg",
+    "14-focus-before.jpg",
+    "15-focus-after-zoom-pan.jpg",
+    "16-focus-after-move.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

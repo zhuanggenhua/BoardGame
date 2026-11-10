@@ -1,0 +1,18 @@
+@media (max-width: 1023px) and (orientation: landscape) {
+    .dt-phase-indicator {
+        width: calc(var(--mobile-board-shell-viewport-inline-unit, 1vw) * 14);
+        --dt-phase-title-font-size: calc(var(--mobile-board-shell-inline-unit, 1vw) * 1.6276042);
+        --dt-phase-item-font-size: calc(var(--mobile-board-shell-inline-unit, 1vw) * 1.4322917);
+        --dt-phase-line-height: 1.5;
+        --dt-phase-item-padding-inline: calc(var(--mobile-board-shell-inline-unit, 1vw) * 1.3);
+        --dt-phase-item-padding-block: calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.15);
+        --dt-phase-item-radius: calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.91);
+        --dt-phase-item-border: calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.39);
+        --dt-phase-active-offset: calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.65);
+        --dt-phase-list-gap: calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.15);
+    }
+
+    .dt-phase-indicator__list {
+        gap: var(--dt-phase-list-gap);
+    }
+}

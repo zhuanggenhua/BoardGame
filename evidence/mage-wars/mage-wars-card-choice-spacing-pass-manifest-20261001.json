@@ -1,0 +1,73 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "Mage Wars 候选卡牌间距修复最终验收",
+  "generatedAt": "2026-10-01T19:24:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "候选卡牌不再使用等宽三列分散布局，卡牌之间保持紧密间距。",
+      "status": "PASS",
+      "evidence": [
+        "CardChoiceOverlay 已由 grid-cols-3 改为按内容宽度收缩的 flex-wrap。",
+        "元素魔杖绑定候选与快速重绑候选截图中，卡牌连续排列，间距为紧凑 gap。",
+        "法师魔杖绑定候选与快速重绑候选截图中，长候选列按可用宽度连续排列。"
+      ]
+    },
+    {
+      "requirement": "候选牌面在真实页面端到端流程中可见，不能只有空浮层或占位壳。",
+      "status": "PASS",
+      "evidence": [
+        "正式页面元素魔杖施放和快速重绑覆盖法术选择 UI：1 passed。",
+        "正式页面法师魔杖施放和快速重绑覆盖法术选择 UI：1 passed。",
+        "E2E 对候选牌 preview 节点做可见性断言，并扫描 body 下的 atlas 资源加载状态。"
+      ]
+    },
+    {
+      "requirement": "候选界面不重复渲染卡面已有牌名、费用、类型或效果。",
+      "status": "PASS",
+      "evidence": [
+        "CardChoiceOverlay.test.tsx：2 passed。",
+        "两条真实 E2E 均断言候选 dock 不泄漏 mageId，候选项不重复绑定法术名。"
+      ]
+    },
+    {
+      "requirement": "本轮最终媒体必须来自当前工作树并经过逐图验收后才能交付。",
+      "status": "PASS",
+      "evidence": [
+        "最终图组包含元素魔杖与法师魔杖各 6 张，共 12 张当前运行原图。",
+        "当前目标相关截图已核对候选牌面、紧密排列、牌桌与底部法术书保护关系。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/01-元素魔杖-施放前.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/02-元素魔杖-绑定候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/03-元素魔杖-施放结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/04-元素魔杖-快速重绑入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/05-元素魔杖-快速重绑候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/06-元素魔杖-快速重绑结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/07-法师魔杖-施放前.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/08-法师魔杖-绑定候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/09-法师魔杖-施放结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/10-法师魔杖-快速重绑入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/11-法师魔杖-快速重绑候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-spacing-pass-20261001/12-法师魔杖-快速重绑结算.jpg"
+  ],
+  "visualAudit": {
+    "document": "evidence/mage-wars/mage-wars-card-choice-spacing-visual-audit-20261001.md",
+    "mediaCount": 12,
+    "passCount": 12,
+    "reviseCount": 0
+  },
+  "notes": [
+    "旧的 card-choice-final-20261001 图组不作为本轮证据。",
+    "旧问题的直接根因是等宽三列与列内居中，不是卡牌素材尺寸。",
+    "本轮只收口候选卡牌间距与真实牌面可见性，不扩大为完整 Mage Wars 全量审计。"
+  ]
+}

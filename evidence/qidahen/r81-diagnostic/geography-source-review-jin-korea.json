@@ -1,0 +1,126 @@
+{
+  "objective": "仅核对原图源几何：女真6块土地与朝鲜3个白色椭圆点位；不判游戏规则、数值或应用UI。",
+  "criteria": [
+    "候选白细线必须贴合原图可见印刷分界、河岸、山脊或图缘，不在地区内部另切。",
+    "朝鲜三个对象只按白色椭圆本体核对，不扩张成半岛土地，不以内点命中替代轮廓核对。",
+    "牌库UI边缘不能作为地理边界；遮挡不能证明隐藏闭合。",
+    "完整读取原图和完整候选后，局部放大仅作辅助。"
+  ],
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r81_jin_korea_geometry"
+  },
+  "source": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "width": 1265,
+    "height": 893,
+    "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e"
+  },
+  "candidate": {
+    "path": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部地区按印刷边线校准候选三.png",
+    "width": 1265,
+    "height": 893,
+    "sha256": "a9763baf70c45c3f5c62ed9a133d712ba366ed2f50ee2931b41683296bf2c85e"
+  },
+  "method": {
+    "completeImagesRead": true,
+    "independentGeometryJudgment": true,
+    "identityLedgerUsedOnlyForNames": true,
+    "localCrops": "内存裁图辅助核对东北女真、建州西南边、长白牌库相接边及朝鲜三椭圆；没有新增裁图文件。",
+    "coordinateSystem": "原图像素，左上角为(0,0)，坐标为可见线条位置近似，指定竖段另经候选像素位置核对。"
+  },
+  "items": [
+    {
+      "name": "乌喇",
+      "verdict": "PASS",
+      "observation": "完整北部土地轮廓沿图上缘、与科尔沁接壤西线，以及南侧与叶赫/哈达、东南侧与辉发之间河岸；未见内部假切或吞相邻土地。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "辉发",
+      "verdict": "PASS",
+      "observation": "北西沿弯曲河岸与乌喇、哈达分开，南侧沿河与长白分开，东接图缘；轮廓对应其完整可见土地。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "哈达",
+      "verdict": "PASS",
+      "observation": "北东南河岸与西侧叶赫棕线均有原图依据；西边折弯跟随印刷线，未用字牌或直线代替。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "叶赫",
+      "verdict": "PASS",
+      "observation": "北侧乌喇河岸、西侧内喀尔喀河岸、东侧哈达棕线及南侧河岸对应；叶赫山城字牌保留为内部对象，没有变成独立土地边。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "建州女真",
+      "verdict": "PASS",
+      "observation": "北侧河岸、西侧与辽北/辽东接壤棕线、东侧长白棕线和南侧河岸均对应。赫图阿拉西南处建州自身白边跟随弯曲印刷界；邻接另一掩膜的斜线不作为建州自身边缘的通过依据。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "长白女真",
+      "verdict": "REVISE",
+      "observation": "北河、西侧建州棕线及可见东南山脊大体对应，但候选在朝鲜牌库左缘使用竖直UI裁切段，不能作为地区真实轮廓通过。原图山脊跨入半透明牌库仍可见。",
+      "failureCoordinates": [
+        {
+          "candidateSegment": [
+            [
+              1139,
+              265
+            ],
+            [
+              1139,
+              275
+            ]
+          ],
+          "sourceIssue": "白细线沿牌库左缘竖直切断连续山体；印刷地理边界不是这条UI竖线。"
+        },
+        {
+          "candidateSegment": [
+            [
+              1139,
+              293
+            ],
+            [
+              1139,
+              302
+            ]
+          ],
+          "sourceIssue": "再次沿牌库左缘竖直闭合，山脊仍跨入牌库；这是可见范围裁切，不能宣称地理闭合。"
+        }
+      ],
+      "minimalCorrection": "按可见印刷山脊继续核对真实边缘；确被牌库遮住的部分明确标为遮挡/未证明，不把UI边缘当已确认土地边界。"
+    },
+    {
+      "name": "咸兴",
+      "verdict": "PASS",
+      "observation": "闭合轮廓只围白色椭圆及印刷边圈，中心约(1064,429)；外侧白标线与深色印刷圈存在约1至2像素的可视描边间隙，未扩张到半岛或红箭头路线。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "平壤",
+      "verdict": "PASS",
+      "observation": "闭合轮廓跟随竖向白椭圆及深色印刷边圈，中心约(1029,578)；未吞左侧海岸、周边土地、牌叠或道路。",
+      "failureCoordinates": []
+    },
+    {
+      "name": "汉城",
+      "verdict": "PASS",
+      "observation": "闭合轮廓跟随白椭圆及橙色印刷边圈，中心约(1139,628)；未包含VP图标、牌叠或半岛土地。",
+      "failureCoordinates": []
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "PASS": 8,
+    "REVISE": 1
+  },
+  "verdict": "REVISE",
+  "scopeLimit": "PASS仅证明当前原图与指定候选的相应源图几何；不证明规则、节点可操作性、遮挡下完整土地闭合或运行时UI。",
+  "changedFiles": [
+    "evidence/qidahen/r81-diagnostic/geography-source-review-jin-korea.json"
+  ]
+}

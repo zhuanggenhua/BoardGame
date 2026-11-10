@@ -1,0 +1,287 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "横屏规则对象守恒，原三席、纪年、朝鲜、轮盘、抽弃牌和手牌都有可见承载",
+      "status": "PASS",
+      "baselineSource": "{\"originalImageReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/old-image-review.json\", \"historicalCode\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"historicalCodeCommit\": \"c057cfe76afab5c2078c129183a02d6f1fb21a90\", \"historicalCodeRole\": \"历史源码仅用于核对既有对象/处理器与重复职责，不声称它与旧图同跑次，也不把它当旧正常运行截图\", \"afterOriginalReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/final-visual-review-current.json\", \"afterSourceRevision\": \"9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7\", \"imagePaths\": [\"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png\", \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png\"], \"cssSnapshot\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/qidahen-board.head-baseline.css\"}",
+      "preservedInformation": "[\"PC原三席身份与公开读数、共享轮盘、两张纪年、朝鲜牌库/弃牌、己方抽弃牌和当前三张手牌的对象职责保留。\", \"旧手机支付图可见三席、轮盘、抽弃牌和三张手牌；纪年和朝鲜在旧手机图中缺失，不能称其原来手机可见。\", \"人口、手牌和牌堆的当前数值仍从原领域状态只读取得；不宣称不同跑次的每个卡名/卡面完全相同。\"]",
+      "preservedActions": "[\"保留轮盘与手牌的原对象入口、纪年放大及卡牌查看处理器。\", \"新E2E实际覆盖选牌、查看关闭、取消与支付；未覆盖每个轮盘扇区和每个牌堆展开。\"]",
+      "changes": "[\"手机恢复被CSS隐藏的纪年/朝鲜实体，收窄三席条；同源对象按手机预算排布。\", \"手机抽弃牌改为对象级72px尺寸，保留可读标签/数量；PC牌堆方位未更改。\", \"场景与HUD仍分层，未复制MobileBoard或增加规则代理面板。\"]",
+      "duplicateDecision": "保留各规则对象的一处主承载；底图印刷槽仍只是场景，恢复的HUD实体承担原职责。",
+      "changeAuthority": "用户明确授权“该优化重构的可以做一下”“按skill、规范重构啊”；边界为本轮七大恨横屏、人口定位及其直接遮挡依赖，未授权改变规则、地图分区或发布。实现服从.spec内UI/响应式主源，README仅为职责/证据账本。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/01-桌面棋盘代表态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png"
+      ],
+      "evidenceLimitations": [
+        "旧图是支付态，新01/02是常态；此项对照对象与字段去向，不以状态不同证明所有布局阶段无回归。"
+      ],
+      "supportingEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/qidahen-board.head-baseline.css",
+          "role": "historical-source-or-data",
+          "origin": "moved-from-before",
+          "reason": "源码或数据只支持职责/定位判断，不充当旧画面。"
+        }
+      ],
+      "internalEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/02-宽屏常态.png",
+          "role": "internal-image-evidence",
+          "reason": "本轮已审内部视口或压力态，不属于用户六图展示集合。"
+        }
+      ],
+      "beforeImageRole": "旧PC/手机支付态用于对象与信息去向对照；不是旧常态全流程截图。",
+      "afterImageRole": "仅列入用户六图清单的当前图片；内部压力/宽屏/桌面目标图及非媒体行为证据分别列于internalEvidence/supportingEvidence。",
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/original-baseline-review.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "横屏地图控件完整可见、行动入口不被工具或退出子钮遮住",
+      "status": "PASS",
+      "baselineSource": "{\"originalImageReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/old-image-review.json\", \"historicalCode\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"historicalCodeCommit\": \"c057cfe76afab5c2078c129183a02d6f1fb21a90\", \"historicalCodeRole\": \"历史源码仅用于核对既有对象/处理器与重复职责，不声称它与旧图同跑次，也不把它当旧正常运行截图\", \"afterOriginalReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/final-visual-review-current.json\", \"afterSourceRevision\": \"9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7\", \"oldImageContext\": [\"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png\", \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png\"], \"cssSnapshot\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/qidahen-board.head-baseline.css\", \"beforeEvidenceRole\": \"旧支付图仅证明工具组位置；完整常态行动遮挡的旧截图缺失，原动作与缩放处理器由历史源码核对\"}",
+      "preservedInformation": "[\"地图缩放、复位及原行动按钮的名称、职责和状态来源保留。\", \"全局工具与退出入口保留，未通过隐藏工具腾出空间。\"]",
+      "preservedActions": "[\"缩放仍写原Board.mapViewport，复位仍用原默认视口。\", \"新E2E真实点击加号和复位并断言zoom变化；三控件中心和原行动按钮3×3命中点通过。减号行为来自保留的原处理器，不宣称本次实际点击减号。\"]",
+      "changes": "[\"地图控件从Scene cover变换层迁入原HUD，避免移动端控件坐标随地图场景变换出屏。\", \"手机右侧原行动区为全局工具展开组/退出子钮让位，手牌/托盘同步使用同一预算；未改全局工具业务。\"]",
+      "duplicateDecision": "地图控件只留HUD一组，删除旧Scene入口及无消费者的sceneOverlay壳；行动按钮仍由原ActionsZone承接。",
+      "changeAuthority": "用户明确授权“该优化重构的可以做一下”“按skill、规范重构啊”；边界为本轮七大恨横屏、人口定位及其直接遮挡依赖，未授权改变规则、地图分区或发布。实现服从.spec内UI/响应式主源，README仅为职责/证据账本。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png"
+      ],
+      "evidenceLimitations": [
+        "不把旧支付态中未显示的常态行动按钮称为已拍到的旧遮挡。"
+      ],
+      "supportingEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx",
+          "role": "historical-source-or-data",
+          "origin": "moved-from-before",
+          "reason": "源码或数据只支持职责/定位判断，不充当旧画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/qidahen-board.head-baseline.css",
+          "role": "historical-source-or-data",
+          "origin": "moved-from-before",
+          "reason": "源码或数据只支持职责/定位判断，不充当旧画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/runtime-at-entry.json",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/e2e-final-board.log",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        }
+      ],
+      "internalEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/02-宽屏常态.png",
+          "role": "internal-image-evidence",
+          "reason": "本轮已审内部视口或压力态，不属于用户六图展示集合。"
+        }
+      ],
+      "beforeImageRole": "旧支付态只提供父棋盘及全局工具位置背景；旧常态行动遮挡无原图，原控件/处理器由历史源码支持。",
+      "afterImageRole": "仅列入用户六图清单的当前图片；内部压力/宽屏/桌面目标图及非媒体行为证据分别列于internalEvidence/supportingEvidence。",
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/original-baseline-review.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "人口方块不重叠、狭窄区域引线归属可辨；37区离线归属与占位检查另有行为证据",
+      "status": "PASS",
+      "baselineSource": "{\"originalImageReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/old-image-review.json\", \"historicalCode\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"historicalCodeCommit\": \"c057cfe76afab5c2078c129183a02d6f1fb21a90\", \"historicalCodeRole\": \"历史源码仅用于核对既有对象/处理器与重复职责，不声称它与旧图同跑次，也不把它当旧正常运行截图\", \"afterOriginalReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/final-visual-review-current.json\", \"afterSourceRevision\": \"9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7\", \"oldImagePaths\": [\"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png\", \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png\"], \"oldGeometryReport\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/center-report.json\"}",
+      "preservedInformation": "[\"各区域population计数、区域ID和正式蒙版/分区语义保留；没有生成第二份规则人口或人口mapToken。\", \"旧图黄色数块交叠只提供视觉线索；旧center-report独立确认辽东/辽西保存中心落邻区及固定偏移问题。\"]",
+      "preservedActions": "[\"人口层继续只读展示，不增加提交动作或改变地图选择命令。\", \"既有军队/控制标记不被人口展示替代；开局占位回归用原mapTokens验证。\"]",
+      "changes": "[\"两个作者源center投影到本区内部；seed、地图边界、分区函数和人口数值不改。\", \"人口展示复用正式像素归属，正常区检查完整26px方块，狭窄区用短引线指向本区内部点；避开现有部队/控制标记和人口槽。\", \"静态几何只随ownership构建；人口零变正数不会挤走邻区槽位。\"]",
+      "duplicateDecision": "每个正人口区域一枚连续数值读数；引线是该读数的归属标识，不生成第二个人口对象。",
+      "changeAuthority": "用户明确授权“该优化重构的可以做一下”“按skill、规范重构啊”；边界为本轮七大恨横屏、人口定位及其直接遮挡依赖，未授权改变规则、地图分区或发布。实现服从.spec内UI/响应式主源，README仅为职责/证据账本。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/01-桌面棋盘代表态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png"
+      ],
+      "evidenceLimitations": [
+        "新图仅证明该局可见34个正人口的图面；37区全归属/完整占位来自独立离线测试，另外3个朝鲜区为0未伪造显示。"
+      ],
+      "supportingEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/center-report.json",
+          "role": "historical-source-or-data",
+          "origin": "moved-from-before",
+          "reason": "源码或数据只支持职责/定位判断，不充当旧画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/behavior-final.json",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        }
+      ],
+      "internalEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/02-宽屏常态.png",
+          "role": "internal-image-evidence",
+          "reason": "本轮已审内部视口或压力态，不属于用户六图展示集合。"
+        }
+      ],
+      "beforeImageRole": "旧两张支付棋盘的黄色数块交叠线索；具体中心归属错误由旧center-report另行证明。",
+      "afterImageRole": "仅列入用户六图清单的当前图片；内部压力/宽屏/桌面目标图及非媒体行为证据分别列于internalEvidence/supportingEvidence。",
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/original-baseline-review.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "支付托盘与标题、类别、查看及选中边界分离，确认与取消主次明确",
+      "status": "PASS",
+      "baselineSource": "{\"originalImageReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/old-image-review.json\", \"historicalCode\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"historicalCodeCommit\": \"c057cfe76afab5c2078c129183a02d6f1fb21a90\", \"historicalCodeRole\": \"历史源码仅用于核对既有对象/处理器与重复职责，不声称它与旧图同跑次，也不把它当旧正常运行截图\", \"afterOriginalReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/final-visual-review-current.json\", \"afterSourceRevision\": \"9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7\", \"imagePaths\": [\"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png\", \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png\"], \"oldReviewFacts\": [\"旧手机确认/取消和1/1进度本来可读，不声称本轮首次补上\", \"旧类别角标/44px可见查看面压住牌面；旧支付栏横跨约73%屏宽\"]}",
+      "preservedInformation": "[\"征召军队支付标题、成本/已选进度、已选牌名、选中状态、确认和取消含义保留。\", \"牌面本体及完整阅读层保留；不把手机缩略图正文说成默认态全部可读。\"]",
+      "preservedActions": "[\"手牌本体仍选择支付牌；确认仍走原规则提交，取消仍取消本次行动。\", \"最新E2E证明查看后1/1选择保留、取消不扣手牌或增加弃牌。\"]",
+      "changes": "[\"托盘按同源手牌宽高预算定位；PC锚点给选中scale的真实上沿留间隔。\", \"类型角标和查看入口移到牌面上缘之外；查看可见面26px，透明触控盒保留44px。\", \"手机正文和类别使用可读字号，确认与次级取消保留不同视觉权重。\"]",
+      "duplicateDecision": "保留一处支付托盘及原手牌对象；不另造右侧支付副面板或文字卡牌列表代替牌面。",
+      "changeAuthority": "用户明确授权“该优化重构的可以做一下”“按skill、规范重构啊”；边界为本轮七大恨横屏、人口定位及其直接遮挡依赖，未授权改变规则、地图分区或发布。实现服从.spec内UI/响应式主源，README仅为职责/证据账本。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/03-手机横屏支付选择.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/05-桌面支付选择.png"
+      ],
+      "evidenceLimitations": [
+        "本次截图直接覆盖征召军队支付代表态；不由两张图推出所有其它支付/战斗状态均合格。"
+      ],
+      "supportingEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/behavior.json",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        }
+      ],
+      "internalEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/07-宽屏支付选择.png",
+          "role": "internal-image-evidence",
+          "reason": "本轮已审内部视口或压力态，不属于用户六图展示集合。"
+        }
+      ],
+      "beforeImageRole": "旧征召军队三牌支付态，直接用于支付栏、牌头、类别及查看入口的旧图对照。",
+      "afterImageRole": "仅列入用户六图清单的当前图片；内部压力/宽屏/桌面目标图及非媒体行为证据分别列于internalEvidence/supportingEvidence。",
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/original-baseline-review.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "requirement": "卡牌查看和关闭保持原选牌，六张溢出手牌代表态可逐张滚动检视",
+      "status": "PASS",
+      "baselineSource": "{\"originalImageReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/old-image-review.json\", \"historicalCode\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"historicalCodeCommit\": \"c057cfe76afab5c2078c129183a02d6f1fb21a90\", \"historicalCodeRole\": \"历史源码仅用于核对既有对象/处理器与重复职责，不声称它与旧图同跑次，也不把它当旧正常运行截图\", \"afterOriginalReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/final-visual-review-current.json\", \"afterSourceRevision\": \"9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7\", \"oldImagePaths\": [\"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png\", \"D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png\"], \"oldCapabilityEvidence\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"oldSixCardImage\": \"不存在；本项不宣称有旧六张手牌运行图或旧六牌视觉PASS\"}",
+      "preservedInformation": "[\"原手牌实体、卡名、牌面阅读和查看/关闭入口保留；三张支付牌的选中信息不因查看丢失。\", \"六张数据来自本轮合法普通手牌布局代表态，未冒充本链自然抽牌或旧六牌基线。\"]",
+      "preservedActions": "[\"原卡牌查看后关闭回到同一选择。\", \"本次E2E用buildDrawnHandCards建立合法6张普通手牌代表态，真实横滚后逐张点击看、核对同一card.label及查看按钮横向归属，再关闭返回。\"]",
+      "changes": "[\"原手牌与独立查看层共享handAlignmentClass和同一原牌列滚动偏移，修正溢出后居中/左对齐不一致。\", \"保持每张牌和查看入口逐实例对应；未减少手牌容量或以新牌列表替代滚动。\"]",
+      "duplicateDecision": "原牌列是唯一实体/滚动owner；查看镜像层仅提供原卡的检视入口，不是第二份手牌或独立滚动状态。",
+      "changeAuthority": "用户明确授权“该优化重构的可以做一下”“按skill、规范重构啊”；边界为本轮七大恨横屏、人口定位及其直接遮挡依赖，未授权改变规则、地图分区或发布。实现服从.spec内UI/响应式主源，README仅为职责/证据账本。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/04-手机横屏卡牌检视.png"
+      ],
+      "evidenceLimitations": [
+        "静态六牌末帧不能证明全部六张可达；该动作由同跑次逐张真实输入断言证明。",
+        "原图仅有三张牌；旧六牌容量和旧滚动交互未做视觉结论。"
+      ],
+      "supportingEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx",
+          "role": "historical-source-or-data",
+          "origin": "moved-from-before",
+          "reason": "源码或数据只支持职责/定位判断，不充当旧画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/e2e-final-board.log",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        }
+      ],
+      "internalEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/10-手机横屏六张手牌滚动代表态.png",
+          "role": "internal-image-evidence",
+          "origin": "moved-from-after",
+          "reason": "内部验收图，非用户六图展示清单；保留独特状态与原审结论。"
+        }
+      ],
+      "beforeImageRole": "旧三牌支付态和查看入口背景；没有旧六牌压力态图，不据此声称旧六牌滚动或视觉已验收。",
+      "afterImageRole": "仅列入用户六图清单的当前图片；内部压力/宽屏/桌面目标图及非媒体行为证据分别列于internalEvidence/supportingEvidence。",
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/original-baseline-review.json",
+      "sourceReviewEntry": "/requirements/4"
+    },
+    {
+      "requirement": "支付后进入招安地图目标，只有一处任务提示且地图候选高亮本体保留",
+      "status": "PASS",
+      "baselineSource": "{\"originalImageReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/old-image-review.json\", \"historicalCode\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"historicalCodeCommit\": \"c057cfe76afab5c2078c129183a02d6f1fb21a90\", \"historicalCodeRole\": \"历史源码仅用于核对既有对象/处理器与重复职责，不声称它与旧图同跑次，也不把它当旧正常运行截图\", \"afterOriginalReview\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/final-visual-review-current.json\", \"afterSourceRevision\": \"9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7\", \"beforeCodeProof\": {\"path\": \"D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx\", \"facts\": [\"HEAD历史源码同时含qidahen-map-selection-banner与qidahen-grant-pardon-selection；旧地图横幅条件未排除grantPardonSelection\", \"旧支付两图不是目标态，不能替代旧目标态截图\"]}, \"oldTargetImage\": \"未取得；本项重复职责的before只采用可回查历史源码，不伪造目标态旧图\"}",
+      "preservedInformation": "[\"招安接收区/对手/部队决策继续由原grantPardonSelection与右侧原面板承接。\", \"地图区域贴合高亮及原目标候选本体保留；不增加代理目标按钮列表。\"]",
+      "preservedActions": "[\"原地图目标输入handler和正式领域命令接线保留，代码对照未发现替换。\", \"本次E2E实际支付3张后进入招安目标态，断言右侧原面板可见且绿色横幅不存在；未实际点击目标结算，不据此宣称目标点击行为已验收。\"]",
+      "changes": "[\"仅招安状态排除地图绿色重复横幅，右侧原决策面板保留；其它独立地图状态的横幅不由本项授权删除。\", \"地图候选描边/浅填充及对象本体仍在，删除绝对定位提示没有留下普通流空槽。\"]",
+      "duplicateDecision": "旧绿色地图横幅与右侧招安面板复述同一当前目标任务；保留右侧唯一任务提示，地图本体继续表达空间候选。",
+      "changeAuthority": "用户明确授权“该优化重构的可以做一下”“按skill、规范重构啊”；边界为本轮七大恨横屏、人口定位及其直接遮挡依赖，未授权改变规则、地图分区或发布。实现服从.spec内UI/响应式主源，README仅为职责/证据账本。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/06-手机横屏地图目标.png"
+      ],
+      "evidenceLimitations": [
+        "无旧目标态截图，仅能对照旧代码的双承载与新图/源码；不宣称同状态像素前后比较。",
+        "原提案“地图高亮本体继续可点”超过本组直接行为证据，已收窄为候选高亮本体保留。"
+      ],
+      "supportingEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/Board.head-baseline.tsx",
+          "role": "historical-source-or-data",
+          "origin": "moved-from-before",
+          "reason": "源码或数据只支持职责/定位判断，不充当旧画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/Board.source.tsx",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        },
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/e2e-final-board.log",
+          "role": "source-data-or-behavior-log",
+          "origin": "moved-from-after",
+          "reason": "源码、数据或真实行为日志支持本项结论，不充当画面。"
+        }
+      ],
+      "internalEvidence": [
+        {
+          "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/09-桌面地图目标.png",
+          "role": "internal-image-evidence",
+          "origin": "moved-from-after",
+          "reason": "内部验收图，非用户六图展示清单；保留独特状态与原审结论。"
+        }
+      ],
+      "beforeImageRole": "parent-board-context-only：仅为旧父棋盘全局背景，明确不是旧招安目标前态；删除重复提示的before依据仍是已核历史Board源码。",
+      "afterImageRole": "仅列入用户六图清单的当前图片；内部压力/宽屏/桌面目标图及非媒体行为证据分别列于internalEvidence/supportingEvidence。",
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/original-baseline-review.json",
+      "sourceReviewEntry": "/requirements/5"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current/01-桌面支付确认与取消.png",
+      "chainId": "手牌支付局部视觉代表态",
+      "chainStep": "1",
+      "sourceRun": "e2e-1793001825872-4pk2pc",
+      "sourceRevision": "cc56474ddb91ddb61b7ad5a3e6ae3c7b53592c4eba3f1769e0383f17583930b9",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current",
+      "stage": "独立代表态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择征召军队并选入一张支付手牌",
+      "description": "桌面支付栏显示进度与选牌名称并区分确认和取消"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current/02-手机横屏支付确认与取消.png",
+      "chainId": "手牌支付局部视觉代表态",
+      "chainStep": "2",
+      "sourceRun": "e2e-1793001825872-4pk2pc",
+      "sourceRevision": "cc56474ddb91ddb61b7ad5a3e6ae3c7b53592c4eba3f1769e0383f17583930b9",
+      "sourceDir": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/current",
+      "stage": "独立代表态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "同一支付状态切换手机横屏并悬停已选手牌",
+      "description": "手机横屏支付栏与已选卡头及查看按钮分离"
+    }
+  ]
+}

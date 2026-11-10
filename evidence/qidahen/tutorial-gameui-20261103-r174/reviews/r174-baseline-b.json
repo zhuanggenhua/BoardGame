@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_b_tail",
+  "requirements": [
+    {
+      "requirement": "建军地区与出兵兵牌识别",
+      "status": "PASS",
+      "baselineSource": "直接读取指定旧版建军方式整屏，与当前建军地区选择和建军方式两张整屏对照；旧图仅作为历史基线，不沿用其通过结论。",
+      "preservedInformation": "保留地图中的地区地界、阵营圆标、兵牌正面、数量标记、人口读数，以及两种建军方式的效果与等级说明；本审查只确认这些信息可辨，不确认规则数值正确性。",
+      "preservedActions": "保留从地图真实地区选择建军地点、在右侧选择建军方式以及返回上一步的可见入口；本批截图不单独证明出兵选择或提交后的行为结果。",
+      "changes": "当前地图主体放大，辽北城名和区内大明兵牌更容易辨认；合法地区使用绿色边界，教学推荐地区以白色边界区分，教学浮层靠近实际地区，建军方式维持清楚的按钮外观。",
+      "duplicateDecision": "地区与兵牌仍由地图本体承载，右侧只承接建军方式选择，未新增一套地区列表或重复兵牌选择栏；教学说明补充建军决策语境，未作为第二套可提交入口。",
+      "changeAuthority": "核对依据为本轮指定的最终候选私有图审合同和建军地区与出兵兵牌识别要求；仅裁决实际读到的图面信息与入口保留，不借旧版退回图推定用户接受，也不扩大为规则或完整出兵流程通过。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/09-recruit-troops.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/08-recruit-source.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/09-recruit-troops.png"
+      ]
+    }
+  ]
+}

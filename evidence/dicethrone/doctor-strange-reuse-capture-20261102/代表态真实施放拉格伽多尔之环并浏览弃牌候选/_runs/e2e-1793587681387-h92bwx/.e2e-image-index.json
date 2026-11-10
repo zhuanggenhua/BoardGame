@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "神秘飞弹原技能分支-桌面.png",
+      "chainId": "弃牌直接施放",
+      "chainStep": "原技能分支",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-bolt-original-ability-choice",
+      "behaviorStepId": "bolt-original-ability-choice",
+      "description": "神秘飞弹通过原技能分支界面选择本次进攻效果。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实点击神秘飞弹技能槽。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "真实点击神秘飞弹技能槽。",
+      "sourceRevision": "7eaeef8ce6f8d1f302b5852ba77d42b1534e957a4db8f1d48de9875271f52a36",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "弃牌直接施放及大候选浏览"
+      ],
+      "sourceRun": "1793587907911-262516-68608bf3-d1d4-4658-afda-474dc9af15fa",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "弃牌直接施放完整候选-桌面.png",
+      "chainId": "弃牌直接施放",
+      "chainStep": "弃牌候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-discard-cast-candidates",
+      "behaviorStepId": "discard-cast-candidates",
+      "description": "施放拉格伽多尔之环后，从弃牌堆选择法术，可搜索和滚动查看全部候选。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从准备区真实选择并施放法术。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从准备区真实选择并施放法术。",
+      "sourceRevision": "7eaeef8ce6f8d1f302b5852ba77d42b1534e957a4db8f1d48de9875271f52a36",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "弃牌直接施放及大候选浏览"
+      ],
+      "sourceRun": "1793587907911-262516-68608bf3-d1d4-4658-afda-474dc9af15fa",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "弃牌直接施放八牌候选-横屏.png",
+      "chainId": "弃牌直接施放",
+      "chainStep": "横屏候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-discard-cast-phone-candidates",
+      "behaviorStepId": "discard-cast-phone-candidates",
+      "description": "横屏恢复旧卡池等比尺度和多行纵向浏览，搜索和动作保持原上下结构。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "查看同一弃牌施放选择的横屏布局。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "查看同一弃牌施放选择的横屏布局。",
+      "sourceRevision": "7eaeef8ce6f8d1f302b5852ba77d42b1534e957a4db8f1d48de9875271f52a36",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "弃牌直接施放及大候选浏览"
+      ],
+      "sourceRun": "1793587907911-262516-68608bf3-d1d4-4658-afda-474dc9af15fa",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "弃牌直接施放法术已选-横屏.png",
+      "chainId": "弃牌直接施放",
+      "chainStep": "横屏选中",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-discard-cast-phone-selected",
+      "behaviorStepId": "discard-cast-phone-selected",
+      "description": "横屏点中首张法术后，原抬升选中边界和下方确认同时完整显示。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "点击首张弃牌候选但尚未提交。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击首张弃牌候选但尚未提交。",
+      "sourceRevision": "7eaeef8ce6f8d1f302b5852ba77d42b1534e957a4db8f1d48de9875271f52a36",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "弃牌直接施放及大候选浏览"
+      ],
+      "sourceRun": "1793587907911-262516-68608bf3-d1d4-4658-afda-474dc9af15fa",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "弃牌搜索无匹配可清除-横屏.png",
+      "chainId": "弃牌直接施放",
+      "chainStep": "搜索空结果",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-discard-cast-phone-search-empty",
+      "behaviorStepId": "discard-cast-phone-search-empty",
+      "description": "搜索无匹配时明确显示空结果，并保留清空搜索和跳过入口。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "在原搜索框输入不匹配词语。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在原搜索框输入不匹配词语。",
+      "sourceRevision": "7eaeef8ce6f8d1f302b5852ba77d42b1534e957a4db8f1d48de9875271f52a36",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "弃牌直接施放及大候选浏览"
+      ],
+      "sourceRun": "1793587907911-262516-68608bf3-d1d4-4658-afda-474dc9af15fa",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实施放拉格伽多尔之环并浏览弃牌候选/_runs/e2e-1793587681387-h92bwx"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "asset": "ability-cards",
+    "bytes": 2039890,
+    "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+    "matchesSelected": true
+  },
+  {
+    "asset": "player-board",
+    "bytes": 859280,
+    "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+    "matchesSelected": true
+  },
+  {
+    "asset": "tip",
+    "bytes": 186676,
+    "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+    "matchesSelected": true
+  }
+]

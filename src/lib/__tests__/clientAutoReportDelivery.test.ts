@@ -11,12 +11,18 @@ const payload = {
 const feedbackCalls = (mock: ReturnType<typeof vi.fn>) => mock.mock.calls.filter(([url]) => url === '/feedback');
 
 describe('自动反馈投递', () => {
+    let unregisterReplayCapture: (() => void) | undefined;
+
     beforeEach(() => {
         vi.resetModules();
+        unregisterReplayCapture?.();
+        unregisterReplayCapture = undefined;
         window.localStorage.clear();
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
     });
     afterEach(() => {
+        unregisterReplayCapture?.();
+        unregisterReplayCapture = undefined;
         vi.unstubAllGlobals();
         delete (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
     });
@@ -79,6 +85,8 @@ describe('自动反馈投递', () => {
         const packet = JSON.parse(body.diagnosticPacket);
         expect(packet.collectionStatus).toBe('partial');
         expect(packet.collectionErrors).toContain('private_replay_prepare_failed');
+        expect(packet.missingFields).toContain('privateReplay');
+        expect(packet.missingFields).toContain('privateReplay.trigger');
         delete (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
         window.history.pushState({}, '', '/');
     });
@@ -89,6 +97,14 @@ describe('自动反馈投递', () => {
         const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ _id: '0123456789abcdef01234567' }) });
         vi.stubGlobal('fetch', fetchMock);
         const { setCurrentGameFeedbackContext, recordGameFeedbackCommand } = await import('../feedback/gameFeedbackContext');
+        const { registerFeedbackReplayCapture } = await import('../feedback/feedbackReplayBridge');
+        const replayCaptureRequests: Array<Record<string, unknown>> = [];
+        unregisterReplayCapture = registerFeedbackReplayCapture('m1', '0', async (request) => {
+            replayCaptureRequests.push(request as unknown as Record<string, unknown>);
+            return request.phase === 'prepare'
+                ? { accepted: true, captureId: 'capture-trigger-1', triggerCaptured: true }
+                : { accepted: true };
+        });
         const before = {
             sys: {
                 schemaVersion: 1,
@@ -137,7 +153,23 @@ describe('自动反馈投递', () => {
             expect.objectContaining({ commandType: 'RESOLVE_INTERACTION', playerId: '0' }),
         ]));
         expect(packet.lastCommand).not.toHaveProperty('payload');
+        expect(packet.missingFields).toContain('privateReplay');
+        expect(packet.missingFields).not.toContain('privateReplay.trigger');
+        expect(packet.collectionErrors).toContain('private_replay_pending_attachment');
         expect(body.diagnosticPacket).not.toContain('hidden-card-option-canary');
+        expect(replayCaptureRequests).toEqual([
+            {
+                phase: 'prepare',
+                trigger: {
+                    commandType: 'RESOLVE_INTERACTION',
+                    playerId: '0',
+                    stateIdBefore: 41,
+                    randomCursorBefore: 11,
+                    requestId: 'choice-request',
+                },
+            },
+            { phase: 'attach', feedbackId: '0123456789abcdef01234567', captureId: 'capture-trigger-1' },
+        ]);
         delete (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
         window.history.pushState({}, '', '/');
     });

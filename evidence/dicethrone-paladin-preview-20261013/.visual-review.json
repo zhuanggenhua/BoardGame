@@ -1,0 +1,44 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/paladin_screenshot_review_v2"
+  },
+  "media": [
+    {
+      "path": "01-选角前.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "作为未选角基线符合前态目标，选角列表和双方未选状态清楚可见。"
+    },
+    {
+      "path": "02-圣骑士选中.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新圣骑士玩家板和提示板完整可读，角色选择状态及开始游戏控件可见。"
+    },
+    {
+      "path": "03-对局.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四张手牌可见部分足以核对卡图映射、角标与卡框横向对齐，手牌下缘因贴底布局部分藏在视口外。"
+    }
+  ]
+}

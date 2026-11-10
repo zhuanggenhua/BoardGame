@@ -1,0 +1,74 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-05T16:50:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "同分辨率 796x360 CSS / DPR 3（等效 2388x1080）下，缩放→平移→移动后，玩家自己的 token 回到 HUD 调整后的可视地图中心。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mobile-zoom-move-animation.e2e.ts 1 passed",
+        "targetState=settled",
+        "目标 betrayal-explorer-figure-token-0",
+        "visibleMapResidualX=-4.6217803955078125 CSS px（阈值 <= 8）",
+        "横向/纵向 token 与视口中心误差均小于 36 CSS px"
+      ]
+    },
+    {
+      "requirement": "移动端角色选择与主桌面能力描述保持可读，能力描述字体不低于 16px。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/basic-flow.e2e.ts 移动端真实入口通过",
+        "角色选择、能力提示和关闭剧本后的主桌面截图均为当前工作树生成",
+        "能力描述 getComputedStyle(font-size) >= 16px"
+      ]
+    },
+    {
+      "requirement": "剧本阅读器的关闭、上一页、下一页按钮可触控但不膨胀遮挡正文，正文不低于 16px。",
+      "status": "REVISE",
+      "evidence": [
+        "旧截图第09张可见底部三项主操作被拆成两行/两个区域",
+        "旧断言只检查热区与存在性，没有检查同排关系和按钮文字视觉比例",
+        "等待当前工作树重新生成PC/手机同状态截图与几何断言"
+      ]
+    },
+    {
+      "requirement": "过程文案下方的继续按钮保持可读、可点，并覆盖真实过场状态。",
+      "status": "PASS",
+      "evidence": [
+        "继续按钮真实热区宽 >= 176px、高 >= 56px",
+        "继续按钮字体断言通过",
+        "截图来自开始剧本后的真实过场状态"
+      ]
+    },
+    {
+      "requirement": "当前回合 HUD 保持右上角，悬浮球保持右下角，回归截图中不发生居中或漂移。",
+      "status": "PASS",
+      "evidence": [
+        "当前回合 HUD x > 400 的几何断言通过",
+        "悬浮球 data-fab-position=bottom-right 且右下角边界断言通过",
+        "关闭剧本回主桌面整屏截图覆盖该状态"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-mobile-final-20261005/01-地图移动前-玩家token与HUD.jpg",
+    "evidence/betrayal-mobile-final-20261005/02-缩放平移后-待执行移动.jpg",
+    "evidence/betrayal-mobile-final-20261005/03-移动完成-玩家token回到可视地图中心.jpg",
+    "evidence/betrayal-mobile-final-20261005/04-移动端横屏-角色选择与能力描述.jpg",
+    "evidence/betrayal-mobile-final-20261005/05-移动端横屏-剧本入口.jpg",
+    "evidence/betrayal-mobile-final-20261005/06-剧本首页-正文可读与关闭按钮.jpg",
+    "evidence/betrayal-mobile-final-20261005/07-剧本翻页中-两侧翻页按钮.jpg",
+    "evidence/betrayal-mobile-final-20261005/08-剧本末页-正文与翻页按钮不遮挡.jpg",
+    "evidence/betrayal-mobile-final-20261005/09-关闭剧本-返回选择页.jpg",
+    "evidence/betrayal-mobile-final-20261005/10-过场文案-继续按钮可读可点.jpg",
+    "evidence/betrayal-mobile-final-20261005/11-主桌面-能力描述与HUD锚点.jpg"
+  ],
+  "supersededReason": "2026-10-06复核发现第09张剧本选择页的阅读、确认、关闭未同排，且按钮文字与视觉盒比例不合格；旧截图不得继续作为最终PASS证据。"
+}

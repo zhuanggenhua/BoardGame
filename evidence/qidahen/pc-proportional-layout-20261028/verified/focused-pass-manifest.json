@@ -1,0 +1,100 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "changeType": "refactor",
+  "acceptanceMode": "visual-only",
+  "acceptanceReason": "本组为桌面与手机等比构图及支付地图浏览的独立代表态验收，原输入行为由同一冻结源码的浏览器断言与专项单测另行证明，不作为完整自然开局或全游戏规则证明。",
+  "sourceRevision": "f777f62a04ffc57716e3ff46546b8c1e906b561e0aea7e0f94a27df61cb1835c",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "①PC与横屏手机共用同一构图及缩放",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/02-手机常态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/06-宽屏桌面常态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/07-小屏手机常态.png"
+      ]
+    },
+    {
+      "requirement": "②手牌支付保留对象与确认取消，八牌首末可触摸",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/03-桌面支付.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/05-手机八张支付压力态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/08-桌面八张支付压力态.png"
+      ]
+    },
+    {
+      "requirement": "③地图人口未见新增相互重叠且原对象可浏览",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png"
+      ]
+    },
+    {
+      "requirement": "④触摸浏览地图后可读取地区说明",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/09-手机地图浏览前.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png"
+      ]
+    }
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/01-桌面常态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/02-手机常态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/03-桌面支付.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/05-手机八张支付压力态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/06-宽屏桌面常态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/07-小屏手机常态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/08-桌面八张支付压力态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/09-手机地图浏览前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/final_visual_scoped"
+    },
+    "reviewFile": "../visual-review.json",
+    "baselineReviewFile": "../baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/populationLayout.test.ts src/games/qidahen/__tests__/handInteractionTray.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=json",
+      "node scripts/infra/run-e2e-command.mjs isolated e2e/qidahen/mobile-population-layout.tmp.e2e.ts --workers=1 --retries=0"
+    ],
+    "evidence": [
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/e2e-run.log",
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/vitest-results.json",
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/geometry.json",
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/map-reachability.json",
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/behavior-verification.json"
+    ]
+  },
+  "sourceScopeEquivalence": "../source-scope-equivalence-review.json",
+  "limitations": [
+    "使用开局和八牌压力代表态，不证明自然抽牌或完整联机局。",
+    "浏览器模拟触摸已覆盖首末牌点选与地图拖动，实体手机手感及八牌手指横滑未在本组宣称。",
+    "全教程及全部战斗表现由各自任务继续验证。",
+    "全仓类型检查未通过，不代表发布门禁已通过。"
+  ],
+  "outOfScopeMedia": []
+}

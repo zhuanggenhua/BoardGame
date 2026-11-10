@@ -6,17 +6,15 @@ import type {
     AttackDefenseResolvedEvent,
     AttackResolvedEvent,
 } from './types';
-import { resolveEffectsToEvents, type EffectContext, type EffectResolutionCheckpoint } from './effects';
+import { isEffectSequenceSuspensionEvent, resolveEffectsToEvents, type EffectContext, type EffectResolutionCheckpoint } from './effects';
 import { getPlayerAbilityEffects } from './abilityLookup';
 import { applyEvents, getPendingAttackExpectedDamage } from './utils';
 import { reduce } from './reducer';
-import { hasPendingBonusDiceSettlement } from './rules';
 import { STATUS_IDS } from './ids';
 import { getCustomActionMeta } from './effects';
 import type { PendingAttackUpdatedEvent, StatusRemovedEvent } from './types';
 import {
     attachAttackEffectContinuation,
-    isAttackEffectSequenceBlocker,
     type AttackEffectContinuationPayload,
     type AttackEffectContinuationStage,
 } from './attackEffectContinuationTypes';
@@ -170,9 +168,6 @@ const buildZhizhuxiaWebbedTriggerEvents = (
         } as StatusRemovedEvent,
     ];
 };
-
-const isInteractiveBonusDiceRerollEvent = (event: DiceThroneEvent): boolean =>
-    event.type === 'BONUS_DICE_REROLL_REQUESTED' && hasPendingBonusDiceSettlement(event.payload.settlement);
 
 const createPreDefenseResolvedEvent = (
     attackerId: string,
@@ -385,9 +380,7 @@ export const resolveAttack = (
         const preDefenseEvents = resolveOffensivePreDefenseEffects(state, random, timestamp);
         events.push(...preDefenseEvents);
 
-        const hasChoice = preDefenseEvents.some(isAttackEffectSequenceBlocker);
-        const hasInteractiveBonusDiceReroll = preDefenseEvents.some(isInteractiveBonusDiceRerollEvent);
-        if (hasChoice || hasInteractiveBonusDiceReroll) return events;
+        if (preDefenseEvents.some(isEffectSequenceSuspensionEvent)) return events;
 
         stateAfterPreDefense = applyEvents(state, preDefenseEvents as DiceThroneEvent[], reduce);
     }
@@ -401,10 +394,7 @@ export const resolveAttack = (
         : resolveDefenseEffects(stateAfterPreDefense, random, timestamp);
     const bonusDamage = stateAfterDefense.pendingAttack?.bonusDamage ?? pending.bonusDamage ?? 0;
     events.push(...defenseEvents);
-    const hasDefenseChoice = defenseEvents.some(isAttackEffectSequenceBlocker);
-    const hasDefenseTokenResponse = defenseEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-    const hasDefenseInteractiveBonusDiceReroll = defenseEvents.some(isInteractiveBonusDiceRerollEvent);
-    if (hasDefenseChoice || hasDefenseTokenResponse || hasDefenseInteractiveBonusDiceReroll) {
+    if (defenseEvents.some(isEffectSequenceSuspensionEvent)) {
         return events;
     }
 
@@ -432,10 +422,7 @@ export const resolveAttack = (
             },
         });
 
-        const hasTokenResponse = withDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-        const hasInteractiveBonusDiceReroll = withDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-        const hasChoiceInWithDamage = withDamageEvents.some(isAttackEffectSequenceBlocker);
-        if (hasTokenResponse || hasInteractiveBonusDiceReroll || hasChoiceInWithDamage) {
+        if (withDamageEvents.some(isEffectSequenceSuspensionEvent)) {
             attackEvents.push(...withDamageEvents);
             events.push(...attackEvents);
             return events;
@@ -451,10 +438,7 @@ export const resolveAttack = (
         attackEvents.push(...resolvedPostDamageEvents);
 
         const postDamageEvents = attackEvents.slice(withDamageEvents.length);
-        const hasChoiceInPostDamage = postDamageEvents.some(isAttackEffectSequenceBlocker);
-        const hasTokenResponseInPostDamage = postDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-        const hasBonusDiceRerollInPostDamage = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-        if (hasChoiceInPostDamage || hasTokenResponseInPostDamage || hasBonusDiceRerollInPostDamage) {
+        if (postDamageEvents.some(isEffectSequenceSuspensionEvent)) {
             events.push(...orderPowderKegExplosionBeforeAttackDamage(attackEvents));
             return events;
         }

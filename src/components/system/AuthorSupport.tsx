@@ -40,11 +40,11 @@ export function AuthorSupportButton() {
         document.addEventListener('pointerdown', onOutsidePress);
         return () => document.removeEventListener('pointerdown', onOutsidePress);
     }, [pinned]);
-    return <div ref={root} className="author-support" onMouseEnter={() => setOpen(true)} onMouseLeave={() => { if (!pinned) setOpen(false); }}
+    return <div ref={root} className="author-support" onMouseEnter={() => { if (window.matchMedia('(hover: hover)').matches) setOpen(true); }} onMouseLeave={() => { if (!pinned) setOpen(false); }}
         onBlur={event => { if (!pinned && !event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
         onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
         <button type="button" className="author-support-trigger" aria-expanded={open} aria-controls={id}
-            onFocus={() => setOpen(true)} onClick={() => { setOpen(true); setPinned(true); }}><Heart size={16} aria-hidden="true" />{t('hud.about.supportAuthor')}</button>
+            onFocus={event => { if (event.currentTarget.matches(':focus-visible')) setOpen(true); }} onClick={() => { setOpen(true); setPinned(true); }}><Heart size={16} aria-hidden="true" />{t('hud.about.supportAuthor')}</button>
         {open && <section id={id} className="author-support-popover" aria-label={t('hud.about.supportAuthor')}>
             <button type="button" className="author-support-close" aria-label={t('hud.about.closeSupport')} onClick={close}><X size={18} /></button>
             <h2 className="author-support-heading">{t('hud.about.supportAuthor')}</h2>

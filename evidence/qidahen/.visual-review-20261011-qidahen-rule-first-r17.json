@@ -1,0 +1,1941 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "image_acceptance_audit",
+    "delegatedAuditors": [
+      "audit_first_37",
+      "audit_last_37"
+    ]
+  },
+  "source": {
+    "desktopDirectory": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17",
+    "mobileDirectory": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17-mobile"
+  },
+  "summary": {
+    "fullCoverage": true,
+    "desktopCount": 73,
+    "mobileCount": 3,
+    "totalMediaCount": 76,
+    "passCount": 76,
+    "reviseCount": 0,
+    "failedPaths": [],
+    "missingMedia": [],
+    "extraMedia": [],
+    "badPngMetadata": [],
+    "numericOrRuleValidation": "excluded; covered by E2E/Vitest",
+    "auxiliaryDetailPaths": [
+      "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15f-征兵训练第2步-宣府炮兵与新增部队特写.png"
+    ]
+  },
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\00-教程目录-先选择章节.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/00-教程目录-先选择章节.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 477404,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\01-开场-阅读三种胜利条件.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/01-开场-阅读三种胜利条件.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3009395,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\01a-玩家行动流程-轮盘与手牌行动无固定先后.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/01a-玩家行动流程-轮盘与手牌行动无固定先后.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2999963,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\02-开局检查-3张手牌未超过15张不弃牌.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/02-开局检查-3张手牌未超过15张不弃牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3000413,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2984801,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\02b-轮盘征兵训练规则原文.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/02b-轮盘征兵训练规则原文.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2967257,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\03-轮盘选择-点击高亮征兵训练.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/03-轮盘选择-点击高亮征兵训练.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3027697,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\03a-轮盘合法分支自动恢复到选择.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/03a-轮盘合法分支自动恢复到选择.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3027602,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\04-轮盘结算-宣府部队1到3.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/04-轮盘结算-宣府部队1到3.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2985089,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\04a-手牌行动规则-四个同层行动.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/04a-手牌行动规则-四个同层行动.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2974828,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\05-赐印招安规则原文.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/05-赐印招安规则原文.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2976876,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\06-手牌行动-现在选择赐印招安.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/06-手牌行动-现在选择赐印招安.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3034154,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\07-赐印招安-支付3张手牌.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/07-赐印招安-支付3张手牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2968678,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\07a-赐印招安-首张手牌抬升并标记已选.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/07a-赐印招安-首张手牌抬升并标记已选.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2951439,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\07b-赐印招安-3张手牌已选待确认.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/07b-赐印招安-3张手牌已选待确认.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2946750,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\08-赐印招安-选择山海关接收区.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/08-赐印招安-选择山海关接收区.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2662416,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\09-赐印招安-接收区自动锁定后金并选择锦州部队.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/09-赐印招安-接收区自动锁定后金并选择锦州部队.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3441386,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\10-赐印招安-部队位置与阵营变化.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/10-赐印招安-部队位置与阵营变化.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3021228,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\11-首回合-规则链完成.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/11-首回合-规则链完成.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3050066,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\13-轮盘第1步-先看走3会让两家对手摸牌.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3029923,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\14-轮盘第2步-看蒙古后金手牌同时增加.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2990820,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\14a-轮盘第2a步-先选择参与进攻的部队.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/14a-轮盘第2a步-先选择参与进攻的部队.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2978333,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15-轮盘第3步-进入进攻调度落点.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15-轮盘第3步-进入进攻调度落点.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2928703,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15a-开垦第1步-点击高亮开垦.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15a-开垦第1步-点击高亮开垦.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3033802,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15b-开垦第2步-看己方控制区人口增加.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15b-开垦第2步-看己方控制区人口增加.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3034953,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15c-军屯第1步-点击高亮军屯.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15c-军屯第1步-点击高亮军屯.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3041228,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15d-军屯第2步-看补牌并建立正规军.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15d-军屯第2步-看补牌并建立正规军.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2949864,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15e-征兵训练第1步-点击高亮征兵训练.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15e-征兵训练第1步-点击高亮征兵训练.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3036713,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15e0-征兵训练规则原文.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15e0-征兵训练规则原文.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2990062,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15f-征兵训练第2步-宣府炮兵与新增部队特写.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15f-征兵训练第2步-宣府炮兵与新增部队特写.png",
+      "device": "desktop",
+      "role": "auxiliary-detail",
+      "viewport": "360x320",
+      "bytes": 187905,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "目标细节、高亮与教程卡可读，作为辅助细节图使用，不替代整屏主链。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\15f-征兵训练第2步-宣府总兵力2到4并训练炮兵.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/15f-征兵训练第2步-宣府总兵力2到4并训练炮兵.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2997070,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\16-军备第0步-四个势力行动总览.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/16-军备第0步-四个势力行动总览.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3004174,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\16-军备第1步-先点升级军备.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/16-军备第1步-先点升级军备.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3043949,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\17-军备第2步-点击底部手牌支付2张.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/17-军备第2步-点击底部手牌支付2张.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2965177,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\18-军备第3步-看火炮技术升到2级.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/18-军备第3步-看火炮技术升到2级.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3038426,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\18a-事件第0步-蒙古三个势力行动总览.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/18a-事件第0步-蒙古三个势力行动总览.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3028027,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\19-事件第1步-先点大汗令箭.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/19-事件第1步-先点大汗令箭.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3036385,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\20-事件第2步-点击底部手牌支付1张.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/20-事件第2步-点击底部手牌支付1张.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3020666,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\21-事件第3步-选择征兵训练效果.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/21-事件第3步-选择征兵训练效果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2728111,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\22-事件第4步-看蒙古兵力增加到4.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/22-事件第4步-看蒙古兵力增加到4.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3042611,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\22a-进攻第0步-大明四个势力行动总览.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/22a-进攻第0步-大明四个势力行动总览.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2998930,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\23-进攻第1步-点击突袭作战入口.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/23-进攻第1步-点击突袭作战入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3013328,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\24-进攻第2步-弃1张手牌支付突袭.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/24-进攻第2步-弃1张手牌支付突袭.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2999983,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\25-进攻第3步-支付后进入察哈尔野战.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/25-进攻第3步-支付后进入察哈尔野战.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2984380,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2990180,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\25b-进攻第3b步-战术牌选中后显示打出确认.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2970267,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\26-进攻第4步-打出战术牌后决定承伤顺序.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2976778,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\26a-进攻第4a步-看断后后的战后处理.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/26a-进攻第4a步-看断后后的战后处理.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3087972,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\27-进攻第5步-看战败标记与战后选择.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/27-进攻第5步-看战败标记与战后选择.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3079195,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\27a-进攻第6步-看占领结果摘要.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/27a-进攻第6步-看占领结果摘要.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3025606,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\28-撤退第1步-先看断后和溃退入口.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/28-撤退第1步-先看断后和溃退入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3034889,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\29-撤退第2步-看溃退后的残部清空与战败标记.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3015686,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\30-攻城第1步-真实守城宣告入口.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/30-攻城第1步-真实守城宣告入口.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2988393,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\30a-攻城第1a步-右侧断后结算城战.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/30a-攻城第1a步-右侧断后结算城战.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2982645,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\31-攻城第2步-选择围城该区.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/31-攻城第2步-选择围城该区.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3119248,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\31a-攻城第3步-同章选择占领该区.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/31a-攻城第3步-同章选择占领该区.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3033551,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\32-外交第1步-点击高亮外交雇佣.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/32-外交第1步-点击高亮外交雇佣.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3036080,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\33-外交第2步-先放置友好标记.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/33-外交第2步-先放置友好标记.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2705815,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\33a-外交第2a步-翻为附庸.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/33a-外交第2a步-翻为附庸.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3086607,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\33b-外交第2b步-移除他方控制标记.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/33b-外交第2b步-移除他方控制标记.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2447995,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\34-外交第3步-结束并结算雇佣军.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/34-外交第3步-结束并结算雇佣军.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3059419,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\35-外交第4步-看完外交与雇佣的合并收益.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/35-外交第4步-看完外交与雇佣的合并收益.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3059419,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\36-跨年第1步-推进到年中并查看税赋与人物.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/36-跨年第1步-推进到年中并查看税赋与人物.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3000285,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\37-跨年第2步-先看新年朝鲜朝贡.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/37-跨年第2步-先看新年朝鲜朝贡.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2958640,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\38-跨年第3步-进入新年防线维护.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/38-跨年第3步-进入新年防线维护.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2964227,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\39-跨年第4步-看纪年卡与争分结果.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/39-跨年第4步-看纪年卡与争分结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3009293,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\40-跨年第5步-看新顺位与人物刷新.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/40-跨年第5步-看新顺位与人物刷新.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2994597,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\41-跨年第6步-看到新年结算与新年份.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/41-跨年第6步-看到新年结算与新年份.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3037686,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2968762,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\43-朝鲜第2步-看汉城威望已进入玩家条.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2975476,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\44-朝鲜第3步-看海路与船锚区域关系.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/44-朝鲜第3步-看海路与船锚区域关系.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2959287,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\45-朝鲜第4步-点击新年维护进入耗损结算.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 2998932,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17\\46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+      "device": "desktop",
+      "role": "main-flow",
+      "viewport": "1920x1080",
+      "bytes": 3013121,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17-mobile\\移动-01-移动教程-手牌检视前.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17-mobile/移动-01-移动教程-手牌检视前.png",
+      "device": "mobile",
+      "role": "main-flow",
+      "viewport": "844x390",
+      "bytes": 488805,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17-mobile\\移动-02-移动教程-长按手牌打开检视.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17-mobile/移动-02-移动教程-长按手牌打开检视.png",
+      "device": "mobile",
+      "role": "main-flow",
+      "viewport": "844x390",
+      "bytes": 423552,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261011-qidahen-rule-first-r17-mobile\\移动-03-移动教程-关闭检视回到牌桌.png",
+      "relativePath": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-rule-first-r17-mobile/移动-03-移动教程-关闭检视回到牌桌.png",
+      "device": "mobile",
+      "role": "main-flow",
+      "viewport": "844x390",
+      "bytes": 489099,
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程卡文字、主焦点/高亮、动作顺序与推进按钮清晰，无明显遮挡、裁切、报错或乱码。",
+      "checkDetail": {
+        "tutorialTextReadable": true,
+        "targetVisible": true,
+        "focusMatchesHighlight": true,
+        "actionOrderConsistent": true,
+        "buttonVisibleAndProgressable": true,
+        "unobstructed": true,
+        "noErrorOrMojibake": true
+      }
+    }
+  ],
+  "reportAbsolutePath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\.visual-review-20261011-qidahen-rule-first-r17.json",
+  "contractNotes": [
+    "76/76 当前 PASS 清单媒体由两个子代理分组逐张完成 UI/交互检查。",
+    "本报告只判断 UI、交互、可读性、裁切、遮挡和明显报错，不判断数值或规则真伪。",
+    "360x320 特写已明确标记 auxiliary-detail，不能单独替代整屏主链证据。"
+  ]
+}

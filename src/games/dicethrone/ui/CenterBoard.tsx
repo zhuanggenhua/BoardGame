@@ -64,8 +64,25 @@ const PreparedSpellsOverlay = ({ preparedSpells, locale, onMagnifyCard, showTouc
         let frame = 0;
         const update = () => {
             const rect = zone.getBoundingClientRect();
-            setZoneCorner(previous => previous?.left === rect.left && previous.bottom === rect.bottom
-                ? previous : { left: rect.left, bottom: rect.bottom });
+            const buttonSize = showTouchMagnifyButton ? 44 : 32;
+            const visibleHeight = 28;
+            const verticalInset = (buttonSize - visibleHeight) / 2;
+            let bottom = rect.bottom;
+            const resources = [...document.querySelectorAll<HTMLElement>('[data-dicethrone-resource]')]
+                .map(element => element.getBoundingClientRect())
+                .filter(resource => resource.width > 0 && resource.height > 0
+                    && resource.left - 12 < rect.left && resource.right + 12 > rect.left - buttonSize)
+                .sort((a, b) => b.top - a.top);
+            for (const resource of resources) {
+                if (bottom - verticalInset > resource.top - 16 && bottom - verticalInset - visibleHeight < resource.bottom + 16) {
+                    // 资源条受击会位移与旋转，给它保留动画空间，避免按钮跟着抖动。
+                    const below = resource.bottom + 16 + visibleHeight + verticalInset;
+                    bottom = below - verticalInset <= rect.bottom + 64 && below <= window.innerHeight
+                        ? below : resource.top - 16 + verticalInset;
+                }
+            }
+            setZoneCorner(previous => previous?.left === rect.left && previous.bottom === bottom
+                ? previous : { left: rect.left, bottom });
         };
         const boardGroup = zone.closest('[data-tutorial-id="player-board"]')?.parentElement;
         const followTransition = (event: Event) => {
@@ -80,6 +97,7 @@ const PreparedSpellsOverlay = ({ preparedSpells, locale, onMagnifyCard, showTouc
         };
         const observer = new ResizeObserver(update);
         observer.observe(zone);
+        document.querySelectorAll<HTMLElement>('[data-dicethrone-resource]').forEach(resource => observer.observe(resource));
         window.addEventListener('resize', update);
         window.addEventListener('scroll', update, true);
         document.addEventListener('transitionrun', followTransition, true);
@@ -91,7 +109,7 @@ const PreparedSpellsOverlay = ({ preparedSpells, locale, onMagnifyCard, showTouc
             window.removeEventListener('scroll', update, true);
             document.removeEventListener('transitionrun', followTransition, true);
         };
-    }, []);
+    }, [showTouchMagnifyButton]);
     const slot = getAbilitySlotLayoutForCharacter('doctor_strange').find(item => item.id === 'sky')!;
     const goToSpell = (index: number) => {
         const list = preparedScrollRef.current;

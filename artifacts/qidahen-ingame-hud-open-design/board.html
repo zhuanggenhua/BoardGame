@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>七大恨 · 局内钉边 HUD</title>
+  <style>
+    :root {
+      --ink: #2a1f15;
+      --muted: #66503a;
+      --map-ink: #20150d;
+      --ivory: #ead7a7;
+      --cinnabar: #9f3426;
+      --paper: #efe3c4;
+      --gold: #c4a15a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #120c08; }
+    body { font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif; color: var(--ink); }
+    .stage {
+      width: 1920px; height: 1080px; overflow: hidden; position: relative;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(159,52,38,.18), transparent 28%),
+        linear-gradient(135deg, #2e1f12 0%, #9f8048 48%, #231810 100%);
+    }
+    .map-viewport {
+      position: absolute; left: 292px; top: 64px; right: 184px; bottom: 300px;
+      overflow: hidden; cursor: grab; background: #5a4024;
+      box-shadow: inset 0 0 0 2px rgba(32,21,13,.55);
+    }
+    .map-viewport.dragging { cursor: grabbing; }
+    .map-scene {
+      position: absolute; width: 1265px; height: 893px; left: 50%; top: 50%;
+      transform-origin: 0 0; user-select: none;
+    }
+    .map-scene img.board { width: 100%; height: 100%; display: block; pointer-events: none; }
+    .token {
+      position: absolute; width: 38px; height: 38px; border-radius: 8px; overflow: hidden;
+      box-shadow: 0 4px 8px rgba(20,12,6,.45);
+    }
+    .token img { width: 150%; height: 150%; object-fit: cover; margin: -25%; display: block; }
+    .zoom {
+      position: absolute; right: 10px; bottom: 10px; z-index: 3;
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(32,21,13,.78); color: var(--ivory); padding: 6px 8px;
+      font-size: 13px; font-weight: 800;
+    }
+    .zoom button {
+      width: 28px; height: 28px; border: 1px solid var(--ivory); background: transparent;
+      color: var(--ivory); font-size: 16px; font-weight: 900; cursor: pointer;
+    }
+    .hud-left {
+      position: absolute; left: 10px; top: 10px; width: 276px; bottom: 300px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 20;
+    }
+    .wheel-wrap { width: 268px; height: 268px; position: relative; flex: 0 0 268px; }
+    .wheel-face {
+      width: 268px; height: 268px; object-fit: contain; display: block;
+      filter: drop-shadow(0 10px 14px rgba(20,12,6,.4));
+    }
+    .wheel-svg { position: absolute; inset: 0; width: 268px; height: 268px; }
+    .sector { fill: transparent; stroke: transparent; cursor: pointer; }
+    .sector.legal { fill: rgba(255, 214, 120, .22); stroke: rgba(255, 214, 120, .7); stroke-width: 1.5; }
+    .sector.legal:hover, .sector.legal.active { fill: rgba(255, 214, 120, .42); stroke: #9f3426; stroke-width: 3; }
+    .sector.now { fill: rgba(159,52,38,.2); stroke: rgba(159,52,38,.55); stroke-width: 1.5; }
+    .marker {
+      position: absolute; width: 36px; height: 36px; pointer-events: none;
+      filter: drop-shadow(0 3px 4px rgba(0,0,0,.45));
+      transform: translate(-50%, -50%);
+    }
+    .wheel-tip {
+      display: none; position: absolute; left: 276px; top: 92px; z-index: 30; width: 252px;
+      padding: 10px 12px; background: #2a1f15; color: var(--ivory);
+      font-size: 14px; font-weight: 700; line-height: 1.45;
+      box-shadow: 0 12px 24px rgba(0,0,0,.35);
+    }
+    .wheel-wrap:hover .wheel-tip.show, .wheel-tip.show { display: block; }
+    .years { position: relative; width: 236px; height: 340px; flex: 1; }
+    .year { padding: 0; border: 0; background: transparent; cursor: pointer; position: absolute; }
+    .year img { object-fit: contain; display: block; filter: drop-shadow(0 10px 12px rgba(20,12,6,.32)); }
+    .year.current { left: 0; top: 18px; z-index: 2; }
+    .year.current img { width: 188px; height: 261px; filter: drop-shadow(0 0 8px rgba(159,52,38,.5)) drop-shadow(0 10px 12px rgba(20,12,6,.32)); }
+    .year.next { left: 48px; top: 0; z-index: 1; }
+    .year.next img { width: 148px; height: 205px; opacity: .92; }
+    .year span {
+      display: block; text-align: left; font-size: 12px; font-weight: 900; margin-top: 4px; color: var(--ivory);
+      text-shadow: 0 1px 2px #000;
+    }
+    .hud-top {
+      position: absolute; left: 292px; right: 184px; top: 8px; height: 50px;
+      display: flex; gap: 8px; z-index: 20;
+    }
+    .chip {
+      flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px;
+      background: linear-gradient(180deg, rgba(255,246,220,.92), rgba(236,210,153,.86));
+      border: 2px solid var(--map-ink); box-shadow: 0 3px 8px rgba(56,35,15,.12);
+    }
+    .chip.current { border-color: var(--cinnabar); background: linear-gradient(180deg, rgba(245,201,142,.9), rgba(224,151,99,.82)); }
+    .chip img { width: 34px; height: 34px; object-fit: contain; }
+    .chip .who { font-size: 16px; font-weight: 900; }
+    .chip .meta { font-size: 12px; font-weight: 800; color: var(--muted); }
+    .badge {
+      margin-left: auto; font-size: 11px; font-weight: 900; padding: 3px 8px;
+      background: linear-gradient(180deg, rgba(216,123,82,.78), rgba(180,76,54,.72));
+      border: 1px solid var(--map-ink);
+    }
+    .hud-right {
+      position: absolute; right: 10px; top: 64px; width: 168px; bottom: 300px;
+      display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 20;
+    }
+    .pile { position: relative; width: 148px; }
+    .pile img {
+      width: 148px; height: 204px; object-fit: contain; display: block;
+      filter: drop-shadow(0 10px 12px rgba(20,12,6,.32));
+    }
+    .pile.empty {
+      height: 204px; border: 2px dashed rgba(234,215,167,.45);
+      background: rgba(46,31,18,.28);
+    }
+    .pile .count {
+      position: absolute; right: 6px; bottom: 8px; min-width: 28px; text-align: center;
+      background: #2a1f15; color: var(--ivory); font-size: 13px; font-weight: 900; padding: 2px 6px;
+    }
+    .pile .lab { margin-top: 6px; text-align: center; color: var(--ivory); font-size: 13px; font-weight: 900; text-shadow: 0 1px 2px #000; }
+    .hud-bottom {
+      position: absolute; left: 10px; right: 10px; bottom: 0; height: 288px; z-index: 21;
+      display: grid; grid-template-rows: 44px 1fr; gap: 6px; padding: 6px 10px 8px;
+      background: linear-gradient(180deg, rgba(255,248,224,.96), rgba(232,210,160,.94));
+      border-top: 3px solid var(--map-ink);
+    }
+    .strip {
+      display: flex; align-items: center; gap: 10px; min-width: 0;
+    }
+    .turn { font-size: 18px; font-weight: 900; }
+    .phase {
+      font-size: 13px; font-weight: 900; padding: 5px 10px; border: 2px solid var(--map-ink); background: #e6d3a8;
+    }
+    .phase.open { background: rgba(245,201,142,.7); border-color: var(--cinnabar); }
+    .acts-label { margin-left: 12px; font-size: 13px; font-weight: 900; color: var(--cinnabar); letter-spacing: .08em; }
+    .acts { display: flex; flex-wrap: wrap; gap: 4px; }
+    .act {
+      position: relative; border: 0; padding: 4px 8px; background: transparent;
+      font: inherit; font-size: 15px; font-weight: 900; color: var(--ink);
+      text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+      cursor: help;
+    }
+    .tip {
+      display: none; position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 8; width: 360px;
+      padding: 12px 14px; text-align: left; background: #2a1f15; color: var(--ivory);
+      font-size: 14px; font-weight: 700; line-height: 1.5; box-shadow: 0 12px 24px rgba(0,0,0,.35);
+    }
+    .act:hover .tip, .act:focus .tip { display: block; }
+    .hands {
+      display: flex; align-items: flex-end; justify-content: center; gap: 12px; min-height: 0;
+    }
+    .side-pile { position: relative; width: 118px; flex: 0 0 118px; }
+    .side-pile img {
+      width: 118px; height: 164px; object-fit: contain; display: block;
+      filter: drop-shadow(0 8px 10px rgba(20,12,6,.28));
+    }
+    .side-pile.empty {
+      height: 164px; border: 2px dashed rgba(95,71,45,.35); background: rgba(255,248,224,.4);
+    }
+    .side-pile .count {
+      position: absolute; right: 4px; bottom: 4px; background: #2a1f15; color: var(--ivory);
+      font-size: 12px; font-weight: 900; padding: 1px 6px;
+    }
+    .side-pile .lab { text-align: center; font-size: 12px; font-weight: 900; color: var(--muted); margin-top: 2px; }
+    .fan { position: relative; height: 210px; width: 760px; }
+    .card {
+      position: absolute; bottom: 0; width: 176px; height: 244px; padding: 0; border: 0;
+      background: transparent; cursor: pointer;
+    }
+    .card img {
+      width: 176px; height: 244px; object-fit: contain; display: block;
+      filter: drop-shadow(0 8px 10px rgba(20,12,6,.28));
+    }
+    .card:hover, .card.picked { bottom: 18px; z-index: 6 !important; }
+    .card.picked img { filter: drop-shadow(0 0 8px rgba(159,52,38,.55)) drop-shadow(0 10px 12px rgba(20,12,6,.3)); }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="map-viewport" id="map" data-testid="qidahen-od-map">
+      <div class="map-scene" id="scene">
+        <img class="board" src="assets/board/qidahen-main-map.webp" alt="七大恨地图" draggable="false" />
+        <div class="token" style="left:49.6%; top:47%"><img src="assets/units/ming-regular-artillery-unit.webp" alt="大明炮" /></div>
+        <div class="token" style="left:53.5%; top:42.2%"><img src="assets/units/ming-regular-infantry-unit.webp" alt="大明步" /></div>
+        <div class="token" style="left:71.5%; top:34.9%"><img src="assets/units/jin-regular-cavalry-unit.webp" alt="后金骑" /></div>
+        <div class="token" style="left:58.6%; top:27.7%"><img src="assets/units/mongol-regular-cavalry-unit.webp" alt="蒙古骑" /></div>
+      </div>
+      <div class="zoom">
+        <button type="button" id="zoom-out" aria-label="缩小">−</button>
+        <span id="zoom-read">100%</span>
+        <button type="button" id="zoom-in" aria-label="放大">+</button>
+      </div>
+    </div>
+
+    <aside class="hud-left">
+      <div class="wheel-wrap" data-testid="qidahen-od-wheel">
+        <img class="wheel-face" src="assets/board/wheel.png" alt="行动轮盘" />
+        <svg class="wheel-svg" viewBox="0 0 268 268" aria-hidden="true"></svg>
+        <img class="marker" id="year-marker" src="assets/markers/year-marker.webp" alt="行动标记" />
+        <div class="wheel-tip" id="wheel-tip"></div>
+      </div>
+      <div class="years">
+        <button type="button" class="year current" data-testid="qidahen-od-year-now">
+          <img src="assets/cards/year-3.webp" alt="当前纪年卡" />
+          <span>当前</span>
+        </button>
+        <button type="button" class="year next" data-testid="qidahen-od-year-next">
+          <img src="assets/cards/year-4.webp" alt="下一张纪年卡" />
+          <span>下一年</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="hud-top">
+      <div class="chip current" data-testid="qidahen-od-chip-ming">
+        <img src="assets/markers/ming.webp" alt="" />
+        <div>
+          <div class="who">大明</div>
+          <div class="meta">VP 0 · 5/15</div>
+        </div>
+        <span class="badge">当前</span>
+      </div>
+      <div class="chip" data-testid="qidahen-od-chip-mongol">
+        <img src="assets/markers/mongol.webp" alt="" />
+        <div>
+          <div class="who">蒙古</div>
+          <div class="meta">VP 1 · 6/10</div>
+        </div>
+      </div>
+      <div class="chip" data-testid="qidahen-od-chip-jin">
+        <img src="assets/markers/jin.webp" alt="" />
+        <div>
+          <div class="who">后金</div>
+          <div class="meta">VP 0 · 10/10</div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="hud-right">
+      <div class="pile" data-testid="qidahen-od-korea-draw">
+        <img src="assets/cards/korea-back.webp" alt="朝鲜牌库" />
+        <span class="count">8</span>
+        <div class="lab">朝鲜牌库</div>
+      </div>
+      <div class="pile empty" data-testid="qidahen-od-korea-discard">
+        <span class="count">0</span>
+        <div class="lab">朝鲜弃牌</div>
+      </div>
+    </aside>
+
+    <div class="hud-bottom">
+      <div class="strip">
+        <div class="turn">大明回合</div>
+        <div class="phase open">轮盘行动</div>
+        <div class="phase open">手牌行动</div>
+        <div class="acts-label">势力行动</div>
+        <div class="acts">
+          <button type="button" class="act">突袭作战<div class="tip">弃 1 张手牌，执行进攻行动（不能执行调度）。</div></button>
+          <button type="button" class="act">征召军队<div class="tip">弃 1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵部队。</div></button>
+          <button type="button" class="act" data-testid="qidahen-od-grant-pardon">赐印招安<div class="tip">弃 3 张手牌，指定 1 个对手；由被指定的玩家选择一支与大明控制区相邻的部队，移入相邻大明控制区并转换为大明部队。</div></button>
+          <button type="button" class="act">驱虎吞狼<div class="tip">弃 3 张手牌，指定 1 个对手抽 6 张手牌；大明指挥该玩家最多 6 个部队调度进攻。需该玩家同意才可执行。</div></button>
+        </div>
+      </div>
+      <div class="hands">
+        <div class="side-pile">
+          <img src="assets/cards/ming-back.webp" alt="大明牌库" />
+          <span class="count">32</span>
+          <div class="lab">抽牌</div>
+        </div>
+        <div class="fan" id="fan"></div>
+        <div class="side-pile empty">
+          <span class="count">0</span>
+          <div class="lab">弃牌</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const HAND = [
+      { src: 'assets/cards/hand-silver-ming.webp', name: '银两' },
+      { src: 'assets/cards/hand-cannon-tech.webp', name: '火炮技术' },
+      { src: 'assets/cards/hand-infantry-armor.webp', name: '步兵铁甲' },
+      { src: 'assets/cards/hand-infantry-cavalry.webp', name: '步骑联合' },
+      { src: 'assets/cards/hand-defection.webp', name: '策反' },
+    ];
+    const MOVES = {
+      1: { title: '走 1 格', text: '免费向前走 1 格。' },
+      2: { title: '走 2 格', text: '指定一个对手抽 2 张牌，向前走 2 格。' },
+      3: { title: '走 3 格', text: '所有对手抽 2 张牌，向前走 3 格。' },
+    };
+    const NOW = 0;
+    const CX = 134, CY = 134, R = 124, INNER = 44;
+    const svg = document.querySelector('.wheel-svg');
+    const tip = document.getElementById('wheel-tip');
+    const marker = document.getElementById('year-marker');
+
+    function polar(deg, radius) {
+      const a = deg * Math.PI / 180;
+      return [CX + radius * Math.cos(a), CY + radius * Math.sin(a)];
+    }
+    function wedge(i) {
+      const start = -112.5 + i * 45;
+      const end = start + 45;
+      const [x1, y1] = polar(start, R);
+      const [x2, y2] = polar(end, R);
+      const [x3, y3] = polar(end, INNER);
+      const [x4, y4] = polar(start, INNER);
+      return `M ${x4} ${y4} L ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${INNER} ${INNER} 0 0 0 ${x4} ${y4} Z`;
+    }
+    for (let i = 0; i < 8; i += 1) {
+      const steps = (i - NOW + 8) % 8;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', wedge(i));
+      path.setAttribute('class', 'sector' + (i === NOW ? ' now' : '') + (steps >= 1 && steps <= 3 ? ' legal' : ''));
+      path.dataset.steps = String(steps);
+      path.setAttribute('data-testid', 'qidahen-od-sector-' + i);
+      if (steps >= 1 && steps <= 3) {
+        path.addEventListener('mouseenter', () => {
+          const m = MOVES[steps];
+          tip.textContent = m.title + ' · ' + m.text;
+          tip.classList.add('show');
+          path.classList.add('active');
+        });
+        path.addEventListener('mouseleave', () => {
+          tip.classList.remove('show');
+          path.classList.remove('active');
+        });
+      }
+      svg.appendChild(path);
+    }
+    const [mx, my] = polar(-90, 96);
+    marker.style.left = mx + 'px';
+    marker.style.top = my + 'px';
+
+    const fan = document.getElementById('fan');
+    HAND.forEach((card, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'card';
+      btn.style.left = (i * 132) + 'px';
+      btn.style.zIndex = String(i + 1);
+      btn.dataset.testid = 'qidahen-od-hand-' + i;
+      btn.innerHTML = '<img src="' + card.src + '" alt="' + card.name + '" />';
+      btn.addEventListener('click', () => {
+        fan.querySelectorAll('.card').forEach((el) => el.classList.remove('picked'));
+        btn.classList.add('picked');
+      });
+      fan.appendChild(btn);
+    });
+
+    const map = document.getElementById('map');
+    const scene = document.getElementById('scene');
+    const zoomRead = document.getElementById('zoom-read');
+    let scale = 1.72;
+    let tx = -127.5 * 1.72;
+    let ty = 36 * 1.72;
+    let drag = null;
+    function layoutMap() {
+      const vw = map.clientWidth, vh = map.clientHeight;
+      const w = 1265 * scale, h = 893 * scale;
+      scene.style.width = w + 'px';
+      scene.style.height = h + 'px';
+      scene.style.left = (vw / 2 + tx - w / 2) + 'px';
+      scene.style.top = (vh / 2 + ty - h / 2) + 'px';
+      scene.style.transform = 'none';
+      zoomRead.textContent = Math.round(scale * 100) + '%';
+    }
+    map.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.zoom')) return;
+      drag = { x: e.clientX, y: e.clientY, tx, ty };
+      map.classList.add('dragging');
+      map.setPointerCapture(e.pointerId);
+    });
+    map.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      tx = drag.tx + (e.clientX - drag.x);
+      ty = drag.ty + (e.clientY - drag.y);
+      layoutMap();
+    });
+    map.addEventListener('pointerup', () => { drag = null; map.classList.remove('dragging'); });
+    map.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      scale = Math.min(2.6, Math.max(0.9, scale + (e.deltaY < 0 ? 0.08 : -0.08)));
+      layoutMap();
+    }, { passive: false });
+    document.getElementById('zoom-in').onclick = () => { scale = Math.min(2.6, scale + 0.12); layoutMap(); };
+    document.getElementById('zoom-out').onclick = () => { scale = Math.max(0.9, scale - 0.12); layoutMap(); };
+    layoutMap();
+
+    const state = new URLSearchParams(location.search).get('state');
+    if (state === 'wheel') {
+      const legal = svg.querySelector('.sector.legal[data-steps="2"]');
+      if (legal) legal.dispatchEvent(new Event('mouseenter'));
+    }
+    if (state === 'hand') {
+      fan.querySelectorAll('.card')[2]?.classList.add('picked');
+    }
+  </script>
+</body>
+</html>

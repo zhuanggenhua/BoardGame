@@ -1,0 +1,58 @@
+{
+  "reviewerId": "visual-audit-agent",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": 94,
+  "media": [
+    {
+      "path": "01-labeled-01-random-faction-before.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "前态未出现绿色选中框，派系卡网格可见，未见错误提示、内部编号或明显遮挡。"
+    },
+    {
+      "path": "02-labeled-02-action-heroes-selected-green.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中列动作英雄卡处于选中态，绿色边界集中在同一张卡的外框矩形上，目标卡相较邻卡有放大和上抬效果；未发现第二层独立绿色选中框或额外叠加边界。白色边缘属于卡图内容自身的白边。"
+    },
+    {
+      "path": "03-labeled-03-after-scroll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "滚动后动作英雄目标卡仍完整可见，绿色选中边界保持在同一目标卡上，没有被底部玩家面板遮挡、裁切或错误文本覆盖。"
+    },
+    {
+      "path": "00-sequence-index.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "索引图清楚列出前态、中态和后态三张当前验收图，能定位中列动作英雄目标卡。"
+    }
+  ],
+  "hard_failures": [],
+  "notes": [
+    "02 与 03 的绿色选中区域一致，说明滚动后目标选中态仍保持。",
+    "白色卡面边缘是卡图内容边缘，不计为第二层选中描边。"
+  ]
+}

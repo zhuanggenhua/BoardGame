@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "全知之眼已选待结算-桌面.png",
+      "chainId": "全知之眼技能选择",
+      "chainStep": "技能已选待结算",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-selected",
+      "behaviorStepId": "ultimate-select-before-resolution",
+      "description": "真实鼠标选择全知之眼后，等待玩家提交攻击结算。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击全知之眼技能槽。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击全知之眼技能槽。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼顶五法术选择-桌面.png",
+      "chainId": "全知之眼顶五法术选择",
+      "chainStep": "法术候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-top-five-choice",
+      "behaviorStepId": "ultimate-prepare-top-five",
+      "description": "真实鼠标触发终极技能后，顶五中法术以卡图供选择准备。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "推进按钮提交攻击结算。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "推进按钮提交攻击结算。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼首张法术已选-桌面.png",
+      "chainId": "全知之眼顶五法术选择",
+      "chainStep": "第一张法术已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-top-five-first-selected",
+      "behaviorStepId": "ultimate-first-top-five-spell-selected",
+      "description": "第一张顶五法术卡片选中后显示提交确认状态。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从顶五候选中选中博萨特之雷。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从顶五候选中选中博萨特之雷。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼次张法术已选-桌面.png",
+      "chainId": "全知之眼顶五法术选择",
+      "chainStep": "第二张法术已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-top-five-second-selected",
+      "behaviorStepId": "ultimate-second-top-five-spell-selected",
+      "description": "第二张顶五法术卡片选中后显示提交确认状态。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从剩余顶五候选中选中法瑞拉之牙。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从剩余顶五候选中选中法瑞拉之牙。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼法术准备目标选择-桌面.png",
+      "chainId": "法瑞拉之牙目标玩家选择",
+      "chainStep": "目标候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-prepare-target",
+      "behaviorStepId": "ultimate-prepare-spell-target",
+      "description": "准备法瑞拉之牙后，选择其效果影响的对手。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "依次准备博萨特之雷和法瑞拉之牙。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "依次准备博萨特之雷和法瑞拉之牙。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼目标玩家已选-桌面.png",
+      "chainId": "法瑞拉之牙目标玩家选择",
+      "chainStep": "对手已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-target-selected",
+      "behaviorStepId": "ultimate-prepare-target-selected",
+      "description": "目标玩家卡片选中后保留待确认态。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "在玩家选择面选中对手。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在玩家选择面选中对手。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼重排剩余三张-桌面.png",
+      "chainId": "全知之眼剩余卡牌重排",
+      "chainStep": "剩余卡牌候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-reorder",
+      "behaviorStepId": "ultimate-order-remaining-cards",
+      "description": "准备两张不同法术后，玩家选择顶五中剩余三张的顺序。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择法瑞拉之牙的目标并完成准备效果。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择法瑞拉之牙的目标并完成准备效果。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼重排首张已选-桌面.png",
+      "chainId": "全知之眼剩余卡牌重排",
+      "chainStep": "首张已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-reorder-card-selected",
+      "behaviorStepId": "ultimate-first-reorder-card-selected",
+      "description": "选中剩余卡牌后由现有确认按钮逐张提交排序。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择下一张牌库顶卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择下一张牌库顶卡。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼攻击后施法选择-桌面.png",
+      "chainId": "全知之眼攻击后选择法术",
+      "chainStep": "施放候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-post-damage-cast",
+      "behaviorStepId": "ultimate-post-damage-cast-choice",
+      "description": "终极攻击结算后显示至多两张不同法术的施放选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "完成顶五剩余卡牌排序。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "完成顶五剩余卡牌排序。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼准备区法术已选-桌面.png",
+      "chainId": "全知之眼攻击后选择法术",
+      "chainStep": "法术已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-prepared-spell-selected",
+      "behaviorStepId": "ultimate-prepared-spell-selected",
+      "description": "从公开准备区选中法瑞拉之牙并等待确认施放。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "在准备法术候选面选中法瑞拉之牙。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在准备法术候选面选中法瑞拉之牙。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    },
+    {
+      "path": "全知之眼下一次施放选择-桌面.png",
+      "chainId": "全知之眼攻击后选择法术",
+      "chainStep": "下一次施放候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-ultimate-second-cast-choice",
+      "behaviorStepId": "ultimate-second-cast-choice",
+      "description": "第一张法术施放后，剩余候选继续显示并允许跳过。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "确认施放法瑞拉之牙。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "确认施放法瑞拉之牙。",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "全知之眼法术和目标选择交互"
+      ],
+      "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1793608899966-80c5g9"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "message": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"mage-wars-board\"]') to be visible\u001b[22m\n",
+  "stack": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"mage-wars-board\"]') to be visible\u001b[22m\n\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\mage-wars-regrowth-belt-real-browser-repro.mjs:239:16)"
+}

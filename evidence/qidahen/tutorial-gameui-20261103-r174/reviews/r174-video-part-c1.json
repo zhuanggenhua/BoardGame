@@ -1,0 +1,155 @@
+{
+  "status": "PASS",
+  "score": 92,
+  "reviewer": "/root/r174_video_c1",
+  "issues": [],
+  "actualReadCount": 4,
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "9d457bff7e4957475b294fae8b6d702dabadc41c50b6d0614c373e7f4e1c86ae",
+      "status": "PASS",
+      "observation": "步兵阶段标题与辽北至叶赫部的进攻方向可读，骰子列头显示红色明标及大明攻方，绿色骰子直接在地图上投掷；地图北侧蒙古骑兵及黄色蒙标显露，大明参战兵牌可辨。邻近蓝色金标与背牌是地图背景，未据此误认守军。地图铺满顶部，手牌与牌堆保持可见，无可见报错。本张为投掷态，不据此判定最终损伤归属。",
+      "checks": [
+        {
+          "check": "target-visible",
+          "status": "PASS"
+        },
+        {
+          "check": "interaction-ui",
+          "status": "PASS"
+        },
+        {
+          "check": "layout-readable",
+          "status": "PASS"
+        },
+        {
+          "check": "no-error",
+          "status": "PASS"
+        }
+      ]
+    }
+  ],
+  "videoPart": {
+    "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+    "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+    "status": "PASS",
+    "readSheets": [
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\c-00.png",
+        "sha256": "73f5ee48ca9a307a6b2198805424f08ab959ac2836a4566eea634b07da428c23",
+        "frameIndices": [
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89
+        ],
+        "observation": "连续十二帧内绿色骰子在叶赫附近移动并改变朝向，地图与手牌保持可见，未出现遮罩或黑屏。"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\c-01.png",
+        "sha256": "e76e6e159bf9a24ba71fc37d7c4f90804050f7495db362cbe4f67ee4bb6053c1",
+        "frameIndices": [
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101
+        ],
+        "observation": "前半段骰子继续滚转，随后朝向与位置趋于稳定，骰子下方出现结果文字，画面无闪断；文字归属留待原始整屏核对。"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\c-02.png",
+        "sha256": "1d079aeff98aec9eb33e009653540626633e7f81e898d6ae368bc53abb897f52",
+        "frameIndices": [
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113
+        ],
+        "observation": "连续十二帧中骰子与下方结果稳定保持，能从前两张联系表看到滚动到停稳再显示结果的时序，未见闪断或错误遮罩。"
+      }
+    ],
+    "readFrameIndices": [
+      78,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113
+    ],
+    "observation": "仅亲读本批第七十八至第一百一十三帧。绿色骰子连续移动并改变朝向，随后停稳，结果文字出现并持续保持；没有突发遮罩、黑屏、顶部空白或可见错误。本批原始整屏核对步兵投掷态的大明攻方标记、蒙古骑兵及地图背景层级；最终结果的归属文字不以缩略联系表代替原始结果图验收，交由负责结果原图的批次核对。",
+    "checks": [
+      {
+        "check": "target-visible",
+        "status": "PASS"
+      },
+      {
+        "check": "interaction-ui",
+        "status": "PASS"
+      },
+      {
+        "check": "layout-readable",
+        "status": "PASS"
+      },
+      {
+        "check": "no-error",
+        "status": "PASS"
+      }
+    ]
+  },
+  "scope": "仅本批投掷态原始整屏与第七十八至第一百一十三帧连续时序；不声明整片或最终结果归属已完成验收。"
+}

@@ -1,0 +1,55 @@
+{
+  "status": "blocked-or-failed-before-reproduction",
+  "error": {
+    "name": "Error",
+    "message": "locator.evaluate: ReferenceError: label is not defined\n    at eval (eval at evaluate (:290:30), <anonymous>:26:7)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+    "stack": "locator.evaluate: ReferenceError: label is not defined\n    at eval (eval at evaluate (:290:30), <anonymous>:26:7)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at clickCenter (D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\repro-formal-open-room-click.mjs:97:31)\n    at async file:///D:/gongzuo/webgame/BoardGame/artifacts/mage-wars-formal-click-repro-20260913/repro-formal-open-room-click.mjs:416:3"
+  },
+  "currentHostUrl": "http://127.0.0.1:4274/?homeStyle=classic&game=mage-wars",
+  "currentGuestUrl": null,
+  "hostState": {
+    "href": "http://127.0.0.1:4274/?homeStyle=classic&game=mage-wars",
+    "phase": null,
+    "phaseActorId": null,
+    "currentPlayerId": null,
+    "turnNumber": null,
+    "planButton": null,
+    "turnEndButton": null,
+    "overlay": null,
+    "shelf": {
+      "planningEnabled": null,
+      "visibleCardCount": null
+    },
+    "cards": [],
+    "drafts": []
+  },
+  "guestState": null,
+  "diagnostics": {
+    "baseUrl": "http://127.0.0.1:4274",
+    "gameServerUrl": "http://127.0.0.1:18000",
+    "viewport": {
+      "width": 2560,
+      "height": 1304
+    },
+    "deviceScaleFactor": 1,
+    "targetCardIds": [
+      "2819",
+      "2906"
+    ],
+    "headless": true,
+    "hostErrors": [
+      "console:http://127.0.0.1:4274/admin-api/stats:0:Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    ],
+    "guestErrors": []
+  },
+  "timeline": [
+    {
+      "step": "open-home",
+      "at": "2026-09-12T16:25:44.885Z"
+    }
+  ],
+  "artifacts": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-25-44-211Z-4274\\01-formal-home-game-details.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-25-44-211Z-4274\\failure-host-current-screen.png"
+  ]
+}

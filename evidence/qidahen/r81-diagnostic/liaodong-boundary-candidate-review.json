@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "claimScope": "source-map-boundary-candidate-only",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r80_visual_review"
+  },
+  "source": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e"
+  },
+  "candidate": {
+    "path": "evidence/qidahen/r81-diagnostic/原图辽北辽东边界候选二.png",
+    "sha256": "f4b13075a729158d1b54bbd71414343354bd5a04ee317edc0a64542787e6e94a",
+    "verticesPath": "evidence/qidahen/r81-diagnostic/liaobei-liaodong-polygons-candidate.json",
+    "verticesSha256": "447fb44e4175e5a3a0242770658a451bd85ea23767e23bf8f2153cf82c63f952"
+  },
+  "inspection": "实际读取第一、第二候选1265×893完整图；对照正式完整原图，并放大同一原图区域核边。第二候选为当前裁决对象。",
+  "previousCandidateFinding": "第一候选东岸在y=440/450处分别内缩约15/19px；此为先前粗描坐标偏差，不能继承为已对齐。",
+  "observations": [
+    "第二候选已消除约20px东岸内缩。更新的(1001,410)、(991,420)、(976,430)、(966,440)、(962,450)、(956,460)、(948,470)、(934,480)、(928,490)、(925,500)跟随辽东侧可辨河岸。",
+    "辽北/辽东共同边界跟随真实棕色折线，旧水平内切地区内部的问题已消除。",
+    "辽东南界沿真实棕色分界继续到(924,511)附近接岸，旧南缘截短已消除。",
+    "辽北上方河岸、左右棕线与辽东西岸整体对应原图，第二候选未见新的明显跨区穿线。"
+  ],
+  "productionDecision": "可将第二候选作为辽北/辽东源图轮廓描线输入；本次不要求再改点。",
+  "precisionLimit": "结论是原图可识别视觉轮廓对齐；粗笔画/河岸和折线采样仍存在约2至3像素人工定位误差，不声称逐像素分割真相。",
+  "notClaimed": [
+    "应用运行时命中",
+    "城市子对象归属规则",
+    "教程最终UI PASS",
+    "全地图边界通过"
+  ],
+  "formalDataChangedByReviewer": false
+}

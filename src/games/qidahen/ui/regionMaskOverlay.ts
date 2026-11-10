@@ -1,4 +1,5 @@
 import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from './mapGraph';
+import printedMapOcclusions from '../data/printed-map-occlusions.json';
 
 type OverlayRgba = readonly [number, number, number, number];
 
@@ -58,14 +59,14 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         innerStrokeRadius: 1,
     },
     selected: {
-        fill: [182, 53, 39, 86],
-        stroke: [159, 52, 38, 244],
+        fill: [232, 172, 42, 92],
+        stroke: [255, 221, 112, 255],
         innerStrokeRadius: 1,
-        outerFill: [182, 53, 39, 44],
+        outerFill: [232, 172, 42, 44],
         outerFillRadius: 3,
-        outerStroke: [216, 118, 92, 228],
+        outerStroke: [255, 221, 112, 236],
         outerStrokeRadius: 4,
-        outerGlow: [159, 52, 38, 74],
+        outerGlow: [232, 172, 42, 74],
         outerGlowRadius: 7,
     },
     source: {
@@ -170,6 +171,14 @@ const readOwnershipRegionIdAt = (
     return regionIdByPixel[(y * width) + x] ?? null;
 };
 
+// 原底图的印刷轮盘覆盖在巴林地区之上；该圆盘不是地块边界。
+const isPrintedWheelCutout = (width: number, height: number, x: number, y: number) =>
+    width === 1265 && height === 893 && (x - 242.5) ** 2 + (y - 214.5) ** 2 <= 138 ** 2;
+
+const isPrintedMapOcclusion = (width: number, height: number, x: number, y: number) =>
+    width === printedMapOcclusions.width && height === printedMapOcclusions.height
+    && printedMapOcclusions.rectangles.some(rect => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+
 const touchesOtherRegionWithinRadius = (
     hitmap: Uint8ClampedArray,
     width: number,
@@ -219,12 +228,14 @@ const touchesOtherOwnershipRegionWithinRadius = (
     regionId: string,
     radius: number,
 ): boolean => {
+    const isOther = (nextX: number, nextY: number) => {
+        const other = readOwnershipRegionIdAt(regionIdByPixel, width, height, nextX, nextY);
+        return other !== regionId && !(regionId === 'city-region-8' && other === null
+            && (isPrintedWheelCutout(width, height, nextX, nextY) || isPrintedMapOcclusion(width, height, nextX, nextY)));
+    };
     if (radius <= 1) {
         return (
-            readOwnershipRegionIdAt(regionIdByPixel, width, height, x - 1, y) !== regionId
-            || readOwnershipRegionIdAt(regionIdByPixel, width, height, x + 1, y) !== regionId
-            || readOwnershipRegionIdAt(regionIdByPixel, width, height, x, y - 1) !== regionId
-            || readOwnershipRegionIdAt(regionIdByPixel, width, height, x, y + 1) !== regionId
+            isOther(x - 1, y) || isOther(x + 1, y) || isOther(x, y - 1) || isOther(x, y + 1)
         );
     }
 
@@ -241,7 +252,7 @@ const touchesOtherOwnershipRegionWithinRadius = (
             if (nextX < 0 || nextX >= width) {
                 return true;
             }
-            if (readOwnershipRegionIdAt(regionIdByPixel, width, height, nextX, nextY) !== regionId) {
+            if (isOther(nextX, nextY)) {
                 return true;
             }
         }
@@ -580,7 +591,29 @@ export const buildRegionOwnershipOverlayPixels = (
     }
 
     if (selectedBounds.right >= 0) {
+        // 轮盘圆周是印刷物遮挡，不能产生选中态光晕；实际命中仍使用正式蒙版。
+        const wheelCovered = toneByRegionId.get('city-region-8') === 'selected' && width === 1265 && height === 893;
+        if (wheelCovered) for (const rect of printedMapOcclusions.rectangles) {
+            for (let y = rect.top; y <= rect.bottom; y++) for (let x = rect.left; x <= rect.right; x++) {
+                const index = y * width + x;
+                if (regionIdByPixel[index] === null) selectedMask[index] = 1;
+            }
+        }
         applySelectedHalo(pixels, selectedMask, width, height, selectedBounds);
+        if (wheelCovered) for (const rect of printedMapOcclusions.rectangles) {
+            for (let y = rect.top; y <= rect.bottom; y++) for (let x = rect.left; x <= rect.right; x++) {
+                const index = y * width + x;
+                if (regionIdByPixel[index] === null) pixels.fill(0, index * 4, index * 4 + 4);
+            }
+        }
+        if (wheelCovered) for (let y = 69; y <= 360; y++) for (let x = 97; x <= 388; x++) {
+            const radius = Math.hypot(x - 242.5, y - 214.5);
+            if (radius > 145) continue;
+            const offset = (y * width + x) * 4;
+            const owner = regionIdByPixel[y * width + x];
+            if (radius > 138 && owner === 'city-region-8') pixels.set(REGION_MASK_OVERLAY_TONES.selected.fill, offset);
+            else if (!owner) pixels.fill(0, offset, offset + 4);
+        }
     }
 
     return pixels;

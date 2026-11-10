@@ -1,0 +1,116 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "golden",
+  "generatedAt": "2026-10-12T01:11:27.834Z",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261012-r7"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs isolated e2e/betrayal/event-choice-coverage.e2e.ts \"吊死鬼真实链路从探索翻牌到四项检定后选奖励关闭\"",
+      "result": "1 passed",
+      "scope": "真实浏览器完成未知房间选择、四项独立投掷、逐项承接、奖励选择、结算关闭和回牌桌。"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "真实玩家完成四项独立检定",
+      "status": "PASS",
+      "evidence": [
+        "吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+        "吊死鬼-完整链路-05-力量检定滚动中.jpg",
+        "吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+        "吊死鬼-完整链路-06-速度检定滚动中.jpg",
+        "吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+        "吊死鬼-完整链路-07-知识检定滚动中.jpg",
+        "吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+        "吊死鬼-完整链路-08-神志检定滚动中.jpg",
+        "吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg"
+      ]
+    },
+    {
+      "requirement": "滚动中不显示结果，停稳后结果可读",
+      "status": "PASS",
+      "evidence": [
+        "吊死鬼-完整链路-05-力量检定滚动中.jpg",
+        "吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+        "吊死鬼-完整链路-06-速度检定滚动中.jpg",
+        "吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+        "吊死鬼-完整链路-07-知识检定滚动中.jpg",
+        "吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+        "吊死鬼-完整链路-08-神志检定滚动中.jpg",
+        "吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg"
+      ]
+    },
+    {
+      "requirement": "每次检定按下一规则动作承接，最后进入奖励选择",
+      "status": "PASS",
+      "evidence": [
+        "吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+        "吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+        "吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+        "吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg",
+        "吊死鬼-完整链路-09-四项检定完成选择奖励.jpg"
+      ]
+    },
+    {
+      "requirement": "奖励结算后关闭临时层并回到牌桌",
+      "status": "PASS",
+      "evidence": [
+        "吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+        "吊死鬼-完整链路-11-确认后回牌桌.jpg"
+      ]
+    }
+  ],
+  "media": [
+    "吊死鬼-完整链路-01-探索前.jpg",
+    "吊死鬼-完整链路-02-选择未知房间.jpg",
+    "吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+    "吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+    "吊死鬼-完整链路-05-力量检定滚动中.jpg",
+    "吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+    "吊死鬼-完整链路-06-速度检定滚动中.jpg",
+    "吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+    "吊死鬼-完整链路-07-知识检定滚动中.jpg",
+    "吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+    "吊死鬼-完整链路-08-神志检定滚动中.jpg",
+    "吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg",
+    "吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+    "吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+    "吊死鬼-完整链路-11-确认后回牌桌.jpg"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "inspect_betrayal_screenshots"
+    },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "规则与数值真相",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/betrayal-event-card-resolution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"吊死鬼\"",
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"吊死鬼待选事件能在真实页面选择奖励属性\""
+    ],
+    "evidence": [
+      "吊死鬼领域测试已通过。",
+      "吊死鬼 Board 页面测试已通过。"
+    ]
+  }
+}

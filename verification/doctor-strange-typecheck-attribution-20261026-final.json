@@ -1,0 +1,40 @@
+{
+  "capturedAt": "2026-10-26T13:35:00.713Z",
+  "check": "typecheck",
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "--max-old-space-size=6144",
+    "node_modules/typescript/bin/tsc",
+    "--build",
+    "--pretty",
+    "false"
+  ],
+  "startedSourceRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "finishedSourceRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "sourceUnchanged": true,
+  "exitCode": 1,
+  "finishedAt": "2026-10-26T13:32:23.898Z",
+  "counts": {
+    "raw": 4859,
+    "unique": 2695,
+    "files": 325,
+    "diceThrone": 331,
+    "diceThroneFiles": 62,
+    "doctorStrangeNamed": []
+  },
+  "interpretationLimit": "只按诊断源路径分类；命名路径0不证明共享类型全部正确，结合目标lint/构建/规则和E2E验收。 改动行相交只证明诊断坐标在改动区，不证明因果；未相交不排除共享类型的间接影响。",
+  "changedHunkCoordinateIntersections": [
+    {
+      "file": "src/games/dicethrone/heroes/tianshi/abilities.ts",
+      "line": 146,
+      "column": 294,
+      "code": "TS2345"
+    },
+    {
+      "file": "src/games/dicethrone/heroes/tianshi/abilities.ts",
+      "line": 266,
+      "column": 285,
+      "code": "TS2345"
+    }
+  ]
+}

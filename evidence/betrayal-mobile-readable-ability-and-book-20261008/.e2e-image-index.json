@@ -1,0 +1,59 @@
+{
+  "title": "山屋惊魂能力查看与剧本书对照验收",
+  "media": [
+    {
+      "path": "01-PC-1920x1080-能力与物品栏.jpg",
+      "chainId": "ability-readability",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-mobile-readable-ability-and-book-20261008",
+      "stage": "前态",
+      "description": "桌面牌桌显示角色完整能力说明与急救包，作为手机对照起点。"
+    },
+    {
+      "path": "02-Vivo-796x360-DPR3-能力与物品栏.jpg",
+      "chainId": "ability-readability",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-mobile-readable-ability-and-book-20261008",
+      "stage": "中态",
+      "description": "从桌面切到手机后，能力说明收成放大入口，急救包仍完整露出。"
+    },
+    {
+      "path": "03-Vivo-796x360-DPR3-点击后的能力详情.jpg",
+      "chainId": "ability-readability",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-mobile-readable-ability-and-book-20261008",
+      "stage": "后态",
+      "description": "点击手机放大入口后，完整能力正文清晰展开，关闭键仍可见。"
+    },
+    {
+      "path": "04-PC-1920x1080-剧本书正文无额外标题.jpg",
+      "chainId": "scenario-book-reading",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-mobile-readable-ability-and-book-20261008",
+      "stage": "前态",
+      "description": "从能力状态转到剧本选择并打开读本，桌面书页只显示原有章节内容。"
+    },
+    {
+      "path": "05-Vivo-796x360-DPR3-剧本书正文无额外标题.jpg",
+      "chainId": "scenario-book-reading",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-mobile-readable-ability-and-book-20261008",
+      "stage": "中态",
+      "description": "从桌面切到手机读本后，两页原文仍清晰，未出现额外剧本名标题。"
+    },
+    {
+      "path": "06-Vivo-796x360-DPR3-关闭剧本书返回选择页.jpg",
+      "chainId": "scenario-book-reading",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-mobile-readable-ability-and-book-20261008",
+      "stage": "后态",
+      "description": "点击手机读本关闭键后返回剧本选择页，剧本名仍属于候选卡。"
+    }
+  ]
+}

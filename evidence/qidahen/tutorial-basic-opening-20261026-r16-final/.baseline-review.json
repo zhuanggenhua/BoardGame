@@ -1,0 +1,168 @@
+{
+  "status": "PASS",
+  "comparison": "r6 → r16",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/review_desktop_r12"
+  },
+  "requirements": [
+    {
+      "requirement": "入口与胜利条件",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/00a-继续后-选择首个行动.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/00a-继续后-选择首个行动.png"
+      ],
+      "baselineSource": "R6: src/games/qidahen/tutorial.ts@HEAD:c057cfe76 (pre-R16 committed definition reference); evidence/qidahen/tutorial-basic-opening-20261025-r6/state-map.json; evidence/qidahen/tutorial-basic-opening-20261025-r6/.e2e-image-index.json; evidence/qidahen/behavior-traces/20261025-qidahen-refactor-r6/basic-opening-entry.json; R16: src/games/qidahen/tutorial.ts (R16 working tree); public/locales/zh-CN/game-qidahen.json (R16 working tree); evidence/qidahen/tutorial-basic-opening-20261026-r16-final/.e2e-image-index.json; evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-entry.json",
+      "preservedInformation": "保留胜利目标说明及从入口继续到首个行动选择的上下文。R6 与 R16 的索引均把胜利条件入口和继续后的行动选择纳入同一责任。",
+      "preservedActions": "阅读入口提示并继续，抵达首个行动选择状态。",
+      "changes": "职责和媒体状态数不变（2→2）；只更换为 R16 run 的媒体引用。",
+      "duplicateDecision": "00 与 00a 是连续的两个 UI 状态，不合并。移动端同主题截图属于另一 viewport 和另一要求，保留为移动路径证据。",
+      "changeAuthority": "用户明确要求重构完整交互教程；本项只保持原有入门目标，不扩成规则章节。媒体重采集不构成教学职责扩张。",
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-baseline-source.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "轮盘先行顺序分支",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02b-先轮盘后手牌-轮盘结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02d-轮盘后选择手牌行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02e-两种行动完成-征召结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/02c-先轮盘后手牌-行动顺序选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/02d-轮盘后选择手牌行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/02e-两种行动完成-征召结果.png"
+      ],
+      "baselineSource": "R6: src/games/qidahen/tutorial.ts@HEAD:c057cfe76 (pre-R16 committed definition reference); evidence/qidahen/tutorial-basic-opening-20261025-r6/state-map.json; evidence/qidahen/tutorial-basic-opening-20261025-r6/.e2e-image-index.json; evidence/qidahen/behavior-traces/20261025-qidahen-refactor-r6/basic-opening-wheel-first.json; R16: src/games/qidahen/tutorial.ts (R16 working tree); public/locales/zh-CN/game-qidahen.json (R16 working tree); evidence/qidahen/tutorial-basic-opening-20261026-r16-final/.e2e-image-index.json; evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-wheel-first.json",
+      "preservedInformation": "保留先执行轮盘、轮盘行动完成后仍可执行手牌行动、两项行动完成后的连续流程。",
+      "preservedActions": "在本回合先选轮盘；完成一次轮盘走法及落点行动；再选择并完成手牌行动。",
+      "changes": "R16 增加明确的行动顺序选择状态 02c（3→4）；旧 R6 从轮盘结算结果开始记录，未单独索引先选择顺序的状态。",
+      "duplicateDecision": "02c 的 uiStateId 为 basic-opening-wheel-first-ui-01；与征召/轮盘主路径的首个行动选择属于不同 chainId，不合并。结算、返回手牌和完成两项行动分别是后续状态。",
+      "changeAuthority": "用户明确要求玩家可自行决定手牌与轮盘顺序，轮盘 1/2/3 格是互斥选择；本次新增画面只补足先轮盘分支入口，不新增教学主题。",
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-baseline-source.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "移动端长按检视手牌",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-01-首个行动选择-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-03-征召支付-长按手牌打开检视.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/移动-01-首个行动选择-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "baselineSource": "R6: src/games/qidahen/tutorial.ts@HEAD:c057cfe76 (pre-R16 committed definition reference); evidence/qidahen/tutorial-basic-opening-20261025-r6/state-map.json; evidence/qidahen/tutorial-basic-opening-20261025-r6/.e2e-image-index.json; evidence/qidahen/behavior-traces/20261025-qidahen-refactor-r6/basic-opening-mobile-hand-inspect.json; R16: src/games/qidahen/tutorial.ts (R16 working tree); public/locales/zh-CN/game-qidahen.json (R16 working tree); evidence/qidahen/tutorial-basic-opening-20261026-r16-final/.e2e-image-index.json; evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-mobile-hand-inspect.json",
+      "preservedInformation": "保留移动端在征召支付情境中通过长按查看手牌的引导；未将桌面“看”操作当作移动端等价证据。",
+      "preservedActions": "进入征召支付、长按手牌打开检视，再回到支付流程完成选牌确认。",
+      "changes": "R16 增加选牌后确认征召支付状态“移动-05-选牌后确认征召支付”（4→5），把长按检视后的返回和确认动作纳入媒体链。",
+      "duplicateDecision": "开场和首个行动选择截图也属于移动端 viewport，虽与桌面教学目的相同仍保留；支付前、长按检视、选牌后确认是不同 interaction-mode 状态，不合并。",
+      "changeAuthority": "用户要求关键操作必须实际完成并看见结果；新增状态限于长按检视后的支付闭环，不扩增规则职责。",
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-baseline-source.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "手牌征召与轮盘两格行动",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02a-轮盘三格费用与落点说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/11-教程结束后同局下一位玩家可操作.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/09b-选择炮兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/09a-选择川兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/02a-轮盘三格费用与落点说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/11-教程结束后同局下一位玩家可操作.png"
+      ],
+      "baselineSource": "R6: src/games/qidahen/tutorial.ts@HEAD:c057cfe76 (pre-R16 committed definition reference); evidence/qidahen/tutorial-basic-opening-20261025-r6/state-map.json; evidence/qidahen/tutorial-basic-opening-20261025-r6/.e2e-image-index.json; evidence/qidahen/behavior-traces/20261025-qidahen-refactor-r6/basic-opening-recruit-wheel.json; R16: src/games/qidahen/tutorial.ts (R16 working tree); public/locales/zh-CN/game-qidahen.json (R16 working tree); evidence/qidahen/tutorial-basic-opening-20261026-r16-final/.e2e-image-index.json; evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-recruit-wheel.json",
+      "preservedInformation": "保留征召支付、建军区域与候选方式，以及轮盘走两格时选择一名对手抽牌并进入真实落点行动的流程。",
+      "preservedActions": "从首个行动选择进入征召；检视/选择并确认弃牌；选择建军区域和候选方式；查看结果；进行两格轮盘移动、选择对手、结算落点并继续对局。",
+      "changes": "媒体状态 10→14。R16 新增一般首个行动选择、确认弃牌，以及川兵和炮兵两种合法候选的独立结果状态；保留原有征召与两格落点链。",
+      "duplicateDecision": "两种候选结果分别保留，不能用候选列表或单一结果替代。02 首个行动选择与 02c 先轮盘分支虽然主题相邻，但索引 chainId/uiStateId 不同；保留各自在对应流程中的状态。桌面牌面检视与移动端长按检视按 viewport 分开。",
+      "changeAuthority": "用户提交的教程要求明确写明合法分支需要可操作、不同选择有对应结果；也明确要求真实手牌行动和轮盘 1/2/3 格互斥选择。R16 新增媒体用于补齐这些已授权职责。",
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-baseline-source.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "requirement": "一格开垦分支",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-一格开垦前-选择轮盘走法.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03c-一格开垦前-选择轮盘走法.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "baselineSource": "R6: src/games/qidahen/tutorial.ts@HEAD:c057cfe76 (pre-R16 committed definition reference); evidence/qidahen/tutorial-basic-opening-20261025-r6/state-map.json; evidence/qidahen/tutorial-basic-opening-20261025-r6/.e2e-image-index.json; evidence/qidahen/behavior-traces/20261025-qidahen-refactor-r6/basic-opening-one-grid.json; R16: src/games/qidahen/tutorial.ts (R16 working tree); public/locales/zh-CN/game-qidahen.json (R16 working tree); evidence/qidahen/tutorial-basic-opening-20261026-r16-final/.e2e-image-index.json; evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-one-grid.json",
+      "preservedInformation": "保留选择一格后进入开垦、展示当前行动结果，以及离开教程后仍可继续同一对局的信息。",
+      "preservedActions": "选择一格走法；在实际开垦落点完成行动；查看结果并继续轮盘操作。",
+      "changes": "职责和媒体状态数不变（3→3）；R16 继续记录走法选择、开垦结算和教程退场后的下一轮盘操作。",
+      "duplicateDecision": "选择态、落点结算态、教程退场后的继续态为连续但不同状态，不合并；与三格分支的“03c”文件名前缀相似，不表示相同场景。",
+      "changeAuthority": "用户要求轮盘走法是互斥选择且教学后能继续正常对局；本项维持既有一格分支，不增加其它规则讲解。",
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-baseline-source.json",
+      "sourceReviewEntry": "/requirements/4"
+    },
+    {
+      "requirement": "三格征兵训练分支",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03l-教程退场后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r16-final/media/03l-教程退场后同局继续.png"
+      ],
+      "baselineSource": "R6: src/games/qidahen/tutorial.ts@HEAD:c057cfe76 (pre-R16 committed definition reference); evidence/qidahen/tutorial-basic-opening-20261025-r6/state-map.json; evidence/qidahen/tutorial-basic-opening-20261025-r6/.e2e-image-index.json; evidence/qidahen/behavior-traces/20261025-qidahen-refactor-r6/basic-opening-three-grid.json; R16: src/games/qidahen/tutorial.ts (R16 working tree); public/locales/zh-CN/game-qidahen.json (R16 working tree); evidence/qidahen/tutorial-basic-opening-20261026-r16-final/.e2e-image-index.json; evidence/qidahen/behavior-traces/codex-tutorial-20261026-r16-final/basic-opening-three-grid.json",
+      "preservedInformation": "保留三格走法实际进入征兵训练后的支付、征兵/训练选择、目标选择、额外操作和结果/结束信息。",
+      "preservedActions": "选择三格走法；进入征兵训练；弃牌支付；实际选择征兵或训练及目标；按当前选择继续或完成行动。",
+      "changes": "职责和媒体状态数不变（9→9）；R16 保留完整条件分支链，未把三格作为强制连续体验步骤。",
+      "duplicateDecision": "三格进入弃牌窗口与后续规则选择/目标/结果/结束分别对应不同 interaction 状态；不合并为一张“已完成”媒体。与一格开垦链按不同落点拆开。",
+      "changeAuthority": "用户明确说明 1/2/3 格是玩家互斥选择；仅当真实落点为征兵训练时讲授该行动。因此该链按条件分支保留，不能强迫每名玩家经过。",
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-baseline-source.json",
+      "sourceReviewEntry": "/requirements/5"
+    }
+  ]
+}

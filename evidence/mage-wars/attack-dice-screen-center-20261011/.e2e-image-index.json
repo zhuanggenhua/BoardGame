@@ -1,0 +1,54 @@
+{
+  "title": "法师战争攻击骰：玩家整屏居中且不改镜头",
+  "media": [
+    {
+      "path": "01-投骰前玩家当前镜头.png",
+      "chainId": "mage-wars-attack-dice-screen-center-20261011",
+      "chainStep": "1",
+      "sourceRun": "1791713197393-14132-a7afea39-dc0c-44fb-9ad6-c5f29154906c",
+      "sourceDir": "evidence/mage-wars/attack-dice-screen-center-20261011",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家已把镜头停在战斗角落，尚未投骰",
+      "description": "投骰前玩家镜头停在右侧石板，山猫与牧师留在左下格，整窗中央没有骰子"
+    },
+    {
+      "path": "02-攻击骰在玩家屏幕中央.jpg",
+      "chainId": "mage-wars-attack-dice-screen-center-20261011",
+      "chainStep": "2",
+      "sourceRun": "1791713197393-14132-a7afea39-dc0c-44fb-9ad6-c5f29154906c",
+      "sourceDir": "evidence/mage-wars/attack-dice-screen-center-20261011",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "近战攻击打出后独立结算层在玩家整屏正中播放",
+      "description": "两颗红色攻击骰和伤害结果停在玩家整屏正中，战斗双方仍在石板左下，镜头没有被拉回中心"
+    },
+    {
+      "path": "03-投骰后底图镜头仍在原位.jpg",
+      "chainId": "mage-wars-attack-dice-screen-center-20261011",
+      "chainStep": "3",
+      "sourceRun": "1791713197393-14132-a7afea39-dc0c-44fb-9ad6-c5f29154906c",
+      "sourceDir": "evidence/mage-wars/attack-dice-screen-center-20261011",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "结算层退场后底图与镜头保持投骰前位置",
+      "description": "骰子层已经退场，石板镜头和战斗位置与投骰前相同，底部牌列仍在"
+    },
+    {
+      "path": "00-近战攻击实际动效.gif",
+      "chainId": "mage-wars-attack-dice-screen-center-20261011",
+      "chainStep": "4",
+      "sourceRun": "1791713197393-14132-a7afea39-dc0c-44fb-9ad6-c5f29154906c",
+      "sourceDir": "evidence/mage-wars/attack-dice-screen-center-20261011",
+      "stage": "中态",
+      "role": "auxiliary-detail",
+      "viewport": "desktop",
+      "transition": "同一镜头下连续播放投骰到收口",
+      "description": "近战攻击从投骰到收口连续播放，骰子在整屏正中出现又消失，底图没有被镜头带走"
+    }
+  ],
+  "version": 2
+}

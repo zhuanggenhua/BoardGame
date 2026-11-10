@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import './classic-feedback.css';
 import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ import {
 import {
     getCurrentGameFeedbackContext,
     getCurrentGameFeedbackDiagnosticContext,
+    getCurrentGameFeedbackReplayTriggerReference,
 } from '../../lib/feedback/gameFeedbackContext';
 import { prepareFeedbackReplayCapture, requestFeedbackReplayCapture } from '../../lib/feedback/feedbackReplayBridge';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
@@ -541,9 +543,17 @@ export const FeedbackModal = ({
                 gameId: (runtimeContext?.gameId ?? gameName) || undefined,
             });
 
-            const shouldCaptureReplay = attachState && clientContext.mode === 'online' && clientContext.matchId && clientContext.playerId;
-            const captureId = shouldCaptureReplay
-                ? await prepareFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!)
+            // 冻结首次触发现场，再等待在线权威快照；异步期间对局可能已经推进。
+            const diagnosticContext = attachState
+                ? getCurrentGameFeedbackDiagnosticContext()
+                : undefined;
+            const diagnosticState = diagnosticContext?.state ?? currentGameFeedbackContext?.state;
+            const shouldCaptureReplay = attachState
+                && clientContext.mode === 'online'
+                && Boolean(clientContext.matchId && clientContext.playerId);
+            const replayTrigger = shouldCaptureReplay ? getCurrentGameFeedbackReplayTriggerReference() : undefined;
+            const replayCapture = shouldCaptureReplay
+                ? await prepareFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!, replayTrigger)
                 : undefined;
 
             const errorContext = lastErrorContext
@@ -556,16 +566,17 @@ export const FeedbackModal = ({
                     componentStack: lastErrorContext.componentStack,
                 }
                 : undefined;
-            const diagnosticContext = attachState
-                ? getCurrentGameFeedbackDiagnosticContext()
-                : undefined;
-            const diagnosticPacket = attachState && currentGameFeedbackContext?.state
+            const diagnosticPacket = attachState && diagnosticState
                 ? serializeFeedbackDiagnosticPacket(buildFeedbackDiagnosticPacket({
                     ...diagnosticContext,
-                    state: diagnosticContext?.state ?? currentGameFeedbackContext.state,
+                    state: diagnosticState,
                     clientContext,
                     source: 'user',
-                    collectionErrors: shouldCaptureReplay && !captureId ? ['private_replay_prepare_failed'] : undefined,
+                    privateReplayRequired: shouldCaptureReplay,
+                    privateReplayTriggerCaptured: replayCapture?.triggerCaptured === true,
+                    collectionErrors: shouldCaptureReplay
+                        ? [replayCapture ? 'private_replay_pending_attachment' : 'private_replay_prepare_failed']
+                        : undefined,
                 }))
                 : undefined;
 
@@ -630,7 +641,7 @@ export const FeedbackModal = ({
             const payload = await res.json().catch(() => null) as { _id?: string; rewardPoints?: number } | null;
             let replayCaptureFailed = false;
             if (shouldCaptureReplay) {
-                replayCaptureFailed = !captureId || !payload?._id || !await requestFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!, payload._id, captureId);
+                replayCaptureFailed = !replayCapture || !payload?._id || !await requestFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!, payload._id, replayCapture.captureId);
             }
             const rewardPoints = typeof payload?.rewardPoints === 'number' ? payload.rewardPoints : 0;
             draftPersistenceDisabledRef.current = true;

@@ -1,0 +1,54 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-09T18:50:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "楼层切换放到右下角，外观保持原来的小箭头切层。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/roomFloorSwitcherSurface.tsx 仍是上箭头、当前层、下箭头，位置改为地图右下角。",
+        "e2e/betrayal/floor-switcher-visual.e2e.ts 2 passed：切层钮贴在地图右下，未改成三层文字开关。",
+        "01、02、03、04、05 原图右下可见「一层」加上下箭头，未挡住急救包和行动栏。",
+        "05 切到一层后切层钮仍在右下角，未挡住继续按钮。"
+      ]
+    },
+    {
+      "requirement": "属性条金色当前格与竖线对齐：格间空隙就是竖线，不再叠左边框或浮层分隔线。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/traitTrackSurface.tsx 使用 equal-cell-gaps：外框加格间空隙作竖线，当前格金色铺满，初始格深绿，金优先。",
+        "e2e/betrayal/trait-track-ui.e2e.ts 1 passed：格间空隙不超过一像素，当前格右边与下一格左边贴齐。",
+        "01 开局图四条属性当前格金色填满格子，竖线就是格间空隙。",
+        "03 速度初始格深绿、当前格金色相邻共边，两种填充不落在同一格。"
+      ]
+    },
+    {
+      "requirement": "利用空位加大持有区域，空预兆行收起。",
+      "status": "PASS",
+      "evidence": [
+        "inventoryCardSurface.tsx 紧凑卡宽加大到八十四，标题字号加大；inventoryRailSurface.tsx 空行高度收成零。",
+        "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts 2 passed：维沃急救包可读，与能力说明重叠面积为零。",
+        "01 左下急救包加大，空预兆行收起。",
+        "03 物品与预兆都空时持有区只留「当前持有区」标题。",
+        "04 高密度物品五张加大卡加第六张边，预兆书本和狗不占空行。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-od-floor-right-inventory-20261009/01-PC-1920x1080-属性条与HUD.jpg",
+    "evidence/betrayal-od-floor-right-inventory-20261009/02-Vivo-796x360-属性条与HUD等比.jpg",
+    "evidence/betrayal-od-floor-right-inventory-20261009/03-PC-1920x1080-当前值与初始值分离.jpg",
+    "evidence/betrayal-od-floor-right-inventory-20261009/04-PC-1920x1080-高密度持有区.jpg",
+    "evidence/betrayal-od-floor-right-inventory-20261009/05-PC-1920x1080-一层切换后.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

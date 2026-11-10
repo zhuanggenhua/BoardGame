@@ -1,0 +1,86 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "tictactoe",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-20T02:02:14.418Z",
+  "targetObject": "井字棋共享横屏等比缩放画布、棋盘、双方 HUD 与悬浮菜单",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "井字棋通过游戏清单接入共享 board-shell 横屏方案，使用 1920×1080 PC 参考画布与 contain 等比缩放。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/tictactoe/manifest.ts 配置 landscape-adapted、landscape、board-shell 与 1920×1080 参考画布。",
+        "Android orientation map 已由 manifest 生成器同步为 landscape。"
+      ]
+    },
+    {
+      "requirement": "936×432 横屏视口保持 PC 主画布同一比例与锚点位置，棋盘、标题、HUD 均符合 0.4 倍缩放，且无横向溢出。",
+      "status": "PASS",
+      "evidence": [
+        "端到端几何断言记录 contain 缩放为 0.4、横向偏移 84、画布 768×432，并逐项比较标题、棋盘、格子和双方 HUD。",
+        "手机视口整屏截图显示完整棋局和两侧黑色承托区域。"
+      ]
+    },
+    {
+      "requirement": "手机视口经真实点击完成一次落子，且玩家可展开悬浮菜单，菜单按钮完整处于画布范围。",
+      "status": "PASS",
+      "evidence": [
+        "端到端测试通过真实点击中心格并断言标记可见；随后真实点击悬浮菜单并断言所有按钮未超出画布。",
+        "真实落子后与菜单展开后的整屏截图可直接看到结果。"
+      ]
+    },
+    {
+      "requirement": "1920×1080 PC 画面作为基准完整保留，并与手机横屏状态组成同一端到端对照组。",
+      "status": "PASS",
+      "evidence": [
+        "同一端到端页面先以 1920×1080 记录 PC 基准，再切换到 936×432 手机横屏视口。",
+        "PC 初始棋局整屏截图与三张手机横屏状态图均通过逐图视觉审计。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/tictactoe-board-shell-pilot-20261020/01-井字棋-PC-1920x1080-初始棋局.jpg",
+    "evidence/tictactoe-board-shell-pilot-20261020/02-井字棋-手机横屏936x432-初始棋局.jpg",
+    "evidence/tictactoe-board-shell-pilot-20261020/03-井字棋-手机横屏936x432-真实落子后.jpg",
+    "evidence/tictactoe-board-shell-pilot-20261020/04-井字棋-手机横屏936x432-FAB展开菜单.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewFile": "visual-review.json",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/tictactoe_shell_visual_audit_luna"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/tictactoe --configLoader native",
+      "node scripts/infra/vitest-cli-safe.mjs run src/hooks/ui/__tests__/useRuntimeViewport.test.ts --configLoader native"
+    ],
+    "evidence": [
+      "井字棋 3 个测试文件、19 项通过。",
+      "共享视口 1 个测试文件、13 项通过。"
+    ]
+  },
+  "e2eVerification": {
+    "command": "npm run test:e2e:file -- e2e/tictactoe/tictactoe-mobile-layout.e2e.ts",
+    "result": "1 passed",
+    "sourceRun": "2026-10-20 09:57 本地隔离浏览器运行；PC 1920×1080 切换到手机横屏 936×432，并执行真实落子和悬浮菜单点击。"
+  },
+  "limitations": [
+    "本轮验证覆盖电脑网页与手机浏览器横屏视口；未覆盖安卓真机。当前 ADB 唯一目标返回 Linux DEMO，且没有 Android getprop 与 pm 命令。",
+    "本轮是井字棋共享适配方案试点，不据此推断全部游戏均已回归通过。"
+  ]
+}

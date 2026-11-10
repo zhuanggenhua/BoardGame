@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "公开准备区三张法术-桌面.png",
+      "chainId": "公开准备区浏览",
+      "chainStep": "准备区入口",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-public-prepared-browse",
+      "behaviorStepId": "public-prepared-browse",
+      "description": "公开准备区显示三张法术的数量及横向浏览入口。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "合法代表态进入主要阶段。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "合法代表态进入主要阶段。",
+      "sourceRevision": "f96e325104554a5f948779787c490f9f238333b47455da89016b0fe9d33a084d",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "四人全候选、手牌准备与公开准备区浏览"
+      ],
+      "sourceRun": "1793605326050-285652-f2aef535-325f-410c-aacd-709a79108915",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793605092812-5jro9s"
+    },
+    {
+      "path": "公开准备区原卡阅读-桌面.png",
+      "chainId": "公开准备区浏览",
+      "chainStep": "桌面",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-public-prepared-reader-1440",
+      "behaviorStepId": "public-prepared-reader-1440",
+      "description": "桌面实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "桌面在公开准备区实际横滚后点击法术本体。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "桌面在公开准备区实际横滚后点击法术本体。",
+      "sourceRevision": "f96e325104554a5f948779787c490f9f238333b47455da89016b0fe9d33a084d",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "四人全候选、手牌准备与公开准备区浏览"
+      ],
+      "sourceRun": "1793605326050-285652-f2aef535-325f-410c-aacd-709a79108915",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793605092812-5jro9s"
+    },
+    {
+      "path": "公开准备区横向找到第三张-横屏.png",
+      "chainId": "公开准备区浏览",
+      "chainStep": "横屏实际入口",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-public-prepared-browse-mobile",
+      "behaviorStepId": "public-prepared-browse-mobile",
+      "description": "横屏原牌桌准备区显示三张数量，并通过实际横滚找回第三张法术。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "先关闭桌面阅读，再切换横屏并在公开准备区实际横向浏览。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "先关闭桌面阅读，再切换横屏并在公开准备区实际横向浏览。",
+      "sourceRevision": "f96e325104554a5f948779787c490f9f238333b47455da89016b0fe9d33a084d",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "四人全候选、手牌准备与公开准备区浏览"
+      ],
+      "sourceRun": "1793605326050-285652-f2aef535-325f-410c-aacd-709a79108915",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793605092812-5jro9s"
+    },
+    {
+      "path": "公开准备区原卡阅读-横屏.png",
+      "chainId": "公开准备区浏览",
+      "chainStep": "横屏",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-public-prepared-reader-812",
+      "behaviorStepId": "public-prepared-reader-812",
+      "description": "横屏实际横向找到第三张公开法术后，点击原卡牌入口阅读完整牌面。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "横屏在公开准备区实际横滚后点击法术本体。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "横屏在公开准备区实际横滚后点击法术本体。",
+      "sourceRevision": "f96e325104554a5f948779787c490f9f238333b47455da89016b0fe9d33a084d",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "四人全候选、手牌准备与公开准备区浏览"
+      ],
+      "sourceRun": "1793605326050-285652-f2aef535-325f-410c-aacd-709a79108915",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793605092812-5jro9s"
+    },
+    {
+      "path": "所有玩家目标候选-桌面.png",
+      "chainId": "授予即视感玩家选择",
+      "chainStep": "全体候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-all-player-candidates",
+      "behaviorStepId": "all-player-candidates",
+      "description": "授予即视感可以选择本人、队友或对手，四个玩家候选同屏显示。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从真实手牌打出时间回溯。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从真实手牌打出时间回溯。",
+      "sourceRevision": "f96e325104554a5f948779787c490f9f238333b47455da89016b0fe9d33a084d",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "四人全候选、手牌准备与公开准备区浏览"
+      ],
+      "sourceRun": "1793605326050-285652-f2aef535-325f-410c-aacd-709a79108915",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793605092812-5jro9s"
+    },
+    {
+      "path": "所有玩家队友已选-桌面.png",
+      "chainId": "授予即视感玩家选择",
+      "chainStep": "队友已选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-all-player-selected",
+      "behaviorStepId": "all-player-selected",
+      "description": "队友候选显示选中反馈，其它玩家仍可比较，等待原确认按钮提交。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击队友候选。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击队友候选。",
+      "sourceRevision": "f96e325104554a5f948779787c490f9f238333b47455da89016b0fe9d33a084d",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "四人全候选、手牌准备与公开准备区浏览"
+      ],
+      "sourceRun": "1793605326050-285652-f2aef535-325f-410c-aacd-709a79108915",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/代表态真实手牌入口覆盖四人玩家选择与公开准备区检视/_runs/e2e-1793605092812-5jro9s"
+    }
+  ]
+}

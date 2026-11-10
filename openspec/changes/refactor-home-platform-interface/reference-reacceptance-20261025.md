@@ -61,3 +61,30 @@ Discord官方[自定义资料](https://support.discord.com/hc/en-us/articles/440
 | 支持作者、教程和配置 | 已查Lichess公开支持与学习页面，页面文字和入口本身不足以证明具体双端状态 | 双端支持作者展开，手机教程步骤与配置状态 |
 
 上述未覆盖格子继续保持未证明。第三方旧图仅作为候选，未将搜索摘要或图库入口写为已看过实际画面。
+
+## 2026-11-08手机附图与退回状态补证
+
+Luna max查找后，主代理逐张打开原始图片核对，三张均保存于 `.tmp/home-reference-closeout-20261108/`。首次传回的两个无 `original` 后缀临时副本全透明，已排除；以下哈希对应重新核实的可见原图。
+
+| 对象与来源 | 原图直接证明 | 对当前实现的比较与剩余边界 |
+| --- | --- | --- |
+| [Sonar 手机反馈附图](https://docs.sonar.expert/field-tech-app/the-sonar-field-tech-app)，[原图](https://files.helpdocs.io/y0fqv9nyr6/articles/qsvfqgnuaf/1748287615092/field-tech-app-bug-attach-screenshots.png)，`sonar-attachments.png`，SHA-256 `212e0dc8eb08d4bba7a0053b2fbede57e48415c3ad140324ab139c241f66d81f` | 已有图片缩略图、可见删除按钮和继续添加入口 | 本项目只有单图粘贴，不因此增加多图功能；当前手机删除按钮的可发现性须按真实粘贴路径单独测试。原图没有展示系统选图器或大图预览 |
+| [Domyland 手机退回及修改](https://help.domyland.ru/adverts)，[退回图](https://static.tildacdn.com/tild6233-3762-4235-b564-333332306237/image.png)，`domyland-rejected.png`，SHA-256 `af559c7d08492f7f6a6cbfabf3c3d7904a8644dfc7f64f55d8aee2dbf786fe2a` | 拒绝状态、审核意见和修改入口 | 可对比本项目退回意见及修订入口；不证明同一对象完成重送 |
+| 同上，[编辑保存图](https://static.tildacdn.com/tild6433-3136-4636-a331-376135363038/image.png)，`domyland-edit.png`，SHA-256 `2c023ef85209b66de5adcd37babb0e5c9b27dE3a8df2a2f002e17e939f4d8e8` | 已发布对象进入编辑，保存后进入审核状态 | 该图与退回图不是同对象连续流程，不能证明退回后重提进入待审；项目自身完整链由真实浏览器行为另验 |
+
+其余设备与状态缺口继续逐格记录，不把一个产品或相邻状态扩展为全部功能的设计依据。
+
+## 2026-11-08 手机筛选、房间和教程补证
+
+Luna max 检索后，主代理逐张查看以下四份原图，留存于 `.tmp/home-reference-closeout-20261108/`。这些是设计参考，并不证明本项目行为：
+
+| 对象与来源 | 画面直接证明 | 与本项目比较及边界 |
+| --- | --- | --- |
+| [Board Game Stats 官方筛选说明](https://www.bgstatsapp.com/explanations/custom-filter/)，[手机筛选原图](https://www.bgstatsapp.com/wp-content/uploads/2024/07/allFiltersDropdown.png)，SHA-256 `164306aceaabdea639b68f295b8c05769cacf01cba9c488078574fe4a4c0396c` | 分类、人数等多条件位于筛选菜单 | 本项目手机发现页提供搜索与分类，参考提供复杂筛选而非同样场景，不据此添加额外筛选；图中没有文字搜索和筛选前后结果 |
+| [BoardGameGeek 官方商店](https://apps.apple.com/us/app/boardgamegeek/id1559701270)，[手机列表原图](https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/51/34/0c/51340cbc-b9d9-c1d0-e1fa-50e1b0099a08/4ea798ec-cfa6-456f-8afc-d0c135db6e6f_iPhone_8_Plus_2.png/1000x1000bb.png)，SHA-256 `8f3faa76bb52c9bd066dfbb751150a62df25f0a1a931644c3fbaffef5725bbee` | 游戏列表、类型选择和底部导航 | 可核对列表与导航的基本职责；没有收藏选中、详情返回原位置的连续状态，不据此更换本项目布局 |
+| [WePlay 建房攻略](https://www.malavida.com/es/articulos/como-crear-una-sala-privada-en-weplay-para-jugar-solo-con-tus-amigos)，[手机建房原图](https://imag.malavida.com/articulos/pasos-para-crear-una-sala-privada-en-weplay.jpg)，SHA-256 `aa05f2eef3165e52cf1da45f5313bad5b9207ee44ca329a9d7c1ceefc61b12aa` | 建房入口、表单、密码开关及设置密码 | 是第三方记录的社交派对游戏，可比较步骤与密码入口；没有加入时输入密码或房主等待状态。本项目实际建房及加入由自身浏览器回归验证 |
+| [Chess.com 官方报告](https://www.chess.com/board-reports/2025-q4)，[手机教学原图](https://images.chesscomfiles.com/uploads/ad_image/30787.632dcc1c.png)，SHA-256 `026d90065f65f06a0315264bac52054398f9599306656d50398c27d1c7578807` | 教程入口、步骤进度、提示及下一步 | 可比较教程步骤的可识别性；不证明配置入口，也不以其他游戏教程内容替换本项目教程 |
+
+仍缺手机收藏返回原位置、目标类产品密码加入确认，以及对应桌面完整状态链的可核查原图；这些格子不因检索结束而标记为已证明。
+
+追加核验的 [BGA 第三方旧版桌面教程](https://boku-boardgame.net/board-game-arena)包含[房间配置](https://boku-boardgame.net/wp-content/uploads/2022/09/board-game-arena-friend-7-680x272.webp)与[可加入桌列表](https://boku-boardgame.net/wp-content/uploads/2022/09/board-game-arena-manual-2-680x234.webp)原图；主代理分别打开确认，可比较房间参数、人数和加入入口，不能证明当前版本或密码确认。对应本地文件 `bga-friend-configuration.webp`、`bga-open-tables.webp` 的 SHA-256 分别为 `8409dfb78670a713681e7fccf2641db0cefd032cfa1299c33dadf36da1021a52`、`94f36a2013533b6298c62f7566fa8831b73a188b1b51cd4839cc70fed70b3394`。教程中一张被描述为接受邀请的图实际上是主持人开始游戏，不计作接受邀请证据。

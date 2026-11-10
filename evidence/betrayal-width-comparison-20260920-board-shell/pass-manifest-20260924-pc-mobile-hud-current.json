@@ -1,0 +1,67 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-24T19:09:11+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "角色选择页沿用同一 PC 画布并按 contain 等比缩放，不切换成移动专用角色网格。",
+      "status": "PASS",
+      "evidence": [
+        "PC 1920x1080 与手机 936x432 均为同一角色选择入口。",
+        "手机 shellWidth=1920px、shellScale=0.400000，角色卡数量和可见数量与 PC 对齐。",
+        "nativeMobileUi.mobileGrid=0、nativeMobileUi.mobileLayout=0，未启用移动专用角色选择布局。",
+        "document/body/root scrollWidth 均不超过 936px。"
+      ]
+    },
+    {
+      "requirement": "手机主牌桌 HUD 与 PC 保持同一信息层级，不再只显示底部按钮。",
+      "status": "PASS",
+      "evidence": [
+        "主牌桌常态 PC/手机截图同时保留左侧角色状态、当前持有区、阶段提示、右侧状态栏、队友区和底部动作栏。",
+        "手机端 leftRail、inventory、statusRail、actionRail、phaseChip 全部通过 Portal 脱离 MobileBoardShell 的 0.4 transform。",
+        "手机端 HUD scale=0.5650969529，主 HUD 区域按同一比例映射 PC 尺寸。"
+      ]
+    },
+    {
+      "requirement": "HUD 不因壳层缩放、overflow 或悬浮菜单抢坐标而出屏、错位、透明或再次缩小。",
+      "status": "PASS",
+      "evidence": [
+        "手机端 hudPlacement 五个一级区域均为 portal，fab placement=portal、inShell=false。",
+        "右侧状态栏内容底部=420.2826px，左侧状态栏内容底部=288.8357px，均在 432px 视口高度内。",
+        "手机端 document/body/root scrollWidth 均为 936px，没有横向溢出。",
+        "FAB 为 44x44px，左右边界均在手机视口内。"
+      ]
+    },
+    {
+      "requirement": "主牌桌常态、移动选目标、驱魔目标提示和结算页在 PC/手机同状态下保持主区域与 HUD 可见。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts 当前运行 5 passed。",
+        "当前工作树重新生成 10 张 PC/手机对照原图，包含角色选择、主牌桌常态、移动选目标、驱魔目标提示和结算页。",
+        "压力态和结算态仍保留 HUD、主舞台和下一步入口，没有退化成单按钮页面。"
+      ]
+    }
+  ],
+  "notes": [
+    "936x432 手机视口中 PC shell 实际宽度为 768px，左右各约 84px 深色边带；这是 contain 等比完整显示 1920x1080 画布的结果。",
+    "黑边属于地图/主画布的比例余量，不属于本轮 HUD 截断证据；本轮目标是 HUD 可见、同构和不裁切。"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\00-pc-1920x1080-角色选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\00-phone-936x432-角色选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\01-pc-1920x1080-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\02-phone-936x432-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\03-pc-1920x1080-驱魔目标提示.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\04-phone-936x432-驱魔目标提示.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\05-pc-1920x1080-结算页.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-width-comparison-20260920-board-shell\\06-phone-936x432-结算页.jpg"
+  ]
+}

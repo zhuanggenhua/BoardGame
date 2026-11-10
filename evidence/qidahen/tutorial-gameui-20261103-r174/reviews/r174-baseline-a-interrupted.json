@@ -1,0 +1,27 @@
+{
+  "status": "RUNNING",
+  "reviewer": "/root/r174_a",
+  "actualReadCount": 1,
+  "requirements": [
+    {
+      "requirement": "轮盘本体与当前落点行动",
+      "status": "PASS",
+      "baselineSource": "已实际读取指定旧版军屯整屏与当前军屯及开垦整屏，旧图仅用于职责对照，不沿用旧版通过结论。",
+      "preservedInformation": "保留轮盘扇区文字、当前位置时标、绿色当前扇区，以及同格开垦和军屯两个行动对象。",
+      "preservedActions": "军屯和开垦仍直接位于轮盘扇区本体，放弃剩余轮盘行动仍在轮盘下方。",
+      "changes": "当前顶部将原先当前短标签写成当前回合，轮盘下方退出入口居中，地图兵牌从重叠排列调整为更独立的槽位。",
+      "duplicateDecision": "本次行动由轮盘本体承接，教学说明只解释当前入口，未新增第二套轮盘导航。",
+      "changeAuthority": "依据当前任务合同要求核查轮盘本体和当前落点行动，只裁决实际图中职责与可读性，不推断规则数值。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/02-farm-action.png"
+      ],
+      "beforeSha256": [
+        "ba6a57692c840bb4879197e3f9668268dc696f7dece20d4fdc690b32fe1b8415"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/02-farm-action.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/03-reclaim-action.png"
+      ]
+    }
+  ]
+}

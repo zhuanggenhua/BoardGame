@@ -1,0 +1,55 @@
+{
+  "title": "七大恨轮盘与行动按钮悬浮功能提示",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "media/00-行动窗口-悬浮前无功能提示.png",
+      "chainId": "qidahen-hover-tip",
+      "chainStep": "1",
+      "sourceRun": "e2e/qidahen-basic-flow.e2e.ts:教程直入行动窗口",
+      "sourceDir": "evidence/qidahen/wheel-action-hover-tip-20261011/media",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "静止",
+      "description": "玩家尚未悬浮时，轮盘和右侧行动按钮都在，画面上没有功能说明浮层。"
+    },
+    {
+      "path": "media/09-行动按钮-悬浮显示功能提示.png",
+      "chainId": "qidahen-hover-tip",
+      "chainStep": "2",
+      "sourceRun": "e2e/qidahen-basic-flow.e2e.ts:教程直入行动窗口",
+      "sourceDir": "evidence/qidahen/wheel-action-hover-tip-20261011/media",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "悬浮显示",
+      "description": "玩家悬浮赐印招安按钮后，按钮左侧出现功能说明浮层，写明指定对手并把相邻部队改为大明控制。"
+    },
+    {
+      "path": "media/11-轮盘扇区-悬浮显示功能提示.png",
+      "chainId": "qidahen-hover-tip",
+      "chainStep": "3",
+      "sourceRun": "e2e/qidahen-basic-flow.e2e.ts:教程直入行动窗口",
+      "sourceDir": "evidence/qidahen/wheel-action-hover-tip-20261011/media",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "悬浮显示",
+      "description": "玩家悬浮轮盘走两格后，轮盘右侧出现功能说明浮层，写明进攻调度、走格花费和指挥部队规则。"
+    },
+    {
+      "path": "media/12-移出后功能提示关闭.png",
+      "chainId": "qidahen-hover-tip",
+      "chainStep": "4",
+      "sourceRun": "e2e/qidahen-basic-flow.e2e.ts:教程直入行动窗口",
+      "sourceDir": "evidence/qidahen/wheel-action-hover-tip-20261011/media",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "移出收口",
+      "description": "鼠标移开后功能说明浮层消失，轮盘和右侧行动按钮仍可继续操作。"
+    }
+  ]
+}

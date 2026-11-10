@@ -1,0 +1,241 @@
+{
+  "diag": {
+    "label": "10-after-confirm-click",
+    "stepDom": "finish",
+    "phase": "preHaunt",
+    "stateStep": "finish",
+    "stepIndex": 21,
+    "active": true,
+    "allowed": [
+      "RESOLVE_DAMAGE_ALLOCATION"
+    ],
+    "used": [
+      "omen-book",
+      "rope"
+    ],
+    "consumedRabbit": [
+      "rope"
+    ],
+    "recentRoll": {
+      "id": "0-标本剥制-1789003726545",
+      "kind": "eventTraitCheck",
+      "dice": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "latestLabel": "受到 1 点物理伤害；放置障碍物"
+    },
+    "pendingEventRollResolution": null,
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "overlay": "这里选择承受 1 点物理伤害的属性，再点确认完成分配。上一步完成当前操作继续",
+    "confirmText": null,
+    "confirmDisabled": null,
+    "confirmAttrs": null,
+    "body": "🛠️作祟前当前回合伊莎·瓦伦西亚移动0/5本回合 5剩余移动 0 本回合 5位置厨房持有2当前属性伊莎·瓦伦西亚力量死亡23344567速度死亡44556788知识死亡23344566神志死亡23456778特性：无特殊能力：基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。队友摘要安妮塔·赫南德兹门厅持有 1力量死亡2234567速度死亡23445678知识死亡4455788神志死亡22345566神父 梁沃伦入口大厅持有 0力量死亡22334566速度死亡23445566知识死亡33455678神志死亡33556688当前持有区未选卡牌未选卡牌已用兔脚已用书本现在：点结束回合当前没有同房间队友探索完成，结束回合伊莎·瓦伦西亚确认标本剥制的最终投骰结果（1/1）100%大阶梯一层起始放大查看门厅一层起始放大查看入口大厅一层起始放大查看厨房一层事件当前房间放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看一层结束回合牌堆区预兆牌堆7物品牌堆22事件牌堆1预兆状态作祟前预兆 1弃牌区000剧本提示队友安妮塔·赫南德兹门厅4453神父 梁沃伦入口大厅3445 伊莎·瓦伦西亚使用兔脚重掷第 1 颗骰子：2 → 0伊莎·瓦伦西亚使用书本，失去 1 点神志；本次事件检定改用知识重新投骰并结算伊莎·瓦伦西亚投掷事件：标本剥制（力量检定 2：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物）当前选中未选卡牌未选卡牌当前没有同房间队友现在：点结束回合当前持有区牌堆区结束回合 阶段作祟前伤害分配分配 1 点物理伤害来源：标本剥制伊莎·瓦"
+  },
+  "logs": [
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/markers/knowledge"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/markers/sanity"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/explorers/anita-hernandez"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/explorers/father-warren-leung"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/item-front-atlas"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/omen-front-atlas"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/tokens/explorers/anita-hernandez"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/rooms/start-triple-room"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/tokens/explorers/father-warren-leung"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/rooms/room-back-atlas"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/back-omen"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/back-item"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/back-event"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/ui/trait-track-0-9"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/back-omen"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/back-item"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/back-event"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/explorers/anita-hernandez"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/explorers/father-warren-leung"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (remote-fallback): betrayal/cards/player-reference-zh-front"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 34.7 FPS | P95 帧时 125.0ms — 低于 60fps"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 37.4 FPS | P95 帧时 104.2ms — 低于 60fps"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 34.7 FPS | P95 帧时 62.5ms — 低于 60fps"
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "01a12fc9-2d65-79d1-9cd7-45802d08a477"
+  },
+  "secondReviewer": {
+    "kind": "subagent",
+    "id": "01a12fba-81e6-7d93-a133-6b4d22dbe83e",
+    "note": "个人电脑一千九百二十对照"
+  },
+  "incremental": {
+    "fresh": [
+      "01-收藏库主页.png",
+      "02-收藏库游戏页.png",
+      "05-发现网格.png",
+      "06-游戏详情.png",
+      "07-上传页.png",
+      "07b-上传新游戏.png",
+      "08-个人主页.png",
+      "m01-收藏库主页.png",
+      "m02b-游戏列表抽屉.png",
+      "m02-收藏库游戏页.png",
+      "m05-发现两列.png",
+      "m05b-发现点开展开.png",
+      "m06-游戏详情.png",
+      "m06c-销毁确认.png",
+      "m06d-创建房间.png",
+      "m07-上传页.png",
+      "m08-个人主页.png",
+      "m08b-顶栏抽屉.png"
+    ],
+    "carriedForward": [
+      "01b-收藏库悬停.png",
+      "02b-收藏库排行榜.png",
+      "02c-收藏库规则概览.png",
+      "03-切发现再回收藏库.png",
+      "04-点主页.png",
+      "05b-发现悬停.png",
+      "06b-作者弹窗.png",
+      "06c-销毁确认.png",
+      "06d-创建房间.png"
+    ]
+  },
+  "media": [
+    {
+      "path": "01-收藏库主页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "一千九百二十桌面构图。顶栏三导航发现收藏库上传，收藏库高亮。无底部三栏。左侧列表常驻。新情报横版，我的游戏竖封面完整。底部对局条叠在内容上。不是两列手机网格。"
+    },
+    {
+      "path": "01b-收藏库悬停.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "悬停后大杀四方封面明显抬起并压住上方内容，介绍文字、人数与时长均可读。",
+      "unchangedEvidence": "本轮只加窄屏媒体查询，未改收藏库悬停抬起。"
+    },
+    {
+      "path": "02-收藏库游戏页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "封面同一排四个主按钮重连进入、教程模式、移出收藏、配置表，横向有空隙。左侧列表仍在。右侧当前房间在上、玩过的好友在下，两框接到视口底。无底栏导航。"
+    },
+    {
+      "path": "02b-收藏库排行榜.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "排行榜出现胜场名单。封面四键仍同一排且有空隙。当前房间在玩过的好友上方，两框占满右侧。",
+      "unchangedEvidence": "本轮未改排行榜分栏实现，用户点名的是移动端。"
+    },
+    {
+      "path": "02c-收藏库规则概览.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "规则概览为原文，可见初始设置、每位玩家选择两个派系、四十张牌库及回合流程。封面四键同一排有空隙。底部对局条压在出牌阶段文字上。",
+      "unchangedEvidence": "本轮未改规则原文承载，用户点名的是移动端。"
+    },
+    {
+      "path": "03-切发现再回收藏库.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "切走发现再回来仍停在大杀四方游戏页。封面四键仍同一排有空隙，右侧两框贴底。",
+      "unchangedEvidence": "本轮未改切发现再回的记忆态。"
+    },
+    {
+      "path": "04-点主页.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "回到收藏库主页。新情报横版且名字与更新叠在图内，我的游戏竖封面完整，末张未被底部对局条裁切。",
+      "unchangedEvidence": "本轮未改点回主页后的收藏库主页布局。"
+    },
+    {
+      "path": "05-发现网格.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "发现页六列竖封面，不是两列。游戏名叠在图内底部。顶栏三导航发现高亮。无底栏导航。"
+    },
+    {
+      "path": "05b-发现悬停.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "发现页悬停后封面内叠出大段介绍，竖盒比例保持，文字可读。",
+      "unchangedEvidence": "本轮未改发现悬停合同。"
+    },
+    {
+      "path": "06-游戏详情.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "居中大卡片，左右仍露出发现网格封面，不是手机全屏铺满。右上正方形叉。英雄区四键同一排且有空隙。电子化作者单独一行。"
+    },
+    {
+      "path": "06d-创建房间.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "王权骰铸详情上叠创建房间表单，底部水平居中创建按钮，右上角正方形叉，没有取消文字。",
+      "unchangedEvidence": "本轮未改桌面创建房间叉号和底部居中创建。"
+    },
+    {
+      "path": "06b-作者弹窗.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "游戏库大杀四方详情上叠白色作者弹窗，标题电子化作者，右上角正方形叉关闭且无取消文字。",
+      "unchangedEvidence": "本轮未改作者弹窗叉号。"
+    },
+    {
+      "path": "06c-销毁确认.png",
+      "status": "carried-forward",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "大杀四方房间列表上叠销毁确认弹窗，底部水平居中销毁按钮，右上角正方形叉，没有取消文字。",
+      "unchangedEvidence": "本轮未改桌面销毁确认叉号和底部居中销毁。"
+    },
+    {
+      "path": "07-上传页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "左侧工坊列表常驻。中间表单加右侧发布更新，是桌面两栏。人数两个下拉，中间写至。游戏链接下方绿色可以打开。无底栏导航。"
+    },
+    {
+      "path": "07b-上传新游戏.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "空链接下方灰色写粘贴后自动检测能否打开。人数两个下拉中间写至。右侧封面虚线框与提交审核均完整可见。无底栏。"
+    },
+    {
+      "path": "08-个人主页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "左右两侧露出封面当资料背景，中间白底内容井。左列头像加动态横条，右栏只有编辑、游玩时长、局数、收藏。动态行可见局数、排行、三位小数分数。右栏没有排行没有评分。资料字段没有当前正在游戏。底部对局条是全站悬浮。"
+    },
+    {
+      "path": "m01-收藏库主页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶栏只有品牌、菜单、铃铛和头像，没有发现收藏库上传文字导航。主栏是新情报横卡加我的游戏两列封面。底栏三键且收藏库高亮。对局条叠在底栏上方。"
+    },
+    {
+      "path": "m02b-游戏列表抽屉.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "左侧抽屉打开，可见主页和大杀四方、王权骰铸等游戏名。右侧内容被遮罩压住，底栏仍在。"
+    },
+    {
+      "path": "m02-收藏库游戏页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "封面下纵向四键重连进入、教程模式、移出收藏、配置表彼此有空隙。四键下方可见当前房间通栏标题且未被底部对局条完全挡住。底栏收藏库高亮，主栏不是列表。"
+    },
+    {
+      "path": "m05-发现两列.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "游戏库正好两列竖封面，游戏名叠在图内。底栏发现高亮。不是六列。"
+    },
+    {
+      "path": "m05b-发现点开展开.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "大杀四方封面上展开介绍文字，仍停在两列网格里，没有全屏详情弹层。"
+    },
+    {
+      "path": "m06-游戏详情.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "几乎全屏铺满，右上正方形叉，可见大厅页签和房间列表，不是居中小卡片。"
+    },
+    {
+      "path": "m06c-销毁确认.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "销毁当前房间对话框左右留白、明显窄于全屏，右上正方形叉、没有取消文字，底部居中销毁。"
+    },
+    {
+      "path": "m06d-创建房间.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "创建房间对话框左右留白，右上叉、无取消文字，可见房间名密码人数，底部居中创建。"
+    },
+    {
+      "path": "m07-上传页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "分类下是人数左右两个下拉、中间写至，人数独占一行，未叠在规则文档上。链接框下可见粘贴后自动检测能否打开。底栏上传高亮。"
+    },
+    {
+      "path": "m08-个人主页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "身份后纵向叠编辑个人资料、游玩时长、局数、收藏。最新动态大杀四方行局数排行分数在对局条上方可读。统计区无排行无评分。资料区无当前正在游戏字段。"
+    },
+    {
+      "path": "m08b-顶栏抽屉.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶栏面板里有搜索游戏、操作指南、中文，底栏仍在。"
+    }
+  ]
+}

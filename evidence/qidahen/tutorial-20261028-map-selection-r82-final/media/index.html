@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>七大恨历史图：提示设计已退回，不作当前验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>七大恨历史图：提示设计已退回，不作当前验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"00-辽北军屯地区选择.png","displayTitle":"00 · 辽北军屯地区选择","description":"开局进入军屯选地，全部合法地区显示绿色高亮，辽北另有教程推荐白边。","kind":"image"},{"relativePath":"01-轮盘前进两格与军屯落点.png","displayTitle":"01 · 轮盘前进两格与军屯落点","description":"选定辽北后选择轮盘前进两格，界面显示军屯落点。","kind":"image"},{"relativePath":"02-指定后金抽牌.png","displayTitle":"02 · 指定后金抽牌","description":"轮盘走法确认后，在正式对手列表中指定后金抽牌。","kind":"image"},{"relativePath":"03-辽北军屯结果.png","displayTitle":"03 · 辽北军屯结果","description":"军屯结算后，查看补牌与辽北新增部队的结果。","kind":"image"},{"relativePath":"04-叶赫部真实地图目标.png","displayTitle":"04 · 叶赫部真实地图目标","description":"转入突袭后，地图显示可进攻地区，并引导点击叶赫部。","kind":"image"},{"relativePath":"05-银两支付与鸳鸯阵手牌.png","displayTitle":"05 · 银两支付与鸳鸯阵手牌","description":"选定叶赫部后，手牌托盘要求选择银两支付突袭费用。","kind":"image"},{"relativePath":"05a-鸳鸯阵选中与确认出牌.png","displayTitle":"05a · 鸳鸯阵选中与确认出牌","description":"进入战术阶段后，选中鸳鸯阵并等待确认出牌。","kind":"image"},{"relativePath":"06-野战选择实际出兵部队.png","displayTitle":"06 · 野战选择实际出兵部队","description":"打出战术牌后，在真实部队控件中设置四支部队参战。","kind":"image"},{"relativePath":"07-战后幸存部队与占领选择.png","displayTitle":"07 · 战后幸存部队与占领选择","description":"野战结算后，查看幸存部队和占领或撤回的选择。","kind":"image"},{"relativePath":"08-叶赫部占领结果.png","displayTitle":"08 · 叶赫部占领结果","description":"选择占领后，地图显示叶赫部控制权及驻军变化。","kind":"image"},{"relativePath":"09-教程退出后同局继续.png","displayTitle":"09 · 教程退出后同局继续","description":"完成引导后，教程提示退场，保留同一对局继续行动。","kind":"image"},{"relativePath":"移动-00-轮盘军屯与指定对手.png","displayTitle":"移动 · 00 · 轮盘军屯与指定对手","description":"手机进入轮盘两格走法，正式对手选择面板完整显示。","kind":"image"},{"relativePath":"移动-01-叶赫部地图目标避开支付托盘.png","displayTitle":"移动 · 01 · 叶赫部地图目标避开支付托盘","description":"手机转入突袭选地，叶赫部目标避开下方支付托盘。","kind":"image"},{"relativePath":"移动-02-突袭支付与手牌.png","displayTitle":"移动 · 02 · 突袭支付与手牌","description":"选定目标后，手机显示突袭支付手牌与确认入口。","kind":"image"},{"relativePath":"移动-03-长按银两检视卡面.png","displayTitle":"移动 · 03 · 长按银两检视卡面","description":"长按银两后，手机展开可阅读的卡牌检视界面。","kind":"image"},{"relativePath":"移动-04-检视返回后轻点银两选择支付.png","displayTitle":"移动 · 04 · 检视返回后轻点银两选择支付","description":"关闭检视返回支付后，轻点银两并显示已选择状态。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

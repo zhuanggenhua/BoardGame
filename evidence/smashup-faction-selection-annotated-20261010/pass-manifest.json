@@ -1,0 +1,30 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-10T09:25:03+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "明确圈出真实随机派系选择后落地的那张派系卡。",
+      "status": "PASS",
+      "evidence": [
+        "随机队列 [0] 在同一次真实 E2E 中落地为 action_heroes（动作英雄）。",
+        "02-faction-selected-annotated.png 用红框、箭头和中文标签直接指向原图底部第 4 行第 3 列的已选卡片。",
+        "原始 1440x900 中态截图保持完整可见，标注图只增加右侧说明栏，不遮挡原始牌面。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/smashup-faction-selection-annotated-20261010/01-faction-before.png",
+    "evidence/smashup-faction-selection-annotated-20261010/02-faction-selected-annotated.png",
+    "evidence/smashup-faction-selection-annotated-20261010/03-faction-after-scroll.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

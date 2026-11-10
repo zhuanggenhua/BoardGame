@@ -1,0 +1,909 @@
+{
+  "schemaVersion": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "status": "PASS",
+  "verdict": "PASS",
+  "reviewLayer": "source",
+  "scope": "basic-opening revision15及本轮直接修改的战斗阶段消费点；非全游戏规则或视觉验收",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_r31_source_review"
+  },
+  "reviewedAt": "2026-10-26T17:54:46.293471+00:00",
+  "comparison": "R28固定征召主线 → R46自然前线军屯/突袭主线",
+  "statusMeaning": "四项PASS仅指源码职责、来源、正式命令、合法状态转移与已执行窄回归；R46成功E2E日志和trace已核身份和元数据，不证明图片可读或用户已验收。全局typecheck与i18n仍失败。",
+  "sourceBaseline": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/.baseline-review.json",
+  "previousReview": "evidence/qidahen/.baseline-review-r43-source-final.json",
+  "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+  "sourceFiles": [
+    {
+      "path": "src/games/qidahen/tutorial.ts",
+      "sha256": "881d6924cc2bdfdad1053cf720d9a9f635635fcaea3f9e7e03ef73a3a5466802"
+    },
+    {
+      "path": "src/games/qidahen/tutorialSetup.ts",
+      "sha256": "78a1088e701e68a8977a2a8acb7b1a4b2d984d592d942880fc3f480e7251e8db"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "4262a38d6c367e000451ad4d8d0fa8fdf14cf622eb5bef6e511a5437338f7842"
+    },
+    {
+      "path": "src/games/qidahen/domain/ordinaryHandCardIdentities.ts",
+      "sha256": "105774feab843d8d51a16d720b7d27ce37583e9475f15c64b8a4d52ac4f17b1a"
+    },
+    {
+      "path": "src/games/qidahen/domain/selectionBuilders.ts",
+      "sha256": "6391a0b0b712df599f7f2cda73739182e4f9de7eedee507841fd44b4dac0607d"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleCommittedTroops.ts",
+      "sha256": "107e3f030ad2d751a20ab957a4f8239714aa5a1e083b3f1f3a79d407ed1aa505"
+    },
+    {
+      "path": "src/games/qidahen/domain/types.ts",
+      "sha256": "6402b42cb554eecfc91e23b6c00cdd54fe5a3404d108fbdf36b0508424b5943f"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleMorale.ts",
+      "sha256": "2223142dbb9286cb81f1315571333057fdc896b8bcf0497d3a492415b005e3bb"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleRollMath.ts",
+      "sha256": "9f43fec097db04b049c988839261a2fea13889d0d597d18ba056fc01cc51dcea"
+    },
+    {
+      "path": "src/games/qidahen/domain/attackRules.ts",
+      "sha256": "c8cd3ebfe5df4179cbbe363d5fa947c04aa0f2b6dd762b09db542060e8960a03"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleForceOutcomes.ts",
+      "sha256": "e8bea6d7e62d76ca5906f05d9b05c8b48ee5f100247c7d7d68b19d1abd54f577"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleForceCommitments.ts",
+      "sha256": "68f839d4942abb5e7a21cbf10980615230c5119ed83acf40deee5e9144906425"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleCombatSupport.ts",
+      "sha256": "113860fa255efedd4c53f3d7241b3f12872afd9d44b5393133070cc466fae9b5"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetResolution.ts",
+      "sha256": "78e6985fdbcf929a34d7d18963271af0e318ae26af0cf87c5a3b7c9000861525"
+    },
+    {
+      "path": "src/games/qidahen/domain/postBattleDecisionResolution.ts",
+      "sha256": "95462d6c0719d50935e18a0305a5ffbff41a187ec96799774cc339d43f18012b"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleFlow.ts",
+      "sha256": "e45ea8eca7c6216033053219658d4fd39674aceefc680bb273ec3fe67296f472"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleState.ts",
+      "sha256": "a9f095595b7beb94967fce93f30e5381f9478d964b58d08b4fb06a41a86ee26a"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetActionBuilder.ts",
+      "sha256": "f8a73712f43b343de692af58929815887574f0e2699853730d7544b40fa527fb"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetChoiceOptions.ts",
+      "sha256": "6c1dded8552977ab9c1e8c2006af796453d8554dc9a1300fea7b406212177101"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetChoicePayload.ts",
+      "sha256": "ee9d02586eefd7259c43791742c8f85d85a6ddb5ad91811c9574a055cca721e1"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleInteractionBuilders.ts",
+      "sha256": "d54d613dbd954567347a793055116828dc49b1c970664d37926c48e91a222efe"
+    },
+    {
+      "path": "src/games/qidahen/domain/interactionSystem.ts",
+      "sha256": "d017722afbae88baddcc9b12d6a19e25c7936ef9d59ba18a9fc671d4f90dbf65"
+    },
+    {
+      "path": "src/games/qidahen/domain/commands.ts",
+      "sha256": "2fad39b700e8003082fd3ac8b640114e75dfc4bd94e36fd3820bd3dfed7e5974"
+    },
+    {
+      "path": "src/games/qidahen/domain/resolvedCommandEventBuilders.ts",
+      "sha256": "1edb3fc9e4169f2c3b1fc2d9eead47c5bd4b7cb0c3c69b34eb3721c5cd03e315"
+    },
+    {
+      "path": "src/games/qidahen/domain/resolvedEventReducers.ts",
+      "sha256": "177dbd29710f27718f42b3c3062831e2e7726ff73c15d868464181624bec9328"
+    },
+    {
+      "path": "src/games/qidahen/domain/commandEventBuilders.ts",
+      "sha256": "f00db7d70dbad33fe9f12a8474de5604948ea071a59ebc3d9ec60714ec0d1637"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleStateTransition.ts",
+      "sha256": "adbe8e6518d708141b2fb329ea3a6b9b8bab63e84c8ec109790974080f3519bb"
+    },
+    {
+      "path": "src/games/qidahen/domain/troopCompat.ts",
+      "sha256": "cb39156442e6db36ef3158559238a2282c86182c19c45eea7a8d78e1a0348506"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapGraph.ts",
+      "sha256": "aaddd1d4e89efb934d76838ba027ade0ce4a690c8d7e3ec71ba02e6acbaad0a5"
+    },
+    {
+      "path": "src/games/qidahen/ui/runtimeRegionOwnership.ts",
+      "sha256": "b9abf13d149152968a9ba5012ee8ca769e8f45ad8a8afc661e064bf77129a68a"
+    },
+    {
+      "path": "src/games/qidahen/data/runtime-region-graph.json",
+      "sha256": "196ca72123f2bea43daaaa7f2f201c1fc6251785629ded5aff26390563687bd0"
+    },
+    {
+      "path": "src/contexts/TutorialContext.tsx",
+      "sha256": "eea82bbae8fca73fb69806c65b26aafcdedba1aac1728694ca743e377d737deb"
+    },
+    {
+      "path": "src/engine/pipeline.ts",
+      "sha256": "f23cf40bf9f3ef110a3d523ef8fa615a09cb973649af974d0e38e00da114f0ad"
+    },
+    {
+      "path": "src/games/qidahen/domain/actionWindowDispatch.ts",
+      "sha256": "37c8dfec30a0545cf33e5a2b43c73fe3e11f0097e151ebcde44db597076521d9"
+    },
+    {
+      "path": "src/games/qidahen/domain/regionSelectionPreferences.ts",
+      "sha256": "1430de70805219406d8362a0882e394a8de054b59069e0222fc241d64a027962"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelImmediateEffect.ts",
+      "sha256": "43a6c9bf7816df4022a4b75b80a9599f98797df3a28d43a8bf938e4d3cf8c552"
+    },
+    {
+      "path": "src/components/game/framework/widgets/GameHUD.tsx",
+      "sha256": "d232195170b3b47337ad0d25a498248deb373ee69685cd73a8408fb60fe73618"
+    },
+    {
+      "path": "src/components/tutorial/TutorialOverlay.tsx",
+      "sha256": "8d7b23b3c0deb6c6714ac3fbd621611e2823b60cd786d2cfc3f9a43eda2c673b"
+    },
+    {
+      "path": "src/games/qidahen/qidahen-board.css",
+      "sha256": "dea810e2b55b11dac17b6f85fdce76fc8fbb3f9e8945f3525f7a01ee347673b4"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "sha256": "ed5e5b055f6897013c07bd1b6a8362cfe3e3916f3c51e68355cfce1aaf387ffc"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "60ce64b63595a0dfec85d96e6161780ea3f43170a6bdae06828259bb3e93278c"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "6db792d09a7e6acdf507b7196d4408460ee618a4f3e1d01313758a3752ec310a"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-closeout.e2e.ts",
+      "sha256": "4760ad2669f1d7d12525fff9b8211b6d2a8186f78263bf5346168edc205789d3"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "连续正式开局与轮盘军屯",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/02-固定先完成手牌行动.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03b-轮盘两格-进入军屯并结算.png"
+      ],
+      "baselineSource": "R28历史清单中的开局、固定征召首步、互斥轮盘走法和两格军屯；当前正式开局合同、PDF p2/p4、tutorial.ts、tutorialSetup.ts、Board.tsx与军屯目标selector。",
+      "preservedInformation": "保留正式大明开局、公共轮盘两格代价、指定一名对手抽牌、军屯抽2牌与建立等级2正规军，以及两类行动均可继续的正式状态。旧课程的1格/3格及征召教学移出本课，正式规则能力和隐藏专项仍在，但不称本课已教会。",
+      "preservedActions": "玩家实际点辽东作为建军地，选择两格，指定后金，并由同一正式轮盘结算在辽东建立部队；setup不代选建军地。",
+      "changes": "用辽东前线补兵后突袭相邻叶赫的正常行动链替换宣府无后续用途的集中征召。首屏呈现本回合争取叶赫控制权的局面目标；不把决定先教哪项的选择交给学员。",
+      "duplicateDecision": "保留地域、轮盘格数与指定对手这三个实际规则决策；不要求依次体验互斥的1/2/3格。地图高亮定位改消费正式runtime anchor，图面是否准确另由本轮视觉报告判定。",
+      "changeAuthority": "用户明确要求先设计有真实用途的连续对局再贴教程；tutorial-design第三节允许固定合法路线，并禁止初始化代做部署。",
+      "sourceEvidence": [
+        "src/games/qidahen/tutorial.ts:QIDAHEN_BASIC_TUTORIAL",
+        "src/games/qidahen/tutorialSetup.ts:NATURAL_OPENING_CONTRACT",
+        "src/games/qidahen/domain/regionSelectionPreferences.ts",
+        "src/games/qidahen/domain/wheelImmediateEffect.ts",
+        "test-results/qidahen-r35-independent-source-tests.log"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/00-唯一入门入口-直接进入胜利条件.png",
+          "sha256": "81d70b31347c1d7f2f8cf799abe9b7d401d34e00c9582e08b8cac858eeb0ca6f",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/02-固定先完成手牌行动.png",
+          "sha256": "c37a0a313cd86607cf7ad9e7e40aec9d504a5f68d1b3b000085a0a6db074d2ef",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘选择-三种走法均可选择.png",
+          "sha256": "34f794790cb494039cf498fd88d0b0f56b89e9bea9130cd7303ab093c94bce57",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03a-轮盘两格-选择对手抽牌.png",
+          "sha256": "a77c8ef40408a8c1a2f315d61b62aa3626e68ae9dfc663faf36a68169928a462",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03b-轮盘两格-进入军屯并结算.png",
+          "sha256": "7a6d4a8c2d18169fa62b82f5ac558d52c82127149190816e630049ddc5239da3",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/00-辽东与叶赫部局面.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/03-辽东军屯结果.png"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/00-辽东与叶赫部局面.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "1",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "前态",
+          "description": "00，辽东与叶赫部局面",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-01",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示00，辽东与叶赫部局面，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-002",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "连续正式开局与轮盘军屯"
+          ],
+          "sha256": "29c37ec23c2a7482385e6a1fb58bb1f13cba26f9b29d7362bb18bf1b1d944421",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/01-轮盘前进两格与军屯落点.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "2",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "01，轮盘前进两格与军屯落点",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-02",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示01，轮盘前进两格与军屯落点，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-004",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "连续正式开局与轮盘军屯"
+          ],
+          "sha256": "462abac2110504baa47251d0ad34366462870a5eb7f0146aaf9011395e4d3e78",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/02-指定后金抽牌.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "3",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "02，指定后金抽牌",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-03",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示02，指定后金抽牌，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-006",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "连续正式开局与轮盘军屯"
+          ],
+          "sha256": "619f5de8e969e3667448fbf7877f9de9a80fb352397456b178fba8a294071c09",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/03-辽东军屯结果.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "4",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "03，辽东军屯结果",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-04",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示03，辽东军屯结果，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-008",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "连续正式开局与轮盘军屯"
+          ],
+          "sha256": "aa1ca74cb187114ae056bd13d5bb714c8a6ef8d541cac384294c5f3631067f4e",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        }
+      ],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前源码职责与行为合同PASS；after已核存在、SHA256、R46 trace步骤和sourceRevision。未读取图面，不能继承R43/R44视觉结论；新视觉验收由另一子代理独立承担。"
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/10-征召结果-轮盘行动待完成.png"
+      ],
+      "baselineSource": "旧主线只有征召支付与部署；不把旧征召图误称突袭/战术旧证据。当前PDF p1/p2/p3/p5/p6、atlas05第44格卡源结论、正式pending战斗/士气/force outcome owner和当前basic文案。",
+      "preservedInformation": "保留手牌作费用、真实选牌确认和地图结果反馈；动作身份明确改为突袭，新增野战与占领的同局用途。第44格数据统一为鸳鸯阵，与第50格乌真超哈分开。首次战斗给当前等级/骰种、宽度、攻击顺序、士气损伤与胜负判定。",
+      "preservedActions": "真实点突袭入口、点叶赫目标、弃银两、确认、由蒙古正式应战、玩家打鸳鸯阵、地图投入3支、开始战斗、占领；不会把断后/溃败当开战按钮。",
+      "changes": "正常分阶段战斗先以单位自身士气承伤，零级才移除；败方有幸存部队才由败方选择撤退，复用同次骰果。占领和撤回都保留受损等级及未参战身份。误点行动、支付掉战术、未到占领结果或撤回，使用已有完整检查点恢复机制。 R37共享pipeline仅在已有rollbackRevision证明完整快照恢复时保留快照随机游标，避免偏离1支后返回再选3支错误沿用cursor2；普通消费仍持久化。战后局部模式和选项随真实postBattleSelection恢复清空。",
+      "duplicateDecision": "费用选择与确认、实际目标、战术和战后选择各有规则后果。非示范合法输入不伪装规则禁止，也不推进到缺失牌或缺失占领面板；不把恢复导航写给玩家。",
+      "changeAuthority": "用户授权完整教程重构及正式规则交互修复；tutorial-design要求来源、动作、真实UI、输入与结果对应，且覆盖非推荐合法分支。",
+      "sourceEvidence": [
+        "src/games/qidahen/domain/battleMorale.ts",
+        "src/games/qidahen/domain/battleRollMath.ts",
+        "src/games/qidahen/domain/pendingBattleFlow.ts",
+        "src/games/qidahen/domain/battleForceOutcomes.ts",
+        "src/games/qidahen/domain/battleForceCommitments.ts",
+        "src/games/qidahen/domain/postBattleDecisionResolution.ts",
+        "test-results/qidahen-r35-independent-source-tests.log",
+        "src/engine/pipeline.ts:710",
+        "src/games/qidahen/Board.tsx:4034",
+        "test-results/qidahen-r37-independent-random-review.log"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07-支付1张手牌.png",
+          "sha256": "0f9d45b535bfa3d8b2c47b3c112450784d935c3db779753db4867623f7206ed5",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-确认弃置手牌.png",
+          "sha256": "da6052752af9daa988749e7b6f03cab944a84a9d99f0e4b26efd0cdd87c7fc8b",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/08-选择宣府建军位置.png",
+          "sha256": "776bd3f2c91420796e9452f325913b9e6e6913e93a3357336edae776ddc097c3",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09-选择建军方式.png",
+          "sha256": "c4e5a8fcf9576350c920c00621a84357953bc0d94b93d4ad8a9d640e8b6c53df",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/10-征召结果-轮盘行动待完成.png",
+          "sha256": "8f0eb9e2a9176ca83e0616c9c9b31cc72bad92cf81bdbaa5c6f02a715b72b897",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/06-野战出兵与战术牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/08-叶赫部占领结果.png"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/04-叶赫部真实地图目标.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "5",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "04，叶赫部真实地图目标",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-05",
+          "uiChange": "target-highlight",
+          "uiChangeReason": "此画面展示04，叶赫部真实地图目标，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-012",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "突袭支付、战术与战后占领"
+          ],
+          "sha256": "0d4c7d3a0bc28ddcb3e6df9ef366d5a8217653592d986f554124354e0dffa397",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/05-银两支付与鸳鸯阵手牌.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "6",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "05，银两支付与鸳鸯阵手牌",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-06",
+          "uiChange": "interaction-mode",
+          "uiChangeReason": "此画面展示05，银两支付与鸳鸯阵手牌，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-014",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "突袭支付、战术与战后占领"
+          ],
+          "sha256": "577b3c00aab0e68c03652151cc8e28b083a0e476185fb1b29d68ba69773e63d1",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/06-野战出兵与战术牌.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "7",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "06，野战出兵与战术牌",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-07",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示06，野战出兵与战术牌，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-022",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "突袭支付、战术与战后占领"
+          ],
+          "sha256": "04a9728b38e235f1a998fed527d8b3b6db4a4e3b837a6269dca67f544a85d0c9",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/07-战后幸存部队与占领选择.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "8",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "07，战后幸存部队与占领选择",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-08",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示07，战后幸存部队与占领选择，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-024",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "突袭支付、战术与战后占领"
+          ],
+          "sha256": "cc822718073e56a7c827d8877a96b7debeecc390ea19ff311463d2231c91d2a9",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/08-叶赫部占领结果.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "9",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "08，叶赫部占领结果",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-09",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示08，叶赫部占领结果，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-032",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "突袭支付、战术与战后占领"
+          ],
+          "sha256": "5a141d37c79647a4d6176824ca4da26a3529fd28924ac287ca4f87cb04828593",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        }
+      ],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前源码职责与行为合同PASS；after已核存在、SHA256、R46 trace步骤和sourceRevision。未读取图面，不能继承R43/R44视觉结论；新视觉验收由另一子代理独立承担。"
+    },
+    {
+      "requirement": "手机长按检视",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "baselineSource": "R28移动征召支付检视媒体职责；当前Board.tsx正式手牌检视owner和closeout移动触摸用例。",
+      "preservedInformation": "保留首次真实支付处桌面看牌与触屏长按提示；不为普通关闭按钮增加课程。",
+      "preservedActions": "保留长按打开真实银两卡面、关闭检视、回到同一支付步骤。当前E2E使用CDP触摸输入，没有DOM合成dispatch替代玩家手势。",
+      "changes": "将检视从旧征召支付移到当前突袭支付；移动端只补平台独有手势和布局证据。 手牌dock外层pointer-events-none，仅牌行按地图选择状态开放输入；Pixi地图待正式mask像素归属完成才可选择。目标聚焦受托盘遮挡时消费真实地图/玩家条/托盘矩形，在可用间隙定位，不换目标、不代点。 R46仅为手机地图圈标签右置并按正式scene逆缩放保持字体；action付款托盘下移、付款面板竖向padding4px，文字及确认控件保留。compact避让同时保护玩家条和正式手牌zone。共享横排严格要求compact、requireAction、hideActionHint、显式compactTooltipWidth且无visual；Fate未声明显式宽度，保持旧竖排；桌面保持竖排。",
+      "duplicateDecision": "复用同一手牌和检视入口，不另外创建教程卡面副本或复制桌面完整课程；视觉可读性不由本源码报告证明。",
+      "changeAuthority": "用户要求边玩边学、必要隐藏交互实际完成，以及子代理全量核图；tutorial-design首次用途和跨视口证据规则。",
+      "sourceEvidence": [
+        "src/games/qidahen/Board.tsx:HandCard",
+        "e2e/qidahen/qidahen-closeout.e2e.ts:dispatchTouchLongPress",
+        "public/locales/zh-CN/game-qidahen.json:tutorial.basic.steps.payRaid",
+        "src/games/qidahen/Board.tsx:2611",
+        "src/games/qidahen/Board.tsx:5678",
+        "src/games/qidahen/Board.tsx:7214",
+        "src/games/qidahen/qidahen-board.css:73",
+        "src/games/qidahen/tutorial.ts:32",
+        "src/components/tutorial/TutorialOverlay.tsx:943",
+        "src/components/tutorial/__tests__/TutorialOverlay.aiActions.test.tsx",
+        "test-results/qidahen-r45-independent-overlay-review.log"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-02-征召支付-手牌检视前.png",
+          "sha256": "987f49ebd90dfd0b59f8ca45741788d0dd79112e3ab5e01b08166c81543a6e70",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-03-征召支付-长按手牌打开检视.png",
+          "sha256": "6f516d8eba440af3941cb99021f2afe2e2de27595402a2ba3a8215467f649573",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-05-选牌后确认征召支付.png",
+          "sha256": "acce68240cd0ed18b98af9f5401ea200b2c6376e8be677220d14bbe7991e6951",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-01-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-02-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-03-检视返回后轻点银两选择支付.png"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "chainStep": "1",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "前态",
+          "description": "移动，00，叶赫部地图目标避开支付托盘",
+          "role": "main-flow",
+          "viewport": "mobile",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-01",
+          "uiChange": "interaction-mode",
+          "uiChangeReason": "此画面展示移动，00，叶赫部地图目标避开支付托盘，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-013",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "手机长按检视"
+          ],
+          "sha256": "115e35b71e68fdf39e341cbba6d3e604cc70c77c4d0f9f751161fad3fc69e911",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-mobile-hand-inspect.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-01-突袭支付与手牌.png",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "chainStep": "2",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "移动，01，突袭支付与手牌",
+          "role": "main-flow",
+          "viewport": "mobile",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-02",
+          "uiChange": "interaction-mode",
+          "uiChangeReason": "此画面展示移动，01，突袭支付与手牌，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-016",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "手机长按检视"
+          ],
+          "sha256": "4fb01d4fe4845f25e884d67bcdd27d84533d7cce3bfea78abab3e07ac964c446",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-mobile-hand-inspect.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-02-长按银两检视卡面.png",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "chainStep": "3",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "中态",
+          "description": "移动，02，长按银两检视卡面",
+          "role": "main-flow",
+          "viewport": "mobile",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-03",
+          "uiChange": "interaction-mode",
+          "uiChangeReason": "此画面展示移动，02，长按银两检视卡面，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-018",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "手机长按检视"
+          ],
+          "sha256": "2d9e54e083e39f1d3eff04e5796ff0f2debc24d8083476e0205213ca6290fd13",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-mobile-hand-inspect.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-03-检视返回后轻点银两选择支付.png",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "chainStep": "4",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "后态",
+          "description": "移动，03，检视返回后轻点银两选择支付",
+          "role": "main-flow",
+          "viewport": "mobile",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-04",
+          "uiChange": "interaction-mode",
+          "uiChangeReason": "此画面展示移动，03，检视返回后轻点银两选择支付，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-022",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "手机长按检视"
+          ],
+          "sha256": "d320613cbd9a2c75e767fb7780e60cf92c47f9b671db3e945a28acd8574d542c",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-mobile-hand-inspect.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        }
+      ],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前源码职责与行为合同PASS；after已核存在、SHA256、R46 trace步骤和sourceRevision。未读取图面，不能继承R43/R44视觉结论；新视觉验收由另一子代理独立承担。"
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "status": "PASS",
+      "before": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/11-教程结束后同局下一位玩家可操作.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03l-教程退场后同局继续.png"
+      ],
+      "baselineSource": "R28同局继续历史媒体及共享教程生命周期；当前basic revision15、stayOnMatchAfterCompletion、正式local dispatch和closeout生命周期用例。旧媒体不证明刷新或退出清理。",
+      "preservedInformation": "保留完成提示后同局继续。旧教程的互斥轮盘分支没有被伪装成新的连续章节；清单版本随步骤前提变化更新。",
+      "preservedActions": "源代码与当前测试承接刷新继续、重开、退出大厅清理、结束后下一玩家真实轮盘输入；不自动跳到另一个预设状态。R46真实浏览器日志及trace已核通过；视觉仍由另一子代理逐图确认。",
+      "changes": "收口改为叶赫战后占领；守方作者动作使用正式SYS_RESPOND optionId并由真实buildLocalDispatchCommand绑定当前interactionId，未注入选择结果。恢复使用完整局面与随机游标检查点。",
+      "duplicateDecision": "不增加额外章节或假确认；完成后撤销教程限制，下一入口仍属于同一真实对局。非示范分支恢复不代付或造胜利。",
+      "changeAuthority": "用户要求初始化、退出、重开、继续和版本处理；tutorial-design生命周期及结果后继续操作验收。",
+      "sourceEvidence": [
+        "src/games/qidahen/tutorial.ts",
+        "src/pages/matchRoomTutorialStageRuntime.tsx",
+        "src/pages/matchRoomBridges.tsx",
+        "src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts",
+        "e2e/qidahen/qidahen-closeout.e2e.ts"
+      ],
+      "beforeBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/11-教程结束后同局下一位玩家可操作.png",
+          "sha256": "b9f7b0f611160b703151ad81a72b25260df4ddec41b3ebdc0154facc6f3970d6",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+          "sha256": "081bae41b00dfe931fbfd52eaaf1a586fb4bcd7700ab587884507e8988b8de98",
+          "reviewKind": "historical-source-and-metadata-only"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03l-教程退场后同局继续.png",
+          "sha256": "895f760ee4467b490a5fad1a5130dc233504561f528d921cb92e90ea65ea386f",
+          "reviewKind": "historical-source-and-metadata-only"
+        }
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/09-教程退出后同局继续.png"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/09-教程退出后同局继续.png",
+          "chainId": "basic-opening-natural-raid",
+          "chainStep": "10",
+          "sourceRun": "20261027-natural-opening-r46",
+          "sourceDir": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media",
+          "stage": "后态",
+          "description": "09，教程退出后同局继续",
+          "role": "main-flow",
+          "viewport": "desktop",
+          "transition": "按当前教程真实操作后呈现此状态",
+          "uiStateId": "basic-opening-natural-raid-ui-10",
+          "uiChange": "panel",
+          "uiChangeReason": "此画面展示09，教程退出后同局继续，对应独立的操作对象或交互模式。",
+          "behaviorStepId": "basic-opening-natural-raid-capture-035",
+          "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+          "requirements": [
+            "生命周期与同局继续"
+          ],
+          "sha256": "cf3c5dec760fc6e69fafcbf2248a99eadf7f869c26b3ba8592a522bf1983905a",
+          "trace": "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+          "reviewKind": "source-and-behavior-metadata-only"
+        }
+      ],
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前源码职责与行为合同PASS；after已核存在、SHA256、R46 trace步骤和sourceRevision。未读取图面，不能继承R43/R44视觉结论；新视觉验收由另一子代理独立承担。"
+    }
+  ],
+  "summary": {
+    "requirements": 4,
+    "sourcePass": 4,
+    "sourceRevise": 0,
+    "afterMedia": 14,
+    "desktopMedia": 10,
+    "mobileMedia": 4
+  },
+  "validation": [
+    {
+      "kind": "vitest",
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/battleMorale.test.ts src/games/qidahen/__tests__/qidahen-battle-resolution-and-offense-tactics.test.ts --configLoader native",
+      "result": "PASS 56/56, 4 files",
+      "log": "test-results/qidahen-r35-independent-source-tests.log"
+    },
+    {
+      "kind": "independent-read-only-pipeline",
+      "result": "PASS",
+      "case": "自然开局出兵2、鸳鸯阵、骰序[1,1,4,1]、断后：参战步兵及无掩护炮兵被移除，辽东仅剩2支原未参战Lv1步兵；不重掷。"
+    },
+    {
+      "kind": "independent-read-only-pipeline",
+      "result": "PASS",
+      "case": "现有siege-and-occupation QA fixture出城、骰值4：续战为city，单线width/attackPressure=1，各force为city宽度1；旧宣告/骰果/败方清空，受损等级与exact存活piece IDs保留。此为规则回归夹具，不充当自然教程E2E。"
+    },
+    {
+      "kind": "independent-read-only-pipeline",
+      "result": "PASS",
+      "case": "同QA fixture直接守城：宣告不掷骰，进入city+tactics且width/attackPressure=1。"
+    },
+    {
+      "kind": "vitest-independent",
+      "result": "PASS 54/54, 5 files",
+      "log": "test-results/qidahen-r37-independent-random-review.log",
+      "scope": "naturalOpening、TutorialSystem、undo-eventstream、pipeline-after-events-context、pipeline-event-commit"
+    },
+    {
+      "kind": "independent-shared-random-probe",
+      "result": "PASS",
+      "log": "test-results/qidahen-r37-independent-random-probe.log",
+      "scope": "普通sequence跨命令持久化；拒绝不消费；真实RESTART_STEP恢复cursor0重掷1；真实Undo恢复cursor1重掷3；fixed4/4无cursor；退出后fallback"
+    },
+    {
+      "kind": "vitest-parent-log-checked",
+      "result": "PASS 83/83, 5 files",
+      "log": "test-results/qidahen-r39-unit.log",
+      "scope": "核读父代理日志，非声称本审查者亲自运行这83项"
+    },
+    {
+      "kind": "real-browser-parent-log-and-trace-checked",
+      "result": "PASS 3/3",
+      "log": "test-results/qidahen-r43-e2e.log",
+      "traceFiles": [
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r43/basic-opening-entry.json",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r43/basic-opening-natural-raid.json",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r43/basic-opening-mobile-hand-inspect.json"
+      ],
+      "scope": "入口/刷新/重开/退出清理、自然主线、移动真实触摸；核身份及步骤绑定，不读图"
+    },
+    {
+      "kind": "typecheck",
+      "result": "FAIL",
+      "log": "test-results/qidahen-final-typecheck.log",
+      "scope": "全局仍失败；包括Board.tsx既存诊断。未用窄测试替代全局通过，未证明全部诊断的历史归属。"
+    },
+    {
+      "kind": "i18n-check",
+      "result": "FAIL",
+      "log": "test-results/qidahen-final-i18n.log",
+      "scope": "全局仍失败；含七大恨动态key提示及其它游戏可见文本诊断，未声称此门禁通过。"
+    },
+    {
+      "kind": "shared-compact-independent-vitest",
+      "result": "PASS 15/15",
+      "log": "test-results/qidahen-r45-independent-overlay-review.log",
+      "scope": "亲自运行；844x390默认无显式宽度竖排、显式760横排、带visual竖排、AI等待禁回退，以及旧桌面11项；均保留真实返回且无错误下一步"
+    },
+    {
+      "kind": "vitest-parent-log-checked",
+      "result": "PASS 98/98, 6 files",
+      "log": "test-results/qidahen-r45-unit.log",
+      "scope": "核读父代理日志；R46只增compact避让手牌与手机付款面板padding，数值owner未变，未重复无变化数值测试。"
+    },
+    {
+      "kind": "real-browser-parent-log-and-trace-checked",
+      "result": "PASS 3/3",
+      "log": "test-results/qidahen-r46-e2e.log",
+      "traceFiles": [
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-entry.json",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-natural-raid.json",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r46/basic-opening-mobile-hand-inspect.json"
+      ],
+      "scope": "核读父代理R46真实E2E成功日志；实际重算当前源文件hash并核全部trace、14媒体元数据与行为步骤绑定；不读图。"
+    }
+  ],
+  "closedFindings": [
+    "原F1低级先损/整支伤害及阶段士气已修；保留新年耗损选择。",
+    "原F2合法偏离失去战术或伪报占领，已由正式检查点恢复承接。",
+    "原F3初始化代选军屯地点，已改真实地图输入。",
+    "原F4当前等级/骰种、宽度和判胜读法已补齐。",
+    "撤回原地恢复等级、撤退改变参战数量、败方溃败使用战前等级及无掩护炮兵错误留存已修。",
+    "野战转城战的旧宣告/骰果、进攻军士气、exact身份和城战宽度消费已修。",
+    "合法偏离战斗后恢复时pipeline以命令开始cursor覆盖完整检查点cursor的问题已修；真实偏离回归及共享代表探针已通过。",
+    "手牌空白dock截获触摸、mask未ready时地图输入和支付托盘遮住地图目标的直接输入问题已通过正式UI修正；像素结果由独立视觉报告裁决。"
+  ],
+  "remainingScope": [
+    "同等级且不同兵种/身份的承伤对象选择仍是已登记的正式游戏缺口；当前课程最高士气承伤者唯一，不触发。",
+    "其它势力、年度补给、征兵训练、其它轮盘落点和攻城不属于这条玩家入门主线；隐藏专项不能代替玩家教学。",
+    "本次不称全游戏卡牌/战斗审计完成。"
+  ],
+  "evidenceLimitations": [
+    "未读取本轮或历史产品截图；before16与after14只核存在、哈希、职责和行为trace，不能代替视觉PASS。",
+    "R43独立视觉为REVISE，R44也曾退回；失败图和旧报告保留，均不得继承为R46视觉通过。",
+    "第44格卡图由此前卡源子代理核读，本报告核身份/效果登记与结论一致，不声称本审查者亲自看图。",
+    "R46 E2E由主代理运行；本审查者核其3/3成功日志、当前sourceRevision及14媒体行为步骤绑定。",
+    "本报告仅source层PASS；另一子代理正独立审14张图；未宣称全游戏规则审计或用户最终验收完成。",
+    "全局typecheck和i18n仍失败，日志保持在validation中；不能以本source PASS冒称全局检查通过。",
+    "历史R31/R35/R43原始报告保持不变；本报告不可改写为视觉总PASS。"
+  ],
+  "sourceRun": "20261027-natural-opening-r46",
+  "consumerMatrix": [
+    {
+      "consumer": "七大恨支付节点",
+      "condition": "hideActionHint + 显式compactTooltipWidth760 + requireAction + 无visual + 手机横屏",
+      "behavior": "仅这些节点正文与返回同行，命令和导航语义不变，玩家条与手牌zone参与正式避让"
+    },
+    {
+      "consumer": "Fate tutorial.ts:55/70",
+      "condition": "hideActionHint:true，但不声明compactTooltipWidth",
+      "behavior": "保留原竖排；纠正R44错误的无其它消费者判断，不采用gameId特判"
+    },
+    {
+      "consumer": "其它默认/桌面/带visual",
+      "condition": "不满足全部紧凑宽条条件",
+      "behavior": "保留原竖排与导航，默认action hint仍可见，AI等待仍禁返回"
+    }
+  ],
+  "reviewHistory": [
+    {
+      "review": "evidence/qidahen/.baseline-review-r31-source.json",
+      "status": "REVISE",
+      "layer": "source",
+      "handling": "保留原始报告，不覆盖"
+    },
+    {
+      "review": "evidence/qidahen/.baseline-review-r43-source-final.json",
+      "status": "PASS",
+      "layer": "source",
+      "handling": "仅历史源码结论，不继承视觉"
+    },
+    {
+      "review": "evidence/qidahen/.visual-review-r43-original.json",
+      "status": "REVISE",
+      "layer": "visual",
+      "handling": "已核报告总14、11PASS/3REVISE；不读图，不以源码PASS推翻"
+    },
+    {
+      "review": "R44子代理审查及父代理反馈",
+      "status": "REVISE",
+      "layer": "shared-source-and-reported-visual",
+      "handling": "共享条件误命中Fate已收窄并加代表回归；父代理报告确认提示遮手牌后，R46加正式手牌保护与付款padding；未声称亲读R44图"
+    }
+  ]
+}

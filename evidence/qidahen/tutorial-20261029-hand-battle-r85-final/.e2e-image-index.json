@@ -1,0 +1,391 @@
+{
+  "title": "七大恨连续入门：辽北军屯、突袭叶赫与同局继续",
+  "version": "20261029-hand-battle-r85",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/00-辽北军屯地区选择.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "1",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "前态",
+      "description": "辽北军屯地区选择",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示辽北军屯地区选择，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-002",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/01-轮盘前进两格与军屯落点.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "2",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "轮盘前进两格与军屯落点",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-02",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示轮盘前进两格与军屯落点，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-004",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/02-指定后金抽牌.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "3",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "指定后金抽牌",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-03",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示指定后金抽牌，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-006",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03-辽北军屯结果.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "4",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "辽北军屯结果",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-04",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示辽北军屯结果，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-008",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手牌半露与悬停抬起"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03a-手牌悬停完整抬起.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "5",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "手牌悬停完整抬起",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-05",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示手牌悬停完整抬起，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-009",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手牌半露与悬停抬起"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03b-共享放大镜检视手牌.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "6",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "共享放大镜检视手牌",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-06",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "此画面展示共享放大镜检视手牌，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-010",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "共享放大镜与检视返回"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/04-叶赫部真实地图目标.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "7",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "叶赫部真实地图目标",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-07",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "此画面展示叶赫部真实地图目标，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-013",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "8",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "银两支付与鸳鸯阵手牌",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-08",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "此画面展示银两支付与鸳鸯阵手牌，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-015",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "9",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "鸳鸯阵选中与确认出牌",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-09",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示鸳鸯阵选中与确认出牌，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-021",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05b-出兵选择前与真实兵牌引导.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "10",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "出兵选择前与真实兵牌引导",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-10",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示出兵选择前与真实兵牌引导，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-023",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "出兵选择与战前决策"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "11",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "野战选择实际出兵部队",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-11",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示野战选择实际出兵部队，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-025",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "出兵选择与战前决策"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/07-战后幸存部队与占领选择.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "12",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "战后幸存部队与占领选择",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-12",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示战后幸存部队与占领选择，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-027",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/08-叶赫部占领结果.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "13",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "叶赫部占领结果",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-13",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示叶赫部占领结果，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-035",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png",
+      "chainId": "basic-opening-natural-raid",
+      "chainStep": "14",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "后态",
+      "description": "教程退出后同局继续",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-natural-raid-ui-14",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示教程退出后同局继续，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-natural-raid-capture-038",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "连续教学与同局继续"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-00-轮盘两格与指定对手.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "1",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "前态",
+      "description": "移动，00，轮盘军屯与指定对手",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "此画面展示移动，00，轮盘军屯与指定对手，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-007",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手机长按与支付"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "2",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "移动，01，叶赫部地图目标避开支付托盘",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-02",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "此画面展示移动，01，叶赫部地图目标避开支付托盘，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-012",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手机长按与支付"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-02-突袭支付与手牌.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "3",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "移动，02，突袭支付与手牌",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-03",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "此画面展示移动，02，突袭支付与手牌，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-015",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手机长按与支付"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-03-长按银两检视卡面.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "4",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "中态",
+      "description": "移动，03，长按银两检视卡面",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-04",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "此画面展示移动，03，长按银两检视卡面，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-017",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手机长按与支付",
+        "共享放大镜与检视返回"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "5",
+      "sourceRun": "20261029-hand-battle-r85",
+      "sourceDir": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media",
+      "stage": "后态",
+      "description": "移动，04，检视返回后轻点银两选择支付",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "按当前教程真实操作后呈现此状态",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-05",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "此画面展示移动，04，检视返回后轻点银两选择支付，对应独立的操作对象或交互模式。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-021",
+      "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+      "requirements": [
+        "手机长按与支付"
+      ]
+    }
+  ]
+}

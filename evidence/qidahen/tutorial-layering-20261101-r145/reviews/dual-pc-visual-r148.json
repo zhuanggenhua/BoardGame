@@ -1,0 +1,45 @@
+{
+  "objective": "私有审查双PC开局说明贴附及地图拖动后归属",
+  "scope": "仅开局opening-move两种PC及拖图前后，不证明完整教程自然全链或数值结算",
+  "reviewer": "/root/r148_map_private",
+  "mode": "all-media",
+  "verdict": "PASS",
+  "summary": {
+    "revise": 0,
+    "total": 4,
+    "passed": 4
+  },
+  "items": [
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/r148-attached/1362/opening-move.png",
+      "sha256": "6126f3b6250315eda38fae273781d6da1cab1617b759973690242d60493c5d21",
+      "status": "PASS",
+      "viewport": "1362",
+      "observation": "行动轮盘完整位于左上，开垦军屯扇区高亮可辨；白色教程说明紧邻轮盘右侧，没有挤走当前输入。地图拖动前后说明与轮盘位置保持一致，地图本体发生位移，动作归属不会跟随地图漂走。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/r148-attached/1362/opening-move-map-panned.png",
+      "sha256": "39ad396cbeca3f53a38d1796469562915971ea20f122bcbe58e7eac521c4449f",
+      "status": "PASS",
+      "viewport": "1362",
+      "observation": "行动轮盘完整位于左上，开垦军屯扇区高亮可辨；白色教程说明紧邻轮盘右侧，没有挤走当前输入。地图拖动前后说明与轮盘位置保持一致，地图本体发生位移，动作归属不会跟随地图漂走。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/r148-attached/1920/opening-move.png",
+      "sha256": "c3dcd1996175500463a5c70848ace434c41b271767094e817fe6a4c306d3641d",
+      "status": "PASS",
+      "viewport": "1920",
+      "observation": "行动轮盘与开垦军屯高亮保持完整；教程说明贴附轮盘右侧，阅读后能直接回到轮盘选择前进1格。拖动地图后说明仍归属于固定轮盘，未遮挡轮盘、手牌或玩家条。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/r148-attached/1920/opening-move-map-panned.png",
+      "sha256": "7c1fec2db2048c7e364a0661a825d05cd0a6d33c834b69f716909428df14fb0c",
+      "status": "PASS",
+      "viewport": "1920",
+      "observation": "行动轮盘与开垦军屯高亮保持完整；教程说明贴附轮盘右侧，阅读后能直接回到轮盘选择前进1格。拖动地图后说明仍归属于固定轮盘，未遮挡轮盘、手牌或玩家条。"
+    }
+  ],
+  "limitations": [
+    "只证明四张原始整屏的可见贴附关系；真实拖动行为与gap断言由主线程另行保留证据。"
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "预感返还多卡候选-横屏.png",
+      "chainId": "预感横屏返还比较",
+      "chainStep": "多卡候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-income-phone-card-candidates",
+      "behaviorStepId": "income-phone-card-candidates",
+      "description": "横屏沿用旧卡池的等比卡面、多行候选、上方标题和下方动作。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "进入同一返还候选的横屏视口。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "进入同一返还候选的横屏视口。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "收入阶段替代选项-桌面.png",
+      "chainId": "预感替代收入选项",
+      "chainStep": "收入选项候选",
+      "stage": "独特界面态",
+      "uiStateId": "doctor-strange-income-options",
+      "behaviorStepId": "income-replacement-choice",
+      "description": "真实主要阶段推进到收入阶段后显示正常收入与预感替代选项。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家结束维护阶段进入收入阶段。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家结束维护阶段进入收入阶段。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "收入阶段替代选项-横屏.png",
+      "chainId": "预感替代收入选项横屏",
+      "chainStep": "收入选项候选",
+      "stage": "独特界面态",
+      "uiStateId": "doctor-strange-income-options-mobile",
+      "behaviorStepId": "income-replacement-choice-mobile",
+      "description": "横屏视口中的预感三个选项采用单列平面选项样式。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "在同一收入选择中切换横屏视口。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在同一收入选择中切换横屏视口。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "本次抽牌返还选择-桌面.png",
+      "chainId": "本次抽牌返还对象选择",
+      "chainStep": "本次抽牌候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-income-drawn-cards",
+      "behaviorStepId": "income-return-drawn-card",
+      "description": "选择花费3层预感抽3张后，只显示本次抽到的卡牌供返还。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择花费3层预感抽取3张牌。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择花费3层预感抽取3张牌。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "本次抽牌复用放大阅读-桌面.png",
+      "chainId": "卡牌候选复用放大阅读",
+      "chainStep": "查看卡牌规则",
+      "stage": "独特界面态",
+      "uiStateId": "doctor-strange-income-card-reading",
+      "behaviorStepId": "income-return-card-reading",
+      "description": "候选使用原卡池尺寸，规则详情通过既有牌桌放大界面阅读，关闭后保持原选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从候选检视按钮进入既有卡牌放大界面。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从候选检视按钮进入既有卡牌放大界面。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "本次抽牌已选待确认-桌面.png",
+      "chainId": "本次抽牌返还对象选择",
+      "chainStep": "卡牌已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-income-drawn-card-selected",
+      "behaviorStepId": "income-return-drawn-card-selected",
+      "description": "选中本次抽到的一张牌后，通过确认按钮提交返还选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从本次抽牌候选中点击一张牌。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "从本次抽牌候选中点击一张牌。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    },
+    {
+      "path": "选择牌库底-桌面.png",
+      "chainId": "本次抽牌返还位置选择",
+      "chainStep": "牌库位置候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-income-return-position",
+      "behaviorStepId": "income-return-position",
+      "description": "选择本次抽到的牌后，显示返还牌库顶或牌库底选项。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择一张本次抽牌作为返还对象。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择一张本次抽牌作为返还对象。",
+      "sourceRevision": "f3cef6c3a8525e904fa539f1af7dec577978a9d3851d83872cc94c14a1a719cb",
+      "e2eSourceRevision": "9f0aa213fb08e93a04a001dac7c87a2b4c30a1deb527ea75d94672a8653ca092",
+      "requirements": [
+        "预感替代收入选项与卡牌选择交互"
+      ],
+      "sourceRun": "1793585854046-228160-ee0d9b5f-598c-4fa6-8ab2-253684f2eaef",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1793585718947-eq110t"
+    }
+  ]
+}

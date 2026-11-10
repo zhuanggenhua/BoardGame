@@ -1,0 +1,81 @@
+{
+  "verdict": "PASS",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-13T14:13:04.784Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "选中圣骑士后显示新玩家板和提示板",
+      "status": "PASS",
+      "evidence": [
+        "02-圣骑士选中.png",
+        "03-对局.png"
+      ]
+    },
+    {
+      "requirement": "对局初始手牌加载新图集且可见卡图、角标和卡框横向关系",
+      "status": "PASS",
+      "evidence": [
+        "03-对局.png"
+      ]
+    }
+  ],
+  "coverageMatrix": [
+    {
+      "step": "创建房间并进入选角",
+      "action": "保持双方未选择角色",
+      "assertion": "前态截图显示选角列表和未选席位",
+      "evidence": "01-选角前.png"
+    },
+    {
+      "step": "选择圣骑士",
+      "action": "玩家选择圣骑士",
+      "assertion": "新玩家板、提示板和开始游戏控件可见",
+      "evidence": "02-圣骑士选中.png"
+    },
+    {
+      "step": "开始对局",
+      "action": "进入圣骑士对局",
+      "assertion": "四张手牌的新图集卡图与角标横向对齐可见",
+      "evidence": "03-对局.png"
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-preview-20261013\\01-选角前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-preview-20261013\\02-圣骑士选中.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-preview-20261013\\03-对局.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/paladin_screenshot_review_v2"
+    },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cardPreviewHelper.test.ts src/games/dicethrone/__tests__/card-system.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "定向运行两份 Dice Throne 测试文件通过，共十六项测试通过。"
+    ]
+  },
+  "notes": [
+    "真实本地浏览器完成创建房间、角色选择和进入对局流程。",
+    "手牌下缘因现有贴底布局部分藏在视口外；本证据验证可见部分的图集映射与横向对齐，不证明牌底完整性。",
+    "验证范围为本地预览，不包含服务器素材或部署状态。"
+  ],
+  "scope": "independent"
+}

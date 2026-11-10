@@ -1,0 +1,35 @@
+{
+  "title": "兔脚重投教程验收图组",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\direct-entry.png",
+      "label": "01 直接进入教程牌桌",
+      "transition": "起点：4274 真实教程入口直接进牌桌，没有选择角色页和加载页"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-selection-highlight.png",
+      "label": "02 兔脚选中骰子",
+      "transition": "从使用兔脚进入选骰：可选骰体有贴身高亮，选中态升级但不遮挡骰面"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-reroll-motion.png",
+      "label": "03 兔脚重投运动中",
+      "transition": "从确认使用兔脚进入重投：被选骰子产生可见位移，不是原地打转"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-before-confirm.png",
+      "label": "04 重投后确认骰面",
+      "transition": "重投落定后仍停在结果窗口，玩家可先看清骰面和总点数，再点确认 0/1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-after-damage-allocation.png",
+      "label": "05 伤害分配后结束回合",
+      "transition": "确认骰面后进入伤害分配；分配完成后教程直接提示结束回合"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T18-27-09-069Z\\rabbit-after-end-turn.png",
+      "label": "06 结束回合后交给队友",
+      "transition": "点击结束回合后没有被教程拒绝，流程交给队友并进入下一条教程提示"
+    }
+  ]
+}

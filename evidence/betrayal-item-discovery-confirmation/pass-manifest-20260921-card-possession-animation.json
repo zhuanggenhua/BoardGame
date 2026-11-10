@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-21T03:22:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "物品最终确认后会飞向实际获得者的探索者 Token，动画期间目标持有区不提前显示该物品，动画结束后正常落位。",
+      "status": "PASS",
+      "evidence": [
+        "正式三人确认 E2E 通过：最后一位玩家确认后出现 possession-gain 过渡。",
+        "动画目标断言为 betrayal-explorer-figure-token-0。",
+        "动画期间目标持有区卡牌数量为 0，过渡结束后物品卡重新可见。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-item-discovery-confirmation\\03e-器械库-最终确认飞入持有区动画.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-item-discovery-confirmation\\04-器械库-全员确认完毕回牌桌持有区.jpg"
+  ]
+}

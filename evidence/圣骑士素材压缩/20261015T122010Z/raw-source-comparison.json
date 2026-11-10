@@ -1,0 +1,32 @@
+[
+  {
+    "asset": "ability-cards",
+    "oldRawUnavailable": true
+  },
+  {
+    "asset": "player-board",
+    "oldRawBytes": 9831345,
+    "oldRawSize": [
+      3160,
+      1929
+    ],
+    "newRawBytes": 16660274,
+    "newRawSize": [
+      4005,
+      2476
+    ]
+  },
+  {
+    "asset": "tip",
+    "oldRawBytes": 7347544,
+    "oldRawSize": [
+      1526,
+      2807
+    ],
+    "newRawBytes": 3799573,
+    "newRawSize": [
+      967,
+      1804
+    ]
+  }
+]

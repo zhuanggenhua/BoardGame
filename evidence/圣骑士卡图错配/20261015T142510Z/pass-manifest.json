@@ -1,0 +1,75 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\.e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "五张错配牌在正式手牌和放大入口显示正确卡面、费用及正文",
+      "status": "PASS",
+      "evidence": [
+        "圣骑士五张修正卡_出牌前手牌.jpg",
+        "圣骑士_正义战法二级_正式放大卡面.jpg",
+        "圣骑士_正义战法三级_正式放大卡面.jpg",
+        "圣骑士_惊不惊喜_正式放大卡面.jpg",
+        "圣骑士_不愧是我_正式放大卡面.jpg",
+        "圣骑士_意不意外_正式放大卡面.jpg",
+        "圣骑士_正义战法二级_扣2CP并升级成功.jpg"
+      ]
+    },
+    {
+      "requirement": "正义战法二级实际打出后扣除两点行动点并落入正确技能槽",
+      "status": "PASS",
+      "evidence": [
+        "browser-assertions.json：CP10→8、等级1→2、升级来源card-righteous-combat-2"
+      ]
+    },
+    {
+      "requirement": "源图身份映射33张一致且线上对象/Android素材索引对应修正版",
+      "status": "PASS",
+      "evidence": [
+        "frame-identity-after.json",
+        "public-verification.json",
+        "android-index-verification.json"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士五张修正卡_出牌前手牌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_正义战法二级_正式放大卡面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_正义战法三级_正式放大卡面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_惊不惊喜_正式放大卡面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_不愧是我_正式放大卡面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_意不意外_正式放大卡面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_正义战法二级_扣2CP并升级成功.jpg"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/audit_frames_11_21"
+    },
+    "reviewFile": "browser-all-media-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/paladin-abilities.test.ts --configLoader native"
+    ],
+    "evidence": [
+      "19项既有技能定义测试通过，含正义战法II主伤害5/III主伤害6及执着变体差异。",
+      "E2E另直接断言CP10→8、等级1→2；不是由截图证明数值结算。"
+    ]
+  },
+  "scopeDescription": "圣骑士33张卡图身份核对及5张错配卡的手牌/放大修复；不涵盖已延期的玩法差异"
+}

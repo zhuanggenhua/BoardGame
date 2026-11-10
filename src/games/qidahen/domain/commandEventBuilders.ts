@@ -1,6 +1,7 @@
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { QIDAHEN_COMMANDS } from './commands';
 import { createQidahenStructuredBattleRolls } from './battleRollMath';
+import { buildPublicBattleReport } from './battleVisualEvent';
 import {
     isQidahenFeignedRetreatCardPlayable,
 } from './feignedRetreatSelection';
@@ -231,6 +232,12 @@ const buildQidahenTacticCardPlayedEvents: QidahenCommandEventBuilder = (
     if (!selection || !card || !isQidahenFeignedRetreatCardPlayable(state.core, card)) {
         return [playedEvent];
     }
+    const rolls = createQidahenStructuredBattleRolls(state.core, selection.pendingTargetAction, random, {
+        defenderSortieBattle: selection.cavalryPlunderPayload.defenderSortieBattle === true,
+        defenderHoldCity: selection.cavalryPlunderPayload.defenderHoldCity === true,
+        defenderCavalryEvasion: selection.cavalryPlunderPayload.defenderCavalryEvasion === true,
+        attackerCavalryPlunder: false,
+    });
     return [
         playedEvent,
         {
@@ -241,17 +248,9 @@ const buildQidahenTacticCardPlayedEvents: QidahenCommandEventBuilder = (
                     ...selection.pendingTargetAction,
                 },
                 attackerCavalryPlunder: false,
-                battleRolls: createQidahenStructuredBattleRolls(
-                    state.core,
-                    selection.pendingTargetAction,
-                    random,
-                    {
-                        defenderSortieBattle: selection.cavalryPlunderPayload.defenderSortieBattle === true,
-                        defenderHoldCity: selection.cavalryPlunderPayload.defenderHoldCity === true,
-                        defenderCavalryEvasion: selection.cavalryPlunderPayload.defenderCavalryEvasion === true,
-                        attackerCavalryPlunder: false,
-                    },
-                ),
+                battleRolls: rolls,
+                battleVisualReport: rolls ? buildPublicBattleReport(state.core, selection.pendingTargetAction, rolls,
+                    `${state.sys.matchId ?? ''}:${state.sys.revision ?? 0}:feigned:${selection.pendingTargetAction.battleMode ?? 'field'}`) : undefined,
                 feignedRetreatResponseResolved: true,
             },
             sourceCommandType: tacticCommand.type,

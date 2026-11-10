@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "editor-canvas-loaded",
+  "sourceRevision": "sha256:d782dbf4c50294ee2af6b77e630fec81761f27544637774b29f144e83337b52d",
+  "reviewer": { "kind": "subagent", "id": "/root/r82_mobile_visual_fresh" },
+  "entries": [
+    {
+      "path": "evidence/qidahen/editor-20261028-map-selection-r82/正式地图工作区.png",
+      "status": "PASS",
+      "sha256": "346fc60759f472fedb25f846596db610e3c1ad67658b276195f8dc953218052a",
+      "source": "evidence/qidahen/editor-20261028-map-selection-r82/正式地图工作区.png",
+      "checks": ["canvas-loaded", "objects-loaded", "no-blank-canvas", "no-error"],
+      "observation": "原始1920×1080整屏实读：正式工作区路径和当前区域大同可见，地图底图、彩色区域节点、通路线及地形标签均已加载；左侧编辑控件和当前区域信息正常显示，画布非空，无破图或错误页。本结论只覆盖画布和对象加载，不判断通路及边界规则正确性。",
+      "issues": []
+    }
+  ],
+  "summary": { "total": 1, "pass": 1, "revise": 0 }
+}

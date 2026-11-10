@@ -60,7 +60,8 @@ test.afterAll(async () => {
     writeFileSync(path.join(out, 'capture-record.json'), JSON.stringify({ sources, media, internalMedia, steps, capturedAt: new Date().toISOString(), environment: { frontend: base, mongo: mongoUri, storage: process.env.UGC_LOCAL_PATH, apiMocked: false, lobbySocketFixture: true } }, null, 2));
 });
 
-for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实投稿规则文件：草稿、锁定、发布与详情`, async ({ request }) => {
+for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实投稿规则文件：草稿、锁定、发布与详情`, async ({ request }, info) => {
+    info.setTimeout(120_000);
     const label = mobile ? '手机' : '桌面';
     const session = await login(request, accounts[0]);
     const browser = await chromium.launch({ headless: true, executablePath: chromium.executablePath(), args: ['--disable-gpu'] });
@@ -75,7 +76,7 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实�
     const take = async (state: string, core: boolean) => {
         await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(200);
         const file = path.join(core ? out : internal, `${label}-${state}.png`);
-        await page.screenshot({ path: file, fullPage: true, scale: 'css' });
+        await page.screenshot({ path: file, fullPage: false, scale: 'css' });
         (core ? media : internalMedia).push({ path: file, sha256: sha(readFileSync(file)), viewport: mobile ? 'mobile' : 'desktop', state,
             description: state === '草稿规则文件' ? `${label}投稿代表态：规则文件已保存可打开，介绍与规则说明分工，表单不再收集预估时长` : `${label}${state}代表态：已发布游戏详情提供规则文件打开入口` });
     };
@@ -109,10 +110,12 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实�
         }
         await page.getByLabel('规则文件', { exact: true }).setInputFiles({ name: '王权骰铸规则.pdf', mimeType: 'application/pdf', buffer: pdf });
         await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-        await expect(page.getByRole('heading', { name: '王权骰铸', exact: true })).toBeVisible();
+        await expect(page.getByRole('link', { name: '王权骰铸规则.pdf', exact: true })).toBeVisible();
         const headers = { Authorization: `Bearer ${tokens[0]}` };
         const list = await (await request.get(base + '/ugc/submissions', { headers })).json();
-        const record = list.items[0];
+        const submissionId = new URL(page.url()).searchParams.get('submission');
+        const record = list.items.find((item: { submissionId: string }) => item.submissionId === submissionId);
+        expect(record, '按当前编辑器编号读取草稿').toBeTruthy();
         check(label, '草稿持久化规则文件名', record.rulesDocument.name, '王权骰铸规则.pdf');
         check(label, '保存草稿没有送审', record.status, 'draft');
         const content = await request.get(base + record.rulesDocument.url);
@@ -126,10 +129,15 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实�
         await page.reload();
         await expect(page.getByRole('link', { name: '王权骰铸规则.pdf', exact: true })).toBeVisible();
         check(label, '刷新后已保存文件可查看', await page.getByRole('link', { name: '王权骰铸规则.pdf', exact: true }).getAttribute('href'), record.rulesDocument.url);
-        await page.evaluate(() => window.scrollTo(0, 0)); await take('草稿规则文件', true);
+        if (mobile) {
+            await page.getByRole('link', { name: '王权骰铸规则.pdf', exact: true }).scrollIntoViewIfNeeded();
+            await page.evaluate(() => window.scrollBy(0, 220));
+        } else await page.evaluate(() => window.scrollTo(0, 0));
+        await take('草稿规则文件', true);
         await page.getByRole('button', { name: '更换', exact: true }).click();
         await page.getByLabel('规则文件', { exact: true }).setInputFiles({ name: '王权骰铸规则修订.pdf', mimeType: 'application/pdf', buffer: replacement });
-        await page.getByRole('button', { name: '提交审核', exact: true }).click();
+        if (mobile) await page.getByRole('button', { name: '提交审核', exact: true }).tap({ position: { x: 15, y: 15 } });
+        else await page.getByRole('button', { name: '提交审核', exact: true }).click();
         await expect(page.getByRole('button', { name: '撤回投稿', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: '移除规则文件', exact: true })).toBeDisabled(); await take('待审核', false);
         const locked = await request.post(base + `/ugc/submissions/${record.submissionId}/rules`, { headers, multipart: { file: { name: 'rules.pdf', mimeType: 'application/pdf', buffer: pdf } } }); check(label, '待审服务端拒绝文件修改', locked.status(), 409);
@@ -141,7 +149,8 @@ for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实�
         const removed = (await (await request.get(base + '/ugc/submissions', { headers })).json()).items.find((item: { submissionId: string }) => item.submissionId === record.submissionId);
         check(label, '移除后草稿不保留旧文件引用', Boolean(removed.rulesDocument), false);
         await page.getByLabel('规则文件', { exact: true }).setInputFiles({ name: '王权骰铸规则修订.pdf', mimeType: 'application/pdf', buffer: replacement });
-        await page.getByRole('button', { name: '提交审核', exact: true }).click();
+        if (mobile) await page.getByRole('button', { name: '提交审核', exact: true }).tap({ position: { x: 15, y: 15 } });
+        else await page.getByRole('button', { name: '提交审核', exact: true }).click();
         await expect(page.getByRole('button', { name: '撤回投稿', exact: true })).toBeVisible();
         const pending = (await (await request.get(base + '/ugc/submissions', { headers })).json()).items.find((item: { submissionId: string }) => item.submissionId === record.submissionId);
         const approved = await request.post(base + `/ugc/creator-review/submissions/${record.submissionId}`, { headers: { Authorization: `Bearer ${tokens[2]}` }, data: { decision: 'approved', comment: '规则资料完整，可以查看。', revision: pending.updatedAt } });

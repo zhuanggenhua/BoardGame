@@ -1,0 +1,122 @@
+{
+  "status": "PASS_WITH_LIMITATIONS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r142_middle"
+  },
+  "reviewKind": "independent-tutorial-layout-geometry-cache-and-performance-review",
+  "claimScope": "仅当前TutorialOverlay源码缓存完整性、指定公开行为回归测试和occupy真实保存点展开战报CPU诊断记录；不代表完整E2E、全媒体UI、所有教程或所有设备性能验收通过。",
+  "codeModified": false,
+  "fullE2EClaimed": false,
+  "fullMediaUIClaimed": false,
+  "checks": [
+    {
+      "id": "canonical-owner",
+      "status": "PASS-static",
+      "observation": "缓存直接位于TutorialOverlay既有布局effect的applyLayout之前；没有新增布局owner、保护列表或第二套候选。保护DOM仍由currentStep正式选择器逐轮采集。相对于本代理先前读到的版本，本轮新增的是完整几何缓存；git diff中的perfect-adjacent跳过free逻辑此前已存在，不能归因于缓存改动。"
+    },
+    {
+      "id": "complete-changing-inputs",
+      "status": "PASS-static",
+      "observation": "key逐项包含target的left/top/right/bottom/width/height、tooltip实测width/height、hiddenContentHeight和protectedRegionRects完整有序四边。rect=null与存在矩形不同，measured缺失与[0,0]不同；不取整、不用容差、不对保护项去重。每轮先querySelectorAll并getBoundingClientRect，再比较key，因此对象移动、集合加入/移除、顺序或重复变化都令缓存失效。"
+    },
+    {
+      "id": "effect-closure-invalidation",
+      "status": "PASS-static",
+      "observation": "previousLayoutGeometry是effect局部变量，首值undefined。currentStep、hasStepVisual、isActive、isBottomConfirmStep、isCompactTutorialLayout、根视口尺寸、viewport尺寸及safeArea在依赖中；effect重建即清空缓存。position、tooltip宽度/偏移配置、显式center/targetless等输入由currentStep闭包读取，不会跨步骤复用key。该结论沿用现有React状态按不可变对象更新的模型。"
+    },
+    {
+      "id": "state-and-selection-semantics",
+      "status": "PASS-static",
+      "observation": "初次调用必定继续执行setTargetRect与commitTooltipLayout。相同effect及完整几何相同才提前return，此时目标/布局输出没有新值需要提交；targetRect只有此处更新，positionedStepId由commit更新。候选生成、评分、排序、稳定tie和选中位置的计算正文不因key命中而另换算法。"
+    },
+    {
+      "id": "public-behavior-regression",
+      "status": "PASS-existing-test-record",
+      "observation": "读取实际测试和qidahen-shared-layout-cache-unit.log，1文件1测试PASS。测试通过rAF轮询观察实际tooltip style，覆盖静止后保持位置、保护对象移动后避让、目标移动、tooltip高度由120增至220以及同几何换step且position由right改left；不是断言内部缓存字符串。",
+      "limitation": "本次独立审查未再次重跑已PASS单测。该单测没有直接覆盖保护集合加入/移除、目标出现/消失、hiddenContentHeight单独变化、tooltip宽度变化、viewport/safeArea变化、compact布局或整组候选稳定tie；这些失效输入目前由源码审查支持。静止位置不变本身不证明求解次数下降，性能证据承担该结论。"
+    },
+    {
+      "id": "saved-point-runtime",
+      "status": "PASS-diagnostic-record-only",
+      "observation": "诊断spec从R143真实occupy保存点经正式续玩入口恢复，真实点击展开战报，确认骰子摘要可见后采样；结束后真实点击收起并点击占领。before/after日志均1PASS，before约1.5分钟、after约24.5秒总测试耗时只作环境记录，不当作纯CPU耗时。两个记录中占领按钮矩形均为x1502,y384,width106,height52，前后命中栈均含同一按钮。",
+      "limitation": "这是保存点诊断，不是从开场到occupy的完整因果E2E。记录仅直接核对占领按钮几何/命中栈，没有采集两版本tooltip完整style快照，不能凭它宣称全图位置逐像素等同。"
+    }
+  ],
+  "performance": {
+    "status": "PASS-for-specified-static-occupy-report-sample",
+    "measurementKind": "审阅已有Chromium CDP Performance增量和Profiler原始文件；本次用原始samples/timeDeltas重新核对采样时长，不改写被测算法。",
+    "metricWindowMs": {
+      "before": 3005.6895,
+      "after": 3005.8521
+    },
+    "scriptDurationSeconds": {
+      "before": 2.872179,
+      "after": 0.081512
+    },
+    "taskDurationSeconds": {
+      "before": 3.00143,
+      "after": 0.229368
+    },
+    "scriptReductionPercent": 97.1620153200758,
+    "taskReductionPercent": 92.35804266632906,
+    "profileWindowMs": {
+      "before": 3867.796,
+      "after": 3449.388
+    },
+    "profileSampleDeltaMs": {
+      "before": 3867.579,
+      "after": 3449.142
+    },
+    "observations": [
+      "before主要采样落在TutorialOverlay匿名回调2582.132ms、getRectIntersectionArea163.364ms、applyLayout159.581ms等；after主要是idle2777.045ms，TutorialOverlay applyLayout未见显著样本。与静止几何重复求解被复用的源码原因一致。",
+      "两个Performance delta窗口均约3.006秒，可比较该静止保存点的脚本/任务增量。Profiler开始早于metricsBefore、结束晚于metricsAfter，且原始采样窗不等长；不能把2582ms和2777ms当严格同窗百分比比较。",
+      "本次窄样本支持重复静态布局CPU开销明显下降。before/after记录没有在采集时附源码hash；本报告锁定审查时当前源码及证据hash，不把当前hash倒称为历史测量时已固化的hash。"
+    ]
+  },
+  "limitations": [
+    "缓存没有降低首次或真实几何变化后的候选求解成本：freeLefts×freeTops×protectedRegionRects仍最坏O(P³)，排序及大量候选分配也保留。不能把静止等待收益称作首次定位/持续动画性能已解决。",
+    "DOM查询与几何测量每100ms继续执行；缓存命中仍有O(P)签名和JSON.stringify开销。",
+    "动态地图、连续动画、所有步骤、所有屏幕尺寸、移动设备、低端硬件、输入延迟和长任务分布未由此3秒样本覆盖。",
+    "R143主链已经FAIL且本代理只读到7张中段图；本报告不恢复该链的完整E2E或全媒体UI资格，也不批准最终查看器。",
+    "本次不评判游戏规则、数值、随机结果或晚期存储性能。"
+  ],
+  "findings": [],
+  "conclusion": "当前完整几何缓存没有发现遗漏会改变布局结果的正常运行输入；指定公开行为回归与occupy真实保存点CPU记录支持静止轮询性能修复。首次求解、其它动态状态及完整主链/视觉验收保持未证明。",
+  "sourceHashes": {
+    "src/components/tutorial/TutorialOverlay.tsx": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+    "src/components/tutorial/__tests__/TutorialOverlay.layout.test.tsx": "68e2095382530ee315a42609bece4d3ecb6ea1cda40257533e2f23a0ae0ef7fd",
+    "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+    "e2e/qidahen/tutorialPointer.ts": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295"
+  },
+  "evidence": [
+    {
+      "path": "test-results/qidahen-shared-layout-cache-unit.log",
+      "sha256": "cf246959c396186bafd2b225e433810391eb7e68ad71c17067459ab100ac239f"
+    },
+    {
+      "path": "test-results/qidahen-report-cpu-before.log",
+      "sha256": "b4f926d04387cbd1c6cf7aeda1ef99710b2a9ad5ffbbec10c65253d09980792c"
+    },
+    {
+      "path": "test-results/qidahen-report-cpu-after.log",
+      "sha256": "ef615b021f120792341e54e301b3439c7b672a34e2f5730a8df9f952dbc9922b"
+    },
+    {
+      "path": "test-results/qidahen-layout-diagnostic/occupy-performance-before.json",
+      "sha256": "4ccc3f52183a9510d4904191aed8a1c4e6f1625743d4287fb829b5ee079770f8"
+    },
+    {
+      "path": "test-results/qidahen-layout-diagnostic/occupy-performance-after.json",
+      "sha256": "718adf5e560e021a9b3684abd4436869f48be571f5d3d0e06a32d851a86d3d35"
+    },
+    {
+      "path": "test-results/qidahen-layout-diagnostic/occupy-performance-before.cpuprofile",
+      "sha256": "c1a735816612bd155fac505d066ed6c52c14a4f8edcee8eb929fb2ad748d2c77"
+    },
+    {
+      "path": "test-results/qidahen-layout-diagnostic/occupy-performance-after.cpuprofile",
+      "sha256": "ca448f1282b7ae0b7545983343927472dafe5b77908143400145abc0f9418853"
+    }
+  ]
+}

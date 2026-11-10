@@ -1,0 +1,136 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "date": "2026-10-04",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "problemChain": {
+    "problemOriginal": "03 步骤写成“选择一种走法”，但后续教程固定要进入征兵训练；如果不选征兵路径，后面无法自然继续。",
+    "understanding": "正式规则允许前进 1、2、3 格，三种走法都合法；基础教程为了继续征兵训练主链必须明确固定走 1 格，同时保留其余合法选项并给出可回退路径。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "同一真实入口 /play/qidahen/tutorial/basic。",
+        "同一真实测试入口 e2e/qidahen/qidahen-closeout.e2e.ts。",
+        "新证据直接覆盖第03步、误选3格、回退到上一步与恢复轮盘未使用。"
+      ]
+    },
+    "currentSolution": "第03步保留完整规则原文，明确本教程固定选择免费走1；2/3格不被禁用，误选后进入 wheel-path-mismatch 回退卡，只允许上一步恢复并重新选择免费走1。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "真实浏览器 E2E 18 passed。",
+        "轮盘误选2或3格后回退卡可见、没有下一步、点击上一步恢复 wheelActionUsed=false。",
+        "类型检查、教程单测与规范 lint 已通过。"
+      ]
+    }
+  },
+  "requirements": [
+    {
+      "requirement": "教程文案必须保留原规则并明确固定教学路径",
+      "status": "PASS",
+      "evidence": [
+        "zh-CN wheelMove 保留1/2/3格规则，并补充本教程固定免费走1及误选后果。"
+      ]
+    },
+    {
+      "requirement": "合法分支不能被教程偷偷禁用",
+      "status": "PASS",
+      "evidence": [
+        "E2E 逐项确认 1/2/3 格按钮存在；未使用 allowedTargets 禁用2/3格。"
+      ]
+    },
+    {
+      "requirement": "误选后必须有可见、可操作的回退",
+      "status": "PASS",
+      "evidence": [
+        "新增 wheel-path-mismatch；无下一步，点击上一步恢复轮盘未使用。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/00-教程目录-先选择章节.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/01-开场-阅读三种胜利条件.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/02-开局检查-3张手牌未超过15张不弃牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/03-轮盘选择-1格2格3格规则.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/03a-轮盘误选其它走法-回到上一步.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/04-轮盘结算-征兵训练建立部队并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/05-手牌行动总览-四个势力行动.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/06-手牌行动-赐印招安规则.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/07-赐印招安-支付3张手牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/08-赐印招安-锦州部队移入山海关.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/09-赐印招安-部队位置与阵营变化.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/10-首回合-规则链完成.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/14a-轮盘第2a步-先选择参与进攻的部队.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15-轮盘第3步-进入进攻调度落点.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15a-开垦第1步-先把轮盘推进到开垦.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15b-开垦第2步-看己方控制区人口增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15c-军屯第1步-先把轮盘推进到军屯.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15d-军屯第2步-看补牌并建立正规军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15e-征兵训练第1步-先把轮盘推进到征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15f-征兵训练第2步-地图区域闪烁与兵牌淡出特写.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/15f-征兵训练第2步-看加兵并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/16-军备第0步-四个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/16-军备第1步-先点升级军备.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/17-军备第2步-点击底部手牌支付2张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/18-军备第3步-看火炮技术升到2级.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/18a-事件第0步-蒙古三个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/19-事件第1步-先点大汗令箭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/20-事件第2步-点击底部手牌支付1张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/21-事件第3步-选择征兵训练效果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/22-事件第4步-看蒙古兵力增加到4.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/22a-进攻第0步-大明四个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/23-进攻第1步-点击突袭作战入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/24-进攻第2步-弃1张手牌支付突袭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/25-进攻第3步-支付后进入察哈尔野战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/26a-进攻第4a步-看断后后的战后处理.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/27-进攻第5步-看战败标记与战后选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/27a-进攻第6步-看占领结果摘要.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/28-撤退第1步-先看断后和溃退入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/30-攻城第1步-真实守城宣告入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/30a-攻城第1a步-右侧断后结算城战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/31-攻城第2步-选择围城该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/31a-攻城第3步-同章选择占领该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/32-外交第1步-从轮盘进入外交雇佣.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/33-外交第2步-先放置友好标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/33a-外交第2a步-翻为附庸.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/33b-外交第2b步-移除他方控制标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/34-外交第3步-结束并结算雇佣军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/35-外交第4步-看完外交与雇佣的合并收益.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/36-跨年第1步-推进到年中并查看税赋与人物.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/37-跨年第2步-先看新年朝鲜朝贡.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/38-跨年第3步-进入新年防线维护.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/39-跨年第4步-看纪年卡与争分结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/40-跨年第5步-看新顺位与人物刷新.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/41-跨年第6步-看到新年结算与新年份.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/44-朝鲜第3步-看海路与船锚区域关系.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/移动-01-移动教程-手牌检视前.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/移动-02-移动教程-长按手牌打开检视.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/2026-10-04-qidahen-wheel-fixed-path-v1-all/移动-03-移动教程-关闭检视回到牌桌.png"
+  ],
+  "verification": {
+    "e2e": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+    "unit": "npx vitest run src/games/qidahen/__tests__/tutorialFlow.test.ts",
+    "typecheck": "npm run typecheck",
+    "specLint": "npm run spec:lint",
+    "screenshotRunId": "2026-10-04-qidahen-wheel-fixed-path-v1",
+    "desktopPngCount": 65,
+    "mobilePngCount": 3,
+    "totalPngCount": 68,
+    "badPngCount": 0
+  }
+}

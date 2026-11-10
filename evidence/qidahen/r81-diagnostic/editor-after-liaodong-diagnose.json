@@ -1,0 +1,67 @@
+{
+  "url": "http://127.0.0.1:4273/dev/qidahen-region-mask",
+  "canonicalMaskSha256": "a5920d67b5ceb274ec8f4a79fcc138bb29a6cdc46cea4eda57846d51bf2e5734",
+  "pixels": [
+    {
+      "x": 892,
+      "y": 350,
+      "rgba": [
+        77,
+        213,
+        89,
+        255
+      ]
+    },
+    {
+      "x": 893,
+      "y": 430,
+      "rgba": [
+        36,
+        141,
+        232,
+        255
+      ]
+    },
+    {
+      "x": 735,
+      "y": 441,
+      "rgba": [
+        77,
+        100,
+        213,
+        255
+      ]
+    },
+    {
+      "x": 710,
+      "y": 390,
+      "rgba": [
+        213,
+        77,
+        179,
+        255
+      ]
+    },
+    {
+      "x": 500,
+      "y": 548,
+      "rgba": [
+        213,
+        213,
+        77,
+        255
+      ]
+    },
+    {
+      "x": 503,
+      "y": 634,
+      "rgba": [
+        65,
+        198,
+        47,
+        255
+      ]
+    }
+  ],
+  "screenshot": "evidence/qidahen/r81-diagnostic/正式编辑器-after-liaodong-diagnose.png"
+}

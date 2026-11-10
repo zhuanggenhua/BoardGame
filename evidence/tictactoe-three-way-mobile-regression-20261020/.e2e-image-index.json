@@ -1,0 +1,52 @@
+{
+  "media": [
+    {
+      "path": "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources/安卓真机原图.png",
+      "chainId": "ttt-platform-comparison-2026-10-20",
+      "chainStep": "1",
+      "sourceRun": "安卓官方 App，OTA 显示版本 759，2026-10-20",
+      "sourceDir": "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "先采集最新版安卓 App 的独立井字棋测试房整屏。",
+      "description": "安卓真机竖屏展示井字棋 玩家信息栏 与展开的离开菜单。"
+    },
+    {
+      "path": "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources/手机网页原图.jpg",
+      "chainId": "ttt-platform-comparison-2026-10-20",
+      "chainStep": "2",
+      "sourceRun": "npm run test:e2e:file -- e2e/tictactoe/tictactoe-mobile-layout.e2e.ts",
+      "sourceDir": "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "加入同一浏览器人机房在三百六十乘八百视口的整屏。",
+      "description": "手机网页显示相同人机测试房的 玩家信息栏 与离开菜单。"
+    },
+    {
+      "path": "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources/电脑网页原图.jpg",
+      "chainId": "ttt-platform-comparison-2026-10-20",
+      "chainStep": "3",
+      "sourceRun": "npm run test:e2e:file -- e2e/tictactoe/tictactoe-mobile-layout.e2e.ts",
+      "sourceDir": "evidence/tictactoe-three-way-mobile-regression-20261020/_temporary/sources",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "继续使用同一浏览器人机房切换到桌面视口并截取整屏。",
+      "description": "电脑网页显示相同人机测试房的 玩家信息栏 与离开菜单。"
+    },
+    {
+      "path": "evidence/tictactoe-three-way-mobile-regression-20261020/井字棋-PC-手机网页-安卓真机三方整屏对比.png",
+      "chainId": "ttt-platform-comparison-2026-10-20",
+      "chainStep": "4",
+      "sourceRun": "三端整屏合成，2026-10-20",
+      "sourceDir": "evidence/tictactoe-three-way-mobile-regression-20261020",
+      "stage": "三端汇总",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "将三张完整整屏等比缩放后并列汇总为单张对比图。",
+      "description": "单张三栏图并列展示电脑网页手机网页和安卓真机。"
+    }
+  ]
+}

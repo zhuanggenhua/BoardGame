@@ -1,0 +1,100 @@
+{
+  "title": "Betrayal 兔脚重投与教程完整流程 PASS 图组",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\first-roll-motion.png",
+      "label": "首次事件投骰：过程帧在骰盘内可见",
+      "transition": "真实点击投骰按钮后，骰子在盘内开始运动，没有从俯视方向消失"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-selection-highlight.png",
+      "label": "兔脚改骰：可选骰子与选中高亮",
+      "transition": "点击兔脚后，骰子本体仍可见，透明命中框贴近骰子，选中高亮清楚"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-reroll-motion.png",
+      "label": "兔脚重投：重掷过程帧",
+      "transition": "确认重投后进入新一次重掷运动，不是原地静态闪现"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-after-reroll-settled.png",
+      "label": "兔脚重投：新落点稳定在骰盘内",
+      "transition": "重投完成后骰子位置发生可见变化，仍完整落在骰盘范围内"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-13T07-39-12-604Z\\rabbit-before-confirm.png",
+      "label": "兔脚重投后：保留确认骰面",
+      "transition": "重投结果可读后，确认按钮仍保留给玩家查看新骰面"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\01-after-rabbit-damage-end-turn.png",
+      "label": "兔脚结果收口：伤害分配后结束回合",
+      "transition": "确认骰面后进入伤害分配，完成分配再真实点击结束回合"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\02-dog-waiting-confirmation.png",
+      "label": "队友二翻出狗：确认归属等待提示",
+      "transition": "队友二的狗由队友二确认，当前玩家看到等待确认和下一步提示"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\03-after-dog-confirmation-handoff.png",
+      "label": "狗确认后：回到当前玩家",
+      "transition": "点下一步让队友二确认后，确认队列清空并回到玩家 0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\04-mask-waiting-confirmation.png",
+      "label": "队友一翻出面具：作祟确认等待",
+      "transition": "队友一翻出面具并触发作祟，当前玩家看到等待确认和下一步提示"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\05-hero-reader-opening.png",
+      "label": "面具确认后：英雄开场过场",
+      "transition": "点下一步让队友一确认后，进入英雄读本开场，不再无提示卡住"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\06-hero-reader-turn-page.png",
+      "label": "英雄读本：进入剧本书入口",
+      "transition": "教程提示玩家点击剧本书翻页区域，入口可见可点"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\07-hero-reader-goal.png",
+      "label": "英雄剧本书：目标页说明图书馆原因",
+      "transition": "剧本书目标页显示真名、驱逐法术和图书馆等目标线索"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\08-hero-reader-close.png",
+      "label": "读完目标：关闭剧本书",
+      "transition": "教程提示关闭读本，关闭按钮在前景可见"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\09-back-to-hero-turn-after-reader.png",
+      "label": "回到英雄回合：队友二自动结束回合",
+      "transition": "关闭读本后，队友二按正式流程结束回合，控制权回到玩家 0"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\10-open-library-move-action.png",
+      "label": "英雄目标行动：打开移动",
+      "transition": "玩家已知道图书馆原因，下一步真实点击移动按钮"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\11-library-target-visible.png",
+      "label": "图书馆成为移动目标",
+      "transition": "移动候选打开后，图书馆本体可见可点"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\12-hero-study-name-action.png",
+      "label": "进入图书馆：寻找木乃伊真名入口",
+      "transition": "玩家移动进图书馆后，使用按钮变成寻找木乃伊真名"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\13-hero-study-name-result-confirm.png",
+      "label": "寻找真名：投骰结果与确认按钮",
+      "transition": "知识检定成功后，结果、骰盘和确认按钮同时保留给玩家阅读"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T07-33-13-937Z\\14-hero-study-name-closeout.png",
+      "label": "确认后收口：目标进度已落位",
+      "transition": "确认投骰结果后，投骰层关闭，目标进度保留并回到结束回合入口"
+    }
+  ]
+}

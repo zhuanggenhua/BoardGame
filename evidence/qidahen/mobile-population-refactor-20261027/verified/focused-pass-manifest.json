@@ -1,0 +1,128 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "changeType": "refactor",
+  "acceptanceMode": "visual-only",
+  "acceptanceReason": "本轮恢复七大恨既有主棋盘HUD、移动横屏信息与人口布局，保持原命令语义；此展示组用于整屏布局验收，真实选择、取消、检视返回和滚动归属由同跑独立E2E证明，不升级为全游戏验收。",
+  "sourceRevision": "9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "横屏规则对象守恒，原三席、纪年、朝鲜、轮盘、抽弃牌和手牌都有可见承载",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/01-桌面棋盘代表态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png"
+      ]
+    },
+    {
+      "requirement": "横屏地图控件完整可见、行动入口不被工具或退出子钮遮住",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png"
+      ]
+    },
+    {
+      "requirement": "人口方块不重叠、狭窄区域引线归属可辨；37区离线归属与占位检查另有行为证据",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/01-桌面棋盘代表态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png"
+      ]
+    },
+    {
+      "requirement": "支付托盘与标题、类别、查看及选中边界分离，确认与取消主次明确",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/03-手机横屏支付选择.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/05-桌面支付选择.png"
+      ]
+    },
+    {
+      "requirement": "卡牌查看和关闭保持原选牌，六张溢出手牌代表态可逐张滚动检视",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/04-手机横屏卡牌检视.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/behavior.json",
+        "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/e2e-final-board.log"
+      ]
+    },
+    {
+      "requirement": "支付后进入招安地图目标，只有一处任务提示且地图候选高亮本体保留",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/06-手机横屏地图目标.png"
+      ]
+    }
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/01-桌面棋盘代表态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/03-手机横屏支付选择.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/04-手机横屏卡牌检视.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/05-桌面支付选择.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/06-手机横屏地图目标.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/final_visual_scoped"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/populationLayout.test.ts src/games/qidahen/__tests__/runtimeRegionOwnership.test.ts src/games/qidahen/__tests__/mapGraph.test.ts src/games/qidahen/__tests__/handInteractionTray.test.tsx src/games/qidahen/__tests__/qidahen-payment-and-hand-action.test.ts src/games/qidahen/__tests__/qidahen-wheel-dispatch-payment.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/operationPrompt.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=json --outputFile=temp/qidahen-mobile-population-20261027/behavior-final-current.json",
+      "$env:PW_E2E_SERVICE_REUSE='isolated'; node scripts/infra/run-e2e-command.mjs isolated e2e/qidahen/mobile-population-layout.tmp.e2e.ts --retries=0"
+    ],
+    "evidence": [
+      "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/e2e-final-board.log",
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/behavior.json",
+      "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/runtime-at-entry.json",
+      "D:/gongzuo/webgame/BoardGame/temp/qidahen-mobile-population-20261027/behavior-final-current.json"
+    ]
+  },
+  "limitations": [
+    "使用basic-opening独立代表态；不证明完整联机开局、自然抽牌或整游戏规则审计。",
+    "内部另覆盖2560×1304与六张合法普通手牌滚动；未覆盖手机竖屏、其它手机尺寸及所有游戏阶段。",
+    "全仓类型检查及Board旧源码字串套件未全部通过；本清单只证明本轮布局与直接交互。",
+    "采集后同文件的教程地区标签和突袭支付专属分支已单独作差异审查，本图组不证明这些分支的行为。"
+  ],
+  "sourceScopeEquivalence": "source-scope-equivalence-review.json",
+  "outOfScopeMedia": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/02-宽屏常态.png",
+      "contract": "内部宽屏常态对照",
+      "reason": "相同布局的额外宽屏视口留作内部检查"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/07-宽屏支付选择.png",
+      "contract": "内部宽屏支付对照",
+      "reason": "相同支付布局的额外宽屏视口留作内部检查"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/09-桌面地图目标.png",
+      "contract": "内部桌面地图目标对照",
+      "reason": "目标去重的桌面对照留作内部检查"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/10-手机横屏六张手牌滚动代表态.png",
+      "contract": "内部六牌滚动代表态",
+      "reason": "用于验证溢出、检视归属与浏览路径的压力数据留在内部"
+    }
+  ]
+}

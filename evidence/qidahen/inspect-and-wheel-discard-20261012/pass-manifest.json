@@ -1,0 +1,83 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-12T03:00:00.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "悬浮地图地点时，出现可见地点功能/详情 tip，不是空悬浮。",
+      "status": "PASS",
+      "evidence": [
+        "独立 E2E e2e/qidahen/inspect-and-wheel-discard.e2e.ts 点击皮岛后 qidahen-map-region-tip 可见，含皮岛与「点击查看地点详情」。",
+        "media/前态-地图地点与军备悬浮提示可见.png 可见皮岛地点 tip。"
+      ]
+    },
+    {
+      "requirement": "玩家面板军备显示不完就不要截断科技树；点击悬浮窗打开详情弹窗，弹窗含完整军备和弃牌堆。",
+      "status": "PASS",
+      "evidence": [
+        "顶栏 qidahen-armaments-ming 文案为「军备详情」，不含火炮技术截断名。",
+        "点击玩家悬浮窗后打开 qidahen-inspect-panel，含完整军备列表和弃牌堆张数。",
+        "media/中态-详情弹窗显示军备与弃牌堆.png 可见完整军备与弃牌堆 7 张。"
+      ]
+    },
+    {
+      "requirement": "点击详情不切换地图视角/镜头。",
+      "status": "PASS",
+      "evidence": [
+        "同一用例记录点击地点 tip 前后 data-map-zoom / data-map-pan 不变。",
+        "media/中态-详情弹窗显示军备与弃牌堆.png 与前态同一全图机位，详情是 overlay。"
+      ]
+    },
+    {
+      "requirement": "点击轮盘走格落到进攻调度后，先出现可见弃牌提示，再进入选择部队。",
+      "status": "PASS",
+      "evidence": [
+        "走 3 格后 qidahen-wheel-dispatch-payment-panel 可见「需弃 1 张」，确认前 targeting 隐藏。",
+        "media/后态-轮盘进攻调度弃牌提示可用.png 可见「选择弃置的手牌」和「确认弃牌」。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/qidahen/inspect-and-wheel-discard-20261012/media/前态-地图地点与军备悬浮提示可见.png",
+    "evidence/qidahen/inspect-and-wheel-discard-20261012/media/中态-详情弹窗显示军备与弃牌堆.png",
+    "evidence/qidahen/inspect-and-wheel-discard-20261012/media/后态-轮盘进攻调度弃牌提示可用.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "image_acceptance_audit"
+    },
+    "reviewFile": ".visual-review.json",
+    "summary": {
+      "fullCoverage": true,
+      "totalMediaCount": 3,
+      "passCount": 3,
+      "reviseCount": 0,
+      "numericOrRuleValidation": "excluded; covered by E2E/Vitest"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/qidahen-wheel-dispatch-payment.test.ts src/games/qidahen/__tests__/qidahen-dispatch-battle-entry.test.ts src/games/qidahen/__tests__/Board.test.ts --config vitest.config.core.ts --configLoader native --pool forks --maxWorkers 1",
+      "node scripts/infra/run-e2e-single.mjs default e2e/qidahen/inspect-and-wheel-discard.e2e.ts \"地图地点与军备弃牌可查看且轮盘进攻调度先弃牌\""
+    ],
+    "evidence": [
+      "Vitest：3 files / 240 tests passed。",
+      "独立 E2E：1 passed（23.8s），截图前态/中态/后态来自同一次运行。"
+    ]
+  }
+}

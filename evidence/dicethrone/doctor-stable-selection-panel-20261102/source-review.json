@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-11-02T16:43:53.9652349+08:00",
+  "conclusion": "通过",
+  "conclusionScope": "仅本轮局部源码增量与已提供证据的直接覆盖范围",
+  "comparison": {
+    "method": "git diff --no-index，指定本轮前快照与当前文件；未使用全仓 git diff",
+    "before": {
+      "path": "evidence/dicethrone/doctor-stable-selection-panel-20261102/before/InteractionOverlay.tsx",
+      "sha256": "206671d6bac874631a08a0c266b027bda89c19a4ff625afe79d82a0621998b84"
+    },
+    "after": {
+      "path": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "sha256": "37c8d4ffe4bcd7e0a9573d86f80d87f853fa9ec9da2e160d152b975579808ebd"
+    }
+  },
+  "findings": [],
+  "sourceReview": [
+    "既有 InteractionOverlay 卡池仍为唯一 owner；没有新增状态、组件、注册表或旁路。",
+    "本轮增量限于视口约束下的稳定 surface 高度、flex 纵向承载、min-h-0 候选区滚动、不可收缩的标题/搜索/footer、确认居中的独立 grid 列。",
+    "CARD_POOL_CARD_WIDTH、卡面渲染/选择反馈/皮肤、骰盘及原有 onSelectHandCard、onConfirm、onCancel、canConfirm 语义均未改变。移除的纵横比计算只服务旧候选区 minHeight。",
+    "grid 的中列 auto 与对称两侧 1fr 让确认目标中心不依赖 canCancel 存在与短确认标签宽度；当前真实调用中会变化的确认文案位于 canCancel=false 的 ChoiceObjectSelection。",
+    "候选区为 flex-1 min-h-0 overflow-y-auto；footer 为 shrink-0，不随搜索命中、空态或选择数量参与内容自适应。",
+    "新 canonical 操作位置稳定规则以 ui-responsive-layout 为唯一来源，本增量与其同视口/同会话稳定要求一致。"
+  ],
+  "verification": {
+    "unit": {
+      "log": "temp/doctor-stable-panel-unit-20261102.log",
+      "reportedResult": "1 个测试文件通过，40/40 测试通过",
+      "independentlyRerun": false,
+      "notes": "读取现有实际执行日志，存在 missing_sfx 诊断，测试结果为通过。"
+    },
+    "captures": [
+      {
+        "path": "temp/doctor-deck-effect-source-capture-20261102/stable-after-desktop/capture.json",
+        "captureSha256": "ce66c65079081675add61778bc9b95098a382cd059875b13ed48e01da3e67d59",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "states": 6,
+        "sourceHashMatchesCurrent": true,
+        "geometryStable": true,
+        "mediaFileHashesValid": true,
+        "panel": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "confirmCenter": [
+          719.9921875,
+          589
+        ],
+        "productAcceptance": "not-claimed"
+      },
+      {
+        "path": "temp/doctor-deck-effect-source-capture-20261102/stable-after-landscape/capture.json",
+        "captureSha256": "871a931eb4ce28ff50f26147d341ea5a2c48f4f1817d49685c1727feacffa4a5",
+        "viewport": {
+          "width": 812,
+          "height": 375
+        },
+        "states": 6,
+        "sourceHashMatchesCurrent": true,
+        "geometryStable": true,
+        "mediaFileHashesValid": true,
+        "panel": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "confirmCenter": [
+          405.9921875,
+          331
+        ],
+        "productAcceptance": "not-claimed"
+      }
+    ]
+  },
+  "limitations": [
+    "本审查未运行、未宣告 16 个博士真实入口正式 E2E 通过；其结果由主任务单独回查。",
+    "现有坐标证据是血色杀戮原卡池 1440x900 和 812x375 各 6 状态，不代替博士规则入口的端到端行为结果。",
+    "本审查读取 capture 坐标并核验源码/媒体哈希，未执行逐图肉眼视觉审计，不作最终图面 PASS 或玩家验收结论。",
+    "canCancel 开关与不同确认文案的中心稳定性已做结构审查；给定 6 状态坐标未覆盖其切换，不冒充该项浏览器测量。",
+    "未验证软键盘弹出、安全区设备、超长多语言按钮文本、其它桌面基线视口和极小高度场景，不将现有两视口结果推广为这些场景已通过。"
+  ],
+  "remainingRisks": "无已发现的本轮增量阻塞项；完整运行与视觉验收仍由主任务完成。"
+}

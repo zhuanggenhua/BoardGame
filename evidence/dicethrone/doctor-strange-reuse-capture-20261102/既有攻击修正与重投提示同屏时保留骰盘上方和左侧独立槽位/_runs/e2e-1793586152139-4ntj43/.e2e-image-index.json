@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "重投左中与上方攻击修正同屏-桌面.png",
+      "chainId": "原骰盘提示与攻击修正同屏",
+      "chainStep": "同屏独立槽位",
+      "stage": "中态",
+      "uiStateId": "reroll-modifier-separate-slots",
+      "behaviorStepId": "reroll-modifier-separate-slots",
+      "viewport": "desktop",
+      "role": "main-flow",
+      "description": "实际出牌后，重投提示位于骰盘左侧中点，攻击修正仍在骰盘上方。",
+      "transition": "攻击修正卡与重投卡按真实入口依次打出。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "攻击修正卡与重投卡按真实入口依次打出。",
+      "sourceRevision": "0ed6bd27143bf37dad49fc8c6d4e8a73615f6d20777f1607bad20ac3eeb95e14",
+      "e2eSourceRevision": "66d80ae890adaa8aa0616387c05957029ad518ff9e81ebc6787546706c0c29ce",
+      "requirements": [
+        "重投提示与攻击修正不重合"
+      ],
+      "sourceRun": "1793586260888-254704-cfb51ad2-0570-46cc-87e9-078a95848842",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位/_runs/e2e-1793586152139-4ntj43"
+    }
+  ]
+}

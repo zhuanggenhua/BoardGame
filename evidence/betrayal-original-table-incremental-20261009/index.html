@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂原牌桌增量验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂原牌桌增量验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-桌面-属性条与完整能力.jpg","displayTitle":"01 · 桌面 · 属性条与完整能力","description":"桌面牌桌左侧属性条当前格金色对齐，完整特性正文与急救包分开，当前位置芯片已去掉。","kind":"image"},{"relativePath":"02-手机横屏-未点击能力全名.jpg","displayTitle":"02 · 手机横屏 · 未点击能力全名","description":"手机横屏未点击时特性全名完整可见，摘要第二行给出有用短句，急救包未被挡住。","kind":"image"},{"relativePath":"03-手机横屏-点击后能力详情.jpg","displayTitle":"03 · 手机横屏 · 点击后能力详情","description":"点击能力入口后完整说明展开可读，关闭键可见，左下急救包仍露出。","kind":"image"},{"relativePath":"04-桌面-剧本书无额外标题.jpg","displayTitle":"04 · 桌面 · 剧本书无额外标题","description":"桌面剧本书只显示原有章节正文，没有额外剧本名标题，关闭翻页是小方钮。","kind":"image"},{"relativePath":"05-手机横屏-剧本书无额外标题.jpg","displayTitle":"05 · 手机横屏 · 剧本书无额外标题","description":"手机横屏剧本书两页原文清晰，没有额外标题，关闭与翻页保持小方钮。","kind":"image"},{"relativePath":"06-手机横屏-关闭剧本书返回选择页.jpg","displayTitle":"06 · 手机横屏 · 关闭剧本书返回选择页","description":"关闭读本后回到剧本选择页，阅读确认关闭三个按钮仍在同一排。","kind":"image"},{"relativePath":"07-桌面-剧本选择三按钮同排.jpg","displayTitle":"07 · 桌面 · 剧本选择三按钮同排","description":"桌面剧本选择底部阅读确认关闭三个按钮同一排，文字大小匹配按钮。","kind":"image"},{"relativePath":"08-手机横屏-剧本选择三按钮同排.jpg","displayTitle":"08 · 手机横屏 · 剧本选择三按钮同排","description":"手机横屏剧本选择同样三个按钮同一排，文字可读且没有撑破操作带。","kind":"image"},{"relativePath":"09-手机横屏-过程文案继续按钮.jpg","displayTitle":"09 · 手机横屏 · 过程文案继续按钮","description":"确认开局后过程文案继续按钮可读，没有胀成正文两倍高，左侧特性全名仍完整。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

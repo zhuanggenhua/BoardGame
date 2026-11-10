@@ -1,0 +1,90 @@
+{
+  "objective": "核查开垦保存点的地图恢复查看诊断：辽东语义关联、镜头外候选恢复可见、原地图控件和候选保留。",
+  "scope": "仅限正式管线保存点 reclaim-target 恢复查看诊断；不是完整自然教程，不放行规则数值、自然整链、其它视口或最终用户展示。",
+  "reviewer": "/root/r148_pan_and_baseline",
+  "mode": "all-three-original-screenshots-private-review",
+  "verdict": "PASS-diagnostic-only",
+  "summary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "blocked": 0,
+    "partial": 0
+  },
+  "criteria": [
+    "恢复图回到辽东，当前注释可与辽东真实区域、阵营标记、部队和人口关联。",
+    "拖开图中此前镜头外的合法候选本体与绿色可选地区边界可辨。",
+    "地图缩放、复位、开垦确认等原操作控件保留；不以要求所有候选的人口和部队同时无遮挡替代 UI 层级审查。",
+    "静态图只判可见状态；拖动行为和状态守恒仅交叉引用 receipt 与测试日志。"
+  ],
+  "items": [
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-map-pan-r148-native/reclaim-target.png",
+      "sha256": "4587314c14e8ce61cbbad2f27c1ba48e965cfbdf0d75f29501cb68e95a50c1cc",
+      "status": "PASS",
+      "observation": "辽东位于中央偏右，白色主边界贴合地区；辽东名牌、明标记、三枚部队标记和人口 3 均可见。注释置于辽东上侧，正文明确写辽东，向下缺口与地区/标记形成可理解关联，没有替代真实区域输入。其它合法地区仍有绿色边界。左下缩放与复位、右侧开垦确认、行动轮盘、玩家状态和牌区均保留。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-map-pan-r148-native/reclaim-target-map-panned.png",
+      "sha256": "bd22d39858dc296005f8c31c8cc788e821f98ad76d141c8723030ca7a3b809c6",
+      "status": "PASS",
+      "observation": "拖开后的中央偏左可见榆林地区，绿色主边界围合真实地区，明标记、部队标记和人口 2 可辨；与 receipt 的 city-region-31 恢复位置一致，可确认镜头外候选可以恢复到可读位置。地图缩放、复位、行动轮盘与开垦确认控件仍在。辽东此时离屏，注释移至右下且仍写辽东，因此不把该注释误记成榆林解释，也不以此图证明辽东仍可直接操作。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-map-pan-r148-native/reclaim-target-map-restored.png",
+      "sha256": "7ed72e96ade00a406f1aaa666824a829fc3587b4a409a043b35b555858c4d6b1",
+      "status": "PASS",
+      "observation": "画面已回到原辽东构图：辽东地区边界、名牌、明标记、三枚部队标记、人口 3 与原图位置一致；正文注释重新位于辽东上侧，关联成立。原绿色候选边界、缩放/复位、确认及各牌区仍可见，未见为突出注释而删除地图候选或地图操作控件。"
+    }
+  ],
+  "layoutAudit": {
+    "scopeSource": "父任务指定的保存点地图恢复查看诊断；按场景层与注释层分别审查。",
+    "checks": [
+      {
+        "criterion": "空间主次",
+        "status": "PASS",
+        "observation": "恢复态以白边辽东为当前解释焦点，绿色地区边界承载其它合法候选；不要求全部候选人口/军队同时无遮挡。"
+      },
+      {
+        "criterion": "对齐栅格",
+        "status": "PASS",
+        "observation": "固定操作层在三图中保持位置，地图层发生平移；恢复态注释与辽东位置关系重新成立。"
+      },
+      {
+        "criterion": "分组与装饰",
+        "status": "PASS",
+        "observation": "绿色候选描边仍贴地区形状，军队/人口/阵营保持地图对象表达；注释和右侧开垦确认职责可分。"
+      }
+    ]
+  },
+  "negative_impact_checks": [
+    {
+      "object": "镜头外合法候选 city-region-31",
+      "status": "PASS",
+      "observation": "未删除；receipt 标明其原先在左下屏外，拖开后恢复到中央，原图实读可见其地区和绿色候选态。"
+    },
+    {
+      "object": "辽东当前解释对象",
+      "status": "PASS",
+      "observation": "拖开期间移出视口；恢复图已回到原位。拖开图右下注释仍谈辽东，是过程态限制，不是榆林注释。"
+    },
+    {
+      "object": "地图操作控件及其它可支配对象",
+      "status": "PASS",
+      "observation": "缩放/复位、开垦确认、行动轮盘、玩家状态、手牌/持有牌和牌堆原承载保留；本次没有以删除候选来换取局部清晰度的图面迹象。"
+    }
+  ],
+  "behavior_crosscheck": {
+    "receipt": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-map-pan-r148-native/reclaim-target-pan-receipt.json",
+    "log": "evidence/qidahen/tutorial-layering-20261101-r145/checks/semantic-map-pan-r148.log",
+    "status": "PASS-diagnostic-only",
+    "observation": "receipt 为 PASS-diagnostic-only，stateStep=reclaim-target，fullChainClaimed=false；候选列表含 city-region-31，原 rect x=-160.97/y=888.64、offscreen=true，恢复 rect x=936.56/y=427.62。辽东名牌原位置 x=1032/y=351.140625，回到 x=1032/y=351.078125。日志记载 semantic-anchor 正式管线保存点 reclaim-target 测试 1 passed。静态截图不独立证明原生鼠标事件序列、全过程候选集合不变或无位置注入，这些行为结论仍属于运行诊断记录的覆盖范围。"
+  },
+  "hard_failures": [],
+  "limitations": [
+    "未验收自然教程完整链路。",
+    "未裁决人口、军队、收入或其它规则数值正确性。",
+    "拖开图中辽东离屏，右下注释只保留原辽东说明，不证明对中央恢复候选的语义标注。",
+    "不生成最终 PASS 媒体清单或用户查看器，不返回图片。"
+  ]
+}

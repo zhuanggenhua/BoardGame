@@ -7,6 +7,7 @@ import { prependNodePath, resolveWorkspaceNodeModuleFile } from './node-module-r
 function createSpawnOptions(env, overrides = {}) {
   return {
     stdio: overrides.stdio ?? 'inherit',
+    ...(overrides.cwd ? { cwd: overrides.cwd } : {}),
     env,
     ...withWindowsHide({}, env),
   };
@@ -35,7 +36,7 @@ export function spawnBundleRunner({ label, entry, outfile, tsconfig, env, watch 
 export function spawnTsxEntry({ entry, tsconfig, env, spawnOptions = {} }) {
   const tsxCliInfo = resolveWorkspaceNodeModuleFile('tsx/dist/cli.mjs', {
     label: 'tsx CLI',
-    cwd: process.cwd(),
+    cwd: spawnOptions.cwd || process.cwd(),
   });
   return spawn(process.execPath, [
     tsxCliInfo.filePath,
@@ -46,16 +47,18 @@ export function spawnTsxEntry({ entry, tsconfig, env, spawnOptions = {} }) {
 }
 
 export function spawnTsLoaderEntry({ entry, env, tsconfig, spawnOptions = {} }) {
-  const loaderUrl = pathToFileURL(path.resolve('scripts/infra/ts-runtime-loader.mjs')).href;
+  const sourceRoot = spawnOptions.cwd || process.cwd();
+  const loaderUrl = pathToFileURL(path.resolve(sourceRoot, 'scripts/infra/ts-runtime-loader.mjs')).href;
   return spawn(process.execPath, [
     '--loader',
     loaderUrl,
     entry,
   ], {
     stdio: spawnOptions.stdio ?? 'inherit',
+    ...(spawnOptions.cwd ? { cwd: spawnOptions.cwd } : {}),
     env: {
       ...env,
-      ...(tsconfig ? { TS_RUNTIME_TSCONFIG: path.resolve(tsconfig) } : {}),
+      ...(tsconfig ? { TS_RUNTIME_TSCONFIG: path.resolve(sourceRoot, tsconfig) } : {}),
     },
     ...withWindowsHide({}, env),
   });

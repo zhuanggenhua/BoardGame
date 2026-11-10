@@ -289,6 +289,7 @@ export const resolveQidahenPendingTargetInteractionChoice = (
         syncFactionActionWindow,
         advanceTurnIfReady: advanceQidahenTurnIfReady,
     },
+    onBattleRolled?: (pending: QidahenPendingTargetAction, rolls: QidahenBattleRolls) => void,
 ): QidahenCore => {
     const requestedPayload = normalizePendingTargetInteractionPayload(value);
     const currentPendingTargetAction = getQidahenInteractionSelectionStateForCore(
@@ -307,7 +308,9 @@ export const resolveQidahenPendingTargetInteractionChoice = (
         : null;
 
     const payload = { ...requestedPayload, ...pendingTargetAction?.defenderDeclaration };
-    const battleRolls = pendingTargetAction?.resolvedBattleRolls ?? (pendingTargetAction && pendingTargetAction.battleStep !== 'defender-declaration'
+    const awaitingFeignedResponse = pendingTargetAction && buildQidahenFeignedRetreatSelection(state, pendingTargetAction,
+        { playerId: state.currentPlayer, attackerCavalryPlunder: payload.attackerCavalryPlunder });
+    const battleRolls = pendingTargetAction?.resolvedBattleRolls ?? (pendingTargetAction && pendingTargetAction.battleStep !== 'defender-declaration' && !awaitingFeignedResponse
         ? dependencies.createStructuredBattleRolls(state, pendingTargetAction, random, {
             defenderSortieBattle: payload.defenderSortieBattle === true,
             defenderHoldCity: payload.defenderHoldCity === true,
@@ -315,7 +318,7 @@ export const resolveQidahenPendingTargetInteractionChoice = (
             attackerCavalryPlunder: payload.attackerCavalryPlunder === true,
         }) : null);
 
-    return resolveQidahenPendingActionFromPayload(state, {
+    const result = resolveQidahenPendingActionFromPayload(state, {
         playerId: state.currentPlayer,
         pendingTargetAction,
         committedTroops: pendingTargetAction?.resolvedBattleRolls ? undefined : payload.committedTroops,
@@ -330,6 +333,10 @@ export const resolveQidahenPendingTargetInteractionChoice = (
         defenderCasualtyPriority: payload.defenderCasualtyPriority,
         battleRolls,
     }, timestamp, dependencies);
+    if (pendingTargetAction && battleRolls && !pendingTargetAction.resolvedBattleRolls && !result.feignedRetreatSelection) {
+        onBattleRolled?.(pendingTargetAction, battleRolls);
+    }
+    return result;
 };
 
 export const resolveQidahenPostBattleInteractionChoice = (

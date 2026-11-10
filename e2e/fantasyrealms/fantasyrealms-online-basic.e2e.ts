@@ -108,11 +108,11 @@ async function ensureFantasyRealmsLobbyReady(page: Page): Promise<void> {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await waitForFrontendAssets(page, 45_000);
     await waitForHomeGameList(page, 45_000);
-    await expect(page.getByRole('heading', { name: '幻想国度' }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-game-id="fantasyrealms"] .platform-game-open').first()).toBeVisible({ timeout: 15_000 });
 }
 
 async function openFantasyRealmsCreateRoomModal(page: Page): Promise<void> {
-    const fantasyRealmsCard = page.locator('a[data-game-id="fantasyrealms"]').first();
+    const fantasyRealmsCard = page.locator('[data-game-id="fantasyrealms"] .platform-game-open').first();
     await expect(fantasyRealmsCard).toBeVisible({ timeout: 15_000 });
     await fantasyRealmsCard.click();
     await expect(page).toHaveURL(/game=fantasyrealms/);
@@ -1251,7 +1251,10 @@ test.describe('FantasyRealms online basic flow', () => {
     test('首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图', async ({ browser }, testInfo) => {
         test.setTimeout(420000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const context = await browser.newContext({ baseURL });
+        const context = await browser.newContext({
+            baseURL,
+            ...(process.env.PW_RECORD_VIDEO === 'true' ? { recordVideo: { dir: testInfo.outputPath('video') } } : {}),
+        });
         await initContext(context, {
             storageKey: '__fantasyrealms_online_ui_full_flow__',
             skipImageGate: true,
@@ -1449,6 +1452,14 @@ test.describe('FantasyRealms online basic flow', () => {
                 await page.screenshot({ path: beforeTakePath, fullPage: false });
             }
 
+            await page.evaluate(() => {
+                (window as Window & { __frNaturalExitAnimations?: number }).__frNaturalExitAnimations = 0;
+                document.addEventListener('animationstart', (event) => {
+                    if ((event.target as Element).matches('[data-testid="fantasyrealms-live-center-exit-card"]')) {
+                        (window as Window & { __frNaturalExitAnimations?: number }).__frNaturalExitAnimations! += 1;
+                    }
+                });
+            });
             await takeDiscardButton.click();
             if (options?.afterTakeScreenshotName) {
                 await page.waitForTimeout(400);
@@ -1471,6 +1482,9 @@ test.describe('FantasyRealms online basic flow', () => {
                     },
                     `等待首页真实建房入口的 host 在 turn ${beforeTurn} 拿公开弃牌后进入弃牌阶段`,
                 );
+
+                await page.waitForTimeout(1600);
+                expect(await page.evaluate(() => (window as Window & { __frNaturalExitAnimations?: number }).__frNaturalExitAnimations)).toBe(1);
 
                 const firstHandDiscardButton = page.getByRole('button', { name: /弃置手牌/ }).first();
                 await expect(firstHandDiscardButton).toBeVisible({ timeout: 10000 });
@@ -1534,7 +1548,6 @@ test.describe('FantasyRealms online basic flow', () => {
                 numPlayers: 3,
             });
             await page.getByRole('button', { name: '加入 AI' }).click();
-            await page.getByRole('button', { name: '3 号位' }).click();
 
             const createModalPath = getEvidenceScreenshotPath(testInfo, 'ui-full-flow-create-room-before-confirm');
             await mkdir(dirname(createModalPath), { recursive: true });
@@ -1644,6 +1657,7 @@ test.describe('FantasyRealms online basic flow', () => {
                 }
             }
 
+            expect(capturedTakeDiscardBranch).toBe(true);
             await expectFantasyRealmsEndgameShell(page);
             const finalCore = await readFantasyRealmsCore(matchId, page);
             const gameOverResult = FantasyRealmsDomain.isGameOver?.(finalCore);
@@ -2490,6 +2504,16 @@ test.describe('FantasyRealms online basic flow', () => {
             });
 
             const discardButton = host.page.getByRole('button', { name: /拿取弃牌/ }).first();
+            const selectedCardId = (await discardButton.getAttribute('data-tutorial-id'))?.replace('fantasyrealms-card-discard-', '');
+            expect(selectedCardId).toBeTruthy();
+            await host.page.evaluate(() => {
+                (window as Window & { __frExitAnimations?: number }).__frExitAnimations = 0;
+                document.addEventListener('animationstart', (event) => {
+                    if ((event.target as Element).matches('[data-testid="fantasyrealms-live-center-exit-card"]')) {
+                        (window as Window & { __frExitAnimations?: number }).__frExitAnimations! += 1;
+                    }
+                });
+            });
             await discardButton.click();
 
             await expect.poll(async () => {
@@ -2511,6 +2535,12 @@ test.describe('FantasyRealms online basic flow', () => {
                 hostHand: 8,
                 discardCount: 1,
             });
+            const afterTakeCore = await readFantasyRealmsCore(matchId, host.page);
+            expect(afterTakeCore.players['0']?.hand.some((card) => card.id === selectedCardId)).toBe(true);
+            expect(afterTakeCore.discardPile.some((card) => card.id === selectedCardId)).toBe(false);
+
+            await host.page.waitForTimeout(1600);
+            expect(await host.page.evaluate(() => (window as Window & { __frExitAnimations?: number }).__frExitAnimations)).toBe(1);
 
             await expect(host.page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '8');
 

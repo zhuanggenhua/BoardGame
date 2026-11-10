@@ -1,0 +1,71 @@
+{
+  "purpose": "user-requested-source-comparison",
+  "productAcceptance": "not-claimed",
+  "label": "current",
+  "baseURL": "http://127.0.0.1:6174",
+  "effectId": "vampire-lord-bloody-slaughter-search-deck-card",
+  "interaction": {
+    "id": "dt-interaction-bloody-slaughter-search-deck-1793599032433",
+    "kind": "dt:card-interaction",
+    "playerId": "0",
+    "resolutionFrameId": "dt-pre-defense-dt-interaction-bloody-slaughter-search-deck-1793599032433",
+    "cancelPolicy": "forbidden",
+    "data": {
+      "id": "bloody-slaughter-search-deck-1793599032433",
+      "playerId": "0",
+      "sourceCardId": "bloody-slaughter",
+      "type": "selectDeckCard",
+      "titleKey": "interaction.selectDeckCardToAddToHand",
+      "selectCount": 1,
+      "selected": [],
+      "resumeAttackSettlementOnComplete": {
+        "stage": "preDamage"
+      },
+      "sourceId": "bloody-slaughter"
+    }
+  },
+  "media": [
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\current\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "548b4d007894fea7da18eac099106dcb463e1e43fdc86a3b03c5ba3f00eb14e9",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "firstCard": {
+        "x": 362.796875,
+        "y": 130.5,
+        "width": 350,
+        "height": 572.9375
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\current\\02-血色杀戮-搜索命中.png",
+      "sha256": "9483af2c8d6409a5b69cff2ed1847832a41cfab628bf7801e5483217b17cbc2e",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "firstCard": {
+        "x": 545,
+        "y": 130.5,
+        "width": 350,
+        "height": 572.9375
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\current\\03-血色杀戮-已选待确认.png",
+      "sha256": "113295614b8e2a58fe9515af8dce4f548079a5b96e012c3308c924fe01de00f6",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "firstCard": {
+        "x": 545,
+        "y": 130.5,
+        "width": 350,
+        "height": 572.9375
+      }
+    }
+  ]
+}

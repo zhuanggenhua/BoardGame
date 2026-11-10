@@ -1,0 +1,143 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_contract_review"
+  },
+  "date": "2026-10-24",
+  "runId": "e2e-1792805482044-ty51qv",
+  "objective": "索尔真实双人入口的选角、实施中标记及开局交互可见性审计",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "scopeBoundary": "仅审查两张画面中的入口、角色身份、实施中标记、开局对象与主要操作可发现性；不证明规则数值、网络同步正确性、完整牌文阅读或未覆盖视口。",
+  "score": 93,
+  "scoreBreakdown": {
+    "任务清晰度": 19,
+    "视觉层级": 14,
+    "对象可识别性": 14,
+    "状态与动作载体": 14,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 8
+  },
+  "target_requirements": [
+    {
+      "requirement": "在线选角可以识别索尔及实施中状态",
+      "status": "PASS",
+      "evidence": "第一张索尔头像、角色名称、实施中斜条与本方席位标记均清楚可见。"
+    },
+    {
+      "requirement": "双人席位选择与就绪流程可发现",
+      "status": "PASS",
+      "evidence": "第一张底部双方角色席位和等待全员就绪状态可辨认。"
+    },
+    {
+      "requirement": "开局后索尔正式对象与主要操作可发现",
+      "status": "PASS",
+      "evidence": "第二张主要阶段高亮，角色板九槽、提示板、骰盘、资源区、扇形手牌及下一阶段按钮可识别。"
+    }
+  ],
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1792805482044-ty51qv/01-索尔真实双人选角与实施中标记.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 95,
+      "observation": "索尔正式头像、角色名称、实施中斜条及本方席位标记清楚，双方角色席位与等待全员就绪状态可见，中央玩家板和右侧提示板完整呈现。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1792805482044-ty51qv/02-索尔在线开局角色板九槽与手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "score": 93,
+      "observation": "开局后主要阶段高亮，索尔玩家板九个技能区域、正式提示板、骰盘、资源区和下一阶段按钮可识别；四张手牌以常规扇形叠放呈现，能发现手牌存在和牌名，不据此证明完整牌文可读。"
+    }
+  ],
+  "element_responsibility_audit": {
+    "ledger": "本报告的元素职责审计",
+    "uncovered_elements": [],
+    "decisions": [
+      {
+        "element": "索尔角色候选与实施中斜条",
+        "responsibility": "承载英雄身份、选择状态与当前实施状态",
+        "decision": "保留；斜条没有遮住角色名称，头像与选中席位可辨认。"
+      },
+      {
+        "element": "双方席位和等候状态",
+        "responsibility": "承载双人选择与就绪流程",
+        "decision": "保留；底部双方角色及等待入口形成统一流程区域。"
+      },
+      {
+        "element": "角色板与提示板",
+        "responsibility": "承载英雄技能对象和规则参考",
+        "decision": "保留正式素材；九个技能区域及提示板在开局画面中可识别，本报告不复判技能规则或数值。"
+      },
+      {
+        "element": "本方资源、骰盘与下一阶段按钮",
+        "responsibility": "承载持续状态和当前主要操作",
+        "decision": "保留原槽位，开局主操作清楚且没有说明浮层遮挡。"
+      },
+      {
+        "element": "手牌、牌堆和弃牌区",
+        "responsibility": "承载持有对象及集合入口",
+        "decision": "保留；手牌以常规扇形呈现，本图只证明对象存在与入口可发现，不替代完整阅读证据。"
+      }
+    ]
+  },
+  "negative_impact_checks": [
+    {
+      "target": "选角身份与状态标签",
+      "status": "PASS",
+      "observation": "实施中斜条没有隐藏索尔名称，双方角色席位信息仍可发现。"
+    },
+    {
+      "target": "开局主要资源及操作入口",
+      "status": "PASS",
+      "observation": "生命、战斗点数、骰区与下一阶段入口未被新增弹窗或说明覆盖。"
+    },
+    {
+      "target": "持续对象发现能力",
+      "status": "PASS",
+      "observation": "开局手牌、牌堆与弃牌区可发现；扇形手牌的完整正文阅读不属于这两张图的证明范围。"
+    }
+  ],
+  "hard_failures": [],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "revise": 0
+  },
+  "uncovered": [
+    "移动端与其它视口",
+    "完整手牌阅读及更多手牌压力态",
+    "网络同步与席位权限的行为正确性",
+    "技能规则与数值正确性"
+  ],
+  "verdictReason": "已逐张私有读取指定同次运行的两张原始整屏图；在线选角身份、实施中状态及开局主要交互可见，未发现本轮入口交互范围内的明确视觉阻塞。"
+}

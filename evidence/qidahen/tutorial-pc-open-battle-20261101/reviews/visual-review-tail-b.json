@@ -1,0 +1,142 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r134_tail_b"
+  },
+  "score": 95,
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/39-upkeep-pyongyang-selected.png",
+      "sha256": "354f1b0c6b9cd82ee87103ab61b3cb7db7621fe18b605a25692b04f8b81e7c73",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "平壤部队带有贴合本体的绿色边界与勾选，耗损面板显示已选部队并提供确认按钮，教程位于上方且未遮住目标，文字完整可读。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/40-claim-year.png",
+      "sha256": "0e2efb88b64d2f7a7c651624ebe650010402981916577893a4ff83f68cdc1755",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "纪年卡本体与教程并列，领取及放弃选项完整，支付张数直接呈现在领取选项上，未选择时确认入口呈禁用态，操作归属清楚。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/41-new-order.png",
+      "sha256": "26cf079f820c348107017ffc3b30e552ecbc87f4bc857e2ed5088bdd20a65b33",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新顺位教程明确说明纪年领取后的顺序，纪年卡组被突出显示，右侧人物候选与放大入口仍可辨，下一步按钮完整。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/42-year-character.png",
+      "sha256": "2221a33ed903513fb9fdfa4bc66ac640389be86ff78a971bd0893c59297d3cc0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "人物候选名称及对应卡面缩略图排列清晰，杨镐候选受到蓝色边界强调，教程说明点击放大镜，放大入口与候选对应且未被提示遮挡。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/43-year-character-inspect.png",
+      "sha256": "713f6b6dad44a0a582a74d9c6c1603f93bd831ede0228e2adb538923e76fab20",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "杨镐整张放大卡面完整且可读，右上关闭入口清楚，右侧人物候选仍能辨认。放大卡右缘覆盖了右下底层教程左侧约七十像素，多行行首被遮住；依既有上层阅读阻塞层合同，这是下层提示被覆盖，当前读卡及关闭操作未受影响。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/44-year-ready.png",
+      "sha256": "62d6262f9f971486238d2bc3cab028ecc3e16557973069500c0db4488a2c3eb5",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "次年当前玩家与顺位信息在顶栏突出，轮盘位置可辨，教程说明从既有位置继续，下一步入口完整，未见遮挡或乱码。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/45-training-target.png",
+      "sha256": "9e8efd7a7e3848afa860a3cc2850ed0eb52503509c24c9f999d408542daec0d4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练面板列出部队候选，叶赫部炮兵候选被清楚强调，已完成次数与当前选项均可读，教程紧邻面板且未覆盖候选或操作区域。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/46-training-second-target.png",
+      "sha256": "d6176ef978bc9b76e0e2073dcc87e361a95768eef44cb4a587dd1b6ec4e7c7ba",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵训练后的完成次数与结果文字可读，下一支步兵候选受到清楚强调，教程说明后续训练对象，候选列表与提示分别完整呈现。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/47-training-finish.png",
+      "sha256": "54f8e8b866d2f094c08fb5e31e0c13198153bc2f0cae05494f7a5b37d36c0a37",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四次基础训练完成的计数清楚，额外训练与完成训练两个决策分开，结束训练选项受强调，教程明确保留手牌并结束，文字及按钮未被遮挡。",
+      "failures": []
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/48-finish.png",
+      "sha256": "ea58b2edd49854af21d7508684122c03bea05a43902d28233f8612050bb75df4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完成教程提示与完成并返回按钮完整可读，主棋盘及顶栏保持可辨，底部半露手牌符合既定呈现要求，未见错误提示或乱码。",
+      "failures": []
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "最后检查一下卡槽和对应技能是否正确给我玩家面板，上面标注每个槽位对应的技能名字和当前效果",
+  "productAcceptance": "not-claimed",
+  "referenceEffect": {
+    "name": "奇异博士玩家板技能槽",
+    "renderer": "src/games/dicethrone/ui/abilitySlotMapping.ts"
+  },
+  "limitations": [
+    "标注图由正式玩家板原图与当前源码整理，不是对局截图；效果以基础技能为准。",
+    "代码核对不代替所有技能的完整真实对局验证。"
+  ],
+  "media": [
+    {
+      "file": "奇异博士玩家板技能槽标注.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-slot-annotated-20261103.png",
+      "sha256": "9c53a9fc49750d0b7467ebc032eb829c033fa0bca54742fa876d8c91e23ca898",
+      "description": "奇异博士玩家板九个技能槽及对应基础效果。"
+    }
+  ]
+}

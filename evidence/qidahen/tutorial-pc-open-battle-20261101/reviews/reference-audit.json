@@ -1,0 +1,65 @@
+{
+  "reviewer": "/root/dice_reference_audit",
+  "date": "2026-11-01",
+  "objective": "比较七大恨封闭骰子预览窗与成熟商业游戏，提出当前PC战斗表现裁决",
+  "criteria": ["实际读取具体商业操作态原图", "区分静态观察与动态验证", "参考只迁移职责和信息层级，不迁移规则与皮肤"],
+  "summary": {"total": 3, "passed": 3, "failed": 0, "blocked": 0},
+  "items": [
+    {
+      "game": "Armello",
+      "page": "https://www.gameuidatabase.com/gameData.php?id=244",
+      "imageUrl": "https://www.gameuidatabase.com/uploads/Armello07152020-074618-7504.jpg",
+      "localPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/dice-reference-20261101/Armello07152020-074618-7504.jpg",
+      "sha256": "c064f53f0f1db7b5b0a1da3c6922351d62b73adb68ace241148b60e800a13fb6",
+      "size": [1920, 1080],
+      "status": "passed",
+      "actualRead": "完整原始截图，双方骰池与中央单颗燃烧骰可见；不是浏览器空白缩略图",
+      "observation": "双方角色与骰池分属稳定左右舞台，骰子直接出现在场景空位，没有每种骰子的独立小窗；角色名只出现在所属一侧，中央一次结算是当前视觉焦点。",
+      "adopt": "同侧归属、骰子本体承担结果、结算高于装饰、避免每种骰子套层层工具窗。",
+      "doNotAdopt": "该图确为全屏独立战斗舞台，有红蓝装饰区域；不能据此声称商业游戏都不采用独立战场。七大恨保留地图、真实部队和常驻HUD是本轮具体裁定，不照搬全屏转场、角色皮肤和图标规则。",
+      "unproven": "静态截图不能证明滚动物理、自动排序时序、操作取消或重掷交互。"
+    },
+    {
+      "game": "Armello",
+      "page": "https://www.gameuidatabase.com/gameData.php?id=244",
+      "imageUrl": "https://www.gameuidatabase.com/uploads/Armello07152020-074619-79668.jpg",
+      "localPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/dice-reference-20261101/Armello07152020-074619-79668.jpg",
+      "sha256": "014c68d1e306c8b5ca34ab1e8867e066b7c0e04f22379d76c7b7b68c54094091",
+      "size": [1920, 1080],
+      "status": "passed",
+      "actualRead": "完整原始截图，右侧四颗骰子、攻击读数和命中反馈可见",
+      "observation": "已读骰子在所属方形成一排，命中直接贴近受击角色；没有把每颗骰面的数值再列成大段算式。左右主体保持稳定。",
+      "adopt": "停稳后揭示该侧总结果和实际效果；单方掷骰也保留该方归属；只有非直观修正才补短算式。",
+      "doNotAdopt": "不复制攻击防御双轨、卡牌堆、红蓝绒布、太阳月亮骰面或其数值规则。",
+      "unproven": "两张不同静态图不是连续录屏，不能声称亲自验证了滚动到命中的完整动画。"
+    },
+    {
+      "game": "Civilization VI",
+      "page": "https://www.gameuidatabase.com/gameData.php?id=639",
+      "imageUrl": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-012838-99782.jpg",
+      "localPath": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/dice-reference-20261101/Civilization-VI02122025-012838-99782.jpg",
+      "sha256": "ddc135bd8e019d39169c959bc2d6b68cae2f41ad8f42a32eda11bed561fd7a9e",
+      "size": [2560, 1440],
+      "status": "passed",
+      "actualRead": "完整原始地图单位选择态；同时另读同页012839-37440、012606-27962、012611-70845、012619-27392、013506-17358原图作为上下文",
+      "observation": "单位本体在地图，当前可达范围直接贴地块边界，当前单位信息收在右下HUD，玩家仍能看见附近真实单位和地形。",
+      "adopt": "保留地图和双方军队的空间关系，把动作与对象直接关联；骰子是当前结算层而不是另一个与地图断开的预览工具。",
+      "doNotAdopt": "该图没有骰子，不能用它证明骰子表现或战斗结算动画；不复制六角格、蓝金皮肤、圆形单位选择环。"
+    }
+  ],
+  "currentDiagnostic": {
+    "source": "evidence/qidahen/tutorial-20261031-causality-r131-final/media",
+    "actuallyReadStills": ["桌面-19-炮兵白骰真实投掷.jpg", "桌面-20-炮兵停稳与结果.jpg", "桌面-21-骑兵红骰真实投掷.jpg", "桌面-22-骑兵停稳与结果.jpg", "桌面-23-步兵绿骰真实投掷.jpg", "桌面-24-步兵停稳与结果.jpg"],
+    "video": "桌面-25-炮骑步连续真实掷骰录屏.webm",
+    "videoDiagnosticRead": "旧录屏既有145帧按序联系图全部读取，只用来诊断阶段连续性和封闭背板；不作为本轮最终逐帧动画或小字可读性验收",
+    "finding": "约620乘370的米色不透明窗在地图空位单独封闭，外总框再套骰种分框；单骰阶段也保留整块实底。确有白、红、绿骰滚动和停稳，问题是工具预览窗式表达而非没有掷骰。骰面下还重复列无修正点数，骰种技术标签常驻。"
+  },
+  "decision": {
+    "keep": ["正式物理骰子及规则骰面", "领域已结算的权威骰值", "炮兵、骑兵、步兵合法阶段", "地图上的双方部队、手牌和常驻HUD", "必要的修正计算", "停稳后总点和损伤"],
+    "remove": ["不透明总背板和固定预览窗边框", "每种骰子的独立底板与边框", "无规则修正时逐骰复写点数", "常驻技术骰种标签"],
+    "restructure": ["在同一地图主舞台透明空间投掷，双方按稳定侧别lane归属", "当前阶段只保留一个主标题；来源目标仅一处必要语境", "仅停稳后展示该阶段结果和实际损伤，随后退场", "单方骰池保持归属，不为了填空虚构另一侧骰子"]
+  },
+  "accessFailures": ["web抓取Game UI Database被robots拒绝；内置浏览器首页、站内搜索、具体游戏页可用", "浏览器直接图片导航曾超时，使用当前页面实际列出的图片链接下载，再逐张读取本地原图", "Baldur搜索只得到旧1、2代，未得到3；Tharsis和Dicey没有精确游戏条目，不冒称已读", "Civilization-VI02122025-012618-88713.jpg下载截断底部灰块，未列为通过参考"],
+  "verdict": "passed",
+  "verdictScope": "仅商业参考查证与当前PC重构方向；不是新实现视觉验收，也不构成用户人工批准"
+}

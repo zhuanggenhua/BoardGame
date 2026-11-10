@@ -33,7 +33,7 @@ const FRONTEND_RUNTIME_ENV_KEYS = new Set([
 ]);
 
 /** 仅标识 Vite 的实际启动配置导入图；不是整个工作区身份。 */
-export function getFrontendSourceHash(cwd = process.cwd(), env = process.env) {
+export function getFrontendSourceHash(cwd = process.cwd(), env = process.env, { relativePaths = false } = {}) {
     const configs = fs.readdirSync(cwd).filter(name => /^vite\.config\.[cm]?[jt]s$/.test(name));
     const inputs = configs.length ? Object.keys(buildSync({ absWorkingDir: cwd, entryPoints: configs,
         bundle: true, write: false, metafile: true, platform: 'node', format: 'esm', packages: 'external',
@@ -54,6 +54,9 @@ export function getFrontendSourceHash(cwd = process.cwd(), env = process.env) {
     environmentHash.update('e2e-source-identity-plugin\0').update(String(Boolean(env.PW_RUNTIME_SCOPE || env.PW_E2E_SESSION_ID)));
 
     const identity = captureSourceIdentity(inputs, cwd);
+    if (relativePaths) {
+        identity.files = identity.files.map(file => ({ ...file, path: path.relative(cwd, file.path).replaceAll('\\', '/') }));
+    }
     identity.files.push({ path: '<frontend-runtime-environment>', hash: environmentHash.digest('hex') });
     return hashSourceIdentity(identity);
 }

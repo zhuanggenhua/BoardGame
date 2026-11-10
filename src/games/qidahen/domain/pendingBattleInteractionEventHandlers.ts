@@ -91,7 +91,7 @@ const resolveQidahenRaidAndAmbushInteractionEvent = (
 const resolveQidahenPendingTargetInteractionEvent = (
     context: QidahenInteractionResolutionContext,
 ): QidahenCore | null | undefined => {
-    const { state, payload, event, random } = context;
+    const { state, payload, event, random, onBattleRolled } = context;
     if (payload.sourceId !== QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID) {
         return undefined;
     }
@@ -109,6 +109,8 @@ const resolveQidahenPendingTargetInteractionEvent = (
         event.timestamp ?? 0,
         random,
         pendingTargetAction,
+        undefined,
+        onBattleRolled,
     );
 };
 

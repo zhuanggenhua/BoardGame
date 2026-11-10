@@ -1,0 +1,176 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "inspect_betrayal_screenshots"
+  },
+  "media": [
+    {
+      "path": "吊死鬼-完整链路-01-探索前.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "吊死鬼：依次完成力量、速度、知识、神志检定，全部通过后选择一项属性 +1。"
+    },
+    {
+      "path": "吊死鬼-完整链路-02-选择未知房间.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "探索入口显示两个未知房间候选。"
+    },
+    {
+      "path": "吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "未知房间已选中，底部出现放置确认。"
+    },
+    {
+      "path": "吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "事件牌已翻出，四项属性检定候选可选。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-力量检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "力量检定正在滚动，尚未显示结果。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-力量检定停稳-进行速度检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "力量检定已停稳，结果可读，下一动作是进行速度检定。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-速度检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "速度检定正在滚动，尚未显示结果。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-速度检定停稳-进行知识检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "速度检定已停稳，结果可读，下一动作是进行知识检定。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-知识检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识检定正在滚动，尚未显示结果。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-知识检定停稳-进行神志检定.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "知识检定已停稳，结果可读，下一动作是进行神志检定。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-神志检定滚动中.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "神志检定正在滚动，尚未显示结果。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-神志检定停稳-选择奖励属性.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "神志检定已停稳，结果可读，下一动作是选择奖励属性。"
+    },
+    {
+      "path": "吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四项检定完成，奖励属性候选可选。"
+    },
+    {
+      "path": "吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选择知识奖励，结算结果显示知识 +1。"
+    },
+    {
+      "path": "吊死鬼-完整链路-11-确认后回牌桌.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算窗口关闭，牌桌恢复可操作。"
+    }
+  ]
+}

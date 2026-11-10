@@ -1,0 +1,2125 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "弃牌直接施放",
+  "sourceRun": "1793587226667-231552-7352fa61-842d-4266-adfb-7797ad7b4ff9",
+  "sourceRevision": "745c2f99a506f7ac8d1e5df2e38506231571d90071f0cb3f335dcf49a08ea8ff",
+  "e2eSourceRevision": "9a784b96a81c12aec63ba5e8b62bc54ca52ac7cafd7a47f7b389906d81f70c72",
+  "status": "PASS",
+  "outcome": "真实施法、搜索空态、清除、选中确认并跳过下一次施放均完成。",
+  "steps": [
+    {
+      "id": "bolt-original-ability-choice",
+      "action": "点击神秘飞弹后通过原技能分支界面选择",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "doctor_strange",
+            "thor",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": true,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": "setup",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "秘术雷击（小顺子）造成6点攻击伤害，然后施放1个法术。",
+            "秘术雷击（大顺子）造成9点攻击伤害，然后施放1个法术。",
+            "不发动技能"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择发动变体该技能有多个变体同时满足条件，请选择要发动的变体：秘术雷击（小顺子）造成6点攻击伤害，然后施放1个法术。秘术雷击（大顺子）造成9点攻击伤害，然后施放1个法术。不发动技能",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择发动变体"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 1,
+              "handIds": [
+                "card-strange-cast-away"
+              ],
+              "deckCount": 22,
+              "discardCount": 8,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "原技能分支可读",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "discard-cast-candidates",
+      "action": "通过正式施法窗口施放拉格伽多尔之环，显示弃牌法术",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "秘术雷击（小顺子）造成6点攻击伤害，然后施放1个法术。",
+            "秘术雷击（大顺子）造成9点攻击伤害，然后施放1个法术。",
+            "不发动技能"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择发动变体该技能有多个变体同时满足条件，请选择要发动的变体：秘术雷击（小顺子）造成6点攻击伤害，然后施放1个法术。秘术雷击（大顺子）造成9点攻击伤害，然后施放1个法术。不发动技能",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择发动变体"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 1,
+              "handIds": [
+                "card-strange-cast-away"
+              ],
+              "deckCount": 22,
+              "discardCount": 8,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "瓦尔托尔之汽 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "瓦图姆之风 spell 0 CP",
+            "墨菲斯之雾 spell 0 CP",
+            "克拉坎之链 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP",
+            "艾坎之形 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine",
+            "dt-discard-card-option-spell-vapors-of-valtorr",
+            "dt-discard-card-option-spell-bolts-of-balthakk",
+            "dt-discard-card-option-spell-winds-of-watoomb",
+            "dt-discard-card-option-spell-mists-of-morpheus",
+            "dt-discard-card-option-spell-crimson-bands-of-cyttorak",
+            "dt-discard-card-option-spell-fangs-of-farallah",
+            "dt-discard-card-option-spell-images-of-ikonn"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 8 / 8跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "全部八个弃牌候选可恢复浏览",
+          "actual": 8,
+          "expected": 8
+        }
+      ]
+    },
+    {
+      "id": "discard-cast-phone-candidates",
+      "action": "横屏从八张弃牌候选浏览法术",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "瓦尔托尔之汽 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "瓦图姆之风 spell 0 CP",
+            "墨菲斯之雾 spell 0 CP",
+            "克拉坎之链 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP",
+            "艾坎之形 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine",
+            "dt-discard-card-option-spell-vapors-of-valtorr",
+            "dt-discard-card-option-spell-bolts-of-balthakk",
+            "dt-discard-card-option-spell-winds-of-watoomb",
+            "dt-discard-card-option-spell-mists-of-morpheus",
+            "dt-discard-card-option-spell-crimson-bands-of-cyttorak",
+            "dt-discard-card-option-spell-fangs-of-farallah",
+            "dt-discard-card-option-spell-images-of-ikonn"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 8 / 8跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "瓦尔托尔之汽 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "瓦图姆之风 spell 0 CP",
+            "墨菲斯之雾 spell 0 CP",
+            "克拉坎之链 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP",
+            "艾坎之形 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine",
+            "dt-discard-card-option-spell-vapors-of-valtorr",
+            "dt-discard-card-option-spell-bolts-of-balthakk",
+            "dt-discard-card-option-spell-winds-of-watoomb",
+            "dt-discard-card-option-spell-mists-of-morpheus",
+            "dt-discard-card-option-spell-crimson-bands-of-cyttorak",
+            "dt-discard-card-option-spell-fangs-of-farallah",
+            "dt-discard-card-option-spell-images-of-ikonn"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 8 / 8跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "八张授权候选均保留",
+          "actual": 8,
+          "expected": 8
+        }
+      ]
+    },
+    {
+      "id": "discard-cast-phone-selected",
+      "action": "横屏选中首张弃牌法术但暂不确认",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "瓦尔托尔之汽 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "瓦图姆之风 spell 0 CP",
+            "墨菲斯之雾 spell 0 CP",
+            "克拉坎之链 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP",
+            "艾坎之形 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine",
+            "dt-discard-card-option-spell-vapors-of-valtorr",
+            "dt-discard-card-option-spell-bolts-of-balthakk",
+            "dt-discard-card-option-spell-winds-of-watoomb",
+            "dt-discard-card-option-spell-mists-of-morpheus",
+            "dt-discard-card-option-spell-crimson-bands-of-cyttorak",
+            "dt-discard-card-option-spell-fangs-of-farallah",
+            "dt-discard-card-option-spell-images-of-ikonn"
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 8 / 8跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "瓦尔托尔之汽 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "瓦图姆之风 spell 0 CP",
+            "墨菲斯之雾 spell 0 CP",
+            "克拉坎之链 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP",
+            "艾坎之形 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine",
+            "dt-discard-card-option-spell-vapors-of-valtorr",
+            "dt-discard-card-option-spell-bolts-of-balthakk",
+            "dt-discard-card-option-spell-winds-of-watoomb",
+            "dt-discard-card-option-spell-mists-of-morpheus",
+            "dt-discard-card-option-spell-crimson-bands-of-cyttorak",
+            "dt-discard-card-option-spell-fangs-of-farallah",
+            "dt-discard-card-option-spell-images-of-ikonn"
+          ],
+          "selectedChoiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 8 / 8确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "原选中卡面与原确认动作均完整可见",
+          "actual": 1,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "id": "discard-cast-phone-search-empty",
+      "action": "输入没有匹配的搜索词",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [
+            "法尔特之焰 spell 0 CP",
+            "瓦尔托尔之汽 spell 0 CP",
+            "博萨特之雷 spell 0 CP",
+            "瓦图姆之风 spell 0 CP",
+            "墨菲斯之雾 spell 0 CP",
+            "克拉坎之链 spell 0 CP",
+            "法瑞拉之牙 spell 0 CP",
+            "艾坎之形 spell 0 CP"
+          ],
+          "choiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine",
+            "dt-discard-card-option-spell-vapors-of-valtorr",
+            "dt-discard-card-option-spell-bolts-of-balthakk",
+            "dt-discard-card-option-spell-winds-of-watoomb",
+            "dt-discard-card-option-spell-mists-of-morpheus",
+            "dt-discard-card-option-spell-crimson-bands-of-cyttorak",
+            "dt-discard-card-option-spell-fangs-of-farallah",
+            "dt-discard-card-option-spell-images-of-ikonn"
+          ],
+          "selectedChoiceIds": [
+            "dt-discard-card-option-spell-flames-of-faltine"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 8 / 8确认",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-mystic-bolt-large"
+          ],
+          "preparedSpellIds": [
+            "spell-rings-of-raggadorr"
+          ],
+          "choiceLabels": [],
+          "choiceIds": [],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "跳过"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "选择要施放的法术显示 0 / 8没有匹配的牌跳过",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序",
+            "选择要施放的法术"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "2",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "4",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-mandala",
+            "strange-book",
+            "strange-book",
+            "strange-cloak"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 2,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 4,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 5,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "card-strange-cast-away",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-rings-of-raggadorr"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 22,
+              "discardCount": 9,
+              "discardIds": [
+                "spell-flames-of-faltine",
+                "spell-vapors-of-valtorr",
+                "spell-bolts-of-balthakk",
+                "spell-winds-of-watoomb",
+                "spell-mists-of-morpheus",
+                "spell-crimson-bands-of-cyttorak",
+                "spell-fangs-of-farallah",
+                "spell-images-of-ikonn",
+                "card-strange-cast-away"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-mystic-bolt-large",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "没有伪造候选卡牌",
+          "actual": 0,
+          "expected": 0
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-bolt-original-ability-choice",
+      "stepId": "bolt-original-ability-choice",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "7336dcabec6ce7be33085c9390cefde9c92c95d53247fec43da3a2160062d053"
+    },
+    {
+      "id": "doctor-strange-discard-cast-candidates",
+      "stepId": "discard-cast-candidates",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "8947aafcb9c3ea9981c86f06d4641ec4619734af2bd08970e4636ff659460b3d"
+    },
+    {
+      "id": "doctor-strange-discard-cast-phone-candidates",
+      "stepId": "discard-cast-phone-candidates",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "1447df7835642c7abd2d37029bb6c93eb4cc84df63683b72102b478fe09e2ca6"
+    },
+    {
+      "id": "doctor-strange-discard-cast-phone-selected",
+      "stepId": "discard-cast-phone-selected",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "e2c65ec7dcfa0f68f1f4c8e8f92910c45623cc85cdadd2e75f6c3cf804fa9eab"
+    },
+    {
+      "id": "doctor-strange-discard-cast-phone-search-empty",
+      "stepId": "discard-cast-phone-search-empty",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "1c194beb2149c9cf894ac52e581640b9848b09417f78588ec9c5439eff26d9ef"
+    }
+  ]
+}

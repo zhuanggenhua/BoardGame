@@ -1,0 +1,45 @@
+{
+  "title": "圣骑士手牌图集替换端到端截图",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-13T15:02:24.000Z",
+  "scope": "圣骑士初始手牌、出牌交互与升级落位",
+  "media": [
+    {
+      "path": "01-出牌前四张手牌.png",
+      "chainId": "paladin-hand-upgrade-e2e",
+      "chainStep": "1",
+      "sourceRun": "isolated-single-pw-1791903709454-58yvqv",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-hand-e2e-20261013",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "圣骑士在主阶段打出升级牌之前",
+      "description": "玩家面前四张圣骑士升级手牌与玩家面板同屏显示。"
+    },
+    {
+      "path": "02-拖动升级牌.png",
+      "chainId": "paladin-hand-upgrade-e2e",
+      "chainStep": "2",
+      "sourceRun": "isolated-single-pw-1791903709454-58yvqv",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-hand-e2e-20261013",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家拖动神圣攻击升级牌进入技能槽",
+      "description": "玩家拖动神圣攻击升级牌，剩余手牌仍在画面中。"
+    },
+    {
+      "path": "03-升级牌落位后.png",
+      "chainId": "paladin-hand-upgrade-e2e",
+      "chainStep": "3",
+      "sourceRun": "isolated-single-pw-1791903709454-58yvqv",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-hand-e2e-20261013",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "神圣攻击升级完成并留在玩家板技能槽",
+      "description": "神圣攻击升级已落入玩家板，三张未打出的手牌继续可见。"
+    }
+  ]
+}

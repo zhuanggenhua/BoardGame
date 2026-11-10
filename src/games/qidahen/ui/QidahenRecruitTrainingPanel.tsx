@@ -4,10 +4,11 @@ import type { QidahenCore } from '../domain/types';
 import { UI_STYLE, UI_SURFACE } from './qidahenTheme';
 
 /** 此处仅承接模式、追加费用和完成；地区与部队候选由地图本体承接。 */
-export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose }: {
+export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose, recommendedChoiceId }: {
     core: QidahenCore;
     canChoose: (choiceId: string) => boolean;
     onChoose: (choiceId: string) => void;
+    recommendedChoiceId?: string;
 }) {
     const { t } = useTranslation('game-qidahen');
     const progress = core.wheelRecruitTrainProgress;
@@ -26,8 +27,10 @@ export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose }: {
         {controls.length ? <div className="mt-3 grid grid-cols-2 gap-2">{controls.map(choice => <button key={choice.id} type="button"
             data-testid={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
             data-tutorial-id={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
+            data-qidahen-tutorial-recommended={choice.id === recommendedChoiceId ? 'true' : undefined}
             disabled={!canChoose(choice.id)} onClick={() => onChoose(choice.id)}
             className="min-h-11 rounded px-3 py-2 text-left font-bold hover:brightness-105 disabled:opacity-40"
-            style={{ border: `2px solid ${UI_STYLE.bronze}`, background: UI_STYLE.paperLight, color: UI_STYLE.ink }}>{label(choice.id)}</button>)}</div> : null}
+            style={{ border: `2px solid ${UI_STYLE.bronze}`, background: UI_STYLE.paperLight, color: UI_STYLE.ink,
+                outline: choice.id === recommendedChoiceId ? '3px solid #fff8dc' : undefined, outlineOffset: 2 }}>{label(choice.id)}</button>)}</div> : null}
     </section>;
 }

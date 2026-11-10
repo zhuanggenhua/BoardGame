@@ -1,0 +1,205 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r73_visual_review"
+  },
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/00-辽东军屯地区选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽东名称贴近绿色不规则地区轮廓，教程要求选择辽东，地图目标及操作提示可见；手牌和玩家栏未遮住目标。",
+      "source": "原始整屏截图",
+      "sha256": "9b031c80113cf47ac7add498c8068fc04dbaf633413912193212c8002ecea749"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘军屯扇区被高亮，教程说明前进两格；目标扇区和操作提示完整可见。",
+      "source": "原始整屏截图",
+      "sha256": "5a9d1e3f08670c01fc6a3b0f7e67178aeccbbd90c769da9f013c2fd0da0f9f74"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求指定后金抽牌，轮盘弹窗同时显示蒙古和后金按钮及辽东建军地，后金目标可辨。",
+      "source": "原始整屏截图",
+      "sha256": "c8c4dd389359b070cbeecd356e29d3edde07b656d5adc980c83fd1bdac228721"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/03-辽东军屯结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图辽东部队与军屯结果提示同屏，教程说明建立部队和抽牌，下一步按钮可见。",
+      "source": "原始整屏截图",
+      "sha256": "da8d7b6df8821ddd860d32243ded114bcf786667f9cbe93bdd34e579c0e12479"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/04-叶赫部真实地图目标.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部文字标注与绿色不规则地图地区轮廓同屏，教程要求点击叶赫部；支付托盘未遮住地区。",
+      "source": "原始整屏截图",
+      "sha256": "630ea55810c40b7a6781700ad43baeae94587241b225ea38f43bc12835923552"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求银两支付并保留鸳鸯阵；支付摘要显示目标叶赫部，手牌可区分银两和鸳鸯阵，确认按钮可见。",
+      "source": "原始整屏截图",
+      "sha256": "b60f94362252895dc000e985709e0d93c0206e658c688b62fa873b3d90a1c48a"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/06-野战出兵与战术牌.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求选择辽东部队并开始战斗，绿色部队标记和开始战斗按钮可见；但本帧没有鸳鸯阵牌或战术出牌画面，无法证明标题中的战术牌。",
+      "source": "原始整屏截图",
+      "sha256": "487efb86f6be07f6276a726f383f97ca96013370adeb9e8112d96c28e28fb972"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/07-战后幸存部队与占领选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战后面板展示叶赫部、战斗阶段和幸存部队，并有占领与撤回按钮；教程提示及下一步可见。",
+      "source": "原始整屏截图",
+      "sha256": "55621aa67cecf29e90ff3685dbfff771c8482bb32621778a4f52d0ccb906853a"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部位置显示大明标记与部队，教程说明占领结果并提供完成并返回按钮；目标和结束操作可见。",
+      "source": "原始整屏截图",
+      "sha256": "c8db3488cca46cc93888a80e8a7380274449d5265a730b89174cfaf1964083b4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/09-教程退出后同局继续.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程浮层已消失，蒙古当前玩家栏、手牌和征兵训练弃牌操作条可见，画面展示同局后续操作状态。",
+      "source": "原始整屏截图",
+      "sha256": "f65e39afe9397a5a8ca73447f26c2d55d53ff70341bbf29d002f7b99c9a98ccc"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部绿色不规则轮廓与支付托盘分离，但地区标签、玩家栏、支付摘要和手牌文字缩得极小，无法正常阅读。",
+      "source": "原始整屏截图",
+      "sha256": "5a73e1199be913d639f4fe7659273ad0d55e43712fa264a568424fda36aa407a"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-01-突袭支付与手牌.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求银两支付并保留鸳鸯阵，但玩家栏、支付摘要、手牌及支付按钮过小；右上聊天浮标遮住教程条的上一步区域。",
+      "source": "原始整屏截图",
+      "sha256": "f4be3ab5ad001a9f8cba3b49c3e427f3327e3f8536fab9157f24af1f57871dc2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-02-长按银两检视卡面.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "长按后银两大卡与关闭按钮清楚可见，但背景玩家栏、支付摘要和手牌缩得过小；聊天浮标压住教程条上一步区域。",
+      "source": "原始整屏截图",
+      "sha256": "60bf8060e9063cd15e789a0eb8ff96e6e3317459ade78146c285b992be437e71"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-03-检视返回后轻点银两选择支付.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返回后银两高亮、教程要求确认弃牌，支付托盘的确认按钮高亮；玩家栏、支付摘要和手牌文字过小，确认按钮仅约55乘15像素。",
+      "source": "原始整屏截图",
+      "sha256": "aaac45a325b181d269021ed68cce966c52b66e86baf11c8a389017bbc0c0ff98"
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "pass": 9,
+    "revise": 5,
+    "failedPaths": [
+      "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/06-野战出兵与战术牌.png",
+      "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-01-突袭支付与手牌.png",
+      "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-02-长按银两检视卡面.png",
+      "evidence/qidahen/tutorial-20261027-region-outline-r73-final/media/移动-03-检视返回后轻点银两选择支付.png"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>来源核查：血色杀戮旧组件重放、当前效果与博士界面对比（不是产品验收）</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>来源核查：血色杀戮旧组件重放、当前效果与博士界面对比（不是产品验收）</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-1-01-血色杀戮-真实抽牌堆候选.png","displayTitle":"01 · 1 · 01 · 血色杀戮 · 真实抽牌堆候选","description":"用户确认的原选择器组件带正式卡图重放；不是原时历史截图；真实完整抽牌堆候选。","kind":"image"},{"relativePath":"01-2-02-血色杀戮-搜索命中.png","displayTitle":"01 · 2 · 02 · 血色杀戮 · 搜索命中","description":"用户确认的原选择器组件带正式卡图重放；不是原时历史截图；相同搜索词命中单张。","kind":"image"},{"relativePath":"01-3-03-血色杀戮-已选待确认.png","displayTitle":"01 · 3 · 03 · 血色杀戮 · 已选待确认","description":"用户确认的原选择器组件带正式卡图重放；不是原时历史截图；相同目标已选待确认。","kind":"image"},{"relativePath":"02-1-01-血色杀戮-真实抽牌堆候选.png","displayTitle":"02 · 1 · 01 · 血色杀戮 · 真实抽牌堆候选","description":"恢复后的血色杀戮真实入口；复用原完整布局和响应式；真实完整抽牌堆候选。","kind":"image"},{"relativePath":"02-2-02-血色杀戮-搜索命中.png","displayTitle":"02 · 2 · 02 · 血色杀戮 · 搜索命中","description":"恢复后的血色杀戮真实入口；复用原完整布局和响应式；相同搜索词命中单张。","kind":"image"},{"relativePath":"02-3-03-血色杀戮-已选待确认.png","displayTitle":"02 · 3 · 03 · 血色杀戮 · 已选待确认","description":"恢复后的血色杀戮真实入口；复用原完整布局和响应式；相同目标已选待确认。","kind":"image"},{"relativePath":"03-01-弃牌法术候选-桌面.png","displayTitle":"03 · 01 · 弃牌法术候选 · 桌面","description":"当前博士弃牌准备候选；与血色杀戮规则来源和候选数量不同，只比较共享承载，不当成同一规则动作。","kind":"image"},{"relativePath":"03-02-弃牌法术已选-桌面.png","displayTitle":"03 · 02 · 弃牌法术已选 · 桌面","description":"当前博士弃牌法术已选待确认；不是用户指定原效果的历史图。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,3247 @@
+{
+  "task": "博士UI恢复全量hunk账：cards责任范围",
+  "mode": "只读产品源码；仅写本JSON；不是PASS",
+  "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "snapshot": "temp\\doctor-ui-restoration-before-20261101",
+  "rawRollout": "D:/codex-home/sessions/2026/10/23/rollout-2026-10-23T18-16-23-01a16842-fe32-7e40-9403-8ff3efc5ae1d.jsonl",
+  "authorizationAnchors": {
+    "reuse": {
+      "line": 43669,
+      "quote": "那就逐项检查奇异博士的玩家和卡牌选择，能复用现有完整交互的就复用，修好后重新截图给我验收。准确的说是所有新交互"
+    },
+    "flat": {
+      "line": 69873,
+      "quote": "选项ui能不能更新一下样式，立体按钮感是给确认按钮用的，ui设计规范没区分交互按钮和选项按钮吗，而且多个选项应该是一列而不是挤在一起"
+    },
+    "compact": {
+      "line": 72999,
+      "quote": "12的选项，都tmd和背景融为一体了，重投的提示也没有，09弹窗都他妈的占满窗口了还是弹窗吗，验收怎么过的啊"
+    },
+    "contrast": {
+      "line": 75408,
+      "quote": "那就把重投提示恢复左侧居中，12的候选对比度再加强， 修好后给我新截图 ，还有实施中的角色怎么排在最上面啊"
+    },
+    "noframe": {
+      "line": 75860,
+      "quote": "谁让你加的底框就把对应规则删了"
+    },
+    "nodrift": {
+      "line": 76299,
+      "quote": "反思所有修改，非必要不要旧 的ui，而是直接复用啊"
+    },
+    "crop": {
+      "line": 50251,
+      "quote": "04自己看不出问题，ui都被截断了，选中的时候"
+    },
+    "restore": {
+      "line": 81407,
+      "quote": "那就按真正的旧基线恢复，把所有UI修改逐项查清，没授权的改动都撤掉，别只改我抽查的三个，修好重新截图给我。然后规范也要更新，新ui非必要不要去改旧ui，我记得已经有了好像"
+    }
+  },
+  "method": "git show baseline:file 对稳定snapshot逐行SequenceMatcher；原始user消息和apply_patch定位归属；HEAD批量提交仅作引入范围不作授权",
+  "entries": [
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        9,
+        9
+      ],
+      "snapshotRange": [
+        9,
+        9
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "新增Check图标",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无直接授权；旧卡池已有选中上移/边界",
+      "decision": "恢复",
+      "action": "移除Check及相应圆徽",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        14,
+        18
+      ],
+      "snapshotRange": [
+        14,
+        22
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "增加比例计算、读牌按钮、长按和壳层/手牌常量import",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse允许原阅读能力；不授权CardInspect底行、比例重排",
+      "decision": "恢复",
+      "action": "保留useTouchLongPress；CardPreview保持旧import；删getCardPreviewAspectRatio、CardInspectButton、壳层宽度计算；22仅在真实旧遮罩复原后仍有必要消费者时保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        22,
+        26
+      ],
+      "snapshotRange": [
+        26,
+        48
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "88..132px clamp改12手牌单位；新增<=540右栏横轨及大卡",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "restore、nodrift；无改PC/移动构图授权",
+      "decision": "恢复",
+      "action": "恢复原clamp/max132常量；删除整段短屏CSS与540阈值",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        40,
+        44
+      ],
+      "snapshotRange": [
+        62,
+        71
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "搜索单行容量改按窗口高与壳层12宽推算",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "与未授权尺寸/右栏绑定",
+      "decision": "恢复",
+      "action": "恢复原132px容量算法",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        137,
+        136
+      ],
+      "snapshotRange": [
+        164,
+        165
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "新增onMagnifyCard callback",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse；旧HandArea已有同名放大回调与长按阅读",
+      "decision": "保留",
+      "action": "保留既有MagnifyOverlay回调，不改其布局",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        147,
+        146
+      ],
+      "snapshotRange": [
+        176,
+        182
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "Choice权限、确认/跳过文案与是否可取消参数",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse：复用原选择器必须保持Choice原权限和提交语义",
+      "decision": "保留",
+      "action": "保留默认兼容旧交互的接口",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        160,
+        165
+      ],
+      "snapshotRange": [
+        196,
+        205
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "解构阅读/Choice语义参数",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "上项接口最窄接入",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        169,
+        168
+      ],
+      "snapshotRange": [
+        210,
+        216
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "复用useTouchLongPress阅读，不提交候选",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse；旧HandArea useTouchLongPress同能力",
+      "decision": "保留",
+      "action": "保留长按与点击阻断；不改卡宽/排列",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        171,
+        170
+      ],
+      "snapshotRange": [
+        219,
+        219
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "单持有人状态窗条件",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact只点名09单持有人",
+      "decision": "保留",
+      "action": "仅isStatusSelection且单持有人生效",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        190,
+        189
+      ],
+      "snapshotRange": [
+        239,
+        252
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "按Choice正式候选过滤状态",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse必须匹配原请求候选，不显示非法状态",
+      "decision": "保留",
+      "action": "保留候选筛选；不放宽移除权限",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        197,
+        197
+      ],
+      "snapshotRange": [
+        260,
+        261
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "selectCard与真实来源区",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse；博士从牌库/弃牌/准备区取真实牌需接入旧选择器",
+      "decision": "保留",
+      "action": "保留来源元数据，禁止用手牌替代",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        212,
+        213
+      ],
+      "snapshotRange": [
+        276,
+        277
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "可选玩家依真实状态候选计算",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse必须保留候选权限",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        224,
+        224
+      ],
+      "snapshotRange": [
+        288,
+        288
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "TeamTone显式类型",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "纯类型无可见影响",
+      "decision": "保留",
+      "action": "保留类型修复",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        279,
+        296
+      ],
+      "snapshotRange": [
+        343,
+        362
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "Choice最小选择数/权限、真实来源候选、search签名",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse最窄数据接入，避免显示其它牌区或无权确认",
+      "decision": "保留",
+      "action": "保留，不重写规则或私有信息",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        318,
+        318
+      ],
+      "snapshotRange": [
+        384,
+        388
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "候选比例参与搜索容量",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无授权、随未授权大卡算法新增",
+      "decision": "恢复",
+      "action": "恢复getCardPoolSingleRowCapacity()无参数",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        346,
+        348
+      ],
+      "snapshotRange": [
+        416,
+        416
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "卡面背景/圆角移除、宽度CSS变量替换",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "noframe允许去人为底框；不授权更宽牌或新布局",
+      "decision": "恢复",
+      "action": "宽度恢复原clamp；卡面不加底框；原卡天然透明/比例由CardPreview承担",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        357,
+        369
+      ],
+      "snapshotRange": [
+        425,
+        438
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "CSS钩子、短屏style、顶部4.25→2.5rem、全高flex/底部钉住",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "没有用户改版授权；原居中标题/搜索、换行纵滚、下方确认",
+      "decision": "恢复",
+      "action": "删除短屏style与布局钩子；恢复旧panel/surface类",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        374,
+        374
+      ],
+      "snapshotRange": [
+        443,
+        445
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "遮罩inset-y0变top0且bottom=22",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "本聊天原始补丁line61491；无必须截短原遮罩的明确用户授权，不能用E2E自定几何保留",
+      "decision": "恢复",
+      "action": "按原卡池surface恢复inset-y-0；不为了读牌新增全高底板",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        378,
+        385
+      ],
+      "snapshotRange": [
+        449,
+        456
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "标题shrink0及标题/搜索CSS钩子",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "为未授权全高短屏布局服务",
+      "decision": "恢复",
+      "action": "恢复旧类；标题与搜索继续居中",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        427,
+        427
+      ],
+      "snapshotRange": [
+        498,
+        498
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "data-card-pool-kind从二选区变真实cardSourceZone",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse真实来源合同",
+      "decision": "保留",
+      "action": "保留测试元数据",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        429,
+        433
+      ],
+      "snapshotRange": [
+        500,
+        504
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "40vh→56vh/minh0及布局钩子",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无布局扩容授权",
+      "decision": "恢复",
+      "action": "恢复原40vh、flex-wrap/纵向滚动；不要横轨",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        445,
+        444
+      ],
+      "snapshotRange": [
+        516,
+        517
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "准备可检视牌与比例计算混合",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse只允许阅读能力",
+      "decision": "保留",
+      "action": "保留inspectableCard正式previewRef；删除cardAspectRatio（不再承担版式）",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        448,
+        451
+      ],
+      "snapshotRange": [
+        521,
+        526
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "新增pb9外层、reader-width变量、key迁移；来源testid",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无底部读牌新行授权",
+      "decision": "恢复",
+      "action": "删外层pb9与reader-width，key放回原button；保留真实来源testid",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        455,
+        454
+      ],
+      "snapshotRange": [
+        530,
+        530
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "data-selection-focus元数据",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "不改变可见布局/规则",
+      "decision": "保留",
+      "action": "可保留元数据，但不据此重造选中皮肤",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        457,
+        457
+      ],
+      "snapshotRange": [
+        533,
+        548
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "长按/右键放大并阻止误选",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse；旧HandArea同放大能力，较底行读牌按钮更窄",
+      "decision": "保留",
+      "action": "保留原MagnifyOverlay callback+长按/右键；单击仍选择原真实cardId",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        459,
+        460
+      ],
+      "snapshotRange": [
+        550,
+        553
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "旧selected上移被去掉、hover新增scale1.02",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无授权；旧选择器已有选中/hover反馈",
+      "decision": "恢复",
+      "action": "恢复原selected -translate-y-2及hover -translate-y-1，不新增scale",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        466,
+        469
+      ],
+      "snapshotRange": [
+        559,
+        562
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "去外底框、候选brightness/drop-shadow增强对比",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "contrast与noframe直接授权",
+      "decision": "保留",
+      "action": "只保留加强对比及无底框，不改变候选外形、尺度与布局；旧选中边界可按旧实现复原",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        475,
+        475
+      ],
+      "snapshotRange": [
+        568,
+        567
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "去CardPreview额外背景圆角",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "noframe",
+      "decision": "保留",
+      "action": "不加新背景框，CardPreview保持正式宽高比",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        480,
+        479
+      ],
+      "snapshotRange": [
+        572,
+        580
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "选中新增Check圆徽",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "旧选择已有边界；没有增加新圆徽授权",
+      "decision": "恢复",
+      "action": "删除圆徽和Check import，保留选择状态",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        481,
+        480
+      ],
+      "snapshotRange": [
+        582,
+        591
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "CardInspectButton底部新行/28px按钮",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse不是造新皮肤授权；长按/右键可复用",
+      "decision": "恢复",
+      "action": "删底行CardInspectButton与pb9外层，保留原放大回调",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        487,
+        487
+      ],
+      "snapshotRange": [
+        598,
+        598
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "动作区shrink与布局钩子",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "随短屏右栏新增",
+      "decision": "恢复",
+      "action": "恢复旧下方确认排列",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        489,
+        502
+      ],
+      "snapshotRange": [
+        600,
+        619
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "canCancel/文案、testid以及44px minheight混合",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse允许Choice跳过/确认原语义；无加大旧按钮授权",
+      "decision": "保留",
+      "action": "保留canCancel/文案/testid；删除min-h44恢复旧size=sm外形",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        524,
+        524
+      ],
+      "snapshotRange": [
+        641,
+        642
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "状态单持有人紧凑宽sm/density",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact直接点名09窗占满",
+      "decision": "保留",
+      "action": "仅单持有人状态紧凑；其它玩家/状态窗width=xl density=normal",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        529,
+        542
+      ],
+      "snapshotRange": [
+        647,
+        664
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "旧modal动作条件与文案/testid",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse最窄Choice语义",
+      "decision": "保留",
+      "action": "保留且保持原按钮视觉类",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        550,
+        550
+      ],
+      "snapshotRange": [
+        672,
+        672
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "状态owner容器testid",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "纯测试hook，不改变UI",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        576,
+        575
+      ],
+      "snapshotRange": [
+        698,
+        698
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "PlayerCardShell透传selected",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "已有data-selected消费，原选中样式在containerClass内",
+      "decision": "保留",
+      "action": "保留状态元数据，不另造卡片皮肤",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        588,
+        589
+      ],
+      "snapshotRange": [
+        711,
+        712
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "玩家参考状态候选过滤",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse真实候选合同",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        620,
+        620
+      ],
+      "snapshotRange": [
+        743,
+        743
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "09单持有人padding收紧",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact",
+      "decision": "保留",
+      "action": "仅compactSingleStatusHolder由p4改p3；其它p4",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        628,
+        630
+      ],
+      "snapshotRange": [
+        751,
+        753
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "真实状态候选、仅实际holder选中",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse；避免相同statusId跨玩家一起高亮",
+      "decision": "保留",
+      "action": "保留正式候选和holder选择归属",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        633,
+        632
+      ],
+      "snapshotRange": [
+        756,
+        757
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "tooltip单人模态边界扩展到多人owner边界并避让所有按钮",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "只证明单人compact tooltip遮挡修复；多人已知旧anchor可复用，未授权整体换边界",
+      "decision": "恢复",
+      "action": "保留单人模态边界（compact最窄可用性），多人回undefined原anchor；删多人avoid选择器",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldRange": [
+        686,
+        686
+      ],
+      "snapshotRange": [
+        811,
+        811
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay.tsx",
+      "change": "状态转移第二步目标卡p4→p3",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact只授权09单状态holder，不含转移目标卡",
+      "decision": "恢复",
+      "action": "恢复p-4",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        14,
+        13
+      ],
+      "snapshotRange": [
+        14,
+        14
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "弃牌合同import",
+      "changeOwner": "Thor/弃牌独立任务（需主代理锁）",
+      "authorizationEvidence": "90b7dba67纳入；本聊天原始补丁未证明；Thor弃牌交互独立owner",
+      "decision": "非本聊天",
+      "action": "不自动撤其它任务真实弃牌合同",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        21,
+        27
+      ],
+      "snapshotRange": [
+        22,
+        29
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "共享高度/宽度常量抽取",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "高度原始本聊天patch61491；宽度当前本聊天新增且原数值12相同",
+      "decision": "恢复",
+      "action": "原宽度12还原本地常量；若卡池恢复不再用22，手牌高度恢复本地22并删死常量；不做额外职责重构",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        31,
+        30
+      ],
+      "snapshotRange": [
+        33,
+        33
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "旋转步数5提常量",
+      "changeOwner": "86712291b已纳入/原写入归属未证明",
+      "authorizationEvidence": "86712291b已有；纯等价旋转常量",
+      "decision": "保留",
+      "action": "保留数值5无外形变化",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        32,
+        33
+      ],
+      "snapshotRange": [
+        35,
+        36
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "新增额外底边距3、原高度22迁出",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "本聊天patch55991/56325/56691自行把1→1.2→3；没有用户指定新增留白",
+      "decision": "恢复",
+      "action": "去本聊天额外3，原高度22可本地恢复；其它任务可配置响应间距按其owner保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        227,
+        227
+      ],
+      "snapshotRange": [
+        230,
+        231
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "弃牌模式由合同驱动",
+      "changeOwner": "Thor/弃牌独立任务（需主代理锁）",
+      "authorizationEvidence": "90b7dba67与Thor共享弃牌能力",
+      "decision": "非本聊天",
+      "action": "保留不撤其它任务候选/命令链",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        231,
+        230
+      ],
+      "snapshotRange": [
+        235,
+        235
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "preserveCardVisibilityBottomGapUnits默认",
+      "changeOwner": "fd2effbdf响应修复",
+      "authorizationEvidence": "fd2effbdf准确diff证明独立响应提示/手牌修复",
+      "decision": "非本聊天",
+      "action": "保留prop与调用能力；默认引用3牵涉本聊天留白，勿借此自动留3，默认数值由主代理与响应owner核定",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        258,
+        257
+      ],
+      "snapshotRange": [
+        263,
+        264
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "弃牌合同prop",
+      "changeOwner": "Thor/弃牌独立任务（需主代理锁）",
+      "authorizationEvidence": "90b7dba67；不得破坏Thor真实候选",
+      "decision": "非本聊天",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        271,
+        270
+      ],
+      "snapshotRange": [
+        278,
+        279
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "响应bottomGap prop类型",
+      "changeOwner": "fd2effbdf响应修复",
+      "authorizationEvidence": "fd2effbdf准确diff",
+      "decision": "非本聊天",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        273,
+        272
+      ],
+      "snapshotRange": [
+        282,
+        282
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "合同驱动弃牌模式",
+      "changeOwner": "Thor/弃牌独立任务（需主代理锁）",
+      "authorizationEvidence": "90b7dba67独立弃牌接入",
+      "decision": "非本聊天",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        454,
+        455
+      ],
+      "snapshotRange": [
+        464,
+        477
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "fan旋转补偿+额外bottomGap+响应全显混合",
+      "changeOwner": "混合：旧fan+本聊天留白+其它响应任务",
+      "authorizationEvidence": "crop支持避免真实选中裁切；旋转补偿867已有；本聊天额外3无直接授权；cbac453bb响应全显与fd2effbdf参数化属其它任务",
+      "decision": "保留",
+      "action": "保留真实扇形旋转补偿及其它任务响应全显；删本聊天人为额外3；任何默认改动复验响应窗口，不可顺带撤cbac/fd",
+      "impactAndRecheck": "分别复验普通手牌、博士候选/已选、响应可用牌与原响应提示，不能只看单张"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        564,
+        565
+      ],
+      "snapshotRange": [
+        586,
+        587
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "法术不播放飞向弃牌堆动画",
+      "changeOwner": "博士必要功能接入（86712291b纳入）",
+      "authorizationEvidence": "用户实施博士；正式法术进入准备区不是弃牌，最窄与真实结果一致",
+      "decision": "保留",
+      "action": "保留，不改普通行动牌动画",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        820,
+        827
+      ],
+      "snapshotRange": [
+        842,
+        853
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "弃牌合同提交",
+      "changeOwner": "Thor/弃牌独立任务（需主代理锁）",
+      "authorizationEvidence": "90b7dba67独立弃牌合同",
+      "decision": "非本聊天",
+      "action": "保留真实候选/提交，不撤其它功能",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        847,
+        851
+      ],
+      "snapshotRange": [
+        873,
+        877
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "弃牌依赖更新/去未用resetDragValues",
+      "changeOwner": "90b7dba67弃牌接入",
+      "authorizationEvidence": "合同最窄接入与无可见影响清理",
+      "decision": "非本聊天",
+      "action": "保留，不顺手扩大重构",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        907,
+        907
+      ],
+      "snapshotRange": [
+        933,
+        933
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "手牌高度22迁常量",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "本聊天61491；原数值等价",
+      "decision": "恢复",
+      "action": "若共享22失去必要消费者，恢复本地22；不要改实际手牌高度",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        928,
+        928
+      ],
+      "snapshotRange": [
+        954,
+        954
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "旋转5改同值常量",
+      "changeOwner": "86712291b已纳入/原写入归属未证明",
+      "authorizationEvidence": "纯等价",
+      "decision": "保留",
+      "action": "保留5，不变扇形",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        937,
+        939
+      ],
+      "snapshotRange": [
+        963,
+        967
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "弃牌候选过滤",
+      "changeOwner": "Thor/弃牌独立任务（需主代理锁）",
+      "authorizationEvidence": "90b7dba67独立弃牌合同",
+      "decision": "非本聊天",
+      "action": "保留真实候选权限",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        1039,
+        1039
+      ],
+      "snapshotRange": [
+        1067,
+        1067
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "motion transform origin改bottom-center",
+      "changeOwner": "未证明（非自动保留）",
+      "authorizationEvidence": "22790d2c7纳入，但未在本聊天原始call找到owner/真实阻断；不能因可见图更好自动保留",
+      "decision": "未证明",
+      "action": "先由主代理核归属；若无其它任务直接授权，按restore恢复旧relative w-full h-full",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "oldRange": [
+        1099,
+        1099
+      ],
+      "snapshotRange": [
+        1127,
+        1129
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx",
+      "oldOwner": "现有 DiceThrone HandArea",
+      "change": "spell不显示普通行动牌CP徽章",
+      "changeOwner": "博士必要功能接入（86712291b纳入）",
+      "authorizationEvidence": "博士法术本有正式法术cost与区域UI；保持法术卡面，最窄功能区别",
+      "decision": "保留",
+      "action": "保留spell分支，普通卡CP不变",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/handLayoutConstants.ts",
+      "oldRange": [
+        1,
+        0
+      ],
+      "snapshotRange": [
+        1,
+        5
+      ],
+      "oldNormalSource": "baseline不存在此文件；原值来源 c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/HandArea.tsx (width12,height22)",
+      "oldOwner": "现有 DiceThrone handLayoutConstants.ts",
+      "change": "新增共享22/12常量及卡池沿用手牌尺度注释",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "22由本聊天61491抽取；12为本次未授权候选重排服务，虽手牌值没变但无必要共享职责",
+      "decision": "恢复",
+      "action": "删除12与错误尺度注释；22若恢复后无必要共享消费者则删文件并本地还原；不留死层",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        10,
+        9
+      ],
+      "snapshotRange": [
+        10,
+        15
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "CardPreview/portrait/Dice2D及元数据import",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse授权接入原选择器而非重造卡grid或头像按钮",
+      "decision": "恢复",
+      "action": "去CardPreview、portrait、HeroState（若不再消费）；保留正式Choice类型与仍被真实骰子结果消费的Dice2D，不能按死分支误删必要metadata",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        11,
+        11
+      ],
+      "snapshotRange": [
+        17,
+        17
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "导出ChoiceOption",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "ChoiceObjectSelection复用需要类型",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        20,
+        19
+      ],
+      "snapshotRange": [
+        26,
+        32
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "真实对象/卡区/候选/骰子预览metadata",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "reuse最窄真实候选数据接入",
+      "decision": "保留",
+      "action": "保留类型，不意味着保留新造皮肤",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        58,
+        58
+      ],
+      "snapshotRange": [
+        71,
+        72
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "tokens/statusEffects插值翻译",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "真实状态名必要文字，不改变构图",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        70,
+        79
+      ],
+      "snapshotRange": [
+        84,
+        96
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "玩家state/names进ChoiceModal供头像按钮",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "对象候选现由ChoiceObjectSelection复用旧InteractionOverlay；无重造头像按钮授权",
+      "decision": "恢复",
+      "action": "删只为头像皮肤所需props；Choice元数据仍可由adapter消费",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        85,
+        84
+      ],
+      "snapshotRange": [
+        103,
+        103
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "cardOptions派生grid",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "本聊天早期重造卡牌选项，已被复用原选择器替代",
+      "decision": "恢复",
+      "action": "删除卡grid派生",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        131,
+        131
+      ],
+      "snapshotRange": [
+        150,
+        150
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "原md按卡数扩宽lg/xl",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无授权；卡对象应复用旧卡池",
+      "decision": "恢复",
+      "action": "恢复width=md",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        134,
+        134
+      ],
+      "snapshotRange": [
+        153,
+        153
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "<=1023间距6→2",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "无改旧移动端选择弹窗构图授权",
+      "decision": "恢复",
+      "action": "恢复原gap-6",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        143,
+        159
+      ],
+      "snapshotRange": [
+        162,
+        178
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "二选一slider按钮平面单列",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "flat明确区分选项与立体确认，并要求单列",
+      "decision": "保留",
+      "action": "保留option/fullWidth单列",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        225,
+        224
+      ],
+      "snapshotRange": [
+        244,
+        278
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "新增w40卡片grid/固定669:1086/下方文字与另排操作",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "用户43669要求全交互复用旧卡池；没有制造卡片选择器授权",
+      "decision": "恢复",
+      "action": "删除独立卡grid分支；通过ChoiceObjectSelection使用真实来源原卡池，不改数据",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        227,
+        227
+      ],
+      "snapshotRange": [
+        281,
+        281
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "默认多个选项改单列",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "flat明确授权",
+      "decision": "保留",
+      "action": "保留flex-col gap3",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        229,
+        228
+      ],
+      "snapshotRange": [
+        283,
+        283
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "用于头像候选的target变量",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "对象已有旧选择器，用户要求复用",
+      "decision": "恢复",
+      "action": "删除头像渲染专用变量",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        235,
+        236
+      ],
+      "snapshotRange": [
+        290,
+        292
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "普通选项option/fullWidth、骰子/头像条件纵排",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "flat支持平面单列；reuse不授权头像重造",
+      "decision": "保留",
+      "action": "保留option/fullWidth；删除target纵排依赖；保留真实骰子结果所需最窄表现",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        240,
+        239
+      ],
+      "snapshotRange": [
+        296,
+        311
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "dicePreview2D 48px+数值，与头像h20w20混合",
+      "changeOwner": "骰子预览: Thor正式组合候选；头像: 本聊天早期重造",
+      "authorizationEvidence": "当前精确检索domain下dicePreview唯一写入者为customActions/thor.ts:221，真实雷神链式组合候选；Board当前有diceCombinationChoice投影。头像则被用户要求原选择器复用替代。",
+      "decision": "非本聊天",
+      "action": "保留雷神真实Dice2D预览数据表达，不跨聊天撤除；删除其中target头像span（304..311附近实际以源码定位），不要把整hunk一起删；是否去除已不走的骰子fallback由Thor owner另判。",
+      "impactAndRecheck": "博士对象选择不走此头像分支；雷神组合选择由原骰盘承接，其真实候选/结果不可误删。"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldRange": [
+        241,
+        240
+      ],
+      "snapshotRange": [
+        313,
+        315
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/ChoiceModal.tsx",
+      "oldOwner": "现有 DiceThrone ChoiceModal.tsx",
+      "change": "头像按钮里的玩家名副标题",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "真实玩家选择应由旧InteractionOverlay显示",
+      "decision": "恢复",
+      "action": "删该新造重复角色选项表现；保留adapter正式玩家名",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "oldRange": [
+        1,
+        0
+      ],
+      "snapshotRange": [
+        1,
+        149
+      ],
+      "oldNormalSource": "baseline不存在此adapter；原选择器来源 c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "oldOwner": "现有 DiceThrone InteractionOverlay",
+      "change": "新adapter将正式Choice映射旧InteractionOverlay，候选/权限/本地选中/原option提交",
+      "changeOwner": "本聊天原始patch44215",
+      "authorizationEvidence": "reuse line43669直接要求全部新交互复用既有完整交互；用户50251要求不要先角色后状态",
+      "decision": "保留",
+      "action": "保留adapter候选/权限与规则提交、onMagnifyCard；不承担新皮肤；无新增清空按钮；直接点实际状态；skip/confirm语义保留",
+      "impactAndRecheck": "必须复验card/player/status/skip及不可操作旁观者；同statusId只高亮真实holder；读牌不变选择"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldRange": [
+        11,
+        11
+      ],
+      "snapshotRange": [
+        11,
+        11
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldOwner": "现有 DiceThrone components/GameButton.tsx",
+      "change": "新增option变体",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "flat",
+      "decision": "保留",
+      "action": "只作用option，不改旧primary/secondary",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldRange": [
+        32,
+        33
+      ],
+      "snapshotRange": [
+        32,
+        36
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldOwner": "现有 DiceThrone components/GameButton.tsx",
+      "change": "option平面文本与无缩放，旧variant类保持",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "flat",
+      "decision": "保留",
+      "action": "保留option隔离分支",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldRange": [
+        41,
+        40
+      ],
+      "snapshotRange": [
+        44,
+        44
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldOwner": "现有 DiceThrone components/GameButton.tsx",
+      "change": "option较明亮底/边/文字",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "contrast与flat",
+      "decision": "保留",
+      "action": "保留只对选项的对比增强，不给卡池造底框",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldRange": [
+        81,
+        84
+      ],
+      "snapshotRange": [
+        85,
+        88
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameButton.tsx",
+      "oldOwner": "现有 DiceThrone components/GameButton.tsx",
+      "change": "option取消hover/tap缩放",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "flat确认选项与确认按钮语义不同",
+      "decision": "保留",
+      "action": "保留；其它按钮原缩放1.01/0.98不变",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldRange": [
+        17,
+        30
+      ],
+      "snapshotRange": [
+        17,
+        33
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldOwner": "现有 DiceThrone components/GameModal.tsx",
+      "change": "opt-in compact参数/默认normal",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact只授权09单持有人收紧；其它旧modal默认一致",
+      "decision": "保留",
+      "action": "保留默认normal；只允许09单持有人调用compact",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldRange": [
+        50,
+        49
+      ],
+      "snapshotRange": [
+        54,
+        55
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldOwner": "现有 DiceThrone components/GameModal.tsx",
+      "change": "testid与density标记",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "非可见hook",
+      "decision": "保留",
+      "action": "保留",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldRange": [
+        64,
+        65
+      ],
+      "snapshotRange": [
+        70,
+        73
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldOwner": "现有 DiceThrone components/GameModal.tsx",
+      "change": "compact标题padding/字号收紧",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact；normal分支与旧值逐项相同",
+      "decision": "保留",
+      "action": "保留opt-in compact；normal原字体/padding不变",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldRange": [
+        75,
+        75
+      ],
+      "snapshotRange": [
+        83,
+        84
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldOwner": "现有 DiceThrone components/GameModal.tsx",
+      "change": "compact内容padding3",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact；normal旧padding不变",
+      "decision": "保留",
+      "action": "保留，仅compact用",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldRange": [
+        81,
+        81
+      ],
+      "snapshotRange": [
+        90,
+        91
+      ],
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/components/GameModal.tsx",
+      "oldOwner": "现有 DiceThrone components/GameModal.tsx",
+      "change": "compact footer padding/gap/shrink0；normal旧类",
+      "changeOwner": "本聊天",
+      "authorizationEvidence": "compact；normal分支已恢复与基线一致",
+      "decision": "保留",
+      "action": "保留；对照普通旧modal不变",
+      "impactAndRecheck": "按原入口对照旧基线截图；此账不宣告视觉PASS"
+    }
+  ],
+  "completeOpcodeCoverage": [
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotSha256": "ca58ece82de06d16ae14e5b1bbf376d6b613f75fa75232f1d7aee834fb8ceb92",
+      "opcodes": [
+        {
+          "oldRange": [
+            9,
+            9
+          ],
+          "snapshotRange": [
+            9,
+            9
+          ],
+          "entryIds": [
+            1
+          ]
+        },
+        {
+          "oldRange": [
+            14,
+            14
+          ],
+          "snapshotRange": [
+            14,
+            16
+          ],
+          "entryIds": [
+            2
+          ]
+        },
+        {
+          "oldRange": [
+            19,
+            18
+          ],
+          "snapshotRange": [
+            21,
+            22
+          ],
+          "entryIds": [
+            2
+          ]
+        },
+        {
+          "oldRange": [
+            22,
+            23
+          ],
+          "snapshotRange": [
+            26,
+            26
+          ],
+          "entryIds": [
+            3
+          ]
+        },
+        {
+          "oldRange": [
+            27,
+            26
+          ],
+          "snapshotRange": [
+            30,
+            48
+          ],
+          "entryIds": [
+            3
+          ]
+        },
+        {
+          "oldRange": [
+            40,
+            40
+          ],
+          "snapshotRange": [
+            62,
+            62
+          ],
+          "entryIds": [
+            4
+          ]
+        },
+        {
+          "oldRange": [
+            43,
+            44
+          ],
+          "snapshotRange": [
+            65,
+            71
+          ],
+          "entryIds": [
+            4
+          ]
+        },
+        {
+          "oldRange": [
+            137,
+            136
+          ],
+          "snapshotRange": [
+            164,
+            165
+          ],
+          "entryIds": [
+            5
+          ]
+        },
+        {
+          "oldRange": [
+            147,
+            146
+          ],
+          "snapshotRange": [
+            176,
+            182
+          ],
+          "entryIds": [
+            6
+          ]
+        },
+        {
+          "oldRange": [
+            160,
+            159
+          ],
+          "snapshotRange": [
+            196,
+            196
+          ],
+          "entryIds": [
+            7
+          ]
+        },
+        {
+          "oldRange": [
+            165,
+            164
+          ],
+          "snapshotRange": [
+            202,
+            205
+          ],
+          "entryIds": [
+            7
+          ]
+        },
+        {
+          "oldRange": [
+            169,
+            168
+          ],
+          "snapshotRange": [
+            210,
+            216
+          ],
+          "entryIds": [
+            8
+          ]
+        },
+        {
+          "oldRange": [
+            171,
+            170
+          ],
+          "snapshotRange": [
+            219,
+            219
+          ],
+          "entryIds": [
+            9
+          ]
+        },
+        {
+          "oldRange": [
+            190,
+            189
+          ],
+          "snapshotRange": [
+            239,
+            252
+          ],
+          "entryIds": [
+            10
+          ]
+        },
+        {
+          "oldRange": [
+            197,
+            197
+          ],
+          "snapshotRange": [
+            260,
+            261
+          ],
+          "entryIds": [
+            11
+          ]
+        },
+        {
+          "oldRange": [
+            212,
+            213
+          ],
+          "snapshotRange": [
+            276,
+            277
+          ],
+          "entryIds": [
+            12
+          ]
+        },
+        {
+          "oldRange": [
+            224,
+            224
+          ],
+          "snapshotRange": [
+            288,
+            288
+          ],
+          "entryIds": [
+            13
+          ]
+        },
+        {
+          "oldRange": [
+            279,
+            279
+          ],
+          "snapshotRange": [
+            343,
+            343
+          ],
+          "entryIds": [
+            14
+          ]
+        },
+        {
+          "oldRange": [
+            281,
+            281
+          ],
+          "snapshotRange": [
+            345,
+            345
+          ],
+          "entryIds": [
+            14
+          ]
+        },
+        {
+          "oldRange": [
+            285,
+            288
+          ],
+          "snapshotRange": [
+            349,
+            353
+          ],
+          "entryIds": [
+            14
+          ]
+        },
+        {
+          "oldRange": [
+            294,
+            293
+          ],
+          "snapshotRange": [
+            359,
+            359
+          ],
+          "entryIds": [
+            14
+          ]
+        },
+        {
+          "oldRange": [
+            296,
+            296
+          ],
+          "snapshotRange": [
+            362,
+            362
+          ],
+          "entryIds": [
+            14
+          ]
+        },
+        {
+          "oldRange": [
+            318,
+            318
+          ],
+          "snapshotRange": [
+            384,
+            388
+          ],
+          "entryIds": [
+            15
+          ]
+        },
+        {
+          "oldRange": [
+            346,
+            348
+          ],
+          "snapshotRange": [
+            416,
+            416
+          ],
+          "entryIds": [
+            16
+          ]
+        },
+        {
+          "oldRange": [
+            357,
+            357
+          ],
+          "snapshotRange": [
+            425,
+            425
+          ],
+          "entryIds": [
+            17
+          ]
+        },
+        {
+          "oldRange": [
+            361,
+            360
+          ],
+          "snapshotRange": [
+            429,
+            429
+          ],
+          "entryIds": [
+            17
+          ]
+        },
+        {
+          "oldRange": [
+            363,
+            363
+          ],
+          "snapshotRange": [
+            432,
+            432
+          ],
+          "entryIds": [
+            17
+          ]
+        },
+        {
+          "oldRange": [
+            369,
+            369
+          ],
+          "snapshotRange": [
+            438,
+            438
+          ],
+          "entryIds": [
+            17
+          ]
+        },
+        {
+          "oldRange": [
+            374,
+            374
+          ],
+          "snapshotRange": [
+            443,
+            445
+          ],
+          "entryIds": [
+            18
+          ]
+        },
+        {
+          "oldRange": [
+            378,
+            378
+          ],
+          "snapshotRange": [
+            449,
+            449
+          ],
+          "entryIds": [
+            19
+          ]
+        },
+        {
+          "oldRange": [
+            385,
+            385
+          ],
+          "snapshotRange": [
+            456,
+            456
+          ],
+          "entryIds": [
+            19
+          ]
+        },
+        {
+          "oldRange": [
+            427,
+            427
+          ],
+          "snapshotRange": [
+            498,
+            498
+          ],
+          "entryIds": [
+            20
+          ]
+        },
+        {
+          "oldRange": [
+            429,
+            429
+          ],
+          "snapshotRange": [
+            500,
+            500
+          ],
+          "entryIds": [
+            21
+          ]
+        },
+        {
+          "oldRange": [
+            433,
+            433
+          ],
+          "snapshotRange": [
+            504,
+            504
+          ],
+          "entryIds": [
+            21
+          ]
+        },
+        {
+          "oldRange": [
+            445,
+            444
+          ],
+          "snapshotRange": [
+            516,
+            517
+          ],
+          "entryIds": [
+            22
+          ]
+        },
+        {
+          "oldRange": [
+            448,
+            447
+          ],
+          "snapshotRange": [
+            521,
+            523
+          ],
+          "entryIds": [
+            23
+          ]
+        },
+        {
+          "oldRange": [
+            449,
+            449
+          ],
+          "snapshotRange": [
+            525,
+            524
+          ],
+          "entryIds": [
+            23
+          ]
+        },
+        {
+          "oldRange": [
+            451,
+            451
+          ],
+          "snapshotRange": [
+            526,
+            526
+          ],
+          "entryIds": [
+            23
+          ]
+        },
+        {
+          "oldRange": [
+            455,
+            454
+          ],
+          "snapshotRange": [
+            530,
+            530
+          ],
+          "entryIds": [
+            24
+          ]
+        },
+        {
+          "oldRange": [
+            457,
+            457
+          ],
+          "snapshotRange": [
+            533,
+            548
+          ],
+          "entryIds": [
+            25
+          ]
+        },
+        {
+          "oldRange": [
+            459,
+            460
+          ],
+          "snapshotRange": [
+            550,
+            553
+          ],
+          "entryIds": [
+            26
+          ]
+        },
+        {
+          "oldRange": [
+            466,
+            466
+          ],
+          "snapshotRange": [
+            559,
+            559
+          ],
+          "entryIds": [
+            27
+          ]
+        },
+        {
+          "oldRange": [
+            468,
+            469
+          ],
+          "snapshotRange": [
+            561,
+            562
+          ],
+          "entryIds": [
+            27
+          ]
+        },
+        {
+          "oldRange": [
+            475,
+            475
+          ],
+          "snapshotRange": [
+            568,
+            567
+          ],
+          "entryIds": [
+            28
+          ]
+        },
+        {
+          "oldRange": [
+            480,
+            479
+          ],
+          "snapshotRange": [
+            572,
+            580
+          ],
+          "entryIds": [
+            29
+          ]
+        },
+        {
+          "oldRange": [
+            481,
+            480
+          ],
+          "snapshotRange": [
+            582,
+            591
+          ],
+          "entryIds": [
+            30
+          ]
+        },
+        {
+          "oldRange": [
+            487,
+            487
+          ],
+          "snapshotRange": [
+            598,
+            598
+          ],
+          "entryIds": [
+            31
+          ]
+        },
+        {
+          "oldRange": [
+            489,
+            495
+          ],
+          "snapshotRange": [
+            600,
+            610
+          ],
+          "entryIds": [
+            32
+          ]
+        },
+        {
+          "oldRange": [
+            501,
+            500
+          ],
+          "snapshotRange": [
+            616,
+            617
+          ],
+          "entryIds": [
+            32
+          ]
+        },
+        {
+          "oldRange": [
+            502,
+            502
+          ],
+          "snapshotRange": [
+            619,
+            619
+          ],
+          "entryIds": [
+            32
+          ]
+        },
+        {
+          "oldRange": [
+            524,
+            524
+          ],
+          "snapshotRange": [
+            641,
+            642
+          ],
+          "entryIds": [
+            33
+          ]
+        },
+        {
+          "oldRange": [
+            529,
+            535
+          ],
+          "snapshotRange": [
+            647,
+            656
+          ],
+          "entryIds": [
+            34
+          ]
+        },
+        {
+          "oldRange": [
+            541,
+            540
+          ],
+          "snapshotRange": [
+            662,
+            662
+          ],
+          "entryIds": [
+            34
+          ]
+        },
+        {
+          "oldRange": [
+            542,
+            542
+          ],
+          "snapshotRange": [
+            664,
+            664
+          ],
+          "entryIds": [
+            34
+          ]
+        },
+        {
+          "oldRange": [
+            550,
+            550
+          ],
+          "snapshotRange": [
+            672,
+            672
+          ],
+          "entryIds": [
+            35
+          ]
+        },
+        {
+          "oldRange": [
+            576,
+            575
+          ],
+          "snapshotRange": [
+            698,
+            698
+          ],
+          "entryIds": [
+            36
+          ]
+        },
+        {
+          "oldRange": [
+            588,
+            589
+          ],
+          "snapshotRange": [
+            711,
+            712
+          ],
+          "entryIds": [
+            37
+          ]
+        },
+        {
+          "oldRange": [
+            620,
+            620
+          ],
+          "snapshotRange": [
+            743,
+            743
+          ],
+          "entryIds": [
+            38
+          ]
+        },
+        {
+          "oldRange": [
+            628,
+            630
+          ],
+          "snapshotRange": [
+            751,
+            753
+          ],
+          "entryIds": [
+            39
+          ]
+        },
+        {
+          "oldRange": [
+            633,
+            632
+          ],
+          "snapshotRange": [
+            756,
+            757
+          ],
+          "entryIds": [
+            40
+          ]
+        },
+        {
+          "oldRange": [
+            686,
+            686
+          ],
+          "snapshotRange": [
+            811,
+            811
+          ],
+          "entryIds": [
+            41
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotSha256": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+      "opcodes": [
+        {
+          "oldRange": [
+            14,
+            13
+          ],
+          "snapshotRange": [
+            14,
+            14
+          ],
+          "entryIds": [
+            42
+          ]
+        },
+        {
+          "oldRange": [
+            21,
+            20
+          ],
+          "snapshotRange": [
+            22,
+            22
+          ],
+          "entryIds": [
+            43
+          ]
+        },
+        {
+          "oldRange": [
+            27,
+            27
+          ],
+          "snapshotRange": [
+            29,
+            29
+          ],
+          "entryIds": [
+            43
+          ]
+        },
+        {
+          "oldRange": [
+            31,
+            30
+          ],
+          "snapshotRange": [
+            33,
+            33
+          ],
+          "entryIds": [
+            44
+          ]
+        },
+        {
+          "oldRange": [
+            32,
+            31
+          ],
+          "snapshotRange": [
+            35,
+            35
+          ],
+          "entryIds": [
+            45
+          ]
+        },
+        {
+          "oldRange": [
+            33,
+            33
+          ],
+          "snapshotRange": [
+            37,
+            36
+          ],
+          "entryIds": [
+            45
+          ]
+        },
+        {
+          "oldRange": [
+            227,
+            227
+          ],
+          "snapshotRange": [
+            230,
+            231
+          ],
+          "entryIds": [
+            46
+          ]
+        },
+        {
+          "oldRange": [
+            231,
+            230
+          ],
+          "snapshotRange": [
+            235,
+            235
+          ],
+          "entryIds": [
+            47
+          ]
+        },
+        {
+          "oldRange": [
+            258,
+            257
+          ],
+          "snapshotRange": [
+            263,
+            264
+          ],
+          "entryIds": [
+            48
+          ]
+        },
+        {
+          "oldRange": [
+            271,
+            270
+          ],
+          "snapshotRange": [
+            278,
+            279
+          ],
+          "entryIds": [
+            49
+          ]
+        },
+        {
+          "oldRange": [
+            273,
+            272
+          ],
+          "snapshotRange": [
+            282,
+            282
+          ],
+          "entryIds": [
+            50
+          ]
+        },
+        {
+          "oldRange": [
+            454,
+            453
+          ],
+          "snapshotRange": [
+            464,
+            475
+          ],
+          "entryIds": [
+            51
+          ]
+        },
+        {
+          "oldRange": [
+            455,
+            455
+          ],
+          "snapshotRange": [
+            477,
+            477
+          ],
+          "entryIds": [
+            51
+          ]
+        },
+        {
+          "oldRange": [
+            564,
+            565
+          ],
+          "snapshotRange": [
+            586,
+            587
+          ],
+          "entryIds": [
+            52
+          ]
+        },
+        {
+          "oldRange": [
+            820,
+            820
+          ],
+          "snapshotRange": [
+            842,
+            842
+          ],
+          "entryIds": [
+            53
+          ]
+        },
+        {
+          "oldRange": [
+            827,
+            827
+          ],
+          "snapshotRange": [
+            849,
+            853
+          ],
+          "entryIds": [
+            53
+          ]
+        },
+        {
+          "oldRange": [
+            847,
+            846
+          ],
+          "snapshotRange": [
+            873,
+            873
+          ],
+          "entryIds": [
+            54
+          ]
+        },
+        {
+          "oldRange": [
+            851,
+            851
+          ],
+          "snapshotRange": [
+            878,
+            877
+          ],
+          "entryIds": [
+            54
+          ]
+        },
+        {
+          "oldRange": [
+            907,
+            907
+          ],
+          "snapshotRange": [
+            933,
+            933
+          ],
+          "entryIds": [
+            55
+          ]
+        },
+        {
+          "oldRange": [
+            928,
+            928
+          ],
+          "snapshotRange": [
+            954,
+            954
+          ],
+          "entryIds": [
+            56
+          ]
+        },
+        {
+          "oldRange": [
+            937,
+            936
+          ],
+          "snapshotRange": [
+            963,
+            964
+          ],
+          "entryIds": [
+            57
+          ]
+        },
+        {
+          "oldRange": [
+            939,
+            939
+          ],
+          "snapshotRange": [
+            967,
+            967
+          ],
+          "entryIds": [
+            57
+          ]
+        },
+        {
+          "oldRange": [
+            1039,
+            1039
+          ],
+          "snapshotRange": [
+            1067,
+            1067
+          ],
+          "entryIds": [
+            58
+          ]
+        },
+        {
+          "oldRange": [
+            1099,
+            1099
+          ],
+          "snapshotRange": [
+            1127,
+            1129
+          ],
+          "entryIds": [
+            59
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/handLayoutConstants.ts",
+      "snapshotSha256": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+      "opcodes": [
+        {
+          "oldRange": [
+            1,
+            0
+          ],
+          "snapshotRange": [
+            1,
+            5
+          ],
+          "entryIds": [
+            60
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotSha256": "41f0d7abffb0ddfc8a0dc07b0a0dc0e236d1ba5e324cf0729becd4bc01143fa7",
+      "opcodes": [
+        {
+          "oldRange": [
+            10,
+            9
+          ],
+          "snapshotRange": [
+            10,
+            15
+          ],
+          "entryIds": [
+            61
+          ]
+        },
+        {
+          "oldRange": [
+            11,
+            11
+          ],
+          "snapshotRange": [
+            17,
+            17
+          ],
+          "entryIds": [
+            62
+          ]
+        },
+        {
+          "oldRange": [
+            20,
+            19
+          ],
+          "snapshotRange": [
+            26,
+            32
+          ],
+          "entryIds": [
+            63
+          ]
+        },
+        {
+          "oldRange": [
+            58,
+            58
+          ],
+          "snapshotRange": [
+            71,
+            72
+          ],
+          "entryIds": [
+            64
+          ]
+        },
+        {
+          "oldRange": [
+            70,
+            69
+          ],
+          "snapshotRange": [
+            84,
+            85
+          ],
+          "entryIds": [
+            65
+          ]
+        },
+        {
+          "oldRange": [
+            79,
+            78
+          ],
+          "snapshotRange": [
+            95,
+            96
+          ],
+          "entryIds": [
+            65
+          ]
+        },
+        {
+          "oldRange": [
+            85,
+            84
+          ],
+          "snapshotRange": [
+            103,
+            103
+          ],
+          "entryIds": [
+            66
+          ]
+        },
+        {
+          "oldRange": [
+            131,
+            131
+          ],
+          "snapshotRange": [
+            150,
+            150
+          ],
+          "entryIds": [
+            67
+          ]
+        },
+        {
+          "oldRange": [
+            134,
+            134
+          ],
+          "snapshotRange": [
+            153,
+            153
+          ],
+          "entryIds": [
+            68
+          ]
+        },
+        {
+          "oldRange": [
+            143,
+            143
+          ],
+          "snapshotRange": [
+            162,
+            162
+          ],
+          "entryIds": [
+            69
+          ]
+        },
+        {
+          "oldRange": [
+            147,
+            148
+          ],
+          "snapshotRange": [
+            166,
+            167
+          ],
+          "entryIds": [
+            69
+          ]
+        },
+        {
+          "oldRange": [
+            158,
+            159
+          ],
+          "snapshotRange": [
+            177,
+            178
+          ],
+          "entryIds": [
+            69
+          ]
+        },
+        {
+          "oldRange": [
+            225,
+            224
+          ],
+          "snapshotRange": [
+            244,
+            278
+          ],
+          "entryIds": [
+            70
+          ]
+        },
+        {
+          "oldRange": [
+            227,
+            227
+          ],
+          "snapshotRange": [
+            281,
+            281
+          ],
+          "entryIds": [
+            71
+          ]
+        },
+        {
+          "oldRange": [
+            229,
+            228
+          ],
+          "snapshotRange": [
+            283,
+            283
+          ],
+          "entryIds": [
+            72
+          ]
+        },
+        {
+          "oldRange": [
+            235,
+            236
+          ],
+          "snapshotRange": [
+            290,
+            292
+          ],
+          "entryIds": [
+            73
+          ]
+        },
+        {
+          "oldRange": [
+            240,
+            239
+          ],
+          "snapshotRange": [
+            296,
+            311
+          ],
+          "entryIds": [
+            74
+          ]
+        },
+        {
+          "oldRange": [
+            241,
+            240
+          ],
+          "snapshotRange": [
+            313,
+            315
+          ],
+          "entryIds": [
+            75
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "snapshotSha256": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299",
+      "opcodes": [
+        {
+          "oldRange": [
+            1,
+            0
+          ],
+          "snapshotRange": [
+            1,
+            149
+          ],
+          "entryIds": [
+            76
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "snapshotSha256": "7ae828f917fb6ca6cbde5978b2f7eb306de7f70d277819290af24f10280016a8",
+      "opcodes": [
+        {
+          "oldRange": [
+            11,
+            11
+          ],
+          "snapshotRange": [
+            11,
+            11
+          ],
+          "entryIds": [
+            77
+          ]
+        },
+        {
+          "oldRange": [
+            32,
+            33
+          ],
+          "snapshotRange": [
+            32,
+            36
+          ],
+          "entryIds": [
+            78
+          ]
+        },
+        {
+          "oldRange": [
+            41,
+            40
+          ],
+          "snapshotRange": [
+            44,
+            44
+          ],
+          "entryIds": [
+            79
+          ]
+        },
+        {
+          "oldRange": [
+            81,
+            81
+          ],
+          "snapshotRange": [
+            85,
+            85
+          ],
+          "entryIds": [
+            80
+          ]
+        },
+        {
+          "oldRange": [
+            84,
+            84
+          ],
+          "snapshotRange": [
+            88,
+            88
+          ],
+          "entryIds": [
+            80
+          ]
+        }
+      ]
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "snapshotSha256": "2389035e678f6969af88c7a342ff5af1e2ea4574debebb1fd98f8647b3ef6a86",
+      "opcodes": [
+        {
+          "oldRange": [
+            17,
+            16
+          ],
+          "snapshotRange": [
+            17,
+            18
+          ],
+          "entryIds": [
+            81
+          ]
+        },
+        {
+          "oldRange": [
+            29,
+            28
+          ],
+          "snapshotRange": [
+            31,
+            31
+          ],
+          "entryIds": [
+            81
+          ]
+        },
+        {
+          "oldRange": [
+            30,
+            29
+          ],
+          "snapshotRange": [
+            33,
+            33
+          ],
+          "entryIds": [
+            81
+          ]
+        },
+        {
+          "oldRange": [
+            50,
+            49
+          ],
+          "snapshotRange": [
+            54,
+            55
+          ],
+          "entryIds": [
+            82
+          ]
+        },
+        {
+          "oldRange": [
+            64,
+            65
+          ],
+          "snapshotRange": [
+            70,
+            73
+          ],
+          "entryIds": [
+            83
+          ]
+        },
+        {
+          "oldRange": [
+            75,
+            75
+          ],
+          "snapshotRange": [
+            83,
+            84
+          ],
+          "entryIds": [
+            84
+          ]
+        },
+        {
+          "oldRange": [
+            81,
+            81
+          ],
+          "snapshotRange": [
+            90,
+            91
+          ],
+          "entryIds": [
+            85
+          ]
+        }
+      ]
+    }
+  ],
+  "openIssues": [
+    "HandArea origin-bottom-center归属未证明，不能自动保留",
+    "响应任务独立bottomGap能力要保留，本聊天默认3不获此证据自动授权"
+  ],
+  "memoryUsed": [
+    {
+      "file": "MEMORY.md",
+      "lines": [
+        664,
+        697
+      ]
+    },
+    {
+      "file": "rollout_summaries/2026-10-23T10-16-23-eSzX-dicethrone_doctor_strange_ui_evidence_repair.md",
+      "lines": [
+        1,
+        48
+      ]
+    }
+  ],
+  "followupEvidence": [
+    "rg -n -C3 dicePreview: src/games/dicethrone/domain：唯一source customActions/thor.ts:221，属于真实Thor dice pair候选，不能归入博士擅改撤掉"
+  ]
+}

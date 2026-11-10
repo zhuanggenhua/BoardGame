@@ -1,0 +1,52 @@
+{
+  "client": {
+    "round": 11,
+    "phase": "preparation",
+    "players": [
+      {
+        "id": "0",
+        "eliminated": false,
+        "mana": 6,
+        "commandSpells": 3
+      },
+      {
+        "id": "1",
+        "eliminated": false,
+        "mana": 6,
+        "commandSpells": 2
+      },
+      {
+        "id": "2",
+        "eliminated": true,
+        "mana": 0,
+        "commandSpells": 2
+      }
+    ],
+    "selfDescription": "已淘汰，观战中",
+    "selfSlash": true
+  },
+  "server": {
+    "round": 11,
+    "phase": "preparation",
+    "players": [
+      {
+        "id": "0",
+        "eliminated": false,
+        "mana": 6,
+        "commandSpells": 3
+      },
+      {
+        "id": "1",
+        "eliminated": false,
+        "mana": 6,
+        "commandSpells": 2
+      },
+      {
+        "id": "2",
+        "eliminated": true,
+        "mana": 0,
+        "commandSpells": 2
+      }
+    ]
+  }
+}

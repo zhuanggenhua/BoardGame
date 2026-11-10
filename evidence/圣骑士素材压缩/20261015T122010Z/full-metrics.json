@@ -1,0 +1,330 @@
+{
+  "phase": "full",
+  "versions": {
+    "aom": "3.13.1",
+    "archive": "3.8.2",
+    "cairo": "1.18.4",
+    "cgif": "0.5.0",
+    "exif": "0.6.25",
+    "expat": "2.7.3",
+    "ffi": "3.5.2",
+    "fontconfig": "2.17.1",
+    "freetype": "2.14.1",
+    "fribidi": "1.0.16",
+    "glib": "2.86.1",
+    "harfbuzz": "12.1.0",
+    "heif": "1.20.2",
+    "highway": "1.3.0",
+    "imagequant": "2.4.1",
+    "lcms": "2.17",
+    "mozjpeg": "0826579",
+    "pango": "1.57.0",
+    "pixman": "0.46.4",
+    "png": "1.6.50",
+    "proxy-libintl": "0.5",
+    "rsvg": "2.61.2",
+    "spng": "0.7.4",
+    "tiff": "4.7.1",
+    "vips": "8.17.3",
+    "webp": "1.6.0",
+    "xml2": "2.15.1",
+    "zlib-ng": "2.2.5",
+    "sharp": "0.34.5"
+  },
+  "records": [
+    {
+      "asset": "ability-cards",
+      "config": {
+        "id": "default-q80",
+        "quality": 80
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\ability-cards--default-q80.webp",
+      "bytes": 3262216,
+      "width": 7380,
+      "height": 4720,
+      "encodeMs": 25257,
+      "sha256": "374d8716b8fa06b2f21dbc6653ccef36dae925a6d7d624ffdedf634858f5561c",
+      "metrics": {
+        "lumaSsimOpaque": 0.953548,
+        "edgeLumaRmse": 4.3189,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "ability-cards",
+      "config": {
+        "id": "default-q85",
+        "quality": 85
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\ability-cards--default-q85.webp",
+      "bytes": 4060314,
+      "width": 7380,
+      "height": 4720,
+      "encodeMs": 26104,
+      "sha256": "a59d72fd8be64a1cd3de47ce324adf40996886ed6d9bedb26a1bd7e08f614254",
+      "metrics": {
+        "lumaSsimOpaque": 0.965924,
+        "edgeLumaRmse": 3.4187,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "ability-cards",
+      "config": {
+        "id": "default-q75",
+        "quality": 75
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\ability-cards--default-q75.webp",
+      "bytes": 2551132,
+      "width": 7380,
+      "height": 4720,
+      "encodeMs": 22601,
+      "sha256": "5f6077a02d35362deab2936cc9e62ee664b137c433a7e4aca375b26a391b3c07",
+      "metrics": {
+        "lumaSsimOpaque": 0.931323,
+        "edgeLumaRmse": 5.4395,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "ability-cards",
+      "config": {
+        "id": "sharp-yuv-q75",
+        "quality": 75,
+        "smartSubsample": true
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\ability-cards--sharp-yuv-q75.webp",
+      "bytes": 2575920,
+      "width": 7380,
+      "height": 4720,
+      "encodeMs": 24474,
+      "sha256": "e4bb5f92b28fcc6493bab4c949da583ffaca7ecee0546844604f42ff2e0a528e",
+      "metrics": {
+        "lumaSsimOpaque": 0.931643,
+        "edgeLumaRmse": 5.4229,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "player-board",
+      "config": {
+        "id": "default-q85",
+        "quality": 85
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\player-board--default-q85.webp",
+      "bytes": 1753348,
+      "width": 4005,
+      "height": 2476,
+      "encodeMs": 8250,
+      "sha256": "d4d9358a80ec130656fdc16ab1a9e300fa05e5f148968750cda6e11996cd1899",
+      "metrics": {
+        "lumaSsimOpaque": 0.970709,
+        "edgeLumaRmse": 3.2761,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "player-board",
+      "config": {
+        "id": "default-q80",
+        "quality": 80
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\player-board--default-q80.webp",
+      "bytes": 1403362,
+      "width": 4005,
+      "height": 2476,
+      "encodeMs": 8274,
+      "sha256": "6aa4b72e9ab16dd12b9f46b4040ce2240f4124fd9e05b9867cf11c00359d1f72",
+      "metrics": {
+        "lumaSsimOpaque": 0.950336,
+        "edgeLumaRmse": 4.2349,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "ability-cards",
+      "config": {
+        "id": "text-q75",
+        "quality": 75,
+        "smartSubsample": true,
+        "preset": "text"
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\ability-cards--text-q75.webp",
+      "bytes": 2723654,
+      "width": 7380,
+      "height": 4720,
+      "encodeMs": 24285,
+      "sha256": "2b691603e60f36213ee6dbec19bdbe04ae3b696d926ac231901d9126cad1b683",
+      "metrics": {
+        "lumaSsimOpaque": 0.935024,
+        "edgeLumaRmse": 4.5176,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "player-board",
+      "config": {
+        "id": "default-q75",
+        "quality": 75
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\player-board--default-q75.webp",
+      "bytes": 1121910,
+      "width": 4005,
+      "height": 2476,
+      "encodeMs": 7872,
+      "sha256": "56a34dfa5f1bdfacbb524effb4575533a976761d4b7fbbe6ead3a96c9227b483",
+      "metrics": {
+        "lumaSsimOpaque": 0.929108,
+        "edgeLumaRmse": 5.3487,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "player-board",
+      "config": {
+        "id": "sharp-yuv-q75",
+        "quality": 75,
+        "smartSubsample": true
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\player-board--sharp-yuv-q75.webp",
+      "bytes": 1135270,
+      "width": 4005,
+      "height": 2476,
+      "encodeMs": 8493,
+      "sha256": "342587817b35a4b40c42e9ddfab0e3f724324c25de7e20894a951cc286e6514b",
+      "metrics": {
+        "lumaSsimOpaque": 0.929742,
+        "edgeLumaRmse": 5.3421,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "tip",
+      "config": {
+        "id": "default-q85",
+        "quality": 85
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\tip--default-q85.webp",
+      "bytes": 402214,
+      "width": 967,
+      "height": 1804,
+      "encodeMs": 1762,
+      "sha256": "a2cd0080f101cf9e79e3f7a52393ae282397a5ae80e0720aa3851c011c6d428f",
+      "metrics": {
+        "lumaSsimOpaque": 0.954966,
+        "edgeLumaRmse": 3.6294,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "player-board",
+      "config": {
+        "id": "text-q75",
+        "quality": 75,
+        "smartSubsample": true,
+        "preset": "text"
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\player-board--text-q75.webp",
+      "bytes": 1188936,
+      "width": 4005,
+      "height": 2476,
+      "encodeMs": 8551,
+      "sha256": "9acb8c1c9a38d6298c2ebbd8021cc93471034b1212285f2da509744ea93d06e0",
+      "metrics": {
+        "lumaSsimOpaque": 0.93518,
+        "edgeLumaRmse": 4.5384,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "tip",
+      "config": {
+        "id": "default-q80",
+        "quality": 80
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\tip--default-q80.webp",
+      "bytes": 312146,
+      "width": 967,
+      "height": 1804,
+      "encodeMs": 1649,
+      "sha256": "b4f41c85b792dde57bd8960ad964192ae381bf0c7b5659e0757c45ab688f9191",
+      "metrics": {
+        "lumaSsimOpaque": 0.931546,
+        "edgeLumaRmse": 4.6691,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "tip",
+      "config": {
+        "id": "default-q75",
+        "quality": 75
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\tip--default-q75.webp",
+      "bytes": 235406,
+      "width": 967,
+      "height": 1804,
+      "encodeMs": 1627,
+      "sha256": "ad171e4eca294c6187491cc61e17d5d93ed821b6d01f3c1410d97008af8d01c7",
+      "metrics": {
+        "lumaSsimOpaque": 0.902094,
+        "edgeLumaRmse": 5.9553,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "tip",
+      "config": {
+        "id": "sharp-yuv-q75",
+        "quality": 75,
+        "smartSubsample": true
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\tip--sharp-yuv-q75.webp",
+      "bytes": 247196,
+      "width": 967,
+      "height": 1804,
+      "encodeMs": 1697,
+      "sha256": "019a9915e04db3940e936f36d799547ff766edebfcb91554750641642e520800",
+      "metrics": {
+        "lumaSsimOpaque": 0.901885,
+        "edgeLumaRmse": 6.0004,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    },
+    {
+      "asset": "tip",
+      "config": {
+        "id": "text-q75",
+        "quality": 75,
+        "smartSubsample": true,
+        "preset": "text"
+      },
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\full\\tip--text-q75.webp",
+      "bytes": 245436,
+      "width": 967,
+      "height": 1804,
+      "encodeMs": 1633,
+      "sha256": "9558e17646eaaed3a681e6266d679c66c267f3cf460f2216442bec404c26112d",
+      "metrics": {
+        "lumaSsimOpaque": 0.891215,
+        "edgeLumaRmse": 5.0104,
+        "alphaExact": true,
+        "sameDimensions": true
+      }
+    }
+  ]
+}

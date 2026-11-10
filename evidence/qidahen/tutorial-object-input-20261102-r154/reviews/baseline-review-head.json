@@ -1,0 +1,48 @@
+{
+  "reviewer": "/root/r153_ui_head",
+  "status": "PASS",
+  "requirements": [
+    {
+      "status": "PASS",
+      "before": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\02-farm-action.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\05-prepare-hand.png"
+      ],
+      "after": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\02-farm-action.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\03-reclaim-action.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\05-prepare-hand.png"
+      ],
+      "baselineSource": "已实际读取R149的02与05原图。它们是用户退回的症状证据，并非已获批正常基线；旧02右侧菜单承载开垦、军屯、先执行手牌行动、结束轮盘行动与确认，旧05菜单承载手牌入口及结束行动。",
+      "preservedInformation": "保留印刷轮盘动作名、时标、当前势力/资源、真实手牌类别与牌名、独立放大镜、纪年卡及牌堆。没有以新外观否认旧菜单所承担的动作语义。",
+      "preservedActions": "可见的开垦/军屯选择迁回印刷名本体；手牌行动入口迁回真实牌本体；放弃剩余或完成轮盘行动仍以轮盘下入口承接。截图证明入口存在与可理解性，不单独证明所有动作可执行。",
+      "changes": "R149右侧同级动作菜单与确认步骤在R154对应状态退场；02军屯、03开垦分别以蓝框指示当前印刷名，05直接提示真实手牌。",
+      "duplicateDecision": "R154这三张无轮盘/手牌切换菜单；玩家不再先在另一块菜单重复选择本体上已有的动作。结束行动仍是独立必要决策而非被误删。",
+      "changeAuthority": "当前委派明确转述用户要求：直接在轮盘印刷名选择，只有当前动作高亮，05提示贴近真实银两且不再出现轮盘/手牌切换菜单；本审查只按该授权核验图面。",
+      "requirement": "轮盘与手牌本体交互"
+    },
+    {
+      "status": "PASS",
+      "before": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\02-farm-action.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r149-layering-pc-20261101\\desktop\\05-prepare-hand.png"
+      ],
+      "after": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\02-farm-action.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\03-reclaim-action.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\05-prepare-hand.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\06-recruit-payment.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\08-recruit-source.png"
+      ],
+      "baselineSource": "已实际读取旧R149的02/05：02教程靠右侧动作菜单，05教程指向先执行手牌行动的菜单项；旧图保留了军屯补给与手牌征召的教学任务，但其位置与菜单属于被退回的症状。",
+      "preservedInformation": "军屯补部队/手牌、同格开垦、再用手牌征召并保留守军的教学目的继续存在；新位置没有删除这些原有教学信息。银两支付说明与放大检视作为后续直接证据。",
+      "preservedActions": "02读完直接点军屯，03直接点开垦，05从银两牌进入手牌动作，06选择支付及确认/取消，07放大阅读后可发现关闭，08从地图点辽北；正常既有检视与结束入口继续可见。",
+      "changes": "02/03教程移到轮盘当前印刷动作旁，05移到手牌银两牌上方并以箭头关联；06支付栏、07放大卡、08地图来源各自承接当前教程任务。",
+      "duplicateDecision": "教程负责说明当前局面与选择理由，实际决策由印刷名称、真实卡牌、地图区域或支付栏执行；未再出现另一个轮盘/手牌切换菜单作为重复主承载。",
+      "changeAuthority": "当前委派要求以易理解而非仅无遮挡判定，并要求当前局面/下一操作清楚、05提示与银两相邻、支付/放大镜/地图候选清楚；本项仅确认这些PC静图职责关系，不扩张为规则或全课程验收。",
+      "requirement": "教程提示与当前决策对应"
+    }
+  ],
+  "comparisonMethod": "R149两张原图已实际读取；R154在00–08逐项比较SHA256，01/02/04同字节复用原观察，00/03/05/06/07/08已重新实际私有读图。"
+}

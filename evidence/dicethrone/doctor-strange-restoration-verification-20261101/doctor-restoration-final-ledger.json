@@ -1,0 +1,590 @@
+{
+  "scope": "本聊天全部UI修改逐项恢复；不是三个抽查项，也不以本次git脏改列表代替历史作者账",
+  "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "snapshot": "temp/doctor-ui-restoration-before-20261101/inventory.json",
+  "sourceFilesCovered": 34,
+  "missingSourceFiles": [],
+  "ledgers": [
+    "doctor-restoration-ledger-cards.json",
+    "doctor-restoration-ledger-other.json",
+    "doctor-restoration-ledger-dice-adapters.json"
+  ],
+  "rootDiceOwnerHunks": [
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -6 +6 @@",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -6 +6 @@\n- * - 骰子交互提示\n+ * - 手牌弃置交互提示\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -14 +14,3 @@ import { Trash2 } from 'lucide-react';",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -14 +14,3 @@ import { Trash2 } from 'lucide-react';\n-import type { InteractionDescriptor, TurnPhase } from '../domain/types';\n+import type { HandDiscardInteractionContract } from './handDiscardInteractionContract';\n+import type { DiceInteractionContract } from './diceInteractionContract';\n+import type { InteractionHint } from './interactionPresentationContract';\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -20,0 +23 @@ const dtViewportBlockUnit = (multiplier: number) =>",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -20,0 +23 @@ const dtViewportBlockUnit = (multiplier: number) =>\n+const HAND_DISCARD_HINT_TOP_UNITS = 5.6;\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -28,6 +31,5 @@ export interface GameHintsProps {",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -28,6 +31,5 @@ export interface GameHintsProps {\n-    /** 是否为骰子交互 */\n-    isDiceInteraction: boolean;\n-    /** 是否为交互所有者 */\n-    isInteractionOwner: boolean;\n-    /** 待处理交互 */\n-    pendingInteraction?: InteractionDescriptor;\n+    /** 手牌弃置的提示、合法候选和动作来自同一交互合同；无此交互时显式传 undefined。 */\n+    handDiscardInteraction: HandDiscardInteractionContract | undefined;\n+\n+    /** 当前骰子交互的同一份合同；普通状态显式传 undefined，交互状态不得漏接。 */\n+    diceInteraction: DiceInteractionContract | undefined;\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -47,3 +48,0 @@ export interface GameHintsProps {",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -47,3 +48,0 @@ export interface GameHintsProps {\n-    /** 当前阶段 */\n-    currentPhase: TurnPhase;\n-\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -94,4 +93,3 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -94,4 +93,3 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount\n-/**\n- * 骰子交互提示（画面顶部中央）\n- */\n-const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor }> = ({ pendingInteraction }) => {\n+const HandDiscardHint: React.FC<{\n+    interaction: HandDiscardInteractionContract;\n+}> = ({ interaction }) => {\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -98,0 +97 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -98,0 +97 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor\n+    const cancelAction = interaction.actions.cancel;\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -102,2 +101,8 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -102,2 +101,8 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor\n-            className=\"absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse\"\n-            style={{ zIndex: UI_Z_INDEX.hint, top: dtViewportInlineUnit(6) }}\n+            data-testid=\"dicethrone-hand-discard-hint\"\n+            className=\"absolute left-1/2 -translate-x-1/2 pointer-events-none\"\n+            style={{\n+                zIndex: UI_Z_INDEX.hint,\n+                top: dtViewportInlineUnit(HAND_DISCARD_HINT_TOP_UNITS),\n+                left: '50%',\n+                transform: 'translateX(-50%)',\n+            }}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -106,2 +111,7 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -106,2 +111,7 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor\n-                className=\"bg-amber-600/90 backdrop-blur-sm rounded-xl border border-amber-400/60 shadow-lg text-center\"\n-                style={{ paddingInline: dtViewportInlineUnit(2), paddingBlock: dtViewportInlineUnit(0.6) }}\n+                className=\"flex items-center rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-900/95 to-orange-900/95 backdrop-blur-sm\"\n+                style={{\n+                    gap: dtViewportInlineUnit(1),\n+                    paddingInline: dtViewportInlineUnit(1.4),\n+                    paddingBlock: dtViewportInlineUnit(0.7),\n+                    boxShadow: `0 0 ${dtViewportInlineUnit(2)} rgba(239,68,68,0.4)`,\n+                }}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -109,2 +119,3 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -109,2 +119,3 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor\n-                <span className=\"text-white font-bold tracking-wide\" style={{ fontSize: dtViewportInlineUnit(1) }}>\n-                    {t(pendingInteraction.titleKey, { count: pendingInteraction.selectCount })}\n+                <Trash2 className=\"shrink-0 text-red-200\" style={{ width: dtViewportInlineUnit(1.5), height: dtViewportInlineUnit(1.5) }} />\n+                <span className=\"whitespace-nowrap text-red-100 font-black\" style={{ fontSize: dtViewportInlineUnit(0.95) }}>\n+                    {t(interaction.hint.key, interaction.hint.params)}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -111,0 +123,11 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -111,0 +123,11 @@ const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor\n+                {cancelAction && (\n+                    <button\n+                        type=\"button\"\n+                        data-testid=\"dicethrone-hand-discard-cancel\"\n+                        onClick={cancelAction.onActivate}\n+                        className=\"pointer-events-auto rounded-lg border border-red-200/70 bg-black/30 px-3 py-2 text-white font-bold hover:bg-black/50\"\n+                        style={{ minHeight: 44, fontSize: dtViewportInlineUnit(0.85) }}\n+                    >\n+                        {t(cancelAction.labelKey)}\n+                    </button>\n+                )}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -187 +209,2 @@ const ResponseWindowHint: React.FC<{",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -187 +209,2 @@ const ResponseWindowHint: React.FC<{\n-}> = ({ onResponsePass, kind, passLabel }) => {\n+    hint?: InteractionHint;\n+}> = ({ onResponsePass, kind, passLabel, hint }) => {\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -256 +279 @@ const ResponseWindowHint: React.FC<{",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -256 +279 @@ const ResponseWindowHint: React.FC<{\n-                        {t('response.yourTurn')}\n+                        {t(hint?.key ?? 'response.yourTurn', hint?.params)}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -314,3 +337,2 @@ export const GameHints: React.FC<GameHintsProps> = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -314,3 +337,2 @@ export const GameHints: React.FC<GameHintsProps> = ({\n-    isDiceInteraction,\n-    isInteractionOwner,\n-    pendingInteraction,\n+    handDiscardInteraction,\n+    diceInteraction,\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -321,0 +344,7 @@ export const GameHints: React.FC<GameHintsProps> = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -321,0 +344,7 @@ export const GameHints: React.FC<GameHintsProps> = ({\n+    const tokenResponseSettlement = diceInteraction?.kind === 'tokenResponseSettlement'\n+        ? diceInteraction\n+        : undefined;\n+    const visibleResponsePrompt = responsePrompt ?? (tokenResponseSettlement\n+        ? { kind: tokenResponseSettlement.responseKind, onPass: undefined, passLabel: undefined }\n+        : undefined);\n+\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -329,3 +358,4 @@ export const GameHints: React.FC<GameHintsProps> = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -329,3 +358,4 @@ export const GameHints: React.FC<GameHintsProps> = ({\n-            {/* 骰子交互提示（画面顶部中央） */}\n-            {isDiceInteraction && isInteractionOwner && pendingInteraction && (\n-                <DiceInteractionHint pendingInteraction={pendingInteraction} />\n+            {handDiscardInteraction && (\n+                <HandDiscardHint\n+                    interaction={handDiscardInteraction}\n+                />\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -345 +375 @@ export const GameHints: React.FC<GameHintsProps> = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -345 +375 @@ export const GameHints: React.FC<GameHintsProps> = ({\n-            {responsePrompt && (\n+            {visibleResponsePrompt && (\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "hunk": "@@ -347,3 +377,4 @@ export const GameHints: React.FC<GameHintsProps> = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/GameHints.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -347,3 +377,4 @@ export const GameHints: React.FC<GameHintsProps> = ({\n-                    onResponsePass={responsePrompt.onPass}\n-                    kind={responsePrompt.kind}\n-                    passLabel={responsePrompt.passLabel}\n+                    onResponsePass={visibleResponsePrompt.onPass}\n+                    kind={visibleResponsePrompt.kind}\n+                    passLabel={visibleResponsePrompt.passLabel}\n+                    hint={tokenResponseSettlement?.hint}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -5,4 +5,2 @@ import { HeartCrack, MousePointerClick } from 'lucide-react';",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -5,4 +5,2 @@ import { HeartCrack, MousePointerClick } from 'lucide-react';\n-import type { AbilityCard, Die, PlayerId, TurnPhase } from '../types';\n-import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';\n-import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';\n-import type { DiceModifyResult, DiceSelectResult } from '../domain/systems';\n+import type { AbilityCard, Die, TurnPhase } from '../types';\n+import type { PlayerId } from '../../../engine/types';\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -9,0 +8 @@ import { DiceActions, DiceTray } from './DiceTray';",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -9,0 +8 @@ import { DiceActions, DiceTray } from './DiceTray';\n+import type { DiceInteractionContract } from './diceInteractionContract';\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -21,12 +19,0 @@ import {",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -21,12 +19,0 @@ import {\n-type SidebarDiceMeta = {\n-    dtType?: 'modifyDie' | 'selectDie';\n-    selectCount?: number;\n-    diceOwnerId?: PlayerId;\n-    targetOpponentDice?: boolean;\n-    allowRepeatedDieSelection?: boolean;\n-    dieModifyConfig?: {\n-        mode?: 'set' | 'adjust' | 'copy' | 'any';\n-        targetValue?: number;\n-    };\n-};\n-\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -38,21 +24,0 @@ type DamageSummary = {",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -38,21 +24,0 @@ type DamageSummary = {\n-const getSidebarDiceMeta = (interaction?: InteractionDescriptor): SidebarDiceMeta | undefined => {\n-    if (!interaction || interaction.kind !== 'multistep-choice') return undefined;\n-    const meta = (interaction.data as { meta?: SidebarDiceMeta } | undefined)?.meta;\n-    if (!meta?.dtType) return undefined;\n-    return meta;\n-};\n-\n-const getCompletedDiceStepCount = (interaction?: InteractionDescriptor, meta?: SidebarDiceMeta): number => {\n-    if (!interaction || interaction.kind !== 'multistep-choice') return 0;\n-    const data = interaction.data as { completedSteps?: unknown; completedDieIds?: unknown } | undefined;\n-    if (typeof data?.completedSteps === 'number' && Number.isFinite(data.completedSteps)) {\n-        return Math.max(0, Math.floor(data.completedSteps));\n-    }\n-    if (!Array.isArray(data?.completedDieIds)) return 0;\n-    const completedDieIds = data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number');\n-    if (meta?.dtType === 'selectDie' && meta.allowRepeatedDieSelection === true) {\n-        return completedDieIds.length;\n-    }\n-    return Array.from(new Set(completedDieIds)).length;\n-};\n-\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -87,2 +53 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -87,2 +53 @@ export const RightSidebar = ({\n-    interaction,\n-    multistepInteraction,\n+    diceInteraction,\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -99 +63,0 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -99 +63,0 @@ export const RightSidebar = ({\n-    teamIdByPlayerId,\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -128,2 +92,2 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -128,2 +92,2 @@ export const RightSidebar = ({\n-    interaction?: InteractionDescriptor;\n-    multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;\n+    /** 显式声明当前骰子合同；普通状态传 undefined，交互状态不得漏接。 */\n+    diceInteraction: DiceInteractionContract | undefined;\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -140 +103,0 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -140 +103,0 @@ export const RightSidebar = ({\n-    teamIdByPlayerId?: Record<PlayerId, string>;\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -142 +105 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -142 +105 @@ export const RightSidebar = ({\n-    const isDiceMultistep = Boolean(getSidebarDiceMeta(interaction));\n+    const isDiceMultistep = diceInteraction?.kind === 'multistep';\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -179 +142,3 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -179 +142,3 @@ export const RightSidebar = ({\n-    const hintContainerStyle: CSSProperties = {\n+    const isLegacyDiceHint = diceInteraction?.kind === 'multistep'\n+        && !(diceInteraction.meta.dtType === 'selectDie' && diceInteraction.meta.selectionMode === 'bonusGroupReroll');\n+    const hintContainerStyle: CSSProperties = isLegacyDiceHint ? {\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -180,0 +146,3 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -180,0 +146,3 @@ export const RightSidebar = ({\n+        // 显式保留旧锚点；当前运行页的 Tailwind translate 计算为 none。\n+        translate: 'none',\n+        transform: 'translateY(-50%)',\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -183,0 +152,8 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -183,0 +152,8 @@ export const RightSidebar = ({\n+    } : {\n+        zIndex: UI_Z_INDEX.hint,\n+        position: 'absolute',\n+        right: 0,\n+        bottom: '100%',\n+        marginBottom: buildBoardShellInlineUnitValue(0.6),\n+        maxWidth: 'min(calc(100vw - 1rem), 22rem)',\n+        overflow: 'visible',\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -187 +163,3 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -187 +163,3 @@ export const RightSidebar = ({\n-        maxWidth: 'min(calc(100vw - 2rem), 22rem)',\n+        maxWidth: diceInteraction?.kind === 'bonusSettlement'\n+            ? 'min(calc(100vw - 2rem), 8.5rem)'\n+            : 'min(calc(100vw - 2rem), 22rem)',\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -234,54 +212,3 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -234,54 +212,3 @@ export const RightSidebar = ({\n-    const interactionHint = useMemo(() => {\n-        if (!isDiceMultistep || !interaction) return null;\n-        const dtMeta = getSidebarDiceMeta(interaction);\n-        if (!dtMeta) return null;\n-\n-        const isModifyMode = dtMeta.dtType === 'modifyDie';\n-        const isSelectMode = dtMeta.dtType === 'selectDie';\n-        const config = isModifyMode ? dtMeta.dieModifyConfig : undefined;\n-        const mode = config?.mode;\n-\n-        const modifyResult = multistepInteraction?.result as DiceModifyResult | undefined;\n-        const selectResult = multistepInteraction?.result as DiceSelectResult | undefined;\n-        const modCount = modifyResult?.modCount ?? 0;\n-        const selectCount = selectResult?.selectedDiceIds?.length ?? 0;\n-        const completedCount = getCompletedDiceStepCount(interaction, dtMeta);\n-        const currentCount = completedCount + (isSelectMode ? selectCount : modCount);\n-        const maxCount = dtMeta.selectCount ?? 1;\n-\n-        if (isModifyMode && mode === 'copy') {\n-            if (currentCount === 0) return t('interaction.hint_copy_step1');\n-            if (currentCount === 1) {\n-                const sourceValue = Object.values(modifyResult?.modifications ?? {})[0];\n-                return t('interaction.hint_copy_step2', { value: sourceValue });\n-            }\n-            return t('interaction.hint_done');\n-        }\n-        if (isModifyMode && mode === 'set') {\n-            if (currentCount >= maxCount) return t('interaction.hint_done');\n-            return t('interaction.hint_set', { value: config?.targetValue ?? '?' });\n-        }\n-        if (isModifyMode && mode === 'adjust') return t('interaction.hint_adjust');\n-        if (isModifyMode && mode === 'any') {\n-            if (currentCount >= maxCount) return t('interaction.hint_done');\n-            return t('interaction.hint_any');\n-        }\n-        if (isSelectMode) {\n-            if (currentCount >= maxCount) return t('interaction.hint_done');\n-            let key = dtMeta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';\n-            if (dtMeta.diceOwnerId) {\n-                const ownerTeamId = teamIdByPlayerId?.[dtMeta.diceOwnerId];\n-                const rootTeamId = teamIdByPlayerId?.[rootPlayerId];\n-                if (dtMeta.diceOwnerId === rootPlayerId) {\n-                    key = 'interaction.hint_select';\n-                } else if (ownerTeamId && rootTeamId && ownerTeamId === rootTeamId) {\n-                    key = 'interaction.hint_select_ally';\n-                } else {\n-                    key = 'interaction.hint_select_opponent';\n-                }\n-            }\n-            return t(key, { current: currentCount, max: maxCount });\n-        }\n-        return null;\n-    }, [interaction, isDiceMultistep, multistepInteraction?.result, rootPlayerId, t, teamIdByPlayerId]);\n-\n+    const interactionHint = diceInteraction?.hint.surface === 'dice-tray'\n+        ? diceInteraction.hint\n+        : undefined;\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -296,0 +224 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -296,0 +224 @@ export const RightSidebar = ({\n+                <div className=\"relative w-full flex justify-center\">\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -297,0 +226,26 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -297,0 +226,26 @@ export const RightSidebar = ({\n+                    {interactionHint && (\n+                        <div\n+                            className={isLegacyDiceHint\n+                                ? 'absolute right-full top-1/2 -translate-y-1/2 z-10 pointer-events-none'\n+                                : 'absolute z-10 pointer-events-none'}\n+                            style={hintContainerStyle}\n+                            data-testid=\"dice-interaction-hint-anchor\"\n+                            data-anchor=\"dice-tray\"\n+                            data-placement={isLegacyDiceHint ? 'tray-left-center' : 'tray-top'}\n+                        >\n+                            <div\n+                                className=\"flex min-w-0 items-start border border-amber-500/50 bg-amber-950/95 shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-normal\"\n+                                style={hintBubbleStyle}\n+                                data-testid=\"dice-interaction-hint\"\n+                            >\n+                                <MousePointerClick className=\"text-amber-400 shrink-0\" style={hintIconStyle} />\n+                                <span\n+                                    data-testid=\"dice-interaction-hint-title\"\n+                                    className=\"min-w-0 overflow-wrap-anywhere break-words text-amber-200 font-medium leading-snug\"\n+                                    style={hintTextStyle}\n+                                >\n+                                    {t(interactionHint.key, interactionHint.params)}\n+                                </span>\n+                            </div>\n+                        </div>\n+                    )}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -337,20 +290,0 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -337,20 +290,0 @@ export const RightSidebar = ({\n-                    {isDiceMultistep && interactionHint && (\n-                        <div\n-                            className=\"absolute right-full top-1/2 -translate-y-1/2 z-10 pointer-events-none\"\n-                            style={hintContainerStyle}\n-                        >\n-                            <div\n-                                className=\"flex min-w-0 items-start border border-amber-500/50 bg-amber-950/95 shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-normal\"\n-                                style={hintBubbleStyle}\n-                                data-testid=\"dice-interaction-hint\"\n-                            >\n-                                <MousePointerClick className=\"text-amber-400 shrink-0\" style={hintIconStyle} />\n-                                <span\n-                                    className=\"min-w-0 overflow-wrap-anywhere break-words text-amber-200 font-medium leading-snug\"\n-                                    style={hintTextStyle}\n-                                >\n-                                    {interactionHint}\n-                                </span>\n-                            </div>\n-                        </div>\n-                    )}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -366 +299,0 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -366 +299,0 @@ export const RightSidebar = ({\n-                        isResponseWindowOpen={isResponseWindowOpen}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -371,2 +304 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -371,2 +304 @@ export const RightSidebar = ({\n-                        interaction={isDiceMultistep ? interaction : undefined}\n-                        multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}\n+                        diceInteraction={isDiceMultistep ? diceInteraction : undefined}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -379,0 +312 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -379,0 +312 @@ export const RightSidebar = ({\n+                </div>\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "hunk": "@@ -395,3 +328 @@ export const RightSidebar = ({",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -395,3 +328 @@ export const RightSidebar = ({\n-                        interaction={isDiceMultistep ? interaction : undefined}\n-                        multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}\n-                        isBonusDiceSettlement={isBonusDiceSettlement}\n+                        diceInteraction={diceInteraction}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceInteractionContract.ts",
+      "hunk": "@@ -0,0 +1,555 @@",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/ui/RightSidebar.tsx",
+      "decision": "恢复旧视觉；保留共享合法交互投影，不为新英雄另造原提示",
+      "exactChanges": "@@ -0,0 +1,555 @@\n+import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';\n+import type { MultistepInteractionState } from '../../../engine/systems/useMultistepInteraction';\n+import type { DieModifyConfig } from '../domain/core-types';\n+import type { PlayerId } from '../../../engine/types';\n+import type { DiceModifyResult, DiceSelectResult } from '../domain/diceInteraction';\n+import type { InteractionHint, InteractionPresentationContract } from './interactionPresentationContract';\n+\n+export type DiceSelectionMode = 'reroll' | 'bonusGroupReroll' | 'choice';\n+\n+export type DiceInteractionMeta = {\n+    selectCount: number;\n+    diceOwnerId?: PlayerId;\n+    targetOpponentDice: boolean;\n+} & (\n+    | { dtType: 'modifyDie'; dieModifyConfig: DieModifyConfig }\n+    | {\n+        dtType: 'selectDie';\n+        selectionMode: DiceSelectionMode;\n+        allowRepeatedDieSelection?: boolean;\n+    }\n+);\n+\n+export type DiceInteractionHintSurface = 'game-hints' | 'dice-tray' | 'response-window';\n+\n+export type DiceInteractionHint = InteractionHint & {\n+    /** 多步骰子交互沿用 RightSidebar 的骰盘提示；响应窗口使用自身承载。 */\n+    surface: DiceInteractionHintSurface;\n+    /** 新交互的附加说明，不覆盖既有提示文案与承载。 */\n+    detail?: InteractionHint;\n+};\n+\n+type DiceInteractionHintText = Omit<DiceInteractionHint, 'surface'>;\n+\n+export type DiceInteractionAction = {\n+    kind: 'cancel' | 'submitSelection' | 'confirmInteraction' | 'confirmSettlement' | 'confirmTokenResponse';\n+    labelKey: string;\n+    buttonTestId?: string;\n+    tutorialId?: string;\n+    ariaLabelKey?: string;\n+    ariaLabelParams?: Record<string, string | number>;\n+};\n+\n+/**\n+ * UI-facing projection of a dice interaction. DiceTray, its action buttons, and\n+ * the hint all read candidates, progress, result, and action roles from here.\n+ */\n+type DiceInteractionContractBase = Omit<InteractionPresentationContract<'multistep' | 'bonusSettlement' | 'tokenResponseSettlement'>, 'hint'> & {\n+    hint: DiceInteractionHint;\n+    interactionId?: string;\n+    allowedDieIds?: number[];\n+    completedDieIds: number[];\n+    completedCount: number;\n+    result: DiceModifyResult | DiceSelectResult | null;\n+    actions: {\n+        left?: DiceInteractionAction;\n+        right: DiceInteractionAction;\n+    };\n+};\n+\n+export type DiceMultistepInteractionContract = DiceInteractionContractBase & {\n+    kind: 'multistep';\n+    meta: DiceInteractionMeta;\n+    controller: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;\n+};\n+\n+export type DiceBonusSettlementInteractionContract = DiceInteractionContractBase & {\n+    kind: 'bonusSettlement';\n+    meta?: never;\n+    controller?: never;\n+};\n+\n+export type DiceTokenResponseSettlementContract = DiceInteractionContractBase & {\n+    kind: 'tokenResponseSettlement';\n+    responseKind: 'token';\n+    meta?: never;\n+    controller?: never;\n+};\n+\n+export type DiceInteractionContract = DiceMultistepInteractionContract\n+    | DiceBonusSettlementInteractionContract\n+    | DiceTokenResponseSettlementContract;\n+\n+const isFiniteNumber = (value: unknown): value is number => (\n+    typeof value === 'number' && Number.isFinite(value)\n+);\n+\n+const isNonNegativeInteger = (value: unknown): value is number => (\n+    isFiniteNumber(value) && Number.isInteger(value) && value >= 0\n+);\n+\n+const isDieFaceValue = (value: unknown): value is number => (\n+    isFiniteNumber(value) && Number.isInteger(value) && value >= 1 && value <= 6\n+);\n+\n+export type ParsedDiceInteraction =\n+    | { kind: 'none' }\n+    | { kind: 'invalid'; reason: string }\n+    | {\n+        kind: 'valid';\n+        meta: DiceInteractionMeta;\n+        allowedDieIds?: number[];\n+        completedDieIds: number[];\n+        completedCount: number;\n+    };\n+\n+const isRecord = (value: unknown): value is Record<string, unknown> => (\n+    value !== null && typeof value === 'object' && !Array.isArray(value)\n+);\n+\n+function parseIntegerList(value: unknown, allowDuplicates: boolean): number[] | undefined {\n+    if (!Array.isArray(value)) return undefined;\n+    if (\n+        value.some(id => !isFiniteNumber(id) || !Number.isInteger(id))\n+        || (!allowDuplicates && new Set(value).size !== value.length)\n+    ) return undefined;\n+    return value as number[];\n+}\n+\n+function parseDieModifyConfig(value: unknown): DieModifyConfig | undefined {\n+    if (!value || typeof value !== 'object') return undefined;\n+    const config = value as Record<string, unknown>;\n+\n+    switch (config.mode) {\n+        case 'set': {\n+            const hasTargetValue = config.targetValue !== undefined;\n+            const hasAllowedValues = config.allowedValues !== undefined;\n+            if (hasTargetValue === hasAllowedValues) return undefined;\n+            if (isDieFaceValue(config.targetValue)) {\n+                return { mode: 'set', targetValue: config.targetValue };\n+            }\n+            if (\n+                Array.isArray(config.allowedValues)\n+                && config.allowedValues.length > 0\n+                && config.allowedValues.every(isDieFaceValue)\n+                && new Set(config.allowedValues).size === config.allowedValues.length\n+            ) {\n+                return { mode: 'set', allowedValues: config.allowedValues as [number, ...number[]] };\n+            }\n+            return undefined;\n+        }\n+        case 'adjust': {\n+            const range = config.adjustRange;\n+            if (\n+                !range\n+                || typeof range !== 'object'\n+                || !Number.isInteger((range as Record<string, unknown>).min)\n+                || !Number.isInteger((range as Record<string, unknown>).max)\n+                || !isFiniteNumber((range as Record<string, unknown>).min)\n+                || !isFiniteNumber((range as Record<string, unknown>).max)\n+                || (range as { min: number }).min > (range as { max: number }).max\n+            ) return undefined;\n+            return {\n+                mode: 'adjust',\n+                adjustRange: {\n+                    min: (range as { min: number }).min,\n+                    max: (range as { max: number }).max,\n+                },\n+            };\n+        }\n+        case 'copy': return { mode: 'copy' };\n+        case 'any': return { mode: 'any' };\n+        default: return undefined;\n+    }\n+}\n+\n+function readInteractionProgress(\n+    data: Record<string, unknown>,\n+    meta: DiceInteractionMeta,\n+): Omit<Extract<ParsedDiceInteraction, { kind: 'valid' }>, 'kind' | 'meta'> | undefined {\n+    const minSteps = data.minSteps;\n+    const maxSteps = data.maxSteps;\n+    const rawCompletedSteps = data.completedSteps;\n+    const allowRepeatedDieSelection = meta.dtType === 'selectDie' && meta.allowRepeatedDieSelection === true;\n+\n+    if (minSteps !== undefined && (!isNonNegativeInteger(minSteps) || minSteps > meta.selectCount)) return undefined;\n+    if (maxSteps !== undefined && (!isNonNegativeInteger(maxSteps) || maxSteps > meta.selectCount)) return undefined;\n+    if (minSteps !== undefined && maxSteps !== undefined && minSteps > maxSteps) return undefined;\n+    if (rawCompletedSteps !== undefined && (!isNonNegativeInteger(rawCompletedSteps) || rawCompletedSteps > meta.selectCount)) return undefined;\n+\n+    const allowedDieIds = data.allowedDieIds === undefined\n+        ? undefined\n+        : parseIntegerList(data.allowedDieIds, false);\n+    if (data.allowedDieIds !== undefined && !allowedDieIds) return undefined;\n+\n+    const parsedCompletedDieIds = data.completedDieIds === undefined\n+        ? []\n+        : parseIntegerList(data.completedDieIds, allowRepeatedDieSelection);\n+    if (data.completedDieIds !== undefined && !parsedCompletedDieIds) return undefined;\n+    const completedDieIds = parsedCompletedDieIds ?? [];\n+\n+    if (Array.isArray(allowedDieIds) && completedDieIds.some(id => !allowedDieIds.includes(id))) return undefined;\n+\n+    const completedIdsCount = allowRepeatedDieSelection ? completedDieIds.length : new Set(completedDieIds).size;\n+    if (rawCompletedSteps !== undefined && data.completedDieIds !== undefined && rawCompletedSteps !== completedIdsCount) return undefined;\n+    const completedCount = rawCompletedSteps ?? completedIdsCount;\n+    if (completedCount > meta.selectCount || (maxSteps !== undefined && completedCount > maxSteps)) return undefined;\n+\n+    return { allowedDieIds, completedDieIds, completedCount };\n+}\n+\n+function parseDiceInteraction(interaction?: InteractionDescriptor): ParsedDiceInteraction {\n+    if (interaction?.kind !== 'multistep-choice') return { kind: 'none' };\n+    const data = isRecord(interaction.data) ? interaction.data : {};\n+    const rawMetaValue = data.meta;\n+    const rawMeta = isRecord(rawMetaValue) ? rawMetaValue : undefined;\n+    if (rawMeta?.dtType === undefined) {\n+        const allowedDieIds = data.allowedDieIds === undefined ? undefined : parseIntegerList(data.allowedDieIds, false);\n+        if (data.allowedDieIds !== undefined && !allowedDieIds) return { kind: 'invalid', reason: 'Invalid allowed die candidates' };\n+        if (data.completedDieIds !== undefined && !parseIntegerList(data.completedDieIds, true)) {\n+            return { kind: 'invalid', reason: 'Invalid completed die history' };\n+        }\n+        return { kind: 'none' };\n+    }\n+\n+    const selectCount = rawMeta.selectCount;\n+    if (!isNonNegativeInteger(selectCount) || selectCount < 1) return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+    if (rawMeta.diceOwnerId !== undefined && (typeof rawMeta.diceOwnerId !== 'string' || rawMeta.diceOwnerId.length === 0)) {\n+        return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+    }\n+    if (typeof rawMeta.targetOpponentDice !== 'boolean') return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+    if (rawMeta.allowRepeatedDieSelection !== undefined && typeof rawMeta.allowRepeatedDieSelection !== 'boolean') {\n+        return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+    }\n+\n+    const diceOwnerId = typeof rawMeta.diceOwnerId === 'string' ? rawMeta.diceOwnerId : undefined;\n+    const targetOpponentDice = rawMeta.targetOpponentDice;\n+    let meta: DiceInteractionMeta;\n+    if (rawMeta.dtType === 'modifyDie') {\n+        if (rawMeta.allowRepeatedDieSelection === true) return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+        const dieModifyConfig = parseDieModifyConfig(rawMeta.dieModifyConfig);\n+        if (!dieModifyConfig || (dieModifyConfig.mode === 'copy' && selectCount !== 2)) {\n+            return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+        }\n+        meta = { dtType: 'modifyDie', dieModifyConfig, selectCount, diceOwnerId, targetOpponentDice };\n+    } else if (rawMeta.dtType === 'selectDie') {\n+        if (rawMeta.selectionMode !== 'reroll' && rawMeta.selectionMode !== 'bonusGroupReroll' && rawMeta.selectionMode !== 'choice') {\n+            return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+        }\n+        if (rawMeta.selectionMode === 'bonusGroupReroll' && rawMeta.allowRepeatedDieSelection === true) {\n+            return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+        }\n+        meta = {\n+            dtType: 'selectDie',\n+            selectionMode: rawMeta.selectionMode,\n+            allowRepeatedDieSelection: rawMeta.allowRepeatedDieSelection === true,\n+            selectCount,\n+            diceOwnerId,\n+            targetOpponentDice,\n+        };\n+    } else {\n+        return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+    }\n+\n+    const progress = readInteractionProgress(data, meta);\n+    if (!progress) return { kind: 'invalid', reason: 'Invalid dice interaction contract' };\n+    return { kind: 'valid', meta, ...progress };\n+}\n+\n+export function getDiceInteractionMeta(interaction?: InteractionDescriptor): DiceInteractionMeta | undefined {\n+    const parsed = parseDiceInteraction(interaction);\n+    return parsed.kind === 'valid' ? parsed.meta : undefined;\n+}\n+\n+export function parseDiceInteractionContract(interaction?: InteractionDescriptor): ParsedDiceInteraction {\n+    return parseDiceInteraction(interaction);\n+}\n+\n+export function getCompletedDiceStepCount(interaction?: InteractionDescriptor, _meta?: DiceInteractionMeta): number {\n+    const parsed = parseDiceInteraction(interaction);\n+    return parsed.kind === 'valid' ? parsed.completedCount : 0;\n+}\n+\n+function getSelectDieHint(input: {\n+    meta: Extract<DiceInteractionMeta, { dtType: 'selectDie' }>;\n+    interaction?: InteractionDescriptor;\n+    result: DiceSelectResult;\n+    completedCount: number;\n+    rootPlayerId: PlayerId;\n+    teamIdByPlayerId?: Record<PlayerId, string>;\n+}): DiceInteractionHintText {\n+    const { meta, result, completedCount } = input;\n+    if (meta.selectionMode === 'choice') {\n+        const data = isRecord(input.interaction?.data) ? input.interaction?.data : {};\n+        return {\n+            key: typeof data.titleKey === 'string' ? data.titleKey : 'interaction.hint_choose_dice',\n+            detail: {\n+                key: 'interaction.hint_choose_dice_detail',\n+                params: {\n+                    selected: result.selectedDiceIds.length,\n+                    remaining: Math.max(0, meta.selectCount - result.selectedDiceIds.length),\n+                    count: meta.selectCount,\n+                },\n+            },\n+        };\n+    }\n+    if (meta.selectionMode === 'bonusGroupReroll') {\n+        const selectedCount = result.selectedDiceIds.length;\n+        return {\n+            key: selectedCount ? 'interaction.hint_group_reroll_selected' : 'interaction.hint_group_reroll',\n+            params: { count: selectedCount },\n+        };\n+    }\n+\n+    const count = completedCount + result.selectedDiceIds.length;\n+    let key = meta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';\n+    if (meta.diceOwnerId && meta.diceOwnerId !== input.rootPlayerId) {\n+        const ownerTeam = input.teamIdByPlayerId?.[meta.diceOwnerId];\n+        const rootTeam = input.teamIdByPlayerId?.[input.rootPlayerId];\n+        key = ownerTeam && ownerTeam === rootTeam ? 'interaction.hint_select_ally' : 'interaction.hint_select_opponent';\n+    }\n+    return count >= meta.selectCount\n+        ? { key: 'interaction.hint_done' }\n+        : { key, params: { current: count, max: meta.selectCount } };\n+}\n+\n+/** 提示、候选进度和提交共读同一个多步交互合同；每种骰子操作都必须产生提示。 */\n+function assertNever(value: never): never {\n+    throw new Error(`Unsupported DiceThrone interaction mode: ${String(value)}`);\n+}\n+\n+export function getDiceInteractionHint(input: {\n+    meta: DiceInteractionMeta;\n+    interaction?: InteractionDescriptor;\n+    result?: DiceModifyResult | DiceSelectResult;\n+    completedCount?: number;\n+    rootPlayerId: PlayerId;\n+    teamIdByPlayerId?: Record<PlayerId, string>;\n+}): DiceInteractionHintText {\n+    const { meta } = input;\n+    const completedCount = input.completedCount ?? getCompletedDiceStepCount(input.interaction, meta);\n+    if (meta.dtType === 'selectDie') {\n+        return getSelectDieHint({\n+            meta,\n+            interaction: input.interaction,\n+            result: (input.result as DiceSelectResult | undefined) ?? { selectedDiceIds: [] },\n+            completedCount,\n+            rootPlayerId: input.rootPlayerId,\n+            teamIdByPlayerId: input.teamIdByPlayerId,\n+        });\n+    }\n+\n+    const modify = input.result as DiceModifyResult | undefined;\n+    const count = completedCount + (modify?.modCount ?? 0);\n+    const done = count >= meta.selectCount;\n+    const config = meta.dieModifyConfig;\n+    switch (config.mode) {\n+        case 'set': {\n+            const value = config.targetValue ?? modify?.targetValue;\n+            return done ? { key: 'interaction.hint_done' }\n+                : value === undefined ? { key: 'interaction.hint_choose_value' }\n+                : { key: 'interaction.hint_set', params: { value } };\n+        }\n+        case 'copy': return count === 0 ? { key: 'interaction.hint_copy_step1' }\n+            : count === 1 ? { key: 'interaction.hint_copy_step2', params: { value: Object.values(modify?.modifications ?? {})[0] } }\n+            : { key: 'interaction.hint_done' };\n+        case 'adjust': return { key: 'interaction.hint_adjust' };\n+        case 'any': return { key: done ? 'interaction.hint_done' : 'interaction.hint_any' };\n+        default: return assertNever(config);\n+    }\n+}\n+\n+export function createDiceInteractionContract(input: {\n+    interaction?: InteractionDescriptor;\n+    controller?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;\n+    rootPlayerId: PlayerId;\n+    teamIdByPlayerId?: Record<PlayerId, string>;\n+    isBonusDiceSettlement?: boolean;\n+    isTokenEvasionConfirmation?: boolean;\n+}): DiceInteractionContract | undefined {\n+    const {\n+        interaction,\n+        controller,\n+        rootPlayerId,\n+        teamIdByPlayerId,\n+        isBonusDiceSettlement = false,\n+        isTokenEvasionConfirmation = false,\n+    } = input;\n+    if (isTokenEvasionConfirmation) {\n+        if (\n+            interaction?.kind !== 'dt:token-response'\n+            || String(interaction.playerId) !== String(rootPlayerId)\n+        ) {\n+            throw new Error('[DiceThrone] Token evasion confirmation requires the active player\\'s token-response interaction');\n+        }\n+        return {\n+            kind: 'tokenResponseSettlement',\n+            interactionId: interaction.id,\n+            responseKind: 'token',\n+            completedDieIds: [],\n+            completedCount: 0,\n+            result: null,\n+            hint: { key: 'response.yourTurn', surface: 'response-window' },\n+            actions: {\n+                right: {\n+                    kind: 'confirmTokenResponse',\n+                    labelKey: 'common.confirm',\n+                    buttonTestId: 'dice-token-response-confirm-button',\n+                    tutorialId: 'dice-confirm-button',\n+                },\n+            },\n+        };\n+    }\n+\n+    const parsed = parseDiceInteraction(interaction);\n+    if (parsed.kind === 'invalid') {\n+        throw new Error(`[DiceThrone] ${parsed.reason}: ${interaction?.id ?? 'unknown interaction'}`);\n+    }\n+\n+    if (parsed.kind !== 'valid') {\n+        const isSettlementOwnerInteraction = interaction === undefined || interaction.kind === 'dt:bonus-dice';\n+        if (!isBonusDiceSettlement || !isSettlementOwnerInteraction) return undefined;\n+        return {\n+            kind: 'bonusSettlement',\n+            completedDieIds: [],\n+            completedCount: 0,\n+            result: null,\n+            hint: { key: 'interaction.hint_bonus_settlement', surface: 'dice-tray' },\n+            actions: { right: { kind: 'confirmSettlement', labelKey: 'common.confirm', buttonTestId: 'dice-bonus-settlement-confirm-button', tutorialId: 'dice-confirm-button' } },\n+        };\n+    }\n+    const { meta, allowedDieIds, completedDieIds, completedCount } = parsed;\n+    if (!controller) {\n+        throw new Error(`[DiceThrone] Dice interaction requires its shared controller: ${interaction?.id ?? 'unknown interaction'}`);\n+    }\n+    if (meta.dtType === 'selectDie' && meta.selectionMode === 'bonusGroupReroll' && !allowedDieIds?.length) {\n+        throw new Error(`[DiceThrone] Bonus group reroll requires explicit die candidates: ${interaction?.id ?? 'unknown interaction'}`);\n+    }\n+    if (meta.dtType === 'selectDie' && meta.selectionMode === 'choice' && !allowedDieIds?.length) {\n+        throw new Error(`[DiceThrone] Dice choice requires explicit die candidates: ${interaction?.id ?? 'unknown interaction'}`);\n+    }\n+    const isBonusGroupReroll = meta.dtType === 'selectDie' && meta.selectionMode === 'bonusGroupReroll';\n+    if (isBonusGroupReroll && !isBonusDiceSettlement) {\n+        throw new Error(`[DiceThrone] Bonus group reroll requires its pending settlement: ${interaction?.id ?? 'unknown interaction'}`);\n+    }\n+\n+    const rawResult = controller.result;\n+    const result: DiceModifyResult | DiceSelectResult | null = rawResult ?? null;\n+    const remainingSelectCount = meta.selectCount - completedCount;\n+    if (result && meta.dtType === 'selectDie') {\n+        if (\n+            !isRecord(result)\n+            || !('selectedDiceIds' in result)\n+            || !Array.isArray(result.selectedDiceIds)\n+            || result.selectedDiceIds.some(id => !isFiniteNumber(id) || !Number.isInteger(id))\n+            || (!meta.allowRepeatedDieSelection && new Set(result.selectedDiceIds).size !== result.selectedDiceIds.length)\n+            || (!meta.allowRepeatedDieSelection && result.selectedDiceIds.some(id => completedDieIds.includes(id)))\n+            || result.selectedDiceIds.length > remainingSelectCount\n+            || (allowedDieIds && result.selectedDiceIds.some(id => !allowedDieIds.includes(id)))\n+        ) {\n+            throw new Error(`[DiceThrone] Invalid current die selection: ${interaction?.id ?? 'unknown interaction'}`);\n+        }\n+    }\n+    if (result && meta.dtType === 'modifyDie') {\n+        const config = meta.dieModifyConfig;\n+        const modifications = isRecord(result) ? result.modifications : undefined;\n+        const modificationEntries = isRecord(modifications) ? Object.entries(modifications) : undefined;\n+        const targetValue = isRecord(result) ? result.targetValue : undefined;\n+        const expectedSetValue = config.mode === 'set' ? (config.targetValue ?? targetValue) : undefined;\n+        if (\n+            !isRecord(result)\n+            || !modificationEntries\n+            || !isNonNegativeInteger(result.modCount)\n+            || result.modCount > remainingSelectCount\n+            || result.modCount !== modificationEntries.length\n+            || !isFiniteNumber(result.totalAdjustment)\n+            || !Number.isInteger(result.totalAdjustment)\n+            || modificationEntries.some(([dieId, value]) => (\n+                !Number.isInteger(Number(dieId))\n+                || String(Number(dieId)) !== dieId\n+                || !isDieFaceValue(value)\n+                || completedDieIds.includes(Number(dieId))\n+                || (allowedDieIds && !allowedDieIds.includes(Number(dieId)))\n+            ))\n+            || (config.mode === 'set' && targetValue !== undefined && (\n+                !isDieFaceValue(targetValue)\n+                || (config.targetValue !== undefined && targetValue !== config.targetValue)\n+                || (config.allowedValues !== undefined && !config.allowedValues.includes(targetValue))\n+            ))\n+            || (config.mode !== 'set' && targetValue !== undefined)\n+            || (config.mode === 'set' && modificationEntries.some(([, value]) => value !== expectedSetValue))\n+            || (config.mode === 'copy' && (\n+                modificationEntries.length > 2\n+                || (modificationEntries.length === 2 && modificationEntries[0][1] !== modificationEntries[1][1])\n+            ))\n+            || (config.mode === 'adjust' && (\n+                result.totalAdjustment < config.adjustRange.min\n+                || result.totalAdjustment > config.adjustRange.max\n+            ))\n+            || (config.mode !== 'adjust' && result.totalAdjustment !== 0)\n+        ) {\n+            throw new Error(`[DiceThrone] Invalid current die modification: ${interaction?.id ?? 'unknown interaction'}`);\n+        }\n+    }\n+    const hint = getDiceInteractionHint({\n+        meta,\n+        interaction,\n+        result: result ?? undefined,\n+        completedCount,\n+        rootPlayerId,\n+        teamIdByPlayerId,\n+    });\n+    const selectedGroupRerollCount = meta.dtType === 'selectDie'\n+        && meta.selectionMode === 'bonusGroupReroll'\n+        && result\n+        && 'selectedDiceIds' in result\n+        ? result.selectedDiceIds.length\n+        : 0;\n+    const isBonusGroupSettlement = isBonusGroupReroll && isBonusDiceSettlement;\n+\n+    const left = isBonusGroupSettlement\n+        ? selectedGroupRerollCount > 0\n+            ? {\n+                kind: 'submitSelection' as const,\n+                labelKey: 'dice.reroll_action',\n+                buttonTestId: 'dice-reroll-selected-group',\n+                tutorialId: 'dice-reroll-selected-group',\n+                ariaLabelKey: 'dice.rerollSelectedGroup',\n+                ariaLabelParams: { count: selectedGroupRerollCount },\n+            }\n+            : undefined\n+        : interaction?.cancelPolicy === 'forbidden'\n+            ? undefined\n+            : {\n+            kind: 'cancel' as const,\n+            labelKey: 'common.cancel',\n+        };\n+    const right: DiceInteractionAction = isBonusGroupSettlement\n+        ? {\n+            kind: 'confirmSettlement',\n+            labelKey: 'common.confirm',\n+            buttonTestId: 'dice-bonus-settlement-confirm-button',\n+            tutorialId: 'dice-confirm-button',\n+        }\n+        : {\n+            kind: 'confirmInteraction',\n+            labelKey: 'common.confirm',\n+            buttonTestId: 'dice-interaction-confirm-button',\n+        };\n+\n+    return {\n+        kind: 'multistep',\n+        interactionId: interaction?.id,\n+        meta,\n+        allowedDieIds,\n+        completedDieIds,\n+        completedCount,\n+        result,\n+        hint: {\n+            ...hint,\n+            surface: 'dice-tray',\n+        },\n+        controller,\n+        actions: { left, right },\n+    };\n+}\n",
+      "recheck": "同牌card-worthy-of-me，roller玩家、同骰0/1/2选择、暗色指针气泡、完成/确认；原奖励骰/Token分支独立复验"
+    }
+  ],
+  "additionalBindingAudit": [
+    {
+      "file": "src/games/dicethrone/hooks/useDiceThroneState.ts",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/hooks/useDiceThroneState.ts",
+      "decision": "保留必要数据透传与候选变化重置，不包含皮肤、构图、尺寸或锚点重造",
+      "changes": "useCurrentChoice透传正式选项metadata到ChoiceObjectSelection；交互重置包含真实来源/候选/选中持有人；其它防御焦点fallback非本聊天UI重造不动",
+      "proof": "git diff c057与本聊天raw patch 44224/44396；旧共有牌再见真实出牌、选中归属及确认后的状态结果单独E2E"
+    },
+    {
+      "file": "src/games/dicethrone/hooks/useInteractionState.ts",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/hooks/useInteractionState.ts",
+      "decision": "保留必要数据透传与候选变化重置，不包含皮肤、构图、尺寸或锚点重造",
+      "changes": "useCurrentChoice透传正式选项metadata到ChoiceObjectSelection；交互重置包含真实来源/候选/选中持有人；其它防御焦点fallback非本聊天UI重造不动",
+      "proof": "git diff c057与本聊天raw patch 44224/44396；旧共有牌再见真实出牌、选中归属及确认后的状态结果单独E2E"
+    }
+  ],
+  "overrides": [
+    {
+      "object": "卡池min-h44",
+      "decision": "已删两处，旧sm32恢复，不以移动规范把原按钮静默增高"
+    },
+    {
+      "object": "40vh卡池padding",
+      "decision": "真实812x375约4.84px裁切；仅box-content校正内容盒，原卡宽/结构/纵滚不变；新原图复验"
+    },
+    {
+      "object": "旧状态selectStatus选中归属",
+      "decision": "Board透传localInteraction.selectedStatus.playerId，修新字段引起的原卡选择反馈缺口；真实card-bye-bye证明只选中/移除实际持有人"
+    },
+    {
+      "object": "多人tooltip",
+      "decision": "保留最窄optional避让：原图真实遮挡另一状态候选；默认未传能力的旧入口不改；新hover图复验"
+    },
+    {
+      "object": "ChoiceModal头像",
+      "decision": "博士不走这条支路；当前Thor正式targetPresentation仅给targetPlayerId，是其它新增角色真实消费者；协调其owner后保护该支路，不擅自破坏Thor"
+    },
+    {
+      "object": "原height22抽取",
+      "decision": "已恢复HandArea内同值22，确认唯一消费者后删除失去共享必要性的handLayoutConstants文件"
+    },
+    {
+      "object": "origin-bottom-center",
+      "decision": "只能定位混合提交，原聊天未找到写入命令；保留防误撤其它任务，不称博士改版必要项"
+    },
+    {
+      "object": "DiceTray重复数字徽/保留完成标记/绕过旧opacity50",
+      "decision": "均恢复c057旧Check/真实当前selected/旧不可操作明度；重复预算和data-selection-count只作实际规则数据不增加视觉"
+    },
+    {
+      "object": "搜索卡池41/42动作裁切",
+      "decision": "初轮私有逐图审查REVISE，box-content修复被错误放大到搜索态；收窄为!shouldShowCardPoolSearch，搜索池恢复旧border-box和40vh，不改卡尺寸或构图；两种搜索态动作bounds及原图重新审查"
+    },
+    {
+      "object": "RightSidebar当前translate实际none",
+      "decision": "同一真实页面量得top50%却translate none使中心偏13.17px；仅原owner显式单次transform translateY(-50%)恢复原锚点，不迁承载或坐标"
+    },
+    {
+      "object": "被替换的重投文案",
+      "decision": "中英各11个无消费者新文案已删除，恢复原进度/完成/确认"
+    },
+    {
+      "object": "最终搜索候选与动作总高度",
+      "decision": "仅Doctor高度<=400带搜索池，将原8px动作上间距移给原纵滚窗，总高/动作位置不变；候选、原选中边界、搜索空态经真实入口和本人原图复核。未改卡宽、比例、标题搜索与纵向构图。"
+    },
+    {
+      "object": "保护旧英雄默认视觉",
+      "decision": "Doctor去底框/高对比、单持有人紧凑、内容盒修正及tooltip避让显式限回Doctor；其它英雄恢复c057默认背景/圆角/尺寸与原tooltip合同。"
+    }
+  ],
+  "sourceIdentity": [
+    {
+      "file": "src/components/common/overlays/InfoTooltip.tsx",
+      "beforeSha256": "08dd720029c5156179c207dadeee5bb0ba6efbd24b1043199dc275c11744ffa6",
+      "currentSha256": "08dd720029c5156179c207dadeee5bb0ba6efbd24b1043199dc275c11744ffa6"
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "beforeSha256": "87abe359dda3777a2a26c90f6598a9a65eb6b134397093ca04fbfe0091f89bc0",
+      "currentSha256": "92a5f83fb93036f97db8a025f819214c80e2bbb1a2bb22ce534024a466e2cad3"
+    },
+    {
+      "file": "src/games/dicethrone/ui/AbilityOverlays.tsx",
+      "beforeSha256": "c592b0aac380f26d1984509c12acbf149532d664de6eb436b35dafb767d09d6a",
+      "currentSha256": "2790c6ce2a6ece05f877516a8a9a6641f4f432b807e95206eb564b12bd8a5dc3"
+    },
+    {
+      "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+      "beforeSha256": "df842a2a36c5ef91c62c1b7afd603a4980f6f8aedc31e46dac642c537b328e07",
+      "currentSha256": "df842a2a36c5ef91c62c1b7afd603a4980f6f8aedc31e46dac642c537b328e07"
+    },
+    {
+      "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+      "beforeSha256": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+      "currentSha256": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25"
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "beforeSha256": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+      "currentSha256": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "beforeSha256": "41f0d7abffb0ddfc8a0dc07b0a0dc0e236d1ba5e324cf0729becd4bc01143fa7",
+      "currentSha256": "f92f23f7ca5f274efd1d700591b593a5fe1d039891d8ee58252858fb079f5e98"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "beforeSha256": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299",
+      "currentSha256": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299"
+    },
+    {
+      "file": "src/games/dicethrone/ui/CompareRollOverlay.tsx",
+      "beforeSha256": "6686a77caf0e3e5a466381c01bd498c099f10deaa9071684d66c2f9a1962e03d",
+      "currentSha256": "6686a77caf0e3e5a466381c01bd498c099f10deaa9071684d66c2f9a1962e03d"
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "beforeSha256": "f59c1dee7f030808a346287dd18e9655c736119ff9e6c14a4948c87dec16bb4d",
+      "currentSha256": "7d27d8905e1fd2ea410e37facfb1592985e3b70faa311dd3cd895522ac2bc71c"
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "beforeSha256": "232646fd467e21da5f23d0bbf11bf7ef37ef2979dfaed65ef506952911182b52",
+      "currentSha256": "0c66dabbb2174f28df274c571c98803df6b99d2b4e6c16b41b9b0fa85f4a3ec6"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "beforeSha256": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+      "currentSha256": "898db642d8cc0bcc3e1cdee46476f0cc640edb937a64ab5ac2641bb0efa3b7f4"
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "beforeSha256": "ca58ece82de06d16ae14e5b1bbf376d6b613f75fa75232f1d7aee834fb8ceb92",
+      "currentSha256": "ca89a92b23296511275b5f8d1d98ddeb34b856d7bbfd25a76a8a4baf6f154fd8"
+    },
+    {
+      "file": "src/games/dicethrone/ui/LeftSidebar.tsx",
+      "beforeSha256": "a9a5141ebd4a1abf3b59638754fca372b0a0426cddfe5190e07a23b4a61f6990",
+      "currentSha256": "7067ece66fa702c3619d0a7b853fecefcaf399cc6268b39fe720f451b4201c68"
+    },
+    {
+      "file": "src/games/dicethrone/ui/PhaseIndicator.tsx",
+      "beforeSha256": "f03950e12c68b48a93a28398be0e42975a61c06e669e5d8958bc6d1235d11dec",
+      "currentSha256": "f03950e12c68b48a93a28398be0e42975a61c06e669e5d8958bc6d1235d11dec"
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "beforeSha256": "6be448e863e136ba92c531d2e041a67f9764f619f648af28f70f5cc36ed05826",
+      "currentSha256": "66493be18b1bffb5bd6b322498db1f81b956c5a5f2c8080d3ea104053922281b"
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityChoiceText.ts",
+      "beforeSha256": "f038573ee890fb4095e5a7ccc747e5689b5d14b870484df72aae1f001eccd309",
+      "currentSha256": "f038573ee890fb4095e5a7ccc747e5689b5d14b870484df72aae1f001eccd309"
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityOverlayHelpers.ts",
+      "beforeSha256": "5962a40a22880353ca707ee23c2595b1a30c84f0c5baca3990d1f21a12a47484",
+      "currentSha256": "5962a40a22880353ca707ee23c2595b1a30c84f0c5baca3990d1f21a12a47484"
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotLayout.ts",
+      "beforeSha256": "7ad0d26fbb19d08d16196ae2cdc80906513b767874ed7d95075c4b9034809bfb",
+      "currentSha256": "7ad0d26fbb19d08d16196ae2cdc80906513b767874ed7d95075c4b9034809bfb"
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotMapping.ts",
+      "beforeSha256": "c8ab960ad9f77aa6f61e64b199014535fc97f57500d49e8bfff2dba8d9755663",
+      "currentSha256": "c8ab960ad9f77aa6f61e64b199014535fc97f57500d49e8bfff2dba8d9755663"
+    },
+    {
+      "file": "src/games/dicethrone/ui/assets.ts",
+      "beforeSha256": "e150ebb5a729eeca32212a40bd19cca0ae7d4f110d105f103c1bb4548fb9db7d",
+      "currentSha256": "e150ebb5a729eeca32212a40bd19cca0ae7d4f110d105f103c1bb4548fb9db7d"
+    },
+    {
+      "file": "src/games/dicethrone/ui/cardAtlas.ts",
+      "beforeSha256": "cdb1739ca500f1da9e9114c6c0e2bf5507c7a0bcaec471a168e24d09c7ffaf2c",
+      "currentSha256": "cdb1739ca500f1da9e9114c6c0e2bf5507c7a0bcaec471a168e24d09c7ffaf2c"
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "beforeSha256": "59722d33f3ffcc92f8bc20e782c031702bcfbe139875e8380ea35ef0f460ce00",
+      "currentSha256": "59722d33f3ffcc92f8bc20e782c031702bcfbe139875e8380ea35ef0f460ce00"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "beforeSha256": "7ae828f917fb6ca6cbde5978b2f7eb306de7f70d277819290af24f10280016a8",
+      "currentSha256": "7ae828f917fb6ca6cbde5978b2f7eb306de7f70d277819290af24f10280016a8"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "beforeSha256": "2389035e678f6969af88c7a342ff5af1e2ea4574debebb1fd98f8647b3ef6a86",
+      "currentSha256": "2389035e678f6969af88c7a342ff5af1e2ea4574debebb1fd98f8647b3ef6a86"
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceCombinationChoice.ts",
+      "beforeSha256": "bd1fa618641a0114c62c311bf662b7384e430603faaf55251a748bf3f52119aa",
+      "currentSha256": "bd1fa618641a0114c62c311bf662b7384e430603faaf55251a748bf3f52119aa"
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceInteractionContract.ts",
+      "beforeSha256": "079febbe5cf9b8ab77e0a543babf5e0f9691fa92437b87ca7c68f6dc31ffe21e",
+      "currentSha256": "f1915cab3daafad2485856056154e05ffdcd5c46ad7a574a6aff0a8740481d20"
+    },
+    {
+      "file": "src/games/dicethrone/ui/fxSetup.ts",
+      "beforeSha256": "db5cee6d25db46500d899f403deac914e923902d132334128304c1196b9cf99a",
+      "currentSha256": "db5cee6d25db46500d899f403deac914e923902d132334128304c1196b9cf99a"
+    },
+    {
+      "file": "src/games/dicethrone/ui/handDiscardInteractionContract.ts",
+      "beforeSha256": "8bfff1f0c04002edd4df231d6449b2cb9feaa7f12496b616941e7935896b7c58",
+      "currentSha256": "8bfff1f0c04002edd4df231d6449b2cb9feaa7f12496b616941e7935896b7c58"
+    },
+    {
+      "file": "src/games/dicethrone/ui/handLayoutConstants.ts",
+      "beforeSha256": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+      "currentSha256": null
+    },
+    {
+      "file": "src/games/dicethrone/ui/handPlayPolicy.ts",
+      "beforeSha256": "7d35a9b053efed5a085b8f00e67a0f779f9c5166c9eae52da399bf6a270b9f26",
+      "currentSha256": "7d35a9b053efed5a085b8f00e67a0f779f9c5166c9eae52da399bf6a270b9f26"
+    },
+    {
+      "file": "src/games/dicethrone/ui/interactionPresentationContract.ts",
+      "beforeSha256": "d16c6bf50b63ab2cd451399addd88432930f806d342409d297545a0e5fd9d2af",
+      "currentSha256": "d16c6bf50b63ab2cd451399addd88432930f806d342409d297545a0e5fd9d2af"
+    },
+    {
+      "file": "src/games/dicethrone/ui/resolveMoves.ts",
+      "beforeSha256": "4c119fb121020bea153c0313795b460df804c2bd5b14c7fb9f87f4d8d74a179b",
+      "currentSha256": "4c119fb121020bea153c0313795b460df804c2bd5b14c7fb9f87f4d8d74a179b"
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "beforeSha256": "eb036b203c8c999633d0c314c1e0cca7cf676d80bf40508fbf020c6f9d597413",
+      "currentSha256": "eb036b203c8c999633d0c314c1e0cca7cf676d80bf40508fbf020c6f9d597413"
+    }
+  ],
+  "governance": {
+    "canonicalSource": ".spec/knowledge/standards/ui-change-gates.md",
+    "scope": "全项目多游戏；已有UI复用与改动授权顺序",
+    "positive": "新UI非必要不改旧UI、完整实际owner、授权先于视觉评分、抽查不缩范围均命中",
+    "negative": "无新增skill/AGENTS正文、无第二可执行主源、恢复/复用不套未授权新设计参考门禁",
+    "originalOrderReplay": "25先沿旧card-worthy-of-me→reroll-die-2→Board→RightSidebar；41/42先核旧clamp与居中多行纵滚",
+    "badProposalBlocked": "12手牌单位大卡、短屏侧栏/横轨、替代GameHints橙条均无用户授权，撤除；不因新测试或视觉得分合理化"
+  },
+  "status": "源码恢复与来源账完成；53项当前原图由三位实际审查者逐项PASS，最终清单及服务校验另列。",
+  "generatedAt": "2026-11-01T13:03:32.199827+00:00",
+  "currentSourceReviewResolutions": {
+    "R1": "卡池2处min-h44已撤回旧sm32，A原图核对",
+    "R2": "Board selectedStatusPlayerId透传已补；实际旧共有牌card-bye-bye选中/确认验证，新增51/52原图核对"
+  }
+}

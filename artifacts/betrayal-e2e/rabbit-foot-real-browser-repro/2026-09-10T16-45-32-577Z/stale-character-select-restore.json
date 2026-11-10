@@ -1,0 +1,860 @@
+{
+  "label": "stale-character-select-restore",
+  "snapshot": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "objective-and-turn",
+    "overlayText": "现在是你的回合。先从“移动”开始，移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索。下一步",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": 2,
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAllowedCommands": null,
+      "stepInfoStep": true,
+      "stepRequireAction": null
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": null,
+      "usedCardIdsThisTurn": [],
+      "pendingDamageAllocation": null
+    },
+    "continueButton": null,
+    "bodyText": "🛠️作祟前当前回合伊莎·瓦伦西亚移动5/5本回合 5剩余移动 5 本回合 5位置入口大厅持有2当前属性伊莎·瓦伦西亚力量死亡23344567速度死亡44556788知识死亡23344566神志死亡23456778特性：无特殊能力：基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。队友摘要安妮塔·赫南德兹门厅持有 1力量死亡2234567速度死亡23445678知识死亡4455788神志死亡22345566神父 梁沃伦同房间入口大厅持有 0力量死亡22334566速度死亡23445566知识死亡33455678神志死亡33556688当前持有区未选卡牌未选卡牌兔脚书本现在：点探索翻一层同房间可交易对象：1人可前往：门厅等待第一步100%大阶梯一层起始放大查看门厅一层起始放大查看入口大厅一层起始当前房间放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看一层移动探索交易使用结束回合牌堆区预兆牌堆7物品牌堆22事件牌堆1预兆状态作祟前预兆 1弃牌区000剧本提示队友安妮塔·赫南德兹门厅4453神父 梁沃伦同房间入口大厅3445 前面还没有动作当前选中未选卡牌未选卡牌同房间可交易对象：1人现在：点探索翻一层当前持有区牌堆区移动探索交易使用结束回合 阶段作祟前现在是你的回合。先从“移动”开始，移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索。下一步 翻面收起",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r2",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn:r2\",\"numPlayers\":3,\"randomCursor\":228,\"savedAt\":1789058774261,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[{\"id\":1,\"event\":{\"type\":\"SYS_TUTORIAL_STARTED\",\"payload\":{\"manifestId\":\"basic-setup-and-turn\",\"stepId\":\"setup-runtime\",\"stepIndex\":0},\"timestamp\":1789058773750}},{\""
+      }
+    ],
+    "fullStorage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r2",
+        "value": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn:r2\",\"numPlayers\":3,\"randomCursor\":228,\"savedAt\":1789058774261,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[{\"id\":1,\"event\":{\"type\":\"SYS_TUTORIAL_STARTED\",\"payload\":{\"manifestId\":\"basic-setup-and-turn\",\"stepId\":\"setup-runtime\",\"stepIndex\":0},\"timestamp\":1789058773750}},{\"id\":2,\"event\":{\"type\":\"SYS_TUTORIAL_STARTED\",\"payload\":{\"manifestId\":\"basic-setup-and-turn\",\"stepId\":\"setup-runtime\",\"stepIndex\":0},\"timestamp\":1789058773798}},{\"id\":3,\"event\":{\"type\":\"SYS_TUTORIAL_AI_CONSUMED\",\"payload\":{\"stepId\":\"setup-runtime\"},\"timestamp\":1789058773873}},{\"id\":4,\"event\":{\"type\":\"SYS_TUTORIAL_STEP_CHANGED\",\"payload\":{\"from\":0,\"to\":1,\"stepId\":\"objective-and-turn\"},\"timestamp\":1789058773873}}],\"maxEntries\":200,\"nextId\":5},\"actionLog\":{\"entries\":[],\"maxEntries\":50},\"rematch\":{\"votes\":{},\"ready\":false},\"responseWindow\":{},\"tutorial\":{\"active\":true,\"manifestId\":\"basic-setup-and-turn\",\"manifestRevision\":2,\"stepIndex\":1,\"steps\":[{\"id\":\"setup-runtime\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.setupRuntime\",\"position\":\"center\",\"showMask\":true,\"viewAs\":\"0\",\"aiActions\":[{\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"payload\":{\"fields\":{\"scenarioId\":\"first-scenario\",\"scenarioCandidateIds\":[\"mummy-rampage\",\"crimson-jack-returns\",\"friends-forever\",\"free-the-realtor\",\"blood-from-a-stone\",\"inheritance\",\"upon-reflection\"],\"proposedScenarioCardId\":\"mummy-rampage\",\"scenarioCardConfirmations\":{\"0\":\"mummy-rampage\",\"1\":\"mummy-rampage\",\"2\":\"mummy-rampage\"},\"phase\":\"preHaunt\",\"playerIds\":[\"0\",\"1\",\"2\"],\"selectedExplorerByPlayerId\":{\"0\":\"isa-valencia\",\"1\":\"anita-hernandez\",\"2\":\"father-warren-leung\"},\"readyPlayerIds\":[\"0\",\"1\",\"2\"],\"currentPlayer\":\"0\",\"activePlayerId\":null,\"turnStartSpeed\":5,\"movesRemaining\":5,\"recommendedAction\":\"explore\",\"activeRoomId\":\"entrance-hall\",\"turnEndedByDiscovery\":false,\"currentExplorer\":{\"playerId\":\"0\",\"explorerId\":\"isa-valencia\",\"displayName\":\"伊莎·瓦伦西亚\",\"portraitAsset\":\"betrayal/explorers/xia\",\"tokenAsset\":\"betrayal/tokens/explorers/isa-valencia\",\"roomId\":\"entrance-hall\",\"traits\":{\"might\":3,\"speed\":5,\"knowledge\":4,\"sanity\":4},\"traitTracks\":{\"might\":{\"trackId\":\"isa-valencia-might\",\"values\":[2,3,3,4,4,5,6,7],\"position\":1,\"startPosition\":1,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"speed\":{\"trackId\":\"isa-valencia-speed\",\"values\":[4,4,5,5,6,7,8,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"knowledge\":{\"trackId\":\"isa-valencia-knowledge\",\"values\":[2,3,3,4,4,5,6,6],\"position\":3,\"startPosition\":3,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"sanity\":{\"trackId\":\"isa-valencia-sanity\",\"values\":[2,3,4,5,6,7,7,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7}},\"inventory\":[{\"id\":\"rope\",\"name\":\"兔脚\",\"kind\":\"item\"},{\"id\":\"omen-book\",\"name\":\"书本\",\"kind\":\"omen\"}]},\"currentExplorerTraits\":{\"might\":3,\"speed\":5,\"knowledge\":4,\"sanity\":4},\"currentExplorerInventory\":[{\"id\":\"rope\",\"name\":\"兔脚\",\"kind\":\"item\"},{\"id\":\"omen-book\",\"name\":\"书本\",\"kind\":\"omen\"}],\"otherExplorers\":[{\"playerId\":\"1\",\"explorerId\":\"anita-hernandez\",\"displayName\":\"安妮塔·赫南德兹\",\"portraitAsset\":\"betrayal/explorers/anita-hernandez\",\"tokenAsset\":\"betrayal/tokens/explorers/anita-hernandez\",\"roomId\":\"hallway\",\"traits\":{\"might\":4,\"speed\":4,\"knowledge\":5,\"sanity\":3},\"traitTracks\":{\"might\":{\"trackId\":\"anita-hernandez-might\",\"values\":[2,2,3,4,5,6,7],\"position\":3,\"startPosition\":3,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":6},\"speed\":{\"trackId\":\"anita-hernandez-speed\",\"values\":[2,3,4,4,5,6,7,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"knowledge\":{\"trackId\":\"anita-hernandez-knowledge\",\"values\":[4,4,5,5,7,8,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":6},\"sanity\":{\"trackId\":\"anita-hernandez-sanity\",\"values\":[2,2,3,4,5,5,6,6],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7}},\"inventory\":[{\"id\":\"map\",\"name\":\"地图\",\"kind\":\"item\"}]},{\"playerId\":\"2\",\"explorerId\":\"father-warren-leung\",\"displayName\":\"神父 梁沃伦\",\"portraitAsset\":\"betrayal/explorers/father-warren-leung\",\"tokenAsset\":\"betrayal/tokens/explorers/father-warren-leung\",\"roomId\":\"entrance-hall\",\"traits\":{\"might\":3,\"speed\":4,\"knowledge\":4,\"sanity\":5},\"traitTracks\":{\"might\":{\"trackId\":\"father-warren-leung-might\",\"values\":[2,2,3,3,4,5,6,6],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"speed\":{\"trackId\":\"father-warren-leung-speed\",\"values\":[2,3,4,4,5,5,6,6],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"knowledge\":{\"trackId\":\"father-warren-leung-knowledge\",\"values\":[3,3,4,5,5,6,7,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"sanity\":{\"trackId\":\"father-warren-leung-sanity\",\"values\":[3,3,5,5,6,6,8,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7}},\"inventory\":[]}],\"monsters\":[],\"drawOrder\":[\"event\",\"item\",\"omen\"],\"roomDiscoveryDeck\":[{\"floor\":\"ground\",\"room\":{\"name\":\"厨房\",\"hint\":\"食物和器具堆在一层，是事件与物品都可能发生的房间\",\"tags\":[\"一层\",\"物资\"],\"visualId\":\"kitchen\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"观测台\",\"hint\":\"一层观测房间，中央器械让视线与路线都更紧张\",\"tags\":[\"一层\",\"观察\"],\"visualId\":\"observatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"温室\",\"hint\":\"玻璃与藤蔓围住的一层房间，适合制造视线遮挡\",\"tags\":[\"一层\",\"植物\"],\"visualId\":\"conservatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"south\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"墓园\",\"hint\":\"通向地下洞窟的室外墓地，适合承接追逐与怪物线\",\"tags\":[\"一层\",\"室外\"],\"visualId\":\"graveyard\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"舞厅\",\"hint\":\"宽敞的一层房间，适合会合与周旋\",\"tags\":[\"会合\",\"开阔\"],\"visualId\":\"ballroom\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"]}},{\"floor\":\"upper\",\"room\":{\"name\":\"图书馆\",\"hint\":\"成排旧书和破纸页，是找知识的地方\",\"tags\":[\"知识\",\"调查\"],\"visualId\":\"library\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"],\"discoveryEffect\":\"gainKnowledge1\"}},{\"floor\":\"upper\",\"room\":{\"name\":\"塔楼\",\"hint\":\"上层塔楼，边缘路线和高度感会影响移动判断\",\"tags\":[\"上层\",\"高处\"],\"visualId\":\"tower\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}},{\"floor\":\"basement\",\"room\":{\"name\":\"裂隙\",\"hint\":\"地下危险地形，后续剧本可能要求丢弃或搬运物体\",\"tags\":[\"地下\",\"危险\"],\"visualId\":\"chasm\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}}],\"roomDiscoveryOrderByFloor\":{\"ground\":[{\"name\":\"厨房\",\"hint\":\"食物和器具堆在一层，是事件与物品都可能发生的房间\",\"tags\":[\"一层\",\"物资\"],\"visualId\":\"kitchen\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]},{\"name\":\"观测台\",\"hint\":\"一层观测房间，中央器械让视线与路线都更紧张\",\"tags\":[\"一层\",\"观察\"],\"visualId\":\"observatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\"]},{\"name\":\"温室\",\"hint\":\"玻璃与藤蔓围住的一层房间，适合制造视线遮挡\",\"tags\":[\"一层\",\"植物\"],\"visualId\":\"conservatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"south\"]},{\"name\":\"墓园\",\"hint\":\"通向地下洞窟的室外墓地，适合承接追逐与怪物线\",\"tags\":[\"一层\",\"室外\"],\"visualId\":\"graveyard\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\"]},{\"name\":\"舞厅\",\"hint\":\"宽敞的一层房间，适合会合与周旋\",\"tags\":[\"会合\",\"开阔\"],\"visualId\":\"ballroom\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"]}],\"upper\":[{\"name\":\"图书馆\",\"hint\":\"成排旧书和破纸页，是找知识的地方\",\"tags\":[\"知识\",\"调查\"],\"visualId\":\"library\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"],\"discoveryEffect\":\"gainKnowledge1\"},{\"name\":\"塔楼\",\"hint\":\"上层塔楼，边缘路线和高度感会影响移动判断\",\"tags\":[\"上层\",\"高处\"],\"visualId\":\"tower\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}],\"basement\":[{\"name\":\"裂隙\",\"hint\":\"地下危险地形，后续剧本可能要求丢弃或搬运物体\",\"tags\":[\"地下\",\"危险\"],\"visualId\":\"chasm\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}]},\"buriedRoomTiles\":[],\"possessionOrderByKind\":{\"item\":[{\"id\":\"camera\",\"name\":\"魔法相机\",\"kind\":\"item\"},{\"id\":\"scary-doll\",\"name\":\"恐怖玩偶\",\"kind\":\"item\"},{\"id\":\"medical-kit\",\"name\":\"急救包\",\"kind\":\"item\"},{\"id\":\"mirror\",\"name\":\"镜子\",\"kind\":\"item\"},{\"id\":\"holy-water\",\"name\":\"奇怪的药品\",\"kind\":\"item\"},{\"id\":\"lucky-coin\",\"name\":\"幸运硬币\",\"kind\":\"item\"},{\"id\":\"leather-jacket\",\"name\":\"皮夹克\",\"kind\":\"item\"},{\"id\":\"tooth-necklace\",\"name\":\"牙齿项链\",\"kind\":\"item\"},{\"id\":\"flashlight\",\"name\":\"手电筒\",\"kind\":\"item\"},{\"id\":\"radio\",\"name\":\"头戴耳机\",\"kind\":\"item\"},{\"id\":\"map\",\"name\":\"地图\",\"kind\":\"item\"},{\"id\":\"strange-amulet\",\"name\":\"奇异护符\",\"kind\":\"item\"},{\"id\":\"brooch\",\"name\":\"胸针\",\"kind\":\"item\"},{\"id\":\"gun\",\"name\":\"枪\",\"kind\":\"item\"},{\"id\":\"crossbow\",\"name\":\"十字弓\",\"kind\":\"item\"},{\"id\":\"rope\",\"name\":\"兔脚\",\"kind\":\"item\"},{\"id\":\"lockpick-tool\",\"name\":\"骨制钥匙\",\"kind\":\"item\"},{\"id\":\"mysterious-stopwatch\",\"name\":\"神秘秒表\",\"kind\":\"item\"},{\"id\":\"hunting-knife\",\"name\":\"砍刀\",\"kind\":\"item\"},{\"id\":\"chainsaw\",\"name\":\"电锯\",\"kind\":\"item\"},{\"id\":\"dynamite\",\"name\":\"炸药\",\"kind\":\"item\"},{\"id\":\"angel-feather\",\"name\":\"天使之羽\",\"kind\":\"item\"}],\"omen\":[{\"id\":\"ring\",\"name\":\"指环\",\"kind\":\"omen\"},{\"id\":\"dog\",\"name\":\"狗\",\"kind\":\"omen\"},{\"id\":\"mask\",\"name\":\"面具\",\"kind\":\"omen\"},{\"id\":\"holy-symbol\",\"name\":\"圣符\",\"kind\":\"omen\"},{\"id\":\"armor\",\"name\":\"盔甲\",\"kind\":\"omen\"},{\"id\":\"idol\",\"name\":\"雕像\",\"kind\":\"omen\"},{\"id\":\"dagger\",\"name\":\"匕首\",\"kind\":\"omen\"}]},\"eventOrder\":[{\"name\":\"标本剥制\",\"roll\":{\"trait\":\"might\",\"branches\":[{\"min\":5,\"label\":\"获得 1 点神志\",\"effect\":{\"mode\":\"trait\",\"trait\":\"sanity\",\"amount\":1,\"recommendedAction\":\"explore\"}},{\"min\":0,\"label\":\"受到 1 点物理伤害；放置障碍物\",\"effect\":{\"mode\":\"compound\",\"recommendedAction\":\"endTurn\",\"effects\":[{\"mode\":\"fixedDamage\",\"amount\":1,\"damageKind\":\"physical\",\"recommendedAction\":\"endTurn\"},{\"mode\":\"placeObstacleToken\",\"recommendedAction\":\"endTurn\"}]}}]}}],\"deckCounts\":{\"omen\":7,\"item\":22,\"event\":1},\"discardCounts\":{\"omen\":0,\"item\":0,\"event\":0},\"rooms\":[{\"id\":\"upper-landing\",\"name\":\"上层起始点\",\"floor\":\"upper\",\"x\":2,\"y\":1,\"connectedRoomIds\":[\"grand-staircase\",\"upper-north\",\"upper-west\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"上层起始连接位\",\"tags\":[\"起始\",\"上层\"],\"discoveryReward\":null,\"visualId\":\"upperLanding\",\"backVisualId\":\"backUpper\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"upper-north\"},{\"edge\":\"west\",\"connectsToRoomId\":\"upper-west\"},{\"edge\":\"east\",\"connectsToRoomId\":\"grand-staircase\",\"leadsToFloor\":\"ground\",\"note\":\"通向 Ground Floor Staircase\"}],\"orientationTurns\":0},{\"id\":\"grand-staircase\",\"name\":\"大阶梯\",\"floor\":\"ground\",\"x\":2,\"y\":2,\"connectedRoomIds\":[\"upper-landing\",\"hallway\",\"basement-landing\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"宅邸中央的楼梯间\",\"tags\":[\"起始\",\"连接\"],\"discoveryReward\":null,\"visualId\":\"startTriple\",\"backVisualId\":\"backGround\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"upper-landing\",\"leadsToFloor\":\"upper\",\"note\":\"通向 Upper Landing\"},{\"edge\":\"east\",\"connectsToRoomId\":\"hallway\"},{\"edge\":\"south\",\"connectsToRoomId\":\"basement-landing\",\"leadsToFloor\":\"basement\",\"note\":\"通向 Basement Landing\"}],\"orientationTurns\":0},{\"id\":\"hallway\",\"name\":\"门厅\",\"floor\":\"ground\",\"x\":3,\"y\":2,\"connectedRoomIds\":[\"grand-staircase\",\"entrance-hall\",\"ground-north\",\"ground-south\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"连接前厅与楼梯的长廊\",\"tags\":[\"起始\",\"走廊\"],\"discoveryReward\":null,\"visualId\":\"startHallway\",\"backVisualId\":\"backGround\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"grand-staircase\"},{\"edge\":\"east\",\"connectsToRoomId\":\"entrance-hall\"},{\"edge\":\"north\",\"connectsToRoomId\":\"ground-north\"},{\"edge\":\"south\",\"connectsToRoomId\":\"ground-south\"}],\"orientationTurns\":0},{\"id\":\"entrance-hall\",\"name\":\"入口大厅\",\"floor\":\"ground\",\"x\":4,\"y\":2,\"connectedRoomIds\":[\"hallway\",\"ground-east\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"进入宅邸后的起始入口\",\"tags\":[\"起始\",\"入口\"],\"discoveryReward\":null,\"visualId\":\"startTriple\",\"backVisualId\":\"backGround\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"hallway\"},{\"edge\":\"east\",\"connectsToRoomId\":\"ground-east\"}],\"orientationTurns\":0},{\"id\":\"basement-landing\",\"name\":\"地下室起始点\",\"floor\":\"basement\",\"x\":2,\"y\":3,\"connectedRoomIds\":[\"grand-staircase\",\"basement-east\",\"basement-south\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"地下入口，通向更深处\",\"tags\":[\"起始\",\"地下\"],\"discoveryReward\":null,\"visualId\":\"basementLanding\",\"backVisualId\":\"backBasement\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"grand-staircase\",\"leadsToFloor\":\"ground\",\"note\":\"与 Ground Floor Staircase 特殊相邻\"},{\"edge\":\"east\",\"connectsToRoomId\":\"basement-east\"},{\"edge\":\"south\",\"connectsToRoomId\":\"basement-south\"}],\"orientationTurns\":0},{\"id\":\"upper-north\",\"name\":\"未探索\",\"floor\":\"upper\",\"x\":2,\"y\":0,\"connectedRoomIds\":[\"upper-landing\"],\"entryRoomId\":\"upper-landing\",\"entryEdge\":\"north\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从上层起始点翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backUpper\",\"doorways\":[{\"edge\":\"south\",\"connectsToRoomId\":\"upper-landing\"}],\"backVisualId\":\"backUpper\"},{\"id\":\"upper-west\",\"name\":\"图书馆\",\"floor\":\"upper\",\"x\":1,\"y\":1,\"connectedRoomIds\":[\"upper-landing\"],\"entryRoomId\":\"upper-landing\",\"entryEdge\":\"west\",\"orientationTurns\":0,\"state\":\"discovered\",\"hint\":\"翻找旧案、了解 Crimson Jack 的最佳地点\",\"tags\":[\"知识\",\"调查\",\"图书馆\"],\"discoveryReward\":null,\"visualId\":\"backUpper\",\"doorways\":[{\"edge\":\"east\",\"connectsToRoomId\":\"upper-landing\"}],\"backVisualId\":\"backUpper\"},{\"id\":\"ground-north\",\"name\":\"未探索\",\"floor\":\"ground\",\"x\":3,\"y\":1,\"connectedRoomIds\":[\"hallway\"],\"entryRoomId\":\"hallway\",\"entryEdge\":\"north\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从门厅翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backGround\",\"doorways\":[{\"edge\":\"south\",\"connectsToRoomId\":\"hallway\"}],\"backVisualId\":\"backGround\"},{\"id\":\"ground-south\",\"name\":\"未探索\",\"floor\":\"ground\",\"x\":3,\"y\":3,\"connectedRoomIds\":[\"hallway\"],\"entryRoomId\":\"hallway\",\"entryEdge\":\"south\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从门厅翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backGround\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"hallway\"}],\"backVisualId\":\"backGround\"},{\"id\":\"ground-east\",\"name\":\"未探索\",\"floor\":\"ground\",\"x\":5,\"y\":2,\"connectedRoomIds\":[\"entrance-hall\"],\"entryRoomId\":\"entrance-hall\",\"entryEdge\":\"east\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从入口大厅翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backGround\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"entrance-hall\"}],\"backVisualId\":\"backGround\"},{\"id\":\"basement-east\",\"name\":\"未探索\",\"floor\":\"basement\",\"x\":3,\"y\":3,\"connectedRoomIds\":[\"basement-landing\"],\"entryRoomId\":\"basement-landing\",\"entryEdge\":\"east\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从地下室起始点翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backBasement\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"basement-landing\"}],\"backVisualId\":\"backBasement\"},{\"id\":\"basement-south\",\"name\":\"未探索\",\"floor\":\"basement\",\"x\":2,\"y\":4,\"connectedRoomIds\":[\"basement-landing\"],\"entryRoomId\":\"basement-landing\",\"entryEdge\":\"south\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从地下室起始点翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backBasement\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"basement-landing\"}],\"backVisualId\":\"backBasement\"}],\"exploreIndex\":0,\"usedCardIdsThisTurn\":[],\"tradeUsedThisTurnPlayerIds\":[],\"turnStartInventoryCardIds\":[\"rope\",\"omen-book\"],\"receivedCardIdsThisTurnByPlayerId\":{},\"nextNonCombatTraitReplacement\":null,\"nextNonCombatTraitRollTotalReplacement\":null,\"pendingExtraTurnAfterCurrentTurn\":null,\"pendingEventChoice\":null,\"pendingEventRollStart\":null,\"pendingCardResolutionQueue\":[],\"pendingTradeAgreement\":null,\"pendingDamageAllocation\":null,\"pendingEventRollResolution\":null,\"recentRoll\":null,\"recentAllTraitCheck\":null,\"latestRoomDrawResolution\":null,\"latestDiscovery\":null,\"latestDiscoveryOwnerPlayerId\":null,\"highlightedDeckKind\":null,\"activityLog\":[{\"id\":\"scenario-started-first-scenario\",\"text\":\"首剧本开始：恶兆前探索\",\"tone\":\"accent\"}],\"scenarioRuntime\":{\"hauntTriggered\":false,\"hauntRevealerPlayerId\":null,\"traitorPlayerId\":null,\"hauntTraitorResolution\":null,\"hauntFirstPlayerResolution\":null,\"nextHauntPlayerId\":null,\"hauntRollThreshold\":5,\"omensDiscovered\":0,\"hauntCardNumber\":null,\"hauntTriggerLabel\":null,\"hauntScenarioCardId\":null,\"hauntScenarioCardTitle\":null,\"hauntScenarioCardLabel\":null,\"triggeringOmenId\":null,\"triggeringOmenName\":null,\"hauntResolutionMatchedTrigger\":false,\"hauntResolutionRepresentativeOnly\":false,\"jackSpiritReleased\":false,\"jackSpiritRoomId\":null,\"jackSpiritHasMovedSinceRelease\":false,\"exorcismCircleRoomIds\":[],\"knowledgeOfJackPlayerIds\":[],\"deadExplorerPlayerIds\":[],\"traitorCorpseRoomId\":null,\"corpseLootedByPlayerIdsThisTurn\":[],\"usedRoomEffectIdsThisTurn\":[],\"hauntSetupQueue\":[],\"monsterStatusesById\":{},\"monsterTurn\":{\"resolvedStartMonsterIds\":[],\"skippedMonsterIdsThisTurn\":[],\"attackedMonsterIdsThisTurn\":[],\"movedMonsterIdsThisTurn\":[],\"movementRollsByGroupId\":{},\"moveRemainingById\":{}},\"bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId\":{},\"bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn\":[]},\"endgameResult\":null}}}]},{\"id\":\"objective-and-turn\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.objectiveAndTurn\",\"highlightTarget\":\"betrayal-action-move\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"traits-and-speed\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.traitsAndSpeed\",\"highlightTarget\":\"betrayal-current-traits\",\"position\":\"right\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"trait-track-reading\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.traitTrackReading\",\"highlightTarget\":\"betrayal-current-traits\",\"position\":\"right\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"moves-remaining\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.movesRemaining\",\"highlightTarget\":\"betrayal-moves-remaining\",\"position\":\"left\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"room-board\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.roomBoard\",\"highlightTarget\":\"betrayal-room-board\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"observe-teammate\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.observeTeammate\",\"highlightTarget\":\"betrayal-bottom-teammate-1\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"focus-self-room\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.focusSelfRoom\",\"highlightTarget\":\"betrayal-focus-self-room\",\"position\":\"left\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"haunt-risk-track\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.hauntRiskTrack\",\"highlightTarget\":\"betrayal-haunt-risk-status\",\"position\":\"left\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"inventory-and-help\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.inventoryAndHelp\",\"highlightTarget\":\"betrayal-inventory-zone\",\"position\":\"right\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"open-move-targets\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.openMoveTargets\",\"highlightTarget\":\"betrayal-action-move\",\"position\":\"top\",\"viewAs\":\"0\"},{\"id\":\"move-to-hallway\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.moveToHallway\",\"highlightTarget\":\"betrayal-room-hallway\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"MOVE_TO_ROOM\"],\"allowedTargets\":[\"hallway\"],\"advanceOnEvents\":[{\"type\":\"EXPLORER_MOVED\",\"match\":{\"playerId\":\"0\",\"roomId\":\"hallway\"}}],\"viewAs\":\"0\"},{\"id\":\"explore-upper\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.exploreUpper\",\"highlightTarget\":\"betrayal-action-explore\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"rotate-room-placement\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.rotateRoomPlacement\",\"highlightTarget\":\"betrayal-room-placement-rotate-right\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"confirm-room-placement\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.confirmRoomPlacement\",\"highlightTarget\":\"betrayal-room-placement-confirm\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"EXPLORE_ROOM\"],\"advanceOnEvents\":[{\"type\":\"ROOM_EXPLORED\",\"match\":{\"playerId\":\"0\"}}],\"viewAs\":\"0\"},{\"id\":\"discovery-card-type\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.discoveryCardType\",\"highlightTarget\":\"betrayal-latest-discovery\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"roll-event\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.rollEvent\",\"highlightTarget\":\"betrayal-event-roll-start\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"ROLL_EVENT\"],\"advanceOnEvents\":[{\"type\":\"EVENT_ROLLED\",\"match\":{\"playerId\":\"0\"}}],\"viewAs\":\"0\"},{\"id\":\"view-book\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.viewBook\",\"highlightTarget\":\"betrayal-inventory-omen-book-magnify\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"use-book\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.useBook\",\"highlightTarget\":\"betrayal-inventory-omen-book\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"USE_POSSESSION\"],\"allowedTargets\":[\"omen-book\"],\"advanceOnEvents\":[{\"type\":\"POSSESSION_USED\",\"match\":{\"playerId\":\"0\",\"cardId\":\"omen-book\"}}],\"viewAs\":\"0\"},{\"id\":\"use-rabbit-foot\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.useRabbitFoot\",\"highlightTarget\":\"betrayal-inventory-rope\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"USE_RABBIT_FOOT\",\"USE_ROLL_REROLL_ITEM\"],\"allowedTargets\":[\"rope\"],\"advanceOnEvents\":[{\"type\":\"RABBIT_FOOT_USED\",\"match\":{\"playerId\":\"0\",\"cardId\":\"rope\"}}],\"viewAs\":\"0\"},{\"id\":\"rabbit-foot-result\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.rabbitFootResult\",\"highlightTarget\":\"betrayal-discovery-continue\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"FINALIZE_EVENT_ROLL\"],\"advanceOnEvents\":[{\"type\":\"EVENT_ROLL_FINALIZED\",\"match\":{\"isFullyAcknowledged\":true}}],\"viewAs\":\"0\"},{\"id\":\"finish\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.finish\",\"highlightTarget\":\"betrayal-damage-allocation-panel\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"RESOLVE_DAMAGE_ALLOCATION\"],\"advanceOnEvents\":[{\"type\":\"DAMAGE_ALLOCATION_RESOLVED\",\"match\":{\"playerId\":\"0\"}}],\"viewAs\":\"0\"},{\"id\":\"return-to-table-after-damage\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.returnToTableAfterDamage\",\"highlightTarget\":\"betrayal-discovery-continue\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"end-turn-after-event\",\"content\":\"game-betrayal:tutorial.mainPath.steps.endTurnAfterEvent\",\"highlightTarget\":\"betrayal-action-endTurn\",\"position\":\"left\",\"requireAction\":true,\"allowedCommands\":[\"END_TURN\"],\"advanceOnEvents\":[{\"type\":\"TURN_ENDED\",\"match\":{\"previousPlayerId\":\"0\",\"nextPlayerId\":\"1\"}}],\"viewAs\":\"0\"},{\"id\":\"watch-teammate-one-omen-turn\",\"content\":\"game-betrayal:tutorial.mainPath.steps.watchTeammateOneOmenTurn\",\"highlightTarget\":\"betrayal-haunt-risk-status\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\",\"randomPolicy\":{\"mode\":\"fixed\",\"values\":[1]},\"aiActions\":[{\"commandType\":\"MOVE_TO_ROOM\",\"playerId\":\"1\",\"payload\":{\"roomId\":\"entrance-hall\"}},{\"commandType\":\"EXPLORE_ROOM\",\"playerId\":\"1\",\"payload\":{\"roomId\":\"ground-east\"}}],\"autoAdvanceAfterAi\":false},{\"id\":\"teammate-one-omen-results\",\"content\":\"game-betrayal:tutorial.mainPath.steps.teammateOneOmenResults\",\"highlightTarget\":\"betrayal-haunt-risk-status\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\",\"aiActions\":[{\"commandType\":\"ACKNOWLEDGE_CARD_RESOLUTION\",\"playerId\":\"1\"},{\"commandType\":\"END_TURN\",\"playerId\":\"1\"}],\"autoAdvanceAfterAi\":false},{\"id\":\"watch-teammate-two-omen-turn\",\"content\":\"game-betrayal:tutorial.mainPath.steps.watchTeammateTwoOmenTurn\",\"highlightTarget\":\"betrayal-haunt-risk-status\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\",\"randomPolicy\":{\"mode\":\"fixed\",\"values\":[1]},\"aiActions\":[{\"commandType\":\"MOVE_TO_ROOM\",\"playerId\":\"2\",\"payload\":{\"roomId\":\"ground-east\"}},{\"commandType\":\"EXPLORE_ROOM\",\"playerId\":\"2\",\"payload\":{\"roomId\":\"frontier-ground-east-east\"}}],\"autoAdvanceAfterAi\":false},{\"id\":\"teammate-two-omen-results\",\"content\":\"game-betrayal:tutorial.mainPath.steps.teammateTwoOmenResults\",\"highlightTarget\":\"betrayal-haunt-risk-status\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\",\"aiActions\":[{\"commandType\":\"ACKNOWLEDGE_CARD_RESOLUTION\",\"playerId\":\"2\"},{\"commandType\":\"END_TURN\",\"playerId\":\"2\"}],\"autoAdvanceAfterAi\":false},{\"id\":\"move-to-grand-staircase\",\"content\":\"game-betrayal:tutorial.mainPath.steps.moveToGrandStaircase\",\"highlightTarget\":\"betrayal-action-move\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"MOVE_TO_ROOM\"],\"allowedTargets\":[\"hallway\",\"grand-staircase\"],\"advanceOnEvents\":[{\"type\":\"EXPLORER_MOVED\",\"match\":{\"playerId\":\"0\",\"roomId\":\"grand-staircase\"}}],\"viewAs\":\"0\"},{\"id\":\"switch-to-upper-floor\",\"content\":\"game-betrayal:tutorial.mainPath.steps.switchToUpperFloor\",\"highlightTarget\":\"betrayal-room-floor-up\",\"position\":\"left\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"move-to-upper-landing\",\"content\":\"game-betrayal:tutorial.mainPath.steps.moveToUpperLanding\",\"highlightTarget\":\"betrayal-room-upper-landing\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"MOVE_TO_ROOM\"],\"allowedTargets\":[\"upper-landing\"],\"advanceOnEvents\":[{\"type\":\"EXPLORER_MOVED\",\"match\":{\"playerId\":\"0\",\"roomId\":\"upper-landing\"}}],\"viewAs\":\"0\"},{\"id\":\"end-turn-from-upper-landing\",\"content\":\"game-betrayal:tutorial.mainPath.steps.endTurnFromUpperLanding\",\"highlightTarget\":\"betrayal-action-endTurn\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"END_TURN\"],\"advanceOnEvents\":[{\"type\":\"TURN_ENDED\",\"match\":{\"previousPlayerId\":\"0\",\"nextPlayerId\":\"1\"}}],\"viewAs\":\"0\"},{\"id\":\"watch-teammate-haunt-trigger\",\"content\":\"game-betrayal:tutorial.mainPath.steps.watchTeammateHauntTrigger\",\"highlightTarget\":\"betrayal-haunt-risk-status\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\",\"randomPolicy\":{\"mode\":\"fixed\",\"values\":[3]},\"aiActions\":[{\"commandType\":\"EXPLORE_ROOM\",\"playerId\":\"1\",\"payload\":{\"roomId\":\"frontier-ground-east-south\"}}],\"autoAdvanceAfterAi\":false},{\"id\":\"teammate-confirm-haunt-trigger\",\"content\":\"game-betrayal:tutorial.mainPath.steps.teammateConfirmHauntTrigger\",\"position\":\"center\",\"viewAs\":\"0\",\"aiActions\":[{\"commandType\":\"ACKNOWLEDGE_CARD_RESOLUTION\",\"playerId\":\"1\"}]},{\"id\":\"haunt-hero-reader\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderOpened\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"haunt-hero-reader-turn-page\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderTurnPage\",\"highlightTarget\":\"betrayal-scenario-reader-next-zone\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"haunt-hero-reader-goal\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderGoal\",\"highlightTarget\":\"betrayal-scenario-book-section-special\",\"position\":\"left\",\"infoStep\":true,\"viewAs\":\"0\"},{\"id\":\"haunt-hero-reader-close\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderClose\",\"highlightTarget\":\"betrayal-scenario-reader-close\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"wait-for-hero-turn-after-haunt\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.waitForHeroTurnAfterHaunt\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\",\"aiActions\":[{\"commandType\":\"END_TURN\",\"playerId\":\"2\"}],\"autoAdvanceAfterAi\":false},{\"id\":\"open-library-move-after-goal\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.openLibraryMoveAfterGoal\",\"highlightTarget\":\"betrayal-action-move\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[],\"viewAs\":\"0\"},{\"id\":\"move-to-library-after-goal\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.moveToLibraryAfterGoal\",\"highlightTarget\":\"betrayal-room-upper-west\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"MOVE_TO_ROOM\"],\"allowedTargets\":[\"upper-west\"],\"advanceOnEvents\":[{\"type\":\"EXPLORER_MOVED\",\"match\":{\"playerId\":\"0\",\"roomId\":\"upper-west\"}}],\"viewAs\":\"0\"},{\"id\":\"hero-study-name-roll\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameRoll\",\"highlightTarget\":\"betrayal-action-use\",\"position\":\"top\",\"requireAction\":true,\"allowedCommands\":[\"STUDY_MUMMY_NAME\"],\"randomPolicy\":{\"mode\":\"fixed\",\"values\":[3]},\"advanceOnEvents\":[{\"type\":\"MUMMY_NAME_STUDIED\",\"match\":{\"playerId\":\"0\",\"success\":true}}],\"viewAs\":\"0\"},{\"id\":\"hero-study-name-result\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameResult\",\"highlightTarget\":\"betrayal-recent-roll-panel\",\"highlightFrame\":\"none\",\"position\":\"left\",\"requireAction\":true,\"allowedCommands\":[\"ACKNOWLEDGE_RECENT_ROLL\"],\"advanceOnEvents\":[{\"type\":\"RECENT_ROLL_ACKNOWLEDGED\",\"match\":{\"isFullyAcknowledged\":true}}],\"viewAs\":\"0\"},{\"id\":\"hero-study-name-closeout\",\"content\":\"game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameCloseout\",\"highlightTarget\":\"betrayal-action-endTurn\",\"position\":\"left\",\"infoStep\":true,\"viewAs\":\"0\"}],\"step\":{\"id\":\"objective-and-turn\",\"content\":\"game-betrayal:tutorial.basicSetup.steps.objectiveAndTurn\",\"highlightTarget\":\"betrayal-action-move\",\"position\":\"top\",\"infoStep\":true,\"viewAs\":\"0\"},\"manifestAllowManualSkip\":true,\"allowManualSkip\":true,\"pendingAnimationAdvance\":false},\"turnNumber\":0,\"phase\":\"\",\"refereeTrace\":{\"entries\":[],\"maxEntries\":200,\"nextId\":1}},\"core\":{\"scenarioId\":\"first-scenario\",\"scenarioCandidateIds\":[\"mummy-rampage\",\"crimson-jack-returns\",\"friends-forever\",\"free-the-realtor\",\"blood-from-a-stone\",\"inheritance\",\"upon-reflection\"],\"proposedScenarioCardId\":\"mummy-rampage\",\"scenarioCardConfirmations\":{\"0\":\"mummy-rampage\",\"1\":\"mummy-rampage\",\"2\":\"mummy-rampage\"},\"phase\":\"preHaunt\",\"playerIds\":[\"0\",\"1\",\"2\"],\"selectedExplorerByPlayerId\":{\"0\":\"isa-valencia\",\"1\":\"anita-hernandez\",\"2\":\"father-warren-leung\"},\"readyPlayerIds\":[\"0\",\"1\",\"2\"],\"currentPlayer\":\"0\",\"activePlayerId\":null,\"turnStartSpeed\":5,\"movesRemaining\":5,\"recommendedAction\":\"explore\",\"activeRoomId\":\"entrance-hall\",\"turnEndedByDiscovery\":false,\"currentExplorer\":{\"playerId\":\"0\",\"explorerId\":\"isa-valencia\",\"displayName\":\"伊莎·瓦伦西亚\",\"portraitAsset\":\"betrayal/explorers/xia\",\"tokenAsset\":\"betrayal/tokens/explorers/isa-valencia\",\"roomId\":\"entrance-hall\",\"traits\":{\"might\":3,\"speed\":5,\"knowledge\":4,\"sanity\":4},\"traitTracks\":{\"might\":{\"trackId\":\"isa-valencia-might\",\"values\":[2,3,3,4,4,5,6,7],\"position\":1,\"startPosition\":1,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"speed\":{\"trackId\":\"isa-valencia-speed\",\"values\":[4,4,5,5,6,7,8,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"knowledge\":{\"trackId\":\"isa-valencia-knowledge\",\"values\":[2,3,3,4,4,5,6,6],\"position\":3,\"startPosition\":3,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"sanity\":{\"trackId\":\"isa-valencia-sanity\",\"values\":[2,3,4,5,6,7,7,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7}},\"inventory\":[{\"id\":\"rope\",\"name\":\"兔脚\",\"kind\":\"item\"},{\"id\":\"omen-book\",\"name\":\"书本\",\"kind\":\"omen\"}]},\"currentExplorerTraits\":{\"might\":3,\"speed\":5,\"knowledge\":4,\"sanity\":4},\"currentExplorerInventory\":[{\"id\":\"rope\",\"name\":\"兔脚\",\"kind\":\"item\"},{\"id\":\"omen-book\",\"name\":\"书本\",\"kind\":\"omen\"}],\"otherExplorers\":[{\"playerId\":\"1\",\"explorerId\":\"anita-hernandez\",\"displayName\":\"安妮塔·赫南德兹\",\"portraitAsset\":\"betrayal/explorers/anita-hernandez\",\"tokenAsset\":\"betrayal/tokens/explorers/anita-hernandez\",\"roomId\":\"hallway\",\"traits\":{\"might\":4,\"speed\":4,\"knowledge\":5,\"sanity\":3},\"traitTracks\":{\"might\":{\"trackId\":\"anita-hernandez-might\",\"values\":[2,2,3,4,5,6,7],\"position\":3,\"startPosition\":3,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":6},\"speed\":{\"trackId\":\"anita-hernandez-speed\",\"values\":[2,3,4,4,5,6,7,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"knowledge\":{\"trackId\":\"anita-hernandez-knowledge\",\"values\":[4,4,5,5,7,8,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":6},\"sanity\":{\"trackId\":\"anita-hernandez-sanity\",\"values\":[2,2,3,4,5,5,6,6],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7}},\"inventory\":[{\"id\":\"map\",\"name\":\"地图\",\"kind\":\"item\"}]},{\"playerId\":\"2\",\"explorerId\":\"father-warren-leung\",\"displayName\":\"神父 梁沃伦\",\"portraitAsset\":\"betrayal/explorers/father-warren-leung\",\"tokenAsset\":\"betrayal/tokens/explorers/father-warren-leung\",\"roomId\":\"entrance-hall\",\"traits\":{\"might\":3,\"speed\":4,\"knowledge\":4,\"sanity\":5},\"traitTracks\":{\"might\":{\"trackId\":\"father-warren-leung-might\",\"values\":[2,2,3,3,4,5,6,6],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"speed\":{\"trackId\":\"father-warren-leung-speed\",\"values\":[2,3,4,4,5,5,6,6],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"knowledge\":{\"trackId\":\"father-warren-leung-knowledge\",\"values\":[3,3,4,5,5,6,7,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7},\"sanity\":{\"trackId\":\"father-warren-leung-sanity\",\"values\":[3,3,5,5,6,6,8,8],\"position\":2,\"startPosition\":2,\"criticalPosition\":0,\"skullPosition\":-1,\"maxPosition\":7}},\"inventory\":[]}],\"monsters\":[],\"drawOrder\":[\"event\",\"item\",\"omen\"],\"roomDiscoveryDeck\":[{\"floor\":\"ground\",\"room\":{\"name\":\"厨房\",\"hint\":\"食物和器具堆在一层，是事件与物品都可能发生的房间\",\"tags\":[\"一层\",\"物资\"],\"visualId\":\"kitchen\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"观测台\",\"hint\":\"一层观测房间，中央器械让视线与路线都更紧张\",\"tags\":[\"一层\",\"观察\"],\"visualId\":\"observatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"温室\",\"hint\":\"玻璃与藤蔓围住的一层房间，适合制造视线遮挡\",\"tags\":[\"一层\",\"植物\"],\"visualId\":\"conservatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"south\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"墓园\",\"hint\":\"通向地下洞窟的室外墓地，适合承接追逐与怪物线\",\"tags\":[\"一层\",\"室外\"],\"visualId\":\"graveyard\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\"]}},{\"floor\":\"ground\",\"room\":{\"name\":\"舞厅\",\"hint\":\"宽敞的一层房间，适合会合与周旋\",\"tags\":[\"会合\",\"开阔\"],\"visualId\":\"ballroom\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"]}},{\"floor\":\"upper\",\"room\":{\"name\":\"图书馆\",\"hint\":\"成排旧书和破纸页，是找知识的地方\",\"tags\":[\"知识\",\"调查\"],\"visualId\":\"library\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"],\"discoveryEffect\":\"gainKnowledge1\"}},{\"floor\":\"upper\",\"room\":{\"name\":\"塔楼\",\"hint\":\"上层塔楼，边缘路线和高度感会影响移动判断\",\"tags\":[\"上层\",\"高处\"],\"visualId\":\"tower\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}},{\"floor\":\"basement\",\"room\":{\"name\":\"裂隙\",\"hint\":\"地下危险地形，后续剧本可能要求丢弃或搬运物体\",\"tags\":[\"地下\",\"危险\"],\"visualId\":\"chasm\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}}],\"roomDiscoveryOrderByFloor\":{\"ground\":[{\"name\":\"厨房\",\"hint\":\"食物和器具堆在一层，是事件与物品都可能发生的房间\",\"tags\":[\"一层\",\"物资\"],\"visualId\":\"kitchen\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]},{\"name\":\"观测台\",\"hint\":\"一层观测房间，中央器械让视线与路线都更紧张\",\"tags\":[\"一层\",\"观察\"],\"visualId\":\"observatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\"]},{\"name\":\"温室\",\"hint\":\"玻璃与藤蔓围住的一层房间，适合制造视线遮挡\",\"tags\":[\"一层\",\"植物\"],\"visualId\":\"conservatory\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"south\"]},{\"name\":\"墓园\",\"hint\":\"通向地下洞窟的室外墓地，适合承接追逐与怪物线\",\"tags\":[\"一层\",\"室外\"],\"visualId\":\"graveyard\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\"]},{\"name\":\"舞厅\",\"hint\":\"宽敞的一层房间，适合会合与周旋\",\"tags\":[\"会合\",\"开阔\"],\"visualId\":\"ballroom\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"]}],\"upper\":[{\"name\":\"图书馆\",\"hint\":\"成排旧书和破纸页，是找知识的地方\",\"tags\":[\"知识\",\"调查\"],\"visualId\":\"library\",\"discoverySymbol\":\"omen\",\"doorways\":[\"north\",\"east\",\"south\",\"west\"],\"discoveryEffect\":\"gainKnowledge1\"},{\"name\":\"塔楼\",\"hint\":\"上层塔楼，边缘路线和高度感会影响移动判断\",\"tags\":[\"上层\",\"高处\"],\"visualId\":\"tower\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}],\"basement\":[{\"name\":\"裂隙\",\"hint\":\"地下危险地形，后续剧本可能要求丢弃或搬运物体\",\"tags\":[\"地下\",\"危险\"],\"visualId\":\"chasm\",\"discoverySymbol\":\"event\",\"doorways\":[\"north\",\"south\"]}]},\"buriedRoomTiles\":[],\"possessionOrderByKind\":{\"item\":[{\"id\":\"camera\",\"name\":\"魔法相机\",\"kind\":\"item\"},{\"id\":\"scary-doll\",\"name\":\"恐怖玩偶\",\"kind\":\"item\"},{\"id\":\"medical-kit\",\"name\":\"急救包\",\"kind\":\"item\"},{\"id\":\"mirror\",\"name\":\"镜子\",\"kind\":\"item\"},{\"id\":\"holy-water\",\"name\":\"奇怪的药品\",\"kind\":\"item\"},{\"id\":\"lucky-coin\",\"name\":\"幸运硬币\",\"kind\":\"item\"},{\"id\":\"leather-jacket\",\"name\":\"皮夹克\",\"kind\":\"item\"},{\"id\":\"tooth-necklace\",\"name\":\"牙齿项链\",\"kind\":\"item\"},{\"id\":\"flashlight\",\"name\":\"手电筒\",\"kind\":\"item\"},{\"id\":\"radio\",\"name\":\"头戴耳机\",\"kind\":\"item\"},{\"id\":\"map\",\"name\":\"地图\",\"kind\":\"item\"},{\"id\":\"strange-amulet\",\"name\":\"奇异护符\",\"kind\":\"item\"},{\"id\":\"brooch\",\"name\":\"胸针\",\"kind\":\"item\"},{\"id\":\"gun\",\"name\":\"枪\",\"kind\":\"item\"},{\"id\":\"crossbow\",\"name\":\"十字弓\",\"kind\":\"item\"},{\"id\":\"rope\",\"name\":\"兔脚\",\"kind\":\"item\"},{\"id\":\"lockpick-tool\",\"name\":\"骨制钥匙\",\"kind\":\"item\"},{\"id\":\"mysterious-stopwatch\",\"name\":\"神秘秒表\",\"kind\":\"item\"},{\"id\":\"hunting-knife\",\"name\":\"砍刀\",\"kind\":\"item\"},{\"id\":\"chainsaw\",\"name\":\"电锯\",\"kind\":\"item\"},{\"id\":\"dynamite\",\"name\":\"炸药\",\"kind\":\"item\"},{\"id\":\"angel-feather\",\"name\":\"天使之羽\",\"kind\":\"item\"}],\"omen\":[{\"id\":\"ring\",\"name\":\"指环\",\"kind\":\"omen\"},{\"id\":\"dog\",\"name\":\"狗\",\"kind\":\"omen\"},{\"id\":\"mask\",\"name\":\"面具\",\"kind\":\"omen\"},{\"id\":\"holy-symbol\",\"name\":\"圣符\",\"kind\":\"omen\"},{\"id\":\"armor\",\"name\":\"盔甲\",\"kind\":\"omen\"},{\"id\":\"idol\",\"name\":\"雕像\",\"kind\":\"omen\"},{\"id\":\"dagger\",\"name\":\"匕首\",\"kind\":\"omen\"}]},\"eventOrder\":[{\"name\":\"标本剥制\",\"roll\":{\"trait\":\"might\",\"branches\":[{\"min\":5,\"label\":\"获得 1 点神志\",\"effect\":{\"mode\":\"trait\",\"trait\":\"sanity\",\"amount\":1,\"recommendedAction\":\"explore\"}},{\"min\":0,\"label\":\"受到 1 点物理伤害；放置障碍物\",\"effect\":{\"mode\":\"compound\",\"recommendedAction\":\"endTurn\",\"effects\":[{\"mode\":\"fixedDamage\",\"amount\":1,\"damageKind\":\"physical\",\"recommendedAction\":\"endTurn\"},{\"mode\":\"placeObstacleToken\",\"recommendedAction\":\"endTurn\"}]}}]}}],\"deckCounts\":{\"omen\":7,\"item\":22,\"event\":1},\"discardCounts\":{\"omen\":0,\"item\":0,\"event\":0},\"rooms\":[{\"id\":\"upper-landing\",\"name\":\"上层起始点\",\"floor\":\"upper\",\"x\":2,\"y\":1,\"connectedRoomIds\":[\"grand-staircase\",\"upper-north\",\"upper-west\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"上层起始连接位\",\"tags\":[\"起始\",\"上层\"],\"discoveryReward\":null,\"visualId\":\"upperLanding\",\"backVisualId\":\"backUpper\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"upper-north\"},{\"edge\":\"west\",\"connectsToRoomId\":\"upper-west\"},{\"edge\":\"east\",\"connectsToRoomId\":\"grand-staircase\",\"leadsToFloor\":\"ground\",\"note\":\"通向 Ground Floor Staircase\"}],\"orientationTurns\":0},{\"id\":\"grand-staircase\",\"name\":\"大阶梯\",\"floor\":\"ground\",\"x\":2,\"y\":2,\"connectedRoomIds\":[\"upper-landing\",\"hallway\",\"basement-landing\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"宅邸中央的楼梯间\",\"tags\":[\"起始\",\"连接\"],\"discoveryReward\":null,\"visualId\":\"startTriple\",\"backVisualId\":\"backGround\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"upper-landing\",\"leadsToFloor\":\"upper\",\"note\":\"通向 Upper Landing\"},{\"edge\":\"east\",\"connectsToRoomId\":\"hallway\"},{\"edge\":\"south\",\"connectsToRoomId\":\"basement-landing\",\"leadsToFloor\":\"basement\",\"note\":\"通向 Basement Landing\"}],\"orientationTurns\":0},{\"id\":\"hallway\",\"name\":\"门厅\",\"floor\":\"ground\",\"x\":3,\"y\":2,\"connectedRoomIds\":[\"grand-staircase\",\"entrance-hall\",\"ground-north\",\"ground-south\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"连接前厅与楼梯的长廊\",\"tags\":[\"起始\",\"走廊\"],\"discoveryReward\":null,\"visualId\":\"startHallway\",\"backVisualId\":\"backGround\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"grand-staircase\"},{\"edge\":\"east\",\"connectsToRoomId\":\"entrance-hall\"},{\"edge\":\"north\",\"connectsToRoomId\":\"ground-north\"},{\"edge\":\"south\",\"connectsToRoomId\":\"ground-south\"}],\"orientationTurns\":0},{\"id\":\"entrance-hall\",\"name\":\"入口大厅\",\"floor\":\"ground\",\"x\":4,\"y\":2,\"connectedRoomIds\":[\"hallway\",\"ground-east\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"进入宅邸后的起始入口\",\"tags\":[\"起始\",\"入口\"],\"discoveryReward\":null,\"visualId\":\"startTriple\",\"backVisualId\":\"backGround\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"hallway\"},{\"edge\":\"east\",\"connectsToRoomId\":\"ground-east\"}],\"orientationTurns\":0},{\"id\":\"basement-landing\",\"name\":\"地下室起始点\",\"floor\":\"basement\",\"x\":2,\"y\":3,\"connectedRoomIds\":[\"grand-staircase\",\"basement-east\",\"basement-south\"],\"state\":\"discovered\",\"startingTile\":true,\"hint\":\"地下入口，通向更深处\",\"tags\":[\"起始\",\"地下\"],\"discoveryReward\":null,\"visualId\":\"basementLanding\",\"backVisualId\":\"backBasement\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"grand-staircase\",\"leadsToFloor\":\"ground\",\"note\":\"与 Ground Floor Staircase 特殊相邻\"},{\"edge\":\"east\",\"connectsToRoomId\":\"basement-east\"},{\"edge\":\"south\",\"connectsToRoomId\":\"basement-south\"}],\"orientationTurns\":0},{\"id\":\"upper-north\",\"name\":\"未探索\",\"floor\":\"upper\",\"x\":2,\"y\":0,\"connectedRoomIds\":[\"upper-landing\"],\"entryRoomId\":\"upper-landing\",\"entryEdge\":\"north\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从上层起始点翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backUpper\",\"doorways\":[{\"edge\":\"south\",\"connectsToRoomId\":\"upper-landing\"}],\"backVisualId\":\"backUpper\"},{\"id\":\"upper-west\",\"name\":\"图书馆\",\"floor\":\"upper\",\"x\":1,\"y\":1,\"connectedRoomIds\":[\"upper-landing\"],\"entryRoomId\":\"upper-landing\",\"entryEdge\":\"west\",\"orientationTurns\":0,\"state\":\"discovered\",\"hint\":\"翻找旧案、了解 Crimson Jack 的最佳地点\",\"tags\":[\"知识\",\"调查\",\"图书馆\"],\"discoveryReward\":null,\"visualId\":\"backUpper\",\"doorways\":[{\"edge\":\"east\",\"connectsToRoomId\":\"upper-landing\"}],\"backVisualId\":\"backUpper\"},{\"id\":\"ground-north\",\"name\":\"未探索\",\"floor\":\"ground\",\"x\":3,\"y\":1,\"connectedRoomIds\":[\"hallway\"],\"entryRoomId\":\"hallway\",\"entryEdge\":\"north\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从门厅翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backGround\",\"doorways\":[{\"edge\":\"south\",\"connectsToRoomId\":\"hallway\"}],\"backVisualId\":\"backGround\"},{\"id\":\"ground-south\",\"name\":\"未探索\",\"floor\":\"ground\",\"x\":3,\"y\":3,\"connectedRoomIds\":[\"hallway\"],\"entryRoomId\":\"hallway\",\"entryEdge\":\"south\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从门厅翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backGround\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"hallway\"}],\"backVisualId\":\"backGround\"},{\"id\":\"ground-east\",\"name\":\"未探索\",\"floor\":\"ground\",\"x\":5,\"y\":2,\"connectedRoomIds\":[\"entrance-hall\"],\"entryRoomId\":\"entrance-hall\",\"entryEdge\":\"east\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从入口大厅翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backGround\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"entrance-hall\"}],\"backVisualId\":\"backGround\"},{\"id\":\"basement-east\",\"name\":\"未探索\",\"floor\":\"basement\",\"x\":3,\"y\":3,\"connectedRoomIds\":[\"basement-landing\"],\"entryRoomId\":\"basement-landing\",\"entryEdge\":\"east\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从地下室起始点翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backBasement\",\"doorways\":[{\"edge\":\"west\",\"connectsToRoomId\":\"basement-landing\"}],\"backVisualId\":\"backBasement\"},{\"id\":\"basement-south\",\"name\":\"未探索\",\"floor\":\"basement\",\"x\":2,\"y\":4,\"connectedRoomIds\":[\"basement-landing\"],\"entryRoomId\":\"basement-landing\",\"entryEdge\":\"south\",\"orientationTurns\":0,\"state\":\"unexplored\",\"hint\":\"等待从地下室起始点翻出房间\",\"tags\":[\"待翻出\"],\"discoveryReward\":null,\"visualId\":\"backBasement\",\"doorways\":[{\"edge\":\"north\",\"connectsToRoomId\":\"basement-landing\"}],\"backVisualId\":\"backBasement\"}],\"exploreIndex\":0,\"usedCardIdsThisTurn\":[],\"tradeUsedThisTurnPlayerIds\":[],\"turnStartInventoryCardIds\":[\"rope\",\"omen-book\"],\"receivedCardIdsThisTurnByPlayerId\":{},\"nextNonCombatTraitReplacement\":null,\"nextNonCombatTraitRollTotalReplacement\":null,\"pendingExtraTurnAfterCurrentTurn\":null,\"pendingEventChoice\":null,\"pendingEventRollStart\":null,\"pendingCardResolutionQueue\":[],\"pendingTradeAgreement\":null,\"pendingDamageAllocation\":null,\"pendingEventRollResolution\":null,\"recentRoll\":null,\"recentAllTraitCheck\":null,\"latestRoomDrawResolution\":null,\"latestDiscovery\":null,\"latestDiscoveryOwnerPlayerId\":null,\"highlightedDeckKind\":null,\"activityLog\":[{\"id\":\"scenario-started-first-scenario\",\"text\":\"首剧本开始：恶兆前探索\",\"tone\":\"accent\"}],\"scenarioRuntime\":{\"hauntTriggered\":false,\"hauntRevealerPlayerId\":null,\"traitorPlayerId\":null,\"hauntTraitorResolution\":null,\"hauntFirstPlayerResolution\":null,\"nextHauntPlayerId\":null,\"hauntRollThreshold\":5,\"omensDiscovered\":0,\"hauntCardNumber\":null,\"hauntTriggerLabel\":null,\"hauntScenarioCardId\":null,\"hauntScenarioCardTitle\":null,\"hauntScenarioCardLabel\":null,\"triggeringOmenId\":null,\"triggeringOmenName\":null,\"hauntResolutionMatchedTrigger\":false,\"hauntResolutionRepresentativeOnly\":false,\"jackSpiritReleased\":false,\"jackSpiritRoomId\":null,\"jackSpiritHasMovedSinceRelease\":false,\"exorcismCircleRoomIds\":[],\"knowledgeOfJackPlayerIds\":[],\"deadExplorerPlayerIds\":[],\"traitorCorpseRoomId\":null,\"corpseLootedByPlayerIdsThisTurn\":[],\"usedRoomEffectIdsThisTurn\":[],\"hauntSetupQueue\":[],\"monsterStatusesById\":{},\"monsterTurn\":{\"resolvedStartMonsterIds\":[],\"skippedMonsterIdsThisTurn\":[],\"attackedMonsterIdsThisTurn\":[],\"movedMonsterIdsThisTurn\":[],\"movementRollsByGroupId\":{},\"moveRemainingById\":{}},\"bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId\":{},\"bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn\":[]},\"endgameResult\":null,\"seatControllers\":{\"0\":{\"type\":\"human\"},\"1\":{\"type\":\"human\"},\"2\":{\"type\":\"human\"}}}}}"
+      }
+    ]
+  },
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T16-45-32-577Z\\stale-character-select-restore.png",
+  "logs": [
+    {
+      "at": "2026-09-10T16:45:41.447Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-10T16:45:41.454Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-10T16:45:41.510Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-10T16:45:41.544Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-10T16:45:47.371Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-10T16:45:47.900Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:45:47.897Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T16:45:47.901Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:47.899Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-10T16:45:47.904Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:45:47.904Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-10T16:45:48.384Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:45:48.383Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T16:45:48.385Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:48.384Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-10T16:45:49.110Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:49.109Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":1210}"
+    },
+    {
+      "at": "2026-09-10T16:45:49.110Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:49.109Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":725}"
+    },
+    {
+      "at": "2026-09-10T16:45:49.511Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/locales/zh-CN/game-betrayal.json net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:45:49.511Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/logos/logo_1_grid.svg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:45:49.546Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-10T16:45:49.556Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-10T16:45:49.569Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-10T16:45:49.600Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-10T16:45:49.979Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-10T16:45:50.529Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:45:50.528Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T16:45:50.530Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:50.529Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-10T16:45:50.534Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:45:50.534Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-10T16:45:50.583Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:45:50.581Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T16:45:50.583Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:50.582Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-10T16:45:50.940Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:50.939Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":410}"
+    },
+    {
+      "at": "2026-09-10T16:45:50.940Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:45:50.939Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":357}"
+    },
+    {
+      "at": "2026-09-10T16:45:58.037Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:45:58.035Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":7454}"
+    },
+    {
+      "at": "2026-09-10T16:45:58.132Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-10T16:45:58.136Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:45:58.137Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-10T16:45:58.138Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:45:58.139Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-10T16:45:58.183Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-10T16:45:58.265Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r2\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:45:58.265Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r2, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-10T16:45:59.148Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:00.986Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:01.906Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 15.0 FPS | P95 帧时 287.5ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-10T16:46:12.275Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/betrayal/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/knowledge.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-front.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/sanity.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/qidahen/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/speed.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-front.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.276Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/tictactoe/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/dicethrone/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/cardia/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/summonerwars/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/might.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.277Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/smashup/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/the-gang/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.278Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.279Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/fantasyrealms/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.279Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.280Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.280Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.280Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.280Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.280Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/mage-wars/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.280Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.281Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/src/games/splendor/cursor.ts net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.281Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.281Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.281Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.281Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/start-triple-room.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/isa-valencia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/might.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/rooms/compressed/room-back-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/title-banner.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/speed.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/knowledge.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.282Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/sanity.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-omen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-item.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/anita-hernandez.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/back-event.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-front.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/xia.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/markers/compressed/number-blank.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/explorers/compressed/father-warren-leung.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.283Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T16:46:12.341Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-10T16:46:12.344Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-10T16:46:12.374Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-10T16:46:12.397Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-10T16:46:12.652Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-10T16:46:13.212Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:46:13.211Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.213Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:46:13.212Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.216Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:46:13.216Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.252Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:46:13.250Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.252Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:46:13.251Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.290Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T16:46:13.288Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":38}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.593Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:46:13.592Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":380}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.593Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T16:46:13.592Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":342}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.754Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.762Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:46:13.763Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.763Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:46:13.763Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.800Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-10T16:46:13.874Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r2\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T16:46:13.874Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn:r2, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-10T16:46:15.331Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 34.0 FPS | P95 帧时 75.0ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-10T16:46:18.983Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 49.8 FPS | P95 帧时 25.0ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-10T16:46:22.608Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 49.7 FPS | P95 帧时 25.0ms — 低于 60fps"
+    }
+  ]
+}

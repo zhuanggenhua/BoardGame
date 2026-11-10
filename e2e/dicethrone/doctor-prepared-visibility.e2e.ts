@@ -15,7 +15,7 @@ test('奇异博士准备法术遮盖层收起与恢复', async ({ page, game }) 
     await page.setViewportSize({ width: 1920, height: 1080 });
     await game.openTestGame('dicethrone', { playerID: '0', disableLocalAiAutomation: true, seat0: 'human', seat1: 'human' });
     const media: Array<{ label: string; file: string; sha256: string }> = [];
-    for (const [label, width, height, count] of [['桌面单张', 1920, 1080, 1], ['桌面多张', 1920, 1080, 3], ['横屏单张', 812, 375, 1], ['横屏多张', 812, 375, 3]] as const) {
+    for (const [label, width, height, count] of [['桌面单张', 1920, 1080, 1], ['桌面多张', 1920, 1080, 3], ['桌面1440', 1440, 900, 1], ['横屏单张', 812, 375, 1], ['横屏多张', 812, 375, 3]] as const) {
         await page.setViewportSize({ width, height });
         const player = initHeroState('0', 'doctor_strange', random);
         const opponent = initHeroState('1', 'monk', random);
@@ -26,6 +26,14 @@ test('奇异博士准备法术遮盖层收起与恢复', async ({ page, game }) 
         const zone = page.locator('[data-prepared-spell-zone="public"]');
         const cards = zone.locator('[data-prepared-spell-card]');
         const toggle = page.getByTestId('dt-prepared-spells-visibility');
+        const toggleBounds = await toggle.boundingBox();
+        for (const resource of ['health', 'cp']) {
+            const resourceBounds = await page.locator(`[data-dicethrone-resource="${resource}"]`).first().boundingBox();
+            expect(toggleBounds && resourceBounds && (
+                toggleBounds.x + toggleBounds.width <= resourceBounds.x || resourceBounds.x + resourceBounds.width <= toggleBounds.x
+                || toggleBounds.y + toggleBounds.height <= resourceBounds.y || resourceBounds.y + resourceBounds.height <= toggleBounds.y
+            ), `${label} 法术显示按钮不得遮挡 ${resource}: ${JSON.stringify({ toggleBounds, resourceBounds })}`).toBeTruthy();
+        }
         await expect(cards).toHaveCount(count);
         await zone.locator('[data-card-atlas-img]').first().waitFor({ state: 'attached', timeout: 30000 });
         const tipToggle = page.locator('[data-tutorial-id="tip-board"] > button').first();

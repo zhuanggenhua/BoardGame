@@ -1,0 +1,23 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "其他升级卡牌是怎么盖的；继续重构",
+  "productAcceptance": "not-claimed",
+  "limitations": [
+    "第一张为不同角色的升级牌真实覆盖参考，第二张是奇异博士准备法术；只对照槽位与牌面呈现，不混同规则效果。",
+    "两张均为整屏画面，前者是历史参考，后者为当前源码代表态。"
+  ],
+  "media": [
+    {
+      "file": "01-旧升级牌覆盖参考.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\zhizhuxia-v2-final-user-view-20260920-png\\录入-04-蜘蛛侠重拳二级升级后.png",
+      "description": "蜘蛛侠升级牌覆盖技能槽的真实参考画面。",
+      "sha256": "ed6f59f0e2a63ff0f96df2979e9667f9618885cb578ee9d4680159940b646f7c"
+    },
+    {
+      "file": "02-奇异博士单张法术覆盖.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面单张.png",
+      "description": "当前奇异博士单张法术覆盖维山帝之书技能槽。",
+      "sha256": "7b60453963f5c6a68b71fb3200eab7b89da7382d911e2b265159581694fc0e75"
+    }
+  ]
+}

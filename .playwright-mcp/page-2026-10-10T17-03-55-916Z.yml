@@ -1,0 +1,28 @@
+- generic [active] [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - heading "E2E 图片画布" [level=1] [ref=f1e4]
+      - paragraph [ref=f1e5]: 正在读取截图目录...
+    - group "画布控制" [ref=f1e6]:
+      - button "-" [ref=f1e7] [cursor=pointer]
+      - button "+" [ref=f1e8] [cursor=pointer]
+      - button "适配" [ref=f1e9] [cursor=pointer]
+      - button "重置" [ref=f1e10] [cursor=pointer]
+      - button "复制文字" [ref=f1e11] [cursor=pointer]
+      - generic [ref=f1e12]:
+        - checkbox "自动刷新" [checked] [ref=f1e13]
+        - text: 自动刷新
+      - button "刷新" [ref=f1e14] [cursor=pointer]
+  - main [ref=f1e15]:
+    - generic [ref=f1e16]:
+      - complementary "截图索引" [ref=f1e17]:
+        - generic [ref=f1e18]:
+          - generic [ref=f1e19]:
+            - strong [ref=f1e20]: 截图索引
+            - generic [ref=f1e21]: 读取中...
+          - button "收起截图索引" [expanded] [ref=f1e22] [cursor=pointer]: <
+      - region "E2E 图片画布" [ref=f1e24]:
+        - generic: 正在读取截图目录...
+    - generic [ref=f1e26]:
+      - generic [ref=f1e27]: 正在读取...
+      - generic [ref=f1e28]: 拖拽画布或图片平移，滚轮缩放。

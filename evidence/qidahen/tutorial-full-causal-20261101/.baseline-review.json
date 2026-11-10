@@ -1,0 +1,329 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r144_visual_middle"
+  },
+  "claimScope": "whole-course-baseline-and-preservation",
+  "scope": "基于实际私读的历史整屏及R144关键整屏，对四项原始目标作独立基线/保留性审查；不是替代45张PNG逐图审查、战斗6张JPG及视频动态审查，不代替用户PC人工认可。",
+  "requirements": [
+    {
+      "requirement": "完整教程的目标与行动因果",
+      "status": "PASS",
+      "baselineSource": "实际私读R134开场与收尾，对照作者完整课程总账、独立52提示内容因果最终报告和R144当前关键步骤；R134为历史失败基线。",
+      "preservedInformation": "保留大明从辽北进攻叶赫的具体对象、共用轮盘、军队与手牌、纪年及三类胜利途径。；保留年中与新年、跨年训练与继续对局，而非把课程完成当作整局胜利。",
+      "preservedActions": "正式军屯与开垦、手牌征召及费用、研发、来源→选兵→目标、战术和占领。；外交/雇佣、维护/补给、纪年领取、人物及次年训练/征兵通过同一主链承接。",
+      "changes": "R134开场的泛扩军描述改成每纪年1威望→3威望→公开控制增长→夺叶赫的具体目的。；R14404说明辽东开垦取得税赋资格，10在年中兑现，49回到同一辽东人口预算且说明新增一兵后失去税赋条件。；R14426占领回接控制增长，42领取回接开场条件，51以新建兵目标及剩余手牌衔接续局。",
+      "duplicateDecision": "正式地图/卡牌/候选承接操作，教程只说明当前决策用途及新差异；已教过的宁远、外长城与同类第二/第三操作复用，不用另一组独立教学章节重复同一决策。",
+      "changeAuthority": "用户要求“把整个七大恨教程按正常对局的前因后果重做，别再只改03”；作者总账 D:/gongzuo/webgame/BoardGame/docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md。历史图片是被否定或失败基线，并非用户批准版本。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/00-frontier-goal.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/48-finish.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/01-PC-公开纪年与年度扩张目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-full-causal-20261101/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "核心操作与年度结算",
+      "status": "PASS",
+      "baselineSource": "实际私读R138战术/维护、R141锦州及R134收尾，对照R144中段全部16张和本次补读的年末/跨年关键图；行为证据用当前trace及生命周期JSON。",
+      "preservedInformation": "开放地图战斗仍保留辽北来源、叶赫目标、出兵与河宽、战术牌实体及按需战报。；山海关、锦州、内长城各自对象和防御后果没有被抽象成无地点费用列表。；保留普通超人口、非汉人前线及朝鲜补给差异、纪年费用与人物顺位。",
+      "preservedActions": "战术牌确认/取消、开始战斗、战后占领/撤回、展开/收起战报入口。；外交结束与雇佣建立区、维护/放弃维护、选择撤去旧守军或弃牌支持、纪年领取/顺延、人物选择与次年3训1征。",
+      "changes": "R138横压辽东兵堆的战术确认条迁到R144右侧空区，原确认和取消仍在。；R138维护时泛地图与压人口提示改为R144山海关/锦州/内长城相应取景；R141锦州被提示压住的城市名/图标在R14434完整可见。；R14436用大同原守军和新雇佣兵承担年末整编选择，42/43接纪年与人物，49/51继续下一年度。",
+      "duplicateDecision": "战报为按需展开的正式结果载体；教程解释占领目的而不再另造战斗摘要。维护标题、地图对象和选项各有职责，不以重复文字代替当前城市本体。",
+      "changeAuthority": "用户要求“把整个七大恨教程按正常对局的前因后果重做，别再只改03”；作者总账 D:/gongzuo/webgame/BoardGame/docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md。历史图片是被否定或失败基线，并非用户批准版本。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r138-causal-pc-20261101/desktop/18-tactic-card-selected.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r138-causal-pc-20261101/desktop/33-maintain-shanhai.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r141-causal-pc-20261101/desktop/34-abandon-jinzhou.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/48-finish.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/33-PC-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/36-PC-长城破败与边界宽度.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/37-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/43-PC-领取纪年卡的费用.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/44-PC-新纪年顺位与人物出场.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-full-causal-20261101/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "合法候选与提示可读性",
+      "status": "PASS",
+      "baselineSource": "实际私读R13509、R13818/33、R14134/49反例及R144对应修后；R144中段16图已经逐张核SHA256并落独立interaction-ui报告。",
+      "preservedInformation": "征召的六支2级与两支4级川兵两种合法候选同时存在且正文完整。；选兵保留辽北10个候选，绿色候选和金色已选可区分；选目标保留己方源与目标本体、名称、归属及人口。；手牌、纪年、驻军、明归属和人口在教程旁仍能被读取；已选战术保留完整抬起牌和检视入口。",
+      "preservedActions": "来源→选兵→目标分步选择；目标阶段保留重新选部队。；正式征召/征兵列表可比较其他合法候选；辽东推荐项仍在同一列表内，未用假候选替代。；维护/放弃、战术打出/取消及地图缩放/复位等现有入口保留。",
+      "changes": "R13509提示覆盖第二个征召候选，R14409将提示置于其下，两种候选完整。；R13818确认条遮兵、33提示遮皮岛人口，R14418右移确认条、33右移提示，兵/明归属/人口可辨。；R14134提示遮锦州，R14434提示避开城市名与城市图标。；R14149滚动行穿过固定标题，R14449标题与列表分离，辽东项完整处于可见列表内。",
+      "duplicateDecision": "绿色轮廓表达候选、金色边界表达已选、正式选项按钮承担提交，教程仅承担规则和因果说明；没有以说明文字列表替代地图/兵/卡牌。非当前决策的世界边缘普通HUD遮挡不升级为失败；当前候选与目标逐项审。",
+      "changeAuthority": "用户要求“把整个七大恨教程按正常对局的前因后果重做，别再只改03”；作者总账 D:/gongzuo/webgame/BoardGame/docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md。历史图片是被否定或失败基线，并非用户批准版本。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r135-causal-pc-20261101/desktop/09-recruit-troops.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r138-causal-pc-20261101/desktop/18-tactic-card-selected.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r138-causal-pc-20261101/desktop/33-maintain-shanhai.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r141-causal-pc-20261101/desktop/34-abandon-jinzhou.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r141-causal-pc-20261101/desktop/49-training-recruit-target.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/10-PC-辽北建军方式与完整候选.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/34-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/35-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-full-causal-20261101/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "PC完整流程与正常续局",
+      "status": "PASS",
+      "baselineSource": "实际私读R134终点和R141末段列表，对照R14449/51；工程事实直接读取R144 behavior-trace.json、late-progress.json及同run lifecycle/lifecycle-verification.json，独立复算当前718源码哈希。",
+      "preservedInformation": "教程完成后保留真实对局、叶赫控制、已获纪年1301、首点威望、当前新年度和剩余手牌。；保存仍包含完整core、回退历史和随机游标，不裁掉晚期历史换取可恢复。",
+      "preservedActions": "从正式PC教程入口全程推进至结束，课程退出后下一方真实输入。；刷新继续、上一步重做、重开、旧revision不恢复、菜单退出、退出后普通房间不复活旧教程。；主链晚期training-recruit-target刷新继续，保留71个回退检查点后完成流程。",
+      "changes": "R144完整trace终态PASS、76行为、52媒体；outcome为tutorialActive=false、year=1、claimed=[1301]、nextInputAccepted=true。；晚期原快照23851804字节编码为3320466字符，刷新前后core/history哈希、71检查点与随机游标106完全一致。；生命周期6项真实断言actual均等于expected=true；718浏览器消费源码逐文件SHA256与当前工作区相同，0漂移。",
+      "duplicateDecision": "正式教程状态及localSession仍为唯一对局/进度承载；本报告只核事实，没有创建第二份运行状态、替代续局入口或新的通过清单。",
+      "changeAuthority": "用户要求“把整个七大恨教程按正常对局的前因后果重做，别再只改03”；作者总账 D:/gongzuo/webgame/BoardGame/docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md。历史图片是被否定或失败基线，并非用户批准版本。 本项PASS仅为PC工程与原目标基线审查；PC用户人工认可pending，移动端未开始。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/48-finish.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r141-causal-pc-20261101/desktop/49-training-recruit-target.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-full-causal-20261101/media/50-PC-辽东征兵与新年度目标.png",
+        "evidence/qidahen/tutorial-full-causal-20261101/media/52-PC-首点威望与下一年度目标.png"
+      ],
+      "independentReviewFile": "evidence/qidahen/tutorial-full-causal-20261101/reviews/baseline-review-original.json",
+      "sourceReviewEntry": "/requirements/3"
+    }
+  ],
+  "supportingEvidence": {
+    "authorLedger": "D:/gongzuo/webgame/BoardGame/docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md",
+    "contentReview": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-full-causal-20261101/reviews/content-review-final.json",
+    "content": "52条内容因果记录全PASS；本次读取全部52条因果摘要及完整课程总账，当前annualTutorial及中英文语言包3文件SHA256均与报告绑定相同。",
+    "behaviorTrace": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/behavior-trace.json",
+    "lateProgress": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/late-progress.json",
+    "lifecycle": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/lifecycle/lifecycle-verification.json",
+    "wholePngReviews": [
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/visual-review-early.json",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/visual-review-middle.json",
+      "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/visual-review-late.json"
+    ],
+    "wholePngReviewSummary": "独立13+16+16张当前PNG审查报告均PASS；本报告所列after是本子代理实际私读的图，不把其他代理所读图列作自身私读。视频/战斗静态图另由独立报告负责。"
+  },
+  "sourceVerification": {
+    "filesChecked": 718,
+    "driftCount": 0,
+    "scope": "sourceIdentity.files[*].hash逐文件复算当前工作区SHA256"
+  },
+  "boundaries": [
+    "历史R134/R135/R138/R141均为被否定或失败基线，未称用户批准。",
+    "未修改产品代码、正式清单、查看器、其他代理报告；仅写本次两个审查JSON。",
+    "内容、图面、实际输入、生命周期、用户人工认可分开；本报告不代替视频动态图审、用户PC人工认可或移动端验收。",
+    "PC人工认可pending；移动端未开始。"
+  ],
+  "privatelyReadMedia": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/00-frontier-goal.png",
+      "sha256": "78252187c7c6b5c48e8e20f6cf56145fc87e6918bf7fe81a87896680499a3541",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r134-open-battle-pc-20261101/desktop/48-finish.png",
+      "sha256": "ea58b2edd49854af21d7508684122c03bea05a43902d28233f8612050bb75df4",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r135-causal-pc-20261101/desktop/09-recruit-troops.png",
+      "sha256": "53191061d32b4303eaf94c29f1ca084f1376d780114d8dc80c44583fb49878c1",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r138-causal-pc-20261101/desktop/18-tactic-card-selected.png",
+      "sha256": "f23144a883ec4fa7b479e52c7b187bc925998ab5b96afb4f8bccd28bfb7a1a85",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r138-causal-pc-20261101/desktop/33-maintain-shanhai.png",
+      "sha256": "5f7f67defdf97f7efdeb57a3ef065c3450cd80dd82ecf5696578582f0998955d",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r141-causal-pc-20261101/desktop/34-abandon-jinzhou.png",
+      "sha256": "2bc77e4eaefb5abe3dd2efad08135e66f6bbaba35366d7c13755b5a8c26e1693",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r141-causal-pc-20261101/desktop/49-training-recruit-target.png",
+      "sha256": "e505924497e4011cf78ffc8a08a6c49d93a6b2471f4dca01cdda95867bae602e",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/00-frontier-goal.png",
+      "sha256": "1796ac269beb9115801846bf692a1cfd445c8fd36709dcfc59769eebc3640b62",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/04-reclaim-target.png",
+      "sha256": "79e4765cc204290e01e5ca87e1dc716422f380f117aed3035d78753f4f460161",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/09-recruit-troops.png",
+      "sha256": "734bec6052ed88bdb687ed2dfff4d8e879b6b7c54fb4050eb22151ea793ea814",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/10-midyear.png",
+      "sha256": "ff7d6f9c6eea13e287be52a6e709abe4ddebe86e145983bf4ce4307949d22bb5",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/14-dispatch-troops.png",
+      "sha256": "a226c67e2f5869f84ff5d31e2bda46a5053cadc11e3befe782af3293bb0bef29",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/15-dispatch-troops-selected.png",
+      "sha256": "1f589d5879e18a037c0ea0855221bfedbbcf8e24af53c0ea50ebc9f54ecd0e31",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/16-dispatch-target.png",
+      "sha256": "07ee7d95435018214ed5d90d967cb08f0dbe4f98ba1006ca87a7c8739161fa1f",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/17-tactic-card.png",
+      "sha256": "c6d07f5f41c95da8f6f48a8bb5444c5100e3c97e1ee196203d4c3a04202fd628",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/18-tactic-card-selected.png",
+      "sha256": "a407d3aa2d3764c6e40262eb39d2c92db2f0c8d9c2fc2cd743492c4eedb24100",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/26-occupy.png",
+      "sha256": "1db9bbf04881fc190794b6d2b6e2a5ebe6a27b5738bf5a3cac3fed036d066d36",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/27-occupy-report.png",
+      "sha256": "77aa1a1934aeac1f6544ab67e3ef34d66dc2feae3de4e6f3ac7736206b38f17b",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/32-new-year.png",
+      "sha256": "af1e787e64327eb51e2a5de7eed8938aa88c733036888130f42fb46049823079",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/33-maintain-shanhai.png",
+      "sha256": "447f9705c14b5e9ef0162cca084345b8f25609b49cd2a2e0810ba6537754b7b8",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/34-abandon-jinzhou.png",
+      "sha256": "91cde1e1a60459350cc1badc333fff802f3b469746be841c45c1c7b15df7990f",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/35-abandon-inner-wall.png",
+      "sha256": "8da775808a873d9ff63f8faedbcf6c34f81331451107481db47949a885f22a95",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/36-upkeep-datong.png",
+      "sha256": "2f924fe059dd2ef9fe2bfb5d96c280333e3c5f6970f11550757ae9bfe5a7c35e",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/42-claim-year.png",
+      "sha256": "a3c5fbce12540ed25ee9bb4f5781de1346ebdbd1643c29f15656b1c8490bf5d2",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/43-new-order.png",
+      "sha256": "dc3b2faeeecbedac0d7a58d69ea7145f0efe224991c139c2244ee7bb0adf9b9d",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/49-training-recruit-target.png",
+      "sha256": "b39fabac7740099f77e45df12e5396668bcd5575b6d01e5437d3c1772bbc07a3",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/51-finish.png",
+      "sha256": "ac31511e70fdfa1b405939bd6f767121a87920075e3175f301433aed767b52bd",
+      "readBy": "/root/r144_visual_middle",
+      "readMode": "private-original-fullscreen"
+    }
+  ],
+  "evidenceHashes": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md",
+      "sha256": "adb2998e5d6c26957a788d9e52875294d72e068817a563ea2ad6ccc9dd02e3db"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-full-causal-20261101/reviews/content-review-final.json",
+      "sha256": "345c2e994a30344b6172d59eb84c645f9c14a314206d97c4748db964da44a886"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/behavior-trace.json",
+      "sha256": "01842e503d724deeaf7a1e580d27971d5b9573fed3d1a85c0e6fc5b1deb40220"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/late-progress.json",
+      "sha256": "3aae02a9e4d622f767859c6aaf7f8dd1a15f50d34e4f4a5f41739a551a1176d0"
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/lifecycle/lifecycle-verification.json",
+      "sha256": "f80092f452faab48982ec01d007f42bafdf5472d21f0e4580d3b8ab5411a6865"
+    }
+  ]
+}

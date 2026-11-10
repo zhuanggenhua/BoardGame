@@ -1,0 +1,56 @@
+{
+  "runId": "20261027-region-outline-r63",
+  "sourceRevision": "sha256:d1b51c5f65e6d1ed76cbb70fb29e74114e19896a0ba26bf6df9dfa14ae682c45",
+  "requirements": [
+    {
+      "requirement": "连续正式开局与轮盘军屯",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/00-辽东军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/03-辽东军屯结果.png"
+      ]
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/06-野战出兵与战术牌.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/08-叶赫部占领结果.png"
+      ]
+    },
+    {
+      "requirement": "手机长按检视",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/移动-01-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/移动-02-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/移动-03-检视返回后轻点银两选择支付.png"
+      ]
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/09-教程退出后同局继续.png"
+      ]
+    },
+    {
+      "requirement": "地区轮廓与真实地图输入",
+      "after": [
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/00-辽东军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261027-region-outline-r63-final/media/移动-01-突袭支付与手牌.png"
+      ]
+    }
+  ],
+  "traceFiles": [
+    "evidence/qidahen/behavior-traces/20261027-region-outline-r63/basic-opening-entry.json",
+    "evidence/qidahen/behavior-traces/20261027-region-outline-r63/basic-opening-natural-raid.json",
+    "evidence/qidahen/behavior-traces/20261027-region-outline-r63/basic-opening-mobile-hand-inspect.json"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "sourceLabelCount": 35,
+  "labelMismatches": [
+    {
+      "name": "辽西",
+      "point": [
+        724,
+        447
+      ]
+    }
+  ],
+  "disconnected": [],
+  "productionChanged": false
+}

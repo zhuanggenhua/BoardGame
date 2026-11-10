@@ -260,7 +260,7 @@ export function HomeVersionFooter({
 
     return (
         <div className={`${positionMode} z-30 inline-flex max-w-[calc(100vw-1.5rem)] items-end gap-3 select-none ${positionClassName}`} data-testid="home-version-footer-row">
-        {!isNativeAndroid && !compact && <span className={`home-download-hint whitespace-nowrap text-[0.7rem] md:text-[0.78rem] ${themeClasses.mutedText}`}>{t('home.appDownloadHint')}</span>}
+        {!isNativeAndroid && !compact && theme !== 'classic' && <span className={`home-download-hint whitespace-nowrap text-[0.7rem] md:text-[0.78rem] ${themeClasses.mutedText}`}>{t('home.appDownloadHint')}</span>}
         <button
             type="button"
             data-testid={testId}

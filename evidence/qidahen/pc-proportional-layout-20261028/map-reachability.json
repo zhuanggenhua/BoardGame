@@ -1,0 +1,41 @@
+{
+  "regionId": "city-region-28",
+  "covered": {
+    "id": "qidahen-map-population-city-region-28",
+    "x": 372.9865417480469,
+    "y": 308.5866394042969,
+    "width": 15.785003662109375,
+    "height": 15.785003662109375
+  },
+  "after": {
+    "x": 512.1463012695312,
+    "y": 184.5619659423828,
+    "width": 23.38616943359375,
+    "height": 23.386138916015625
+  },
+  "initialZoom": 1,
+  "finalZoom": "1.4815439999999998",
+  "initialPan": "0",
+  "finalPan": "-747.8687616665477",
+  "gestures": [
+    {
+      "distance": 140,
+      "previousPan": "0",
+      "nextPan": "-350"
+    },
+    {
+      "distance": 112.69186401367188,
+      "previousPan": "-350",
+      "nextPan": "-682.6594944587068"
+    }
+  ],
+  "sourceHashes": {
+    "src/games/qidahen/Board.tsx": "58f7cefc1ed85ff4fc290fa752eadf09cc23f557b7934035542cc28d564c4f10",
+    "src/games/qidahen/QidahenBoardShell.tsx": "651d8675033f2f8b4414265a97b1dcc2dd427988e6901d17b1b520bbdf58a5ee",
+    "src/games/qidahen/qidahen-board.css": "99bb115914340cec7aa8bf9d8637cbd050f46d91b9765f83acc68fd12d5e2fc1",
+    "src/games/qidahen/ui/QidahenHandInteractionTray.tsx": "929540561c5f9b14e6fbe070b26d3d41f94b3e2b320e5ee2366cfa730f9a9f0a",
+    "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx": "b563738c799cf9db56b0b747ba9e4881ce6628d47889a5eedff0d78e6f89d1ce",
+    "src/games/qidahen/ui/populationLayout.ts": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82",
+    "src/games/qidahen/data/runtime-region-graph.json": "0f994d60cf192c7771aa88fe74d9c67c0b9c6fc341e50bdd1424545cd252cb45"
+  }
+}

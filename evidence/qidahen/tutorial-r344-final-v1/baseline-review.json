@@ -1,0 +1,163 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "name": "开局控制章",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-token-r298\\frontier-goal.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-final-v1\\media\\01-00-frontier-goal.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-final-v1\\media\\02-01-frontier-target.png"
+      ],
+      "reviewedCopies": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\01-修改前-开局控制章重叠.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\02-修改后-开局控制章.png"
+      ],
+      "sha256": {
+        "before": "479c9c3d81cf57837da3facfe82e9aec12f70ad7f63f2c127bb528983440d90c",
+        "after": [
+          "1ced14ee96eca2e9c3c9eb187705caaf9149c3e23a31a1121f5b069165f602b1",
+          "cd30d49b01bd90954478144727d53c1ff7c5fc67cc03376f3098f4274e5c49eb"
+        ]
+      },
+      "status": "PASS",
+      "observation": "修改前为单屏开局纪年卡目标介绍，修改后拆为连续两步：00 显示得分与控制地区条件，01 显示“这一年从辽北夺取叶赫部，争取第一张纪年卡”，且叶赫部目标高亮；两步合起来承接原信息。教程流程定义中 frontier-goal 紧接 frontier-target，生命周期测试也明确从前者点击下一步等待后者。修改前朵颜部与山海关附近两个明控制章重叠，00 中分开且地名更可辨。00 与修改前地图视野大体一致、均未显示百分比；01 显示 120% 且视角变化。此为已审截图及流程定义的局部比较，不证明该截图生成时实际点击链或全部视角无退步。",
+      "contract": {
+        "requirement": "开局控制章与地区识别",
+        "baselineSource": "前图是单屏开局目标；后图为 00 年度目标和 01 具体进攻目标。顺序见 src/games/qidahen/annualTutorial.ts 的 frontier-goal 与 frontier-target 连续定义，以及 e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts 的下一步断言。",
+        "preservedInformation": "得分、年度控制地区条件、从辽北夺取叶赫部及争取第一张纪年卡的信息分别在后两屏可见；01 高亮叶赫部。",
+        "preservedActions": "00 显示下一步；01 显示上一步与下一步；流程定义和测试源码支持步骤顺序，静态图片和源码本身不证明该次截图生成时点击成功。",
+        "changes": "原单屏说明拆成相邻两步；重叠控制章分开，部分空方块出现阵营文字；01 地图缩放 120% 并聚焦目标。",
+        "duplicateDecision": "年度目标规则和具体行动分布于连续两屏，各有不同信息；所审图片未发现原具体目标被删除。",
+        "changeAuthority": "用户要求对照画面、部队归属和相关信息；拆步可从当前截图与流程源码核对，具体设计授权以用户及项目记录为准。"
+      },
+      "requirement": "开局控制章与地区识别",
+      "baselineSource": "前图是单屏开局目标；后图为 00 年度目标和 01 具体进攻目标。顺序见 src/games/qidahen/annualTutorial.ts 的 frontier-goal 与 frontier-target 连续定义，以及 e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts 的下一步断言。",
+      "preservedInformation": "得分、年度控制地区条件、从辽北夺取叶赫部及争取第一张纪年卡的信息分别在后两屏可见；01 高亮叶赫部。",
+      "preservedActions": "00 显示下一步；01 显示上一步与下一步；流程定义和测试源码支持步骤顺序，静态图片和源码本身不证明该次截图生成时点击成功。",
+      "changes": "原单屏说明拆成相邻两步；重叠控制章分开，部分空方块出现阵营文字；01 地图缩放 120% 并聚焦目标。",
+      "duplicateDecision": "年度目标规则和具体行动分布于连续两屏，各有不同信息；所审图片未发现原具体目标被删除。",
+      "changeAuthority": "用户要求对照画面、部队归属和相关信息；拆步可从当前截图与流程源码核对，具体设计授权以用户及项目记录为准。",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\r344-comparison-independent.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "name": "进攻目标兵组",
+      "before": [
+        "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r297-gameui-pc-20261108\\desktop\\17-dispatch-target.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-final-v1\\media\\22-21-dispatch-target.png"
+      ],
+      "reviewedCopies": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\03-修改前-进攻目标.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\04-修改后-进攻目标.png"
+      ],
+      "sha256": {
+        "before": "1c3ec2506430c2b170ad87416144677750ba93377df43c2f306015b2f6a3f1e6",
+        "after": [
+          "ecdbc165c886f3d32f13897fcd9bcea93f38e90af691163ebd7e4920002eb638"
+        ]
+      },
+      "status": "PASS",
+      "observation": "两图均为选择进攻叶赫部目标阶段，右侧均有重新选择部队，提示均说守方可选择避战；修改前缩放 182%，兵牌面板左侧被轮盘挡住，修改后为 120%，显示“辽北”标题、完整兵牌、选中数和从辽北明章连接到面板的线，叶赫部目标也可见，局部可读性与归属改善。视角和缩放不同，不能当作同像素或证明同缩放下无退步。",
+      "contract": {
+        "requirement": "进攻来源目标与兵组归属",
+        "baselineSource": "两张进攻叶赫部选择目标的整屏截图。",
+        "preservedInformation": "叶赫部目标、避战提示、选中兵牌与数量、重新选择部队入口均可见；旧图被轮盘挡住的兵牌无法逐个核对。",
+        "preservedActions": "两图均显示重新选择部队和上一步入口；静态图不证明点击有效。",
+        "changes": "缩放 182% 降至 120%，地图视角改变；面板远离轮盘并显示辽北标题和归属线。",
+        "duplicateDecision": "未见可据截图判断需删除的重复信息；不推断代码复用。",
+        "changeAuthority": "用户要求比较目标、兵组归属和布局；截图无法证明各具体代码变更的授权。"
+      },
+      "requirement": "进攻来源目标与兵组归属",
+      "baselineSource": "两张进攻叶赫部选择目标的整屏截图。",
+      "preservedInformation": "叶赫部目标、避战提示、选中兵牌与数量、重新选择部队入口均可见；旧图被轮盘挡住的兵牌无法逐个核对。",
+      "preservedActions": "两图均显示重新选择部队和上一步入口；静态图不证明点击有效。",
+      "changes": "缩放 182% 降至 120%，地图视角改变；面板远离轮盘并显示辽北标题和归属线。",
+      "duplicateDecision": "未见可据截图判断需删除的重复信息；不推断代码复用。",
+      "changeAuthority": "用户要求比较目标、兵组归属和布局；截图无法证明各具体代码变更的授权。",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\r344-comparison-independent.json",
+      "sourceReviewEntry": "/items/1"
+    },
+    {
+      "name": "外长城",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-wall-r292\\abandon-outer-wall.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-final-v1\\media\\44-43-abandon-outer-wall.png"
+      ],
+      "reviewedCopies": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\05-修改前-外长城维护.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\06-修改后-外长城维护.png"
+      ],
+      "sha256": {
+        "before": "e0f68546d69ba3cfc0061abbe19e31fadb354aaf1c9d1bac8a1d160d6aaae5b7",
+        "after": [
+          "cae87ea9068de6f44213a3546ce5067037979ba6c723cb04416dc2861c6a26f6"
+        ]
+      },
+      "status": "PASS",
+      "observation": "两图均显示大明维护外长城决策，保留弃 6 张手牌维护和放弃维护两项。修改前缩放数字未显示，墙线左段被左侧两张牌及左下牌堆遮挡；修改后显示 158%，地图聚焦外长城，青色墙线主要可见，左侧卡牌和牌堆不再压住这段墙线。视角和缩放不同，右侧仍有维护面板临近墙线末端，不能据此宣称相同视角下整条墙线全无影响。",
+      "contract": {
+        "requirement": "长城维护与墙线",
+        "baselineSource": "两张均为大明维护外长城的决策状态。",
+        "preservedInformation": "外长城标签、墙线、6 数字标记、两张纪年相关卡和维护两种选项均可见。",
+        "preservedActions": "两图都有弃 6 张手牌维护与放弃维护；静态图不证明实际执行。",
+        "changes": "后图聚焦墙线且显示 158%，地图平移；明抽牌堆由左下移到右侧，左侧卡牌仍在但不覆盖所示墙线。",
+        "duplicateDecision": "墙线、牌堆与纪年卡职责不同；仅凭截图无法判定其他重复内容。",
+        "changeAuthority": "用户要求对比墙线与牌堆布局；图片不能证明实现细节或具体变更授权。"
+      },
+      "requirement": "长城维护与墙线",
+      "baselineSource": "两张均为大明维护外长城的决策状态。",
+      "preservedInformation": "外长城标签、墙线、6 数字标记、两张纪年相关卡和维护两种选项均可见。",
+      "preservedActions": "两图都有弃 6 张手牌维护与放弃维护；静态图不证明实际执行。",
+      "changes": "后图聚焦墙线且显示 158%，地图平移；明抽牌堆由左下移到右侧，左侧卡牌仍在但不覆盖所示墙线。",
+      "duplicateDecision": "墙线、牌堆与纪年卡职责不同；仅凭截图无法判定其他重复内容。",
+      "changeAuthority": "用户要求对比墙线与牌堆布局；图片不能证明实现细节或具体变更授权。",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\r344-comparison-independent.json",
+      "sourceReviewEntry": "/items/2"
+    },
+    {
+      "name": "征兵兵组",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r329-surfaces\\training-recruit-target.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-final-v1\\media\\59-58-training-recruit-target.png"
+      ],
+      "reviewedCopies": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\07-修改前-征兵地图.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-r344-before-after\\08-修改后-征兵地图.png"
+      ],
+      "sha256": {
+        "before": "4779bc43fd7d82e48830b92b26d259df77c07e3859c52016bc2f9ddae5532137",
+        "after": [
+          "7d5d169566eba1b64037c637ad35982750317c3f97b4fa143c4f8300c387ee26"
+        ]
+      },
+      "status": "PASS",
+      "observation": "两图均为辽东建军，教程说明 4 人口、3 支部队并建立 1 支 2 级正规军，提示均为已完成 3/4 次。修改前缩放 182%，辽北兵组面板被右侧屏幕截断，并受朝鲜牌堆和提示遮挡；修改后缩放 120%，辽北面板完整在屏内，七张兵牌可见，连线指向辽北明章，辽东目标和其三支部队仍可见。视野改变且缩放不同，不证明 182% 下同样无裁切。",
+      "contract": {
+        "requirement": "征兵地区与兵组归属",
+        "baselineSource": "两张均为辽东训练征兵选择建军地区的整屏截图。",
+        "preservedInformation": "辽东教程说明、4 人口、三支部队、3/4 进度、辽北兵组标题和目标区域均可见；前图兵牌被截断无法逐一核对。",
+        "preservedActions": "两图均显示选择建军地区和上一步；静态图不证明目标可点击或建军成功。",
+        "changes": "缩放由 182% 降至 120%，镜头拉远；辽北面板移至画面右下完整展示并以连线关联来源。",
+        "duplicateDecision": "辽北兵组与辽东目标是不同地区，不应按邻近关系视为重复；截图不足以判断代码重复。",
+        "changeAuthority": "用户要求比较征兵兵组和归属；图片不能证明具体实现变更的授权。"
+      },
+      "requirement": "征兵地区与兵组归属",
+      "baselineSource": "两张均为辽东训练征兵选择建军地区的整屏截图。",
+      "preservedInformation": "辽东教程说明、4 人口、三支部队、3/4 进度、辽北兵组标题和目标区域均可见；前图兵牌被截断无法逐一核对。",
+      "preservedActions": "两图均显示选择建军地区和上一步；静态图不证明目标可点击或建军成功。",
+      "changes": "缩放由 182% 降至 120%，镜头拉远；辽北面板移至画面右下完整展示并以连线关联来源。",
+      "duplicateDecision": "辽北兵组与辽东目标是不同地区，不应按邻近关系视为重复；截图不足以判断代码重复。",
+      "changeAuthority": "用户要求比较征兵兵组和归属；图片不能证明具体实现变更的授权。",
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\r344-comparison-independent.json",
+      "sourceReviewEntry": "/items/3"
+    }
+  ]
+}

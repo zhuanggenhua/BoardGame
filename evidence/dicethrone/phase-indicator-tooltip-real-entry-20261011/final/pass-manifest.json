@@ -1,0 +1,134 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-11T07:57:55.857Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "截图来自真实 Dice Throne 页面，并通过真实鼠标悬浮打开阶段说明 tip。",
+      "status": "PASS",
+      "evidence": [
+        "真实 /play/dicethrone 入口、真实阶段项 hover、info-tooltip 可见。",
+        "同一次运行输出 PHASE_TOOLTIP_METRICS，标题为主要阶段，正文包含三条阶段说明。"
+      ]
+    },
+    {
+      "requirement": "交付对象是阶段指示项旁边解释阶段含义的 tip，不是手牌 hover，也不是牌池卡牌 hover。",
+      "status": "PASS",
+      "evidence": [
+        "03-labeled-阶段说明tip.png 直接圈出左侧阶段列表第 3 项右侧的阶段说明浮层。",
+        "视觉审阅确认标注指向阶段说明浮层，未指向手牌或牌池。"
+      ]
+    },
+    {
+      "requirement": "tip 保留淡入，但不再发生方向性飞入或位移。",
+      "status": "PASS",
+      "evidence": [
+        "InfoTooltip class 为 animate-in fade-in duration-200，已移除 slide-in-from-left-[0.5vw]。",
+        "真实 E2E metrics：transform 为 none，opacity 为 1，className 不含 slide-in-from-left。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/final/01-阶段项-未悬浮.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/final/02-阶段说明tip-稳定态.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/final/03-labeled-阶段说明tip.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/final/04-阶段项-移出后.jpg"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/phase-indicator-tooltip-real-entry-20261011/final/02-阶段说明tip-稳定态.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "visual_review"
+    },
+    "media": [
+      {
+        "path": "01-阶段项-未悬浮.jpg",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "阶段列表可见但没有悬浮说明框，作为目标对象出现前的真实牌桌状态。"
+      },
+      {
+        "path": "02-阶段说明tip-稳定态.jpg",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "真实悬浮阶段项后说明浮层稳定贴在阶段项右侧并保持可读。"
+      },
+      {
+        "path": "03-labeled-阶段说明tip.png",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "圈选图直接标出阶段列表右侧解释阶段含义的说明浮层。"
+      },
+      {
+        "path": "04-阶段项-移出后.jpg",
+        "status": "PASS",
+        "checks": [
+          "target-visible",
+          "interaction-ui",
+          "layout-readable",
+          "no-error"
+        ],
+        "observation": "鼠标移出阶段项后说明浮层消失，牌桌回到稳定可操作状态。"
+      }
+    ]
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/components/__tests__/InfoTooltipLayer.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/phase-indicator-tooltip-real-entry.tmp.e2e.ts 阶段指示 hover 说明 tip 真实截图"
+    ],
+    "evidence": [
+      "InfoTooltipLayer.test.tsx：3 tests passed。",
+      "真实 Dice Throne E2E：1 passed；tip metrics 为 transform none、opacity 1。"
+    ]
+  },
+  "audit": {
+    "verdictReason": "本轮已移除阶段说明 tip 的方向性位移动效，保留淡入；最终媒体目录已扁平化并清理旧路径引用。",
+    "targetObject": "Dice Throne 左侧阶段指示项 hover 后出现的阶段说明 tip",
+    "excludedObjects": [
+      "手牌 hover",
+      "牌池卡牌 hover"
+    ],
+    "codeModified": true,
+    "changedFiles": [
+      "src/components/common/overlays/InfoTooltip.tsx",
+      "src/components/__tests__/InfoTooltipLayer.test.tsx"
+    ],
+    "similarTooltipAudit": [
+      "InfoTooltip 的所有运行时调用点统一继承淡入、无位移。",
+      "BreakdownTooltip、Mage Wars HUD tip、Qidahen 功能说明 tip 未发现同类方向性飞入。",
+      "菜单、教程卡片、离线/错误提示条的空间动效属于不同 UI 语义，本轮保留。"
+    ]
+  }
+}

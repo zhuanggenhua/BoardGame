@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793672092363-ohpdqg/AI自主出牌并交还真人.png",
+      "chainId": "fate-local-ai-natural-round",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "uiStateId": "local-ai-0",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "AI自主出牌并交还真人.png",
+      "behaviorStepId": "automatic-opponents-played",
+      "sourceRevision": "tree-sha256:7cc2169a059faba503ccad7f9c434a19ba3244a95c689a0228974f373fcf380d",
+      "description": "AI自主出牌并交还真人.png",
+      "viewport": "desktop",
+      "requirements": [
+        "正式本地AI自行选择合法命令并交还真人，下一轮可操作"
+      ],
+      "sourceRun": "1793672117147-382500-44f2ae35-f50c-42c7-82f2-4d5776faa2fa",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793672092363-ohpdqg"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793672092363-ohpdqg/本地AI自然换轮后真人继续准备.png",
+      "chainId": "fate-local-ai-natural-round",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "uiStateId": "local-ai-1",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "本地AI自然换轮后真人继续准备.png",
+      "behaviorStepId": "next-round",
+      "sourceRevision": "tree-sha256:7cc2169a059faba503ccad7f9c434a19ba3244a95c689a0228974f373fcf380d",
+      "description": "本地AI自然换轮后真人继续准备.png",
+      "viewport": "desktop",
+      "requirements": [
+        "正式本地AI自行选择合法命令并交还真人，下一轮可操作"
+      ],
+      "sourceRun": "1793672117147-382500-44f2ae35-f50c-42c7-82f2-4d5776faa2fa",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/local-ai-real-entry.e2e/正式本地自动玩家独立出牌并交还真人，完成自然一轮后可继续准备/_runs/e2e-1793672092363-ohpdqg"
+    }
+  ]
+}

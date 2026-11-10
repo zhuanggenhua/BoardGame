@@ -1,0 +1,179 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "online",
+  "sourceRun": "e2e-1792861790020-21xayk",
+  "sourceRevision": "6631f38851fb74e46a525d470fe9a7755e8afa2cc86f3be8fcda76cd980361ef",
+  "status": "PASS",
+  "visualStatus": "PASS",
+  "outcome": "真实双人房间可选索尔并完成开局，角色板显示九槽与起手牌",
+  "steps": [
+    {
+      "id": "online-01",
+      "action": "真实创建双人房间并由主机选择索尔",
+      "before": {
+        "visible": {
+          "text": "选择你的英雄\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792861802461(你)\nP2\n武僧\nGuest-1792861802690\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "选择你的英雄\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792861802461(你)\nP2\n武僧\nGuest-1792861802690\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "选角阶段",
+          "actual": "setup",
+          "expected": "setup"
+        },
+        {
+          "name": "索尔已被选择",
+          "actual": "thor",
+          "expected": "thor"
+        },
+        {
+          "name": "实施中标记",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "online-02",
+      "action": "双方准备并开局后确认索尔角色板",
+      "before": {
+        "visible": {
+          "text": "选择你的英雄\n实施中\n索尔\nP1\n武僧\nP2\n狂战士\n烈火术士\n暗影刺客\n月精灵\n圣骑士\n枪手\n武士\n树精\n忍者\n战术家\n咒缚海盗\n工匠\n炽天使\n实施中\n女猎手\n实施中\n吸血鬼领主\n实施中\n蜘蛛侠\nP1\n索尔\nHost-1792861802461(你)\nP2\n武僧\nGuest-1792861802690\n等待全员就绪"
+        },
+        "authoritative": {
+          "phase": "setup",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": false,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": []
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": []
+            }
+          }
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "🛠️\nGuest-1792861802690\n武僧\n50\n2\n4\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n2\n手动响应\n牌堆\n29\n<\n投掷\n确认\n下一阶段\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n弃牌堆\n2\n2\n2\n2"
+        },
+        "authoritative": {
+          "phase": "main1",
+          "selectedCharacters": {
+            "0": "thor",
+            "1": "monk"
+          },
+          "hostStarted": true,
+          "players": {
+            "0": {
+              "characterId": "thor",
+              "hand": [
+                "card-super-double",
+                "card-thor-impenetrable",
+                "upgrade-thor-power-of-thunder-2",
+                "card-what-status"
+              ]
+            },
+            "1": {
+              "characterId": "monk",
+              "hand": [
+                "hidden-card-0",
+                "hidden-card-1",
+                "hidden-card-2",
+                "hidden-card-3"
+              ]
+            }
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "开局标记",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "主机角色",
+          "actual": "thor",
+          "expected": "thor"
+        },
+        {
+          "name": "索尔起手牌数",
+          "actual": 4,
+          "expected": 4
+        },
+        {
+          "name": "开局阶段",
+          "actual": "main1",
+          "expected": "main1"
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "online-01-ui",
+      "stepId": "online-01",
+      "change": "layout",
+      "viewport": "desktop",
+      "viewportSize": "1920x1080",
+      "sha256": "ed5935b9b19650cf634a3eb929130e4edce7d22bb4d8f65121fb2f71a41b23b4"
+    },
+    {
+      "id": "online-02-ui",
+      "stepId": "online-02",
+      "change": "panel",
+      "viewport": "desktop",
+      "viewportSize": "1920x1080",
+      "sha256": "c9a0a22273f8dbc0e836d80f62d7b3b1f326e833c7782f9d282ed0c2aeb50491"
+    }
+  ]
+}

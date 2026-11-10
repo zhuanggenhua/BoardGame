@@ -1,0 +1,116 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-22",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "sections": [
+      "原始问题直接证据闭环",
+      "流程截图"
+    ],
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "evidence/山屋惊魂-全员确认与物理骰子-20260922"
+  },
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts '--grep=普通预兆触发作祟时先确认预兆和检定|普通物品停留三秒后自动飞入持有区' --reporter=line",
+      "result": "2 passed",
+      "scope": "同一次真实页面运行覆盖预兆确认、物理骰子滚动中与停稳、普通物品三秒自动推进、可改骰结果物品三人确认"
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/betrayal-possessions-and-recent-roll-rerolls.test.ts src/games/betrayal/__tests__/ai.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=dot",
+      "result": "2 files passed; 95 tests passed",
+      "scope": "物品确认分类、最近投骰重掷和 Betrayal AI 回归"
+    },
+    {
+      "command": "npm run spec:lint",
+      "result": "spec-lint: OK",
+      "scope": "项目规范结构"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "物理骰子必须证明滚动过程，不能只给停稳截图。",
+      "status": "PASS",
+      "evidence": [
+        "同一次真实预兆页面运行中，先等待并截图 data-dice-physics-motion=rolling，再等待 data-dice-physics-motion=settled。",
+        "滚动帧保留实体骰盘、预兆牌和当前作祟检定上下文；停稳结果由同一用例继续验证。"
+      ],
+      "images": [
+        "02-物理骰子滚动中.jpg"
+      ],
+      "uncovered": "本清单覆盖预兆作祟检定的物理骰子，不外推其它游戏或其它投骰入口。"
+    },
+    {
+      "requirement": "预兆在所有玩家确认完成前不能关闭；本人确认后仍要保留可见。",
+      "status": "PASS",
+      "evidence": [
+        "初始页面显示确认 0/3。",
+        "本人确认后截图显示已确认 1/3，预兆牌和骰盘仍在页面上。",
+        "同一真实用例继续让其余玩家确认，之后才进入剧本书承接。"
+      ],
+      "images": [
+        "01-预兆与作祟检定同屏.jpg",
+        "03-本人确认后仍等待1-3.jpg",
+        "04-全员确认后承接剧本书.jpg"
+      ],
+      "uncovered": "中间截图直接覆盖 1/3；其余玩家通过同一 E2E 真实确认链完成，未额外截取 2/3 静态图。"
+    },
+    {
+      "requirement": "普通物品默认停留三秒后自动进入实际持有区。",
+      "status": "PASS",
+      "evidence": [
+        "急救包页面先显示确认 0/1，2.5 秒时仍保持可见。",
+        "同一页面继续等待自动确认，结算面板关闭，急救包进入当前持有区。",
+        "截图来自本轮修复后的同一次 E2E 运行。"
+      ],
+      "images": [
+        "05-普通物品三秒等待中.jpg",
+        "06-普通物品三秒后进入持有区.jpg"
+      ],
+      "uncovered": "本清单用急救包代表普通单步物品，不外推所有物品的卡面效果实现。"
+    },
+    {
+      "requirement": "可能改写骰子结果的物品不能自动关闭，必须等所有相关玩家确认。",
+      "status": "PASS",
+      "evidence": [
+        "幸运硬币在确认 0/3 时等待超过 3.5 秒仍未关闭。",
+        "本人确认后显示已确认 1/3，3.5 秒后仍未关闭。",
+        "E2E 继续派发剩余两名玩家的真实确认，最终才清空展示并进入持有区。"
+      ],
+      "images": [
+        "07-可改骰物品本人确认后仍等待.jpg"
+      ],
+      "uncovered": "本清单证明发现展示的确认门槛，不替代幸运硬币实际重掷过程的独立 E2E。"
+    },
+    {
+      "requirement": "固定规则已在卡面承载时，卡外描述不能重复成废话，但不能删除骰子操作和结果承载。",
+      "status": "PASS",
+      "evidence": [
+        "作者源已移除“按卡面规则持有”占位句。",
+        "预兆页面仍保留作祟检定类型、实体骰盘和总点数承载。",
+        "相关物品 / 最近投骰领域测试 95/95 通过，规范结构检查通过。"
+      ],
+      "images": [
+        "01-预兆与作祟检定同屏.jpg",
+        "02-物理骰子滚动中.jpg"
+      ],
+      "uncovered": "本项的文案去重由源代码与领域测试补足；截图只证明玩家可见的骰子承载仍在。"
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\01-预兆与作祟检定同屏.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\02-物理骰子滚动中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\03-本人确认后仍等待1-3.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\04-全员确认后承接剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\05-普通物品三秒等待中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\06-普通物品三秒后进入持有区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-全员确认与物理骰子-20260922\\07-可改骰物品本人确认后仍等待.jpg"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "recordedBy": "/root",
+  "recordedAt": "2026-11-01T10:33:01.629Z",
+  "scope": "当前新交互视觉与实际入口证据；用户验收仍待确认",
+  "media": 49,
+  "visualRows": 49,
+  "independentGroups": 25,
+  "evidenceValidation": "REVISE",
+  "viewerDryRun": "PASS",
+  "viewerUrl": "http://127.0.0.1:4867/?key=ef06e9a25e36",
+  "viewerHttpStatuses": [
+    200,
+    200,
+    200
+  ],
+  "allHttpMediaHashesMatched": true,
+  "currentDependencyLists": 14,
+  "allActualDependenciesMatched": true,
+  "unchangedCasesTextEquivalent": true,
+  "behaviorTests": "7 files; 73 passed",
+  "eslint": "0 errors; 4 existing warnings",
+  "specLint": "OK",
+  "scopedDiffCheck": "PASS",
+  "implementationStatus": "in_progress",
+  "userAccepted": false,
+  "rejectedAt": "2026-11-01T11:12:55.089Z",
+  "rejection": "基线尚未正确锁定，未经授权重排，整组49图通过撤销"
+}

@@ -1,0 +1,824 @@
+{
+  "schemaVersion": 1,
+  "reviewRunId": "e2e-1793397129949-ge068k",
+  "scope": "四套件真实入口当前源码全屏截图；排序索引#0–50及#80–102逐图视觉检查目标可见、交互界面、布局可读、无错误；#51–79待补；不裁决规则数值",
+  "reviewedCount": 74,
+  "totalCount": 103,
+  "status": "in_progress",
+  "entries": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\01-不愧是我同骰两次-队友持有真实卡牌与掷骰归属可见.png",
+      "status": "PASS",
+      "observation": "2v2牌桌上队友手中的“不愧是我”卡牌可见；手牌默认露出态的下边框与末端插画被视口底边截去，但规则正文完整可读。索尔右侧骰盘和四名玩家区域可见；符合默认 idle peek。sidecar 为 1920×1080、offensiveRoll，手牌 rect bottom=1118.39，仅作辅助。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\01-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "status": "PASS",
+      "observation": "队友出牌后的重掷选择态仍使用右侧旧骰盘。顶部居中提示、五颗骰子候选、取消和跳过入口同时可见；卡牌放大预览没有遮住骰盘或操作。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\01-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "status": "PASS",
+      "observation": "结算后的右侧骰盘显示重掷结果，玩家区域仍可辨认；当前无提示或弹窗，画面未见错误/调试信息。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\01-不愧是我同骰两次-提示说明重投次数与下一步确认.png",
+      "status": "PASS",
+      "observation": "顶部居中提示显示重掷选择已就绪并说明下一步需确认；骰盘上的已选骰、取消和确认操作可见，提示没有遮住保护区。sidecar 标记 hint placement=top-center 且不与骰盘/提示条重叠。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\02-我又行了任选两骰-队友持有真实卡牌与掷骰归属可见.png",
+      "status": "PASS",
+      "observation": "队友的“我又行了!”卡牌处于手牌默认露出态，规则正文可读，卡片下缘贴近视口底边；索尔骰盘仍完整可见，未见错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\02-我又行了任选两骰-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "status": "PASS",
+      "observation": "队友卡牌放大预览可完整阅读，覆盖角色板中部插画但不遮挡右侧候选骰和操作；顶部提示仍可见，牌桌结构可辨认。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\02-我又行了任选两骰-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "status": "PASS",
+      "observation": "结算帧展示更新后的骰面和牌桌，骰盘与玩家区可见，未见错误或调试信息。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\02-我又行了任选两骰-提示说明重投次数与下一步确认.png",
+      "status": "PASS",
+      "observation": "顶部提示显示本次重掷选择进度和剩余次数；右侧骰盘上选中的骰子可辨，取消与确认入口可见，未遮挡候选本体。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\03-就这防御骰重掷-队友持有真实卡牌与掷骰归属可见.png",
+      "status": "PASS",
+      "observation": "队友手牌中的“就这?”卡牌可见；手牌默认露出态下缘被视口边缘截去，但卡面规则文字可读。防御阶段骰盘及四人牌桌均可见。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\03-就这防御骰重掷-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "status": "PASS",
+      "observation": "“就这?”完整卡牌放大预览位于画面中央，标题和规则正文可读；虽然覆盖角色板部分插画，但未遮住右侧骰盘候选/操作，顶部提示可见。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\03-就这防御骰重掷-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "status": "PASS",
+      "observation": "防御掷骰结算后，右侧骰盘显示骰面结果；索尔板面、队友栏与阶段栏完整可辨，无新增提示遮挡或可见错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\03-就这防御骰重掷-提示说明重投次数与下一步确认.png",
+      "status": "PASS",
+      "observation": "顶部提示显示重掷已选2/5及剩余3次；右侧骰盘的两个选中标记清楚，取消和确认重投按钮可见。提示未挡候选。sidecar 标记 top-center 且避开骰盘和顶部区域。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\04-下次一定触发前索尔本人处于八点受伤响应.png",
+      "status": "PASS",
+      "observation": "索尔处于伤害响应窗口，右侧五颗骰及阶段/队友区域清楚；中央“可以响应/跳过”承接当前响应决定，未遮挡骰盘。未见错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\05-队友打出下次一定后索尔待结算伤害从八降至二.png",
+      "status": "PASS",
+      "observation": "“下次一定!”正式卡牌特写显示在中央，标题及防止即将受到伤害的规则文字可读；特写盖住部分角色板插画，但骰盘与牌桌响应区域仍可见。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793397129949-ge068k\\06-索尔确认继续受伤后只扣除剩余二点生命.png",
+      "status": "PASS",
+      "observation": "伤害结算帧中索尔生命条的-2变化清楚，右侧骰盘和玩家区域仍可见；无提示层遮挡或错误信息。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔奥丁之力II可用原确认入口跳过额外重掷\\_runs\\e2e-1793397129949-ge068k\\01-奥丁效果骰空选时沿用原确认入口.png",
+      "status": "PASS",
+      "observation": "奥丁之力 II 选择态保留原右侧五骰盘、骰子候选和原“确认”入口；橙色说明贴骰盘上方，符合效果骰提示的 DiceTray 承载。左侧所选能力卡被生命/CP槽边缘轻微压住约一小条边框，标题和已选标记仍清楚。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔奥丁之力II可用原确认入口跳过额外重掷\\_runs\\e2e-1793397129949-ge068k\\02-空选确认后直接收口且进入防御投掷.png",
+      "status": "PASS",
+      "observation": "空选确认后画面切到僧侣玩家的防御投掷阶段；右侧为该玩家骰盘，中央“玩家思考中”覆盖部分角色板插画，表达等待态；无错误提示或调试标识。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793397129949-ge068k\\01-当之无愧取消前选择五但尚未改骰.png",
+      "status": "PASS",
+      "observation": "当之无愧选择态顶部提示说明设为5，骰盘上方4/5固定值选项清晰；取消可见、确认处于禁用态，右侧五颗候选骰完整。右下卡牌特写文字可读，未挡骰盘/操作。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793397129949-ge068k\\02-取消改骰后骰面保持且卡牌资源退回.png",
+      "status": "PASS",
+      "observation": "取消后骰面仍显示原值，右侧投掷与确认操作恢复；当之无愧卡牌特写位于画面下方中间，卡片底边略越过视口，但标题和完整规则句可读，未覆盖骰盘/按钮。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔当之无愧选择五后取消不提交改骰\\_runs\\e2e-1793397129949-ge068k\\03-重新出牌选择五后原固定流程完成改骰.png",
+      "status": "PASS",
+      "observation": "再次使用当之无愧后的结果态显示单颗骰子为5，右侧旧骰盘与投掷/确认、结算操作可见；右下卡牌特写没有挡住候选或操作，规则文字可读。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793397129949-ge068k\\01-连锁闪电触发前.png",
+      "status": "PASS",
+      "observation": "连锁闪电触发前的索尔牌桌完整显示，右侧骰盘与“结算攻击”操作可见；未见新弹窗、错误或内部调试信息。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793397129949-ge068k\\02-三颗效果骰等待确认.png",
+      "status": "PASS",
+      "observation": "三颗效果骰已在右侧原骰盘显示；骰盘上方橙色提示说明确认效果骰后继续结算，确认操作可见。sidecar 将提示归为 dice-tray / tray-top，未压到骰盘候选。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793397129949-ge068k\\03-效果骰投影到旧骰盘并显示选择提示.png",
+      "status": "PASS",
+      "observation": "连锁闪电效果骰选择态的提示位于顶部居中，清楚说明需选两颗；右侧骰盘保留当前候选与原确认操作，没有组合弹窗。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793397129949-ge068k\\04-两颗骰子选中后启用原确认动作.png",
+      "status": "PASS",
+      "observation": "顶部提示显示2/2已选且还需0颗；右侧骰盘的两个选中标记与原确认按钮清楚可见，未遮挡候选。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔连锁闪电选择效果骰并自动结算唯一附属目标\\_runs\\e2e-1793397129949-ge068k\\05-附属伤害自动命中唯一对手并保留主攻击.png",
+      "status": "PASS",
+      "observation": "附属伤害后显示僧侣牌桌，右侧响应骰盘与“总伤害”状态可见；索尔玩家栏上的伤害反馈醒目，画面无错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793397129949-ge068k\\01-破防正式图标与消费入口.png",
+      "status": "PASS",
+      "observation": "破防响应的正式效果图标、2/2资源计数与“可以响应/跳过”入口均可见；右侧索尔骰盘仍清楚，响应控制贴近中央决策区。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793397129949-ge068k\\02-第一枚破防效果骰失败.png",
+      "status": "PASS",
+      "observation": "破防效果骰结果显示在右侧骰盘，骰盘上方有“确认效果骰结果并继续结算”的短提示，确认入口可见；其他候选与玩家板未被遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793397129949-ge068k\\03-失败后仍可使用第二枚破防.png",
+      "status": "PASS",
+      "observation": "失败响应后破防图标计数仍可见且再次出现“可以响应/跳过”入口；右侧骰盘与阶段栏清楚，无错误遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793397129949-ge068k\\04-第二枚破防效果骰成功.png",
+      "status": "PASS",
+      "observation": "第二枚破防效果骰结果和原确认操作可见；骰盘上方的效果骰提示不盖住骰子本体或按钮，玩家板完整。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔破防连续消费失败后仍可再次使用\\_runs\\e2e-1793397129949-ge068k\\05-不可防御主攻击结算后收口.png",
+      "status": "PASS",
+      "observation": "主攻击结算后的阶段按钮显示“下一阶段”，索尔玩家栏有伤害反馈，右侧骰盘仍完整；未见多余弹窗或错误信息。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793397129949-ge068k\\01-手牌放大完整阅读挥锤时刻.png",
+      "status": "PASS",
+      "observation": "“挥锤时刻!”卡牌已通过中心放大预览完整展开，标题、插画、效果文字和右上关闭按钮可见；其下两张手牌仍是默认 idle peek、下缘出视口。右侧骰盘与阶段操作未被遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793397129949-ge068k\\02-改骰前自己的五颗骰子.png",
+      "status": "PASS",
+      "observation": "索尔自己的五颗骰子、投掷/确认与结算操作清楚可见；底部两张手牌处于默认 idle peek，卡片边缘贴近视口底部。当前没有卡牌特写或手牌选择遮住骰盘。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793397129949-ge068k\\03-当之无愧直接选择固定目标四或五.png",
+      "status": "PASS",
+      "observation": "当之无愧固定值选择态显示顶部居中提示，骰盘上方4/5选项、取消和禁用确认清楚可辨；右下当之无愧卡牌预览标题与效果句可读，骰盘完整。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793397129949-ge068k\\04-选择四后沿原固定值流程点选骰子.png",
+      "status": "PASS",
+      "observation": "选定4后提示改为“选择要设为4的骰子”，4选项高亮；取消和确认、五颗骰盘候选仍清楚。底部卡牌为可关闭的完整预览/手牌露出层，没有盖住候选。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔手牌可完整放大并通过当之无愧选择自己的骰子\\_runs\\e2e-1793397129949-ge068k\\05-改为四且其余骰子保持.png",
+      "status": "PASS",
+      "observation": "结果态仅一颗骰面显示为4，其他骰面保持可见；右侧骰盘与操作完整。当之无愧预览的标题及规则文字可读，未见错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\01-索尔正式角色板与卡牌.png",
+      "status": "PASS",
+      "observation": "索尔正式角色板和能力卡素材均已加载，角色图与骰盘清晰；下方四张手牌为默认露出态，卡片下缘轻微出视口，目标牌桌控制未被遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\02-弃牌飞掷选择成本.png",
+      "status": "PASS",
+      "observation": "弃牌成本选择采用手牌区承接：顶部居中红色提示写明选1张手牌弃置并提供取消，四张手牌候选完整位于视口内；没有通用弹窗，提示不遮候选/骰盘。sidecar 标记手牌保护区内且无重叠。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\03-取消弃牌支付且资源未扣.png",
+      "status": "PASS",
+      "observation": "取消后四张手牌回到默认露出态，底边部分超出视口；骰盘、阶段按钮与玩家板均可见，未见残留选中覆盖或错误提示。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\04-手牌区弃置成本后飞掷结算.png",
+      "status": "PASS",
+      "observation": "弃牌后手牌候选减少且右侧骰面/结算入口可见；右下“雷霆万钧”卡牌特写标题及效果区可读，没有遮挡骰盘或主操作。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\05-奥丁之力二级升级完成.png",
+      "status": "PASS",
+      "observation": "奥丁之力 II 升级完成后正式角色板、升级卡面与手牌可见，骰盘/阶段控制完整；生命与CP HUD压住角色板左下能力卡约十余像素的边缘，但标题和正文仍可读，未遮挡当前骰子操作。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\06-奥丁效果骰等待选择重掷骰子.png",
+      "status": "PASS",
+      "observation": "奥丁效果骰选择态仍使用原右侧骰盘；五颗骰子候选、原“确认”入口和顶部骰盘提示可见。底部两张手牌处于手牌露出态，没有遮挡骰盘或操作。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\07-使用原整组重掷动作提交两颗所选骰子.png",
+      "status": "PASS",
+      "observation": "两颗骰子选中后，骰盘上的两个勾选标记与原“重掷/确认”按钮可见；骰盘上方提示说明可重掷或保留结果，手牌与角色板仍可辨。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\08-整组重掷一次完成并保留原确认收口.png",
+      "status": "PASS",
+      "observation": "整组重掷结果已回到原骰盘，原确认继续结算入口仍在；骰盘上方提示清楚、候选未被遮挡，卡牌露出未影响当前操作。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-interactions.e2e\\索尔正式素材、弃牌飞掷与奥丁整组重掷\\_runs\\e2e-1793397129949-ge068k\\09-效果骰收口后进入主攻击防御.png",
+      "status": "PASS",
+      "observation": "效果骰确认后画面转到僧侣防御阶段；僧侣角色板和右侧防御骰盘清晰，索尔玩家栏与手牌区域仍可辨，无额外重掷弹窗或错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-online-entry.e2e\\索尔可在真实双人房间选择并以实施中状态开局\\_runs\\e2e-1793397129949-ge068k\\01-索尔真实双人选角与实施中标记.png",
+      "status": "PASS",
+      "observation": "真实双人选角页面显示索尔角色图、实施中斜标、P1/P2席位和等待全员就绪状态，正式角色板/说明卡已加载。席位名呈现Host-/Guest-加时间戳；对应值由本测试helper注入为E2E显示名，不是产品默认名或原始playerId。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-online-entry.e2e\\索尔可在真实双人房间选择并以实施中状态开局\\_runs\\e2e-1793397129949-ge068k\\02-索尔在线开局角色板九槽与手牌.png",
+      "status": "PASS",
+      "observation": "在线开局画面显示正式索尔角色板、九槽能力卡、右侧骰盘和四张手牌；手牌为默认露出态，下缘出视口但牌桌操作未被遮挡。顶部Guest-时间戳名来自E2E测试helper注入的显示名，不是产品默认名或原始playerId。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁二级空选保留效果骰原确认\\_runs\\e2e-1793397129949-ge068k\\01-原角色板技能选择与升级牌面.png",
+      "status": "PASS",
+      "observation": "原角色板能力选择态显示正式卡面与选中勾，右侧骰盘和结算操作可见；玩家板无空白素材或调试ID，当前选择反馈清楚。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁二级空选保留效果骰原确认\\_runs\\e2e-1793397129949-ge068k\\02-五颗效果骰与原确认保留结果.png",
+      "status": "PASS",
+      "observation": "奥丁之力 II 空选态仍显示五颗骰子候选、骰盘上方说明及原确认入口；角色板与阶段栏完整，无新增重置按钮或弹窗。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁二级空选保留效果骰原确认\\_runs\\e2e-1793397129949-ge068k\\03-确认后一次获得三驭电和一点战斗点数.png",
+      "status": "PASS",
+      "observation": "空选确认后切换到僧侣防御状态，右侧骰盘、对手角色板和索尔玩家栏可见；画面未见错误或额外交互层。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁基础无重掷效果骰原确认\\_runs\\e2e-1793397129949-ge068k\\01-原角色板技能选择与升级牌面.png",
+      "status": "PASS",
+      "observation": "奥丁基础能力卡选中态的角色板/卡图清晰，右侧骰盘和阶段操作均可见；未见错误、空白或内部标识。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔奥丁基础无重掷效果骰原确认\\_runs\\e2e-1793397129949-ge068k\\02-五颗效果骰与原确认保留结果.png",
+      "status": "PASS",
+      "observation": "奥丁基础效果骰结果保留在旧骰盘上，骰盘顶部的效果骰说明和原确认操作清楚；五颗候选本体无遮挡，无额外组合弹窗。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793397129949-ge068k\\03-原骰盘直接展示四骰与组合选择提示.png",
+      "status": "PASS",
+      "observation": "Thor正式角色板完整；右侧旧骰盘四颗候选可见，骰盘上方提示说明选择效果骰并沿用原确认动作，没有多出的组合弹窗。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793397129949-ge068k\\04-选中两颗后原确认动作启用.png",
+      "status": "PASS",
+      "observation": "旧骰盘上两颗骰子以选中态突出，其余候选仍可辨；原确认入口可见，顶部提示与骰盘操作对应且未遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔连锁二级四颗效果骰保留六个组合选择\\_runs\\e2e-1793397129949-ge068k\\05-玩家选低值组合后三附属伤害与主攻击分别保留.png",
+      "status": "PASS",
+      "observation": "防守结算画面中僧侣角色板、索尔玩家栏和右侧骰盘均可见；当前交互区没有被额外弹层遮挡，未见调试文字。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\00-同张升级的两个变体以真实规则供选择.png",
+      "status": "PASS",
+      "observation": "中央“选择发动变体”窗口完整显示两个正式卡牌选项及“不发动技能”入口；文字与按钮没有裁切，窗口外角色板仍可辨。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\01-原角色板技能选择与升级牌面.png",
+      "status": "PASS",
+      "observation": "Thor正式角色板显示已选中的能力卡及选中标记；右侧骰盘和结算动作可见，卡面没有内部ID或空白素材。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\02-可选移动窗口保留立即停止入口.png",
+      "status": "PASS",
+      "observation": "中央技能结算选择窗完整显示目标头像和“停止移动”入口；目标与操作关系清楚，窗口未超出视口。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\03-一次飞掷独立扣一生命后可继续或停止.png",
+      "status": "PASS",
+      "observation": "技能结算窗显示当前移动目标及“停止移动”入口；头像、文案和按钮均完整可见，背景操作未压住窗口内容。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中二级三次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\04-达到次数上限或停止后回原结算.png",
+      "status": "PASS",
+      "observation": "从移动选择回到原角色板和响应界面；骰盘及当前操作区可见，没有残留的移动选择窗或错误覆盖。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\01-原角色板技能选择与升级牌面.png",
+      "status": "PASS",
+      "observation": "Thor正式角色板、能力卡选中态及旧骰盘完整显示；当前技能入口清楚，没有新增交互层。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\02-可选移动窗口保留立即停止入口.png",
+      "status": "PASS",
+      "observation": "中央技能结算窗显示目标头像和“停止移动”入口；目标卡片与停止操作均完整可读。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔瓶中基础零次停止沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\04-达到次数上限或停止后回原结算.png",
+      "status": "PASS",
+      "observation": "原角色板与骰盘结果可见，中央“可以响应/跳过”提示与当前响应入口对应；没有新建组合选择弹窗。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出1沿原效果骰确认\\_runs\\e2e-1793397129949-ge068k\\01-明确加入推广卡的合法主要阶段前态.png",
+      "status": "PASS",
+      "observation": "“彩虹桥”卡牌处于放大预览态，卡名及规则末行在画面内可读；下边框越出视口，但不是默认手牌露出态，当前骰盘与阶段按钮未被遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出1沿原效果骰确认\\_runs\\e2e-1793397129949-ge068k\\02-推广卡效果骰原骰盘待确认.png",
+      "status": "REVISE",
+      "observation": "右侧旧骰盘和确认效果骰提示清楚；右下角卡牌面板的下半规则文字被固定黑色圆形箭头控件压住，当前卡牌内容无法完整阅读。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": false,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出1沿原效果骰确认\\_runs\\e2e-1793397129949-ge068k\\03-确认后抽一牌及雷电分支状态奖励.png",
+      "status": "REVISE",
+      "observation": "中心放大卡牌的可见规则末行仍可读，但右下角较小卡牌面板被固定黑色圆形箭头控件压住，遮挡其规则文字。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": false,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出6沿原效果骰确认\\_runs\\e2e-1793397129949-ge068k\\01-明确加入推广卡的合法主要阶段前态.png",
+      "status": "PASS",
+      "observation": "“彩虹桥”放大预览的卡名与规则末行可读，只有预览底边越出视口；右下箭头位于空的弃牌区，没有压住卡牌内容。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出6沿原效果骰确认\\_runs\\e2e-1793397129949-ge068k\\02-推广卡效果骰原骰盘待确认.png",
+      "status": "REVISE",
+      "observation": "效果骰确认提示和右侧骰盘可见；右下角卡牌的规则文字被固定黑色圆形箭头控件遮住，不能完整读卡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": false,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔推广彩虹桥投出6沿原效果骰确认\\_runs\\e2e-1793397129949-ge068k\\03-确认后抽一牌及雷电分支状态奖励.png",
+      "status": "REVISE",
+      "observation": "中央放大卡牌的最后规则行仍在视口内；右下角卡牌面板的文字区域被固定黑色圆形箭头控件覆盖。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": false,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔无懈可击响应后生命5\\_runs\\e2e-1793397129949-ge068k\\01-代表态：索尔5血、即将承受8点攻击伤害，处于受伤响应.png",
+      "status": "PASS",
+      "observation": "受伤响应提示、右侧骰盘和“无懈可击”放大预览均可见；预览底边越出视口，但卡名与可见规则末行未被切掉。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔无懈可击响应后生命5\\_runs\\e2e-1793397129949-ge068k\\03-原伤害事务完成且生命与牌费正确.png",
+      "status": "REVISE",
+      "observation": "结算后的牌桌与索尔正式角色板完整；右下“无懈可击”卡面被固定黑色圆形箭头压住下半部规则文字，卡牌说明不完整。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": false,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\01-原角色板技能选择与升级牌面.png",
+      "status": "PASS",
+      "observation": "Thor正式角色板显示当前选中能力，右侧骰盘与结算攻击按钮清晰；未见额外弹窗或内部标识。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\02-可选移动窗口保留立即停止入口.png",
+      "status": "PASS",
+      "observation": "居中的技能结算选择窗完整显示移动目标头像和“停止移动”选项；文字、边界和操作均在视口内。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\03-一次飞掷独立扣一生命后可继续或停止.png",
+      "status": "PASS",
+      "observation": "居中的技能结算窗显示另一移动目标及“停止移动”入口；目标头像和按钮完整，背景无异常遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-rule-interactions.e2e\\索尔终极四次沿既有选择窗口逐次移动\\_runs\\e2e-1793397129949-ge068k\\04-达到次数上限或停止后回原结算.png",
+      "status": "REVISE",
+      "observation": "Thor角色板、骰盘和回合阶段可见；结算动画的红色“-14”星形飘字覆盖顶部对手玩家条的生命数值区域，使该数值在此帧不可读，其他操作未被遮挡。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": false,
+        "noErrors": true
+      }
+    }
+  ]
+}

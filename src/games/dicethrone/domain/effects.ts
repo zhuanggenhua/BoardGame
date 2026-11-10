@@ -78,6 +78,13 @@ export interface EffectResolutionCheckpoint {
     damageDealt: number;
 }
 
+/** 所有效果序列共用的暂停判定：交互事件与仍可操作的奖励骰都必须阻塞父流程。 */
+export function isEffectSequenceSuspensionEvent(event: DiceThroneEvent): boolean {
+    return isAttackEffectSequenceBlocker(event)
+        || (event.type === 'BONUS_DICE_REROLL_REQUESTED'
+            && hasPendingBonusDiceSettlement(event.payload.settlement));
+}
+
 const getAttackDamageBeforePercent = (breakdown: DamageBreakdown): number | undefined => {
     const percentIndex = breakdown.steps.findIndex(step => (
         step.type === 'percent'
@@ -1775,11 +1782,7 @@ export function resolveEffectsToEvents(
 
         // 任何需要玩家或响应窗口接管的事件都中断当前时点，并携带同一效果游标。
         // 多个阻塞事件由同一 ResolutionFrame 绑定；只有全部收口后才恢复下一项效果。
-        const suspensionEvents = immediateEvents.filter((event) => (
-            isAttackEffectSequenceBlocker(event)
-            || (event.type === 'BONUS_DICE_REROLL_REQUESTED'
-                && hasPendingBonusDiceSettlement(event.payload.settlement))
-        ));
+        const suspensionEvents = immediateEvents.filter(isEffectSequenceSuspensionEvent);
         if (suspensionEvents.length > 0) {
             suspendedOnBlocker = true;
             if (

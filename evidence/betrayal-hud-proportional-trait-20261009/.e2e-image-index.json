@@ -1,0 +1,32 @@
+{
+  "title": "山屋惊魂牌桌等比缩放与属性条单信号验收",
+  "media": [
+    {
+      "path": "01-PC-1920x1080-属性条与HUD.jpg",
+      "chainId": "hud-proportional-trait",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-hud-proportional-trait-20261009",
+      "stage": "前态",
+      "description": "电脑开局牌桌，左侧属性条当前格只有金色填充，没有叠绿下划线，名称与格子对齐。"
+    },
+    {
+      "path": "02-Vivo-796x360-属性条与HUD等比.jpg",
+      "chainId": "hud-proportional-trait",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-hud-proportional-trait-20261009",
+      "stage": "中态",
+      "description": "手机横屏整桌按电脑比例缩小，字号一起缩放，当前格只有金色，能力全名没有挡住急救包。"
+    },
+    {
+      "path": "03-PC-1920x1080-当前值与初始值分离.jpg",
+      "chainId": "hud-proportional-trait",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/trait-track-ui.e2e.ts",
+      "sourceDir": "evidence/betrayal-hud-proportional-trait-20261009",
+      "stage": "后态",
+      "description": "电脑牌桌速度当前格金色、初始格另用绿线，同一格不再同时下划线和高亮。"
+    }
+  ]
+}

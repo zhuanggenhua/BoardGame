@@ -1,0 +1,97 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/audit_frames_11_21"
+  },
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士五张修正卡_出牌前手牌.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式牌桌底部可辨认正义战法二级与三级及三张通用改骰牌的真实卡图和费用，五张牌均位于手牌区域。",
+      "sha256": "3e69c11a54f0284970362d7fb5f3405a9b7e1cc4f07434e2a0c589a93a98d8c1"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_正义战法二级_正式放大卡面.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中央完整放大卡清晰显示正义战法二级、二点费用及基础五点伤害，标题和正文没有被关闭按钮遮住。",
+      "sha256": "84f67033eeb72963082627fb1858fd27e73d80e066395af276bfe86806303664"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_正义战法三级_正式放大卡面.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中央完整放大卡清晰显示正义战法三级、四点费用及基础六点伤害，底部执着子区及其治疗和不可防御伤害文字可读。",
+      "sha256": "3c911fa15fb055a55ca3eede6116b5700b3002f57a5232e04fc720f9f542c201"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_惊不惊喜_正式放大卡面.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中央完整放大卡清晰显示惊不惊喜、二点费用及改变任意一颗骰子数值的正文，真实卡图未被遮挡或裁切。",
+      "sha256": "5d9ee903cbe4b5701f4fea0e8ec01bd470aa155e9f797b0a57ed154e9ec56bcf"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_不愧是我_正式放大卡面.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中央完整放大卡清晰显示不愧是我、壹点费用及自己或队友重掷至多两颗骰子的完整正文，括号说明可读。",
+      "sha256": "0cef22ec279b5c8cbbe6a219f54efad878ef5b01a9a57c0827062c2e0e998474"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_意不意外_正式放大卡面.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "中央完整放大卡清晰显示意不意外、三点费用及改变任意两颗骰子数值的正文，标题和费用没有遮挡。",
+      "sha256": "481359f28d5a632b8e617dc5290680db9723955ea169f687f7f25cf0177ca590"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\paladin-card-art-review.e2e\\圣骑士五张错配卡的正式手牌与放大入口\\圣骑士_正义战法二级_扣2CP并升级成功.jpg",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "场上原正义战法位置已显示二级真实卡图，底部手牌只剩三级升级牌及三张通用改骰牌，左侧资源显示八且清晰可读。",
+      "sha256": "5f7379f2a17699147b65fc9c61397a3ed77799828592ae00d3878ae50090f833"
+    }
+  ]
+}

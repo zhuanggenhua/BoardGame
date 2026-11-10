@@ -1,0 +1,334 @@
+{
+  "sourceRevision": "1c90c20f2ac33b548363a763236d9461f13eb116c006855a74b7ddeb2818205b",
+  "workspaceSourceRevision": "0d9dc780cd8af6eb489aa2106cc94498224e8996b94c988f5085cdff0f5a9a94",
+  "runtimeId": "D:\\gongzuo\\webgame\\BoardGame::isolated-single-pw-1793036760545-599cht",
+  "visible": {
+    "text": "🛠️\nP2\n武僧\n49\n2\n0\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n8\n手动响应\n牌堆\n29\n<\n索尔的奖励骰\n总\n伤\n害\n6\n确认\n结算攻击\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n1\n0",
+    "viewport": {
+      "width": 1920,
+      "height": 1080,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "protectedHeader": {
+      "top": 17.265625,
+      "bottom": 105.5625
+    },
+    "scrollers": [],
+    "handCards": [
+      "card-thor-worthy",
+      "card-thor-hammer-time"
+    ]
+  },
+  "authoritative": {
+    "phase": "offensiveRoll",
+    "players": {
+      "0": {
+        "characterId": "thor",
+        "hp": 50,
+        "cp": 8,
+        "tokens": {
+          "guard_break": 0,
+          "electrokinesis": 0,
+          "mjolnir": 0
+        },
+        "hand": [
+          "card-thor-worthy",
+          "card-thor-hammer-time"
+        ]
+      },
+      "1": {
+        "characterId": "monk",
+        "hp": 49,
+        "cp": 2,
+        "tokens": {
+          "taiji": 0,
+          "evasive": 0,
+          "purify": 0,
+          "knockdown": 0,
+          "mjolnir": 1
+        },
+        "hand": []
+      }
+    },
+    "pendingAttack": {
+      "attackerId": "0",
+      "defenderId": "1",
+      "settlementStage": "preDamage",
+      "isDefendable": true,
+      "sourceAbilityId": "thor-odinforce",
+      "isUltimate": false,
+      "damageResolved": false,
+      "resolvedDamage": 0,
+      "statusEffectsAppliedThisAttack": {},
+      "attackDiceFaceCounts": {
+        "fist": 0,
+        "palm": 0,
+        "taiji": 0,
+        "lotus": 0,
+        "sword": 0,
+        "heart": 0,
+        "strength": 0,
+        "branch": 0,
+        "leaf": 0,
+        "spirit": 0,
+        "ninja_katana": 0,
+        "shuriken": 0,
+        "mask": 0,
+        "thor_hammer": 2,
+        "thor_worthy": 3
+      },
+      "attackDiceValues": [
+        1,
+        1,
+        4,
+        4,
+        4
+      ],
+      "bonusDamage": 0,
+      "attackModifierBonusDamage": 0,
+      "preDefenseResolved": true
+    },
+    "pendingBonusDiceSettlement": {
+      "id": "thor-odinforce-display-1793036799351",
+      "sourceAbilityId": "thor-odinforce",
+      "attackerId": "0",
+      "targetId": "0",
+      "dice": [
+        {
+          "index": 0,
+          "value": 1,
+          "face": "thor_hammer",
+          "effectKey": "bonusDie.effect.thor.die",
+          "effectParams": {
+            "value": 1
+          }
+        },
+        {
+          "index": 1,
+          "value": 1,
+          "face": "thor_hammer",
+          "effectKey": "bonusDie.effect.thor.die",
+          "effectParams": {
+            "value": 1
+          }
+        },
+        {
+          "index": 2,
+          "value": 4,
+          "face": "thor_worthy",
+          "effectKey": "bonusDie.effect.thor.die",
+          "effectParams": {
+            "value": 4
+          }
+        },
+        {
+          "index": 3,
+          "value": 4,
+          "face": "thor_worthy",
+          "effectKey": "bonusDie.effect.thor.die",
+          "effectParams": {
+            "value": 4
+          }
+        },
+        {
+          "index": 4,
+          "value": 6,
+          "face": "thor_thunder",
+          "effectKey": "bonusDie.effect.thor.die",
+          "effectParams": {
+            "value": 6
+          }
+        }
+      ],
+      "rerollCostTokenId": "",
+      "rerollCostAmount": 0,
+      "rerollCount": 0,
+      "maxRerollCount": 1,
+      "readyToSettle": false,
+      "displayOnly": true,
+      "customResolutionId": "thor-odinforce-settle",
+      "customResolutionParams": {
+        "count": 5,
+        "groupReroll": true
+      },
+      "continuation": {
+        "kind": "attack",
+        "settlementStage": "preDamage",
+        "markBonusDiceResolved": true
+      },
+      "allowDiceModification": true,
+      "groupReroll": true
+    },
+    "currentRollContext": {
+      "id": "bonus:thor-odinforce-display-1793036799351",
+      "kind": "bonus",
+      "ownerPlayerId": "0",
+      "targetPlayerId": "0",
+      "sourceAbilityId": "thor-odinforce",
+      "dice": [
+        {
+          "id": 0,
+          "definitionId": "thor-dice",
+          "value": 1,
+          "symbol": "thor_hammer",
+          "symbols": [
+            "thor_hammer"
+          ],
+          "isKept": false,
+          "ownerId": "0",
+          "displayOnly": true
+        },
+        {
+          "id": 1,
+          "definitionId": "thor-dice",
+          "value": 1,
+          "symbol": "thor_hammer",
+          "symbols": [
+            "thor_hammer"
+          ],
+          "isKept": false,
+          "ownerId": "0",
+          "displayOnly": true
+        },
+        {
+          "id": 2,
+          "definitionId": "thor-dice",
+          "value": 4,
+          "symbol": "thor_worthy",
+          "symbols": [
+            "thor_worthy"
+          ],
+          "isKept": false,
+          "ownerId": "0",
+          "displayOnly": true
+        },
+        {
+          "id": 3,
+          "definitionId": "thor-dice",
+          "value": 4,
+          "symbol": "thor_worthy",
+          "symbols": [
+            "thor_worthy"
+          ],
+          "isKept": false,
+          "ownerId": "0",
+          "displayOnly": true
+        },
+        {
+          "id": 4,
+          "definitionId": "thor-dice",
+          "value": 6,
+          "symbol": "thor_thunder",
+          "symbols": [
+            "thor_thunder"
+          ],
+          "isKept": false,
+          "ownerId": "0",
+          "displayOnly": true
+        }
+      ],
+      "status": "open",
+      "policy": {
+        "modifiableBy": "any",
+        "rerollableBy": "any",
+        "allowPassiveReroll": true,
+        "allowDiceCardTargeting": true,
+        "ultimateLocked": false,
+        "blocksPhaseFlow": true
+      },
+      "settlement": {
+        "mode": "damage",
+        "metadata": {
+          "pendingBonusDiceSettlementId": "thor-odinforce-display-1793036799351"
+        }
+      },
+      "display": {
+        "surface": "diceTray",
+        "replayOnly": false
+      },
+      "suspendedParent": {
+        "id": "roll:offensive:0:1",
+        "kind": "offensive",
+        "ownerPlayerId": "0",
+        "phase": "offensiveRoll",
+        "dice": [
+          {
+            "id": 0,
+            "definitionId": "thor-dice",
+            "value": 1,
+            "symbol": "thor_hammer",
+            "symbols": [
+              "thor_hammer"
+            ],
+            "isKept": false,
+            "ownerId": "0"
+          },
+          {
+            "id": 1,
+            "definitionId": "thor-dice",
+            "value": 1,
+            "symbol": "thor_hammer",
+            "symbols": [
+              "thor_hammer"
+            ],
+            "isKept": false,
+            "ownerId": "0"
+          },
+          {
+            "id": 2,
+            "definitionId": "thor-dice",
+            "value": 4,
+            "symbol": "thor_worthy",
+            "symbols": [
+              "thor_worthy"
+            ],
+            "isKept": false,
+            "ownerId": "0"
+          },
+          {
+            "id": 3,
+            "definitionId": "thor-dice",
+            "value": 4,
+            "symbol": "thor_worthy",
+            "symbols": [
+              "thor_worthy"
+            ],
+            "isKept": false,
+            "ownerId": "0"
+          },
+          {
+            "id": 4,
+            "definitionId": "thor-dice",
+            "value": 4,
+            "symbol": "thor_worthy",
+            "symbols": [
+              "thor_worthy"
+            ],
+            "isKept": false,
+            "ownerId": "0"
+          }
+        ],
+        "status": "settling",
+        "policy": {
+          "modifiableBy": "owner",
+          "rerollableBy": "owner",
+          "allowPassiveReroll": true,
+          "allowDiceCardTargeting": true,
+          "ultimateLocked": false,
+          "blocksPhaseFlow": true
+        },
+        "settlement": {
+          "mode": "selectAttack"
+        },
+        "display": {
+          "surface": "diceTray",
+          "replayOnly": false
+        }
+      }
+    },
+    "mjolnirThrowsThisTurn": {
+      "0": 1
+    }
+  }
+}

@@ -227,7 +227,7 @@ const bindManifestToExistingTutorialState = <TCore>(
         return state;
     }
 
-    const reboundTutorial = deriveStepState(effectiveManifest, stepIndex, tutorial.randomPolicy?.cursor);
+    const reboundTutorial = resolveTutorialStep(state, effectiveManifest, deriveStepState(effectiveManifest, stepIndex, tutorial.randomPolicy?.cursor));
     const shouldPreserveConsumedAiActions = Boolean(
         tutorial.step?.id === manifestStep.id
         && !tutorial.step?.aiActions
@@ -345,6 +345,7 @@ const buildManifestFromState = (
         steps: tutorial.steps,
         allowManualSkip: tutorial.manifestAllowManualSkip,
         randomPolicy: tutorial.manifestRandomPolicy,
+        ...(fallbackManifest?.id === tutorial.manifestId ? { resolveStep: fallbackManifest.resolveStep } : {}),
     };
 };
 
@@ -353,6 +354,14 @@ type StepValidatorFn = (state: MatchState<unknown>, step: TutorialStepSnapshot) 
 const MAX_VALIDATOR_SKIP = 50;
 
 type TutorialStepTransitionDirection = 'next' | 'previous';
+
+/** 解析后的步骤仍保留原 id，确保持久化、checkpoint 与进度索引不漂移。 */
+const resolveTutorialStep = <TCore>(state: MatchState<TCore>, manifest: TutorialManifest, tutorial: TutorialState): TutorialState => {
+    if (!tutorial.step || !manifest.resolveStep) return tutorial;
+    const step = manifest.resolveStep(state as MatchState<unknown>, tutorial.step);
+    if (step.id !== tutorial.step.id) throw new Error('Tutorial resolveStep must preserve the step id');
+    return { ...tutorial, step, aiActions: step.aiActions };
+};
 
 const transitionTutorialStep = <TCore>(
     state: MatchState<TCore>,
@@ -392,7 +401,7 @@ const transitionTutorialStep = <TCore>(
                 && (!validator || validator(state, previousStep))
             ) {
                 const previousTutorial = {
-                    ...deriveStepState(manifest, previousIndex, tutorial.randomPolicy?.cursor),
+                    ...resolveTutorialStep(state, manifest, deriveStepState(manifest, previousIndex, tutorial.randomPolicy?.cursor)),
                     checkpoints: tutorial.checkpoints,
                     selectedBranch:tutorial.selectedBranch,
                 };
@@ -443,7 +452,7 @@ const transitionTutorialStep = <TCore>(
         .map((event) => isRecord(event.payload) && typeof event.payload.stepId === 'string' ? event.payload.stepId : null)
         .filter((stepId): stepId is string => Boolean(stepId));
     const nextTutorial = {
-        ...deriveStepState(manifest, nextIndex, tutorial.randomPolicy?.cursor),
+        ...resolveTutorialStep(state, manifest, deriveStepState(manifest, nextIndex, tutorial.randomPolicy?.cursor)),
         checkpoints: tutorial.checkpoints,
         selectedBranch:tutorial.selectedBranch,
         ...(skippedStepIds.length > 0 ? { skippedStepIds } : {}),
@@ -468,6 +477,8 @@ const isValidTutorialManifest = (manifest: TutorialManifest | undefined): manife
 
 const shouldBlockCommand = (tutorial: TutorialState | undefined, command: Command): boolean => {
     if (!tutorial?.active) return false;
+    // 等待真实动画时不能继续提交玩家动作或交互响应；关闭、上一步和动画完成仍由系统命令处理。
+    if (tutorial.pendingAnimationAdvance && (!command.type?.startsWith('SYS_') || command.type === 'SYS_INTERACTION_RESPOND')) return true;
     // 系统命令不拦截（SYS_ 前缀，包括 CHEAT 命令和教程命令）
     if (command.type?.startsWith('SYS_')) return false;
     // manifest 明确声明的教程 AI 动作属于系统推进，不是玩家手动输入。
@@ -560,7 +571,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 activeManifestById.set(manifest.id, manifest);
                 activeStepValidator = manifest.stepValidator;
                 activeBranchSelector=manifest.selectBranch;
-                const nextTutorial = deriveStepState(manifest, 0);
+                const nextTutorial = resolveTutorialStep(state, manifest, deriveStepState(manifest, 0));
                 const timestamp = resolveTimestamp(command);
                 const nextState = appendTutorialCheckpoint(
                     applyTutorialState(state, nextTutorial),
@@ -758,7 +769,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             }
         },
 
-        afterEvents: ({ state, events, command, random }): HookResult<TCore> | void => {
+        afterEvents: ({ state, events, command, random, pendingAfterEventsToReduceCount }): HookResult<TCore> | void => {
             let currentState=state;
             let tutorial = currentState.sys?.tutorial;
             if (!tutorial?.active) {
@@ -783,6 +794,10 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 && shouldAdvance(events, step?.advanceOnEvents);
 
             if (!matched) {
+                // 领域事件尚未归约时不能以暂态 frame 判定动态步骤无效；匹配事件仍正常推进。
+                if (resolveActiveManifest(tutorial)?.resolveStep && (pendingAfterEventsToReduceCount ?? 0) > 0) {
+                    return currentState !== state ? { state: currentState } : undefined;
+                }
                 // 事件未匹配：检查 stepValidator 是否判定当前步骤不可满足
                 if (shouldAdvanceInvalidCurrentStep(currentState, activeStepValidator)) {
                     const timestamp = resolveTimestamp(command, events);
@@ -794,6 +809,20 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                         resolveActiveManifest(tutorial),
                         random.getCursor?.(),
                     );
+                }
+                const manifest = resolveActiveManifest(tutorial);
+                const originalStep = tutorial.steps?.find(item => item.id === step?.id);
+                if (manifest?.resolveStep && originalStep) {
+                    let resolved = resolveTutorialStep(currentState, manifest, { ...tutorial, step: originalStep });
+                    // 重新解析不能把已经消费的静态 AI 动作重新排队。
+                    if (!tutorial.aiActions && !tutorial.step?.aiActions && originalStep.aiActions
+                        && JSON.stringify(resolved.step?.aiActions) === JSON.stringify(originalStep.aiActions)) {
+                        resolved = { ...resolved, aiActions: undefined, step: resolved.step ? { ...resolved.step, aiActions: undefined } : null };
+                    }
+                    if (JSON.stringify(resolved.step) !== JSON.stringify(tutorial.step)
+                        || JSON.stringify(resolved.aiActions) !== JSON.stringify(tutorial.aiActions)) {
+                        return { state: applyTutorialState(currentState, resolved) };
+                    }
                 }
                 return currentState!==state?{state:currentState}:undefined;
             }

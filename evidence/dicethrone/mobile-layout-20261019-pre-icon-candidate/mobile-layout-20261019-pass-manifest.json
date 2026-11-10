@@ -1,0 +1,130 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "evidenceMode": "regression-comparison",
+  "evidenceIndex": "../../test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/.e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "scopeNote": "仅覆盖本地同源网页整屏对象尺寸恢复及前后比较，不宣告当前任务全部完成。用户追加的教程初始化文字、悬浮球SVG及字与按钮间距问题仍在追因，未被此PASS覆盖。左上角只是样本。四张修前手机产品裁决仍REVISE。常态/压力态是预置代表状态，压力态含原状态区真实滚动前后，不冒充完整自然对局。未部署、未安卓真机验收。",
+  "requirements": [
+    {
+      "requirement": "按用户整体症状确定范围，修复整个移动界面的共同尺寸回归",
+      "status": "PASS",
+      "evidence": [
+        "mobile-layout-20261019-metrics.json：九类对象三视口两状态的宽高记录；新用例先红后绿",
+        "936横屏中央板宽约388恢复473，牌堆本体约78恢复95，提示板、对手、手牌、按钮和骰盘均沿同一映射变化",
+        "仅恢复manifest历史940宽度适配，撤销之前所有字号补偿；PC常态完整PNG与修前同SHA256，压力态几何与视觉保护通过"
+      ]
+    },
+    {
+      "requirement": "保留现有对象尺寸与顺序，压力态原状态区可滚动查看完整牌堆与操作入口",
+      "status": "PASS",
+      "evidence": [
+        "11/13压力态与12/14真实滚动后整屏成对；七阶段保持原位，未压缩状态或牌堆",
+        "两个手机真实wheel滚到牌堆完整显示；原44px圆形手牌按钮四向外缘与中心命中，真实边缘点击完成隐藏/恢复并滚回顶部",
+        "独立逐图复核8张新图，无范围内硬失败"
+      ]
+    },
+    {
+      "requirement": "先保留真实修前整屏，再提供同入口同等状态的整屏对比",
+      "status": "PASS",
+      "evidence": [
+        "六张改动前整屏原图已独立核图并比对SHA256；新旧14张图均为整屏，无裁切特写",
+        "原九张字号失败候选另行存档，不混入本轮产品通过图组"
+      ]
+    },
+    {
+      "requirement": "更新通用范围确定规范并回到原问题验证",
+      "status": "PASS",
+      "evidence": [
+        "唯一主源conversation-handoff-target-lock增加范围确定，区分总体、样本、假设及实际改动；README只同步索引",
+        "spec:lint、定向diff检查及独立规范审查通过；按原话复演在对象锁定处阻断示例收窄",
+        "业务审查纠正滚动热区裁切和骰盘可缺失漏洞后通过；不是仅以规范lint宣称业务修复"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/hud_media_audit"
+    },
+    "reviewFile": "mobile-layout-20261019-visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/__tests__/mobileSupport.test.ts src/hooks/ui/__tests__/useRuntimeViewport.test.ts src/games/dicethrone/ui/__tests__/LeftSidebar.test.tsx src/games/dicethrone/ui/__tests__/compatLayout.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      ".tmp/dt-whole-vitest-current.log：4文件35项通过；.tmp/dt-whole-all-final.log：3 E2E passed(26.8s)。本轮不修改游戏规则，截图不证明数值或结算正确性。"
+    ]
+  },
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-桌面-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/02-修复前-手机横屏-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/03-修复前-较窄手机横屏-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/04-修复前-桌面-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/05-修复前-手机横屏-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/06-修复前-较窄手机横屏-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/07-修复后-桌面-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/08-修复后-手机横屏-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/09-修复后-较窄手机横屏-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/10-修复后-桌面-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/11-修复后-手机横屏-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/12-修复后-手机横屏-状态区滚动后牌堆完整.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/13-修复后-较窄手机横屏-状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/14-修复后-较窄手机横屏-状态区滚动后牌堆完整.png"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/01-PC-1920x1080-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-mobile-regression",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/02-手机横屏936x432-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-mobile-regression",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/03-手机横屏812x375-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-mobile-regression",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/04-PC-1920x1080-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-mobile-regression",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/05-手机横屏936x432-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-mobile-regression",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/阶段提示沿用-PC-单列比例，并覆盖无-Token-常态与-Token-压力态/06-手机横屏812x375-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-mobile-regression",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/真实-2340x1080-手机横屏原图覆盖无-Token-常态与-Token-压力态/01-真实DPR手机横屏2340x1080-无Token常态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-true-device-screenshots",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-left-sidebar-mobile-regression.e2e/真实-2340x1080-手机横屏原图覆盖无-Token-常态与-Token-压力态/02-真实DPR手机横屏2340x1080-有Token压力态-左侧阶段与Token对照.jpg",
+      "contract": "dicethrone-left-sidebar-true-device-screenshots",
+      "reason": "同次运行的补充空间或浏览器倍率合同，不计入本轮整屏前后视觉图组。"
+    }
+  ]
+}

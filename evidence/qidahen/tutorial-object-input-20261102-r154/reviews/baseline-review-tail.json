@@ -1,0 +1,43 @@
+{
+  "reviewer": "/root/r154_ui_tail",
+  "status": "PASS",
+  "requirements": [
+    {
+      "status": "PASS",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/32-new-year.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r149-layering-pc-20261101/desktop/51-finish.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/32-save-hand.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/33-new-year.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/34-maintain-shanhai.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/35-abandon-jinzhou.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/36-abandon-inner-wall.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/37-upkeep-datong.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/38-upkeep-yehe.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/39-upkeep-yehe-selected.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/40-hand-scroll-end.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/41-upkeep-pyongyang.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/42-upkeep-pyongyang-selected.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/43-claim-year.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/44-new-order.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/45-year-character.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/46-year-character-inspect.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/47-training-kind.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/48-training-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/49-training-second-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/50-training-recruit-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/51-training-finish.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/52-finish.png"
+      ],
+      "baselineSource": "已实际读取R149的32-new-year与51-finish原图；旧版仅是症状和历史执行参考，不是用户认可基线。年度执行真相另从R154最终behavior-trace.status/outcome及R153生命周期真实记录获取。",
+      "preservedInformation": "保留轮盘新年/年中与动作名、当前势力和资源、纪年卡、真实手牌及牌堆、维护对象/支付成本/放弃后果、耗损选兵、纪年领取、人物候选和放大镜、训练对象/等级/次数、后续胜利目标。",
+      "preservedActions": "保留维护或放弃、选牌支持或选兵移除后确认、领取纪年或放弃顺延、人物查看与选择、征兵/训练/额外训练/完成、完成并返回及继续对局输入。实体选择确认仍保留；运行结果由trace证明，不从静态图推断。",
+      "changes": "R149新年维护选项下可见的额外灰确认在R154单次直接决策中退场；R15432保留手牌按钮贴手牌并说明结束回合；年度后段按维护、耗损、纪年、顺位、人物及训练分步承接当前对象，终页保留后续战略目标。",
+      "duplicateDecision": "无实体草稿的维护/放弃、纪年领取/放弃、人物出场及训练菜单单次按钮直接执行，没有额外灰确认；支付、多选兵牌和真正目标草稿仍有必要确认。教程负责取舍与后果，当前对象及输入由本体或独立操作区承接。",
+      "changeAuthority": "当前委派转述用户要求：易理解当前局面/规则对象/下一输入、手牌半露加hover抬起、取消单次无实体草稿的多余确认并保留真实选择确认。R154最终trace PASS、76步/53媒体且nextInputAccepted=true；R153 revision26生命周期PASS按同代码条件沿用。本报告不判规则数值或未覆盖视口。",
+      "requirement": "完整年度流程与可继续操作"
+    }
+  ]
+}

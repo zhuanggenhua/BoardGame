@@ -1,0 +1,60 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "../../test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-00-默认三列剧本关闭.png",
+      "chainId": "qidahen-faction-select",
+      "chainStep": "一",
+      "sourceRun": "online-inmatch-setup",
+      "sourceDir": "test-results/evidence-screenshots/qidahen/online-inmatch-setup",
+      "stage": "前态",
+      "description": "进入对局后先看到三列阵营，明蒙金圆形标记无白色方角，剧本菜单关闭，底栏写请先确认起始剧本设置卡，确认阵营不可点。"
+    },
+    {
+      "path": "../../test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内剧本选择-01-房主进入剧本书页并可点选.png",
+      "chainId": "qidahen-faction-select",
+      "chainStep": "二",
+      "sourceRun": "online-inmatch-setup",
+      "sourceDir": "test-results/evidence-screenshots/qidahen/online-inmatch-setup",
+      "stage": "中态",
+      "description": "点开剧本后弹出起始剧本设置卡三张印刷卡，丁卯胡乱灰置并写当前三人房不可投。"
+    },
+    {
+      "path": "../../test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内剧本选择-01b-山海关之议已暂选待确认.png",
+      "chainId": "qidahen-faction-select",
+      "chainStep": "三",
+      "sourceRun": "online-inmatch-setup",
+      "sourceDir": "test-results/evidence-screenshots/qidahen/online-inmatch-setup",
+      "stage": "中态",
+      "description": "房主点选山海关之议后中间印刷卡抬升并带朱砂光，关闭与确认采用同排仍可点。"
+    },
+    {
+      "path": "../../test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-02-三阵营可见且未被占用.png",
+      "chainId": "qidahen-faction-select",
+      "chainStep": "四",
+      "sourceRun": "online-inmatch-setup",
+      "sourceDir": "test-results/evidence-screenshots/qidahen/online-inmatch-setup",
+      "stage": "中态",
+      "description": "采用剧本后菜单关闭，右上显示剧本山海关之议，大明起始手牌变为两张。"
+    },
+    {
+      "path": "../../test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-02c-势力行动悬停.png",
+      "chainId": "qidahen-faction-select",
+      "chainStep": "五",
+      "sourceRun": "online-inmatch-setup",
+      "sourceDir": "test-results/evidence-screenshots/qidahen/online-inmatch-setup",
+      "stage": "中态",
+      "description": "悬停突袭作战后规则原文出现在行动名下方，手牌上限事实行仍完整可见。"
+    },
+    {
+      "path": "../../test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-02b-大明已暂选待确认.png",
+      "chainId": "qidahen-faction-select",
+      "chainStep": "六",
+      "sourceRun": "online-inmatch-setup",
+      "sourceDir": "test-results/evidence-screenshots/qidahen/online-inmatch-setup",
+      "stage": "后态",
+      "description": "点击大明列后该列变为琥珀色并带朱砂边，底栏只写大明，确认阵营可点。"
+    }
+  ]
+}

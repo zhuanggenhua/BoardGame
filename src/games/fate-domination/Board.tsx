@@ -3,6 +3,7 @@ import { FateTutorialUiBridge, type FateInspectionSource } from './ui/FateTutori
 import { fateTutorialAllows, fateTutorialExpected } from './ui/tutorialContract';
 import { fateTutorialAbilitySource, presentFateTutorial } from './ui/tutorialPresentation';
 import { FateIdentitySetup } from './ui/FateIdentitySetup';
+import { FateFgoEffects } from './ui/FateFgoEffects';
 import { UI_Z_INDEX } from '../../core/ui/zIndex';
 import { useFateDeploymentInteraction } from './ui/useFateDeploymentInteraction';
 import {useFateMapDrag} from './ui/useFateMapDrag';
@@ -81,6 +82,10 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     const [detail, setDetail] = useState<string | null>(null);
     const [masterAbilityTip,setMasterAbilityTip]=useState(false);
     const [inspection, setInspection] = useState<Inspection | null>(null);
+    const [fgoBattleAnchors, setFgoBattleAnchors] = useState<Partial<Record<LocationId, HTMLDivElement>>>({});
+    const registerFgoBattleAnchor = React.useCallback((locationId: LocationId, element: HTMLDivElement | null) => {
+        setFgoBattleAnchors(current => current[locationId] === element ? current : { ...current, [locationId]: element ?? undefined });
+    }, []);
     const [inspectionPosition, setInspectionPosition] = useState<React.CSSProperties>({left:16,top:90});
     const movement = useFateMovementInteraction(attackDraft.state, actorId);
     const deployment = useFateDeploymentInteraction(attackDraft.state, actorId);
@@ -226,12 +231,13 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     );
     return <UndoProvider value={{ G: G as MatchState<unknown>, dispatch: send, playerID, isGameOver: core.phase === 'complete', isLocalMode: !isMultiplayer }}>
   <div className="fd-runtime-table" data-testid="fate-domination-board" data-played-count={playedCardCount} data-dragging-pawn={mapDrag.point?'true':undefined} onPointerDownCapture={mapDrag.onPointerDownCapture} onClickCapture={mapDrag.onClickCapture}>
+   <FateFgoEffects state={G} viewerId={actorId} battleAnchors={fgoBattleAnchors}/>
    {selectingIdentity && actor ? <FateIdentitySetup masterId={actor.masterId} servantId={actor.servantId}
     available={(kind,id) => validate(attackDraft.state,kind==='master'?{type:'SELECT_MASTER',playerId:actor.id,payload:{masterId:id}}:{type:'SELECT_SERVANT',playerId:actor.id,payload:{servantId:id}}).valid}
     onSelect={(kind,id) => send(kind==='master'?'SELECT_MASTER':'SELECT_SERVANT',kind==='master'?{masterId:id}:{servantId:id})}
     onInspect={(asset,name) => inspect(asset,name,true,'detail')} onConfirm={()=>send('ADVANCE_PHASE',{})} confirmEnabled={primaryEnabled}/>
     : <>
-   <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} canUseLocation={(id,slot)=>{const command=movement.intent?movement.commandFor(id):deployment.commandFor(id,slot);return Boolean(command&&fateTutorialAllows(G.sys.tutorial,command.type,command.payload));}} movablePlayerId={!interactionBlocked && (movement.normalAvailable||movement.intent) ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else beginNormalMovement();}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={executeLocation}/>
+   <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} canUseLocation={(id,slot)=>{const command=movement.intent?movement.commandFor(id):deployment.commandFor(id,slot);return Boolean(command&&fateTutorialAllows(G.sys.tutorial,command.type,command.payload));}} movablePlayerId={!interactionBlocked && (movement.normalAvailable||movement.intent) ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else beginNormalMovement();}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={executeLocation} onBattleAnchorChange={registerFgoBattleAnchor}/>
    {mapDrag.point&&actor&&createPortal(<div className="fd-pawn-drag-ghost" style={{left:mapDrag.point.x,top:mapDrag.point.y}}><OptimizedImage src={fateTokenAsset(actor.masterId)} alt=""/></div>,document.body)}
    <header className="fd-runtime-top"><div><small>{t('brand')}</small><h1>{t('title')}</h1></div><div className="fd-runtime-round">{t('ui.board.roundNumber', { round: core.round })} <span>{t(`phases.${core.phase}`)}</span></div></header>
    <FatePlayerRail core={core} viewerId={actorId} selectedId={selectedSeat} nameFor={nameFor} onSelect={setSelectedSeat} onDetail={id => { setInspection(null); setDetail(id); setSelectedSeat(id); }} onInspect={(asset,name) => inspect(asset,name,true,'opponent')}/>

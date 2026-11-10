@@ -1,0 +1,179 @@
+{
+  "targetUrl": "http://127.0.0.1:4273/play/mage-wars/match/lTzc6BXoCuV?playerID=0",
+  "failureScreenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T14-39-10-140Z\\00-failure-page.png",
+  "pageState": {
+    "href": "http://127.0.0.1:4273/?game=mage-wars&homeStyle=classic",
+    "title": "易桌游 - 桌游教学与联机平台",
+    "hasBoard": false,
+    "bodyText": "易桌游桌游教程、联机与原型制作平台操作指南登录注册语言全部游戏卡牌骰子抽象战棋休闲工具大杀四方2-4 人阵营混搭卡牌对战。选择两个派系组成牌组，围绕基地展开争夺，率先到达胜利分数即可获胜。不同派系组合会带来截然不同的战术节奏。卡牌2-4人召唤师战争一款战术卡牌游戏，在网格战场上指挥你的阵营战士。召唤单位、施放法术，摧毁敌方召唤师即可获胜。战棋2 人王权骰铸这是一款快节奏且易上手的游戏。从众多英雄之中，挑选一位你最中意的角色。投掷你英雄专属的 5 颗骰子来攻击对手、激活能力。累积战斗点数，并用它们购买效果各异的卡牌，例如升级英雄、施展法术，或直接操控你、队友或对手的骰子。骰子骰驱2-4人卡迪亚四大派系争夺印戒与统治权。打出卡牌、触发能力，在一场场遭遇中智胜对手。卡牌2 人璀璨宝石已完成基础版核心规则、主界面与教学引导的璀璨宝石实现。主打公开信息、宝石经营、永久折扣与贵族竞速。卡牌2-4人XOXOPRO井字棋经典的井字棋游戏。挑战 AI 或与朋友对战。抽象2 人游戏幻想国度2-6 人奇幻卡牌组合游戏。围绕 7 张手牌与公开弃牌堆做取舍，通过套牌联动冲高终局分数。卡牌2-6人纸牌帮合作德州扑克排序游戏。用筹码表达牌力，齐心完成抢劫。卡牌3-10人实施中山屋惊魂3-6 人恐怖探索桌游。当前已接入运行时基础骨架，用于锁定房间主视图、探索者区与牌堆区。卡牌3-6人实施中MW法师战争法师战争双人法术战棋。当前基础流程锁定标准竞技场、法师状态、法术书区域和事件驱动法术特效。战棋2 人实施中七大恨三势力非对称历史策略游戏。使用手牌资源与行动轮盘争夺东北亚区域控制，并在复杂战斗流程中取得政治霸权。战棋卡牌2-3人0.6.47 MW法师战争法师战争电子化作者：佚名双人法术战棋。当前基础流程锁定标准竞技场、法师状态、法术书区域和事件驱动法术特效。2推荐人数教程模式电子化作者：佚名大厅在线大厅更新更新评价评价排行排行榜创建房间暂无活跃房间",
+    "loaderText": null,
+    "loaderHtml": null
+  },
+  "captureError": null,
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "at": "2026-09-13T14:39:10.858Z"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "at": "2026-09-13T14:39:10.870Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "at": "2026-09-13T14:39:10.873Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "at": "2026-09-13T14:39:10.912Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "at": "2026-09-13T14:39:10.917Z"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "at": "2026-09-13T14:39:10.947Z"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙",
+      "at": "2026-09-13T14:39:10.969Z"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token",
+      "at": "2026-09-13T14:39:11.338Z"
+    },
+    {
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…",
+      "at": "2026-09-13T14:39:11.586Z"
+    },
+    {
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)",
+      "at": "2026-09-13T14:39:11.591Z"
+    },
+    {
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已停止",
+      "at": "2026-09-13T14:39:11.595Z"
+    },
+    {
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:4273/lobby-socket/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established.",
+      "at": "2026-09-13T14:39:11.596Z"
+    },
+    {
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…",
+      "at": "2026-09-13T14:39:11.611Z"
+    },
+    {
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)",
+      "at": "2026-09-13T14:39:11.611Z"
+    },
+    {
+      "type": "error",
+      "text": "[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "at": "2026-09-13T14:39:11.784Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 加载失败，尝试回退 level 1 (remote-fallback): splendor/picture",
+      "at": "2026-09-13T14:39:11.784Z"
+    },
+    {
+      "type": "error",
+      "text": "[OptimizedImage] ❌ 图片加载失败: {src: qidahen/thumbnails/cover, currentSrc: /assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "at": "2026-09-13T14:39:11.784Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 加载失败，尝试回退 level 1 (remote-fallback): qidahen/thumbnails/cover",
+      "at": "2026-09-13T14:39:11.784Z"
+    },
+    {
+      "type": "log",
+      "text": "[LobbySocket] ✅ 连接成功",
+      "at": "2026-09-13T14:39:11.820Z"
+    },
+    {
+      "type": "error",
+      "text": "[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "at": "2026-09-13T14:39:11.928Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 加载失败，尝试回退 level 1 (remote-fallback): splendor/picture",
+      "at": "2026-09-13T14:39:11.928Z"
+    },
+    {
+      "type": "info",
+      "text": "[UseGamePackageState] {\"at\":\"2026-09-13T14:39:12.174Z\",\"stage\":\"hook-init\",\"gameId\":\"mage-wars\",\"gameName\":\"法师战争\",\"enabled\":false,\"isPackageManaged\":false,\"delivery\":{\"mode\":\"package-managed\",\"runtimeChannel\":\"foundation\",\"modulePackId\":\"mage-wars\",\"assetPackId\":\"mage-wars\"},\"fallbackManifest\":{\"gameId\":\"mage-wars\",\"runtimeChannel\":\"foundation\",\"modulePackId\":\"mage-wars\",\"assetPackId\":\"mage-wars\",\"source\":\"fallback\"}}",
+      "at": "2026-09-13T14:39:12.175Z"
+    },
+    {
+      "type": "info",
+      "text": "[UseGamePackageState] {\"at\":\"2026-09-13T14:39:12.175Z\",\"stage\":\"disable-package-managed\",\"gameId\":\"mage-wars\",\"fallbackState\":{\"gameId\":\"mage-wars\",\"runtimeChannel\":\"foundation\",\"status\":\"not-installed\",\"modulePackId\":\"mage-wars\",\"assetPackId\":\"mage-wars\",\"updatedAt\":1789310351933}}",
+      "at": "2026-09-13T14:39:12.175Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.175Z\",\"stage\":\"critical-image-resolver-load-start\",\"gameId\":\"mage-wars\"}",
+      "at": "2026-09-13T14:39:12.176Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.176Z\",\"stage\":\"prefetch-start\",\"gameId\":\"mage-wars\",\"includeTutorial\":false}",
+      "at": "2026-09-13T14:39:12.177Z"
+    },
+    {
+      "type": "info",
+      "text": "[UseGamePackageState] {\"at\":\"2026-09-13T14:39:12.180Z\",\"stage\":\"hook-init\",\"gameId\":\"mage-wars\",\"gameName\":\"法师战争\",\"enabled\":false,\"isPackageManaged\":false,\"delivery\":{\"mode\":\"package-managed\",\"runtimeChannel\":\"foundation\",\"modulePackId\":\"mage-wars\",\"assetPackId\":\"mage-wars\"},\"fallbackManifest\":{\"gameId\":\"mage-wars\",\"runtimeChannel\":\"foundation\",\"modulePackId\":\"mage-wars\",\"assetPackId\":\"mage-wars\",\"source\":\"fallback\"}}",
+      "at": "2026-09-13T14:39:12.181Z"
+    },
+    {
+      "type": "info",
+      "text": "[UseGamePackageState] {\"at\":\"2026-09-13T14:39:12.180Z\",\"stage\":\"disable-package-managed\",\"gameId\":\"mage-wars\",\"fallbackState\":{\"gameId\":\"mage-wars\",\"runtimeChannel\":\"foundation\",\"status\":\"not-installed\",\"modulePackId\":\"mage-wars\",\"assetPackId\":\"mage-wars\",\"updatedAt\":1789310351933}}",
+      "at": "2026-09-13T14:39:12.181Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.180Z\",\"stage\":\"critical-image-resolver-reuse-inflight\",\"gameId\":\"mage-wars\"}",
+      "at": "2026-09-13T14:39:12.181Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.180Z\",\"stage\":\"prefetch-reuse-inflight\",\"gameId\":\"mage-wars\",\"includeTutorial\":false}",
+      "at": "2026-09-13T14:39:12.181Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.367Z\",\"stage\":\"critical-image-resolver-load-success\",\"gameId\":\"mage-wars\",\"durationMs\":192}",
+      "at": "2026-09-13T14:39:12.368Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.487Z\",\"stage\":\"prefetch-success\",\"gameId\":\"mage-wars\",\"includeTutorial\":false,\"durationMs\":311}",
+      "at": "2026-09-13T14:39:12.488Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T14:39:12.487Z\",\"stage\":\"prefetch-success\",\"gameId\":\"mage-wars\",\"includeTutorial\":false,\"durationMs\":307}",
+      "at": "2026-09-13T14:39:12.488Z"
+    }
+  ],
+  "error": {
+    "message": "page.waitForSelector: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"mage-wars-board\"]') to be visible\u001b[22m\n",
+    "stack": "page.waitForSelector: Timeout 120000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"mage-wars-board\"]') to be visible\u001b[22m\n\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\mage-wars-regrowth-belt-real-browser-repro.mjs:241:16)"
+  }
+}

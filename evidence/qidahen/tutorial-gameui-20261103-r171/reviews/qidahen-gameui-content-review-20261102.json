@@ -1,0 +1,1011 @@
+{
+  "reviewer": "/root/strategy_reference_review",
+  "mode": "read-only-content-causality-review",
+  "revision": 27,
+  "summary": {
+    "totalNodes": 77,
+    "reviewed": 77,
+    "sections": 8,
+    "findings": 0
+  },
+  "sourceIdentity": [
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "027c3321414986d293e3f2d1a8c869ed044b33c1412205f8c9e3b5a861ae3633"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "9a74e5f72a2612622192c0b3ae7933088667bb163ef7bcdab23c8787be58da5c"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "dba459020e41806cd67361b817ec4a697f8558336152fadbc6ef7e12df426e46"
+    },
+    {
+      "path": "docs/games/qidahen/records/qidahen-annual-tutorial-design-20261030.md",
+      "sha256": "7cc34a3b3669cd08411344eba5c89bca992c2de6e651d98a9b34c59b311fb0ae"
+    },
+    {
+      "path": "docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md",
+      "sha256": "adb2998e5d6c26957a788d9e52875294d72e068817a563ea2ad6ccc9dd02e3db"
+    },
+    {
+      "path": "src/games/qidahen/rule/七大恨规则.md",
+      "sha256": "57243737ab4484b97922278bce85cc944cb491d04234d78ca3e49aa8b27b5fc7"
+    },
+    {
+      "path": "D:/gongzuo/webgame/gameasset/七大恨 中文mod/七大恨规则.pdf",
+      "sha256": "9a81be7a232309a5d097db3af88ee091857e168fd4855fb596ff2c71f3a2e27a"
+    }
+  ],
+  "sources": "两语言包annual全部文本、77节点、年度设计及最新完整因果记录。仓内规则译文全文相关段落，正式PDF第3/5/6页原生提取逐条核对行动、季节、纪年、战斗，不把转写当冲突裁决源。",
+  "sections": [
+    {
+      "name": "开局目标和前线准备",
+      "start": "opening-opponents",
+      "end": "opening-finish",
+      "nodeIds": [
+        "opening-opponents",
+        "frontier-goal",
+        "opening-move",
+        "farm-action",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "opening-finish"
+      ],
+      "rulePages": [
+        3,
+        4
+      ],
+      "criteria": "公开控制增长纪年目标，先军屯补牌补军，开垦产生税赋资格，再势力征召备战和留守。不是给玩家自由挑课程，也没有三种轮盘移动依次体验。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "年中收入与回合开头超限",
+      "start": "midyear",
+      "end": "hand-limit",
+      "nodeIds": [
+        "midyear",
+        "hand-limit"
+      ],
+      "rulePages": [
+        3,
+        5
+      ],
+      "criteria": "其他席位真实推进公共轮盘触发全体年中；税赋和漕运补牌导致下一回合超过15才要求弃6，保留本场实际战术/军备。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "军备、出兵与野战占领",
+      "start": "battle-move",
+      "end": "battle-finish",
+      "nodeIds": [
+        "battle-move",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish"
+      ],
+      "rulePages": [
+        2,
+        3,
+        5,
+        6
+      ],
+      "criteria": "军备为本战炮兵服务，手牌动作与轮盘付费分别发生；来源→具体步兵/炮兵→目标→守方回应→战术→分阶段骰果→占领，回到同一纪年控制增长目标。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "西线外交与驻防",
+      "start": "opponent-round",
+      "end": "save-hand",
+      "nodeIds": [
+        "opponent-round",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand"
+      ],
+      "rulePages": [
+        4,
+        5
+      ],
+      "criteria": "叶赫占领后改管西线：取消外喀尔喀蒙古友好不声称夺得控制，首次雇佣补强大同，新增部队与人口差形成后续耗损选择；保留手牌为新年预算服务。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "新年朝贡及防线预算",
+      "start": "new-year",
+      "end": "abandon-outer-wall",
+      "nodeIds": [
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall"
+      ],
+      "rulePages": [
+        5,
+        6,
+        7
+      ],
+      "criteria": "朝贡→防线维护→耗损→纪年→人物的真实次序；先说明山海关价值及破败后果，再维护/弃牌；其余防线放弃对应真实费用取舍。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "新年补给与军队整编",
+      "start": "upkeep-datong",
+      "end": "upkeep-hanseong",
+      "nodeIds": [
+        "upkeep-datong",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "other-upkeep",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong"
+      ],
+      "rulePages": [
+        5,
+        6,
+        7
+      ],
+      "criteria": "先以刚雇佣的大同撤旧兵示范差额，再处理叶赫大明正规军非汉人例外、朝鲜无人口和辽北超额；移除朝鲜雇佣军保留纪年费用，不误称移兵自动丢控制。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "纪年领取、新顺位与人物",
+      "start": "claim-year",
+      "end": "year-ready",
+      "nodeIds": [
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "year-ready"
+      ],
+      "rulePages": [
+        2,
+        5
+      ],
+      "criteria": "占领增长兑现资格；同分旧顺位靠后优先；半手牌向上取整领取本年卡，再按接任卡顺位出人物，全部完成才公开再下一张。人物不是手牌。",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "name": "次年前线训练和新建目标",
+      "start": "training-move",
+      "end": "finish",
+      "nodeIds": [
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-second-kind",
+        "training-second-target",
+        "training-third-kind",
+        "training-third-target",
+        "training-recruit-kind",
+        "training-recruit-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ],
+      "rulePages": [
+        2,
+        5,
+        6
+      ],
+      "criteria": "新公开建军条件让征兵有用途；训练原实际参战炮兵和两支步兵，再在曾开垦辽东征1兵，人口容量与税赋资格变化有前因。4次同费，用完才说明额外弃牌训练，保留最后手牌正常收尾。",
+      "verdict": "通过：内容与静态合同层"
+    }
+  ],
+  "items": [
+    {
+      "order": 1,
+      "id": "opening-opponents",
+      "presentation": "hidden-automation",
+      "zh": null,
+      "en": null,
+      "criteria": "对手已学动作压缩或合法开局前置，不代做学员新决策",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 2,
+      "id": "frontier-goal",
+      "presentation": "authored-content",
+      "zh": "你执掌大明，每张纪年卡计1点威望，先得3点即可获胜。新年按下一张纪年卡的条件决定领取资格；眼前的条件是增加最多控制区域。这一年从辽北夺取叶赫部，争取第一张纪年卡。",
+      "en": "You command Ming. Each chronology card is worth 1 prestige; the first player to reach 3 wins. At New Year, the next card determines eligibility to claim this year’s card. The revealed condition rewards the greatest increase in controlled regions. Capture Yehe from Liaobei to compete for your first card.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 3,
+      "id": "opening-move",
+      "presentation": "authored-content",
+      "zh": "三方共用这个行动轮盘。前进1格免费；前进2格须指定一名对手抽2张牌，前进3格则所有对手各抽2张。这次前进1格，利用开垦、军屯准备前线。",
+      "en": "All three factions share this action wheel. Advance 1 space for free, 2 spaces by giving one chosen opponent 2 cards, or 3 spaces by giving every opponent 2 cards. Advance 1 space to prepare your frontier with Reclamation and Military Farming.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 4,
+      "id": "farm-action",
+      "presentation": "authored-content",
+      "zh": "要从辽北出兵，先补充当地部队和手牌。军屯：抽2张手牌，并且建立1个等级2的正规军部队。",
+      "en": "Prepare troops and cards for an advance from Liaobei. Military Farming: draw 2 hand cards and establish 1 level-2 regular unit.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 5,
+      "id": "farm-target",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 6,
+      "id": "reclaim-action",
+      "presentation": "authored-content",
+      "zh": "同格的开垦也可以执行。每个己方控制区域可增加1人口，一次最多选5处，不得超过当地人口上限。人口决定当地供养能力，也影响年中税赋。",
+      "en": "You may also perform Reclamation in this space. Add 1 population to each of up to 5 controlled regions without exceeding their population limits. Population supports local troops and determines eligibility for midyear tax.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 7,
+      "id": "reclaim-target",
+      "presentation": "authored-content",
+      "zh": "人口多于部队、且未被围城的控制区域，年中可收1张手牌。辽东现在3人口、3支部队；在这里开垦，便能取得这份收入。",
+      "en": "At midyear, each controlled region with more population than troops and no siege provides 1 card. Liaodong currently has 3 population and 3 units. Reclaim it to qualify for that income.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 8,
+      "id": "recruit-action",
+      "presentation": "authored-content",
+      "zh": "本回合还可执行一次手牌行动。利用刚补充的手牌征召军队，既准备进攻叶赫部，也留下部队守住辽北。 大明的征召军队：弃1张手牌，建立6个等级2部队，或2个等级4的川兵部队。选择征召军队。",
+      "en": "You may still take one hand action this turn. Use your replenished cards to recruit troops for the attack on Yehe while retaining a garrison in Liaobei. Ming’s Raise Troops: discard 1 hand card to establish either 6 level-2 units or 2 level-4 Sichuan infantry units. Choose Raise Troops.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 9,
+      "id": "recruit-payment",
+      "presentation": "authored-content",
+      "zh": "银两没有特殊效果，只能弃牌作为资源使用。用这张银两支付，保留其它牌；点击放大镜可查看整张手牌。",
+      "en": "Silver has no special effect and is used by discarding it as a resource. Pay with this Silver card and retain your other cards. The magnifying glass opens a full-card view.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 10,
+      "id": "recruit-confirm",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 11,
+      "id": "recruit-source",
+      "presentation": "authored-content",
+      "zh": "正规军只能在自己的本土建立。辽北是这次进攻的出发地，在这里征召。",
+      "en": "Regular units must be established in your homeland. Recruit in Liaobei, the source of this attack.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 12,
+      "id": "recruit-troops",
+      "presentation": "authored-content",
+      "zh": "这次建立6支2级部队，两支用于跨河，其余留守。等级决定每支部队的骰子：2级投八面骰，4级投十二面骰。军队超过当地人口的部分，新年须弃牌补给或减员。",
+      "en": "Establish 6 level-2 units: send two across the river and retain the rest. Each unit’s level determines its die: level 2 uses an eight-sided die, level 4 a twelve-sided die. At New Year, troops beyond local population require cards or removal.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 13,
+      "id": "opening-finish",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "开局目标和前线准备",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 14,
+      "id": "midyear",
+      "presentation": "authored-content",
+      "zh": "轮盘经过年中、新年时必须停留；当前玩家可择一执行格内行动，也可放弃，随后全体结算。年中每个符合税赋条件的区域收1张手牌，大明另抽5张漕运牌；刚才开垦的辽东也贡献了收入。年中还检查人物的判定条件。",
+      "en": "The wheel must stop when passing Midyear or New Year. The active player may take one action there or decline; all factions then resolve the season. At Midyear, each tax-eligible region provides 1 card, and Ming draws 5 extra transport cards. Reclaimed Liaodong now contributes. Character judgment conditions are also checked.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "年中收入与回合开头超限",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 15,
+      "id": "hand-limit",
+      "presentation": "authored-content",
+      "zh": "收入带来了更多选择，但大明的手牌上限是15张，回合开始须弃掉超出的部分。保留接下来作战所需的鸳鸯阵和火炮技术，选择高亮的6张弃牌。",
+      "en": "Income provides more options, but Ming’s hand limit is 15. Discard excess cards at the start of your turn. Retain Mandarin Duck Formation and Artillery Technology for the coming battle; discard the six highlighted cards.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "年中收入与回合开头超限",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 16,
+      "id": "battle-move",
+      "presentation": "authored-content",
+      "zh": "前线兵力已经备好。前进1格到进攻调度，这回合从辽北渡河进攻叶赫部，为本年的控制增长争取优势。",
+      "en": "Your frontier force is ready. Advance 1 space to Dispatch and Attack. Cross from Liaobei into Yehe this turn to improve your control-growth score.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 17,
+      "id": "upgrade-card",
+      "presentation": "authored-content",
+      "zh": "辽北炮兵将参加这场战斗。先用本回合手牌行动研发火炮技术，再执行轮盘上的进攻。手牌行动和轮盘行动的先后由玩家决定。 军备牌打出后还需另弃1张手牌，随后留在己方场上。每张已研发的火炮技术使炮兵骰点加1，并提高炮兵可训练的等级上限。打出「火炮技术」加强炮兵。",
+      "en": "Liaobei’s artillery will join this battle. Use your hand action to develop Artillery Technology before the wheel’s attack. You choose the order of your hand and wheel actions. Playing an armament requires discarding another hand card; the armament then remains in play. Each developed Artillery Technology adds 1 to artillery rolls and raises their training limit. Play Artillery Technology to strengthen your artillery.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 18,
+      "id": "upgrade-payment",
+      "presentation": "authored-content",
+      "zh": "打出的火炮技术不是费用牌。另选这张银两弃掉，完成研发。",
+      "en": "The played technology is not the payment card. Discard this separate Silver card to complete development.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 19,
+      "id": "upgrade-confirm",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 20,
+      "id": "dispatch-action",
+      "presentation": "authored-content",
+      "zh": "进攻调度：弃1张手牌，指挥最多6个部队移动。步兵、炮兵移动1格，骑兵移动2格；进入非己方或友好势力控制的区域触发战斗。执行调度，向叶赫部推进。",
+      "en": "Dispatch and Attack: discard 1 card to move up to 6 units. Infantry and artillery move 1 space; cavalry move 2. Entering a region outside your control or friendship triggers combat. Dispatch your force toward Yehe.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 21,
+      "id": "dispatch-payment",
+      "presentation": "authored-content",
+      "zh": "这笔弃牌支付的是轮盘行动，之前的军备手牌行动已用过。用这张牌支付，留下鸳鸯阵用于战斗。",
+      "en": "This discard pays for the wheel action; your hand action was already used on the armament. Pay with this card and retain Mandarin Duck Formation for combat.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 22,
+      "id": "dispatch-source",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 23,
+      "id": "dispatch-troops",
+      "presentation": "authored-content",
+      "zh": "野战以存活的步兵、骑兵数量判胜负，同数时守方胜。辽北到叶赫部隔河，战场宽度为2，炮兵不占宽度。选两支2级步兵和原有的1级炮兵，再确认。",
+      "en": "The side with more surviving infantry and cavalry wins a field battle; ties favor the defender. The river to Yehe gives a battle width of 2, while artillery ignores that width. Select two level-2 infantry and the existing level-1 artillery, then confirm.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 24,
+      "id": "dispatch-target",
+      "presentation": "authored-content",
+      "zh": "部队已选好，选择叶赫部作为目标。这里有蒙古驻军，进攻提交后先由守方决定是否避战。",
+      "en": "Your force is selected. Choose Yehe as its destination. Mongol troops defend it; after you commit, the defender first decides whether to evade battle.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 25,
+      "id": "defender-response",
+      "presentation": "authored-content",
+      "zh": "守方骑兵可撤往其它己方控制区域避战；蒙古选择迎战。每3点骰值通常造成1损伤，但它已研发骑兵铁甲，本次需要4点。接下来由双方决定是否使用战术牌。",
+      "en": "Defending cavalry may evade into another controlled region; Mongol chooses to fight. Normally each 3 rolled points causes 1 damage, but its developed Cavalry Armor requires 4 here. Both sides may now play a tactic.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 26,
+      "id": "tactic-card",
+      "presentation": "authored-content",
+      "zh": "每场战斗通常只能打出1张战术牌。鸳鸯阵使这两支2级步兵改投十面骰，不改变部队等级；不用这张牌时，它们各投八面骰。选择并确认打出，增强这次进攻。",
+      "en": "Normally you may play 1 tactic per battle. Mandarin Duck Formation changes these level-2 infantry to ten-sided dice without changing their levels; without it, each rolls an eight-sided die. Select and confirm the card to strengthen this attack.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 27,
+      "id": "battle-roll",
+      "presentation": "authored-content",
+      "zh": "野战依炮兵、骑兵、步兵的顺序，双方同阶段同时结算。每支参战部队掷自己的骰子；1级炮兵投六面骰。损伤先由最高等级部队承受，步骑每受1损伤降1级，降至0移除；炮兵不承伤。开始战斗，观察骰果如何改变守军。",
+      "en": "Field battles resolve artillery, cavalry, then infantry; both sides resolve simultaneously within each phase. Each participating unit rolls its own die; level-1 artillery uses a six-sided die. Damage goes to the highest-level units first. Each damage lowers infantry or cavalry by 1 level; level 0 is removed. Artillery cannot absorb damage. Start combat and watch the rolls affect the defenders.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 28,
+      "id": "occupy",
+      "presentation": "authored-content",
+      "zh": "要把这次胜利计入控制区域的增长，必须留下部队占领。选择不劫掠占领，保留叶赫部人口。野战败方的人物还会获得战败标记，留待年中判定。",
+      "en": "To turn this victory into increased control, leave troops to occupy the region. Occupy without plundering to retain Yehe’s population. The defeated side also places a defeat marker on an eligible character for midyear judgment.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 29,
+      "id": "battle-finish",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "军备、出兵与野战占领",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 30,
+      "id": "opponent-round",
+      "presentation": "hidden-automation",
+      "zh": null,
+      "en": null,
+      "criteria": "对手已学动作压缩或合法开局前置，不代做学员新决策",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 31,
+      "id": "diplomacy-move",
+      "presentation": "authored-content",
+      "zh": "叶赫部已拿下，接着照顾西线。大同邻接外喀尔喀部，当地的蒙古友好标记允许其安全通行、驻守。前进1格到外交、雇佣，取消这项资格并加强大同驻军。",
+      "en": "With Yehe taken, attend to the western frontier. Datong borders Outer Khalkha, where Mongol’s friendship marker permits passage and stationing. Advance 1 space to Diplomacy and Hiring to remove that permission and reinforce Datong.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 32,
+      "id": "diplomacy-action",
+      "presentation": "authored-content",
+      "zh": "外交可影响最多3个邻接己方控制区域的区域。没有控制标记的本土、有正规军驻守的区域及朝鲜不能成为目标。选择外交，处理外喀尔喀部的蒙古标记。",
+      "en": "Diplomacy may affect up to 3 regions adjacent to your controlled regions. Unmarked homelands, regions containing regular units, and Korea are excluded. Choose Diplomacy to deal with Mongol’s marker in Outer Khalkha.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 33,
+      "id": "diplomacy-target",
+      "presentation": "authored-content",
+      "zh": "反面标记表示友好，仍是中立区域；正面才是附庸控制区。选择外喀尔喀部，移除蒙古的反面标记；这会取消友好关系，不会让大明取得控制。",
+      "en": "A reverse marker means friendship while the region remains neutral; its front means vassal control. Select Outer Khalkha to remove Mongol’s reverse marker. This ends the friendship without giving Ming control.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 34,
+      "id": "diplomacy-finish",
+      "presentation": "authored-content",
+      "zh": "本回合只需处理这处友好关系。结束外交，转去补强相邻的大同。",
+      "en": "This turn only that friendship needs attention. Finish Diplomacy and reinforce neighboring Datong.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 35,
+      "id": "hire-action",
+      "presentation": "authored-content",
+      "zh": "大同目前只有一支1级守军。同一格还可以雇佣：首次弃1张手牌，在己方控制区域建立2支2级雇佣军；继续雇佣时，每张牌只能再建1支。",
+      "en": "Datong currently has only one level-1 garrison. This space also permits Hiring: discard 1 card to establish 2 level-2 mercenaries in a controlled region. Further hires in this action provide only 1 unit per card.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 36,
+      "id": "hire-payment",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 37,
+      "id": "hire-target",
+      "presentation": "authored-content",
+      "zh": "在大同建立两支新守军。它们将和旧守军一起超过当地2人口；新年可用手牌支持差额，也可撤去旧兵。雇佣军可在任意己方控制区域建立，不限本土。",
+      "en": "Establish the two new defenders in Datong. With the old garrison, they exceed its 2 population. At New Year you may pay cards for the excess or remove the old unit. Unlike regular units, mercenaries may be established in any controlled region.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 38,
+      "id": "diplomacy-round-finish",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 39,
+      "id": "save-hand",
+      "presentation": "authored-content",
+      "zh": "新年将至，防线、驻军和领取纪年卡都需要手牌。这回合保留手牌，不再执行手牌行动。",
+      "en": "New Year is approaching. Fortifications, troop support, and claiming the chronology card all require cards. Retain your hand and forgo a hand action this turn.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "西线外交与驻防",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 40,
+      "id": "new-year",
+      "presentation": "authored-content",
+      "zh": "新年先按控制的朝鲜区域标记抽取朝鲜牌；这些牌使用、弃掉后须回到独立的朝鲜弃牌堆。随后依序维护防线、处理耗损、领取纪年卡、打出新年度人物。现在的选择会影响还能留多少牌领取纪年卡。",
+      "en": "New Year first provides Korean tribute cards according to the marks in your controlled Korean regions. Used or discarded Korean cards go to their separate discard pile. Maintenance, upkeep, the chronology claim, and new-year characters then resolve in order. Your spending determines the cards left for the claim.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 41,
+      "id": "maintain-shanhai",
+      "presentation": "authored-content",
+      "zh": "山海关维持辽西、蓟镇之间的城防；破败后这条边界按平原处理。保留山海关，把其余手牌分给前线补给和纪年卡。",
+      "en": "Shanhai Pass maintains the fortified boundary between Liaoxi and Jizhen; ruin turns it into a plain boundary. Maintain the pass and reserve the rest of your cards for frontier upkeep and the chronology card.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 42,
+      "id": "maintenance-first-card",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 43,
+      "id": "maintenance-second-card",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 44,
+      "id": "abandon-jinzhou",
+      "presentation": "authored-content",
+      "zh": "锦州、宁远若不维护，会视为城市不存在。保留这些城防也要花手牌；本年把资源留给已出战的军队和纪年卡，放弃维护锦州，随后同样处理宁远。",
+      "en": "Unmaintained Jinzhou and Ningyuan lose their city effects. Keeping them also costs cards. This year reserve resources for the field army and chronology card: abandon Jinzhou, then do the same for Ningyuan.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 45,
+      "id": "abandon-ningyuan",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 46,
+      "id": "abandon-inner-wall",
+      "presentation": "authored-content",
+      "zh": "从长城凸面进攻时，战场宽度为1；破败后变为3。放弃内、外长城维护会失去这项防御。本年保留手牌，选择放弃维护。",
+      "en": "An attack against the convex side of an intact wall has battle width 1; ruin raises it to 3. Abandoning either wall loses this defense. Retain your cards this year and abandon maintenance.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 47,
+      "id": "abandon-outer-wall",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "新年朝贡及防线预算",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 48,
+      "id": "upkeep-datong",
+      "presentation": "authored-content",
+      "zh": "人口少于部队时，差额每支须弃1张手牌支持，或移除一支部队。大同已雇来两支2级守军；撤去原来的1级兵，让新守军由当地人口供养，保留手牌。",
+      "en": "When troops exceed population, each excess unit requires 1 discarded card or the removal of a unit. Datong has two newly hired level-2 defenders. Remove its old level-1 unit so local population supports the new garrison, retaining your cards.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 49,
+      "id": "upkeep-yehe",
+      "presentation": "authored-content",
+      "zh": "叶赫部是非汉人区域，大明正规军不能接受当地人口补给。刚夺取的前线需要留下守军，每支各弃1张手牌支持；这次为三支驻军支付。",
+      "en": "Yehe is non-Han territory, where Ming regulars cannot use local population for support. Retain the garrison on your newly taken frontier by discarding 1 card per unit. Support all three here.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 50,
+      "id": "upkeep-xianxing",
+      "presentation": "authored-content",
+      "zh": "朝鲜不放人口，也不能就地补给任何军队。每支驻军完全由手牌支持；这次弃1张牌，保留咸兴驻军。",
+      "en": "Korea has no population and cannot supply any troops locally. Every stationed unit needs card support. Discard 1 card to retain the Hamhung garrison.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 51,
+      "id": "other-upkeep",
+      "presentation": "hidden-automation",
+      "zh": null,
+      "en": null,
+      "criteria": "对手已学动作压缩或合法开局前置，不代做学员新决策",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 52,
+      "id": "upkeep-liaobei",
+      "presentation": "authored-content",
+      "zh": "辽北留下的预备队超过当地人口4支。扩军的补给代价现在兑现：支付4张手牌保留它们，而不是因部队留在本土就免除差额。",
+      "en": "Liaobei’s retained force exceeds local population by four units. Expansion now incurs its upkeep cost: pay 4 cards to retain them. Being in your homeland does not waive excess-troop support.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 53,
+      "id": "upkeep-pyongyang",
+      "presentation": "authored-content",
+      "zh": "还要为纪年卡留出手牌。本次撤去平壤、随后撤去汉城的雇佣军，不再支付这两处驻军的补给；移除部队不会自动改变控制权。",
+      "en": "Retain cards for the chronology claim. Remove the mercenaries in Pyongyang, then Hanseong, rather than supporting those two garrisons. Removing units does not automatically change control.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 54,
+      "id": "upkeep-hanseong",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "新年补给与军队整编",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 55,
+      "id": "claim-year",
+      "presentation": "authored-content",
+      "zh": "年初看到的控制增长条件现在结算：占领叶赫部使大明取得领取资格；同分时原顺位靠后者优先。弃一半手牌、向上取整，领取本年纪年卡和1点威望；放弃则资格顺延。",
+      "en": "The control-growth condition revealed at the start now resolves. Capturing Yehe makes Ming eligible; ties favor the later faction in the previous order. Discard half your hand, rounded up, to claim this year’s card and 1 prestige. Declining passes eligibility onward.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 56,
+      "id": "chronology-first-card",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 57,
+      "id": "chronology-second-card",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 58,
+      "id": "chronology-third-card",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 59,
+      "id": "new-order",
+      "presentation": "authored-content",
+      "zh": "领走的是本年纪年卡；刚用于评分的下一张接任本年卡，决定新顺位和可出场人物。新顺位是蒙古、大明、后金。蒙古选完人物后轮到大明，全部出场完成才翻开再下一张。",
+      "en": "You claimed this year’s card. The next card, whose condition was just scored, becomes current and determines order and eligible characters. The new order is Mongol, Ming, Jin. After Mongol chooses, Ming chooses. The following card is revealed only after everyone finishes.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 60,
+      "id": "year-character",
+      "presentation": "authored-content",
+      "zh": "人物由本年的纪年卡限定，不进入手牌，出场后的能力持续生效。点击放大镜查看杨镐：调度、进攻可指挥10个部队，且不受其它人物效果影响。选择他，为后续动员留下指挥余量。",
+      "en": "The current chronology card determines eligible characters. They do not enter your hand; their abilities persist in play. Inspect Yang Gao with the magnifying glass: he can command 10 units in dispatch or attacks and ignores other character effects. Choose him to allow larger future mobilization.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 61,
+      "id": "year-ready",
+      "presentation": "hidden-automation",
+      "zh": null,
+      "en": null,
+      "criteria": "对手已学动作压缩或合法开局前置，不代做学员新决策",
+      "section": "纪年领取、新顺位与人物",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 62,
+      "id": "training-move",
+      "presentation": "authored-content",
+      "zh": "人物出场完成后，新公开的纪年条件是本年新建最多部队。现在轮到大明，前进1格到征兵训练：先强化叶赫部驻军，再建立新兵，开始争取下一次领取资格。",
+      "en": "After character selection, the newly revealed chronology condition rewards the most units established this year. It is now Ming’s turn. Advance 1 space to Recruitment and Training: strengthen Yehe’s garrison, then recruit to compete for the next claim.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 63,
+      "id": "training-action",
+      "presentation": "authored-content",
+      "zh": "弃1张手牌，最多可进行4次征兵或训练。征兵每次建立1个等级2正规军；训练每次使一支部队提升1级。本次用三次训练强化前线，再用一次征兵补充辽东。",
+      "en": "Discard 1 card for up to 4 recruitment or training actions. Each recruitment establishes 1 level-2 regular; each training raises one unit by 1 level. Train the frontier three times, then recruit once in Liaodong.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 64,
+      "id": "training-payment",
+      "presentation": "authored-content",
+      "zh": "用朝贡后保留的这张朝鲜手牌支付一次费用，开始征兵训练。",
+      "en": "Use this Korean tribute card retained from New Year to pay once for Recruitment and Training.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 65,
+      "id": "training-payment-confirm",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 66,
+      "id": "training-kind",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 67,
+      "id": "training-target",
+      "presentation": "authored-content",
+      "zh": "每支部队每回合只能提升1级，炮兵等级上限须由军备提高。之前的火炮技术已把上限提高到2；选择参加过叶赫之战的1级炮兵，训练到2级。",
+      "en": "Each unit may gain only 1 level per turn, and artillery limits require armaments. Your earlier Artillery Technology raised the limit to 2. Train the level-1 artillery that fought at Yehe to level 2.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 68,
+      "id": "training-second-kind",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 69,
+      "id": "training-second-target",
+      "presentation": "authored-content",
+      "zh": "继续训练两支参战步兵，仍使用同一次费用的基础次数。2级升到3级后，通常投掷的骰子由八面变为十面，不必再靠鸳鸯阵临时改变。",
+      "en": "Train the two infantry that fought here, using the remaining base actions from the same payment. Raising level 2 to level 3 changes their normal dice from eight-sided to ten-sided without temporarily relying on Mandarin Duck Formation.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 70,
+      "id": "training-third-kind",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 71,
+      "id": "training-third-target",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 72,
+      "id": "training-recruit-kind",
+      "presentation": "authored-content",
+      "zh": "三次训练已强化前线，最后一次用于征兵。训练不算新建部队；征兵才能增加这次纪年条件所统计的建军数量。",
+      "en": "Three training actions strengthened the frontier. Use the last action to recruit. Training does not establish a new unit; recruitment increases the count used by this chronology condition.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 73,
+      "id": "training-recruit-target",
+      "presentation": "authored-content",
+      "zh": "辽东此前开垦后有4人口、3支部队。在这里建立1支2级正规军，可由当地人口供养；人口与部队相等后，这里不再符合年中税赋条件。",
+      "en": "Earlier reclamation left Liaodong with 4 population and 3 units. Establish 1 level-2 regular here, supported by local population. With equal population and troops, it will no longer qualify for midyear tax.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 74,
+      "id": "training-finish",
+      "presentation": "authored-content",
+      "zh": "4次基础行动已用完。额外训练每次还需弃1张手牌；这次保留最后一张，不再追加训练。",
+      "en": "All 4 base actions are used. Each extra training requires another discarded card. Retain your last card and finish without additional training.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 75,
+      "id": "training-slot-finish",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 76,
+      "id": "training-round-finish",
+      "presentation": "self-explanatory-ui",
+      "zh": null,
+      "en": null,
+      "criteria": "已教学的真实控件或重复支付/完成操作，不另显示念稿；实际可见性待图审",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    },
+    {
+      "order": 77,
+      "id": "finish",
+      "presentation": "authored-content",
+      "zh": "叶赫部仍在大明控制下，第一点威望已经取得。接下来比较本年新建部队，继续扩军时也要为新年留下补给和领取纪年的手牌。率先取得3点威望即可获胜；攻下对手首都，或新年控制至少16个非朝鲜区域，也能获胜。",
+      "en": "Ming retains Yehe and has earned its first prestige. The next contest counts units established this year. As you recruit, retain cards for New Year support and the chronology claim. Reach 3 prestige first to win; capturing an opposing capital or controlling at least 16 non-Korean regions at New Year also wins.",
+      "criteria": "文本先说明当前局面用途，再补当前规则/真实动作及后果；中英语义一致",
+      "section": "次年前线训练和新建目标",
+      "verdict": "通过：内容与静态合同层"
+    }
+  ],
+  "findings": [],
+  "verdict": "内容与静态因果合同审查通过；不代表完整产品/图面/规则全分支验收",
+  "boundaries": [
+    "本轮没有读取图片、运行浏览器或测试。目标是否真实出现、可点、贴近、无遮挡必须由当前R157真实流程和逐图审查证明。",
+    "正式PDF未囊括每张实际组件效果；鸳鸯阵、骑兵铁甲、杨镐、当前纪年卡效果与现有项目组件合同/当前运行态对照，未在本次重新读卡图，因此不新声明逐卡素材规则验收。",
+    "1/2/3格互斥走法主线只选1格；事件牌、其他势力专属行动、城市围城、海运、骑兵劫掠/败退、全部人物判定/争议勘误不在本主线实操范围。",
+    "年中有规则说明且全体结算观察，首次无满足条件的人物判定不伪造骰局；新年逐项真实决定不能由本报告替代数值结果测试。",
+    "年度设计文档明确旧revision22/23内容为历史，存在旧雇佣/训练路线；当前步骤唯一以revision27源码与两语言包为准，历史文档不能恢复旧设计验收。"
+  ]
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "gaussian-04",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\gaussian-04.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 2066324
+  },
+  {
+    "id": "gaussian-06",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\gaussian-06.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 3529050
+  },
+  {
+    "id": "edge-protected-06",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\edge-protected-06.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 2530155
+  },
+  {
+    "id": "edge-protected-09",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\edge-protected-09.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 2799687
+  },
+  {
+    "id": "bilateral-10",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\bilateral-10.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 2997898
+  },
+  {
+    "id": "bilateral-18",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-pilot\\bilateral-18.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": false,
+    "changedOpaqueRgbPixels": 3530367
+  }
+]

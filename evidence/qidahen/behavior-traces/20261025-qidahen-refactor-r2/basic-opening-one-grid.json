@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-one-grid",
+  "sourceRun": "20261025-qidahen-refactor-r2",
+  "sourceRevision": "sha256:8ce0e83a429d553de9e8ddbd06f2474cfece1e6c960ed1b85e01d840564feb77",
+  "status": "RUNNING",
+  "outcome": "教程行为链执行中。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

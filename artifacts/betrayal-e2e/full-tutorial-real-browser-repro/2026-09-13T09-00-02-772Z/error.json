@@ -1,0 +1,4 @@
+{
+  "message": "page.waitForFunction: Timeout 90000ms exceeded.",
+  "stack": "page.waitForFunction: Timeout 90000ms exceeded.\n    at waitForStep (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:253:14)\n    at playRabbitAndEndTurn (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:349:9)\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:679:11)"
+}

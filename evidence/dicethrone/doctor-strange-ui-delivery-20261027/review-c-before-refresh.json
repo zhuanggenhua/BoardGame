@@ -1,0 +1,466 @@
+{
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/strange_ui_delivery_c"
+  },
+  "reviewedAt": "2026-10-27T02:06:59.804Z",
+  "status": "PASS",
+  "media": [
+    {
+      "path": "images/worthy-teammate__值得拥有-四人队伍起始态.png",
+      "sha256": "4eaadf31180f436c07535fe4d90c9ac4bb1d939cc2ad555049f6f03dba3ed91f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四人头像和队伍颜色、奇异博士玩家板、公开准备法术、HP/CP与右侧五骰同时可见；中央P1等待提示表明当前为队友投掷阶段。",
+      "userDescription": "四人组队牌桌显示奇异博士和队友的当前骰区。",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-ready",
+        "before": [
+          "images/worthy-teammate__值得拥有-四人队伍起始态.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-四人队伍起始态.png"
+        ],
+        "visibleConsequence": "四人头像和队伍颜色、奇异博士玩家板、公开准备法术、HP/CP与右侧五骰同时可见；中央P1等待提示表明当前为队友投掷阶段。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "整屏画面；资源、准备区、技能槽与骰盘未被本次UI遮挡，底部卡背接近视口底缘。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/worthy-teammate__值得拥有-队友骰区目标态.png",
+      "sha256": "b4188d5a72b45bfaea7b64ea1fdade9c16114ea422316c9da82a3b000b6d19bd",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "队友牌打出后右侧出现“选择队友的骰子(0/2)”，五颗候选骰均完整可见；悬停卡图停在骰区左下方，未遮挡骰子或取消入口，确认尚为禁用态。",
+      "userDescription": "打出队友牌后，右侧显示五颗可选择的队友骰子。",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-targets",
+        "before": [
+          "images/worthy-teammate__值得拥有-四人队伍起始态.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-队友骰区目标态.png"
+        ],
+        "visibleConsequence": "队友牌打出后右侧出现“选择队友的骰子(0/2)”，五颗候选骰均完整可见；悬停卡图停在骰区左下方，未遮挡骰子或取消入口，确认尚为禁用态。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "悬停卡图覆盖玩家板与提示板的局部下侧，但当前五颗选骰候选、选骰提示及取消入口完整；禁用确认区未被该卡图覆盖。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/worthy-teammate__值得拥有-队友骰子已选.png",
+      "sha256": "73883339c589bff8c5c4a686a236b4b62f49e406c5f96ea33cee526f0b10b607",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧前两颗骰子出现黄色勾选与描边，“完成”提示和黄色确认按钮可见；卡图悬停预览已退场，目标与确认动作关系清楚。",
+      "userDescription": "选中两颗队友骰子后，勾选反馈与确认入口出现。",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-selected-dice",
+        "before": [
+          "images/worthy-teammate__值得拥有-队友骰区目标态.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-队友骰子已选.png"
+        ],
+        "visibleConsequence": "右侧前两颗骰子出现黄色勾选与描边，“完成”提示和黄色确认按钮可见；卡图悬停预览已退场，目标与确认动作关系清楚。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "当前候选和勾选可见；工具图标靠近确认按钮右缘，但确认文字及主要按钮面完整可辨。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/worthy-teammate__值得拥有-队友骰区重掷结算.png",
+      "sha256": "70e504d2609880918dcca85f8b13ced4f5b3dcc5ef6a7196edb90d3a14a69be4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选骰提示及勾选反馈退场，右侧前两骰呈重掷旋转过程，弃牌区保留所打出的卡图；本帧只证明重掷过程及选择层关闭，不能据此读取最终骰值。",
+      "userDescription": "确认选择后，队友骰子开始重掷且选骰提示关闭。",
+      "uiAudit": {
+        "target": "doctor-strange-worthy-teammate-settled",
+        "before": [
+          "images/worthy-teammate__值得拥有-队友骰子已选.png"
+        ],
+        "after": [
+          "images/worthy-teammate__值得拥有-队友骰区重掷结算.png"
+        ],
+        "visibleConsequence": "选骰提示及勾选反馈退场，右侧前两骰呈重掷旋转过程，弃牌区保留所打出的卡图；本帧只证明重掷过程及选择层关闭，不能据此读取最终骰值。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "骰子旋转过程无额外遮挡，准备区、资源和弃牌区可见；不作为最终骰面稳定态。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/premonition-income__收入阶段替代选项-桌面.png",
+      "sha256": "e2f5ebda183ad264b8fcc243f5f7a4bfeeb678bdecd545a05274c1d1cf49c791",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "收入选择弹窗居中显示不使用预感、花费1预感和花费3预感三个选项，文字和按钮完整可辨，底层牌桌按模态任务变暗。",
+      "userDescription": "进入收入阶段后，弹窗显示正常抽牌及两种预感选项。",
+      "uiAudit": {
+        "target": "doctor-strange-income-options",
+        "before": [
+          "images/premonition-income__收入阶段替代选项-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__收入阶段替代选项-桌面.png"
+        ],
+        "visibleConsequence": "收入选择弹窗居中显示不使用预感、花费1预感和花费3预感三个选项，文字和按钮完整可辨，底层牌桌按模态任务变暗。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "当前任务为模态决策，底层牌桌受遮罩；三项当前决策按钮均完整。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/premonition-income__本次抽牌返还选择-桌面.png",
+      "sha256": "ed3092dcc90ffd7ebc02a3ca139268530f5ee9451f47d11aa4fde81c3623f4c1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返还卡牌弹窗并排呈现三张完整实体卡图与名称，中间候选出现黄色焦点描边，选择提示位于候选上方，无候选被遮挡。",
+      "userDescription": "选择预感替代后，三张返还候选卡并排出现。",
+      "uiAudit": {
+        "target": "doctor-strange-income-drawn-cards",
+        "before": [
+          "images/premonition-income__收入阶段替代选项-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__本次抽牌返还选择-桌面.png"
+        ],
+        "visibleConsequence": "返还卡牌弹窗并排呈现三张完整实体卡图与名称，中间候选出现黄色焦点描边，选择提示位于候选上方，无候选被遮挡。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "三张当前候选完整入镜，卡名及主体可读，无浮层覆盖。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/premonition-income__选择牌库底-桌面.png",
+      "sha256": "c05f5a59e5bab3ab2c9072bea0d64bd37658b10de0a3d6718671f711556db0d9",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返还位置弹窗居中显示牌库顶与牌库底两个按钮，当前选择任务及可点入口清楚，未出现额外遮挡或错误提示。",
+      "userDescription": "选择返还牌后，弹窗提供牌库顶与牌库底两个去向。",
+      "uiAudit": {
+        "target": "doctor-strange-income-return-position",
+        "before": [
+          "images/premonition-income__本次抽牌返还选择-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__选择牌库底-桌面.png"
+        ],
+        "visibleConsequence": "返还位置弹窗居中显示牌库顶与牌库底两个按钮，当前选择任务及可点入口清楚，未出现额外遮挡或错误提示。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "两个当前去向按钮完整入镜，无裁切。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/premonition-income__预感收入结算后-桌面.png",
+      "sha256": "a9f1ce5ddd0cb2b122110c176e404ff69c393c8d60e53cd00c69a20161dde10c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返还选择弹窗关闭后，奇异博士玩家板、准备法术、资源区和三张手牌本体恢复可见；手牌下部延伸到视口底缘，不遮挡当前骰盘与阶段控件，画面不单独证明返牌数值或最终阶段。",
+      "userDescription": "选择返还位置后，弹窗关闭并恢复牌桌显示。",
+      "uiAudit": {
+        "target": "doctor-strange-income-settled",
+        "before": [
+          "images/premonition-income__选择牌库底-桌面.png"
+        ],
+        "after": [
+          "images/premonition-income__预感收入结算后-桌面.png"
+        ],
+        "visibleConsequence": "返还选择弹窗关闭后，奇异博士玩家板、准备法术、资源区和三张手牌本体恢复可见；手牌下部延伸到视口底缘，不遮挡当前骰盘与阶段控件，画面不单独证明返牌数值或最终阶段。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "手牌下部延伸到视口底缘；当前返还弹窗已退场，资源/准备区/骰区未被遮挡。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__真实创建房间-待确认.png",
+      "sha256": "23653a6f6282ba1aaecb7fe01629673d74854a815158591cc10c0a8d5f45b0d1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式创建房间弹窗完整显示房间信息、人数、保存方式与确认创建按钮，当前2人选项突出且底部提交入口未裁切。",
+      "userDescription": "从游戏入口创建房间时，显示双人房间确认界面。",
+      "uiAudit": {
+        "target": "doctor-strange-online-room-confirmation",
+        "before": [
+          "images/online-selection-and-start__真实创建房间-待确认.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__真实创建房间-待确认.png"
+        ],
+        "visibleConsequence": "正式创建房间弹窗完整显示房间信息、人数、保存方式与确认创建按钮，当前2人选项突出且底部提交入口未裁切。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "弹窗及提交按钮完整入镜，无裁切；背景游戏详情按模态关系变暗。",
+        "internalIdCheck": "未发现规则内部ID、测试解释标签或资源路径作为玩家主标签。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png",
+      "sha256": "ec9ad9424141e72bb98131a37da947963d142e56dc35741fd9fac09ba6f1a7ba",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面选角页显示奇异博士角色卡、完整玩家板和提示板预览，卡上没有实施中条幅；顶部等待加入及底部双方席位清楚。",
+      "userDescription": "创建房间后，桌面选角页显示奇异博士及其玩家板。",
+      "uiAudit": {
+        "target": "doctor-strange-available-desktop-selection",
+        "before": [
+          "images/online-selection-and-start__真实创建房间-待确认.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png"
+        ],
+        "visibleConsequence": "桌面选角页显示奇异博士角色卡、完整玩家板和提示板预览，卡上没有实施中条幅；顶部等待加入及底部双方席位清楚。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "整屏预览与角色选项可见，左侧长角色列表超出底缘但保留滚动语法。",
+        "internalIdCheck": "未发现规则内部ID泄漏；席位P1/P2与游客字符串为玩家显示信息。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png",
+      "sha256": "9ac62771bb2c7d34581c3ade9ef645c9337bdb2d18b71dc63025657b19a882ec",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机横屏同一选角页保留角色列表、奇异博士玩家板与提示板预览、等待提示和双方席位；奇异博士卡可识别且没有实施中条幅，左侧列表允许继续滚动。",
+      "userDescription": "切换手机横屏后，角色列表与奇异博士预览仍可见。",
+      "uiAudit": {
+        "target": "doctor-strange-available-mobile-selection",
+        "before": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-桌面.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png"
+        ],
+        "visibleConsequence": "手机横屏同一选角页保留角色列表、奇异博士玩家板与提示板预览、等待提示和双方席位；奇异博士卡可识别且没有实施中条幅，左侧列表允许继续滚动。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "横屏整屏构图，角色列表部分超出底缘可滚动；本轮奇异博士选项与预览均可见。",
+        "internalIdCheck": "未发现规则内部ID泄漏；席位P1/P2与游客字符串为玩家显示信息。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__房主真实选择奇异博士.png",
+      "sha256": "a2d0203ac61bae87b525e3219c52a4ab7f3f9596eee932f2070c36eecbafefe7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "房主点击奇异博士后，其角色卡出现P1标记，底部房主席位同步显示奇异博士；右侧按钮显示等待全员就绪，选择反馈清楚。",
+      "userDescription": "房主选择奇异博士后，角色卡和席位显示选中结果。",
+      "uiAudit": {
+        "target": "doctor-strange-selected-by-host",
+        "before": [
+          "images/online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__房主真实选择奇异博士.png"
+        ],
+        "visibleConsequence": "房主点击奇异博士后，其角色卡出现P1标记，底部房主席位同步显示奇异博士；右侧按钮显示等待全员就绪，选择反馈清楚。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "角色卡和席位选中反馈均入镜，未被预览遮挡。",
+        "internalIdCheck": "未发现规则内部ID泄漏；席位P1/P2与游客字符串为玩家显示信息。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__双方选角并由客人准备.png",
+      "sha256": "d2381e172f22f728be90e178e52fd7e1f40172245bbc6cac93d8631fbb87944a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "客人选择武僧并准备后，双方角色卡出现各自席位标记，底部武僧旁显示绿色准备勾选，开始游戏入口可见；截图不推断按钮后台状态。",
+      "userDescription": "客人选武僧并准备后，双方角色与准备标记显示。",
+      "uiAudit": {
+        "target": "doctor-strange-opponent-ready",
+        "before": [
+          "images/online-selection-and-start__房主真实选择奇异博士.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__双方选角并由客人准备.png"
+        ],
+        "visibleConsequence": "客人选择武僧并准备后，双方角色卡出现各自席位标记，底部武僧旁显示绿色准备勾选，开始游戏入口可见；截图不推断按钮后台状态。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "角色、准备反馈和开始入口均入镜，无新增浮层遮挡。",
+        "internalIdCheck": "未发现规则内部ID泄漏；席位P1/P2与游客字符串为玩家显示信息。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__房主视角进入双人牌桌.png",
+      "sha256": "d017e1f914cce2a185c481b65048cedaeeab08268436f4d22b4b067ef5349070",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "房主进入对局后，中央奇异博士玩家板、公开准备法术、HP/CP、右侧骰盘与下一阶段入口完整呈现；开局手牌正在翻转，只证明正确角色牌桌已进入。",
+      "userDescription": "房主开局后，进入奇异博士牌桌并显示公开准备法术。",
+      "uiAudit": {
+        "target": "doctor-strange-live-board-host",
+        "before": [
+          "images/online-selection-and-start__双方选角并由客人准备.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__房主视角进入双人牌桌.png"
+        ],
+        "visibleConsequence": "房主进入对局后，中央奇异博士玩家板、公开准备法术、HP/CP、右侧骰盘与下一阶段入口完整呈现；开局手牌正在翻转，只证明正确角色牌桌已进入。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "开局翻牌过程导致部分手牌尚为卡背或翻转姿态；当前角色板、准备区、资源、骰盘和阶段入口完整，不声称翻牌结束。",
+        "internalIdCheck": "未发现规则内部ID泄漏；席位P1/P2与游客字符串为玩家显示信息。"
+      }
+    },
+    {
+      "path": "images/online-selection-and-start__客人视角进入双人牌桌.png",
+      "sha256": "01c5ad5db85dbb1fffb301872ae9ce94d676f39c54a3e221be75069d10a003f7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "客人进入同一对局后，中央为武僧玩家板，顶部对手头像和角色名为奇异博士；HP/CP及右侧控件可见，游客字符串属于玩家显示名，手牌仍处翻转过程。",
+      "userDescription": "客人同步开局后，看到武僧牌桌及顶部奇异博士对手。",
+      "uiAudit": {
+        "target": "doctor-strange-live-board-guest",
+        "before": [
+          "images/online-selection-and-start__房主视角进入双人牌桌.png"
+        ],
+        "after": [
+          "images/online-selection-and-start__客人视角进入双人牌桌.png"
+        ],
+        "visibleConsequence": "客人进入同一对局后，中央为武僧玩家板，顶部对手头像和角色名为奇异博士；HP/CP及右侧控件可见，游客字符串属于玩家显示名，手牌仍处翻转过程。",
+        "protectedSlots": [
+          "资源",
+          "当前候选及主动作",
+          "技能与准备区"
+        ],
+        "cropAndOcclusion": "手牌底部延伸到视口底缘且仍在翻转；正确客人玩家板、对手栏和资源/骰盘完整，不声称手牌动画完成。",
+        "internalIdCheck": "未发现规则内部ID泄漏；席位P1/P2与游客字符串为玩家显示信息。"
+      }
+    }
+  ],
+  "issues": [],
+  "limits": [
+    "图片只证明交互与UI可见性，不证明规则、资源或骰子最终数值。",
+    "队友重掷末图为旋转过程；双人开局图手牌尚在翻转，未声称动画完成。",
+    "本次审查覆盖group=c的15张新增交互截图及其直接同屏依赖，不外推整页重构质量。"
+  ]
+}

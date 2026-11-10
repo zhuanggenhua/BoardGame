@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "sourceRevision": "sha256:d782dbf4c50294ee2af6b77e630fec81761f27544637774b29f144e83337b52d",
+  "reviewer": { "kind": "subagent", "id": "/root/r82_mobile_visual_fresh" },
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-00-轮盘军屯与指定对手.png",
+      "status": "PASS",
+      "sha256": "09f1985788723d97b3378e5cd4014495b9260101d8b2ae43773770280daf5b54",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-00-轮盘军屯与指定对手.png",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "原生整屏实读：左侧选择对手弹框的辽北军屯说明、蒙古和后金两按钮清楚完整；轮盘、地图、手牌和常驻信息栏仍在，右下教学说明没有盖住对手选择。玩家下一步可直接点选对手，无乱码或缺图。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "status": "PASS",
+      "sha256": "1a3a6c0562bcddc260a6ed5bdb17e65d0d98a8e5b831025db3ae4a6e5023841b",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "原生整屏实读：地图已上移，叶赫部所在上方目标区域及清楚贴合区域边界的高亮露在支付托盘之上；突袭、已选0/1张、在地图上选择目标地区及取消按钮可读，确认处于未满足条件状态。教学说明在左下，手牌仍可见，没有把目标本体盖住。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-02-突袭支付与手牌.png",
+      "status": "PASS",
+      "sha256": "b63dd37a780cfda516a1c17c8aa0e7ea159f5f5a4e6a02f455198e4a15cb4aeb",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-02-突袭支付与手牌.png",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "原生整屏实读：顶端明确说明用银两支付、保留鸳鸯阵并可长按看卡；红色托盘内支付进度、叶赫部与辽北的路径、确认和取消均完整可读。下方五张手牌完整加载，银两图案可辨，托盘没有覆盖手牌选择区，常驻棋盘保留同构缩放。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-03-长按银两检视卡面.png",
+      "status": "PASS",
+      "sha256": "e1931037b15393d1ee09b906f9842e08a9a550dff65bdad88d81b1b8461cda10",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-03-长按银两检视卡面.png",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "原生整屏实读：银两完整卡面在中央放大，标题、明字和银锭图案加载清楚，比例正常且四边未裁切；右上黑色关闭按钮清楚独立，未压住银两标题。底层支付场景仍在，当前焦点明确为阅读卡面，关闭后返回选择由下一张图覆盖。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "status": "PASS",
+      "sha256": "6ff72bca5b2200ef939200044bb240c150d45454fe7a47b848b2e16491726e78",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "原生整屏实读：大卡已关闭，银两手牌抬升并有选中标记；支付托盘显示已选1/1张和已选牌银两，亮起的确认执行按钮与上方确认弃掉选中银两说明一致。其余手牌仍可见，目标路径说明和取消动作均未被遮挡，无乱码或缺图。",
+      "issues": []
+    }
+  ],
+  "summary": { "total": 5, "pass": 5, "revise": 0 }
+}

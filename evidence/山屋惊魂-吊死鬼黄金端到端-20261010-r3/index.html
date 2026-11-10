@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂 · 吊死鬼黄金端到端</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂 · 吊死鬼黄金端到端</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"吊死鬼-完整链路-01-探索前.jpg","displayTitle":"吊死鬼 · 完整链路 · 01 · 探索前","description":"吊死鬼要求玩家逐项检定力量、速度、知识和神志，四项都通过后从中选择一项获得加一。","kind":"image"},{"relativePath":"吊死鬼-完整链路-02-选择未知房间.jpg","displayTitle":"吊死鬼 · 完整链路 · 02 · 选择未知房间","description":"玩家进入未知房间选择，吊死鬼事件的探索入口保持可操作。","kind":"image"},{"relativePath":"吊死鬼-完整链路-03-事件牌翻出等待逐项检定.jpg","displayTitle":"吊死鬼 · 完整链路 · 03 · 事件牌翻出等待逐项检定","description":"玩家完成房间放置后翻出吊死鬼卡，四项属性选项出现且尚未开始检定。","kind":"image"},{"relativePath":"吊死鬼-完整链路-04-力量检定停稳.jpg","displayTitle":"吊死鬼 · 完整链路 · 04 · 力量检定停稳","description":"玩家选择力量后，骰盘进入真实滚动过程，结果尚未提前结算。","kind":"image"},{"relativePath":"吊死鬼-完整链路-05-速度检定停稳.jpg","displayTitle":"吊死鬼 · 完整链路 · 05 · 速度检定停稳","description":"力量骰盘停稳并显示六点通过，玩家可点击继续进入下一项检定。","kind":"image"},{"relativePath":"吊死鬼-完整链路-06-关闭后回牌桌.jpg","displayTitle":"吊死鬼 · 完整链路 · 06 · 关闭后回牌桌","description":"玩家确认关闭结算窗口后回到牌桌，临时面板消失且知识轨道升至四。","kind":"image"},{"relativePath":"吊死鬼-完整链路-06-知识检定停稳.jpg","displayTitle":"吊死鬼 · 完整链路 · 06 · 知识检定停稳","description":"速度骰盘停稳并显示六点通过，上一项结果收口后进入知识检定。","kind":"image"},{"relativePath":"吊死鬼-完整链路-07-神志检定停稳.jpg","displayTitle":"吊死鬼 · 完整链路 · 07 · 神志检定停稳","description":"知识骰盘停稳并显示六点通过，四项检定只剩神志待完成。","kind":"image"},{"relativePath":"吊死鬼-完整链路-08-四项检定完成选择奖励.jpg","displayTitle":"吊死鬼 · 完整链路 · 08 · 四项检定完成选择奖励","description":"四项检定均显示六点通过，奖励属性选择面板出现，确定按钮等待玩家选择。","kind":"image"},{"relativePath":"吊死鬼-完整链路-09-知识奖励结算结果可见.jpg","displayTitle":"吊死鬼 · 完整链路 · 09 · 知识奖励结算结果可见","description":"玩家选择知识并确认，结算文案显示每项属性均通过和知识加一，旧属性骰盘已收起。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

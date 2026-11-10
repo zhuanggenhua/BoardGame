@@ -1,0 +1,53 @@
+{
+  "status": "COMPLETE",
+  "updatedAt": "2026-10-06",
+  "sourceRun": "betrayal-event-choice-coverage-20261006-items-4",
+  "evidenceIndex": ".e2e-image-index.json",
+  "manifest": "pass-manifest-current.json",
+  "mediaCount": 32,
+  "descriptionsNonEmpty": 32,
+  "chainIds": [
+    "betrayal-item-flashlight",
+    "betrayal-item-lantern",
+    "betrayal-item-magic-camera",
+    "betrayal-item-book"
+  ],
+  "note": "仅表示当前四条物品黄金效果与关闭链及其说明/查看器交付完成；不代表小黑屋全部事件牌、预兆牌、真名寻找、胜负流程已全量覆盖。",
+  "verification": {
+    "e2eRun": "4 passed（同一 sourceRun 的四条真实浏览器物品链；本轮仅更新规范/索引，未改运行时代码，因此不重复重跑）",
+    "specLint": "PASS",
+    "diffCheckSpec": "PASS",
+    "viewerDryRun": "PASS",
+    "viewerUrl": "http://127.0.0.1:4867/?key=1ff2e36ebaf0",
+    "viewerVisible": "PASS（查看器显示 32 张、32 条中文说明；说明包含链起点/相对上一张/完整录屏文本）",
+    "jsonAlignment": "PASS（索引 32 条、manifest 32 条、每条含 testedObject/effectClaim/observedDelta、effectMatrix 4 行）"
+  },
+  "stateSource": "representative-state",
+  "stateSourceNote": "仅建立合法持有区前置；不证明四件物品的来源动作。",
+  "effectAssertions": [
+    {
+      "testedObject": "手电筒",
+      "effectMode": "被动",
+      "effectClaim": "事件属性检定额外投 2 骰",
+      "observedDelta": "知识 3 → 4；3 骰基线 → 5 骰；物品保留。"
+    },
+    {
+      "testedObject": "灯笼",
+      "effectMode": "被动",
+      "effectClaim": "事件属性检定额外投 2 骰",
+      "observedDelta": "知识 3 → 4；3 骰基线 → 5 骰；物品保留。"
+    },
+    {
+      "testedObject": "魔法相机",
+      "effectMode": "被动",
+      "effectClaim": "知识检定使用神志值替代知识值",
+      "observedDelta": "知识 3、神志 5 → 知识 4、神志 5；相机保留。"
+    },
+    {
+      "testedObject": "书本",
+      "effectMode": "主动一次性",
+      "effectClaim": "支付 1 点神志，建立并消费下一次非战斗检定改用知识的替代状态",
+      "observedDelta": "神志 2 → 1；替代状态建立 → 消费 → 清空；书本保留知识 +1 摘要。"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "targetUrl": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+  "failureScreenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T13-36-21-552Z\\00-failure-page.png",
+  "pageState": {
+    "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+    "title": "易桌游 - 桌游教学与在线联机平台 | 王权骰铸、大杀四方、召唤师战争",
+    "hasBoard": false,
+    "bodyText": "正在加载 法师战争...正在加载对局资源…",
+    "loaderText": null,
+    "loaderHtml": null
+  },
+  "captureError": null,
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "at": "2026-09-13T13:36:38.234Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "at": "2026-09-13T13:36:38.342Z"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "at": "2026-09-13T13:36:38.531Z"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙",
+      "at": "2026-09-13T13:36:38.601Z"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token",
+      "at": "2026-09-13T13:36:41.013Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T13:36:42.391Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-13T13:36:42.451Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T13:36:42.394Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"timeoutMs\":120000}",
+      "at": "2026-09-13T13:36:42.461Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T13:36:42.401Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-13T13:36:42.462Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T13:36:42.402Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"mage-wars\"}",
+      "at": "2026-09-13T13:36:42.462Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T13:36:58.666Z\",\"stage\":\"load-http-fallback-success\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":16265}",
+      "at": "2026-09-13T13:36:58.670Z"
+    }
+  ],
+  "error": {
+    "message": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"mage-wars-board\"]') to be visible\u001b[22m\n",
+    "stack": "page.waitForSelector: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"mage-wars-board\"]') to be visible\u001b[22m\n\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\mage-wars-regrowth-belt-real-browser-repro.mjs:239:16)"
+  }
+}

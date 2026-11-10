@@ -1,0 +1,19 @@
+{
+  "phase": "after",
+  "sourceRevision": "b22b1b4faf1533aa643fa2106975ef04378398c5f3b154b5d2a5c18436468243",
+  "entryHash": "cf6d52a72e593545d39d1e022d643af0e665ad44fdcdd0860b676835fd64496f",
+  "boardHash": "8a94c2b4e9a95cd927ba67d38f0dd72f0f233c6313ba9d51db0ff8e034dbbb1a",
+  "runtimeHash": "b22b1b4faf1533aa643fa2106975ef04378398c5f3b154b5d2a5c18436468243",
+  "backendInputsMatch": true,
+  "ports": {
+    "frontend": 6174,
+    "gameServer": 20000,
+    "apiServer": 21000
+  },
+  "ownerPid": 40232,
+  "consumerPids": [
+    2828,
+    38864
+  ],
+  "sessionId": "e2e-1793016692590-f455sv"
+}

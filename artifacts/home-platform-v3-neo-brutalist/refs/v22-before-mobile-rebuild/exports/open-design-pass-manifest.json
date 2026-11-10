@@ -1,0 +1,208 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "lobby",
+  "evidenceCategory": "independent",
+  "title": "首页第二十二版：三百七十五竖屏适配",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": { "kind": "subagent", "id": "01a12fc9-2d65-79d1-9cd7-45802d08a477" },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run --config artifacts/home-platform-v3-neo-brutalist/vitest.config.ts --configLoader native"
+    ],
+    "evidence": [
+      "home-v9.contract.test.ts 锁定流体视口、一千零二十三窄屏条件、底栏、抽屉、点按展开，并保持链接检测与个人主页字段合同"
+    ]
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "同一份页面在一千九百二十仍是顶栏三导航、左侧列表、六列发现、个人页左右留背景",
+      "status": "PASS",
+      "evidence": [
+        "01-收藏库主页.png：顶栏三导航，无底栏，左侧列表常驻。",
+        "05-发现网格.png：六列竖封面，发现高亮，无底栏。",
+        "08-个人主页.png：左右露出封面背景，中间白底内容井两列。"
+      ]
+    },
+    {
+      "requirement": "三百七十五能看见底栏三导航、列表抽屉、两列发现、个人页纵向叠放和顶图背景",
+      "status": "PASS",
+      "evidence": [
+        "m01-收藏库主页.png：底栏发现收藏库上传，顶栏无三字导航，封面两列。",
+        "m02b-游戏列表抽屉.png：左侧抽屉打开可见大杀四方。",
+        "m05-发现两列.png：正好两列竖封面。",
+        "m08-个人主页.png：身份统计动态纵向叠放，顶图通栏。"
+      ]
+    },
+    {
+      "requirement": "点按能展开发现封面介绍；详情、创建、销毁仍是右上叉加底部居中确认",
+      "status": "PASS",
+      "evidence": [
+        "m05b-发现点开展开.png：封面上展开介绍，尚未全屏详情。",
+        "m06-游戏详情.png：几乎全屏，右上正方形叉。",
+        "m06c-销毁确认.png：左右留白，右上叉，底部居中销毁。",
+        "m06d-创建房间.png：左右留白，右上叉，底部居中创建。"
+      ]
+    },
+    {
+      "requirement": "对局条在底栏上方，不把底栏顶走",
+      "status": "PASS",
+      "evidence": [
+        "m01-收藏库主页.png：对局条叠在底栏上方，底栏三键仍在。"
+      ]
+    },
+    {
+      "requirement": "游戏链接可以自动检测，防止打不开等基本错误",
+      "status": "PASS",
+      "evidence": [
+        "07-上传页.png：游戏链接下方绿色写可以打开。",
+        "07b-上传新游戏.png：空链接下方灰色写粘贴后自动检测能否打开。",
+        "m07-上传页.png：链接下可见粘贴后自动检测能否打开。"
+      ]
+    },
+    {
+      "requirement": "个人主页按点名资料页组织：左动态横条、右侧栏读数，不抄深色皮肤，也不用库页封面墙",
+      "status": "PASS",
+      "evidence": [
+        "08-个人主页.png：左右露出资料背景，中间白底内容井，左列动态横条，右栏编辑和统计。"
+      ]
+    },
+    {
+      "requirement": "弹窗统一用叉，确认按钮底部居中，取消改成叉",
+      "status": "PASS",
+      "evidence": [
+        "06c-销毁确认.png：右上角正方形叉，底部水平居中销毁，没有取消文字。",
+        "06d-创建房间.png：右上角正方形叉，底部水平居中创建，没有取消文字。",
+        "m06c-销毁确认.png：右上叉，底部居中销毁。",
+        "m06d-创建房间.png：右上叉，底部居中创建。"
+      ]
+    },
+    {
+      "requirement": "个人中心自己组织字段和左右间距，不照抄深色皮肤",
+      "status": "PASS",
+      "evidence": [
+        "08-个人主页.png：头像名字在左，编辑和个人统计在右栏，左右两侧是封面背景。"
+      ]
+    },
+    {
+      "requirement": "叉号必须在正方形按钮里光学居中，不是文字关闭",
+      "status": "PASS",
+      "evidence": [
+        "06b-作者弹窗.png：作者弹窗右上角只有居中叉号。",
+        "06c-销毁确认.png、06d-创建房间.png：同一套正方形叉号。",
+        "m06-游戏详情.png：右上正方形叉。"
+      ]
+    },
+    {
+      "requirement": "当前房间改到玩过的好友上面，两个框要有明显分割",
+      "status": "PASS",
+      "evidence": [
+        "02-收藏库游戏页.png：右侧当前房间卡片在上，玩过的好友卡片在下，两块独立描边。",
+        "m02-收藏库游戏页.png：四键下方可见当前房间通栏。"
+      ]
+    },
+    {
+      "requirement": "规则概览是规则原文，读取规则文件夹，不是总结",
+      "status": "PASS",
+      "evidence": [
+        "02c-收藏库规则概览.png：可见初始设置、每位玩家选择两个派系、四十张牌库。"
+      ]
+    },
+    {
+      "requirement": "收藏和配置表与教程模式在封面同一排，不在房间标题",
+      "status": "PASS",
+      "evidence": [
+        "02-收藏库游戏页.png：封面同一排是重连进入、教程模式、移出收藏、配置表，按钮之间有空隙。"
+      ]
+    },
+    {
+      "requirement": "弹窗动作按钮同一排拉开间距，不要挤成一团",
+      "status": "PASS",
+      "evidence": [
+        "06-游戏详情.png：重连进入、教程模式、移出收藏、配置表同一排有空隙，电子化作者单独一行。"
+      ]
+    },
+    {
+      "requirement": "房间和好友占满右侧，不要避开底部悬浮对局条",
+      "status": "PASS",
+      "evidence": [
+        "02-收藏库游戏页.png：右侧两框接到视口底，对局条叠在内容上。"
+      ]
+    },
+    {
+      "requirement": "个人主页没有成就和等级。侧栏只有游玩时长、局数、收藏。排行和分数只出现在游戏动态行，分数是用于排名的分。不要当前正在游戏。",
+      "status": "PASS",
+      "evidence": [
+        "08-个人主页.png：动态行可见排行和三位小数分数。右栏只有编辑、游玩时长、局数、收藏。没有当前正在游戏。",
+        "m08-个人主页.png：动态行局数排行分数在对局条上方可读，统计区无排行无评分。"
+      ]
+    },
+    {
+      "requirement": "创建房间用叉取消，下面一个大创建按钮；加入电脑点击展开，不要多层框",
+      "status": "PASS",
+      "evidence": [
+        "06d-创建房间.png：无取消文字，右上角叉号，底部居中创建。",
+        "m06d-创建房间.png：右上叉，底部居中创建。"
+      ]
+    },
+    {
+      "requirement": "上传人数用两个可解析下拉，不要随机字符串",
+      "status": "PASS",
+      "evidence": [
+        "07-上传页.png、07b-上传新游戏.png：最少人数与最多人数两个下拉，中间写至。",
+        "m07-上传页.png：分类下是人数两个下拉，中间写至。"
+      ]
+    },
+    {
+      "requirement": "重连进入和创建房间不能同时存在",
+      "status": "PASS",
+      "evidence": [
+        "02-收藏库游戏页.png：大杀四方有进行中对局，封面条只有重连进入。",
+        "m02-收藏库游戏页.png：纵向四键是重连进入不是创建房间。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\01-收藏库主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\01b-收藏库悬停.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\02-收藏库游戏页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\02b-收藏库排行榜.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\02c-收藏库规则概览.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\03-切发现再回收藏库.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\04-点主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\05-发现网格.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\05b-发现悬停.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06-游戏详情.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06d-创建房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06b-作者弹窗.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06c-销毁确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\07-上传页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\07b-上传新游戏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\08-个人主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01-收藏库主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m02b-游戏列表抽屉.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m02-收藏库游戏页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m05-发现两列.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m05b-发现点开展开.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06-游戏详情.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06c-销毁确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06d-创建房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m07-上传页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m08-个人主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m08b-顶栏抽屉.png"
+  ]
+}

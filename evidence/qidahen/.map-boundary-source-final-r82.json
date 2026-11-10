@@ -1,0 +1,101 @@
+{
+  "status": "PASS",
+  "scope": "source-map-geometry-only",
+  "total": 35,
+  "sourceImageSha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e",
+  "formalMaskSha256": "2776b14fd011dae389a5a65ee7072b8db8db8cbbf774b7db208e9c1b63698136",
+  "independentReports": [
+    "evidence/qidahen/r81-diagnostic/geography-source-review-han.json",
+    "evidence/qidahen/r81-diagnostic/geography-source-review-mongol.json",
+    "evidence/qidahen/r81-diagnostic/geography-source-review-jin-korea-v4.json"
+  ],
+  "v4ToFinalUnchangedProof": [
+    {
+      "regionId": "city-region-4",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-5",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-9",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-7",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-13",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-11",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "xian-xing",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-18",
+      "changedOwnershipPixels": 0
+    },
+    {
+      "regionId": "city-region-29",
+      "changedOwnershipPixels": 0
+    }
+  ],
+  "approximateSegments": [
+    {
+      "regionIds": [
+        "city-region-11"
+      ],
+      "points": [
+        [
+          1145,
+          259
+        ],
+        [
+          1143,
+          269
+        ],
+        [
+          1141,
+          279
+        ],
+        [
+          1139,
+          291
+        ],
+        [
+          1137,
+          304
+        ]
+      ],
+      "reason": "牌库黑框及断续山形不能证明连续隐藏边界，按可见段作窄近似连接。"
+    },
+    {
+      "regionIds": [
+        "city-region-26",
+        "city-region-31"
+      ],
+      "points": [
+        [
+          79,
+          753
+        ],
+        [
+          9,
+          790
+        ]
+      ],
+      "reason": "标题遮挡；首点为可见长城末端，后点明确为图缘近似锚。"
+    }
+  ],
+  "notProven": [
+    "城市聚合控制/税赋/维护/全部通路规则",
+    "最终玩家UI可用性由另外逐图报告负责"
+  ]
+}

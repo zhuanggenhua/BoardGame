@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "reviewId": "qidahen-r172-five-fixes-code-review",
+  "reviewer": {
+    "actualAgent": "/root/r172_five_fixes_code",
+    "role": "独立只读源码审查",
+    "independentOfImplementation": true
+  },
+  "targetLock": {
+    "object": "R171集中返工表的五类真实UI问题所对应的既有源码owner",
+    "truth": "当前工作区源码、领域正式状态与请求合同；问题范围取docs/games/qidahen/records/qidahen-action-menu-review-20261102.md:22-36",
+    "environment": "D:/gongzuo/webgame/BoardGame，PC正式年度教程主线",
+    "acceptance": "源码来源/权限/调用兼容审查；不判图面PASS，不运行浏览器或测试，不改实现或生产"
+  },
+  "conclusion": {
+    "sourceVerdict": "PASS_WITH_SCOPED_NOTE",
+    "productionBlockingFindings": 0,
+    "definiteAncillaryFindings": 1,
+    "visualVerdict": "NOT_REVIEWED",
+    "endToEndVerdict": "NOT_RUN_BY_REVIEWER",
+    "summary": "所审五项生产源码扩展收口在既有owner，未发现确定生产缺陷；有一处范围外临时诊断调用未补新增参数。源码结论不能恢复R171整体放行。"
+  },
+  "items": [
+    {
+      "id": "battle-participants",
+      "verdict": "SOURCE_ACCEPT",
+      "owners": [
+        "ui/useQidahenBattlePresentation.ts",
+        "Board.tsx",
+        "ui/QidahenBattleRollOverlay.tsx",
+        "ui/QidahenBattleRollSequence.tsx"
+      ],
+      "evidence": [
+        "hook从active时捕获的战前before.pendingTargetAction读取身份，其次当前pending，最后正式postBattleSelection；没有根据战后regions所有权猜身份。",
+        "正常进攻pending.defenderFactionId来自正式dispatch候选；中立使用neutral分支的defenderLabel，不映射为玩家阵营标记。",
+        "解围targetKind=siege-attacker候选的defenderFactionId来自targetRuntimeRegion.siegeState.attackerFactionId；战前快照保留该围城方，而非城池controller。",
+        "Board沿用factionTone.chip，Sequence只消费name/markerSrc，列头同时呈现阵营和攻守角色。",
+        "battleRollMath.ts:949-950确认attackerDamage由attackerTotal针对defenderUnits计算，Sequence对方目标命名方向正确。",
+        "伤害保持1800ms阅读时长、原始roll值、settled回调与物理源；本项新增文字不改变引擎或规则计算。"
+      ],
+      "boundary": "postBattleSelection.originalController表示原地区控制者，解围时并非围城方；本结论依赖既有hook在正常触发时捕获战前pending。刷新已有骰果不重播（completed初始化为identity）。未运行解围或中立的浏览器场景，不宣称这些场景运行时已验收。"
+    },
+    {
+      "id": "post-battle-summary",
+      "verdict": "SOURCE_ACCEPT",
+      "owners": [
+        "Board.tsx",
+        "domain/battleInteractionBuilders.ts",
+        "public/locales/zh-CN/game-qidahen.json",
+        "public/locales/en/game-qidahen.json"
+      ],
+      "evidence": [
+        "Board战后结果直接输出postBattleSelection.summary，interaction builder的subtitle也直接沿用selection.summary。",
+        "领域buildPostBattleSelection本身持有包含幸存数的完整summary；两处消费者删除追加幸存数。",
+        "中英文postBattle.summary包装键已删除；精确检索未见存活消费点。",
+        "年度E2E occupy节点新增summary内幸存数字恰好一次断言。"
+      ],
+      "boundary": "断言只扫描主summary文本，不证明整屏任意位置零重复；展开战报仍需当前媒体视觉检查。"
+    },
+    {
+      "id": "chronology-inline",
+      "verdict": "SOURCE_ACCEPT",
+      "owners": [
+        "Board.tsx",
+        "ui/QidahenTurnChoicePanel.tsx",
+        "ui/useQidahenTurnInput.ts"
+      ],
+      "evidence": [
+        "仅turnInput.active且step=chronology启用inline；同一turnChoicePanel变量由互斥条件挂入ChronologyZone或原dock，一次仅有一处挂载。",
+        "panel继续读取input.options，调用同一choose/toggle/confirm，没有新增领取状态、并行提交或候选副本。",
+        "chronology-payment通过既有cardIds分支回手牌支付；非chronology步骤仍使用原dock。",
+        "晚增E2E行已实际读取：claim-year检查qidahen-chronology-choice内的正式panel和真实牌底到决策区间距。"
+      ],
+      "boundary": "距离与DOM归属断言不能代替纪年区读牌/按钮可读性或无遮挡视觉验收。"
+    },
+    {
+      "id": "request-owner",
+      "verdict": "SOURCE_ACCEPT",
+      "owners": [
+        "ui/useQidahenTurnInput.ts",
+        "ui/QidahenTurnChoicePanel.tsx",
+        "Board.tsx",
+        "public/locales/zh-CN/game-qidahen.json",
+        "public/locales/en/game-qidahen.json"
+      ],
+      "evidence": [
+        "actorName由当前interaction.playerId在正式factions中反查，而非currentPlayer或回合阵营。",
+        "turnResolutionSystem.ts把choice.factionId对应的playerId写入正式请求；人物年度选择owner来自currentFactionOrder[yearCharacterIndex]。",
+        "canAct仍比较viewer playerId与current.playerId，提交仍发SYS_INTERACTION_RESPOND并带当前interactionId。",
+        "player.current仅改为当前回合/Current turn，未改currentPlayer、顺序或权限。",
+        "晚增E2E new-order/year-character行已读取，核对真实request owner的name出现在panel h2。"
+      ],
+      "boundary": "未宣称非owner/观战端等待态或私有候选过滤已在本轮实测；本轮变更未改这些既有逻辑。"
+    },
+    {
+      "id": "recruit-training-controls",
+      "verdict": "SOURCE_ACCEPT",
+      "owners": [
+        "ui/QidahenRecruitTrainingPanel.tsx",
+        "domain/wheelRecruitTrain.ts",
+        "Board.tsx"
+      ],
+      "evidence": [
+        "controls仍由getQidahenWheelRecruitTrainChoices返回的正式候选过滤而来，排除recruit-target/training-target，未新增文字地图目标列表。",
+        "按钮仅改为两列与明确2px边界、填充、文字颜色，保留disabled、canChoose与onChoose。",
+        "Board回调仍提交RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE和原choiceId；领域owner继续查找合法choice后处理finish/extra-training等真实命令。"
+      ],
+      "boundary": "按钮形态和两列布局的实际可读/可点及收尾状态仍待当前媒体与真实操作，不作UI PASS。"
+    }
+  ],
+  "compatibility": {
+    "production": "Board为Overlay唯一正式调用方，Overlay转发新增attacker/defender给Sequence；两个已跟踪单测fixture均已补参数。旧board.battleRoll.attacker/defender/inflictedDamage保留，BattleReport继续消费；新增sideOwner/damageTo不破坏原历史报告。",
+    "ancillary": "范围外未跟踪text-fill-diagnostic.tmp.e2e.ts的动态import直接React.createElement调用尚未补参数，见F1。",
+    "typecheck": "本审查未运行；父线程告知全项目typecheck通过仅列为外部报告，不冒称独立验证。"
+  },
+  "definiteFindings": [
+    {
+      "id": "F1",
+      "priority": "P3",
+      "blockingForFiveProductionFixes": false,
+      "file": "e2e/qidahen/text-fill-diagnostic.tmp.e2e.ts",
+      "line": 57,
+      "title": "临时诊断调用缺少Sequence新增的必填双方参数",
+      "evidence": "动态import后的React.createElement仍只传sourceName/targetName/onComplete/rolls；Sequence读取actors[side].markerSrc时会访问undefined。git ls-files对该文件无输出，属于未跟踪诊断材料。",
+      "consequence": "单独运行此旧诊断会使真实Sequence片段无法挂载；不影响Board正式年度主线调用。",
+      "minimalRemedy": "若继续保留/运行该诊断，在此调用点补真实诊断夹具attacker与defender参数；不要为此给生产Sequence添加猜测身份的fallback。"
+    }
+  ],
+  "verificationRead": {
+    "reviewerExecutedTests": false,
+    "reviewerOpenedImages": false,
+    "reviewerOpenedBrowser": false,
+    "parentReportedOnly": [
+      "65项定向Vitest（含battleRollProjection）通过",
+      "全项目typecheck通过",
+      "R172主线在battle-roll被真实内存保护终止，后有其他E2E启动；该次结果不证明功能失败或通过"
+    ],
+    "e2eRead": "已读取battleRecording完整源码和年度E2E相关diff，包括后补claim-year及new-order/year-character断言；不对年度E2E全文件无关逻辑背书。",
+    "testBoundary": "battleRollProjection夹具补参与物理源/停稳断言已读，但未新增专门hook身份单测；E2E身份断言只证明其运行时实际命中的战斗，不自动覆盖解围/中立。"
+  },
+  "retainedBoundaries": [
+    "R171完整操作通过但五类图审REVISE的历史事实保持；本源码审查不能覆盖或推翻图审结论。",
+    "最终仍需当前PC正式主线、必要整屏与完整投骰录屏复验；本报告不附PASS媒体清单或查看器。",
+    "不进入移动端、不提交/推送/发布、不修改规范、不撤销其他改动；唯一写入为本.tmp审查JSON。",
+    "审阅的大文件采用明确相关区段及diff，不声明已审整个Board或整个领域引擎。",
+    "sourceHashes记录落盘时实际文件SHA256；后续变化需按新哈希重新判断，不能沿用本结论证明新内容。"
+  ],
+  "sourceHashes": [
+    {
+      "path": ".spec/knowledge/standards/code-design.md",
+      "sha256": "9bf58f44b0f62c85b1d0c3c348578d7df2cc9a0888ae08dff8dc3f5892f3615d"
+    },
+    {
+      "path": ".spec/knowledge/standards/ui-change-gates.md",
+      "sha256": "b41b0b83a89c77b7f06c802860bb5e4ebd93e7707a61699479702a7f932c7fd6"
+    },
+    {
+      "path": "docs/games/qidahen/records/qidahen-action-menu-review-20261102.md",
+      "sha256": "d7b86dabad10fecf80970042c531b0e4a079fe18165f7f4720c90a4b783a8be8"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "d6f3249ef902ee85f5ee817098bc7dd917fccc32e5bb5a7e181439b1a27c8537"
+    },
+    {
+      "path": "src/games/qidahen/ui/useQidahenBattlePresentation.ts",
+      "sha256": "fb4f47bd987f087656602e66ebd96d1dc15fdc479822532be5b60b0058f92f51"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "sha256": "a07d005a7bfd682286445ed0f1eef0dfd13cf48c38192ae54069590cd9f81625"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleRollSequence.tsx",
+      "sha256": "44ec6f619843ed65aa77d7fc508c90f6a74298df5a3f3dd8739e93962011149f"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenTurnChoicePanel.tsx",
+      "sha256": "22055daf7c701d0166ed910e5f7d34a4476656fcabd55effad88f4fef50c7327"
+    },
+    {
+      "path": "src/games/qidahen/ui/useQidahenTurnInput.ts",
+      "sha256": "11952b23370ba1eae0b5e24cb5fd2b53410c0ed78d385ed8118fb65468543c56"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenRecruitTrainingPanel.tsx",
+      "sha256": "4ad8585cba9eb53cb73bd8446498e08df124319bab6fd6d99eeedadc9744d1ee"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleReport.tsx",
+      "sha256": "699b68d1dc661a860abe59e2d65d913a43b025ba62012aa9f2fd75aabe72f58f"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleInteractionBuilders.ts",
+      "sha256": "011d59ca6ab54d4fc4d8b98cd9cb8b2a90c3f624bb26698bef3337cf5c36c1c2"
+    },
+    {
+      "path": "src/games/qidahen/domain/dispatchSelectionBuilders.ts",
+      "sha256": "24ac52eb353a0779d81957d30b050bfb17a9ccb19fbdb347a7231cfe6d1c1c17"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingTargetResolution.ts",
+      "sha256": "cce759e310c758102fbab0e5b6861ef2cd742aa020eac9c3183f635e82dfbf40"
+    },
+    {
+      "path": "src/games/qidahen/domain/pendingBattleFlow.ts",
+      "sha256": "e45ea8eca7c6216033053219658d4fd39674aceefc680bb273ec3fe67296f472"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionSystem.ts",
+      "sha256": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc"
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionChoices.ts",
+      "sha256": "3ddb285977f23259a4d3710d3c39bd23e6c570ca4f0d656c2be2335fb68ad41d"
+    },
+    {
+      "path": "src/games/qidahen/domain/wheelRecruitTrain.ts",
+      "sha256": "44bcc8bfbcf14335860af9a85f687cd84ce1081e948ee3ab34812dc6f1fdfc7b"
+    },
+    {
+      "path": "src/games/qidahen/domain/battleRollMath.ts",
+      "sha256": "3fc29c4bc45e1d36249d14000e04440580994633c7c73475d3e7b90956fd70d5"
+    },
+    {
+      "path": "src/games/qidahen/domain/types.ts",
+      "sha256": "248246ffbe549bdc121806d285494ee1fb79995348cbbcf0be4ab4737a025569"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/battleRollPlacement.test.tsx",
+      "sha256": "4dd61c27ecf31f3c880191005bd5719ec5d555f4a58fdece08a605ce9855af7e"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/battleRollProjection.test.tsx",
+      "sha256": "abba9f1b09a50df7caa0c04fe90b6813b097a91af12a26a9c9768955dbfbdb9f"
+    },
+    {
+      "path": "e2e/qidahen/battleRecording.ts",
+      "sha256": "7a7aa4cabfe6c08756aa83ed9786b0520d1c1e4b4b12dae980d9e24831a65962"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "357beb48ec87d71cfd8004c0ba49dd5baab0770082dcbd333bdf6384a09c3492"
+    },
+    {
+      "path": "e2e/qidahen/text-fill-diagnostic.tmp.e2e.ts",
+      "sha256": "1727ce2425424a5e638b671c53a330ad3f1ea6e347f2aecedab724e75d107bfa"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "d5f78a4325b893ff54a203e4adae20d55c5007bedb68fa81b0a26a4cb554fed5"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "3ae2babb6eb9b3d1d052ff61c2b585eeeb431b0340a9d7fe826ad71ebd3b66d1"
+    }
+  ],
+  "reviewedAt": "2026-11-03T03:37:01.7314653Z"
+}

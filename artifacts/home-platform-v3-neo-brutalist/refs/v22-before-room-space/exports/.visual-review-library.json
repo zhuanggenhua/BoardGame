@@ -1,0 +1,460 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": 94,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/steam_library_reference"
+  },
+  "scope": "仅当前重拍的十六张收藏库变化图；移动三百七十五宽初始首屏及关联状态，桌面现有构图回归。其余二十七张由主线程沿用既有有效记录，本报告不宣称已复核未变化图片。",
+  "method": "逐张私有读取十六张原始截图并以当前图面裁决；截图仅证明可见承载，实际点击、排序语义和返回动作由主线程端到端证据单独证明。未向用户打开图片。",
+  "target_requirements": [
+    {
+      "requirement": "移动初始首屏八款封面与中文名完整可识别且不被对局条遮挡",
+      "status": "PASS",
+      "evidence": "m01-收藏库主页.png"
+    },
+    {
+      "requirement": "搜索与排序直接可见并有搜索结果和空态",
+      "status": "PASS",
+      "evidence": "m01-收藏库主页.png；m01d-收藏搜索.png；m01e-收藏搜索空态.png；m01f-收藏排序.png"
+    },
+    {
+      "requirement": "次要情报默认收于游戏后并可展开收起",
+      "status": "PASS",
+      "evidence": "m01c-收藏库末项.png；m01h-展开次要情报.png"
+    },
+    {
+      "requirement": "游戏封面承接进入，详情有明确返回收藏库入口",
+      "status": "PASS",
+      "evidence": "m01-收藏库主页.png；m02-收藏库游戏页.png；m02b-返回全部游戏.png"
+    },
+    {
+      "requirement": "滚动后返回仍显示一致位置",
+      "status": "PASS",
+      "evidence": "m01c-收藏库末项.png；m01g-返回保留位置.png"
+    },
+    {
+      "requirement": "桌面维持既有侧栏、情报、网格及详情构图",
+      "status": "PASS",
+      "evidence": "五张桌面变化图"
+    },
+    {
+      "requirement": "详情房间与好友保留完整可见承载",
+      "status": "PASS",
+      "evidence": "m02c-完整房间列表.png；m02d-完整好友列表.png"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    "移动情报由主栏上方移到游戏之后并默认折叠，展开入口位于末行下方，展开后有明确收起入口。",
+    "移动常驻游戏侧栏改由八款封面网格承载，初始首屏保留全部收藏中文名与封面，详情提供明确返回收藏库入口。",
+    "当前对局条维持底部独立入口，初始八款游戏不被遮挡，完整房间与好友有对应滚动图证明。",
+    "桌面侧栏及大封面网格仍保持原构图，悬停说明只属于当前游戏。"
+  ],
+  "limitations": [
+    "本报告只覆盖列明的十六张图面，不代替主线程对四十三张媒体的合并账本。",
+    "静态图无法独立证明单次点按、排序算法和滚动恢复动作，只证明截图所覆盖的可见状态与前后位置一致。",
+    "只覆盖本次移动与桌面截图视口，未覆盖其它设备及真机浏览器。",
+    "参考官方移动库仅用于封面网格、搜索与排序层级，不推断其未覆盖的进入及返回交互。",
+    "图面通过属于助手独立审计，不表示用户已验收。"
+  ],
+  "media": [
+    {
+      "path": "01-收藏库主页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面侧栏与大封面网格保持清晰分工，八款收藏均有真实封面与中文名。",
+      "targetObject": "桌面收藏库主页",
+      "actionBefore": "打开收藏库主页",
+      "actionAfter": "展示收藏库总览",
+      "playerVisibleResult": "桌面侧栏与大封面网格保持清晰分工，八款收藏均有真实封面与中文名。",
+      "protectedSlots": [
+        "收藏侧栏",
+        "情报条",
+        "游戏网格",
+        "当前对局条"
+      ],
+      "overlap": "网格最下方靠近对局条，中文名仍清晰可见",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "01b-收藏库悬停.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "悬停说明承接在对应封面内部，其余游戏与左侧收藏列表仍可识别。",
+      "targetObject": "桌面游戏悬停卡",
+      "actionBefore": "将指针移至大杀四方封面",
+      "actionAfter": "显示该游戏说明",
+      "playerVisibleResult": "悬停说明承接在对应封面内部，其余游戏与左侧收藏列表仍可识别。",
+      "protectedSlots": [
+        "收藏侧栏",
+        "其它游戏封面",
+        "当前对局条"
+      ],
+      "overlap": "悬停只覆盖所属卡面",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "02-收藏库游戏页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "游戏标题与主要动作位于横幅下沿，收藏侧栏和房间好友栏保持原有构图。",
+      "targetObject": "桌面收藏游戏详情",
+      "actionBefore": "选择大杀四方",
+      "actionAfter": "展示游戏页",
+      "playerVisibleResult": "游戏标题与主要动作位于横幅下沿，收藏侧栏和房间好友栏保持原有构图。",
+      "protectedSlots": [
+        "收藏侧栏",
+        "游戏主操作",
+        "房间列表",
+        "好友列表"
+      ],
+      "overlap": "当前对局条未遮住主要动作及右侧列表",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "03-切发现再回收藏库.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返回收藏库后可见原游戏标题、选中侧栏项与详情内容，页面层级清楚。",
+      "targetObject": "桌面收藏状态恢复",
+      "actionBefore": "从游戏页切换发现后返回收藏库",
+      "actionAfter": "显示原游戏详情状态",
+      "playerVisibleResult": "返回收藏库后可见原游戏标题、选中侧栏项与详情内容，页面层级清楚。",
+      "protectedSlots": [
+        "收藏侧栏",
+        "游戏主操作",
+        "房间列表",
+        "好友列表"
+      ],
+      "overlap": "当前对局条未遮住主要动作及右侧列表",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "04-点主页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主页再次显示情报条和八款大封面，左侧主页选中态与网格承载明确。",
+      "targetObject": "桌面收藏库返回主页",
+      "actionBefore": "点击收藏库侧栏主页",
+      "actionAfter": "展示全部收藏",
+      "playerVisibleResult": "主页再次显示情报条和八款大封面，左侧主页选中态与网格承载明确。",
+      "protectedSlots": [
+        "收藏侧栏",
+        "情报条",
+        "游戏网格",
+        "当前对局条"
+      ],
+      "overlap": "网格最下方靠近对局条，中文名仍清晰可见",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01-收藏库主页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "首屏完整显示八款封面和中文名，搜索排序位于网格上方，对局条位于封面下方。",
+      "targetObject": "移动收藏库首屏",
+      "actionBefore": "打开移动收藏库",
+      "actionAfter": "展示默认首屏",
+      "playerVisibleResult": "首屏完整显示八款封面和中文名，搜索排序位于网格上方，对局条位于封面下方。",
+      "protectedSlots": [
+        "八款游戏",
+        "搜索框",
+        "排序框",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "八款封面与中文名均未被当前对局条遮挡",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01c-收藏库末项.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末行两款封面与中文名完整可见，情报展开入口位于游戏网格之后且未被对局条压住。",
+      "targetObject": "移动收藏库末项",
+      "actionBefore": "将收藏库向下滚动",
+      "actionAfter": "展示末行及情报入口",
+      "playerVisibleResult": "末行两款封面与中文名完整可见，情报展开入口位于游戏网格之后且未被对局条压住。",
+      "protectedSlots": [
+        "末行游戏",
+        "搜索排序",
+        "情报入口",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "顶部第一行随正常滚动被工具栏裁去少量上沿，末行完整",
+      "clipping": "顶部游戏随滚动正常局部裁切，目标末行完整可读",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01d-收藏搜索.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "搜索词与清除入口保持可见，匹配封面和中文名清楚，情报仍排在结果之后。",
+      "targetObject": "移动收藏搜索结果",
+      "actionBefore": "在搜索框输入战争",
+      "actionAfter": "展示单个匹配游戏",
+      "playerVisibleResult": "搜索词与清除入口保持可见，匹配封面和中文名清楚，情报仍排在结果之后。",
+      "protectedSlots": [
+        "搜索清除入口",
+        "排序框",
+        "匹配游戏",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "结果封面及搜索控件无遮挡",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01e-收藏搜索空态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "无匹配提示承接搜索结果，搜索框清除入口、排序和收藏库导航均保留。",
+      "targetObject": "移动收藏搜索空态",
+      "actionBefore": "搜索没有这款游戏",
+      "actionAfter": "展示无匹配收藏",
+      "playerVisibleResult": "无匹配提示承接搜索结果，搜索框清除入口、排序和收藏库导航均保留。",
+      "protectedSlots": [
+        "搜索清除入口",
+        "排序框",
+        "空态提示",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "空态提示及恢复搜索入口无遮挡",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01f-收藏排序.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "排序框明确显示游玩时长，八款封面中文名仍完整可见，次序变化由真实游戏承载。",
+      "targetObject": "移动收藏排序结果",
+      "actionBefore": "选择游玩时长排序",
+      "actionAfter": "展示重排后的八款游戏",
+      "playerVisibleResult": "排序框明确显示游玩时长，八款封面中文名仍完整可见，次序变化由真实游戏承载。",
+      "protectedSlots": [
+        "八款游戏",
+        "搜索框",
+        "排序框",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "八款封面与中文名均未被当前对局条遮挡",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01g-返回保留位置.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "返回图与末项图中的卡片边界及情报分隔位置一致，末行游戏仍完整可见。",
+      "targetObject": "移动收藏库返回位置",
+      "actionBefore": "从末行游戏详情返回收藏库",
+      "actionAfter": "恢复此前网格滚动位置",
+      "playerVisibleResult": "返回图与末项图中的卡片边界及情报分隔位置一致，末行游戏仍完整可见。",
+      "protectedSlots": [
+        "末行游戏",
+        "搜索排序",
+        "情报入口",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "顶部第一行随恢复的滚动位置裁去少量上沿，末行完整",
+      "clipping": "顶部游戏随滚动正常局部裁切，目标末行完整可读",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m01h-展开次要情报.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "情报在八款游戏之后展开，收起和翻页入口清楚，游戏仍是前置主承载。",
+      "targetObject": "移动收藏库次要情报",
+      "actionBefore": "点击网格之后的情报展开",
+      "actionAfter": "展示情报内容及收起入口",
+      "playerVisibleResult": "情报在八款游戏之后展开，收起和翻页入口清楚，游戏仍是前置主承载。",
+      "protectedSlots": [
+        "游戏网格",
+        "搜索排序",
+        "情报收起及翻页",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "情报图在当前滚动位置仅部分可见，收起及翻页控件无遮挡",
+      "clipping": "上方游戏与下方情报随滚动正常局部裁切，收起及翻页入口完整",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m02-收藏库游戏页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部返回收藏库按钮清晰，游戏封面标题与重连进入主按钮完整可见，房间列表紧随其后。",
+      "targetObject": "移动大杀四方详情",
+      "actionBefore": "点按大杀四方封面",
+      "actionAfter": "展示游戏详情",
+      "playerVisibleResult": "顶部返回收藏库按钮清晰，游戏封面标题与重连进入主按钮完整可见，房间列表紧随其后。",
+      "protectedSlots": [
+        "返回收藏库",
+        "游戏标题",
+        "主要动作",
+        "房间列表",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "后续房间内容在当前滚动位置延伸至对局条下方，完整房间图补足可读性",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m02b-返回全部游戏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "末行游戏详情使用正确封面与中文名，返回收藏库入口位于页首，当前无房间和好友状态明确。",
+      "targetObject": "移动山屋惊魂详情返回入口",
+      "actionBefore": "点按末行山屋惊魂封面",
+      "actionAfter": "展示游戏详情与返回入口",
+      "playerVisibleResult": "末行游戏详情使用正确封面与中文名，返回收藏库入口位于页首，当前无房间和好友状态明确。",
+      "protectedSlots": [
+        "返回收藏库",
+        "游戏标题",
+        "收藏操作",
+        "房间好友状态",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "详情主要动作和状态区域未被对局条遮挡",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m02c-完整房间列表.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四个房间的名称、席位数量及加入重连按钮完整可见，返回收藏库入口保持在上方。",
+      "targetObject": "移动详情完整房间列表",
+      "actionBefore": "在游戏详情向下滚动至房间区",
+      "actionAfter": "展示四个房间",
+      "playerVisibleResult": "四个房间的名称、席位数量及加入重连按钮完整可见，返回收藏库入口保持在上方。",
+      "protectedSlots": [
+        "返回收藏库",
+        "完整房间列表",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "房间列表完整位于对局条上方，好友列表后续内容由好友图补足",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    },
+    {
+      "path": "m02d-完整好友列表.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "六位好友及邀请按钮完整可见，返回收藏库入口仍在上方，后续更新内容顺序清楚。",
+      "targetObject": "移动详情完整好友列表",
+      "actionBefore": "继续滚动至好友区",
+      "actionAfter": "展示六位好友",
+      "playerVisibleResult": "六位好友及邀请按钮完整可见，返回收藏库入口仍在上方，后续更新内容顺序清楚。",
+      "protectedSlots": [
+        "返回收藏库",
+        "完整好友列表",
+        "更新标签",
+        "底部导航",
+        "当前对局条"
+      ],
+      "overlap": "好友列表完整位于对局条上方，后续更新内容可继续滚动",
+      "clipping": "本图目标对象及关键操作未见异常裁切",
+      "internalIdLeak": "未见调试标识泄漏，房间短码为玩家可见房间编号"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "Mage Wars 法师魔杖与元素魔杖卡牌选择 UI 最终验收",
+  "generatedAt": "2026-10-01T17:35:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "法师魔杖真实联机链覆盖施放、绑定候选、结算、快速重绑入口、候选和结算。",
+      "status": "PASS",
+      "evidence": [
+        "正式页面法师魔杖施放和快速重绑覆盖法术选择 UI：1 passed",
+        "最终媒体：07-法师魔杖-施放前.jpg 至 12-法师魔杖-快速重绑结算.jpg"
+      ]
+    },
+    {
+      "requirement": "元素魔杖真实联机链覆盖施放、绑定候选、结算、快速重绑入口、候选和结算。",
+      "status": "PASS",
+      "evidence": [
+        "正式页面元素魔杖施放和快速重绑覆盖法术选择 UI：1 passed",
+        "最终媒体：01-元素魔杖-施放前.jpg 至 06-元素魔杖-快速重绑结算.jpg"
+      ]
+    },
+    {
+      "requirement": "卡牌本体是唯一视觉信息 owner，卡外不重复显示牌名、费用、类型或效果。",
+      "status": "PASS",
+      "evidence": [
+        "CardChoiceOverlay.test.tsx：2 passed",
+        "法师魔杖和元素魔杖候选图中，候选信息由卡面本体承载",
+        "快速重绑入口动作文案改为“重新绑定”，不再显示对应卡牌名"
+      ]
+    },
+    {
+      "requirement": "候选牌直接融入棋盘，不套额外卡槽框、底色、圆角或外部卡牌阴影。",
+      "status": "PASS",
+      "evidence": [
+        "12 张最终原图逐图复核",
+        "候选牌由共享 CardChoiceOverlay 直接渲染，外层保持透明背景"
+      ]
+    },
+    {
+      "requirement": "最终图组来自当前工作树并经过逐图验收。",
+      "status": "PASS",
+      "evidence": [
+        "最终图组目录：test-results/evidence-screenshots/mage-wars/card-choice-final-20261001",
+        "逐图账本：evidence/mage-wars/mage-wars-card-choice-final-visual-audit-20261001.md"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/01-元素魔杖-施放前.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/02-元素魔杖-绑定候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/03-元素魔杖-施放结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/04-元素魔杖-快速重绑入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/05-元素魔杖-快速重绑候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/06-元素魔杖-快速重绑结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/07-法师魔杖-施放前.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/08-法师魔杖-绑定候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/09-法师魔杖-施放结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/10-法师魔杖-快速重绑入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/11-法师魔杖-快速重绑候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/card-choice-final-20261001/12-法师魔杖-快速重绑结算.jpg"
+  ],
+  "visualAudit": {
+    "document": "evidence/mage-wars/mage-wars-card-choice-final-visual-audit-20261001.md",
+    "mediaCount": 12,
+    "passCount": 12,
+    "reviseCount": 0
+  },
+  "notes": [
+    "旧的 REVISE 清单和旧 viewer 不再作为本轮证据。",
+    "DiceThrone / Smash Up 仅作为抽象裁决依据，不混入最终用户图组。"
+  ]
+}

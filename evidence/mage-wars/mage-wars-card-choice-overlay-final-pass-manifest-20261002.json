@@ -1,0 +1,65 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "Mage Wars 候选法术浮层独立滚动窗口最终验收",
+  "generatedAt": "2026-10-02T12:20:00+08:00",
+  "viewerUrl": null,
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "上层候选浮层不得为了避让下层法术书 / 计划区而压缩候选牌或扣除下层 UI 高度。",
+      "status": "PASS",
+      "evidence": [
+        "4 张当前工作树真实入口截图中，候选牌保持与底部法术书同一可见高度。",
+        "候选窗口使用 overlay-owned 滚动策略；实现已移除 calc(100vh - 34rem) 的下层高度扣除。",
+        "规范已明确上层弹窗独立计算内容高度，不为下层 UI 预留物理空白。"
+      ]
+    },
+    {
+      "requirement": "候选卡必须以正式法术牌本体呈现，卡外不重复渲染牌名、费用、类型或效果。",
+      "status": "PASS",
+      "evidence": [
+        "法师魔杖绑定选择和快速重绑选择均显示正式卡面。",
+        "元素魔杖绑定选择和快速重绑选择均显示正式卡面。",
+        "组件单测和真实 E2E 均断言候选卡外不出现重复法术名。"
+      ]
+    },
+    {
+      "requirement": "候选过多时必须在浮层自己的窗口内真实换行和滚动，取消入口保持可见。",
+      "status": "PASS",
+      "evidence": [
+        "两条真实 E2E 均通过 data-choice-scroll-policy=overlay-owned、overflow-y=auto 和候选换行断言。",
+        "四张截图均能看到候选卡网格、标题和取消入口，未出现文字行替代卡面。"
+      ]
+    },
+    {
+      "requirement": "画面保持开放式牌桌，不新增候选卡外壳框或重复信息面板。",
+      "status": "PASS",
+      "evidence": [
+        "四张原始候选态截图逐张检查：卡牌直接融入牌桌，未见额外大卡框、候选文字列表或卡外牌名重复。",
+        "底部法术书仍作为独立牌列存在，没有被压缩成避让空白。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/card-choice-overlay-final-20261002/02-法师魔杖-绑定候选-法师魔杖候选牌可见.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-overlay-final-20261002/05-法师魔杖-快速重绑候选-候选法术牌可见.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-overlay-final-20261002/02-元素魔杖-绑定候选-元素魔杖候选牌可见.png",
+    "test-results/evidence-screenshots/mage-wars/card-choice-overlay-final-20261002/05-元素魔杖-快速重绑候选-候选法术牌可见.png"
+  ],
+  "visualAudit": {
+    "document": "evidence/mage-wars/mage-wars-card-choice-overlay-final-visual-audit-20261002.md",
+    "mediaCount": 4,
+    "passCount": 4,
+    "reviseCount": 0
+  },
+  "notes": [
+    "旧 2026-10-01 viewer 和 PASS 证据不复用；本轮使用 2026-10-02 当前工作树重新运行的媒体。",
+    "本轮只验收候选浮层的独立滚动、同尺寸卡面、开放式牌桌和去重复写，不外推整页 UI 已全部通过。"
+  ]
+}

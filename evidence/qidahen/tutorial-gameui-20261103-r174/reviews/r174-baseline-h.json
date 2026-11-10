@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagents",
+    "id": "/root/r174_h1 + /root/r174_e1"
+  },
+  "requirements": [
+    {
+      "requirement": "征兵训练地图本体",
+      "status": "PASS",
+      "baselineSource": "指定旧版训练目标整图仅作为信息和操作职责对照，旧版右侧长列表与教程说明可见；该旧版已退回，不继承其历史放行结论。当前另读首次训练、第二次训练和征兵地区三张整屏。",
+      "preservedInformation": "训练次数与额外训练次数保留在右侧进度；部队类型、当前等级和地区归属保留在地图兵牌与城名，升级目标由教程说明承接；征兵图显示辽东人口、现有部队及地区边界。",
+      "preservedActions": "旧版列表选择训练对象的职责迁回真实兵牌本体，推荐炮兵及后续步兵均有白色贴边，其他合法兵牌保持绿色贴边；征兵地区由地图区域本体和白色边界承接。此处只核对可见动作承载，执行结果另由行为证据验证。",
+      "changes": "移除右侧滚动候选菜单，放大并定位当前推荐军队，教程说明移到对象相邻位置；右侧只保留当前目标类型与进度；征兵阶段回到较大地图范围并突出辽东地区。",
+      "duplicateDecision": "不再以侧栏文字菜单重复列举地图部队，兵牌或地区是唯一目标承接物，说明负责教学、进度负责次数，各自职责不重复；模式与结束命令不出现在本批目标选择态中，不据本批代判。",
+      "changeAuthority": "依据本轮合同要求直接操作地图本体、区分合法候选与教学推荐，并遵守自由平移和手牌半露约定；未另行修改实现、规则数值或扩张验收范围。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/48-training-target.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/49-training-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/51-training-second-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/52-training-recruit-target.png"
+      ],
+      "actualReviewer": "/root/r174_h1",
+      "sourcePartFile": "reviews/r174-baseline-h1.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "requirement": "教学视角与结束后续局",
+      "status": "PASS",
+      "baselineSource": "已实际读取指定旧版收尾整图与当前收尾整图，旧版顶部后金为当前阵营且底部展示后金牌库与手牌；此处仅对照图面，不继承旧版通过结论。",
+      "preservedInformation": "保留地图、行动轮盘、三阵营公开状态、教学总结、胜利条件说明与当前回合信息；当前牌库和手牌明确属于大明，后金当前回合不再改变教学玩家视角。",
+      "preservedActions": "保留教学上一步和完成并返回按钮，返回入口仍在总结正文下方，当前截图可证明点击返回前的收尾操作可发现。",
+      "changes": "顶部当前标记改为当前回合，底部从后金私有手牌切回大明最后手牌；大明兵牌正面可辨，收尾卡与返回按钮位置保持一致。",
+      "duplicateDecision": "未见额外收尾菜单或重复返回入口，教学总结卡独立承接完成并返回动作，公开回合状态与私有大明手牌分别承担不同职责。",
+      "changeAuthority": "依本轮指定教学视角与结束后续局要求检查；图面只判固定玩家视角与返回前收尾，返回后续局必须由主线程行为断言验证，本报告不宣称图片已证明续局。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/52-finish.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/54-finish.png"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-baseline-h2.json",
+      "sourcePartEntry": 0
+    }
+  ]
+}

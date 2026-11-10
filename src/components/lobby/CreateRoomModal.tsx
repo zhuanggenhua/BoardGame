@@ -10,6 +10,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import './platform-room-dialog.css';
+import './classic-room-dialog.css';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion, type MotionStyle } from 'framer-motion';
@@ -68,7 +69,7 @@ const RETENTION_OPTIONS = [
 const LOCAL_AI_DIFFICULTY_OPTIONS: AiDifficultyLevel[] = ['easy', 'normal', 'hard', 'expert'];
 const AI_MINIMUM_ACTION_DELAY_OPTIONS_MS = [0, 1000, 2000, 3000] as const;
 
-type CreateRoomVisualStyle = 'default' | 'home-v2';
+type CreateRoomVisualStyle = 'default' | 'home-v2' | 'classic';
 
 export interface RoomConfig {
     roomName: string;
@@ -401,6 +402,7 @@ export const CreateRoomModal = ({
     }), [createRoomSetup, defaultNumPlayers, gameManifest, rawDefaultSetupSelections, setupFields]);
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
+    const isClassicStyle = visualStyle === 'classic';
     const platformDialogRef = useRef<HTMLDialogElement>(null);
     const platformDialogTitleId = useId();
     useEffect(() => {
@@ -1041,7 +1043,7 @@ export const CreateRoomModal = ({
                                 aria-labelledby={platformDialogTitleId}
                                 onKeyDown={(event) => { if (event.key === 'Escape') event.stopPropagation(); }}
                                 onCancel={(event) => { event.preventDefault(); if (!isLoading) onClose(); }}
-                                className="platform-room-dialog"
+                                className={isClassicStyle ? 'classic-room-dialog pointer-events-auto fixed inset-0 m-auto flex w-full max-w-md flex-col overflow-hidden rounded-sm border border-parchment-card-border/30 bg-parchment-card-bg p-0 font-serif shadow-parchment-card-hover' : 'platform-room-dialog'}
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     const bounds = event.currentTarget.getBoundingClientRect();
@@ -1050,19 +1052,26 @@ export const CreateRoomModal = ({
                                     if (event.target === event.currentTarget && outside && !isLoading) onClose();
                                 }}
                                 style={{
-                                    maxHeight: 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 820px)',
+                                    maxHeight: isClassicStyle ? 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 42rem)' : 'min(var(--modal-max-height, var(--runtime-modal-max-height)), 820px)',
                                 }}
                                 data-testid="create-room-modal"
                             >
-                                <button type="button" className="platform-room-close" onClick={onClose}
+                                {isClassicStyle && <>
+                                    <div className="absolute left-2 top-2 h-3 w-3 border-l border-t border-parchment-card-border/60" />
+                                    <div className="absolute right-2 top-2 h-3 w-3 border-r border-t border-parchment-card-border/60" />
+                                    <div className="absolute bottom-2 left-2 h-3 w-3 border-b border-l border-parchment-card-border/60" />
+                                    <div className="absolute bottom-2 right-2 h-3 w-3 border-b border-r border-parchment-card-border/60" />
+                                </>}
+                                {!isClassicStyle && <button type="button" className="platform-room-close" onClick={onClose}
                                     disabled={isLoading} aria-label={t('actions.cancel')} data-testid="create-room-cancel-button">×</button>
-                            <div className="platform-room-heading">
-                                <h2 id={platformDialogTitleId} className="platform-room-title">
+                                }
+                            <div className={isClassicStyle ? 'relative z-10 shrink-0 p-6 pb-4' : 'platform-room-heading'}>
+                                <h2 id={platformDialogTitleId} className={isClassicStyle ? 'text-center text-xl font-bold tracking-wide text-parchment-base-text' : 'platform-room-title'}>
                                     {t('createRoom.title')}
                                 </h2>
                             </div>
 
-                            <div className="platform-room-content space-y-5">
+                            <div className={isClassicStyle ? 'relative z-10 min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-6 pb-4' : 'platform-room-content space-y-5'}>
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
                                         <label className="text-sm font-bold text-black">
@@ -1300,7 +1309,10 @@ export const CreateRoomModal = ({
                                 )}
                             </div>
 
-                            <div className="platform-room-footer">
+                            <div className={isClassicStyle ? 'relative z-10 flex shrink-0 gap-3 border-t border-parchment-card-border/15 bg-parchment-card-bg/95 p-6 pt-4' : 'platform-room-footer'}>
+                                {isClassicStyle && <button type="button" onClick={onClose} data-testid="create-room-cancel-button"
+                                    className="flex-1 cursor-pointer rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-4 py-2.5 font-bold text-parchment-base-text transition-all hover:bg-parchment-base-bg"
+                                    disabled={isLoading}>{t('actions.cancel')}</button>}
 
                                 <button
                                     type="button"

@@ -1,0 +1,153 @@
+{
+  "objective": "基于Game UI Database文明六真实操作态，为七大恨重构提供任务对应参考，不冒称完整实机教程",
+  "reviewer": "/root/strategy_reference_review",
+  "sourcePage": "https://www.gameuidatabase.com/gameData.php?id=639",
+  "criteria": [
+    "原图实际可读",
+    "具体玩家任务",
+    "真实对象和提示锚点",
+    "候选与提交边界只按可见事实"
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 8
+  },
+  "items": [
+    {
+      "title": "教程：选开拓者",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-011213-86364.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-guided-17.jpg",
+      "sha256": "b0d3c6f3f8161b6968309b9f7269d7d5aa71b4e7f5e1bf42ced21ecb2244a468",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "地图开拓者旗标上方紧贴 SELECT SETTLER 短提示，黄箭头直接指单位，正文要求点击该单位。主舞台保持地图，无额外选择来源的菜单。",
+      "application": "提示锚真实对象，来源直接点地图部队。",
+      "limits": "不能从单帧证明点击后何时推进、取消或完成流程。",
+      "status": "passed"
+    },
+    {
+      "title": "教程：建城",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-011215-80093.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-guided-18.jpg",
+      "sha256": "f67d9310572f982de8aba943a18e95e98ab9f2dbbf5fdebc425aa92aa458e630",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "开拓者已选中呈白色圈，地图有青色范围；右下单位面板显示专属操作图标。FOUND A CITY 短提示紧贴建城图标，黄箭头指向真实按钮。",
+      "application": "实体选中后才展示该实体必要命令；教程指命令本身，而非复制一个教程按钮。",
+      "limits": "不意味着所有动作必须直接点棋盘；图标承载建城是必要抽象动作。不能证明确认或取消行为。",
+      "status": "passed"
+    },
+    {
+      "title": "教程：城市生产",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-011904-39493.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-19.jpg",
+      "sha256": "1a1be1ed26c1bff9eb50de7cac70056b62ae1e380b2e6faeaa4cff0d9e987162",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "城已建成，右侧 CHOOSE PRODUCTION 面板分建筑和单位，候选含图标、名称、需要回合数，勇士行突出；教程贴列表左侧，箭头指勇士条目。地图城市保留。",
+      "application": "建军候选应展示具体可比较的部队效果/成本；教程点当前真实候选，不再用额外代办菜单。",
+      "limits": "这是文明六城市生产，不是七大恨规则；不支持复制其生产回合数、城市队列或皮肤。",
+      "status": "passed"
+    },
+    {
+      "title": "教程：研究",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-011906-92855.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-20.jpg",
+      "sha256": "1484f0414d522338a7763abc2ede631ff241562cd8a32e534d6b248407cf4d2f",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "第二回合左侧研究候选列表，提示紧贴采矿条目，箭头指具体候选；城市地图和现有生产信息同时在场。",
+      "application": "提示只解释当前已出现、可执行的候选，不离对象很远或全文灌规则。",
+      "limits": "静态不能证明选中是否即提交；不为七大恨统一取消独立确认背书。",
+      "status": "passed"
+    },
+    {
+      "title": "教程：攻击",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-011907-98818.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-21.jpg",
+      "sha256": "a6d34dec2f52a30f3e0b399445ac634dc3a704dde1436a4fd443b81573d098e3",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "第三回合来源勇士已选白圈，敌对野蛮人红圈并有目标箭头；MOVE WARRIOR 短提示贴敌人上方，解释移动到敌方格可攻击，要求右键敌人。右下有双方战力及胜负预估。",
+      "application": "先来源后目标；地图目标直接可点；提示讲实际动作及此刻结果预期；保留双方信息与空间关系。",
+      "limits": "只有目标态，不证明完整来源点击过程、完整战斗动画或本游戏伤害公式。",
+      "status": "passed"
+    },
+    {
+      "title": "普通对局：移动预览",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-012618-88713.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-target1.jpg",
+      "sha256": "e38eb57c7eb7cc4b267c1467f9af7b07a81a1e1abbf92c75eb36c8ccf90254a4",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "已选勇士白圈与竖光柱，青色合法范围；从来源至光标位置有虚线路径及回合数字。右下是该单位命令和状态。",
+      "application": "把来源、范围、目标、路径贴地图表达，避免用长句重述地图与数值。",
+      "limits": "单张图无法确认右键/左键、取消行为；不同战棋六角格不授权把七大恨地区做圆形命中区。",
+      "status": "passed"
+    },
+    {
+      "title": "普通对局：剩余移动范围",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-012838-99782.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-target2.jpg",
+      "sha256": "ddc135bd8e019d39169c959bc2d6b68cae2f41ad8f42a32eda11bed561fd7a9e",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "勇士已选白圈，青色区域边界显示当前范围；右下勇士面板明确剩余移动。附近敌军与地图关系保留，没有中央阻塞菜单。",
+      "application": "选择态保留地图和对手；候选范围独立于教程推荐目标，让玩家知道所有可选位置。",
+      "limits": "不证明全部青色区域均可进攻，不能由颜色推规则合法性。",
+      "status": "passed"
+    },
+    {
+      "title": "普通对局：开拓者目标预览",
+      "url": "https://www.gameuidatabase.com/uploads/Civilization-VI02122025-012839-37440.jpg",
+      "path": "D:/gongzuo/webgame/BoardGame/.tmp/civ-target3.jpg",
+      "sha256": "24e931ac73f4957302b4a60bafd1d115dc595d48df154bf11165158d93957fee",
+      "dimensions": [
+        2560,
+        1440
+      ],
+      "method": "私有读取完整原图；工具显示等比缩至2048宽，未裁切",
+      "observed": "已选开拓者白圈，地图颜色热区和路径虚线/数字同时展示；目标上圈选标记，右下仍是开拓者状态与必要命令。",
+      "application": "空间候选由地图表达，状态与提交只补地图不能表达的内容。",
+      "limits": "文明六建城适宜性热图不应照抄成七大恨合法地区色彩；静态无法证明拖拽和提交步骤。",
+      "status": "passed"
+    }
+  ],
+  "verdict": "参考读取通过；不是七大恨产品验收",
+  "scopeLimit": "已读5教程+3普通对局静态图，未亲玩、未核验完整教程/动画/交互时序。网站图库本体可开，初次弹层图片延迟及CDP超时后使用已观察原始URL正常HTTP下载私下核查；未展示给用户、未用于AI资产生成。",
+  "prohibitedInference": [
+    "没有七大恨轮盘同物，不应照抄界面",
+    "不支持把程序流程菜单当规则",
+    "不支持所有动作一律省确认或一律加确认"
+  ],
+  "video": {
+    "url": "https://www.youtube.com/watch?v=W_I-cXuczvM",
+    "source": "同图库 VIDEO FOOTAGE (RAW) 实际嵌入播放器",
+    "title": "Civilization VI (Mouse/Keyboard/PC) - Game UI Database",
+    "duration": "23:43",
+    "verified": "实际点击播放，核见0:03菜单、1:02加载、1:20左右地图教学弹层、1:33后城市及其右下生产入口。中间有时间轴跳转，未连续看完。",
+    "limits": "未完整观看，不能称完整教程核验；只用于确认可访问视频来源和局部状态。",
+    "cleanup": "只关闭本子代理创建的隐藏浏览器标签，不动用户标签。"
+  }
+}

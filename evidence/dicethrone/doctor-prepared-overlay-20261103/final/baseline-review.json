@@ -1,0 +1,34 @@
+{
+  "status": "REVISE",
+  "requirements": [
+    {
+      "status": "PASS",
+      "requirement": "准备法术参照旧升级牌直接等比覆盖原技能槽，单张完整无额外深色底板；多张能逐张浏览并打开原卡阅读。",
+      "baselineSource": "桌面独立图审实际读取的蜘蛛侠升级牌参考图；三份独立图审及当前源码。",
+      "preservedInformation": "保留原技能槽位置、卡面比例和内容，不遮挡相邻槽；视觉参照仅覆盖布局，不代表规则效果相同。",
+      "preservedActions": "保留卡牌原放大入口；浏览、重置和触控行为由独立浏览器测试验证，截图仅证明画面。",
+      "changes": "奇异博士准备法术多张时增加页码和浏览控件；触控为循环前进，布局编辑时隐藏准备层。",
+      "duplicateDecision": "13 张按 SHA-256 去重为 12 张；横屏恢复三张浏览末张与横屏三张浏览末张内容相同，保留后者。",
+      "changeAuthority": "用户指定旧升级牌覆盖为视觉基线，并要求准备法术支持多张浏览；不改变其他英雄及旧 UI。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/录入-04-蜘蛛侠重拳二级升级后.png"
+      ],
+      "after": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\01-桌面单张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\02-桌面两张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\03-桌面两张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\04-桌面三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\05-桌面三张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\06-横屏三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\07-横屏三张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\08-横屏换牌两张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\09-横屏换牌两张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\10-横屏恢复三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\12-横屏触控三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\13-横屏触控末张.png"
+      ],
+      "independentReviewFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\independent-baseline.json",
+      "sourceReviewEntry": "/baselineRequirements/0"
+    }
+  ]
+}

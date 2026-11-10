@@ -1,0 +1,112 @@
+{
+  "status": "PASS",
+  "score": 93,
+  "reviewer": "/root/r174_video_c2",
+  "issues": [],
+  "actualReadCount": 5,
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "status": "PASS",
+      "observation": "步兵阶段在地图上显示大明攻方及明字原标记，绿色实体骰与合计结果相邻，结果明确写对蒙古造成损伤；大明步兵及蒙古标记旁的骑兵牌正面可见，邻近后金背牌仍为非参战背景。顶部阵营条、底部手牌和地图完整，没有新增顶部空白、结果遮挡或报错。",
+      "checks": [
+        {
+          "name": "target-visible",
+          "status": "PASS"
+        },
+        {
+          "name": "interaction-ui",
+          "status": "PASS"
+        },
+        {
+          "name": "layout-readable",
+          "status": "PASS"
+        },
+        {
+          "name": "no-error",
+          "status": "PASS"
+        }
+      ]
+    }
+  ],
+  "videoPart": {
+    "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+    "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+    "status": "PASS",
+    "readSheets": [
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\c-02.png",
+        "sha256": "1d079aeff98aec9eb33e009653540626633e7f81e898d6ae368bc53abb897f52",
+        "observation": "所分配的十二个连续帧均为战斗结果停留态，地图与底部手牌稳定，没有跳屏、空白或可见错误；本表未出现骰体运动，不以它证明前段掷骰。"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\c-03.png",
+        "sha256": "d5687fb74f126b70bc27c4d196fc996c844aacdb6f95cb0fcb54bc09927ea6f9",
+        "observation": "本表十二帧先延续结果停留态，末两帧退回较小地图视野并出现右侧下一步面板及白色教学说明；地图、手牌和顶部阵营读数均保持存在，未见跳黑或报错。"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\c-04.png",
+        "sha256": "67005564c891ae9024dbc7d4390561300e7dd56eca07be01223cabad373357eb",
+        "observation": "本表只有末帧，承接上一表缩小地图与右侧面板及教学说明；右侧黑色为联系表未占用区域，不是页面空白。未见错误。"
+      }
+    ],
+    "readFrameIndices": [
+      102,
+      103,
+      104,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126
+    ],
+    "observation": "仅亲读本批第一百零二至第一百二十六帧：步兵结果停留后回到缩小地图并出现下一步面板和教学说明，画面连续，没有跳黑或报错。此末段未覆盖骰体运动或停止瞬间，不声称前段及整片已审。阵营、参战牌与结果承受方的文字判定来自本批当前原始整屏。",
+    "checks": [
+      {
+        "status": "PASS",
+        "name": "target-visible",
+        "observation": "末段结果始终显示，退出结果后保留地图与下一步承接。"
+      },
+      {
+        "status": "PASS",
+        "name": "interaction-ui",
+        "observation": "当前整屏明确显示大明攻方及原明字标记，损伤明确指向蒙古。"
+      },
+      {
+        "status": "PASS",
+        "name": "layout-readable",
+        "observation": "结果邻近地图战斗区域；底部手牌与顶部阵营条未被替代或挤走。"
+      },
+      {
+        "status": "PASS",
+        "name": "no-error",
+        "observation": "本批连续帧与当前整屏均未见报错或异常空屏。"
+      }
+    ]
+  },
+  "baselineRead": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r154-object-input-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "525043bd47e8f86f014ac664201e7cb49e05a13df7474dd2cbe50ccc6cf72a9a",
+      "observation": "旧整屏的攻方列仅标攻方、结果仅写造成损伤，骰子与地图参战位置相距较远，顶部有较大空白；此观察仅限该旧静态图。"
+    }
+  ]
+}

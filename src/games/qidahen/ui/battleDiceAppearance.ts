@@ -4,6 +4,7 @@ import type { DiceBoxDieSkin, DiceBoxDieType, DiceBoxStyleProfile } from '../../
 const COLORS: Record<DiceBoxDieType, string> = { d6: '#ffffff', d8: '#901515', d10: '#136a2c', d12: '#d0821e' };
 export const QIDAHEN_BATTLE_DICE_STYLES = Object.fromEntries(Object.entries(COLORS).map(([type, color]) => [type, {
     id: `qidahen-tts-${type}`, surface: 'transparent-virtual', texture: '', material: 'plastic', baseScale: 84, shadows: false, projectedLayoutMargin: 8, projectedLayoutMinGap: 8, optimizeSettledFaceReadability: true,
+    throwTravelDiceSizes: 2, throwBounceDiceSizes: 0.35,
     customColorset: { name: `qidahen-tts-${type}`, foreground: type === 'd6' ? '#111111' : '#ffffff', background: color, outline: 'none', texture: 'none', material: 'plastic' },
 } satisfies DiceBoxStyleProfile])) as Record<DiceBoxDieType, DiceBoxStyleProfile>;
 

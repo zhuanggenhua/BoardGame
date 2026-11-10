@@ -1,0 +1,105 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "golden",
+  "generatedAt": "2026-10-11T13:16:26.766Z",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-吊死鬼黄金端到端-20261011-r6"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs isolated e2e/betrayal/event-choice-coverage.e2e.ts \"吊死鬼真实链路从探索翻牌到四项检定后选奖励关闭\"",
+      "result": "1 passed",
+      "scope": "真实浏览器完成未知房间选择、四项独立投掷、奖励选择、结算确认和回牌桌。"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "统一选择交互位置和组件",
+      "status": "PASS",
+      "evidence": [
+        "事件选择候选位于事件牌和骰盘下方。",
+        "选择动作复用 BetrayalChoiceOptionButton，提交动作复用 BetrayalDecisionActionDock。",
+        "真实 E2E 断言 shared-decision-action-dock 仅有一个且 data-action-position=bottom。"
+      ]
+    },
+    {
+      "requirement": "四项检定都保留滚动中和停稳画面",
+      "status": "PASS",
+      "evidence": [
+        "四项检定均有同一次真实运行生成的滚动中与停稳成对截图。",
+        "四张停稳截图均直接显示稳定骰子本体、骰面、总点数、对应检定结果和底部继续按钮。",
+        "每张停稳图都在玩家点击继续前保存，下一项不会提前出现。"
+      ]
+    },
+    {
+      "requirement": "单决策单收口并返回牌桌",
+      "status": "PASS",
+      "evidence": [
+        "中间属性检定每项只保留一个继续入口，不重复确认或返回。",
+        "最后一项停稳后仍需玩家点击继续，之后奖励只保留一次确认。",
+        "确认奖励后结算窗口关闭并回到牌桌，回牌桌截图确认临时层均已退出。"
+      ]
+    },
+    {
+      "requirement": "规范与实现同步",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/e2e-verification.md 已补充多项检定逐次投掷、停稳后等待继续和最终逐图验收。",
+        ".spec/knowledge/standards/ui-change-gates.md 已补充底部决策 dock、选择面板复用、单候选真实点击和单决策单收口。",
+        "npm run spec:lint 通过；TypeScript 类型检查通过。"
+      ]
+    }
+  ],
+  "media": [
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-01-探索前.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-02-选择未知房间.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-03-未知房间已选中等待放置确认.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-04-事件牌翻出等待逐项检定.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-05-力量检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-05-力量检定停稳等待继续.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-06-速度检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-06-速度检定停稳等待继续.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-07-知识检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-07-知识检定停稳等待继续.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-08-神志检定滚动中.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-08-神志检定停稳等待继续.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-09-四项检定完成选择奖励.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-10-知识奖励结算等待确认.jpg",
+    "evidence/山屋惊魂-吊死鬼黄金端到端-20261011-r6/吊死鬼-完整链路-11-确认后回牌桌.jpg"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "inspect_betrayal_screenshots"
+    },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "规则与数值真相",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/betrayal-event-card-resolution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"吊死鬼\"",
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"吊死鬼待选事件能在真实页面选择奖励属性\""
+    ],
+    "evidence": [
+      "吊死鬼领域测试 1 passed。",
+      "吊死鬼 Board 页面测试 1 passed。",
+      "截图只承担交互和可见性，规则结果由 Vitest 与真实 E2E 断言负责。"
+    ]
+  }
+}

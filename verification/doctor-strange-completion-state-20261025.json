@@ -1,0 +1,291 @@
+{
+  "goal": "完成奇异博士 Dice Throne 派系实施，并按当前 OpenSpec 与项目验收门禁完成验收和审计",
+  "status": "completed",
+  "acceptance_criteria": [
+    {
+      "id": "C1",
+      "description": "素材与规则真相源、32卡/骰面/技能槽/状态数据、正式资源 manifest 与公开交付均有当前可复核证据",
+      "status": "pass",
+      "evidence": [
+        "evidence/dicethrone/doctor-strange-implementation-audit.md:32张实体卡、9槽位和3状态对象矩阵",
+        "evidence/dicethrone/doctor-strange-real-entry-20261025/assets-remote-check.json:12/12资源公开回查、同源哈希和大小通过",
+        "public/assets/i18n/zh-CN/dicethrone/images/doctor_strange/ 角色独立前缀资源与manifest"
+      ]
+    },
+    {
+      "id": "C2",
+      "description": "法术、技能、阶段、共享行动牌与私有视图符合规则合同，定向测试和回归通过",
+      "status": "pass",
+      "evidence": [
+        "verification/doctor-strange-regression-current-20261026-closeout.log:12文件249/249基线",
+        "verification/doctor-strange-incremental-tests-20261026-closeout.log:后续4文件80/80"
+      ]
+    },
+    {
+      "id": "C3",
+      "description": "目标源码检查、TypeScript、i18n、production build、OpenSpec/spec lint 与资源校验门禁完成或有明确归属证据",
+      "status": "pass",
+      "evidence": [
+        "evidence/dicethrone/doctor-strange-implementation-audit.md:当前通过与历史全仓残余分列",
+        "verification/doctor-strange-build-current-20261026-closeout.log:生产build通过",
+        "verification/doctor-strange-eslint-20261026-closeout.log:目标lint",
+        "verification/doctor-strange-openspec-strict-20261026-closeout.log",
+        "verification/doctor-strange-spec-lint-20261026-closeout.log",
+        "verification/doctor-strange-audit-selfcheck-20261026-closeout.log",
+        "verification/doctor-strange-typecheck-20261026-final.log",
+        "verification/doctor-strange-typecheck-attribution-20261026-final.json",
+        "verification/doctor-strange-i18n-20261026-final.log",
+        "verification/doctor-strange-assets-20261026-final.log",
+        "verification/doctor-strange-assets-dicethrone-20261026-final.log"
+      ]
+    },
+    {
+      "id": "C4",
+      "description": "当前源码真实入口 E2E、交互行为链和逐图审查覆盖约定视口及玩家真实入口",
+      "status": "pass",
+      "evidence": [
+        "evidence/dicethrone/doctor-strange-real-entry-20261026-closeout/:9独立链42图及内部索引合同",
+        "verification/doctor-strange-e2e-final-current-20261026-run14.log:9/9",
+        "verification/doctor-strange-online-entry-current-20261026-final.log:最新正式入口1/1",
+        "verification/doctor-strange-runtime-identity-20261026-closeout.json",
+        "verification/doctor-strange-online-runtime-identity-20261026-final.json",
+        "verification/doctor-strange-source-scope-20261026-closeout.json",
+        "verification/doctor-strange-incremental-impact-20261026-final.json"
+      ]
+    },
+    {
+      "id": "C5",
+      "description": "32卡对象矩阵与共享规则消费链完成独立整体审计，无未处理缺陷",
+      "status": "pass",
+      "evidence": [
+        "evidence/dicethrone/doctor-strange-implementation-audit.md:32张实体卡矩阵逐行复核、18张共享流程合同与最终状态断言",
+        "openspec/changes/add-dicethrone-doctor-strange-faction/tasks.md:4.6已勾选；此前独立只读复审发现项全部有修复与回归，无本范围未处理P1/P2"
+      ]
+    },
+    {
+      "id": "C6",
+      "description": "角色完成态已按用户目标应用，正常可选且无实施中标记",
+      "status": "pass",
+      "evidence": [
+        "src/games/dicethrone/domain/core-types.ts:doctor_strange无setupOptionStatus限制",
+        "verification/doctor-strange-incremental-tests-20261026-closeout.log:目录/生命周期断言",
+        "当前证据包正式双人选角、准备和开局trace及截图"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "openspec/changes/add-dicethrone-doctor-strange-faction/tasks.md",
+      "description": "历史记录：角色实施与验收清单",
+      "required": false
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-implementation-audit.md",
+      "description": "历史记录：对象级规则审计与门禁归属",
+      "required": false
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261025-inprogress-1792927193535-sr1ly3/",
+      "description": "历史记录：10月25日真实入口历史证据包",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-e2e-final-current-20261026-run2.log",
+      "description": "历史记录：10月26日候选E2E在ad512源码快照下9/9通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-visual-review-20261026-e2e-1792948129031-lku9e1/",
+      "description": "历史记录：候选E2E 42/42图的私有视觉审查",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-common-actions-current-20261026-run3.log",
+      "description": "历史记录：当时源码定向12文件回归249/249通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-gamehints-current-20261026-run1.log",
+      "description": "历史记录：当时源码手牌弃置提示4/4通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-build-current-20261026-run3.log",
+      "description": "历史记录：当时源码production build退出码0",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-eslint-current-20261026-run2.log",
+      "description": "历史记录：当时5个目标文件ESLint通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-typecheck-current-20261026-run3.log",
+      "description": "历史记录：当时全仓TypeScript诊断日志，保留失败状态",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-typecheck-attribution-current-20261026.json",
+      "description": "历史记录：TypeScript范围归属和 changed-hunk 坐标对照",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-i18n-current-20261026-run3.log",
+      "description": "历史记录：当时全仓i18n诊断和警告",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-assets-current-20261026-run3.log",
+      "description": "历史记录：当时全仓资源manifest诊断",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-assets-i18n-root-current-20261026-run2.log",
+      "description": "历史记录：当时根i18n资源manifest校验通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-assets-dicethrone-current-20261026-run2.log",
+      "description": "历史记录：当时Dice Throne资源manifest校验通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-style-contract-current-20261026-run1.log",
+      "description": "历史记录：当时Dice Throne CSS合同校验通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-openspec-strict-current-20261026-run2.log",
+      "description": "历史记录：当时OpenSpec strict校验通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-spec-lint-current-20261026-run2.log",
+      "description": "历史记录：当时项目spec lint通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-audit-selfcheck-current-20261026-run2.log",
+      "description": "历史记录：当时审计证据自检通过",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-e2e-preflight-current-20261026-run10.log",
+      "description": "历史记录：最新共享runtime owner/consumer、源码身份与资源状态复核",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-e2e-preflight-current-20261026-run9.log",
+      "description": "历史记录：当时源码与共享runtime输入身份、owner/consumer及资源状态预检",
+      "required": false
+    },
+    {
+      "path": "verification/doctor-strange-e2e-preflight-current-20261026-run8.log",
+      "description": "历史记录：当时源码指纹及共享E2E端口、资源状态预检",
+      "required": false
+    },
+    {
+      "path": "openspec/changes/add-dicethrone-doctor-strange-faction/tasks.md",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-implementation-audit.md",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261026-closeout/",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-regression-current-20261026-closeout.log",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-incremental-tests-20261026-closeout.log",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-openspec-strict-20261026-closeout.log",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-spec-lint-20261026-closeout.log",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-audit-selfcheck-20261026-closeout.log",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-runtime-identity-20261026-closeout.json",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-online-runtime-identity-20261026-final.json",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-source-scope-20261026-closeout.json",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-incremental-impact-20261026-final.json",
+      "description": "本次范围验收证据",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-typecheck-20261026-final.log",
+      "description": "最新全仓检查及范围归属；原始失败状态保留",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-typecheck-attribution-20261026-final.json",
+      "description": "最新全仓检查及范围归属；原始失败状态保留",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-i18n-20261026-final.log",
+      "description": "最新全仓检查及范围归属；原始失败状态保留",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-assets-20261026-final.log",
+      "description": "最新全仓检查及范围归属；原始失败状态保留",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-assets-dicethrone-20261026-final.log",
+      "description": "最新全仓检查及范围归属；原始失败状态保留",
+      "required": true
+    },
+    {
+      "path": "verification/doctor-strange-final-artifact-verification-20261026.json",
+      "description": "六项验收、产物存在、42图SHA、九链源身份与范围增量最终核验PASS",
+      "required": true
+    }
+  ],
+  "notes": [
+    "本派系当前代码验证口径已收口：32张实体卡、9个玩家板槽位及3种状态完成实施与对象审计，独立复审发现的七项攻击P1和两条法术语义问题均有修复与回归，本范围无未处理P1/P2。角色正常可选，已移除实施中标记。12文件回归249/249通过，随后角色/法术/目录/手牌费用增量回归80/80通过；两次运行分别记录，不相加。九条独立行为链、42张截图完成验收；8条牌桌链由内部初始化后使用真实鼠标操作，另1条由正式建房入口完成双人选角和开局。全仓TypeScript、i18n及共享音频清单的最新失败与历史结果均保留，不声称全仓通过。未提交、推送或部署。",
+    "同端口刷新授权已应用。每条独立链保存实际源码身份；增量变化有逐文件SHA及影响复核，未知变化不继承通过。",
+    "完成后按.spec/tasks/README.md删除执行卡；持久历史保留在OpenSpec、审计文档和本完成状态清单。"
+  ],
+  "retiredExecutionCard": {
+    "path": ".spec/tasks/add-dicethrone-doctor-strange.md",
+    "bytes": 17911,
+    "sha256": "6d6e688bb7e06da015b315a091ce8d7547b8a8554997fe0b53dc7f02c9d02ce4",
+    "reason": ".spec/tasks/README.md规定完成后删除；长期记录已转入OpenSpec与审计包"
+  },
+  "completedAt": "2026-10-26T13:42:27.134Z",
+  "finalArtifactVerification": "verification/doctor-strange-final-artifact-verification-20261026.json"
+}

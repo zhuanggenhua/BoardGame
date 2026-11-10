@@ -131,4 +131,32 @@ describe('TransportStateSynchronizer', () => {
             expect.objectContaining({ path: '/core/publicValue', value: 'after' }),
         ]));
     });
+
+    it('广播缓存与权威状态隔离，原地修改后仍能产生下一次更新', () => {
+        const io = new MockIO();
+        const synchronizer = new TransportStateSynchronizer(io as unknown as never);
+        const match = createMatch();
+        synchronizer.broadcast(match);
+        (match.state.core as { publicValue: string }).publicValue = 'after';
+        expect((match.lastBroadcastedViews.get('0') as { core: { publicValue: string } }).core.publicValue).toBe('before');
+        match.stateID = 2;
+        synchronizer.broadcast(match);
+        expect(io.gameNamespace.sent[1].args[1]).toEqual(expect.arrayContaining([
+            expect.objectContaining({ path: '/core/publicValue', value: 'after' }),
+        ]));
+    });
+
+    it('不同玩家和观战者的广播缓存保持各自视图', () => {
+        const io = new MockIO();
+        const synchronizer = new TransportStateSynchronizer(io as unknown as never);
+        const match = createMatch();
+        match.connections.set('1', new Set(['socket-1']));
+        match.spectatorSockets.add('spectator');
+        synchronizer.broadcast(match);
+        const core = (key: string) => (match.lastBroadcastedViews.get(key) as { core: { privateHand?: string[] } }).core;
+        expect(core('0').privateHand).toEqual(['alpha']);
+        expect(core('1').privateHand).toEqual([]);
+        expect(core('spectator').privateHand).toBeUndefined();
+        expect(io.gameNamespace.sent.map(event => event.socketId)).toEqual(['socket-0', 'socket-1', 'spectator']);
+    });
 });

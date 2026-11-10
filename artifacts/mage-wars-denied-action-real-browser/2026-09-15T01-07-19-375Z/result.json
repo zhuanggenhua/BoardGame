@@ -1,0 +1,168 @@
+{
+  "status": "PASS",
+  "targetUrl": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+  "runtime": "真实 Playwright Chromium；合法起点由正式测试 harness 注入，点击以后全部使用真实页面鼠标输入",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-denied-action-real-browser\\2026-09-15T01-07-19-375Z",
+  "screenshots": {
+    "before": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-denied-action-real-browser\\2026-09-15T01-07-19-375Z\\01-click-before.png",
+    "after": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-denied-action-real-browser\\2026-09-15T01-07-19-375Z\\02-denied-toast-after.png"
+  },
+  "snapshots": {
+    "before": {
+      "label": "click-before",
+      "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "devicePixelRatio": 1
+      },
+      "card": {
+        "disabled": false,
+        "primaryAction": "true",
+        "primaryState": "enabled",
+        "selected": null,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "centerHitsInsideCard": true,
+        "centerHitsInspectButton": false,
+        "hitTestId": "mage-wars-desktop-prepared-card"
+      },
+      "overlay": "true",
+      "toastVisible": false,
+      "toastText": null,
+      "state": {
+        "phase": "initiativeQuickcast",
+        "mana": 0,
+        "prepared": [
+          3417
+        ],
+        "quickcastReady": true,
+        "actionReady": true
+      }
+    },
+    "after": {
+      "label": "click-after",
+      "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "devicePixelRatio": 1
+      },
+      "card": {
+        "disabled": false,
+        "primaryAction": "true",
+        "primaryState": "enabled",
+        "selected": null,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer",
+        "centerHitsInsideCard": true,
+        "centerHitsInspectButton": false,
+        "hitTestId": "mage-wars-desktop-prepared-card"
+      },
+      "overlay": "true",
+      "toastVisible": true,
+      "toastText": "法力不足，不能施放这个法术。",
+      "state": {
+        "phase": "initiativeQuickcast",
+        "mana": 0,
+        "prepared": [
+          3417
+        ],
+        "quickcastReady": true,
+        "actionReady": true
+      }
+    }
+  },
+  "checks": {
+    "cardCenterHitsCardBody": true,
+    "cardIsEnabled": true,
+    "noMagnifyBefore": true,
+    "toastVisibleAfter": true,
+    "noMagnifyAfter": true,
+    "noSelectionAfterDenied": true,
+    "manaUnchanged": true,
+    "preparedCardRemains": true,
+    "quickcastRemainsReady": true,
+    "actionRemainsReady": true
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-15T01:07:22.039Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T01:07:22.042Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"timeoutMs\":120000}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-15T01:07:22.052Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T01:07:22.053Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"mage-wars\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-15T01:07:22.088Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":36}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T01:07:22.233Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":192}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-15T01:07:22.233Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":181}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"reset\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":1,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 1, activePhaseElapsedMs: null}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"initiativeQuickcast\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":1,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 1, activePhaseElapsedMs: null}"
+    }
+  ]
+}

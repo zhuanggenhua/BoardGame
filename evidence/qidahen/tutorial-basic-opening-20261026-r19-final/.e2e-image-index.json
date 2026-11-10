@@ -1,0 +1,750 @@
+{
+  "version": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/00-唯一入门入口-直接进入胜利条件.png",
+      "chainId": "basic-opening-entry",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现00，唯一入门入口，直接进入胜利条件状态。",
+      "description": "00-唯一入门入口-直接进入胜利条件",
+      "uiStateId": "basic-opening-entry-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现00，唯一入门入口，直接进入胜利条件状态。",
+      "behaviorStepId": "basic-opening-entry-capture-001",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "入口与胜利条件"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/00a-继续后-选择首个行动.png",
+      "chainId": "basic-opening-entry",
+      "chainStep": "02",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现00a，继续后，选择首个行动状态。",
+      "description": "00a-继续后-选择首个行动",
+      "uiStateId": "basic-opening-entry-ui-02",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现00a，继续后，选择首个行动状态。",
+      "behaviorStepId": "basic-opening-entry-capture-003",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "入口与胜利条件"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/移动-00-开场-胜利条件说明.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家完成当前输入后，教程界面呈现移动，00，开场，胜利条件说明状态。",
+      "description": "移动-00-开场-胜利条件说明",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现移动，00，开场，胜利条件说明状态。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-001",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "移动端长按检视手牌"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/移动-01-首个行动选择-轮盘或征召.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "02",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家完成当前输入后，教程界面呈现移动，01，首个行动选择，轮盘或征召状态。",
+      "description": "移动-01-首个行动选择-轮盘或征召",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-02",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现移动，01，首个行动选择，轮盘或征召状态。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-003",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "移动端长按检视手牌"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/移动-02-征召支付-手牌检视前.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "03",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家完成当前输入后，教程界面呈现移动，02，征召支付，手牌检视前状态。",
+      "description": "移动-02-征召支付-手牌检视前",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-03",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现移动，02，征召支付，手牌检视前状态。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-005",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "移动端长按检视手牌"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/移动-03-征召支付-长按手牌打开检视.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "04",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家完成当前输入后，教程界面呈现移动，03，征召支付，长按手牌打开检视状态。",
+      "description": "移动-03-征召支付-长按手牌打开检视",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-04",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现移动，03，征召支付，长按手牌打开检视状态。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-007",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "移动端长按检视手牌"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/移动-05-选牌后确认征召支付.png",
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "chainStep": "05",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "玩家完成当前输入后，教程界面呈现移动，05，选牌后确认征召支付状态。",
+      "description": "移动-05-选牌后确认征召支付",
+      "uiStateId": "basic-opening-mobile-hand-inspect-ui-05",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现移动，05，选牌后确认征召支付状态。",
+      "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-010",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "移动端长按检视手牌"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03c-一格开垦前-选择轮盘走法.png",
+      "chainId": "basic-opening-one-grid",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03c，一格开垦前，选择轮盘走法状态。",
+      "description": "03c-一格开垦前-选择轮盘走法",
+      "uiStateId": "basic-opening-one-grid-ui-01",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03c，一格开垦前，选择轮盘走法状态。",
+      "behaviorStepId": "basic-opening-one-grid-capture-008",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "一格开垦分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03c-轮盘一格-进入开垦并结算.png",
+      "chainId": "basic-opening-one-grid",
+      "chainStep": "02",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03c，轮盘一格，进入开垦并结算状态。",
+      "description": "03c-轮盘一格-进入开垦并结算",
+      "uiStateId": "basic-opening-one-grid-ui-02",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03c，轮盘一格，进入开垦并结算状态。",
+      "behaviorStepId": "basic-opening-one-grid-capture-010",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "一格开垦分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "chainId": "basic-opening-one-grid",
+      "chainStep": "03",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03d，一格开垦后退出教程并完成下一次轮盘行动状态。",
+      "description": "03d-一格开垦后退出教程并完成下一次轮盘行动",
+      "uiStateId": "basic-opening-one-grid-ui-03",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03d，一格开垦后退出教程并完成下一次轮盘行动状态。",
+      "behaviorStepId": "basic-opening-one-grid-capture-013",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "一格开垦分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/09b-选择炮兵后的实际结果.png",
+      "chainId": "basic-opening-recruit-artillery",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现09b，选择炮兵后的实际结果状态。",
+      "description": "09b-选择炮兵后的实际结果",
+      "uiStateId": "basic-opening-recruit-artillery-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现09b，选择炮兵后的实际结果状态。",
+      "behaviorStepId": "basic-opening-recruit-artillery-capture-007",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/09a-选择川兵后的实际结果.png",
+      "chainId": "basic-opening-recruit-chuanbing",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现09a，选择川兵后的实际结果状态。",
+      "description": "09a-选择川兵后的实际结果",
+      "uiStateId": "basic-opening-recruit-chuanbing-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现09a，选择川兵后的实际结果状态。",
+      "behaviorStepId": "basic-opening-recruit-chuanbing-capture-007",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/02-选择首个行动-轮盘或征召.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现02，选择首个行动，轮盘或征召状态。",
+      "description": "02-选择首个行动-轮盘或征召",
+      "uiStateId": "basic-opening-recruit-wheel-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现02，选择首个行动，轮盘或征召状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-003",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动",
+        "轮盘先行顺序分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/07a-征召支付-点击看查看牌面.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "02",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现07a，征召支付，点击看查看牌面状态。",
+      "description": "07a-征召支付-点击看查看牌面",
+      "uiStateId": "basic-opening-recruit-wheel-ui-02",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现07a，征召支付，点击看查看牌面状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-006",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/07-支付1张手牌.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "03",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现07，支付1张手牌状态。",
+      "description": "07-支付1张手牌",
+      "uiStateId": "basic-opening-recruit-wheel-ui-03",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现07，支付1张手牌状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-007",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/07a-确认弃置手牌.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "04",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现07a，确认弃置手牌状态。",
+      "description": "07a-确认弃置手牌",
+      "uiStateId": "basic-opening-recruit-wheel-ui-04",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现07a，确认弃置手牌状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-009",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/08-选择宣府建军位置.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "05",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现08，选择宣府建军位置状态。",
+      "description": "08-选择宣府建军位置",
+      "uiStateId": "basic-opening-recruit-wheel-ui-05",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现08，选择宣府建军位置状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-011",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/09-选择建军方式.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "06",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现09，选择建军方式状态。",
+      "description": "09-选择建军方式",
+      "uiStateId": "basic-opening-recruit-wheel-ui-06",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现09，选择建军方式状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-013",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/10-征召结果-轮盘行动待完成.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "07",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现10，征召结果，轮盘行动待完成状态。",
+      "description": "10-征召结果-轮盘行动待完成",
+      "uiStateId": "basic-opening-recruit-wheel-ui-07",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现10，征召结果，轮盘行动待完成状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-015",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/02a-轮盘三格费用与落点说明.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "08",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现02a，轮盘三格费用与落点说明状态。",
+      "description": "02a-轮盘三格费用与落点说明",
+      "uiStateId": "basic-opening-recruit-wheel-ui-08",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现02a，轮盘三格费用与落点说明状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-017",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03-轮盘选择-三种走法均可选择.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "09",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03，轮盘选择，三种走法均可选择状态。",
+      "description": "03-轮盘选择-三种走法均可选择",
+      "uiStateId": "basic-opening-recruit-wheel-ui-09",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03，轮盘选择，三种走法均可选择状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-018",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03a-轮盘两格-选择对手抽牌.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "10",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03a，轮盘两格，选择对手抽牌状态。",
+      "description": "03a-轮盘两格-选择对手抽牌",
+      "uiStateId": "basic-opening-recruit-wheel-ui-10",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03a，轮盘两格，选择对手抽牌状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-020",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03b-轮盘两格-进入军屯并结算.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "11",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03b，轮盘两格，进入军屯并结算状态。",
+      "description": "03b-轮盘两格-进入军屯并结算",
+      "uiStateId": "basic-opening-recruit-wheel-ui-11",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03b，轮盘两格，进入军屯并结算状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-022",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/11-教程结束后同局下一位玩家可操作.png",
+      "chainId": "basic-opening-recruit-wheel",
+      "chainStep": "12",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现11，教程结束后同局下一位玩家可操作状态。",
+      "description": "11-教程结束后同局下一位玩家可操作",
+      "uiStateId": "basic-opening-recruit-wheel-ui-12",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现11，教程结束后同局下一位玩家可操作状态。",
+      "behaviorStepId": "basic-opening-recruit-wheel-capture-025",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "手牌征召与轮盘两格行动"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03c，轮盘三格，进入征兵训练弃牌窗口状态。",
+      "description": "03c-轮盘三格-进入征兵训练弃牌窗口",
+      "uiStateId": "basic-opening-three-grid-ui-01",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03c，轮盘三格，进入征兵训练弃牌窗口状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-010",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03e-征兵训练选择行动前规则译文.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "02",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03e，征兵训练选择行动前规则译文状态。",
+      "description": "03e-征兵训练选择行动前规则译文",
+      "uiStateId": "basic-opening-three-grid-ui-02",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03e，征兵训练选择行动前规则译文状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-013",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03f-训练目标选择与等级提示.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "03",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03f，训练目标选择与等级提示状态。",
+      "description": "03f-训练目标选择与等级提示",
+      "uiStateId": "basic-opening-three-grid-ui-03",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03f，训练目标选择与等级提示状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-015",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03g-征兵训练结算结果.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "04",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03g，征兵训练结算结果状态。",
+      "description": "03g-征兵训练结算结果",
+      "uiStateId": "basic-opening-three-grid-ui-04",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03g，征兵训练结算结果状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-017",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03h-征兵目标本土限制与候选区域.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "05",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03h，征兵目标本土限制与候选区域状态。",
+      "description": "03h-征兵目标本土限制与候选区域",
+      "uiStateId": "basic-opening-three-grid-ui-05",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03h，征兵目标本土限制与候选区域状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-019",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03i-额外训练规则与弃牌.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "06",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03i，额外训练规则与弃牌状态。",
+      "description": "03i-额外训练规则与弃牌",
+      "uiStateId": "basic-opening-three-grid-ui-06",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03i，额外训练规则与弃牌状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-022",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03j-额外训练目标与结果.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "07",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03j，额外训练目标与结果状态。",
+      "description": "03j-额外训练目标与结果",
+      "uiStateId": "basic-opening-three-grid-ui-07",
+      "uiChange": "target-highlight",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03j，额外训练目标与结果状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-025",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03k-征兵训练结果与轮盘结算.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "08",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03k，征兵训练结果与轮盘结算状态。",
+      "description": "03k-征兵训练结果与轮盘结算",
+      "uiStateId": "basic-opening-three-grid-ui-08",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03k，征兵训练结果与轮盘结算状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-028",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/03l-教程退场后同局继续.png",
+      "chainId": "basic-opening-three-grid",
+      "chainStep": "09",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现03l，教程退场后同局继续状态。",
+      "description": "03l-教程退场后同局继续",
+      "uiStateId": "basic-opening-three-grid-ui-09",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现03l，教程退场后同局继续状态。",
+      "behaviorStepId": "basic-opening-three-grid-capture-031",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "三格征兵训练分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/02c-先轮盘后手牌-行动顺序选择.png",
+      "chainId": "basic-opening-wheel-first",
+      "chainStep": "01",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现02c，先轮盘后手牌，行动顺序选择状态。",
+      "description": "02c-先轮盘后手牌-行动顺序选择",
+      "uiStateId": "basic-opening-wheel-first-ui-01",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现02c，先轮盘后手牌，行动顺序选择状态。",
+      "behaviorStepId": "basic-opening-wheel-first-capture-002",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "轮盘先行顺序分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+      "chainId": "basic-opening-wheel-first",
+      "chainStep": "02",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现02b，先轮盘后手牌，轮盘结算结果状态。",
+      "description": "02b-先轮盘后手牌-轮盘结算结果",
+      "uiStateId": "basic-opening-wheel-first-ui-02",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现02b，先轮盘后手牌，轮盘结算结果状态。",
+      "behaviorStepId": "basic-opening-wheel-first-capture-004",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "轮盘先行顺序分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/02d-轮盘后选择手牌行动.png",
+      "chainId": "basic-opening-wheel-first",
+      "chainStep": "03",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现02d，轮盘后选择手牌行动状态。",
+      "description": "02d-轮盘后选择手牌行动",
+      "uiStateId": "basic-opening-wheel-first-ui-03",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现02d，轮盘后选择手牌行动状态。",
+      "behaviorStepId": "basic-opening-wheel-first-capture-006",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "轮盘先行顺序分支"
+      ]
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media/02e-两种行动完成-征召结果.png",
+      "chainId": "basic-opening-wheel-first",
+      "chainStep": "04",
+      "sourceRun": "codex-tutorial-20261026-r19-final",
+      "sourceDir": "evidence/qidahen/tutorial-basic-opening-20261026-r19-final/media",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家完成当前输入后，教程界面呈现02e，两种行动完成，征召结果状态。",
+      "description": "02e-两种行动完成-征召结果",
+      "uiStateId": "basic-opening-wheel-first-ui-04",
+      "uiChange": "panel",
+      "uiChangeReason": "玩家完成当前输入后，教程界面呈现02e，两种行动完成，征召结果状态。",
+      "behaviorStepId": "basic-opening-wheel-first-capture-012",
+      "sourceRevision": "sha256:c486a0776ae95463bfcfd99a41096afa24c3222152b993e96b5575adae681e89",
+      "requirements": [
+        "轮盘先行顺序分支"
+      ]
+    }
+  ]
+}

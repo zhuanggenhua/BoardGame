@@ -1,6 +1,6 @@
 import { deliverFeedbackWithRetry } from './feedbackDelivery';
-type CaptureRequest = { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string };
-type Capture = (request: CaptureRequest) => Promise<{ accepted: boolean; captureId?: string }>;
+import type { FeedbackReplayCaptureRequest, FeedbackReplayCaptureResult, FeedbackReplayTriggerReference } from '../../engine/transport/feedbackReplayCaptureTypes';
+type Capture = (request: FeedbackReplayCaptureRequest) => Promise<FeedbackReplayCaptureResult>;
 const captures = new Map<string, Capture>();
 const key = (matchId: string, playerId: string) => `${matchId}\u0000${playerId}`;
 
@@ -11,12 +11,18 @@ export function registerFeedbackReplayCapture(matchId: string, playerId: string,
     return () => { if (captures.get(id) === capture) captures.delete(id); };
 }
 
-export async function prepareFeedbackReplayCapture(matchId: string, playerId: string): Promise<string | undefined> {
+export async function prepareFeedbackReplayCapture(
+    matchId: string,
+    playerId: string,
+    trigger?: FeedbackReplayTriggerReference,
+): Promise<{ captureId: string; triggerCaptured: boolean } | undefined> {
     const capture = captures.get(key(matchId, playerId));
     if (!capture) return undefined;
     try {
-        const result = await capture({ phase: 'prepare' });
-        return result.accepted ? result.captureId : undefined;
+        const result = await capture({ phase: 'prepare', trigger });
+        return result.accepted && result.captureId
+            ? { captureId: result.captureId, triggerCaptured: result.triggerCaptured === true }
+            : undefined;
     } catch {
         return undefined;
     }

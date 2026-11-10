@@ -1,0 +1,122 @@
+{
+  "status": "PASS",
+  "score": 93,
+  "reviewer": {
+    "kind": "subagents",
+    "id": "/root/r174_e1 + /root/r174_e2"
+  },
+  "aggregation": "主线程只合并独立逐图PASS与验证当前路径/哈希/覆盖，不代替读图或评分。",
+  "sourceParts": [
+    {
+      "file": "reviews/r174-review-e1.json",
+      "sha256": "4bb09dd3d2ee056eb4b6e8e6664e1a7e9760fc7f5d018324f3d1a66a892d0c4d",
+      "reviewer": "/root/r174_e1"
+    },
+    {
+      "file": "reviews/r174-review-e2.json",
+      "sha256": "b524a0c14b6fd8dbdf1c3d26ba25c834f59db04c864d05c89c6b4742ca1d2f6e",
+      "reviewer": "/root/r174_e2"
+    }
+  ],
+  "media": [
+    {
+      "id": "hire-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/31-hire-target.png",
+      "sha256": "01fec0cdd8f82824e42b3ca0f4cd0bb1f57517483700db0de89d7da2a874df5c",
+      "status": "PASS",
+      "score": 93,
+      "observation": "雇佣军建立区域请求标明大明归属，地图绿色候选边界与中央白边推荐区域清楚，未选择时确认按钮灰置，下一步是点击地图区域；教学文字与地图邻接，手牌仍可辨认，未见导航菜单或错误。",
+      "checks": [
+        "target-visible：雇佣区域候选本体完整可辨，白边推荐与绿色候选分开",
+        "interaction-ui：请求归属大明，未选前确认灰置，点击区域再确认的顺序可懂",
+        "layout-readable：教学卡在地图左邻，主目标未被右侧请求框遮住，手牌按约定半露",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-e1.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "id": "save-hand",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/32-save-hand.png",
+      "sha256": "0c774a24ad8748d7ca3f5123ea6925d1c93e9962aa660288429cb5600d305459",
+      "status": "PASS",
+      "score": 94,
+      "observation": "保留手牌的教学提示紧邻蓝边结束回合按钮，按钮明确写明放弃手牌行动并结束回合；下方其它手牌行动与底部半露手牌仍能辨认，玩家能理解本次应直接结束，未见导航菜单或错误。",
+      "checks": [
+        "target-visible：保留手牌提示与底部手牌同屏，结束回合入口完整可读",
+        "interaction-ui：蓝边按钮与提示紧邻，文案明确说明结束手牌行动和回合",
+        "layout-readable：说明、主按钮、手牌行动横排与手牌分层，主按钮无裁切遮挡",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-e1.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "id": "new-year",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/33-new-year.png",
+      "sha256": "a06ef60ca76a6e2c0e3fe6b34b97d71b57839777d66f03214a9b89d16839cf8c",
+      "status": "PASS",
+      "score": 93,
+      "observation": "新年教学卡的尖角贴合轮盘新年位置，下一步按钮直接承接教学正文；右侧正式请求清楚标明大明维护山海关，并与顶部蒙古当前回合区分。手牌、朝鲜牌库和弃牌堆仍在各自位置，未见导航菜单、遮挡当前教学操作或错误。",
+      "checks": [
+        "target-visible：新年轮盘标记、教学正文与下一步按钮同屏可辨",
+        "interaction-ui：教学下一步在正文下方，右侧维护请求标明阵营及城名，未混淆顶部回合身份",
+        "layout-readable：教学卡围绕轮盘新年位置，正文及按钮无裁切，正式维护请求与手牌未相互遮挡",
+        "no-error：未见破图、内部标识、错误提示或新增导航菜单"
+      ],
+      "actualReviewer": "/root/r174_e1",
+      "sourcePartFile": "reviews/r174-review-e1.json",
+      "sourcePartEntry": 2
+    },
+    {
+      "id": "maintain-shanhai",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/34-maintain-shanhai.png",
+      "sha256": "667a088a96cdbd37407922e78fea4a0e6c59b64cff03d7b8dcdb85c084a443c9",
+      "status": "PASS",
+      "observation": "山海关地名和城防位置可读，教程解释保留该关的意义，右侧维护山海关请求与弃牌或放弃两个按钮明确对应；地图主体未被提示遮住，未见重复决策或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-review-e2.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "id": "abandon-jinzhou",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/35-abandon-jinzhou.png",
+      "sha256": "25cff198c33e78b9816ec99bde8337b1121e11559fc9ea8bf9269a1a4e97af5e",
+      "status": "PASS",
+      "observation": "锦州地名与城防在地图中央可读，右侧维护锦州请求紧接放弃维护按钮，教程在其下说明放弃城防的后果与资源取舍；放弃按钮蓝色边界清楚，未见目标被遮挡或重复菜单。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-review-e2.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "id": "upkeep-datong",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/38-upkeep-datong.png",
+      "sha256": "13d080cdc045dd998f90c8a27f43d9605de01bc24bdeb01103e2386dec96cc40",
+      "status": "PASS",
+      "observation": "大同白边区域居中，三支兵牌及等级清楚可辨，绿色候选与白边推荐有区别；教程明确建议撤去旧兵，下面支持请求和确认按钮对应本区，手牌仍可见，未见提示遮住部队或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-review-e2.json",
+      "sourcePartEntry": 2
+    }
+  ]
+}

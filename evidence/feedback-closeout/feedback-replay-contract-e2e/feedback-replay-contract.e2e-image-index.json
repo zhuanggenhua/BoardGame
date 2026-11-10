@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "media": [
+    {
+      "path": "../../../test-results/evidence-screenshots/feedback-packet-chain-20261006/01-前态-反馈列表显示目标反馈.png",
+      "chainId": "feedback-replay-contract-20261006",
+      "chainStep": "第一步",
+      "stage": "前态",
+      "sourceRun": "后台反馈管理真实浏览器运行",
+      "sourceDir": "test-results/evidence-screenshots/feedback-packet-chain-20261006",
+      "description": "反馈列表显示目标反馈和问题原文，证明验收对象已经锁定"
+    },
+    {
+      "path": "../../../test-results/evidence-screenshots/feedback-packet-chain-20261006/02-中态-详情显示现场包关联键.png",
+      "chainId": "feedback-replay-contract-20261006",
+      "chainStep": "第二步",
+      "stage": "中态",
+      "sourceRun": "后台反馈管理真实浏览器运行",
+      "sourceDir": "test-results/evidence-screenshots/feedback-packet-chain-20261006",
+      "description": "反馈详情显示现场包回放等级采集编号故障链和缺失字段"
+    },
+    {
+      "path": "../../../test-results/evidence-screenshots/feedback-packet-chain-20261006/03-后态-复制诊断包完成.png",
+      "chainId": "feedback-replay-contract-20261006",
+      "chainStep": "第三步",
+      "stage": "后态",
+      "sourceRun": "后台反馈管理真实浏览器运行",
+      "sourceDir": "test-results/evidence-screenshots/feedback-packet-chain-20261006",
+      "description": "诊断包复制完成并显示完整分诊内容，证明反馈现场可以继续定位"
+    }
+  ]
+}
+

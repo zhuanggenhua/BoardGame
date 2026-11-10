@@ -1,0 +1,41 @@
+{
+  "unit": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/unit.log",
+    "passed": 18,
+    "files": 5,
+    "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialTurnInput.test.tsx src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts src/games/qidahen/__tests__/seasonChoiceBranches.test.ts --configLoader native --maxWorkers 1",
+    "sourceBinding": "719 browser-consumed production sources exactly match R152 unit run; R154 only adds the save-hand screenshot state"
+  },
+  "typecheck": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/typecheck.log"
+  },
+  "e2e": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/e2e.log"
+  },
+  "lifecycle": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/lifecycle.log"
+  },
+  "specLint": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/specLint.log"
+  },
+  "openspec": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/openspec.log"
+  },
+  "diffCheck": {
+    "exitCode": 0,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/diffCheck.log"
+  },
+  "i18n": {
+    "exitCode": 1,
+    "evidence": "evidence/qidahen/tutorial-object-input-20261102-r154/checks/i18n.log",
+    "blocking": false,
+    "warnings": 8,
+    "scope": "Existing warnings in OperationGuidePanel, DiceThrone InteractionOverlay and lobby locale; no Qidahen warning; tool and warnings unchanged"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_g",
+  "score": 93,
+  "issues": [],
+  "actualReadCount": 6,
+  "media": [
+    {
+      "id": "upkeep-pyongyang-selected",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/43-upkeep-pyongyang-selected.png",
+      "sha256": "45694bc5366784506a667e34cd6eeb628dd9f9017a46c1ba4d29782b5ba53bc1",
+      "status": "PASS",
+      "score": 92,
+      "observation": "平壤步兵以贴合本体的金边和勾表达已选，维护条直接列出平壤及所选雇佣军并承接确认；教学正文、所选兵牌和手牌各自可辨，顶部蒙古标记明确写出当前回合。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "claim-year",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/44-claim-year.png",
+      "sha256": "df3e307a31de40dba7823806ca76dbbbd2686e0f876f19a2a23e477ff778f059",
+      "status": "PASS",
+      "score": 94,
+      "observation": "纪年领取与放弃面板紧贴两张纪年牌右侧，两个按钮清楚且不与左下地图缩放导航重叠；教学说明接在决策区下方，当前领取阵营和代价均可直接辨认。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "new-order",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/45-new-order.png",
+      "sha256": "2a6b27ecb2e914635b3e4fa5b5b8ecdea50156f3f20db02c9f1e3833c37aabda",
+      "status": "PASS",
+      "score": 92,
+      "observation": "新顺位教学贴在纪年牌旁并以深色下一步承接；右侧人物面板写明大明打出人物，顶部蒙古另标当前回合，两个归属层级可区分，人物名称和检视入口可辨。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "year-character",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/46-year-character.png",
+      "sha256": "5abcd508d4ec37efb88e12bb33c6213e5c50be7cafbd7429fc21be11cee6d760",
+      "status": "PASS",
+      "score": 93,
+      "observation": "人物选择面板明确标注大明，毛文龙、熊廷弼、杨镐及不打出人物均完整可读；杨镐的推荐轮廓与独立放大镜入口清楚，教学紧接面板下方，顶部当前回合未冒充人物操作者。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "year-character-inspect",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/47-year-character-inspect.png",
+      "sha256": "8ac98ea0a24a84c5385796b266d6a1e3bb2118db19a5bd8fb2732229fd645e09",
+      "status": "PASS",
+      "score": 91,
+      "observation": "杨镐完整牌面居中放大，人物名称、能力与人物判定分段可辨；关闭图标叠在牌面右上角而不另占正文行，右侧大明选择面板保留上下文且未压住放大牌面。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    },
+    {
+      "id": "training-kind",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/48-training-kind.png",
+      "sha256": "8aa4c5c25103d892b4f70ef5640f59b6a7862db5948cf117ee2dce579420e2e8",
+      "status": "PASS",
+      "score": 94,
+      "observation": "征兵、训练、额外训练和完成命令均有清楚的实线边框与浅色填充，和上方次数说明形成按钮与状态的层级；额外训练直接说明弃牌代价，完成按钮归属同一操作面板，文字与边缘均完整。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ]
+    }
+  ],
+  "hardFailures": []
+}

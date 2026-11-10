@@ -1,0 +1,40 @@
+{
+  "gameId": "qidahen",
+  "sourceRun": "20261025-qidahen-refactor-r1",
+  "sourceRevision": "sha256:30f953e2e426df85acb4ba729dca2f3182da33a7e047a6b41111ab6c1ca21594",
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "result": "1 个测试文件通过，29/29 tests passed。"
+  },
+  "e2e": [
+    {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+      "status": "PASS",
+      "result": "21/21 tests passed。"
+    },
+    {
+      "command": "$env:QIDAHEN_CAPTURE_BEHAVIOR_TRACE='1'; $env:QIDAHEN_TUTORIAL_SCREENSHOT_RUN_ID='20261025-qidahen-refactor-r1'; node scripts/infra/run-e2e-batch.mjs default --files e2e/qidahen/qidahen-closeout.e2e.ts -- --grep \"唯一入门入口|教程模式会带玩家走完真实回合主路|基础教程的 1 格走法|玩家可先做轮盘行动|基础教程的 3 格走法|移动横屏真实教程\"",
+      "status": "PASS",
+      "result": "6/6 traced E2E tests passed; six same-run behavior traces and 32 unique UI states。"
+    }
+  ],
+  "otherChecks": [
+    {
+      "command": "npx eslint src/components/tutorial/TutorialOverlay.tsx src/engine/types.ts src/games/qidahen/tutorial.ts src/games/qidahen/__tests__/tutorialFlow.test.ts e2e/qidahen/qidahen-closeout.e2e.ts",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run spec:lint",
+      "status": "PASS"
+    },
+    {
+      "command": "npm run i18n:check",
+      "status": "FAIL_UNRELATED_WORKTREE_KEYS",
+      "result": "当前工作区另有 lobby.homeAppearance (zh-CN/en) 与 game-dicethrone 的英文及简体中文键缺失；检查未报告本教程的 Qidahen 语言键缺失。"
+    }
+  ]
+}

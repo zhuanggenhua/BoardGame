@@ -1657,8 +1657,8 @@ describe('FantasyRealms Board foundation', () => {
             const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
             fireEvent.click(discardButton);
 
-            expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[0]!.id });
-            expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[0]!.id });
+            expect(dispatch).toHaveBeenCalledTimes(1);
+            expect(dispatch).toHaveBeenCalledWith('TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[0]!.id });
         });
     });
 
@@ -1676,8 +1676,8 @@ describe('FantasyRealms Board foundation', () => {
                 const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
                 fireEvent.click(discardButton);
 
-                expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[0]!.id });
-                expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[0]!.id });
+                expect(dispatch).toHaveBeenCalledTimes(1);
+                expect(dispatch).toHaveBeenCalledWith('TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[0]!.id });
             });
         } finally {
             (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = originalForcedCoarsePointer;

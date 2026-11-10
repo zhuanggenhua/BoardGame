@@ -1,0 +1,79 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "小黑屋急救包属性变化反馈贴合目标角色验收",
+  "generatedAt": "2026-10-04T10:47:30+08:00",
+  "standard": {
+    "source": ".spec/knowledge/standards/ui-change-gates.md",
+    "animationSource": ".spec/knowledge/standards/animation-effects.md",
+    "e2eSource": ".spec/knowledge/standards/e2e-verification.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "referenceAudit": {
+    "patternChosen": "target-anchored independent lines",
+    "patternIsNormative": false,
+    "rationale": "当前目标数量少、反馈同时结算且需要保持角色归属；选择独立行是本场景裁决，不上升为全项目固定版式。",
+    "sources": [
+      {
+        "title": "FINAL FANTASY XIV UI Guide — What is flying text?",
+        "finding": "官方把伤害、增益、减益、物品等作为飞字 / 弹出文字的不同反馈类别。"
+      },
+      {
+        "title": "Blizzard Heroes of the Storm PTR Patch Notes — January 27, 2016",
+        "finding": "官方说明伤害、治疗等浮字要易于区分，并采用向目标周围错开的方向以避免互相叠住。"
+      }
+    ]
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "viewerUrl": "http://127.0.0.1:4867/?key=f92de76ec4dc",
+    "finalPassBeforeOpen": true,
+    "directory": "evidence/山屋惊魂-物品使用完整链路"
+  },
+  "tests": [
+    {
+      "command": "BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/first-scenario-use-possession.e2e.ts \"真实页面选择急救包、选队友目标并完成治疗收口\"",
+      "result": "1 passed；真实入口完成急救包选择、同板块目标选择、属性恢复、物品移除与反馈清理。",
+      "scope": "急救包真实页面使用后，目标角色属性变化反馈的样式、锚点与文案"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "属性变化不能静默，必须显示实际恢复的属性和数值，不能伪装成生命治疗次数。",
+      "status": "PASS",
+      "evidence": [
+        "05-急救包结算结果可见.jpg：目标角色上方显示 +1 力量 / +1 速度 / +1 知识 / +1 神志，不再显示‘治疗 +4’。",
+        "真实入口 E2E 断言四项属性浮字存在且明确禁止‘治疗 +4’。"
+      ]
+    },
+    {
+      "requirement": "反馈位置必须相对目标角色，而不是相对房间层或其它按钮区域。",
+      "status": "PASS",
+      "evidence": [
+        "05-急救包结算结果可见.jpg：四项属性浮字位于被选择队友角色 token 正上方，并与目标角色同屏。",
+        "真实入口 E2E 断言 data-feedback-style=floating-text 且 data-feedback-anchor=target-token。"
+      ]
+    },
+    {
+      "requirement": "多个同时发生的属性变化必须逐项独立显示，不得用斜杠单行摘要承载主视觉反馈。",
+      "status": "PASS",
+      "evidence": [
+        "05-急救包结算结果可见.jpg：属性反馈在同一目标锚点上方纵向堆叠，每项独立成行。",
+        "真实入口 E2E 与基础测试断言 flex-col、独立子节点数量以及主视觉不含斜杠摘要。"
+      ]
+    }
+  ],
+  "media": [
+    "evidence/山屋惊魂-物品使用完整链路/05-急救包结算结果可见.jpg"
+  ],
+  "visualAudit": {
+    "mediaCount": 1,
+    "passCount": 1,
+    "reviseCount": 0,
+    "verdict": "PASS",
+    "score": 96,
+    "notes": "新截图覆盖逐项纵向浮字与角色相对锚点；旧斜杠摘要证据不再作为当前 PASS；不扩张为整条木乃伊黄金链通过。"
+  }
+}

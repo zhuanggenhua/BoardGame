@@ -1,0 +1,32 @@
+{
+  "title": "山屋惊魂属性轨与身份条验收",
+  "media": [
+    {
+      "path": "01-PC-1920x1080-属性条与HUD.jpg",
+      "chainId": "od-trait-hud-token",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-trait-hud-token-20261009",
+      "stage": "前态",
+      "description": "电脑开局牌桌左侧用小棋子加一次名字，属性格金色填满并与竖线对齐，能力正文换行，楼层切换在地图左下角。"
+    },
+    {
+      "path": "02-Vivo-796x360-属性条与HUD等比.jpg",
+      "chainId": "od-trait-hud-token",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-trait-hud-token-20261009",
+      "stage": "中态",
+      "description": "手机横屏同一身份条与属性格仍对齐，能力说明自动换行且未挡住急救包，楼层切换保持小箭头在左下。"
+    },
+    {
+      "path": "03-PC-1920x1080-当前值与初始值分离.jpg",
+      "chainId": "od-trait-hud-token",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/trait-track-ui.e2e.ts",
+      "sourceDir": "evidence/betrayal-od-trait-hud-token-20261009",
+      "stage": "后态",
+      "description": "速度初始格深绿、当前格金色相邻共边，证明高亮与格线同一几何。"
+    }
+  ]
+}

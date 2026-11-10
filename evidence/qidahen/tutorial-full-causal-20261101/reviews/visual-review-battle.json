@@ -1,0 +1,113 @@
+{
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r144_visual_early + /root/r144_visual_late"
+  },
+  "actualReaders": [
+    {
+      "reviewer": "/root/r144_visual_early",
+      "reviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/video-private-review/review-part1.json",
+      "sourceVideoSha256": "2e63b874d65825529b25cef98b57bf22ff001c934ac30262d831002e618df643",
+      "firstFrame": 1,
+      "lastFrame": 67,
+      "framesRead": 67
+    },
+    {
+      "reviewer": "/root/r144_visual_late",
+      "reviewFile": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r144-causal-pc-20261101/desktop/video-private-review/review-part2.json",
+      "sourceVideoSha256": "2e63b874d65825529b25cef98b57bf22ff001c934ac30262d831002e618df643",
+      "firstFrame": 68,
+      "lastFrame": 133,
+      "framesRead": 66
+    }
+  ],
+  "aggregation": "仅合并原子代理裁决；原视频逐帧序列连续覆盖，无遗漏、重复或改写视觉观察。",
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "a5518482b4fce790a1c31f218605ebbff170009ed0b25d914e13495dca43661f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏显示炮兵阶段、攻方及连续投掷中的白色骰体；骰体位于主地图内，不压当地单位。右侧叶赫部战场红色区域轮廓、圆形势力标记、明军堆及人口读数可识别；无教程遮挡，底部手牌及翻页、牌堆和玩家板仍在。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "17ea852444619b600bb6b9cad9a04846f4392dffe3c2aff9ad52bb82cf17917f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏显示炮兵阶段停骰、骰面以及合计与造成损伤的结算标签；结果紧随骰体下方，未盖住右侧叶赫部战场部队。地图势力标记和明军堆保持可见，未出现错误图片、调试解释标签或加载缺失。本报告不判定合计和损伤数值的规则正确性。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "d0a2b8c4fb2d7b38ae06895b7af8cd7b5f9135825f372a9580fc431cd10b630e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏显示骑兵阶段、守方与正在转动的红色多面骰，阶段文字与骰体清楚同组，白骰已退场；地图当前战场、本方军队与双方标记可识别，手牌和牌堆保留，不受教程浮层覆盖。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "8a6bacb0ed86343b1c181d6269cc894e0b42845558882da3ed1684c7c7c63af9",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏显示骑兵阶段、守方、红色骰子及合计1/造成0损伤文字，阶段与结果均完整可读；叶赫部红色区域轮廓与军队、顶部状态、底部手牌没有被教程浮层遮住，未见破图或错误。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "d325a831babe8415b200e26756671b6bc137057479c2dfa1c132928ced4025b9",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏显示步兵阶段、攻方与两枚绿色多面骰，两个骰面旋转姿态可辨，未被左侧卡片或底部手牌遮住；叶赫部轮廓与军队仍可见，本图只证明掷骰过程界面。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "149b6108766a42a5c95098362b71826f6260cf6224f0537d772dd1db7cf6f0fe",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏显示步兵阶段、攻方，两枚绿色骰子定格及其下合计20/造成2损伤结果；数字与阶段文字未越界，地图区域轮廓和部队仍能辨认，无错误层或素材缺失；不据画面推导伤害规则。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\battle-real-time.webm",
+      "sha256": "2e63b874d65825529b25cef98b57bf22ff001c934ac30262d831002e618df643",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第1至67帧：已逐序私读1至67每一张960宽完整帧。1至3显示开战前叶赫部区域、开始战斗按钮和避让战场的战斗顺序教程；4至8教程退场，地图重新聚焦，炮兵阶段攻方标签出现；9至30白色骰体持续转动；31至42停骰及合计/损伤结果持续可读，叶赫部战场部队保持可见；43至44换为骑兵阶段守方；45至46红色多面骰转动，47至67为停骰与结算结果。全过程未出现错图、破图或教程遮住当前军队，当前战场区域与军队可辨，手牌、牌堆和玩家栏保留；普通常驻界面后的无关世界单位不计教程遮挡。本分片仅证明所读界面过程，不证明步兵阶段、战斗终局或数值规则。；第68至133帧：逐张私读68至133全部66张960宽整帧，并仅把67作为交界上下文。68至76保持骑兵阶段守方红骰及结果可见；77开始切至步兵阶段攻方，77至101两枚绿骰连续改变朝向并分开，未被轮盘、卡片或手牌压住；102至130两骰停住且合计/损伤结果持续可见。131退去骰子并缩放地图，右侧出现战后选择及占领、撤回入口；132至133教程位于选择区下方，未挡住选择按钮。全段顶部玩家、右侧牌堆与底部手牌承载稳定，叶赫部区域和相关军队可辨，无白屏、错误层、破图或互相遮挡导致当前动作不可读的帧。本结论只覆盖当前后半段界面过程与可读性，不推导数值规则、音效或未读前半段。"
+    }
+  ]
+}

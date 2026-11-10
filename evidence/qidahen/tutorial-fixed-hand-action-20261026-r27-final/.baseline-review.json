@@ -1,0 +1,193 @@
+{
+  "status": "PASS",
+  "comparison": "R18 → R27",
+  "statusMeaning": "独立审查了旧职责到本轮基本教程 requirement 的保留、拆分和移除；不是旧图片或旧 PASS 的当前验收。",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/visual_r27_opening"
+  },
+  "requirements": [
+    {
+      "status": "PASS",
+      "requirement": "入口与胜利条件及固定手牌首步",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00a-继续后-选择首个行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02d-轮盘后选择手牌行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02e-两种行动完成-征召结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/02-固定先完成手牌行动.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留三种胜利条件，并从正式开局进入手牌征召；教程固定示范先征召，不再把行动顺序做成课程分支。",
+      "preservedActions": "阅读胜利条件，继续到真实行动窗口，并点击高亮的征召军队。",
+      "changes": "移除轮盘先行后再返回手牌行动的教程路径；正式规则仍允许玩家决定行动顺序，教程只演示一条连续路径。",
+      "duplicateDecision": "旧入口与轮盘先行分支不是重复画面；合并为入口和固定首步职责，保留当前开局及征召提示两个状态。",
+      "changeAuthority": "用户指出第二步的分叉与目标错位，要求彻底重构为连贯的边玩边学流程。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "status": "PASS",
+      "requirement": "征召后两格轮盘行动",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02a-轮盘三格费用与落点说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/11-教程结束后同局下一位玩家可操作.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03-轮盘走法悬停-显示费用与效果.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/11-教程结束后同局下一位玩家可操作.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留征召支付、建军、两格轮盘指定一名对手抽牌及军屯落点结果。",
+      "preservedActions": "真实完成征召后选两格、指定对手并结算军屯，然后继续同局。",
+      "changes": "把原手牌征召与轮盘结果绑定到一条真实行为链，并去掉行动顺序分叉。",
+      "duplicateDecision": "征召窗口、候选编制、轮盘选择、对手选择和军屯结果是不同可见交互状态，保留必要状态而不按每一步机械截图。",
+      "changeAuthority": "用户要求从真实局面解释并让玩家实际操作，且不把行动顺序变成课程选择。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "status": "PASS",
+      "requirement": "三格轮盘征兵训练与继续",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03l-教程退场后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03l-教程退场后同局继续.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留三格移动后实际支付、选择征兵或训练、额外训练和结束行动。",
+      "preservedActions": "选择三格、确认对手补牌、完成征兵训练操作并继续同一局。",
+      "changes": "保留为条件路线，不要求所有玩家为学习其他规则而强行选择三格。",
+      "duplicateDecision": "规则说明、目标高亮、支付、结果与继续是不同界面状态，数值变化由 E2E 和 Vitest 断言。",
+      "changeAuthority": "用户要求尊重真实互斥选项，并按操作后果教规则；不把数值正确性转嫁给截图。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "status": "PASS",
+      "requirement": "一格开垦与同局继续",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-一格开垦前-选择轮盘走法.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留轮盘一格走法进入开垦并显示结果，以及退出教程后继续同局。",
+      "preservedActions": "在真实轮盘选一格、查看开垦结果，再继续同一局。",
+      "changes": "把一格走法作为互斥合法路线单独验证，不要求玩家依次完成其他格数路线。",
+      "duplicateDecision": "轮盘选择前和开垦后的结果是不同实质界面状态，继续对局状态由行为链关联。",
+      "changeAuthority": "用户明确指出一格、两格、三格是互斥选择，不能排成连续步骤。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "status": "PASS",
+      "requirement": "川兵征召结果",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/09a-选择川兵后的实际结果.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留征召行动支付后可选川兵编制的真实结果。",
+      "preservedActions": "支付征召费用、选择川兵并查看真实建立结果。",
+      "changes": "从宽泛的手牌征召职责拆出川兵互斥结果，绑定本轮独立行为链。",
+      "duplicateDecision": "川兵与炮兵是互斥编制且结算不同，不能用一个结果截图替代。",
+      "changeAuthority": "用户要求真实操作和选择结果有实际证据，不以规则数值截图替代交互验收。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/4"
+    },
+    {
+      "status": "PASS",
+      "requirement": "炮兵征召结果",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/09b-选择炮兵后的实际结果.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留征召行动中炮兵编制的真实结果。",
+      "preservedActions": "支付征召费用、选择炮兵并查看真实建立结果。",
+      "changes": "从宽泛的手牌征召职责拆出炮兵互斥结果，绑定本轮独立行为链。",
+      "duplicateDecision": "炮兵与川兵是互斥编制且结算不同，不能合并为同一结果。",
+      "changeAuthority": "用户要求真实操作和选择结果有实际证据，不以规则数值截图替代交互验收。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/5"
+    },
+    {
+      "status": "PASS",
+      "requirement": "移动端长按检视手牌",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-01-首个行动选择-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-01-固定先完成手牌行动.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-04-关闭检视-回到征召支付.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R27 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留移动端长按检视当前手牌并返回支付窗口的交互。",
+      "preservedActions": "在支付窗口长按手牌查看，再回到原支付状态并选牌确认。",
+      "changes": "用本轮移动端真实入口与行为链重取证；界面关闭后的支付恢复状态由行为日志记录，视觉重复帧不重复收录。",
+      "duplicateDecision": "桌面点击检视与移动长按属于不同输入方式，移动端状态单独保留。",
+      "changeAuthority": "用户要求按实际 UI 和交互验收，不让教程结束或退出后残留遮罩。",
+      "independentReviewFile": ".baseline-review-r27-source.json",
+      "sourceReviewEntry": "/requirements/6"
+    }
+  ]
+}

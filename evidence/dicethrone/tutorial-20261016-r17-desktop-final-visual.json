@@ -1,0 +1,611 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_desktop_final"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/01-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜负目标说明完整，下一步按钮清楚，双方体力与战斗点数可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/02-stats.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "资源面板高亮贴合，体力和战斗点数未被说明遮挡，前后步骤入口清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/03-phases.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "阶段顺序整列可见，当前阶段高亮明确，说明文字完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/04-player-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家面板本体完整高亮，技能槽可辨，说明和下一步位于右侧。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/05-tip-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧提示板高亮完整，展开说明与导航可读，双方资源仍可见。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/06-tip-inspect.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示板右上放大入口高亮可见，操作指令完整，目标本体未遮挡。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/07-tip-inspect-close.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完整提示板说明可读，右上关闭按钮高亮清楚，教程说明未压住关闭入口。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/08-card-types.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌时机分类说明完整，手牌颜色与左侧图标可辨，下一步按钮清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/09-hand.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌区域被明确框出，卡名费用和时机可辨，说明给出查看与打出的区别。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/10-hand-inspect.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "指定手牌本体高亮可见，查看指令完整，双方资源读数清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/11-hand-inspect-close.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌详情名称和效果完整呈现，右上关闭入口突出，资源未遮挡。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/12-discard.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧弃牌堆完整框出，出售说明完整，拖入目标区域清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/13-response-control.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧手动响应开关清楚高亮，响应机制说明和前后导航可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/14-main-actions-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主要阶段三类行动说明完整，手牌区域清楚框出，资源可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/15-sell-card-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "待出售卡牌本体可见并高亮，右侧弃牌堆入口可见，出售说明完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/16-sell-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "资源面板战斗点数与出售结果说明同屏可读，已出售卡牌显示在右侧弃牌堆。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/17-undo-sell-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌堆中的刚售卡牌清楚高亮，撤回说明完整，下一步入口明确。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/18-undo-sell.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧撤回目标卡牌本体完整可见，操作说明未遮挡目标。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/19-undo-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回手卡牌名称与手牌区域可辨，资源数值和撤回结果说明完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/20-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮明亮高亮，阶段推进指令完整，双方资源可见。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/21-dice-tray.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗骰子和投掷剩余次数同屏可辨，骰盘说明完整且未遮挡骰盘。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/22-roll-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷与重掷规则文字完整，骰盘和投掷入口清楚可见。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/23-dice-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷按钮紧邻骰盘并高亮，五颗骰子可见，操作指令清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/24-dice-lock.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "可锁定骰子本体完整高亮，锁定说明可读，资源未被遮挡。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/25-dice-reroll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "锁定标记显示在首颗骰子上，重投按钮高亮，未锁骰本体可见。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/26-dice-symbols.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "骰子数字与图标均可辨，点数用途说明完整，骰盘高亮未遮挡本体。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/27-play-six-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "改骰效果说明完整，指定手牌名称可见，双方资源读数清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/28-play-six.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "指定橙色手牌本体与名称可见，操作说明完整，目标区域未被浮层覆盖。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/29-play-six-modify.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧五颗待选骰子完整显露，改骰提示与目标关系清楚，战斗点数可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/30-dice-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认按钮高亮清楚，改后的骰面可见，确认说明完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/31-ability-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "技能要求与顺子说明完整，冲拳技能高亮清楚，骰面和资源均可辨。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/32-abilities.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "冲拳技能本体完整高亮，技能名称与操作说明清楚，点击目标无遮挡。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/33-attack-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "当前总伤害在骰盘旁清楚显示，伤害类型说明完整，双方资源可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/34-resolve-attack.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算攻击按钮高亮并紧邻骰盘，总伤害与资源可读，操作说明完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/35-opponent-defense.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部对手资源条被命中白光覆盖，对手体力和战斗点数不可读；己方体力及防御结果说明可读。",
+      "score": 82
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/36-main2-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第二主要阶段高亮可见，双方体力战斗点数可读，阶段说明和导航完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/37-enlightenment-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟手牌名称可辨并高亮，效果说明完整，双方资源无遮挡。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/38-enlightenment-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟卡牌点击本体可见，行动指令完整，资源读数清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/39-enlightenment-confirm.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟投掷结果骰面和确认按钮清楚可见，说明完整未压住目标。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/40-enlightenment-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "获得的三种标记及持有数量清楚框出，结果说明完整，双方资源可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/41-status-tokens.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "状态标记与各自数量清楚可见，说明文字完整，双方体力战斗点数可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/42-inner-peace-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心手牌本体可见并高亮，获得标记说明和前后按钮可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/43-inner-peace.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心卡牌点击本体无遮挡，使用指令完整，当前标记和资源可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/44-ai-turn-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "增加后的太极持有数量可读，后续阶段说明完整，导航按钮清楚。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/45-discard-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌阶段说明完整，现有手牌清楚框出，双方资源和标记可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/46-end-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮高亮可见，回合结束操作说明完整，双方资源可读。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/47-ai-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对方冲拳特写和伤害档位可读，开始防御入口清楚，教程说明未遮住攻击内容。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/48-defense-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开始防御按钮高亮清楚，冲拳特写主体和伤害档位可见，操作说明完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/49-defense-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御技能及骰盘清楚显露，总伤害八与双方资源可读，防御说明完整。",
+      "score": 94
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r17/桌面：锁骰重掷、亲手防御并使用太极减伤/50-defense-roll.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷按钮高亮，防御骰盘和当前总伤害可见，说明文字完整。",
+      "score": 94
+    }
+  ]
+}

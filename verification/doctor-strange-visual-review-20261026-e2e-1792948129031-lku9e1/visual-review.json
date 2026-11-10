@@ -1,0 +1,652 @@
+{
+  "run": "e2e-1792948129031-lku9e1",
+  "sourceRevision": "ad51205334a68844097cd9bea8f9aebcd48f8f4d21340b93a50be6c5be02f945",
+  "currentSourceAtReview": "2917908005611cb933ee3bbb1255ce5ecd5192ad934c9c578ad27f6d3fe8ddfc",
+  "currentSourceMatches": false,
+  "eligibility": "historical-only",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "reviewedAt": "2026-10-25T17:24:42.431Z",
+  "contactSheets": [
+    "contact-1.png",
+    "contact-2.png",
+    "contact-3.png"
+  ],
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792948129031-lku9e1/值得拥有-四人队伍起始态.png",
+      "sourceRun": "1792948169236-190288-3c89eba1-50c0-4c99-a20b-e20082b1a5cc",
+      "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+      "chainStep": "01",
+      "sha256": "716001cf57e4b4fdb974b2335e247e4752e8920715a7cda09d4be48b7952474d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792948129031-lku9e1/值得拥有-队友骰区目标态.png",
+      "sourceRun": "1792948169236-190288-3c89eba1-50c0-4c99-a20b-e20082b1a5cc",
+      "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+      "chainStep": "02",
+      "sha256": "658d2776898a1e903ad3a3045bca319efda65e34f15af5ad026ddf6ebb3f9f14",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792948129031-lku9e1/值得拥有-队友骰子已选.png",
+      "sourceRun": "1792948169236-190288-3c89eba1-50c0-4c99-a20b-e20082b1a5cc",
+      "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+      "chainStep": "03",
+      "sha256": "7cbc3079b697146a1e8f8b87892c87a228e023e79d21d8b1366e4c7567fccdda",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子/_runs/e2e-1792948129031-lku9e1/值得拥有-队友骰区重掷结算.png",
+      "sourceRun": "1792948169236-190288-3c89eba1-50c0-4c99-a20b-e20082b1a5cc",
+      "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+      "chainStep": "04",
+      "sha256": "8baad6d839b3a295c674ed097b5dd03f97e510ecb3e45c0907ce5d2f423d1205",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792948129031-lku9e1/即视感使用前-桌面.png",
+      "sourceRun": "1792948176337-190288-19bb9355-e8e9-4019-8f41-aa657c212111",
+      "chainId": "奇异博士即视感重开阶段",
+      "chainStep": "01",
+      "sha256": "eef5cf71d57d3f64775e31531681cd69d22d070d66c9f2c9cac7f8c613e653ed",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792948129031-lku9e1/即视感悬停说明态-桌面.png",
+      "sourceRun": "1792948176337-190288-19bb9355-e8e9-4019-8f41-aa657c212111",
+      "chainId": "奇异博士即视感重开阶段",
+      "chainStep": "02",
+      "sha256": "80783fd8381a33887ebc73c6da3f47e2532885ff6a8e8a28d7cf2a02967db694",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段/_runs/e2e-1792948129031-lku9e1/即视感重开后-桌面.png",
+      "sourceRun": "1792948176337-190288-19bb9355-e8e9-4019-8f41-aa657c212111",
+      "chainId": "奇异博士即视感重开阶段",
+      "chainStep": "03",
+      "sha256": "922220b477f73c5cba5ae03e58bff7dc3512a080c70e09d5f8cf584622413a21",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/手机横屏-公开法术起始态.png",
+      "sourceRun": "1792948161131-190288-b33cafa3-0add-49a1-bf22-46539568c762",
+      "chainId": "奇异博士内部初始化法术准备-手机横屏",
+      "chainStep": "01",
+      "sha256": "b2f44433758dcf3c26d2b4022d1e95351079910a393e3a1156b029d9dc8d089f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/手机横屏-宇宙感知已选待结算.png",
+      "sourceRun": "1792948161131-190288-b33cafa3-0add-49a1-bf22-46539568c762",
+      "chainId": "奇异博士内部初始化法术准备-手机横屏",
+      "chainStep": "02",
+      "sha256": "ceceedf8d7fa9684ec8974b2341558d77ada11e83a947032b12a98d5412f0911",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/手机横屏-弃牌准备选择态.png",
+      "sourceRun": "1792948161131-190288-b33cafa3-0add-49a1-bf22-46539568c762",
+      "chainId": "奇异博士内部初始化法术准备-手机横屏",
+      "chainStep": "03",
+      "sha256": "1ca22641232464616824429d1b898bdb89234d0daacc90453638d0285c9d6cf7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/手机横屏-法术准备目标选择态.png",
+      "sourceRun": "1792948161131-190288-b33cafa3-0add-49a1-bf22-46539568c762",
+      "chainId": "奇异博士内部初始化法术准备-手机横屏",
+      "chainStep": "04",
+      "sha256": "a57bc7a11194ffb6203fb6b9e80f81186b4427f092a79447f0569acd8d39d6cc",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/手机横屏-法术准备结算态.png",
+      "sourceRun": "1792948161131-190288-b33cafa3-0add-49a1-bf22-46539568c762",
+      "chainId": "奇异博士内部初始化法术准备-手机横屏",
+      "chainStep": "05",
+      "sha256": "5f7d5df36f0698bcb47fddfbc60594c33db3ddda3d24548137f90f8bef778b24",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/桌面-公开法术起始态.png",
+      "sourceRun": "1792948149435-190288-d987d959-2856-4922-a7ea-29607643bf99",
+      "chainId": "奇异博士内部初始化法术准备-桌面",
+      "chainStep": "01",
+      "sha256": "7d6d2a0ea0e3d928686bbde1003e457d3268431c1f050bf49880df7c40c9a9f0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/桌面-宇宙感知已选待结算.png",
+      "sourceRun": "1792948149435-190288-d987d959-2856-4922-a7ea-29607643bf99",
+      "chainId": "奇异博士内部初始化法术准备-桌面",
+      "chainStep": "02",
+      "sha256": "82d1cc745339bbd759d9b892dff4bc1ffaad5cabc541323b1fdcb2be171b7604",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/桌面-弃牌准备选择态.png",
+      "sourceRun": "1792948149435-190288-d987d959-2856-4922-a7ea-29607643bf99",
+      "chainId": "奇异博士内部初始化法术准备-桌面",
+      "chainStep": "03",
+      "sha256": "f36712c8b21d08f8f25a57155530fe51c7ad43bee68788e3c34dabbcf098eade",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/桌面-法术准备目标选择态.png",
+      "sourceRun": "1792948149435-190288-d987d959-2856-4922-a7ea-29607643bf99",
+      "chainId": "奇异博士内部初始化法术准备-桌面",
+      "chainStep": "04",
+      "sha256": "fd8ca7893e6c1ac7ded0eb7a6990c9c3658188b04b1e80d47935dbe150ed912d",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1792948129031-lku9e1/桌面-法术准备结算态.png",
+      "sourceRun": "1792948149435-190288-d987d959-2856-4922-a7ea-29607643bf99",
+      "chainId": "奇异博士内部初始化法术准备-桌面",
+      "chainStep": "05",
+      "sha256": "64f1d137aab997193366ec8b3e77a5840bd1ebd0bff5f65031c22e642828d867",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼攻击前-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "01",
+      "sha256": "2bd56c61669e790d80871117bb1e9b60a87029761970f79d4d94e481d720810a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼已选待结算-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "02",
+      "sha256": "179521fe54c3f31cc04aab2f140278905367aabcc6922a6e1ce30a287745a22a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼顶五法术选择-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "03",
+      "sha256": "7c979fad58b1aa7f23adc8fb20fb46497b000ebac0de3cb8f64c84859c6d754f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼法术准备目标选择-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "04",
+      "sha256": "f711fd93018c05689505ce23b21534327c77e9e7132614694b52ac36c4f1d61f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼重排剩余三张-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "05",
+      "sha256": "73a49025448f2f29a80614b7a157cf40a4e5f96ba9ce2ddd29c45756e94fed05",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼攻击后施法选择-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "06",
+      "sha256": "d3d2b0e4fdee9a2716b0a95c6c907b1dd75b92f134f077de4cfddc79ce5c6c89",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌/_runs/e2e-1792948129031-lku9e1/全知之眼攻击结算-桌面.png",
+      "sourceRun": "1792948192310-190288-5b1f460e-d84e-4c68-83ad-4f2f16631732",
+      "chainId": "奇异博士全知之眼顶五法术流程",
+      "chainStep": "07",
+      "sha256": "15608170d1707c335ba80f0483a0a5a264736e01efb30b4bf8a83a8e22259b13",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792948129031-lku9e1/深红系带手牌-桌面.png",
+      "sourceRun": "1792948215321-190288-6edcd567-a480-4538-b8c3-ca1c4bc25e02",
+      "chainId": "奇异博士深红系带真实施加",
+      "chainStep": "01",
+      "sha256": "5c2049cc10345727193ed4fa2ee9951d23e7dc6425a49e262a0ed594e8450548",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792948129031-lku9e1/深红系带目标选择-桌面.png",
+      "sourceRun": "1792948215321-190288-6edcd567-a480-4538-b8c3-ca1c4bc25e02",
+      "chainId": "奇异博士深红系带真实施加",
+      "chainStep": "02",
+      "sha256": "9832261d69682bd0315bc496f4cee9dcd4bde01b4ec04565e64c6fdb42252425",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1792948129031-lku9e1/深红系带已施加-桌面.png",
+      "sourceRun": "1792948215321-190288-6edcd567-a480-4538-b8c3-ca1c4bc25e02",
+      "chainId": "奇异博士深红系带真实施加",
+      "chainStep": "03",
+      "sha256": "80b24528c0e7b714034af57a72648c9af14e600e04397be38c8e80c97bb0fb6c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792948129031-lku9e1/星际侵入前-桌面.png",
+      "sourceRun": "1792948206572-190288-d6fbda0c-3ac5-4d34-8c99-dd6789faace3",
+      "chainId": "奇异博士星际侵入奖励骰结算",
+      "chainStep": "01",
+      "sha256": "a10e2f2d0b2949f02ddd2e394912ff4abd844ab322bfa41f27a6b92173245121",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792948129031-lku9e1/星际侵入已选-桌面.png",
+      "sourceRun": "1792948206572-190288-d6fbda0c-3ac5-4d34-8c99-dd6789faace3",
+      "chainId": "奇异博士星际侵入奖励骰结算",
+      "chainStep": "02",
+      "sha256": "c5a1f95a485496c9b268c03132a05127a7416cd1cf8602580f1d91f7514eb226",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792948129031-lku9e1/星际侵入奖励骰待确认-桌面.png",
+      "sourceRun": "1792948206572-190288-d6fbda0c-3ac5-4d34-8c99-dd6789faace3",
+      "chainId": "奇异博士星际侵入奖励骰结算",
+      "chainStep": "03",
+      "sha256": "f0b77c77c7d1cff38e7f97448cb3ff107afb1ad58786615165adbc46e92d61f1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择星际侵入并确认奖励骰/_runs/e2e-1792948129031-lku9e1/星际侵入奖励骰确认-桌面.png",
+      "sourceRun": "1792948206572-190288-d6fbda0c-3ac5-4d34-8c99-dd6789faace3",
+      "chainId": "奇异博士星际侵入奖励骰结算",
+      "chainStep": "04",
+      "sha256": "ed7a5a248960d41ba624834fd28ecf17cd2793acc9fc197ca9d039ea51d436cc",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792948129031-lku9e1/收入阶段替代选项-桌面.png",
+      "sourceRun": "1792948186479-190288-e09dc968-58fb-4878-aef0-4f17b5503281",
+      "chainId": "奇异博士预感替代收入抽牌返还",
+      "chainStep": "01",
+      "sha256": "e7d3aac8c0195c5c0d4c0add81e417c255fa7066628626f860ad2c4207417582",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792948129031-lku9e1/本次抽牌返还选择-桌面.png",
+      "sourceRun": "1792948186479-190288-e09dc968-58fb-4878-aef0-4f17b5503281",
+      "chainId": "奇异博士预感替代收入抽牌返还",
+      "chainStep": "02",
+      "sha256": "db555f418c134b92ed04d92f73e09799def7403ec39615650cd6745b837cb3ac",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792948129031-lku9e1/选择牌库底-桌面.png",
+      "sourceRun": "1792948186479-190288-e09dc968-58fb-4878-aef0-4f17b5503281",
+      "chainId": "奇异博士预感替代收入抽牌返还",
+      "chainStep": "03",
+      "sha256": "ad475c9fb675a836e714c8d9d5c3915e7af9259470c1e2b857e0d6847099f984",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底/_runs/e2e-1792948129031-lku9e1/预感收入结算后-桌面.png",
+      "sourceRun": "1792948186479-190288-e09dc968-58fb-4878-aef0-4f17b5503281",
+      "chainId": "奇异博士预感替代收入抽牌返还",
+      "chainStep": "04",
+      "sha256": "66faa0c44748eaf9750bec553fbf27d1aefdc73e1ba418ab5dacbc5a2558c204",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/真实创建房间-待确认.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "01",
+      "sha256": "e4c45d218a2945515bfcbad17e16329a67fccb91cb3c6a71aebdb252866f2cae",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/真实选角入口-奇异博士实施中-桌面.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "02",
+      "sha256": "b218875a494aa1c4631d4940946bdf45a40b99557fcb0d5f85d4d30f98da2cd0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/真实选角入口-奇异博士实施中-窄屏.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "03",
+      "sha256": "e4dc3e214f18106c7b2e859c7195b1ec8e8dd9b79fa13474fe6bcd379890b71c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/房主真实选择奇异博士.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "04",
+      "sha256": "930840618172166e520c4a23feaf981c948e7644aa8ba9eb0092681377a04f34",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/双方选角并由客人准备.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "05",
+      "sha256": "b53e7268a50487ea55d003335895854801f385dfd047b221a2c18638c73299c3",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/房主视角进入双人牌桌.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "06",
+      "sha256": "661d94e55521716a6913a62f899fc79f615b04adf02079ad707b6147cc90a814",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1792948129031-lku9e1/客人视角进入双人牌桌.png",
+      "sourceRun": "1792948221215-190288-2ff16a77-abb2-49ba-8f4f-0fdee88df36b",
+      "chainId": "奇异博士真实双人选角与开局",
+      "chainStep": "07",
+      "sha256": "bd94354fee6e83bdff79bd57e52cf82d0e0aa3adc68139fddf54c089ad44de21",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "画面目标清楚可见，交互状态与布局可读，没有遮挡或错误提示。"
+    }
+  ]
+}

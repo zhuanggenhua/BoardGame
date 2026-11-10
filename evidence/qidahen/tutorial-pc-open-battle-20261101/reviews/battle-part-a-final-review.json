@@ -1,0 +1,1207 @@
+{
+  "assembler": "/root/r134_battle_last_five",
+  "sourceVideo": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-real-time.webm",
+  "sourceSha256": "558feaf903d055f327a33997b15df2d597e8a056f011431111053101c28cc033",
+  "range": [
+    1,
+    55
+  ],
+  "status": "PASS",
+  "reviewedFrameCount": 55,
+  "wholeVideoStatus": "PARTIAL",
+  "contributors": [
+    {
+      "reviewer": "/root/r134_battle_resume",
+      "range": [
+        1,
+        50
+      ],
+      "reviewedFrameCount": 50,
+      "sourceReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+      "sourceReportSha256": "2f65ef8ac20118efd967e8bd3f1d12abc87e7574a78aba3dce1e6a061008afe4",
+      "sourceReportStatus": "PARTIAL"
+    },
+    {
+      "reviewer": "/root/r134_battle_last_five",
+      "range": [
+        51,
+        55
+      ],
+      "reviewedFrameCount": 5,
+      "sourceReport": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+      "sourceReportSha256": "007a15032f5010be8378daf08e7eba175f622a138483dcb404c00b465e4edf07"
+    }
+  ],
+  "claimScope": "仅第一至第五十五帧；前五十帧沿用原读图者真实观察，合成人只实际读第五十一至第五十五帧。本段通过不单独宣告整段录像通过，不核验数值规则。",
+  "validation": {
+    "complete55FrameCoverage": true,
+    "inheritedFramesActuallyReadTrue": true,
+    "inheritedFrameHashesMatchDecodeAndFiles": true,
+    "inheritedIssuesEmpty": true,
+    "lastFiveActuallyRead": true,
+    "originalPartialReportUnchanged": true,
+    "decodeMetaUnchanged": true,
+    "decodeMeta": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\decode-meta.json",
+    "decodeMetaSha256": "46424cf1a74b25f8d191c376fd21cc9ddb1133ea9dff6fd505f5c45605fc825d"
+  },
+  "frames": [
+    {
+      "index": 1,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0001.png",
+      "sha256": "8b17fbf363595e63433641f24f684b479a2c6b8d055e3af6e09b4be6cf74c2dc",
+      "timeSeconds": 0,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "开战前地图、出兵部队与战场宽度卡、开始战斗按钮和规则说明可辨，顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/0/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/0/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 2,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0002.png",
+      "sha256": "949c5aa810f9b17a5989f4855997ffa29a6db57ff846e78b8a07a712b5582d66",
+      "timeSeconds": 0.073,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "开战前地图、出兵部队与战场宽度卡、开始战斗按钮和规则说明可辨，顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/1/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/1/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 3,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0003.png",
+      "sha256": "949c5aa810f9b17a5989f4855997ffa29a6db57ff846e78b8a07a712b5582d66",
+      "timeSeconds": 0.146,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "开战前地图、出兵部队与战场宽度卡、开始战斗按钮和规则说明可辨，顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/2/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/2/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 4,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0004.png",
+      "sha256": "949c5aa810f9b17a5989f4855997ffa29a6db57ff846e78b8a07a712b5582d66",
+      "timeSeconds": 0.228,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "开战前地图、出兵部队与战场宽度卡、开始战斗按钮和规则说明可辨，顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/3/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/3/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 5,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0005.png",
+      "sha256": "03a14e6c4d024f3adc41b3713a289d5eaa316bcf58c92bcafa8a4e33c646a17e",
+      "timeSeconds": 1.264,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "开战卡和规则说明退场，双方单位仍在地图上，顶部状态、手牌与牌堆保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/4/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/4/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 6,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0006.png",
+      "sha256": "0013a14887e9b24f5fcc2d2fc7b89d24da663fc3fc57ad22691bc330b5b7ecb5",
+      "timeSeconds": 2.551,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "地图视角变换到战斗开放舞台，炮兵阶段与攻方标记出现，无总盘或分盒，顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/5/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/5/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 7,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0007.png",
+      "sha256": "f732a8d0948a66a00d78c9a2ebb80ee62f59562eb25f2c8fcab3464db0b491a3",
+      "timeSeconds": 2.897,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵阶段与攻方文字持续可辨，开放地图舞台尚未见骰体，未显示合计或损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/6/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/6/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 8,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0008.png",
+      "sha256": "573624755d9d06ec51fbc126221a5d1314e61f8b6fa0bc9978ef54225fd49d51",
+      "timeSeconds": 2.974,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵阶段与攻方文字持续可辨，开放地图舞台尚未见骰体，未显示合计或损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/7/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/7/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 9,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0009.png",
+      "sha256": "eb5386407858eeb2047e3c72841010caff72a97dd3c5592314352a9c7847719a",
+      "timeSeconds": 3.048,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵阶段与攻方文字持续可辨，开放地图舞台尚未见骰体，未显示合计或损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/8/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/8/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 10,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0010.png",
+      "sha256": "63c44e6889a68ce8d30941874aa0652a9786bad15225b443d87fdfe66009100b",
+      "timeSeconds": 3.121,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵阶段与攻方文字持续可辨，开放地图舞台尚未见骰体，未显示合计或损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/9/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/9/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 11,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0011.png",
+      "sha256": "50774d4dbf39734fb64bea612b5a5fedfe59863200c519dd74ea6b72d5c310a7",
+      "timeSeconds": 3.193,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵阶段与攻方标记持续显示，开放舞台仍在等待骰体，无合计和损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/10/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/10/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 12,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0012.png",
+      "sha256": "d706fc4f1760f74a73f11cdfbc5e8ae55714db442f1386383a41d564ccd5e892",
+      "timeSeconds": 3.356,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵阶段与攻方标记持续显示，开放舞台仍在等待骰体，无合计和损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/11/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/11/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 13,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0013.png",
+      "sha256": "b95e7565c8bf87fd0432782debf7be49225ea98bd7bd4b43e6c38accc25b247f",
+      "timeSeconds": 3.763,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "浅色六面骰进入地图上方，正面一点可辨，炮兵阶段与攻方标记保留，地图和手牌未被总盘遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/12/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/12/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 14,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0014.png",
+      "sha256": "d1d740a0ffd875026e080d09cfc4f99560089a759efa976228a90e5ae750f9a1",
+      "timeSeconds": 5.385,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "浅色六面骰相对上一帧转角改变、位置下移，仍是直接落在地图上的开放骰体，无盘盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/13/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/13/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 15,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0015.png",
+      "sha256": "4eac12893c558013eaca20f02ad9d9d80d1ffe0fb46b9c2f086fd11c9b640729",
+      "timeSeconds": 6.813,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "浅色六面骰继续下移后呈一点面，阶段和攻方标记保留，合计与损伤尚未出现。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/14/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/14/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 16,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0016.png",
+      "sha256": "794c5bcecf7c14d5754213571f067f059217eb0a97269724382539c45d9cf74d",
+      "timeSeconds": 6.955,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "炮兵骰体稳定显示一点，算式一加二等于三、合计三和造成零损伤出现；地图、顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/15/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/15/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 17,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0017.png",
+      "sha256": "1e3a79afd7ae09791adc10ad01d2d9e7edff7af30d5164bba85ea99f04a1f443",
+      "timeSeconds": 7.093,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵攻方骰体与结果保持稳定，算式一加二等于三、合计三及造成零损伤完整可辨，无总盘或分盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/16/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/16/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 18,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0018.png",
+      "sha256": "a4cf9ee2f38c3ecffc58f73cf086715483a95c016a4fe79e78c9f012615a3524",
+      "timeSeconds": 7.249,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵攻方骰体与结果保持稳定，算式一加二等于三、合计三及造成零损伤完整可辨，无总盘或分盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/17/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/17/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 19,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0019.png",
+      "sha256": "85cd74888e346c3e4cefb7f3d19659503553f9f30b88f5c710a85b3a243527ce",
+      "timeSeconds": 7.445,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵攻方骰体与结果保持稳定，算式一加二等于三、合计三及造成零损伤完整可辨，无总盘或分盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/18/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/18/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 20,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0020.png",
+      "sha256": "85cd74888e346c3e4cefb7f3d19659503553f9f30b88f5c710a85b3a243527ce",
+      "timeSeconds": 7.819,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "炮兵攻方骰体与结果保持稳定，算式一加二等于三、合计三及造成零损伤完整可辨，无总盘或分盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/19/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/19/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 21,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0021.png",
+      "sha256": "41fb54fa2c1600c2230b71bd4da505bbecee7699075a5bc964beefb4d06483d7",
+      "timeSeconds": 11.025,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "炮兵攻方一点骰与合计三、造成零损伤持续保留，双方地图单位、顶部状态、牌堆与手牌可见。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/20/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/20/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 22,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0022.png",
+      "sha256": "4d6eb6957e5b2aafd257571723c179536f676337a5f256313ef0b4f8fdebb195",
+      "timeSeconds": 14.13,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "切换为骑兵阶段守方，红色多面骰出现并呈倾斜姿态，炮兵结果退场；地图、顶部状态与手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/21/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/21/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 23,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0023.png",
+      "sha256": "d7093cd913ab94d717d47e64692f7acd761dee08269377989628b50e82a3ea9a",
+      "timeSeconds": 14.387,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰倾斜向下移动，前面可见一，骑兵阶段与守方标记清楚，尚无合计和损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/22/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/22/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 24,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0024.png",
+      "sha256": "f83b080f49e6d33b78948151af798660322c9f87c9ab75398fdeea116f2f3432",
+      "timeSeconds": 14.567,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰继续转动，四与一所在面角度变化；开放舞台无总盘或单骰盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/23/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/23/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 25,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0025.png",
+      "sha256": "7a03897969b4991b03f5037b5984e90e3fbc72aed4e06d687b0be37b24f4aabb",
+      "timeSeconds": 14.686,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰转到三所在面居前，骑兵阶段守方标记不变，尚未显示结果。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/24/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/24/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 26,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0026.png",
+      "sha256": "c01c94d1a97e5ea5e4f39b9e314eafa3dcadfa5d1a7ca2579ac329e3d6963dad",
+      "timeSeconds": 14.776,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰继续旋转并下移，三所在面与二、六相邻面均可辨，未出现结算文字。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/25/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/25/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 27,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0027.png",
+      "sha256": "ef7128d94288959655f95aaaea8eb84626b247288fc22d54d464f6d1c49b6426",
+      "timeSeconds": 14.853,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰在地图上持续倾斜旋转，二和三所在面朝向变化，阶段侧别不变。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/26/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/26/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 28,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0028.png",
+      "sha256": "fec06686bcb855343808daa7896ba637c3864aa1a22cc2fceef0c9db09a2a11e",
+      "timeSeconds": 14.937,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰仍在转动，二与三面可辨，地图底纹从骰体四周直接露出，无盒边。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/27/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/27/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 29,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0029.png",
+      "sha256": "99da8a4d4c2421985f21b24c3d60006d397ef490b5384231c51ab79cd38df977",
+      "timeSeconds": 15.024,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰转到二与五面朝前，位置继续下移，合计和损伤尚未显示。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/28/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/28/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 30,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0030.png",
+      "sha256": "4f1242ae2b6e1003e6dc7574b39943ca29b1c3ce4d05c7915f3804419c31c790",
+      "timeSeconds": 15.107,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰转角继续变化，二、五、八面相邻可辨，骑兵阶段守方文字稳定可读。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/29/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/29/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 31,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0031.png",
+      "sha256": "a149627bcf797dc9e7b88706b91b361927049b708e2fff6d5bb23eaafdeaebe9",
+      "timeSeconds": 15.197,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰继续旋转并向右下移动，二和五面朝向改变，阶段与守方文字保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/30/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/30/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 32,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0032.png",
+      "sha256": "055910e6851be483028a16f31eefe5776962d501086ae09187d3b7d1fc07484f",
+      "timeSeconds": 15.288,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰短暂呈较正的二面，仍与上一帧角度不同，尚无结算文字。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/31/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/31/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 33,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0033.png",
+      "sha256": "54eaef770c444ba8447aa2c70c035e34f5aa75eb945d285ef230bc98db1e9b1a",
+      "timeSeconds": 15.384,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰滚向三面朝前，边缘与相邻面有连续转动变化，开放地图底纹可见。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/32/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/32/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 34,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0034.png",
+      "sha256": "3c1b279cbfa74d284658d27cc54c616745c5bdae6b580a7e159e45aec9d8be14",
+      "timeSeconds": 15.47,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰在低处继续旋转，三所在面居前，阶段侧别清楚。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/33/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/33/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 35,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0035.png",
+      "sha256": "92563e2ce40efb86542a0e1a3023bd1ed17e98d66c4864c44fe6e2f52b3ac14b",
+      "timeSeconds": 15.59,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰继续转动，四、三和八所在面角度变化，尚无合计与损伤。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/34/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/34/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 36,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0036.png",
+      "sha256": "6fb81db703c0de7d162a6110e9b306d314af9ea2a213490f2d07a73884eb9549",
+      "timeSeconds": 15.717,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "红骰转到一面朝前并接近稳定，骑兵阶段与守方标记保留，结果文字尚未显示。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/35/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/35/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 37,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0037.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "timeSeconds": 15.809,
+      "actuallyRead": true,
+      "readMode": "full-frame",
+      "status": "PASS",
+      "observation": "红骰一面停稳后出现合计一和造成零损伤，骑兵阶段与守方清楚；地图、顶部状态和手牌保留。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/36/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/36/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 38,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0038.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "timeSeconds": 15.882,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵守方红骰保持一面稳定，合计一和造成零损伤完整可读，无盘盒。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/37/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/37/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 39,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0039.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "timeSeconds": 15.958,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵守方红骰与结果保持稳定，合计一及造成零损伤在骰子下方清楚呈现。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/38/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/38/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 40,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0040.png",
+      "sha256": "3de90e9cfdbb166bc0fc6e7eb925839f84304b56dd7ae33b8aae0cf3eff9001c",
+      "timeSeconds": 16.033,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵守方红骰和结算文字持续保留，地图底纹穿透舞台，无新增遮挡或错误。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/39/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/39/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 41,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0041.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.111,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/40/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/40/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 42,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0042.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.203,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/41/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/41/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 43,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0043.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.288,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/42/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/42/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 44,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0044.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.361,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/43/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/43/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 45,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0045.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.445,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/44/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/44/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 46,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0046.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.537,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/45/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/45/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 47,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0047.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.613,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/46/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/46/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 48,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0048.png",
+      "sha256": "5af2263c04f66b3768f76bcf5b6396bc0831bd52cdcfb73c364b1ee9476a8f23",
+      "timeSeconds": 16.695,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/47/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/47/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 49,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0049.png",
+      "sha256": "f63d66651a609d40be8804426b89ae0e9fdde3ac7105c1ec6bdfcbdbb4fc17d3",
+      "timeSeconds": 16.785,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/48/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/48/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 50,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0050.png",
+      "sha256": "f63d66651a609d40be8804426b89ae0e9fdde3ac7105c1ec6bdfcbdbb4fc17d3",
+      "timeSeconds": 16.861,
+      "actuallyRead": true,
+      "readMode": "panel-plus-12px-original-pixels",
+      "status": "PASS",
+      "observation": "骑兵阶段守方红骰一面维持停稳，合计一和造成零损伤持续完整显示；开放舞台未见盘盒或错误遮挡。",
+      "failures": [],
+      "reviewer": "/root/r134_battle_resume",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/49/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-review.json",
+        "pointer": "/frames/49/actuallyRead"
+      },
+      "inheritanceNote": "保留原读图者的观察及实际已读声明；本合成人未重读该帧。"
+    },
+    {
+      "index": 51,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0051.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "timeSeconds": 16.928,
+      "actuallyRead": true,
+      "status": "PASS",
+      "reviewer": "/root/r134_battle_last_five",
+      "observation": "完整原帧与裁片已读：骑兵阶段、守方、红骰一面停稳，以及合计一和造成零损伤均清楚；地图开放无总骰盘或单骰盒，顶部状态、双方单位、手牌和牌堆保留，未见错误遮挡。",
+      "readMode": "full-original-and-original-pixel-crop",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0051-crop.png",
+      "failures": [],
+      "fullOriginalReadPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0051.png",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/0/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/0/actuallyRead"
+      }
+    },
+    {
+      "index": 52,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0052.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "timeSeconds": 17.007,
+      "actuallyRead": true,
+      "status": "PASS",
+      "reviewer": "/root/r134_battle_last_five",
+      "observation": "原像素裁片已读：骑兵阶段与守方标记清楚，红骰一面维持停稳，合计一和造成零损伤完整可读；骰子直接位于地图上，无盘盒或错误遮挡。",
+      "readMode": "original-pixel-crop",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0052-crop.png",
+      "failures": [],
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/1/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/1/actuallyRead"
+      }
+    },
+    {
+      "index": 53,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0053.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "timeSeconds": 17.089,
+      "actuallyRead": true,
+      "status": "PASS",
+      "reviewer": "/root/r134_battle_last_five",
+      "observation": "原像素裁片已读：守方骑兵红骰停稳，阶段、侧别、合计一与造成零损伤均可辨；地图底图透出，未见总骰盘、分盒或异常遮挡。",
+      "readMode": "original-pixel-crop",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0053-crop.png",
+      "failures": [],
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/2/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/2/actuallyRead"
+      }
+    },
+    {
+      "index": 54,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0054.png",
+      "sha256": "2594261004b856ccae0c47f4a5ad48f5a5a110c0d860925d341ded4d4432e8e9",
+      "timeSeconds": 17.164,
+      "actuallyRead": true,
+      "status": "PASS",
+      "reviewer": "/root/r134_battle_last_five",
+      "observation": "原像素裁片已读：骑兵阶段守方红骰一面持续停稳，合计一和造成零损伤完整显示；开放地图舞台没有盘盒，结果文字无遮挡。",
+      "readMode": "original-pixel-crop",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0054-crop.png",
+      "failures": [],
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/3/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/3/actuallyRead"
+      }
+    },
+    {
+      "index": 55,
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0055.png",
+      "sha256": "9fe35e41dc8258cd680c02af876b361e3cf8068733c19301f4a6733902d12012",
+      "timeSeconds": 17.238,
+      "actuallyRead": true,
+      "status": "PASS",
+      "reviewer": "/root/r134_battle_last_five",
+      "observation": "完整原帧与裁片已读：骑兵阶段、守方、红骰一面停稳及合计一和造成零损伤清楚；地图开放无总骰盘或分盒，双方单位、顶部状态、底部手牌和牌堆仍保留，未见错误遮挡。",
+      "readMode": "full-original-and-original-pixel-crop",
+      "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\last-five-crops\\frame-0055-crop.png",
+      "failures": [],
+      "fullOriginalReadPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0055.png",
+      "observationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/4/observation"
+      },
+      "readAttestationSource": {
+        "file": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-part-a-last-five.json",
+        "pointer": "/frames/4/actuallyRead"
+      }
+    }
+  ],
+  "issues": []
+}

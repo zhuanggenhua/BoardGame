@@ -1,0 +1,321 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "mediaCount": 25,
+  "reviewScope": "本轮改写并复核训练目标两态；其余 23 张沿用既有逐图 PASS，因为对应 UI 与验收条件未改写。",
+  "reviewers": [
+    {
+      "id": "/root/qidahen_visual_audit_20261022",
+      "role": "此前逐图 UI 复核"
+    },
+    {
+      "id": "/root/qidahen_visual_batch03_retry",
+      "role": "本轮训练目标两态复核"
+    }
+  ],
+  "media": [
+    {
+      "path": "media/00-唯一入门入口-直接进入胜利条件.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家从唯一入门入口进入胜利目标说明。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/00a-继续后-进入行动流程说明.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "继续后读到本回合要完成的两种行动。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/05-选择征召军队并阅读规则.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召前可见行动费用和真实手牌检视入口。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/移动-01-移动教程-手牌检视前.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "移动端同一行动窗口显示手牌检视入口和征召选项。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/移动-02-移动教程-长按手牌打开检视.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "长按手牌后卡牌检视框在移动牌桌上打开。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/07-支付1张手牌.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择一张手牌后显示已选标记和支付确认。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/08-选择宣府建军位置.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图高亮宣府作为当前建军目标。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/09-选择建军方式.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择目标后显示本次可用的建军方式。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/10-征召结果-轮盘行动待完成.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召结果可见且轮盘行动仍待玩家完成。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/11-教程结束后同局下一位玩家可操作.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程提示退场后同局下一位玩家可操作轮盘。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03-轮盘选择-三种走法均可选择.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘显示三种互斥步数供玩家选择。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03a-轮盘两格-选择对手抽牌.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择两格后出现真实对手选择按钮。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03b-轮盘两格-进入军屯并结算.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "军屯结算面板和返回轮盘操作均可见。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/02a-轮盘三格费用与落点说明.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘提示显示征兵训练路线的费用与落点。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03c-轮盘一格-进入开垦并结算.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "一格路线进入开垦并展示真实结算窗口。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结束教程提示后同一对局已恢复轮盘操作。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三格路线进入征兵训练并显示初始弃牌窗口。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03e-征兵训练选择行动前规则译文.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择行动前只显示当前征兵训练规则译文。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03f-训练目标选择与等级提示.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练目标列表底部在自身面板内可滚动查看；蓝色高亮贴合面板边界，末行与右下弃牌堆之间留有空隙。",
+      "reviewMethod": "subagent",
+      "reviewer": "/root/qidahen_visual_batch03_retry"
+    },
+    {
+      "path": "media/03g-征兵训练结算结果.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认征兵后结果窗口显示已建立部队。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03h-征兵目标本土限制与候选区域.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择征兵后显示本土规则和真实候选区域。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03i-额外训练规则与弃牌.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "有剩余手牌时显示额外训练规则和支付操作。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03j-额外训练目标与结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "候选名称和等级提示清楚，滚动说明可见；列表末行未被弃牌堆遮挡，面板和高亮边框完整。",
+      "reviewMethod": "subagent",
+      "reviewer": "/root/qidahen_visual_batch03_retry"
+    },
+    {
+      "path": "media/03k-征兵训练结果与轮盘结算.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征兵训练结果关闭后轮盘三格行动结算。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    },
+    {
+      "path": "media/03l-教程退场后同局继续.png",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "三格路线结束教程后仍可在同一对局继续。",
+      "unchangedEvidence": "本轮未改写该屏 UI 或验收条件；本次仅机械重拍用于串联证据，沿用此前逐图 PASS。"
+    }
+  ]
+}

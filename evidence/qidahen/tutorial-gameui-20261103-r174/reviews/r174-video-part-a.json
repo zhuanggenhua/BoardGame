@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "score": 93,
+  "reviewer": "/root/r174_video_a",
+  "issues": [],
+  "actualReadCount": 5,
+  "media": [
+    {
+      "status": "PASS",
+      "observation": "辽北至叶赫部的交战标题与炮兵阶段明确，大明攻方列头带原有明字阵营标记；开放的白骰倾斜显示投掷中状态，大明辽北兵牌与北侧带蒙古标记的蒙古骑兵完整可见，骰子未遮挡参战兵牌或读数。列头控制骰子列，邻近后金背牌仍是隐藏的非参战背景。地图顶边连续填满，未见顶部空白或错误。",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-rolling.jpg",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "sha256": "9f27dfc9187952230517787e07ee19495e68d760ce6b9cc1f2860f81c1646c3e"
+    },
+    {
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "炮兵结果保留在大明攻方骰子列下，结果正文明确写出对蒙古造成损伤，承受阵营直接可读；北侧蒙古骑兵及其蒙古标记、大明辽北兵牌保持显露，右侧非参战后金背牌没有被揭露。地图铺满顶部，骰子和结果没有遮住真实参战兵牌或其读数，画面未见错误。这里只确认归属文字，不据图验证结算数值。",
+      "status": "PASS",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-damage.jpg"
+    }
+  ],
+  "videoPart": {
+    "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+    "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+    "status": "PASS",
+    "readSheets": [
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\a-00.png",
+        "sha256": "3a883acf7b4a05459927e6b02ae0ccdd1cb71279a37fa6a5f3aab668e96bfd6d"
+      },
+      {
+        "sha256": "fb2d9a7c6d29c11de97a184e12e2d01074c4c443ade41586dd43fce5a6688ade",
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\a-01.png"
+      },
+      {
+        "path": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-r174-video-review\\a-02.png",
+        "sha256": "fc94b070a1fa91f638a8f4671a3b71706f5e50bbfc3eed0c9b55a774ec66569e"
+      }
+    ],
+    "readFrameIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+    ],
+    "observation": "本段实际覆盖零至二十九帧。零至二帧为全局开场，三至四帧放大到交战地图；五至十六帧白色炮兵骰连续改变面向和位置，十六至十七帧收束停稳；十八至二十三帧保留稳定骰面并显示结果，二十四至二十九帧进入下一段红骰运动，因此只确认本段炮兵投掷的运动至停稳，不声称其余帧或全场完成。两张原始整屏可直接识别大明攻方骰子列、辽北至叶赫部交战、带蒙古标记的真实守军骑兵及对蒙古造成损伤的结果文字；骰子列靠近后金背景，但列头和结果明确所属，不把后金背牌当参战者。参战对象和读数未被骰子遮挡，交战地图顶边没有空白。",
+    "checks": [
+      "target-visible",
+      "interaction-ui",
+      "layout-readable",
+      "no-error"
+    ]
+  }
+}

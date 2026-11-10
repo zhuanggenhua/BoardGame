@@ -1,0 +1,261 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-entry",
+  "sourceRun": "20261027-natural-opening-r50",
+  "sourceRevision": "sha256:991a1c31bc27b83442dfe930a990d7e2f3c636f84d04178808b9c84124ce8e56",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 4 个行为检查点与 0 个独特界面状态。",
+  "steps": [
+    {
+      "id": "basic-opening-entry-check-001",
+      "action": "正常进入唯一入门并推进到军屯地点选择",
+      "before": {
+        "visible": {
+          "boardVisible": false,
+          "path": "blank",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": false,
+          "tutorialStepId": null,
+          "tutorialHiddenAutomation": false,
+          "turnPhase": null,
+          "currentPlayer": null,
+          "selectedActionId": null,
+          "actionWheelPosition": null,
+          "factionActionUsed": null,
+          "mingHandCount": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ],
+      "assertions": [
+        {
+          "name": "当前教程步骤",
+          "actual": "select-farm-region",
+          "expected": "select-farm-region"
+        },
+        {
+          "name": "棋盘可见状态",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-entry-check-002",
+      "action": "刷新后真实点击从上次继续，恢复同一军屯地点选择",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "从上次继续"
+        }
+      ],
+      "assertions": [
+        {
+          "name": "当前教程步骤",
+          "actual": "select-farm-region",
+          "expected": "select-farm-region"
+        },
+        {
+          "name": "棋盘可见状态",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-entry-check-003",
+      "action": "刷新后真实点击重头开始，恢复正式开局首屏",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "frontier",
+          "tutorialText": "辽东驻有3支明军，邻近的叶赫部由蒙古控制。这回合从辽东进攻叶赫部，争取区域控制权；轮盘和手牌行动都尚未使用。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "frontier",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "重头开始"
+        }
+      ],
+      "assertions": [
+        {
+          "name": "当前教程步骤",
+          "actual": "frontier",
+          "expected": "frontier"
+        },
+        {
+          "name": "棋盘可见状态",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-entry-check-004",
+      "action": "通过退出面板返回大厅，教程提示和高亮均清理",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "frontier",
+          "tutorialText": "辽东驻有3支明军，邻近的叶赫部由蒙古控制。这回合从辽东进攻叶赫部，争取区域控制权；轮盘和手牌行动都尚未使用。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "frontier",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": false,
+          "path": "/",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": null,
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "返回大厅彻底离开房间"
+        }
+      ],
+      "assertions": [
+        {
+          "name": "当前教程步骤",
+          "actual": null,
+          "expected": null
+        },
+        {
+          "name": "棋盘可见状态",
+          "actual": false,
+          "expected": false
+        }
+      ]
+    }
+  ],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

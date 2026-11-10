@@ -1,0 +1,148 @@
+{
+  "media": [
+    {
+      "path": "01-pc-character-select.jpg",
+      "chainId": "character-and-board",
+      "chainStep": "一",
+      "sourceRun": "pc-mobile-width-comparison",
+      "sourceDir": "evidence/betrayal-character-select-text-scale-20261006",
+      "stage": "前态",
+      "description": "电脑端角色选择页文字和滚动框保持可读"
+    },
+    {
+      "path": "02-mobile-character-select.jpg",
+      "chainId": "character-and-board",
+      "chainStep": "二",
+      "sourceRun": "pc-mobile-width-comparison",
+      "sourceDir": "evidence/betrayal-character-select-text-scale-20261006",
+      "stage": "中态",
+      "description": "移动端角色选择页文字和滚动框保持可读"
+    },
+    {
+      "path": "03-pc-scenario-actions.jpg",
+      "chainId": "scenario-flow",
+      "chainStep": "一",
+      "sourceRun": "pc-mobile-width-comparison",
+      "sourceDir": "evidence/betrayal-scenario-actions-pc-mobile-20261006",
+      "stage": "前态",
+      "description": "电脑端剧本候选页三个按钮保持同排"
+    },
+    {
+      "path": "04-mobile-scenario-actions.jpg",
+      "chainId": "scenario-flow",
+      "chainStep": "二",
+      "sourceRun": "pc-mobile-width-comparison",
+      "sourceDir": "evidence/betrayal-scenario-actions-pc-mobile-20261006",
+      "stage": "中态",
+      "description": "移动端剧本候选页三个按钮保持同排"
+    },
+    {
+      "path": "05-pc-script-home.jpg",
+      "chainId": "script-reader-pc",
+      "chainStep": "一",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "前态",
+      "description": "电脑端剧本书首页正文和关闭按钮可见"
+    },
+    {
+      "path": "06-pc-script-page.jpg",
+      "chainId": "script-reader-pc",
+      "chainStep": "二",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "中态",
+      "description": "电脑端剧本书翻页状态正文保持可读"
+    },
+    {
+      "path": "07-pc-script-last.jpg",
+      "chainId": "script-reader-pc",
+      "chainStep": "三",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "电脑端剧本书末页正文和按钮不互相遮挡"
+    },
+    {
+      "path": "08-mobile-script-home.jpg",
+      "chainId": "script-reader-mobile",
+      "chainStep": "一",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "前态",
+      "description": "移动端剧本书首页正文和关闭按钮可见"
+    },
+    {
+      "path": "09-mobile-script-page.jpg",
+      "chainId": "script-reader-mobile",
+      "chainStep": "二",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "中态",
+      "description": "移动端剧本书翻页状态正文保持可读"
+    },
+    {
+      "path": "10-mobile-script-last.jpg",
+      "chainId": "script-reader-mobile",
+      "chainStep": "三",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "移动端剧本书末页正文和按钮不互相遮挡"
+    },
+    {
+      "path": "11-mobile-script-return.jpg",
+      "chainId": "scenario-flow",
+      "chainStep": "三",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "移动端关闭剧本后返回选择页状态正确"
+    },
+    {
+      "path": "12-mobile-transition-continue.jpg",
+      "chainId": "character-and-board",
+      "chainStep": "三",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "移动端过程文案下方继续按钮保持可读可点"
+    },
+    {
+      "path": "13-mobile-main-board.jpg",
+      "chainId": "character-and-board",
+      "chainStep": "四",
+      "sourceRun": "basic-flow",
+      "sourceDir": "evidence/betrayal-basic-flow",
+      "stage": "后态",
+      "description": "移动端主桌面回归后当前回合和悬浮球锚点稳定"
+    },
+    {
+      "path": "14-focus-before.jpg",
+      "chainId": "focus-move",
+      "chainStep": "一",
+      "sourceRun": "mobile-zoom-move-animation",
+      "sourceDir": "evidence/betrayal-focus-2388x1080",
+      "stage": "前态",
+      "description": "缩放平移前玩家角色和地图状态清晰可见"
+    },
+    {
+      "path": "15-focus-after-zoom-pan.jpg",
+      "chainId": "focus-move",
+      "chainStep": "二",
+      "sourceRun": "mobile-zoom-move-animation",
+      "sourceDir": "evidence/betrayal-focus-2388x1080",
+      "stage": "中态",
+      "description": "缩放平移后地图状态保持稳定等待移动"
+    },
+    {
+      "path": "16-focus-after-move.jpg",
+      "chainId": "focus-move",
+      "chainStep": "三",
+      "sourceRun": "mobile-zoom-move-animation",
+      "sourceDir": "evidence/betrayal-focus-2388x1080",
+      "stage": "后态",
+      "description": "移动完成后玩家角色回到可视地图中心附近"
+    }
+  ]
+}

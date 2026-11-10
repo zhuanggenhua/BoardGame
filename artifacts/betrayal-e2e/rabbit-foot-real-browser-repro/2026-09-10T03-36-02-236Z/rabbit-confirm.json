@@ -1,0 +1,522 @@
+{
+  "label": "rabbit-confirm",
+  "before": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "rabbit-foot-result",
+    "overlayText": "兔脚重掷完成。先看清新的骰面和总点数，再点“确认”确认结果；确认后如果仍失败，游戏会进入伤害分配。上一步完成当前操作继续",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 20,
+      "stepId": "rabbit-foot-result",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 20,
+      "stepId": "rabbit-foot-result",
+      "stepAllowedCommands": [
+        "FINALIZE_EVENT_ROLL"
+      ],
+      "stepInfoStep": null,
+      "stepRequireAction": true
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": {
+        "rollId": "0-标本剥制-1789011499639",
+        "playerId": "0",
+        "requiredPlayerIds": [
+          "0"
+        ],
+        "acknowledgedPlayerIds": [],
+        "requiresAcknowledgement": true
+      },
+      "recentRoll": {
+        "id": "0-标本剥制-1789011499639",
+        "kind": "eventTraitCheck",
+        "trait": "knowledge",
+        "dice": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "consumedRabbitFootCardIds": [
+          "rope"
+        ]
+      },
+      "usedCardIdsThisTurn": [
+        "omen-book",
+        "rope"
+      ],
+      "pendingDamageAllocation": null
+    },
+    "continueButton": {
+      "text": "确认 0/1",
+      "disabled": false,
+      "confirmed": "0",
+      "required": "1",
+      "rect": {
+        "x": 617,
+        "y": 642,
+        "width": 132,
+        "height": 62
+      }
+    },
+    "bodyText": "🛠️作祟前当前回合伊莎·瓦伦西亚移动0/5本回合 5剩余移动 0 本回合 5位置厨房持有2当前属性伊莎·瓦伦西亚力量死亡23344567速度死亡44556788知识死亡23344566神志死亡23456778特性：无特殊能力：基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。队友摘要安妮塔·赫南德兹门厅持有 1力量死亡2234567速度死亡23445678知识死亡4455788神志死亡22345566神父 梁沃伦入口大厅持有 0力量死亡22334566速度死亡23445566知识死亡33455678神志死亡33556688当前持有区未选卡牌未选卡牌已用兔脚已用书本现在：点结束回合当前没有同房间队友探索完成，结束回合伊莎·瓦伦西亚使用兔脚重掷第 1 颗骰子：2 → 0探索结果 标本剥制 结果已公开事件牌 标本剥制 结果已公开 知识检定 1：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物事件效果：力量检定 2：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物0000受到 1 点物理伤害；放置障碍物总点数 1骰面合计 0｜加值 +1｜总点数 1骰面合计 0/加值 +1骰面合计 0｜加值 +1｜总点数 1加值 +1知识检定加值 +1骰面合计 0｜加值 +1｜总点数 1总点数 1受到 1 点物理伤害；放置障碍物确认 0/1100%大阶梯一层起始放大查看门厅一层起始放大查看入口大厅一层起始放大查看厨房一层事件当前房间放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看一层结束回合牌堆区预兆牌堆7物品牌堆22事件牌堆1预兆状态作祟前预兆 1弃牌区000剧本提示队友安妮塔·赫南德兹门厅4453神父 梁沃伦入口大厅3445 伊莎·瓦伦西亚使用书本，失去 1 点神志；本次事件检定改用知识重新投骰并结算伊莎·瓦伦西亚投掷事件：标本剥制（力量检定 2：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物）伊莎·瓦伦西亚探索到厨房，公开事件：标本剥制，等待投掷当前选中未选卡牌未选卡牌当前没有同房间队友现在：点结束回合当前持有区牌堆区结束回合 阶段作祟前兔脚重掷完成。先看清新的骰面和总点数，再点“确认”确认结果；确认后如果仍失败，游戏会进入伤害分配。上一步完成当前操作继续 翻面收起",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"numPlayers\":3,\"randomCursor\":236,\"savedAt\":1789011503006,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1,\"snapshotCursors\":[231]},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[],\"maxEntries\":200,\"nextId\":27},\"actionLog\":{\"entries\":[{\"id\":\"betrayal-MOVE_T"
+      }
+    ]
+  },
+  "after": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "finish",
+    "overlayText": "这里选择承受 1 点物理伤害的属性，再点确认完成分配。上一步完成当前操作继续",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 21,
+      "stepId": "finish",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 21,
+      "stepId": "finish",
+      "stepAllowedCommands": [
+        "RESOLVE_DAMAGE_ALLOCATION"
+      ],
+      "stepInfoStep": null,
+      "stepRequireAction": true
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": "0",
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": {
+        "id": "0-标本剥制-1789011499639",
+        "kind": "eventTraitCheck",
+        "trait": "knowledge",
+        "dice": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "consumedRabbitFootCardIds": [
+          "rope"
+        ]
+      },
+      "usedCardIdsThisTurn": [
+        "omen-book",
+        "rope"
+      ],
+      "pendingDamageAllocation": {
+        "playerId": "0"
+      }
+    },
+    "continueButton": null,
+    "bodyText": "🛠️作祟前当前回合伊莎·瓦伦西亚移动0/5本回合 5剩余移动 0 本回合 5位置厨房持有2当前属性伊莎·瓦伦西亚力量死亡23344567速度死亡44556788知识死亡23344566神志死亡23456778特性：无特殊能力：基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。队友摘要安妮塔·赫南德兹门厅持有 1力量死亡2234567速度死亡23445678知识死亡4455788神志死亡22345566神父 梁沃伦入口大厅持有 0力量死亡22334566速度死亡23445566知识死亡33455678神志死亡33556688当前持有区未选卡牌未选卡牌已用兔脚已用书本现在：点结束回合当前没有同房间队友探索完成，结束回合伊莎·瓦伦西亚确认标本剥制的最终投骰结果（1/1）100%大阶梯一层起始放大查看门厅一层起始放大查看入口大厅一层起始放大查看厨房一层事件当前房间放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看未探索一层尚未翻出放大查看一层结束回合牌堆区预兆牌堆7物品牌堆22事件牌堆1预兆状态作祟前预兆 1弃牌区000剧本提示队友安妮塔·赫南德兹门厅4453神父 梁沃伦入口大厅3445 伊莎·瓦伦西亚使用兔脚重掷第 1 颗骰子：2 → 0伊莎·瓦伦西亚使用书本，失去 1 点神志；本次事件检定改用知识重新投骰并结算伊莎·瓦伦西亚投掷事件：标本剥制（力量检定 2：受到 1 点物理伤害；放置障碍物；受到 1 点物理伤害；放置障碍物）当前选中未选卡牌未选卡牌当前没有同房间队友现在：点结束回合当前持有区牌堆区结束回合 阶段作祟前伤害分配分配 1 点物理伤害来源：标本剥制伊莎·瓦伦西亚力量0死亡233445673 -> 3速度0死亡445567885 -> 5确认这里选择承受 1 点物理伤害的属性，再点确认完成分配。上一步完成当前操作继续 翻面收起",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"numPlayers\":3,\"randomCursor\":236,\"savedAt\":1789011506208,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1,\"snapshotCursors\":[231]},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[],\"maxEntries\":200,\"nextId\":27},\"actionLog\":{\"entries\":[{\"id\":\"betrayal-MOVE_T"
+      }
+    ]
+  },
+  "screenshots": {
+    "before": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T03-36-02-236Z\\rabbit-before-confirm.png",
+    "after": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-10T03-36-02-236Z\\rabbit-after-confirm.png"
+  },
+  "logs": [
+    {
+      "at": "2026-09-10T03:37:48.008Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-10T03:37:48.019Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-10T03:37:48.072Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-10T03:37:48.107Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-10T03:37:48.826Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-10T03:37:56.647Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T03:37:56.646Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T03:37:56.649Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:56.648Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-10T03:37:56.653Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T03:37:56.653Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-10T03:37:57.045Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T03:37:57.033Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T03:37:57.045Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:57.033Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-10T03:37:57.702Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:57.687Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":1039}"
+    },
+    {
+      "at": "2026-09-10T03:37:57.702Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:57.687Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":654}"
+    },
+    {
+      "at": "2026-09-10T03:37:58.104Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 41.4 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-10T03:37:58.413Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/locales/zh-CN/game-betrayal.json net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T03:37:58.453Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-10T03:37:58.469Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-10T03:37:58.487Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-10T03:37:58.509Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-10T03:37:58.847Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-10T03:37:59.408Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T03:37:59.407Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T03:37:59.408Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:59.408Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-10T03:37:59.411Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T03:37:59.411Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-10T03:37:59.451Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T03:37:59.449Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-10T03:37:59.451Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:59.450Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-10T03:37:59.718Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:59.716Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":308}"
+    },
+    {
+      "at": "2026-09-10T03:37:59.718Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-10T03:37:59.717Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":267}"
+    },
+    {
+      "at": "2026-09-10T03:38:07.230Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-10T03:38:07.217Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":7768}"
+    },
+    {
+      "at": "2026-09-10T03:38:07.406Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-10T03:38:07.469Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T03:38:07.469Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:07.469Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T03:38:07.469Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-10T03:38:07.587Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-10T03:38:07.727Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||3|0|||||||0|\",\"markerAfter\":\"0||3|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-10T03:38:07.728Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:08.603Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T03:38:08.961Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T03:38:09.041Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-10T03:38:09.041Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 23.8 FPS | P95 帧时 333.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-10T03:38:13.502Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 24.3 FPS | P95 帧时 200.0ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-10T03:38:14.095Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:14.095Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:14.184Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:14.599Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: move-to-hallway, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:17.961Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:17.961Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:18.050Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:18.157Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 26.3 FPS | P95 帧时 83.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-10T03:38:18.297Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: confirm-room-placement, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:18.783Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:18.784Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:18.884Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:19.650Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: roll-event, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:20.362Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:20.362Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:20.446Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:21.113Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-book, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:21.113Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:21.113Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:21.202Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:21.868Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 16.1 FPS | P95 帧时 333.3ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-10T03:38:22.802Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: use-rabbit-foot, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:22.802Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:22.802Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:22.893Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:25.319Z",
+      "type": "warning",
+      "text": "🔴 [性能] 平均 17.4 FPS | P95 帧时 99.9ms — 严重掉帧"
+    },
+    {
+      "at": "2026-09-10T03:38:25.943Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: rabbit-foot-result, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:25.943Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(1), eventCount: 1}"
+    },
+    {
+      "at": "2026-09-10T03:38:25.948Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    },
+    {
+      "at": "2026-09-10T03:38:26.051Z",
+      "type": "warning",
+      "text": "[TutorialSystem] afterEvents: {stepId: finish, advanceOnEvents: Array(1), receivedEvents: Array(0), eventCount: 0}"
+    }
+  ]
+}

@@ -1,0 +1,823 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-01T09:32:36.270Z",
+  "reviewer": "/root/doctor_full_inventory",
+  "verdict": "当前目标代码复核通过；最终同源逐图视觉未判定",
+  "scope": "当前完整目标diff的只读独立代码复核；不作视觉PASS",
+  "userQuote": "按规范重新逐张验收所有新交互，和旧UI逐项对照，有问题直接修，别再拿测试通过当验收通过，修好给我新截图。",
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "title": "portal候选宽度与容量计算使用不同坐标尺度",
+      "source": [
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 26
+        },
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 47
+        },
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 472
+        },
+        {
+          "file": "src/components/system/ModalStackRoot.tsx",
+          "line": 75
+        },
+        {
+          "file": "src/index.css",
+          "line": 706
+        },
+        {
+          "file": "src/index.css",
+          "line": 1207
+        }
+      ],
+      "consequence": "移动壳scale不为1时，候选在modal-root按逻辑壳单位直接渲染，容量却按乘scale后的屏幕宽计算，实际排布和搜索门槛不一致。横屏单张卡高度会超过原50vh滚动区而裁切，且候选与手牌并非同一实际尺寸。",
+      "evidence": "CARD_POOL_CARD_WIDTH=buildBoardShellInlineUnitValue(12)，modal-root不在.mobile-board-shell transform内。capacity cardWidth=readBoardShellInlineUnitPixelValue()*readBoardShellScaleValue()*12。移动横屏CSS逻辑inline-unit=19.2px，渲染宽230.4px，博士frame669/1086对应高约374px，而375高视口的max-h=187.5px。",
+      "blocker": "候选默认比较可读性和横屏完整性是用户本轮目标，不能用放大阅读或单测通过抵消；当前真实E2E横屏宇宙感知已报告失败，但本报告未把失败详情归因给本项。",
+      "minimalRemedy": "先量portal候选、壳内手牌、scale及容器裁切；让候选实际宽度与容量使用同一屏幕尺度，且按目标可读性调合法容器承载。不得仅缩回难读缩略图。重跑本轮受影响桌面/横屏卡区图审。",
+      "status": "已定点源码复核修复：portal宽与容量同一inlineUnit*scale*12；实际最终画面需另验",
+      "blocking": false
+    },
+    {
+      "id": "R2",
+      "priority": "P2",
+      "title": "新增代表态夹具丢失其它席位的起手牌",
+      "source": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 2459
+        },
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 2463
+        },
+        {
+          "file": "src/games/dicethrone/domain/characters.ts",
+          "line": 558
+        }
+      ],
+      "consequence": "initHeroState已从deck移出4张起手牌；直接hand=[]后没有放回正式deck/discard，对非博士席位永久丢失4张卡。该补证前态不是完整合法卡区状态，且弱化其它玩家手牌上下文。",
+      "evidence": "buildDoctorUiPlayers先对每个席位hand=[]，只有players[0]后续完整重建牌库/手牌/准备区，其余玩家未重建或转移。",
+      "blocker": "本轮补证明确要求合法正式来源前态；不能把非法缺牌前态标为合法代表态。",
+      "minimalRemedy": "其它席位保留initHeroState原hand；若空手确有场景需要，把原4张转入正式discard/deck并保持总数/唯一归属，再以真实动作触发目标。",
+      "status": "已定点源码复核修复：其它席位保留initHeroState正式hand；博士单独完整重建卡区",
+      "blocking": false
+    },
+    {
+      "id": "R3",
+      "priority": "P2",
+      "category": "verification-gap",
+      "title": "resize不能证明同步或重挂载期间持续阅读",
+      "source": [
+        {
+          "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+          "line": 1339
+        },
+        {
+          "file": "src/games/dicethrone/ui/__tests__/CardSpotlightOverlay.test.tsx",
+          "line": 86
+        }
+      ],
+      "consequence": "来源卡>3秒和resize持续可见已实际断言，但同一DOM的视口变化及React rerender不触发Hook卸载恢复，也没有真实联机resync。若把它写成同步/重挂载通过会越权。",
+      "evidence": "E2E只setViewportSize(1441→1440)；组件单测仅rerender(renderCard())。既有useCardSpotlight.rollback.test.tsx:280和320才包含unmount/remount与空EventStream恢复；当前58项日志未跑该文件。",
+      "blocker": "UI阅读标准要求明确关闭前持续，含同步/重挂载边界；现有证据只覆盖timer/resize/rerender。",
+      "minimalRemedy": "复用并执行既有useCardSpotlight.rollback.test.tsx对应行为验证；当前E2E准确声明为resize，浏览器真实同步/重挂载未验证则明确保留边界，不能宣布全覆盖。",
+      "status": "已按主代理明确证据分层收口：resize仅声明resize；hook同步/重挂载已有测试另跑另记，不宣称浏览器断线恢复已验",
+      "blocking": false
+    },
+    {
+      "id": "R4",
+      "priority": "P2",
+      "title": "新增ratio读取直接传入nullable previewRef",
+      "source": [
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 383
+        },
+        {
+          "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+          "line": 515
+        },
+        {
+          "file": "src/games/dicethrone/ui/cardPreviewHelper.ts",
+          "line": 54
+        },
+        {
+          "file": "src/components/common/media/CardPreview.tsx",
+          "line": 110
+        }
+      ],
+      "consequence": "两处新调用输入是CardPreviewRef|null，但getCardPreviewAspectRatio仅接受CardPreviewRef，立即读.type。严格TypeScript下参数不兼容；若既有helper无ref路径进入则直接抛错，破坏原CardPreview无ref承接。",
+      "evidence": "candidateMaxAspectRatio map使用card.previewRef ?? getDiceThroneCardPreviewRef(...)直接传函数；渲染map中previewRef亦直接传函数。helper签名明确CardPreviewRef|null，ratio getter签名明确CardPreviewRef。",
+      "blocker": "这是本轮新增调用方违反现有公开契约，不由当前67项单测通过抵消；不得把未知数据可用性假定当类型收口。",
+      "minimalRemedy": "只在两处已有previewRef truthy时读取ratio；否则延用本来undefined ratio路径。不改变共享getter契约、不增加假素材/第二套状态或无现实入口兜底。",
+      "status": "已定点复核修复：两处先判定既有previewRef存在才读ratio；无ref延用原undefined/0比率路径，仅履行既有nullable API合同，不扩非法状态兜底。",
+      "blocking": false
+    }
+  ],
+  "approvedImplementationFacts": [
+    {
+      "object": "GameHints DiceInteractionHint",
+      "finding": "与22790d2c7^旧组件左中/琥珀/单行/原padding字号动画语法一致；没有重做新的提示owner。",
+      "boundary": "实际视觉仍需本轮原图"
+    },
+    {
+      "object": "handLayoutConstants / HandArea",
+      "finding": "原12单位常量同值抽出，HandArea局部常量取同值；本项本身没有改变手牌尺寸。",
+      "boundary": "InteractionOverlay的portal使用必须另修坐标尺度R1"
+    },
+    {
+      "object": "CardSpotlightOverlay",
+      "finding": "普通autoCloseDelay undefined → 原SpotlightContainer.disableAutoClose=true，复用正确；显式教程delay保留。内容点击不关闭、空白明确关闭语义保留。",
+      "boundary": "教程显式3秒不在本轮修改范围，不能称整个项目阅读展示全部通过"
+    },
+    {
+      "object": "CenterBoard preparedSpells",
+      "finding": "仅移除固定满高、写死比例和第二层白框，真实CardPreview拥有原图比例；原横滚、物理槽、点击本卡放大沿用。",
+      "boundary": "真实截图仍需确认剩余容器高度与数量/横滚入口"
+    },
+    {
+      "object": "ChoiceObjectSelection / Board / BoardOverlays",
+      "finding": "仅转发已有setMagnifiedCard至现有完整卡池；未建立第二套reading状态。原候选id仍为规则option提交，阅读不选择。单卡比率由正式atlas meta取得并约束高度。",
+      "boundary": "多卡阅读仍写死0.61，是既有链，本轮未改；不外推已通过"
+    },
+    {
+      "object": "ChoiceModal / GameButton / GameModal",
+      "finding": "secondary取消恢复及平面高对比单列选项有用户既定裁定；normal footer无shrink0与90b7dba67^旧原组件一致，compact独立保留。未发现为本轮另造对象列表。",
+      "boundary": "共享消费者实际视觉覆盖不得超出本轮代表态"
+    }
+  ],
+  "testReview": {
+    "behaviorUnitLog": "temp/doctor-full-final-behavior-unit.log",
+    "observed": "该日志已读为6files/67tests passed含hook8项，属于此前实际执行记录，不外推当前改后所有行为或视觉通过",
+    "e2eLog": "temp/doctor-full-current-e2e.log",
+    "observedAtReview": "14 tests运行中；桌面宇宙感知、状态、值得拥有通过，横屏宇宙感知失败，尚无完整最终结果",
+    "meaning": "仅运行与行为事实，不是任何画面验收通过",
+    "finalE2eLog": "temp/doctor-full-r5-e2e.log",
+    "finalObservedAtFollowup": "R5完整重采已启动，最终实际run=e2e-1793525351005-77m5hl；本报告不读取半跑截图、不外推通过"
+  },
+  "sceneReview": {
+    "existingFourNewTests": "真实手牌/正式选择承接保留，R2正式卡区缺牌已修；最终执行结果另记",
+    "discardRing": "从真实card-strange-cast-away进入准备区施放环，再入8张弃牌候选；第一张用vapors无新增目标分派，第二次skip合理，未发现跳过真实选择结果",
+    "allPlayer": "card-strange-time-loop真实目标四人，选队友、再点取消、确认；后续真实打mists准备，本轮每回合一次被动前未使用，未发现prepare-hand虚构入口",
+    "status": "实际手牌瓦图姆之风分多持有人及空状态skip，仍走正式ChoiceObjectSelection/ChoiceModal分派"
+  },
+  "visualReview": "按指令未重读旧图，也未对新图作视觉审查；不准把本报告当UI PASS",
+  "constraints": "只写temp/doctor-full-code-review-20261101.json，不改产品/测试/规范/主任务文档，保留并发工作区",
+  "remainingRisks": [
+    "R5全部真实源与独立逐图审查仍待完成；R4三项旧视觉失败保留为历史而非当前PASS",
+    "新variant文案源码已补，必须由最终原分支图确认实际可读",
+    "只证明本轮真实双持有人遮挡修复，未声明所有未来密集Tooltip布局可无条件容纳",
+    "实体手机触控/长按和浏览器真实断线恢复仍未由本报告直接验证"
+  ],
+  "snapshotFiles": {
+    "src/components/common/overlays/InfoTooltip.tsx": "08dd720029c5156179c207dadeee5bb0ba6efbd24b1043199dc275c11744ffa6",
+    "src/components/__tests__/InfoTooltipLayer.test.tsx": "459f6e57e7e6ab3daa7d65b49148b6c9c7bc59e4cddf8bfa9e062328e40aa699",
+    "src/games/dicethrone/ui/statusEffects.tsx": "eb036b203c8c999633d0c314c1e0cca7cf676d80bf40508fbf020c6f9d597413",
+    "src/games/dicethrone/ui/InteractionOverlay.tsx": "ca58ece82de06d16ae14e5b1bbf376d6b613f75fa75232f1d7aee834fb8ceb92",
+    "src/games/dicethrone/ui/GameHints.tsx": "232646fd467e21da5f23d0bbf11bf7ef37ef2979dfaed65ef506952911182b52",
+    "src/games/dicethrone/Board.tsx": "87abe359dda3777a2a26c90f6598a9a65eb6b134397093ca04fbfe0091f89bc0",
+    "src/games/dicethrone/ui/CardSpotlightOverlay.tsx": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+    "src/games/dicethrone/ui/CenterBoard.tsx": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+    "src/games/dicethrone/ui/handLayoutConstants.ts": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+    "src/games/dicethrone/ui/HandArea.tsx": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+    "src/games/dicethrone/ui/abilityChoiceText.ts": "f038573ee890fb4095e5a7ccc747e5689b5d14b870484df72aae1f001eccd309",
+    "public/locales/zh-CN/game-dicethrone.json": "7d1142097333e601fdb02f0d679a8bc3d116ae63435b2cff58de04f02fa32dc6",
+    "public/locales/en/game-dicethrone.json": "81d2ee3537c7e5a2cedb5ff3e0e0d5f3d36adcb298e47035259a4a1ab24ba3bf",
+    "e2e/dicethrone/doctor-strange-real-entry.e2e.ts": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643"
+  },
+  "reviewHistory": [
+    {
+      "reviewedAt": "2026-11-01T08:27:43.556Z",
+      "verdict": "退回",
+      "findings": [
+        {
+          "id": "R1",
+          "priority": "P1",
+          "title": "portal候选宽度与容量计算使用不同坐标尺度",
+          "source": [
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 26
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 47
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 472
+            },
+            {
+              "file": "src/components/system/ModalStackRoot.tsx",
+              "line": 75
+            },
+            {
+              "file": "src/index.css",
+              "line": 706
+            },
+            {
+              "file": "src/index.css",
+              "line": 1207
+            }
+          ],
+          "consequence": "移动壳scale不为1时，候选在modal-root按逻辑壳单位直接渲染，容量却按乘scale后的屏幕宽计算，实际排布和搜索门槛不一致。横屏单张卡高度会超过原50vh滚动区而裁切，且候选与手牌并非同一实际尺寸。",
+          "evidence": "CARD_POOL_CARD_WIDTH=buildBoardShellInlineUnitValue(12)，modal-root不在.mobile-board-shell transform内。capacity cardWidth=readBoardShellInlineUnitPixelValue()*readBoardShellScaleValue()*12。移动横屏CSS逻辑inline-unit=19.2px，渲染宽230.4px，博士frame669/1086对应高约374px，而375高视口的max-h=187.5px。",
+          "blocker": "候选默认比较可读性和横屏完整性是用户本轮目标，不能用放大阅读或单测通过抵消；当前真实E2E横屏宇宙感知已报告失败，但本报告未把失败详情归因给本项。",
+          "minimalRemedy": "先量portal候选、壳内手牌、scale及容器裁切；让候选实际宽度与容量使用同一屏幕尺度，且按目标可读性调合法容器承载。不得仅缩回难读缩略图。重跑本轮受影响桌面/横屏卡区图审。",
+          "status": "已即时回报主代理；本报告快照仍待修复"
+        },
+        {
+          "id": "R2",
+          "priority": "P2",
+          "title": "新增代表态夹具丢失其它席位的起手牌",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2459
+            },
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2463
+            },
+            {
+              "file": "src/games/dicethrone/domain/characters.ts",
+              "line": 558
+            }
+          ],
+          "consequence": "initHeroState已从deck移出4张起手牌；直接hand=[]后没有放回正式deck/discard，对非博士席位永久丢失4张卡。该补证前态不是完整合法卡区状态，且弱化其它玩家手牌上下文。",
+          "evidence": "buildDoctorUiPlayers先对每个席位hand=[]，只有players[0]后续完整重建牌库/手牌/准备区，其余玩家未重建或转移。",
+          "blocker": "本轮补证明确要求合法正式来源前态；不能把非法缺牌前态标为合法代表态。",
+          "minimalRemedy": "其它席位保留initHeroState原hand；若空手确有场景需要，把原4张转入正式discard/deck并保持总数/唯一归属，再以真实动作触发目标。",
+          "status": "已即时回报主代理；本报告快照仍待修复"
+        },
+        {
+          "id": "R3",
+          "priority": "P2",
+          "category": "verification-gap",
+          "title": "resize不能证明同步或重挂载期间持续阅读",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 1339
+            },
+            {
+              "file": "src/games/dicethrone/ui/__tests__/CardSpotlightOverlay.test.tsx",
+              "line": 86
+            }
+          ],
+          "consequence": "来源卡>3秒和resize持续可见已实际断言，但同一DOM的视口变化及React rerender不触发Hook卸载恢复，也没有真实联机resync。若把它写成同步/重挂载通过会越权。",
+          "evidence": "E2E只setViewportSize(1441→1440)；组件单测仅rerender(renderCard())。既有useCardSpotlight.rollback.test.tsx:280和320才包含unmount/remount与空EventStream恢复；当前58项日志未跑该文件。",
+          "blocker": "UI阅读标准要求明确关闭前持续，含同步/重挂载边界；现有证据只覆盖timer/resize/rerender。",
+          "minimalRemedy": "复用并执行既有useCardSpotlight.rollback.test.tsx对应行为验证；当前E2E准确声明为resize，浏览器真实同步/重挂载未验证则明确保留边界，不能宣布全覆盖。",
+          "status": "已回报已有测试位置，无需新建旁路/产品状态"
+        }
+      ],
+      "snapshotFiles": {
+        "src/games/dicethrone/ui/InteractionOverlay.tsx": "eec244a7d4919d04a1a8744d9af987b60889be039425c5f5896d82c15077278c",
+        "src/games/dicethrone/ui/GameHints.tsx": "ed1ff3209df99373381c8d4619dd694c9384c729e1da08d1c97b9583c8fb1bd7",
+        "src/games/dicethrone/ui/CardSpotlightOverlay.tsx": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+        "src/games/dicethrone/ui/CenterBoard.tsx": "f7f3928bb871e7e4171503c64f79f11200845c07cb8471737c692f2a66960dd9",
+        "src/games/dicethrone/ui/handLayoutConstants.ts": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+        "src/games/dicethrone/ui/HandArea.tsx": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+        "e2e/dicethrone/doctor-strange-real-entry.e2e.ts": "f2df272e8139af1def0dbc624d9ec3bbea1d01d8e2282072dfac89ac1ae7af57"
+      }
+    },
+    {
+      "reviewedAt": "2026-11-01T08:30:08.971Z",
+      "verdict": "代码复核通过；视觉验收未判定",
+      "findings": [
+        {
+          "id": "R1",
+          "priority": "P1",
+          "title": "portal候选宽度与容量计算使用不同坐标尺度",
+          "source": [
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 26
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 47
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 472
+            },
+            {
+              "file": "src/components/system/ModalStackRoot.tsx",
+              "line": 75
+            },
+            {
+              "file": "src/index.css",
+              "line": 706
+            },
+            {
+              "file": "src/index.css",
+              "line": 1207
+            }
+          ],
+          "consequence": "移动壳scale不为1时，候选在modal-root按逻辑壳单位直接渲染，容量却按乘scale后的屏幕宽计算，实际排布和搜索门槛不一致。横屏单张卡高度会超过原50vh滚动区而裁切，且候选与手牌并非同一实际尺寸。",
+          "evidence": "CARD_POOL_CARD_WIDTH=buildBoardShellInlineUnitValue(12)，modal-root不在.mobile-board-shell transform内。capacity cardWidth=readBoardShellInlineUnitPixelValue()*readBoardShellScaleValue()*12。移动横屏CSS逻辑inline-unit=19.2px，渲染宽230.4px，博士frame669/1086对应高约374px，而375高视口的max-h=187.5px。",
+          "blocker": "候选默认比较可读性和横屏完整性是用户本轮目标，不能用放大阅读或单测通过抵消；当前真实E2E横屏宇宙感知已报告失败，但本报告未把失败详情归因给本项。",
+          "minimalRemedy": "先量portal候选、壳内手牌、scale及容器裁切；让候选实际宽度与容量使用同一屏幕尺度，且按目标可读性调合法容器承载。不得仅缩回难读缩略图。重跑本轮受影响桌面/横屏卡区图审。",
+          "status": "已定点源码复核修复：portal宽与容量同一inlineUnit*scale*12；实际最终画面需另验",
+          "blocking": false
+        },
+        {
+          "id": "R2",
+          "priority": "P2",
+          "title": "新增代表态夹具丢失其它席位的起手牌",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2459
+            },
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2463
+            },
+            {
+              "file": "src/games/dicethrone/domain/characters.ts",
+              "line": 558
+            }
+          ],
+          "consequence": "initHeroState已从deck移出4张起手牌；直接hand=[]后没有放回正式deck/discard，对非博士席位永久丢失4张卡。该补证前态不是完整合法卡区状态，且弱化其它玩家手牌上下文。",
+          "evidence": "buildDoctorUiPlayers先对每个席位hand=[]，只有players[0]后续完整重建牌库/手牌/准备区，其余玩家未重建或转移。",
+          "blocker": "本轮补证明确要求合法正式来源前态；不能把非法缺牌前态标为合法代表态。",
+          "minimalRemedy": "其它席位保留initHeroState原hand；若空手确有场景需要，把原4张转入正式discard/deck并保持总数/唯一归属，再以真实动作触发目标。",
+          "status": "已定点源码复核修复：其它席位保留initHeroState正式hand；博士单独完整重建卡区",
+          "blocking": false
+        },
+        {
+          "id": "R3",
+          "priority": "P2",
+          "category": "verification-gap",
+          "title": "resize不能证明同步或重挂载期间持续阅读",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 1339
+            },
+            {
+              "file": "src/games/dicethrone/ui/__tests__/CardSpotlightOverlay.test.tsx",
+              "line": 86
+            }
+          ],
+          "consequence": "来源卡>3秒和resize持续可见已实际断言，但同一DOM的视口变化及React rerender不触发Hook卸载恢复，也没有真实联机resync。若把它写成同步/重挂载通过会越权。",
+          "evidence": "E2E只setViewportSize(1441→1440)；组件单测仅rerender(renderCard())。既有useCardSpotlight.rollback.test.tsx:280和320才包含unmount/remount与空EventStream恢复；当前58项日志未跑该文件。",
+          "blocker": "UI阅读标准要求明确关闭前持续，含同步/重挂载边界；现有证据只覆盖timer/resize/rerender。",
+          "minimalRemedy": "复用并执行既有useCardSpotlight.rollback.test.tsx对应行为验证；当前E2E准确声明为resize，浏览器真实同步/重挂载未验证则明确保留边界，不能宣布全覆盖。",
+          "status": "已按主代理明确证据分层收口：resize仅声明resize；hook同步/重挂载已有测试另跑另记，不宣称浏览器断线恢复已验",
+          "blocking": false
+        }
+      ],
+      "snapshotFiles": {
+        "src/games/dicethrone/ui/InteractionOverlay.tsx": "4217e41f19d3e691d48d39820014dbf4cdc62382229d8ea4ee01d75577f96e1f",
+        "src/games/dicethrone/ui/GameHints.tsx": "ed1ff3209df99373381c8d4619dd694c9384c729e1da08d1c97b9583c8fb1bd7",
+        "src/games/dicethrone/ui/CardSpotlightOverlay.tsx": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+        "src/games/dicethrone/ui/CenterBoard.tsx": "f7f3928bb871e7e4171503c64f79f11200845c07cb8471737c692f2a66960dd9",
+        "src/games/dicethrone/ui/handLayoutConstants.ts": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+        "src/games/dicethrone/ui/HandArea.tsx": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+        "e2e/dicethrone/doctor-strange-real-entry.e2e.ts": "3b50d86f9794a60092bda5f103e2a89c11c60e21efb364a81560508f74119456"
+      },
+      "followupReview": {
+        "reviewedAt": "2026-11-01T08:30:08.971Z",
+        "scope": "仅复核R1/R2修复与检视控件必要避让、短屏容量最小调整；不重读旧图不扩规范",
+        "sourceFacts": [
+          {
+            "object": "InteractionOverlay CARD_POOL_CARD_WIDTH",
+            "line": 26,
+            "finding": "CSS明确乘var(--mobile-board-shell-scale,1)，与getCardPoolSingleRowCapacity使用同一屏幕尺度；原HandArea同值未改"
+          },
+          {
+            "object": "InteractionOverlay candidate reading",
+            "line": 495,
+            "finding": "同一个原CardInspectButton位于相对wrapper的pb-9预留36px区域，bottom-0/left-1/2；maxSize28，牌面本身与控件有独立纵向槽；未改共享CardInspectButton源码、原onInspect/长按/阅读状态继续复用"
+          },
+          {
+            "object": "InteractionOverlay short viewport",
+            "line": 404,
+            "finding": "top clamp最小2.5rem及max56vh只扩原候选承载，不另造折叠/状态/皮肤；最终可读性和保护槽位由本轮实际整屏图审决定"
+          },
+          {
+            "object": "E2E buildDoctorUiPlayers",
+            "line": 2459,
+            "finding": "删除对所有玩家hand=[]，其它席位4张起手牌保留；players[0]由DOCTOR_STRANGE_CARDS按hand/prepared排除后重建deck，总32张单一归属"
+          }
+        ],
+        "notEstablished": [
+          "最终14条重跑结果尚未全部返回",
+          "本报告不判任何逐图视觉PASS",
+          "实体手机触屏长按、浏览器真实断线/重同步仍未在本报告直接验证",
+          "hook恢复测试必须按真实运行结果单列，不由本报告代跑或推定通过"
+        ]
+      }
+    },
+    {
+      "reviewedAt": "2026-11-01T09:05:15.475Z",
+      "verdict": "退回：新ratio调用违反nullable预览引用契约；视觉验收未判定",
+      "findings": [
+        {
+          "id": "R1",
+          "priority": "P1",
+          "title": "portal候选宽度与容量计算使用不同坐标尺度",
+          "source": [
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 26
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 47
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 472
+            },
+            {
+              "file": "src/components/system/ModalStackRoot.tsx",
+              "line": 75
+            },
+            {
+              "file": "src/index.css",
+              "line": 706
+            },
+            {
+              "file": "src/index.css",
+              "line": 1207
+            }
+          ],
+          "consequence": "移动壳scale不为1时，候选在modal-root按逻辑壳单位直接渲染，容量却按乘scale后的屏幕宽计算，实际排布和搜索门槛不一致。横屏单张卡高度会超过原50vh滚动区而裁切，且候选与手牌并非同一实际尺寸。",
+          "evidence": "CARD_POOL_CARD_WIDTH=buildBoardShellInlineUnitValue(12)，modal-root不在.mobile-board-shell transform内。capacity cardWidth=readBoardShellInlineUnitPixelValue()*readBoardShellScaleValue()*12。移动横屏CSS逻辑inline-unit=19.2px，渲染宽230.4px，博士frame669/1086对应高约374px，而375高视口的max-h=187.5px。",
+          "blocker": "候选默认比较可读性和横屏完整性是用户本轮目标，不能用放大阅读或单测通过抵消；当前真实E2E横屏宇宙感知已报告失败，但本报告未把失败详情归因给本项。",
+          "minimalRemedy": "先量portal候选、壳内手牌、scale及容器裁切；让候选实际宽度与容量使用同一屏幕尺度，且按目标可读性调合法容器承载。不得仅缩回难读缩略图。重跑本轮受影响桌面/横屏卡区图审。",
+          "status": "已定点源码复核修复：portal宽与容量同一inlineUnit*scale*12；实际最终画面需另验",
+          "blocking": false
+        },
+        {
+          "id": "R2",
+          "priority": "P2",
+          "title": "新增代表态夹具丢失其它席位的起手牌",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2459
+            },
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2463
+            },
+            {
+              "file": "src/games/dicethrone/domain/characters.ts",
+              "line": 558
+            }
+          ],
+          "consequence": "initHeroState已从deck移出4张起手牌；直接hand=[]后没有放回正式deck/discard，对非博士席位永久丢失4张卡。该补证前态不是完整合法卡区状态，且弱化其它玩家手牌上下文。",
+          "evidence": "buildDoctorUiPlayers先对每个席位hand=[]，只有players[0]后续完整重建牌库/手牌/准备区，其余玩家未重建或转移。",
+          "blocker": "本轮补证明确要求合法正式来源前态；不能把非法缺牌前态标为合法代表态。",
+          "minimalRemedy": "其它席位保留initHeroState原hand；若空手确有场景需要，把原4张转入正式discard/deck并保持总数/唯一归属，再以真实动作触发目标。",
+          "status": "已定点源码复核修复：其它席位保留initHeroState正式hand；博士单独完整重建卡区",
+          "blocking": false
+        },
+        {
+          "id": "R3",
+          "priority": "P2",
+          "category": "verification-gap",
+          "title": "resize不能证明同步或重挂载期间持续阅读",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 1339
+            },
+            {
+              "file": "src/games/dicethrone/ui/__tests__/CardSpotlightOverlay.test.tsx",
+              "line": 86
+            }
+          ],
+          "consequence": "来源卡>3秒和resize持续可见已实际断言，但同一DOM的视口变化及React rerender不触发Hook卸载恢复，也没有真实联机resync。若把它写成同步/重挂载通过会越权。",
+          "evidence": "E2E只setViewportSize(1441→1440)；组件单测仅rerender(renderCard())。既有useCardSpotlight.rollback.test.tsx:280和320才包含unmount/remount与空EventStream恢复；当前58项日志未跑该文件。",
+          "blocker": "UI阅读标准要求明确关闭前持续，含同步/重挂载边界；现有证据只覆盖timer/resize/rerender。",
+          "minimalRemedy": "复用并执行既有useCardSpotlight.rollback.test.tsx对应行为验证；当前E2E准确声明为resize，浏览器真实同步/重挂载未验证则明确保留边界，不能宣布全覆盖。",
+          "status": "已按主代理明确证据分层收口：resize仅声明resize；hook同步/重挂载已有测试另跑另记，不宣称浏览器断线恢复已验",
+          "blocking": false
+        },
+        {
+          "id": "R4",
+          "priority": "P2",
+          "title": "新增ratio读取直接传入nullable previewRef",
+          "source": [
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 383
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 515
+            },
+            {
+              "file": "src/games/dicethrone/ui/cardPreviewHelper.ts",
+              "line": 54
+            },
+            {
+              "file": "src/components/common/media/CardPreview.tsx",
+              "line": 110
+            }
+          ],
+          "consequence": "两处新调用输入是CardPreviewRef|null，但getCardPreviewAspectRatio仅接受CardPreviewRef，立即读.type。严格TypeScript下参数不兼容；若既有helper无ref路径进入则直接抛错，破坏原CardPreview无ref承接。",
+          "evidence": "candidateMaxAspectRatio map使用card.previewRef ?? getDiceThroneCardPreviewRef(...)直接传函数；渲染map中previewRef亦直接传函数。helper签名明确CardPreviewRef|null，ratio getter签名明确CardPreviewRef。",
+          "blocker": "这是本轮新增调用方违反现有公开契约，不由当前67项单测通过抵消；不得把未知数据可用性假定当类型收口。",
+          "minimalRemedy": "只在两处已有previewRef truthy时读取ratio；否则延用本来undefined ratio路径。不改变共享getter契约、不增加假素材/第二套状态或无现实入口兜底。",
+          "status": "已即时回报主代理，待最窄调用方修复",
+          "blocking": true
+        }
+      ],
+      "snapshotFiles": {
+        "src/games/dicethrone/ui/InteractionOverlay.tsx": "008bb49b59218c6d7da38d01bc75f6973491cf1ce4a367c919019ddefb0f15eb",
+        "src/games/dicethrone/ui/GameHints.tsx": "232646fd467e21da5f23d0bbf11bf7ef37ef2979dfaed65ef506952911182b52",
+        "src/games/dicethrone/ui/CardSpotlightOverlay.tsx": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+        "src/games/dicethrone/ui/CenterBoard.tsx": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+        "src/games/dicethrone/ui/handLayoutConstants.ts": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+        "src/games/dicethrone/ui/HandArea.tsx": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+        "e2e/dicethrone/doctor-strange-real-entry.e2e.ts": "3bea4a5751d2c1bd27a70888c789fc5b81830bb40403158d3d90397b8f8c8cb6",
+        "src/components/common/media/CardPreview.tsx": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269",
+        "src/games/dicethrone/ui/cardPreviewHelper.ts": "f3c6fdacbf559b2dc3ef86bc3bafe1cd5ecd532c537b55f36ee827831aed0302"
+      },
+      "followupReview": {
+        "reviewedAt": "2026-11-01T09:05:15.475Z",
+        "scope": "最终目标增量只读源码/E2E复核，不读取旧图、不新增规范、不执行重跑",
+        "sourceFacts": [
+          {
+            "object": "CenterBoard prepared zone",
+            "line": 175,
+            "finding": "只在博士有preparedSpells的实际区域设zIndex=UI_Z_INDEX.hud+1，跨过原同板AbilityOverlays hud层；原滚动/点击/比例owner保持，未抬整板或所有英雄层级。来源是先前call log sky/strange-book-of-vishanti拦截。"
+          },
+          {
+            "object": "buildDoctorUiPlayers",
+            "line": 2493,
+            "finding": "initHeroState各席位保留原hand，显式CP/cp3和HP/hp50按既有Worthy夹具；博士hand/prepared/remainingDeck从完整正式32卡重建。弃牌环样本另将8法术归discard并从deck剔除，无重复归属。"
+          },
+          {
+            "object": "cast-away trigger",
+            "line": 2648,
+            "finding": "前态清楚注释为确认后合法代表态；真实点combo，出现原AbilityChoiceModal则真实选大顺，断言pendingAttack.sourceAbilityId为mystic-bolt家族后才拖cast-away。没有注入pendingAttack/choice/最终结果，未放宽正式规则。"
+          },
+          {
+            "object": "CardPool short-screen owner",
+            "line": 33,
+            "finding": "max-height540 CSS仅改同一个现有CardPool DOM的grid/滚动方向/原title-search-actions位置，未引入新的card数据、选择状态、阅读状态或产品owner。高度按runtimeviewport-safeTop-safeBottom-3.5rem，包含36px inspect、原selection顶部与surfacepadding；检视仍CardInspectButton。"
+          },
+          {
+            "object": "CardPool sizing",
+            "line": 26,
+            "finding": "PC及height>540使用屏幕hand unit*scale*12；短屏按正式card ratio从可用高度求每卡宽，避免在短屏继续把完整牌面压成原90px缩略图。横向滚动只影响实际候选承载，不改变授权集合。"
+          },
+          {
+            "object": "CardPool capacity approximation",
+            "line": 66,
+            "finding": "短屏JS以innerHeight-rootFont*4近似CSS可读高，在零小安全区与runtimeHeight=innerHeight时相等；侧栏按9.25rem加原96px安全预算，gap16比实际clamp gap保守。非零notch或visualViewport键盘时并非精确同一量，通常更早显示搜索；本报告未把它当像素等价证明。"
+          },
+          {
+            "object": "Hook sync/remount verification",
+            "finding": "temp/doctor-full-final-behavior-unit.log实际6files/67tests通过，含既有useCardSpotlight.rollback8项的水位回退、unmount/remount、空EventStream恢复；仍与浏览器resize分开，不能称浏览器真实断线恢复已验。"
+          }
+        ],
+        "boundaries": [
+          "所谓PC不变限height>540；max-height540 media也会作用于短高度桌面窗口，不能汇报所有桌面尺寸均无变化",
+          "CSS读图、候选正文尺寸、保护槽位与负向影响仍必须由本轮新整屏原图审计",
+          "当前完整14条未全部收口，已出现值得拥有/全知之眼失败；本报告没有诊断或以它们判断产品根因",
+          "R4为调用方契约问题；不要求扩成全仓防护代码"
+        ]
+      }
+    },
+    {
+      "reviewedAt": "2026-11-01T09:10:08.130Z",
+      "verdict": "当前目标代码复核通过；最终E2E与逐图视觉验收未判定",
+      "findings": [
+        {
+          "id": "R1",
+          "priority": "P1",
+          "title": "portal候选宽度与容量计算使用不同坐标尺度",
+          "source": [
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 26
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 47
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 472
+            },
+            {
+              "file": "src/components/system/ModalStackRoot.tsx",
+              "line": 75
+            },
+            {
+              "file": "src/index.css",
+              "line": 706
+            },
+            {
+              "file": "src/index.css",
+              "line": 1207
+            }
+          ],
+          "consequence": "移动壳scale不为1时，候选在modal-root按逻辑壳单位直接渲染，容量却按乘scale后的屏幕宽计算，实际排布和搜索门槛不一致。横屏单张卡高度会超过原50vh滚动区而裁切，且候选与手牌并非同一实际尺寸。",
+          "evidence": "CARD_POOL_CARD_WIDTH=buildBoardShellInlineUnitValue(12)，modal-root不在.mobile-board-shell transform内。capacity cardWidth=readBoardShellInlineUnitPixelValue()*readBoardShellScaleValue()*12。移动横屏CSS逻辑inline-unit=19.2px，渲染宽230.4px，博士frame669/1086对应高约374px，而375高视口的max-h=187.5px。",
+          "blocker": "候选默认比较可读性和横屏完整性是用户本轮目标，不能用放大阅读或单测通过抵消；当前真实E2E横屏宇宙感知已报告失败，但本报告未把失败详情归因给本项。",
+          "minimalRemedy": "先量portal候选、壳内手牌、scale及容器裁切；让候选实际宽度与容量使用同一屏幕尺度，且按目标可读性调合法容器承载。不得仅缩回难读缩略图。重跑本轮受影响桌面/横屏卡区图审。",
+          "status": "已定点源码复核修复：portal宽与容量同一inlineUnit*scale*12；实际最终画面需另验",
+          "blocking": false
+        },
+        {
+          "id": "R2",
+          "priority": "P2",
+          "title": "新增代表态夹具丢失其它席位的起手牌",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2459
+            },
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 2463
+            },
+            {
+              "file": "src/games/dicethrone/domain/characters.ts",
+              "line": 558
+            }
+          ],
+          "consequence": "initHeroState已从deck移出4张起手牌；直接hand=[]后没有放回正式deck/discard，对非博士席位永久丢失4张卡。该补证前态不是完整合法卡区状态，且弱化其它玩家手牌上下文。",
+          "evidence": "buildDoctorUiPlayers先对每个席位hand=[]，只有players[0]后续完整重建牌库/手牌/准备区，其余玩家未重建或转移。",
+          "blocker": "本轮补证明确要求合法正式来源前态；不能把非法缺牌前态标为合法代表态。",
+          "minimalRemedy": "其它席位保留initHeroState原hand；若空手确有场景需要，把原4张转入正式discard/deck并保持总数/唯一归属，再以真实动作触发目标。",
+          "status": "已定点源码复核修复：其它席位保留initHeroState正式hand；博士单独完整重建卡区",
+          "blocking": false
+        },
+        {
+          "id": "R3",
+          "priority": "P2",
+          "category": "verification-gap",
+          "title": "resize不能证明同步或重挂载期间持续阅读",
+          "source": [
+            {
+              "file": "e2e/dicethrone/doctor-strange-real-entry.e2e.ts",
+              "line": 1339
+            },
+            {
+              "file": "src/games/dicethrone/ui/__tests__/CardSpotlightOverlay.test.tsx",
+              "line": 86
+            }
+          ],
+          "consequence": "来源卡>3秒和resize持续可见已实际断言，但同一DOM的视口变化及React rerender不触发Hook卸载恢复，也没有真实联机resync。若把它写成同步/重挂载通过会越权。",
+          "evidence": "E2E只setViewportSize(1441→1440)；组件单测仅rerender(renderCard())。既有useCardSpotlight.rollback.test.tsx:280和320才包含unmount/remount与空EventStream恢复；当前58项日志未跑该文件。",
+          "blocker": "UI阅读标准要求明确关闭前持续，含同步/重挂载边界；现有证据只覆盖timer/resize/rerender。",
+          "minimalRemedy": "复用并执行既有useCardSpotlight.rollback.test.tsx对应行为验证；当前E2E准确声明为resize，浏览器真实同步/重挂载未验证则明确保留边界，不能宣布全覆盖。",
+          "status": "已按主代理明确证据分层收口：resize仅声明resize；hook同步/重挂载已有测试另跑另记，不宣称浏览器断线恢复已验",
+          "blocking": false
+        },
+        {
+          "id": "R4",
+          "priority": "P2",
+          "title": "新增ratio读取直接传入nullable previewRef",
+          "source": [
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 383
+            },
+            {
+              "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+              "line": 515
+            },
+            {
+              "file": "src/games/dicethrone/ui/cardPreviewHelper.ts",
+              "line": 54
+            },
+            {
+              "file": "src/components/common/media/CardPreview.tsx",
+              "line": 110
+            }
+          ],
+          "consequence": "两处新调用输入是CardPreviewRef|null，但getCardPreviewAspectRatio仅接受CardPreviewRef，立即读.type。严格TypeScript下参数不兼容；若既有helper无ref路径进入则直接抛错，破坏原CardPreview无ref承接。",
+          "evidence": "candidateMaxAspectRatio map使用card.previewRef ?? getDiceThroneCardPreviewRef(...)直接传函数；渲染map中previewRef亦直接传函数。helper签名明确CardPreviewRef|null，ratio getter签名明确CardPreviewRef。",
+          "blocker": "这是本轮新增调用方违反现有公开契约，不由当前67项单测通过抵消；不得把未知数据可用性假定当类型收口。",
+          "minimalRemedy": "只在两处已有previewRef truthy时读取ratio；否则延用本来undefined ratio路径。不改变共享getter契约、不增加假素材/第二套状态或无现实入口兜底。",
+          "status": "已定点复核修复：两处先判定既有previewRef存在才读ratio；无ref延用原undefined/0比率路径，仅履行既有nullable API合同，不扩非法状态兜底。",
+          "blocking": false
+        }
+      ],
+      "snapshotFiles": {
+        "src/games/dicethrone/ui/InteractionOverlay.tsx": "6bbba5191957c226fbf282933a3bf8b980f0c3e216bc93e448d57e4929601192",
+        "src/games/dicethrone/ui/GameHints.tsx": "232646fd467e21da5f23d0bbf11bf7ef37ef2979dfaed65ef506952911182b52",
+        "src/games/dicethrone/Board.tsx": "87abe359dda3777a2a26c90f6598a9a65eb6b134397093ca04fbfe0091f89bc0",
+        "src/games/dicethrone/ui/CardSpotlightOverlay.tsx": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+        "src/games/dicethrone/ui/CenterBoard.tsx": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+        "src/games/dicethrone/ui/handLayoutConstants.ts": "743a776c08a887e9270c81a0c9a1e547835b767755412aa4237344985ce5d869",
+        "src/games/dicethrone/ui/HandArea.tsx": "21759366c36c514b7ca2d667de747f3ec55e3c069eb2b725d3fe9fc0f8a63630",
+        "e2e/dicethrone/doctor-strange-real-entry.e2e.ts": "3bea4a5751d2c1bd27a70888c789fc5b81830bb40403158d3d90397b8f8c8cb6",
+        "src/components/common/media/CardPreview.tsx": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269",
+        "src/games/dicethrone/ui/cardPreviewHelper.ts": "f3c6fdacbf559b2dc3ef86bc3bafe1cd5ecd532c537b55f36ee827831aed0302",
+        "src/games/dicethrone/ui/__tests__/GameHints.test.tsx": "780a6c01e0ebfa095edc181b7fab8c10696bcb03edfb26b899009308dd1442c6"
+      },
+      "followupReview": {
+        "reviewedAt": "2026-11-01T09:10:08.130Z",
+        "scope": "最终nullable调用修正及共享GameHints placement归属定点复核；其它此前认可的最窄层级/夹具/真实攻击入口沿用源码核验事实，不沿用任何视觉PASS",
+        "sourceFacts": [
+          {
+            "object": "candidateMaxAspectRatio",
+            "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+            "line": 383,
+            "finding": "先解析既有previewRef，仅truthy调用getCardPreviewAspectRatio；null沿用0，不改共享getter、素材或规则状态。"
+          },
+          {
+            "object": "candidate rendered ratio",
+            "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+            "line": 516,
+            "finding": "同一个previewRef存在性判定后读ratio，否则undefined；原正式卡面和有无可检视素材判定不变。"
+          },
+          {
+            "object": "GameHints explicit placement",
+            "file": "src/games/dicethrone/ui/GameHints.tsx",
+            "line": 143,
+            "finding": "placement为显式props；left分支继续旧左中琥珀单行、原间距字号动画，top分支保留另一线程Thor双行覆盖，未合并成共享默认。"
+          },
+          {
+            "object": "Board placement consumer",
+            "file": "src/games/dicethrone/Board.tsx",
+            "line": 2691,
+            "finding": "唯一生产GameHints消费点仅handOwner.characterId=thor用top，其余原英雄left；handOwner=观战viewPlayer否则player，Worthy操作者投掷者Monk视角回left，避免将非Doctor身份误当Thor。没有改变候选权限/操作权/实际骰owner。"
+          },
+          {
+            "object": "GameHints interface consumers",
+            "finding": "rg生产仅Board一个消费点，当前显式传参数；现有GameHints测试通过baseProps带left，单独top分支保持。未发现漏传新增必填props的生产消费者。"
+          }
+        ],
+        "boundaries": [
+          "本报告认可的是当前源码职责与最窄实现；不证明R4全14条已通过",
+          "R3 12/14只作历史失败记录，不晋升当前通过",
+          "短屏当前所有候选/搜索/重排/阅读等实际图面仍要由本轮各审查者独立判定",
+          "正常浏览器resize与hook同步重挂载分开登记，不宣称浏览器断线恢复已验",
+          "nullable存在性判断仅遵守已有API边界，不新增非法状态、影子状态或素材兜底"
+        ]
+      }
+    }
+  ],
+  "followupReview": {
+    "reviewedAt": "2026-11-01T09:32:36.270Z",
+    "scope": "多人说明遮挡的既有InfoTooltip最窄扩展及博士两变体文字补全；不改其它线程token涟漪，不用测试替代图面",
+    "sourceFacts": [
+      {
+        "object": "InfoTooltip optional avoidSelector",
+        "file": "src/components/common/overlays/InfoTooltip.tsx",
+        "line": 15,
+        "finding": "仅调用方显式提供avoidSelector时查询保护矩形并在旧位置冲突后找原四向/视口边缘空位；旧入口不传参数时旧左右翻转与viewportclamp逐段保持，未新增Tooltip组件/影子开关/产品状态。"
+      },
+      {
+        "object": "InfoTooltip geometry",
+        "file": "src/components/common/overlays/InfoTooltip.tsx",
+        "line": 100,
+        "finding": "避让正式调用方提供的owner/标题/按钮矩形，候选须同时满足12px视口留边与不交叠；没有合法新位时仍保留旧位置，因此代码本身不宣称所有未来极密布局均已解决，当前真实双持有人已另看新原图。"
+      },
+      {
+        "object": "statusEffects forwarding",
+        "file": "src/games/dicethrone/ui/statusEffects.tsx",
+        "line": 1313,
+        "finding": "SelectableEffectsContainer→SelectableStatusBadge→原InfoTooltip仅透传可选tooltipAvoidSelector，原状态集合、图标、hover/选中/关闭owner不变。当前文件git diff中的token涟漪属于别的线程，未把它当本轮tooltip修复或授权改动。"
+      },
+      {
+        "object": "InteractionOverlay multi-owner opt in",
+        "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+        "line": 756,
+        "finding": "只在targetPlayerIds>1状态持有人入口传avoidSelector，边界是同一dt-status-owners组，保护当前owner/h2/buttons。单持有人仍用原dt-game-modal边界且avoidSelector undefined；普通其他Tooltip默认不变。"
+      },
+      {
+        "object": "geometry regression",
+        "file": "src/components/__tests__/InfoTooltipLayer.test.tsx",
+        "line": 23,
+        "finding": "新增812×375真实问题形状：两个200×139持有人、顶部标题、下部中央按钮、320×68说明，断言最终矩形不交叠。既有默认层级/原左右翻转/上下一侧测试保持，测试仅证明这些几何合同。"
+      },
+      {
+        "object": "Doctor Strange branch text",
+        "file": "public/locales/zh-CN/game-dicethrone.json",
+        "line": 5592,
+        "finding": "只补strange-mystic-bolt-small/large两个正式变体name和description，明确6/9攻击后施放1法术；与locked录入合同28/29及abilities26/27一致，不改能力规则。英文相邻对应对象同义。"
+      },
+      {
+        "object": "existing text owner",
+        "file": "src/games/dicethrone/ui/abilityChoiceText.ts",
+        "line": 135,
+        "finding": "新locale键走原variantNameKey与variantDescriptionKey存在分支，避免原effect描述泛化；未修改共享resolver、原AbilityChoiceModal或其它英雄文本。E2E原选择入口另断言6/9实际正文。"
+      }
+    ],
+    "defaultImpact": "未传avoidSelector的共享Tooltip走原算法；单持有人不新增避让；只有已经被本轮新图证实遮挡的多人状态入口opt-in。",
+    "visualBoundary": "私有窄跑e2e-1793525232024-d0oukw两张已本人重读，桌面说明移右侧、横屏移候选下方左侧，标题/两状态/跳过无交叠；这不是R5最终同源通过，也不替代全部截图。",
+    "futureBoundary": "不为尚未实际触发的非法状态新增兜底。当前无空位时的旧位置行为未扩成保证；若未来真实合法密度失败，仍按实际图证据修复。"
+  }
+}

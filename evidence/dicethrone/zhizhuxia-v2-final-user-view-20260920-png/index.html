@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>蜘蛛侠 v2 · 当前 PNG 验收截图</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>蜘蛛侠 v2 · 当前 PNG 验收截图</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"交互-01-落网-普通攻击前.png","displayTitle":"交互 · 落网 · 普通攻击前","description":"已有落网，技能区普通攻击尚未进入防御。","kind":"image"},{"relativePath":"交互-02-落网-普通攻击前被消费.png","displayTitle":"交互 · 落网 · 普通攻击前被消费","description":"技能区普通攻击进入防御前消费落网。","kind":"image"},{"relativePath":"交互-03-手牌来源伤害-落网保留.png","displayTitle":"交互 · 手牌来源伤害 · 落网保留","description":"手牌直接伤害前，落网仍在。","kind":"image"},{"relativePath":"交互-03-蜘蛛发射器-施加落网前.png","displayTitle":"交互 · 蜘蛛发射器 · 施加落网前","description":"真实拖拽打牌前，对手生命为 50。","kind":"image"},{"relativePath":"交互-04-手牌来源伤害-不消费落网.png","displayTitle":"交互 · 手牌来源伤害 · 不消费落网","description":"手牌直接伤害结算后，落网仍保留。","kind":"image"},{"relativePath":"交互-04-蜘蛛发射器-落网与2点状态伤害已结算.png","displayTitle":"交互 · 蜘蛛发射器 · 落网与 2 点状态伤害已结算","description":"真实打牌后落网为 1，对手生命变为 48。","kind":"image"},{"relativePath":"交互-05-Token来源伤害-落网保留.png","displayTitle":"交互 · Token 来源伤害 · 落网保留","description":"Token 直接伤害前，落网仍在。","kind":"image"},{"relativePath":"交互-06-Token来源伤害-不消费落网.png","displayTitle":"交互 · Token 来源伤害 · 不消费落网","description":"Token 直接伤害结算后，落网仍保留。","kind":"image"},{"relativePath":"交互-07-蜘蛛感应-投出蜘蛛前.png","displayTitle":"交互 · 蜘蛛感应 · 投出蜘蛛前","description":"防御投骰前的蜘蛛感应状态。","kind":"image"},{"relativePath":"交互-08-蜘蛛感应-伤害减半结算.png","displayTitle":"交互 · 蜘蛛感应 · 伤害减半结算","description":"蜘蛛感应使技能区攻击伤害减半并向上取整。","kind":"image"},{"relativePath":"交互-09-飞荡脱身-蛛网骰面.png","displayTitle":"交互 · 飞荡脱身 · 蛛网骰面","description":"飞荡脱身使蛛网进入可判定的成功面候选。","kind":"image"},{"relativePath":"交互-10-飞荡脱身-蛛网视为成功面并减伤.png","displayTitle":"交互 · 飞荡脱身 · 蛛网视为成功面并减伤","description":"蛛网视为成功面并完成减伤结算。","kind":"image"},{"relativePath":"交互-11-隐形-不可防御伤害响应窗口.png","displayTitle":"交互 · 隐形 · 不可防御伤害响应窗口","description":"不可防御伤害窗口中的隐形入口。","kind":"image"},{"relativePath":"交互-12-隐形-伤害完全失效.png","displayTitle":"交互 · 隐形 · 伤害完全失效","description":"隐形成功后该段伤害完全失效。","kind":"image"},{"relativePath":"交互-13-隐形-防御投骰中可用.png","displayTitle":"交互 · 隐形 · 防御投骰中可用","description":"防御投骰阶段的隐形入口。","kind":"image"},{"relativePath":"交互-14-隐形-增加一次防御投骰.png","displayTitle":"交互 · 隐形 · 增加一次防御投骰","description":"消耗隐形后增加一次防御投骰。","kind":"image"},{"relativePath":"录入-01-蜘蛛侠选角-实施中状态.png","displayTitle":"录入 · 蜘蛛侠选角 · 实施中状态","description":"真实选角入口；角色仍保持实施中状态。","kind":"image"},{"relativePath":"录入-02-蜘蛛侠牌桌-玩家板与手牌.png","displayTitle":"录入 · 蜘蛛侠牌桌 · 玩家板与手牌","description":"真实进入牌桌后的玩家板和手牌。","kind":"image"},{"relativePath":"录入-03-蜘蛛侠正式专属卡图槽位.png","displayTitle":"录入 · 蜘蛛侠正式专属卡图槽位","description":"正式卡图槽位和图集渲染。","kind":"image"},{"relativePath":"录入-04-蜘蛛侠重拳二级升级后.png","displayTitle":"录入 · 蜘蛛侠重拳二级升级后","description":"从真实手牌入口打出升级牌后的技能替换。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

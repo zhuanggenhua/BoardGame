@@ -1,0 +1,32 @@
+{
+  "title": "大杀四方派系选择：单层选中效果与自动聚焦",
+  "media": [
+    {
+      "path": "01-labeled-faction-before.jpg",
+      "chainId": "smashup-faction-selection-final-r3",
+      "chainStep": "一",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "前态",
+      "description": "随机派系卡位于列表首位，玩家尚未选择真实派系。"
+    },
+    {
+      "path": "02-labeled-faction-selected.jpg",
+      "chainId": "smashup-faction-selection-final-r3",
+      "chainStep": "二",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "中态",
+      "description": "随机结果落地为动作英雄；红框明确指出当前视口中部的卡片，绿色说明标识单层选中效果。"
+    },
+    {
+      "path": "03-labeled-faction-after-scroll.jpg",
+      "chainId": "smashup-faction-selection-final-r3",
+      "chainStep": "三",
+      "sourceRun": "e2e/smashup/smashup-faction-random-selection.e2e.ts",
+      "sourceDir": "test-results/evidence-screenshots/smashup-faction-random-selection",
+      "stage": "后态",
+      "description": "继续滚动派系列表，选择流程保持可用。"
+    }
+  ]
+}

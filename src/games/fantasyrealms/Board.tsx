@@ -1097,7 +1097,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 card: { ...card },
             });
             setLiveCenterHeldCard(null);
-            handleFocusCard(card.id);
             dispatch('TAKE_FROM_DISCARD', { cardId: card.id });
             return;
         }

@@ -1,0 +1,67 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "refactor",
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "准备法术参照旧升级牌直接等比覆盖原技能槽，单张完整无额外深色底板；多张能逐张浏览并打开原卡阅读。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\01-桌面单张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\02-桌面两张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\03-桌面两张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\04-桌面三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\05-桌面三张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\06-横屏三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\07-横屏三张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\08-横屏换牌两张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\09-横屏换牌两张浏览末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\10-横屏恢复三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\12-横屏触控三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\13-横屏触控末张.png"
+      ]
+    }
+  ],
+  "acceptanceReason": "用户指出法术牌覆盖与其它升级牌不同，要求继续重构；本组只审准备区的单张覆盖、多张浏览和横屏画面。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\01-桌面单张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\02-桌面两张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\03-桌面两张浏览末张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\04-桌面三张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\05-桌面三张浏览末张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\06-横屏三张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\07-横屏三张浏览末张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\08-横屏换牌两张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\09-横屏换牌两张浏览末张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\10-横屏恢复三张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\12-横屏触控三张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\final\\13-横屏触控末张.png"
+  ],
+  "behavioralVerification": {
+    "status": "not-claimed",
+    "reason": "本清单只声明画面；同源测试已另行检查浏览和阅读，不以视觉结论代替完整规则验证。"
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "REVISE",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "currentIssue": "本次新增隐藏/恢复按钮后旧图不再代表当前界面，待新图验证。"
+}

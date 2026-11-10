@@ -1,0 +1,157 @@
+{
+  "objective": "对重新拍摄的02首帧进行实际整屏图面复核；不按实施说明推定PASS。",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r81_jin_korea_geometry"
+  },
+  "media": {
+    "path": "evidence/qidahen/r81-diagnostic/current-board/02-辽北全部候选.png",
+    "sha256": "0195118f1db75983634e800fe29c589bfc62823d0c4c9ad9890aee576fe3142b",
+    "viewport": [
+      1920,
+      1080
+    ],
+    "entryProvidedByParent": "真实dev4273入口，select-farm-region，等待networkidle",
+    "visibleZoom": "182%"
+  },
+  "evidenceRole": "internal-diagnostic-only",
+  "verdict": "REVISE",
+  "observedImprovements": [
+    {
+      "object": "底部事件/战术/银两三张运行时卡片",
+      "rect": [
+        687,
+        811,
+        1233,
+        1064
+      ],
+      "observation": "卡面图案、标题、文字已加载，原先浅色无正文外观消失；不能再把它们称为空面板。三张真实持有卡均保留。"
+    },
+    {
+      "object": "左侧纪年卡",
+      "rect": [
+        80,
+        541,
+        399,
+        757
+      ],
+      "observation": "两张纪年卡仍在，没有被删除。"
+    }
+  ],
+  "targetRequirements": [
+    {
+      "requirement": "全部合法候选适配且反馈清楚",
+      "status": "REVISE",
+      "evidence": "取景仍与01一致，左上仍182%；候选在左下/底部裁切且部分被底部持有卡覆盖。图上没有能核对合法全集的名单，不能凭文件名认定全部候选已纳入。普通候选仍为细青边，未见描述中的加强绿填色。",
+      "rects": [
+        [
+          12,
+          12,
+          74,
+          44
+        ],
+        [
+          0,
+          650,
+          840,
+          1080
+        ],
+        [
+          687,
+          811,
+          1233,
+          1064
+        ]
+      ],
+      "minimalCorrection": "先确认当前运行实例确实加载本轮修改，再由同一入口重拍候选实际适配后的整屏；保留真实持有卡并让地图适配可用视区。"
+    },
+    {
+      "requirement": "辽北推荐独立且轮廓真实",
+      "status": "PASS-observation",
+      "evidence": "辽北白色不规则地区边界和绿填充仍清楚，推荐明显；与01相比该区域像素完全相同，属于保留已有正确表达。",
+      "rect": [
+        835,
+        225,
+        1227,
+        615
+      ]
+    },
+    {
+      "requirement": "选地区时不显示无关行动菜单和旧说明",
+      "status": "REVISE",
+      "evidence": "右侧仍有突袭作战/征召军队/赐印招安/驱虎吞狼四项按钮，并仍悬着征召军队功能说明。整个菜单及说明区域与01逐像素相同。",
+      "rect": [
+        1445,
+        530,
+        1855,
+        755
+      ],
+      "minimalCorrection": "排查修改是否被真实页面加载，确认选地区状态下菜单和说明实际退场；截图只能证明浮层仍在，不能确定它来自禁用动作的hover残留。"
+    },
+    {
+      "requirement": "字号可读性",
+      "status": "REVISE",
+      "evidence": "轮盘区与01逐像素相同，小扇区文字仍偏小；功能说明同样小且密。教程正文和顶部主HUD依旧可读，不能概括成所有字都小。",
+      "minimalCorrection": "针对轮盘及功能说明的小字调整；纪年/持有卡小字需通过可发现的阅读态另验，不删除卡。"
+    }
+  ],
+  "pixelComparison": {
+    "reference": "evidence/qidahen/r81-diagnostic/current-board/01-辽北候选首帧.png",
+    "referenceSha256": "62b3dd696d8611b4b068a0b58cfd8ec0ca31f06becf3f8884c9061e3ae65237f",
+    "mode": "Pillow RGB ImageChops.difference",
+    "globalDifferentPixels": 139057,
+    "handcardsRect": [
+      685,
+      810,
+      1235,
+      1065
+    ],
+    "handcardsDifferentPixels": 135202,
+    "identicalRects": [
+      {
+        "name": "轮盘",
+        "rect": [
+          140,
+          20,
+          580,
+          440
+        ]
+      },
+      {
+        "name": "右侧行动菜单和说明",
+        "rect": [
+          1445,
+          530,
+          1855,
+          755
+        ]
+      },
+      {
+        "name": "顶部HUD",
+        "rect": [
+          740,
+          16,
+          1460,
+          75
+        ]
+      },
+      {
+        "name": "辽北",
+        "rect": [
+          835,
+          225,
+          1227,
+          615
+        ]
+      }
+    ],
+    "interpretation": "本张截图主要证明卡片加载完成；关键地图/菜单/字号修改未在这些图面区域体现。像素证据不负责判定代码改动是否存在。"
+  },
+  "minimumNextStep": "先对真实页面核当前实现是否加载及状态是否命中，再重拍；本图保留为加载完成后的诊断证据，不生成最终PASS或用户查看链接。",
+  "scopeLimits": [
+    "仅静态整屏图面及01/02像素对比；不验证实际按钮禁用逻辑、合法候选全集、点击闭环、放大阅读态或截图之外的实现。"
+  ],
+  "changedFiles": [
+    "evidence/qidahen/r81-diagnostic/current-board/firstframe-review-2.json"
+  ]
+}

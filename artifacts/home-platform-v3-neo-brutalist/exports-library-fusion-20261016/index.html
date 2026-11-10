@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>exports · library · fusion · 20261016</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>exports · library · fusion · 20261016</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"game-rooms-friends-1024x600-v1.png","displayTitle":"game · rooms · friends · 1024x600 · v1","description":"向下滚动游戏页后，满员房间和全部好友内容可读且不被对局条遮挡","kind":"image"},{"relativePath":"game-top-1024x600-v1.png","displayTitle":"game · top · 1024x600 · v1","description":"选择大杀四方后，紧凑头图下方的首个房间和重连按钮完整出现","kind":"image"},{"relativePath":"home-1024x600.png","displayTitle":"home · 1024x600","description":"低高度窗口进入收藏库后，顶栏操作与左侧游戏清单保持可用","kind":"image"},{"relativePath":"home-1280.png","displayTitle":"home · 1280","description":"中等窗口进入收藏库后，封面按四列排列并保持纵向比例","kind":"image"},{"relativePath":"home-1920.png","displayTitle":"home · 1920","description":"进入桌面收藏库后，左侧游戏清单和右侧情报与封面网格同时可见","kind":"image"},{"relativePath":"home-bottom-1280.png","displayTitle":"home · bottom · 1280","description":"向下滚动收藏库后，最后一排游戏名称和封面完整可读","kind":"image"},{"relativePath":"home-hover-1920.png","displayTitle":"home · hover · 1920","description":"悬停大杀四方卡片后，介绍与游玩记录在卡面内展开","kind":"image"},{"relativePath":"mobile-details-375.png","displayTitle":"mobile · details · 375","description":"打开手机游戏详情后，主次操作和完整房间列表同屏可读","kind":"image"},{"relativePath":"mobile-home-375.png","displayTitle":"mobile · home · 375","description":"手机进入收藏库后，搜索排序与八款收藏游戏直接可见","kind":"image"},{"relativePath":"mobile-return-375.png","displayTitle":"mobile · return · 375","description":"从游戏页返回收藏库后，原来的浏览位置与游戏列表保留","kind":"image"},{"relativePath":"mobile-search-375.png","displayTitle":"mobile · search · 375","description":"输入战争后，收藏网格只保留匹配游戏并显示结果数量","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

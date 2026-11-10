@@ -1,0 +1,54 @@
+{
+  "authorizedScope": "替换已验收的圣骑士三个压缩 WebP，同步生成参数及索引，发布并回查公开文件与素材包索引",
+  "truth": "selection-preprocessed.json 与用户当轮先替换的指令",
+  "environment": "D:\\gongzuo\\webgame\\BoardGame",
+  "acceptance": "目标文件 hash/尺寸/alpha、manifest、公开 GET 与包内索引一致",
+  "createdAtUtc": "2026-10-15T12:54:54.088571+00:00",
+  "entries": [
+    {
+      "target": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+      "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\replacement-20261015T125417Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+      "beforeSha256": "68d0df8ae6cedd3cce1e4045c6a24c3e87c82e1ab0c38be46630524c933212f4",
+      "afterSha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815"
+    },
+    {
+      "target": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\player-board.webp",
+      "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\replacement-20261015T125417Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\player-board.webp",
+      "beforeSha256": "11b4c2e50f5e2732cd38cc448afd4fe2fa89ae5c5cb21cd07f3f8f57e374bdd8",
+      "afterSha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46"
+    },
+    {
+      "target": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\tip.webp",
+      "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\replacement-20261015T125417Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\tip.webp",
+      "beforeSha256": "30e1b62010aef2e75be2e31cb1f9abf8f3096100e024d7939ffbc0f18f49304f",
+      "afterSha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5"
+    },
+    {
+      "target": "D:\\gongzuo\\webgame\\BoardGame\\scripts\\assets\\prepare_dicethrone_paladin_preview.py",
+      "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\replacement-20261015T125417Z\\original\\scripts\\assets\\prepare_dicethrone_paladin_preview.py",
+      "beforeSha256": "838b53d1e59d03f35700a9c3d98416eb2aa1aa1c7d8f63ebca749c036f8b0938",
+      "afterSha256": "5e8899b8657e5fe4d0a07c57bca21d6032641551e36501cc4588c3ca3f559785"
+    },
+    {
+      "target": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\assets-manifest.json",
+      "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\replacement-20261015T125417Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\assets-manifest.json",
+      "beforeSha256": "7bdbd85dbb1a12147d176119ddc781c9cb8a685a0e9b3c3bd7922e565e5e565a",
+      "afterSha256": "67ba21b6a3e8e754a0c7ec5ffe571ca9b6b45db4ddc32275c6c7913af242052d"
+    },
+    {
+      "target": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\assets-manifest.json",
+      "backup": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\replacement-20261015T125417Z\\original\\public\\assets\\i18n\\assets-manifest.json",
+      "beforeSha256": "70d4876db0903f980bba74294cc7849b72c9786f9d27f8d5d3cc582ec921484e",
+      "afterSha256": "8b338eabd0f5b38adb46e3bc7bdb6683fb89d0a668ce36ae61839cfb16223f7f"
+    }
+  ],
+  "publicImageGetChecks": 9,
+  "androidChannels": [
+    "edge",
+    "stable"
+  ],
+  "verifiedPublished": true,
+  "releaseId": "20261015130007729",
+  "publishCommandExitCode": 1,
+  "publishCommandError": "HTTP 503 after publish: ReferenceError assetIndex is not defined in server closing log"
+}

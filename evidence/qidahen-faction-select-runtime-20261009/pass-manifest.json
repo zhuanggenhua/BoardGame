@@ -1,0 +1,79 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-09T19:14:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "阵营图标裁掉 JPEG 正方形白角和圆形白圈，不加额外白色圆框。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内阵营选择-00-默认三列剧本关闭.png：明/蒙/金三枚标记为圆形牌面，贴在米色卡纸上，四角无白色方块，圆周无 JPEG 白圈。",
+        "七大恨-联机局内阵营选择-02b-大明已暂选待确认.png：选中态同样是圆形牌面，无白色方角。",
+        "src/games/qidahen/qidahen-board.css：.qidahen-faction-select__token 使用 clip-path: circle(47% at 50% 50%)，源码禁止 border-radius: 999px。"
+      ]
+    },
+    {
+      "requirement": "主舞台是三列阵营，剧本菜单默认关闭，标题为选择你的阵营。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内阵营选择-00-默认三列剧本关闭.png：三列大明蒙古后金同屏，剧本浮层未打开，标题选择你的阵营。",
+        "e2e/qidahen/online-inmatch-setup.e2e.ts 断言 qidahen-scenario-vote-screen 数量为 0。"
+      ]
+    },
+    {
+      "requirement": "房主用右上剧本打开起始剧本设置卡印刷卡，丁卯三人房不可投，无待确认口号和牌背。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内剧本选择-01-房主进入剧本书页并可点选.png：标题起始剧本设置卡，三张印刷卡，丁卯写当前三人房不可投。",
+        "七大恨-联机局内剧本选择-01b-山海关之议已暂选待确认.png：中间山海关之议抬升并带朱砂光，关闭与确认采用同排。"
+      ]
+    },
+    {
+      "requirement": "采用剧本后回到三列阵营，右上显示剧本名，起始手牌随剧本更新。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内阵营选择-02-三阵营可见且未被占用.png：剧本山海关之议，大明起始手牌二，后金起始手牌六。",
+        "对照 00 图萨尔浒默认起始手牌大明三后金十。"
+      ]
+    },
+    {
+      "requirement": "点击阵营本体草稿，底栏显示势力名而不是待确认，确认阵营可提交。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内阵营选择-02b-大明已暂选待确认.png：大明列琥珀色朱砂边，底栏只写大明，确认阵营可点。",
+        "e2e 断言底栏含大明且不含待确认。"
+      ]
+    },
+    {
+      "requirement": "势力行动悬停显示规则原文，且不遮住手牌上限事实行。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内阵营选择-02c-势力行动悬停.png：突袭作战下方出现弃一张手牌执行进攻行动不能执行调度，手牌上限十五牌库四十仍完整可见。"
+      ]
+    },
+    {
+      "requirement": "剧本未锁定时底栏写请先确认起始剧本设置卡，确认阵营禁用。",
+      "status": "PASS",
+      "evidence": [
+        "七大恨-联机局内阵营选择-00-默认三列剧本关闭.png：底栏请先确认起始剧本设置卡，确认阵营灰色不可点。"
+      ]
+    }
+  ],
+  "images": [
+    "test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-00-默认三列剧本关闭.png",
+    "test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内剧本选择-01-房主进入剧本书页并可点选.png",
+    "test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内剧本选择-01b-山海关之议已暂选待确认.png",
+    "test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-02-三阵营可见且未被占用.png",
+    "test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-02c-势力行动悬停.png",
+    "test-results/evidence-screenshots/qidahen/online-inmatch-setup/七大恨-联机局内阵营选择-02b-大明已暂选待确认.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

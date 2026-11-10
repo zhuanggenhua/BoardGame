@@ -1,0 +1,49 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T12-51-52-292Z",
+  "points": [],
+  "logs": [
+    {
+      "at": "2026-09-13T12:52:37.855Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-13T12:52:37.937Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    }
+  ],
+  "failures": [
+    {
+      "message": "real player flow script threw before completing",
+      "error": "page.goto: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn\", waiting until \"domcontentloaded\"\u001b[22m\n",
+      "stack": "page.goto: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn\", waiting until \"domcontentloaded\"\u001b[22m\n\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-full-tutorial-real-browser-repro.mjs:672:16)",
+      "lastPoint": null,
+      "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\full-tutorial-real-browser-repro\\2026-09-13T12-51-52-292Z\\failure.png",
+      "snapshot": {
+        "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+        "bodyText": "<div style=\"max-width:960px;margin:0 auto;padding:40px 20px;font-family:serif;color:#2c2216\"> <h1 style=\"text-align:center;font-size:2rem;letter-spacing:0.1em\">易桌游</h1> <p style=\"text-align:center;font-size:0.875rem;color:#8b7355;letter-spacing:0.2em\">桌游教程、联机与原型制作平台</p> <p style=\"margin:16px auto 0;max-width:760px;text-align:center;line-height:1.8\"> 易桌游提供浏览器即开即玩的桌游体验，覆盖新手教学、在线房间联机与多端访问，帮助玩家更快开局、持续对战。 </p> <nav style=\"margin:32px 0;text-align:center\"> <span>全部</span> · <span>策略</span> · <span>派对</span> · <span>休闲</span> </nav> <section data-nosnippet> <h2>🎲 王权骰铸 (Dice Throne)</h2> <p>经典骰子对战桌游，选择你的英雄，投掷骰子，释放强力技能击败对手。支持在线联机对战与新手教学引导。</p> <h2>💥 大杀四方 (Smash Up)</h2> <p>阵营混搭卡牌桌游，选择两个阵营组合成独特牌组，争夺基地控制权。支持在线联机对战与新手教学引导。</p> <h2>⚔️ 召唤师战争 (Summoner Wars)</h2> <p>战术卡牌对战桌游，指挥召唤师和军队在战场上排兵布阵，消灭对方召唤师获胜。支持在线联机对战与新手教学引导。</p> <h2>⭕ 井字棋 (Tic Tac Toe)</h2> <p>经典井字棋，支持本地对战和在线联机。适合快速上手体验平台功能。</p> </section> <footer data-nosnippet style=\"margin-top:48px;text-align:center;font-size:0.75rem;color:#8b7355\"> <p>易桌游 - 免费在线桌游平台 | 桌游教学 · 在线联机 · 好友对战</p> <p>支持王权骰铸、大杀四方、召唤师战争等热门桌游，无需下载，打开浏览器即可畅玩。</p> </footer> </div> !游戏页保护页面没有正常显示为了避免一直停留在黑屏，这里先切到友好提示。你可以刷新重试，或先返回大厅再重新进入。刷新重试返回大厅 (function(){ var el = document.getElementById('initial-loader'); if (!el) return; var p = location.pathname; var isGame = p.indexOf('/play/') === 0; function readOnlineMatchRoute() { var match = /^\\/play\\/([^/?#]+)\\/match\\/([^/?#]+)/.exec(location.pathname); if (!match) return null; try { return { gameId: decodeURIComponent(match[1]), matchId: decodeURIComponent(match[2]) }; } catch (error) { return { gameId: match[1], matchId: match[2] }; } } function suppressOwnerActiveMatch(matchId) { try { var key = 'owner_active_match_suppressed'; var parsed = JSON.parse(localStorage.getItem(key) || '[]'); var list = Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : []; if (list.indexOf(matchId) !== -1) return; list.push(matchId); localStorage.setItem(key, JSON.stringify(list)); } catch (error) { try { localStorage.setItem('owner_active_match_suppressed', JSON.stringify([matchId])); } catch (innerError) { // localStorage 可能不可用；缺房跳转仍继续。 } } } function clearMissingOnlineMatchLocalState(matchId) { try { localStorage.rem",
+        "boardVisible": false,
+        "characterSelectVisible": false,
+        "loadingVisible": false,
+        "activeStepDom": null,
+        "overlay": null,
+        "tutorialNext": null,
+        "highlight": {
+          "target": null,
+          "found": false,
+          "visible": false,
+          "rect": null
+        },
+        "discoveryPanel": null,
+        "discoveryConfirm": null,
+        "rollContinue": null,
+        "recentRollPanel": null,
+        "scenarioReader": null,
+        "tutorial": null,
+        "core": null
+      }
+    }
+  ]
+}

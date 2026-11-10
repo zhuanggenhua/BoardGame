@@ -1,0 +1,100 @@
+{
+  "title": "山屋惊魂 · 吊死鬼黄金端到端",
+  "gameId": "betrayal",
+  "evidenceCategory": "golden",
+  "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+  "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+  "descriptionContract": "首张只介绍测试对象和效果；后续每张只写玩家动作、画面结果和相对变化。",
+  "media": [
+    {
+      "path": "吊死鬼-完整链路-01-探索前.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "1",
+      "stage": "前态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "吊死鬼要求玩家逐项检定力量、速度、知识和神志，四项都通过后从中选择一项获得加一。"
+    },
+    {
+      "path": "吊死鬼-完整链路-02-选择未知房间.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "2",
+      "stage": "中态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "玩家进入未知房间选择，吊死鬼事件的探索入口保持可操作。"
+    },
+    {
+      "path": "吊死鬼-完整链路-03-事件牌翻出等待逐项检定.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "3",
+      "stage": "中态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "玩家完成房间放置后翻出吊死鬼卡，四项属性选项出现且尚未开始检定。"
+    },
+    {
+      "path": "吊死鬼-完整链路-04-力量检定停稳.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "4",
+      "stage": "中态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "玩家选择力量后，骰盘进入真实滚动过程，结果尚未提前结算。"
+    },
+    {
+      "path": "吊死鬼-完整链路-05-速度检定停稳.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "5",
+      "stage": "中态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "力量骰盘停稳并显示六点通过，玩家可点击继续进入下一项检定。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-知识检定停稳.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "6",
+      "stage": "中态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "速度骰盘停稳并显示六点通过，上一项结果收口后进入知识检定。"
+    },
+    {
+      "path": "吊死鬼-完整链路-07-神志检定停稳.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "7",
+      "stage": "后态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "知识骰盘停稳并显示六点通过，四项检定只剩神志待完成。"
+    },
+    {
+      "path": "吊死鬼-完整链路-08-四项检定完成选择奖励.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "8",
+      "stage": "后态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "四项检定均显示六点通过，奖励属性选择面板出现，确定按钮等待玩家选择。"
+    },
+    {
+      "path": "吊死鬼-完整链路-09-知识奖励结算结果可见.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "9",
+      "stage": "后态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "玩家选择知识并确认，结算文案显示每项属性均通过和知识加一，旧属性骰盘已收起。"
+    },
+    {
+      "path": "吊死鬼-完整链路-06-关闭后回牌桌.jpg",
+      "chainId": "吊死鬼完整链路",
+      "chainStep": "10",
+      "stage": "后态",
+      "sourceRun": "betrayal-event-choice-coverage-20261010-hanging-tree-r3",
+      "sourceDir": "evidence/山屋惊魂-事件牌页面承接E2E",
+      "description": "玩家确认关闭结算窗口后回到牌桌，临时面板消失且知识轨道升至四。"
+    }
+  ]
+}

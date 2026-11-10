@@ -1,0 +1,71 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_review"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/06-card-types.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四张真实手牌现完整落在同一蓝框内，原始星号已消失，三类牌时机正文清楚可读；本次修复的手牌焦点偏移已消除。",
+      "score": 88
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/07-hand.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "蓝框已准确包住四张手牌，卡名、费用角标和卡面本体清楚可辨；手牌字段说明在上方且不再指向右侧空区。",
+      "score": 89
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/09-response-control.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手动响应开关蓝框清楚，生命与CP读数已避开；但底部提示框正文末行在导航区域上沿被截断，只露部分字形，开关说明未完整呈现。",
+      "score": 64
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/27-ability-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示框被压成左下约七十像素宽的竖条，正文逐字断行并大量截断，下一步按钮横向溢出，无法读取技能需求。",
+      "score": 23
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016/桌面：锁骰重掷、亲手防御并使用太极减伤/28-abilities.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示框被压成屏幕最右侧约七十像素宽的竖条，正文逐字竖排、下半段与控件被截，冲拳独立主焦点未清楚呈现，无法按文案完成教学。",
+      "score": 20
+    }
+  ]
+}

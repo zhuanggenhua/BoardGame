@@ -1984,6 +1984,25 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         snapshot => (snapshot.visible.selectedAbilityIds as (string | null)[]).includes('strange-all-seeing-eye'),
         true,
     );
+    const handToggle = page.getByTestId('dicethrone-hand-visibility-toggle');
+    const handVisibilityBefore = await handToggle.getAttribute('aria-pressed');
+    await handToggle.click();
+    await expect(handToggle).not.toHaveAttribute('aria-pressed', handVisibilityBefore!);
+    const abilityReadableScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼收起手牌后-桌面',
+        'ultimate-hide-hand-to-read', '使用原手牌收起按钮查看已选技能', '技能保持已选且牌桌阅读区域可见',
+        snapshot => (snapshot.visible.selectedAbilityIds as (string | null)[]).includes('strange-all-seeing-eye'), true,
+    );
+    await page.getByTestId('player-board-magnify-button').click();
+    await expect(page.getByTestId('board-magnify-overlay')).toBeVisible();
+    const abilityMagnifiedScreenshot = await captureTracedState(
+        page, game, evidenceRun, trace, '全知之眼玩家板放大阅读-桌面',
+        'ultimate-magnify-board-to-read', '使用原玩家板放大入口阅读技能', '原玩家板放大画面可见',
+        snapshot => Boolean(snapshot.visible.magnifyVisible), true,
+    );
+    await page.getByTestId('board-magnify-overlay-close').click();
+    await handToggle.click();
+    await expect(handToggle).toHaveAttribute('aria-pressed', handVisibilityBefore!);
     const advance = page.locator('[data-tutorial-id="advance-phase-button"]');
     await expect(advance).toContainText('结算攻击');
     await advance.click();
@@ -2175,6 +2194,12 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
         { path: abilitySelectedScreenshot, chainId: '全知之眼技能选择', chainStep: '技能已选待结算', stage: '中态', uiStateId: 'doctor-strange-ultimate-selected',
             behaviorStepId: 'ultimate-select-before-resolution', description: '真实鼠标选择全知之眼后，等待玩家提交攻击结算。',
             role: 'main-flow', viewport: 'desktop', transition: '点击全知之眼技能槽。' },
+        { path: abilityReadableScreenshot, chainId: '全知之眼技能阅读', chainStep: '收起手牌阅读', stage: '中态', uiStateId: 'doctor-strange-ultimate-hidden-hand',
+            behaviorStepId: 'ultimate-hide-hand-to-read', description: '使用原手牌收起入口后阅读已选的全知之眼技能。',
+            role: 'main-flow', viewport: 'desktop', transition: '点击原手牌收起按钮。' },
+        { path: abilityMagnifiedScreenshot, chainId: '全知之眼技能阅读', chainStep: '放大玩家板', stage: '中态', uiStateId: 'doctor-strange-ultimate-magnified-board',
+            behaviorStepId: 'ultimate-magnify-board-to-read', description: '使用原玩家板放大入口阅读技能印刷文字。',
+            role: 'main-flow', viewport: 'desktop', transition: '点击玩家板放大按钮。' },
         { path: firstChoiceScreenshot, chainId: '全知之眼顶五法术选择', chainStep: '法术候选', stage: '中态', uiStateId: 'doctor-strange-ultimate-top-five-choice',
             behaviorStepId: 'ultimate-prepare-top-five', description: '真实鼠标触发终极技能后，顶五中法术以卡图供选择准备。',
             role: 'main-flow', viewport: 'desktop', transition: '推进按钮提交攻击结算。' },
@@ -2483,47 +2508,49 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
     });
     const doctorStrangeCard = page.locator('[data-testid="character-selection-overlay"] [data-character-id="doctor_strange"]');
     await expect(doctorStrangeCard).toBeVisible();
-    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toHaveCount(0);
     await expect(page.locator('[data-character-id="monk"]')).toBeVisible();
+    await doctorStrangeCard.scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeVisible();
     const desktopScreenshot = await captureTracedState(
         page, undefined, evidenceRun, trace, '真实选角入口-奇异博士可选-桌面',
         'online-room-created-selection-visible', '确认创建房间并进入桌面选角界面',
-        '真实选角目录显示可选奇异博士且没有实施中徽标',
+        '真实选角目录显示可选奇异博士及实施中徽标',
         snapshot => ({
             doctorStrangeVisible: (snapshot.visible.selectableHeroIds as string[]).includes('doctor_strange'),
             implementationBadgeVisible: snapshot.visible.doctorStrangeImplementationBadgeVisible,
             setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
         }),
-        { doctorStrangeVisible: true, implementationBadgeVisible: false, setupOptionStatus: null },
+        { doctorStrangeVisible: true, implementationBadgeVisible: true, setupOptionStatus: 'in_progress' },
     );
     media.push({
         path: desktopScreenshot, chainId: '奇异博士在线角色选择界面', chainStep: '桌面角色候选', stage: '中态',
         uiStateId: 'doctor-strange-available-desktop-selection',
         behaviorStepId: 'online-room-created-selection-visible',
-        description: '真实选角页展示可选奇异博士，角色没有实施中徽标。',
+        description: '真实选角页展示可选奇异博士及实施中徽标。',
         role: 'main-flow', viewport: 'desktop', transition: '创建联机房间并显示真实角色选择界面',
     });
 
     await page.setViewportSize({ width: 812, height: 375 });
     await expect(doctorStrangeCard).toBeVisible();
-    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toHaveCount(0);
+    await doctorStrangeCard.scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeVisible();
     const mobileScreenshot = await captureTracedState(
         page, undefined, evidenceRun, trace, '真实选角入口-奇异博士可选-窄屏',
         'online-selection-mobile-viewport', '将同一真实联机选角页切换到手机横屏尺寸',
-        '窄屏选角显示奇异博士且没有实施中徽标',
+        '窄屏选角显示奇异博士及实施中徽标',
         snapshot => ({
             doctorStrangeVisible: (snapshot.visible.selectableHeroIds as string[]).includes('doctor_strange'),
             implementationBadgeVisible: snapshot.visible.doctorStrangeImplementationBadgeVisible,
             setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
         }),
-        { doctorStrangeVisible: true, implementationBadgeVisible: false, setupOptionStatus: null },
+        { doctorStrangeVisible: true, implementationBadgeVisible: true, setupOptionStatus: 'in_progress' },
     );
     media.push({
         path: mobileScreenshot, chainId: '奇异博士在线角色选择界面', chainStep: '手机横屏角色候选', stage: '独特界面态',
         uiStateId: 'doctor-strange-available-mobile-selection',
         uiChange: 'layout', uiChangeReason: '同一真实选角页切换到 812×375 窄屏。',
         behaviorStepId: 'online-selection-mobile-viewport',
-        description: '手机横屏真实选角页显示奇异博士，角色没有实施中徽标。',
+        description: '手机横屏真实选角页显示奇异博士及实施中徽标。',
         role: 'main-flow', viewport: 'mobile', transition: '切换同一选角入口为手机横屏视口',
     });
 
@@ -2574,7 +2601,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 doctorStrangeSelected: (snapshot.visible.selectedHeroIds as string[]).includes('doctor_strange'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { doctorStrangeSelected: true, setupOptionStatus: null },
+            { doctorStrangeSelected: true, setupOptionStatus: 'in_progress' },
         );
         media.push({
             path: readyScreenshot, chainId: '双方选角并准备', chainStep: '双方角色就绪', stage: '中态',
@@ -2595,7 +2622,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 doctorStrangeBoardVisible: (snapshot.visible.boardHeroIds as (string | null)[]).includes('doctor_strange'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { doctorStrangeBoardVisible: true, setupOptionStatus: null },
+            { doctorStrangeBoardVisible: true, setupOptionStatus: 'in_progress' },
         );
         media.push({
             path: hostBoardScreenshot, chainId, chainStep: 6, stage: '后态',
@@ -2615,7 +2642,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 monkBoardVisible: (snapshot.visible.boardHeroIds as (string | null)[]).includes('monk'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { monkBoardVisible: true, setupOptionStatus: null },
+            { monkBoardVisible: true, setupOptionStatus: 'in_progress' },
         );
         media.push({
             path: guestBoardScreenshot, chainId, chainStep: 7, stage: '后态',
@@ -2838,6 +2865,24 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
         description: '施放拉格伽多尔之环后，从弃牌堆选择法术，可搜索和滚动查看全部候选。', role: 'main-flow', viewport: 'desktop', transition: '从准备区真实选择并施放法术。' });
     const search = page.getByTestId('dt-card-pool-search-input');
     await expect(search).toBeVisible();
+    const desktopActionBeforeSearch = await page.getByTestId('dt-interaction-confirm').boundingBox();
+    const expectStableAction = (before: Awaited<ReturnType<typeof search.boundingBox>>, after: Awaited<ReturnType<typeof search.boundingBox>>) => {
+        expect(before).not.toBeNull();
+        expect(after).not.toBeNull();
+        for (const key of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(before![key] - after![key])).toBeLessThan(0.5);
+    };
+    await search.fill('没有这张法术');
+    await expect(page.getByTestId('dt-card-pool-empty')).toBeVisible();
+    expectStableAction(desktopActionBeforeSearch, await page.getByTestId('dt-interaction-confirm').boundingBox());
+    const desktopEmpty = await captureTracedState(page, game, evidenceRun, trace, '弃牌搜索无匹配-桌面',
+        'discard-cast-desktop-search-empty', '在桌面搜索不存在的法术', '空结果保留固定操作区',
+        snapshot => (snapshot.visible.choiceIds as string[]).length, 0);
+    media.push({ path: desktopEmpty, chainId: '弃牌直接施放', chainStep: '桌面搜索空结果', stage: '中态',
+        uiStateId: 'doctor-strange-discard-cast-desktop-search-empty', behaviorStepId: 'discard-cast-desktop-search-empty',
+        description: '桌面搜索无匹配时保留空结果提示与固定操作区。', role: 'main-flow', viewport: 'desktop', transition: '在搜索框输入不匹配的词语。' });
+    await page.getByTestId('dt-card-pool-search-clear').click();
+    await expect(page.locator('#modal-root [data-testid^="dt-discard-card-option-"]')).toHaveCount(8);
+    expectStableAction(desktopActionBeforeSearch, await page.getByTestId('dt-interaction-confirm').boundingBox());
     await page.setViewportSize({ width: 812, height: 375 });
     const assertSearchPoolActionsVisible = async () => {
         const box = await page.getByTestId('dt-interaction-confirm').boundingBox();
@@ -2862,6 +2907,47 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
     media.push({ path: phoneImage, chainId: '弃牌直接施放', chainStep: '横屏候选', stage: '中态',
         uiStateId: 'doctor-strange-discard-cast-phone-candidates', behaviorStepId: 'discard-cast-phone-candidates',
         description: '横屏恢复旧卡池等比尺度和多行纵向浏览，搜索和动作保持原上下结构。', role: 'main-flow', viewport: 'mobile', transition: '查看同一弃牌施放选择的横屏布局。' });
+    const discardPool = page.getByTestId('dt-card-pool-selection');
+    const discardChoices = page.locator('#modal-root [data-testid^="dt-discard-card-option-"]');
+    const touchCard = await discardChoices.first().boundingBox();
+    expect(touchCard).not.toBeNull();
+    const touchSession = await page.context().newCDPSession(page);
+    try {
+        await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+        await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: touchCard!.x + touchCard!.width / 2, y: touchCard!.y + touchCard!.height / 2 }] });
+        await page.waitForTimeout(600);
+        await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await expect(page.getByTestId('board-magnify-overlay')).toBeVisible();
+        await expect(discardChoices.first()).toHaveAttribute('data-selected', 'false');
+        const touchReadImage = await captureTracedState(page, game, evidenceRun, trace, '弃牌长按原卡阅读-横屏',
+            'discard-cast-phone-touch-read', '长按弃牌候选查看原卡', '放大原卡但不选择候选',
+            snapshot => Boolean(snapshot.visible.magnifyVisible), true);
+        media.push({ path: touchReadImage, chainId: '弃牌直接施放', chainStep: '横屏长按阅读', stage: '中态',
+            uiStateId: 'doctor-strange-discard-cast-phone-touch-read', behaviorStepId: 'discard-cast-phone-touch-read',
+            description: '横屏长按候选，复用原卡放大阅读而不提交选择。', role: 'main-flow', viewport: 'mobile', transition: '在候选卡面上长按。' });
+        await page.getByTestId('board-magnify-overlay-close').click();
+    } finally {
+        await touchSession.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+        await touchSession.detach();
+    }
+    const confirmBeforeScroll = await page.getByTestId('dt-interaction-confirm').boundingBox();
+    await discardPool.hover();
+    await page.mouse.wheel(0, 600);
+    await expect.poll(async () => {
+        const last = await discardChoices.last().boundingBox();
+        const pool = await discardPool.boundingBox();
+        return Boolean(last && pool && last.y >= pool.y && last.y + last.height <= pool.y + pool.height + 1);
+    }, { message: '横屏滚动后最后一张弃牌必须完整可见' }).toBe(true);
+    expectStableAction(confirmBeforeScroll, await page.getByTestId('dt-interaction-confirm').boundingBox());
+    const lastPhoneImage = await captureTracedState(page, game, evidenceRun, trace, '弃牌直接施放浏览末张-横屏',
+        'discard-cast-phone-scrolled', '滚动浏览最后一张弃牌法术', '末张候选完整可见，确认位置保持不动',
+        snapshot => (snapshot.visible.choiceIds as string[]).length, 8);
+    media.push({ path: lastPhoneImage, chainId: '弃牌直接施放', chainStep: '横屏浏览末张', stage: '中态',
+        uiStateId: 'doctor-strange-discard-cast-phone-scrolled', behaviorStepId: 'discard-cast-phone-scrolled',
+        description: '横屏滚动候选区至末张，操作区保持固定。', role: 'main-flow', viewport: 'mobile', transition: '在候选区向下滚动。' });
+    await discardPool.hover();
+    await page.mouse.wheel(0, -600);
+    await expect.poll(() => discardPool.evaluate(element => element.scrollTop)).toBe(0);
     const firstPhoneCard = page.locator('#modal-root [data-testid^="dt-discard-card-option-"]').first();
     await firstPhoneCard.click();
     await clearHandCardHover(page);

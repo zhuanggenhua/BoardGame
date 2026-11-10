@@ -1,0 +1,50 @@
+{
+  "version": 3,
+  "purpose": "MageWars-MageStaff-golden-E2E",
+  "started_at": "2026-09-24T14:38:15.786Z",
+  "recorded_at": "2026-09-24T14:58:27.613Z",
+  "stopped_by": "cli_stop",
+  "entry": {
+    "start_url": "http://127.0.0.1:4273/"
+  },
+  "recorder": {
+    "bsk": "0.3.1",
+    "vom": 1
+  },
+  "states": [
+    {
+      "id": "s1",
+      "url": "http://127.0.0.1:4273/",
+      "title": "127.0.0.1:4273",
+      "page": "s1.txt"
+    },
+    {
+      "id": "s2",
+      "url": "http://127.0.0.1:4273/?homeStyle=classic",
+      "title": "易桌游 - 桌游教学与联机平台",
+      "page": "s2.txt"
+    }
+  ],
+  "steps": [
+    {
+      "op": "navigate",
+      "id": 1,
+      "state": "s1",
+      "result": {
+        "state": "s1"
+      },
+      "to": "http://127.0.0.1:4273/",
+      "cause": "user_typed"
+    },
+    {
+      "op": "navigate",
+      "id": 2,
+      "state": "s1",
+      "result": {
+        "state": "s2"
+      },
+      "to": "http://127.0.0.1:4273/?homeStyle=classic",
+      "cause": "browser"
+    }
+  ]
+}

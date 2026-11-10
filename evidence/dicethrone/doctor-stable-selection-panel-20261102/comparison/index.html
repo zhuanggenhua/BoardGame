@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>牌堆选择：修复前后与六种连续状态对照</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>牌堆选择：修复前后与六种连续状态对照</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-1-01-血色杀戮-真实抽牌堆候选.png","displayTitle":"01 · 1 · 01 · 血色杀戮 · 真实抽牌堆候选","description":"修复前桌面原选择器；操作区随候选收缩；完整牌库候选与确认区。","kind":"image"},{"relativePath":"01-2-02-血色杀戮-搜索命中.png","displayTitle":"01 · 2 · 02 · 血色杀戮 · 搜索命中","description":"修复前桌面原选择器；操作区随候选收缩；搜索命中单张候选。","kind":"image"},{"relativePath":"01-3-03-血色杀戮-已选待确认.png","displayTitle":"01 · 3 · 03 · 血色杀戮 · 已选待确认","description":"修复前桌面原选择器；操作区随候选收缩；选中卡牌等待确认。","kind":"image"},{"relativePath":"02-1-01-血色杀戮-真实抽牌堆候选.png","displayTitle":"02 · 1 · 01 · 血色杀戮 · 真实抽牌堆候选","description":"修复后桌面原选择器；候选内部滚动且操作区固定；完整牌库候选与确认区。","kind":"image"},{"relativePath":"02-2-02-血色杀戮-搜索命中.png","displayTitle":"02 · 2 · 02 · 血色杀戮 · 搜索命中","description":"修复后桌面原选择器；候选内部滚动且操作区固定；搜索命中单张候选。","kind":"image"},{"relativePath":"02-3-03-血色杀戮-已选待确认.png","displayTitle":"02 · 3 · 03 · 血色杀戮 · 已选待确认","description":"修复后桌面原选择器；候选内部滚动且操作区固定；选中卡牌等待确认。","kind":"image"},{"relativePath":"02-4-04-血色杀戮-取消选中.png","displayTitle":"02 · 4 · 04 · 血色杀戮 · 取消选中","description":"修复后桌面原选择器；候选内部滚动且操作区固定；取消选中保留搜索。","kind":"image"},{"relativePath":"02-5-05-血色杀戮-无匹配.png","displayTitle":"02 · 5 · 05 · 血色杀戮 · 无匹配","description":"修复后桌面原选择器；候选内部滚动且操作区固定；搜索无匹配候选。","kind":"image"},{"relativePath":"02-6-06-血色杀戮-清空恢复.png","displayTitle":"02 · 6 · 06 · 血色杀戮 · 清空恢复","description":"修复后桌面原选择器；候选内部滚动且操作区固定；清空搜索恢复全部候选。","kind":"image"},{"relativePath":"03-1-01-血色杀戮-真实抽牌堆候选.png","displayTitle":"03 · 1 · 01 · 血色杀戮 · 真实抽牌堆候选","description":"修复后横屏原选择器；同视口操作位置保持稳定；完整牌库候选与确认区。","kind":"image"},{"relativePath":"03-2-02-血色杀戮-搜索命中.png","displayTitle":"03 · 2 · 02 · 血色杀戮 · 搜索命中","description":"修复后横屏原选择器；同视口操作位置保持稳定；搜索命中单张候选。","kind":"image"},{"relativePath":"03-3-03-血色杀戮-已选待确认.png","displayTitle":"03 · 3 · 03 · 血色杀戮 · 已选待确认","description":"修复后横屏原选择器；同视口操作位置保持稳定；选中卡牌等待确认。","kind":"image"},{"relativePath":"03-4-04-血色杀戮-取消选中.png","displayTitle":"03 · 4 · 04 · 血色杀戮 · 取消选中","description":"修复后横屏原选择器；同视口操作位置保持稳定；取消选中保留搜索。","kind":"image"},{"relativePath":"03-5-05-血色杀戮-无匹配.png","displayTitle":"03 · 5 · 05 · 血色杀戮 · 无匹配","description":"修复后横屏原选择器；同视口操作位置保持稳定；搜索无匹配候选。","kind":"image"},{"relativePath":"03-6-06-血色杀戮-清空恢复.png","displayTitle":"03 · 6 · 06 · 血色杀戮 · 清空恢复","description":"修复后横屏原选择器；同视口操作位置保持稳定；清空搜索恢复全部候选。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

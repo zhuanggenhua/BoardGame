@@ -1,0 +1,9 @@
+.classic-room-dialog { width: min(28rem, calc(100vw - 2rem)); }
+.classic-room-dialog::backdrop { background: transparent; }
+.classic-room-dialog .text-black { color: var(--color-parchment-base-text); }
+.classic-room-dialog .text-neutral-600 { color: var(--color-parchment-light-text); }
+.classic-room-dialog .text-neutral-600\/80 { color: color-mix(in srgb, var(--color-parchment-light-text) 80%, transparent); }
+.classic-room-dialog input::placeholder { color: color-mix(in srgb, var(--color-parchment-light-text) 50%, transparent); }
+.classic-room-dialog input:not([type="checkbox"]),
+.classic-room-dialog select,
+.classic-room-dialog [data-testid="create-room-cancel-button"] { border: 1px solid var(--color-parchment-card-border); }

@@ -1573,18 +1573,35 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expectMapArmyFace(page, { faction: 'ming', regionId: 'city-region-16', face: 'front', minimum: 4 });
         const committedTroopTokens = page.locator('[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]');
         await expect(committedTroopTokens).toHaveCount(4);
-        await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');
-        await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'true');
+        await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'false');
+        await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'false');
         await committedTroopTokens.nth(1).click();
         await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');
         await expect(committedTroopTokens.nth(1)).toHaveAttribute('data-pending-committed-selected', 'true');
         await expect(committedTroopTokens.nth(2)).toHaveAttribute('data-pending-committed-selected', 'false');
         await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'false');
+        const selectedGeometry = await committedTroopTokens.nth(0).evaluate(token => {
+            const image = token.querySelector('img');
+            const highlight = token.querySelector('[data-testid^="qidahen-pending-committed-highlight-"]');
+            if (!image || !highlight) throw new Error('Selected troop image or highlight is missing');
+            const body = token.getBoundingClientRect();
+            const face = image.getBoundingClientRect();
+            const ring = highlight.getBoundingClientRect();
+            return { body: body.toJSON(), face: face.toJSON(), ring: ring.toJSON() };
+        });
+        expect(Math.abs(selectedGeometry.face.width - selectedGeometry.body.width)).toBeLessThan(0.5);
+        expect(Math.abs(selectedGeometry.face.height - selectedGeometry.body.height)).toBeLessThan(0.5);
+        expect(selectedGeometry.ring.left).toBeLessThan(selectedGeometry.body.left);
+        expect(selectedGeometry.ring.top).toBeLessThan(selectedGeometry.body.top);
+        expect(selectedGeometry.ring.right).toBeGreaterThan(selectedGeometry.body.right);
+        expect(selectedGeometry.ring.bottom).toBeGreaterThan(selectedGeometry.body.bottom);
         await saveScreenshot(page, COMMITTED_TROOPS_SCREENSHOT);
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rear-guard', committedTroops: 2 });
 
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('幸存 2');
+        await page.click('[data-testid="qidahen-post-battle-mode-occupy"]');
         await page.click('[data-testid="qidahen-post-battle-choice-occupy"]');
+        await page.click('[data-testid="qidahen-post-battle-confirm"]');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('占领');
         const finalState = await readRequiredQidahenHarnessState(page);
         const sourceRegion = finalState.core.regions.find((region) => region.id === 'city-region-16');

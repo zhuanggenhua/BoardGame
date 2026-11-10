@@ -1,0 +1,154 @@
+{
+  "reviewer": {
+    "agent_id": "/root/r81_boundary_candidate",
+    "role": "独立源图几何视觉复核子代理"
+  },
+  "objective": "只核蒙古13地区的源图轮廓，不判规则或应用验收",
+  "reviewed_version": "v5",
+  "sources": [
+    {
+      "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+      "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e"
+    },
+    {
+      "path": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部地区按印刷边线校准候选三.png",
+      "sha256": "a9763baf70c45c3f5c62ed9a133d712ba366ed2f50ee2931b41683296bf2c85e"
+    },
+    {
+      "path": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部地区按印刷边线校准候选五.png",
+      "sha256": "2139c3d0765e6c273d15766bbc5863ce87289f5f81861484dddf5e1efc1b143a"
+    },
+    {
+      "path": "evidence/qidahen/r81-diagnostic/geography-candidate/region-mask-boundary-normalized-v5.png",
+      "sha256": "2776b14fd011dae389a5a65ee7072b8db8db8cbbf774b7db208e9c1b63698136"
+    }
+  ],
+  "method": "先完整读取原图和v3候选；以4组同坐标放大覆盖13地区，再补鄂尔多斯西南；v5只核该遮挡桥的原图叠加和mask接缝。",
+  "carry_forward": {
+    "compared_versions": "v3→v5",
+    "pixel_window": [
+      0,
+      0,
+      900,
+      753
+    ],
+    "changed_pixels": 0,
+    "result": "其余12区与已审v3对应像素一致，沿用观察结论。"
+  },
+  "summary": {
+    "total": 13,
+    "PASS": 13,
+    "REVISE": 0,
+    "declaredApproximationCount": 1
+  },
+  "items": [
+    {
+      "name": "外喀尔喀",
+      "verdict": "PASS",
+      "checked_segments": "西/南河道约(390,10)→(405,128)→(538,154)，东侧山脊约(599,10)→(538,154)",
+      "observation": "沿河道及连续山脊，未见切入内部或吞科尔沁/巴林。",
+      "deviating_segments": []
+    },
+    {
+      "name": "科尔沁",
+      "verdict": "PASS",
+      "checked_segments": "西山脊约(599,10)→(617,99)，南河约(617,99)→(819,217)，东北图缘/棕界",
+      "observation": "西山脊、南河和东北底色分界均贴印刷走向。",
+      "deviating_segments": []
+    },
+    {
+      "name": "巴林",
+      "verdict": "PASS",
+      "checked_segments": "南棕线约(394,263)→(444,279)→(498,289)，北河、西棕线及东山脊",
+      "observation": "本版南缘沿真实棕线，未见所述10至18px成片内缩；其它边沿河/棕线/山脊。",
+      "deviating_segments": []
+    },
+    {
+      "name": "扎鲁特",
+      "verdict": "PASS",
+      "checked_segments": "北河约(617,100)→(729,167)，东棕线(729,167)→(717,220)→(663,269)，南河及西山脊",
+      "observation": "轮廓随棕线弯折及河道、山脊闭合，未横切骑兵/地区内部。",
+      "deviating_segments": []
+    },
+    {
+      "name": "内喀尔喀",
+      "verdict": "PASS",
+      "checked_segments": "西棕界约(729,167)→(663,269)，北/南河与东侧邻叶赫棕界",
+      "observation": "独立色域与三侧河/棕界吻合，未吞奈曼或扎鲁特。",
+      "deviating_segments": []
+    },
+    {
+      "name": "克什克腾",
+      "verdict": "PASS",
+      "checked_segments": "北棕线(394,263)→(498,289)，东山链到(434,419)，南棕线约(297,410)→(361,428)→(391,474)",
+      "observation": "棕线与山脊转折吻合；未把相邻察哈尔底色并入。",
+      "deviating_segments": []
+    },
+    {
+      "name": "察哈尔",
+      "verdict": "PASS",
+      "checked_segments": "北河约(522,251)→(704,292)，东棕线(704,296)→(700,347)→(647,400)→(620,439)，西山脊与南河",
+      "observation": "轮廓沿地形和棕线；白城仍在本区内部，没有围城牌切成另一块。",
+      "deviating_segments": []
+    },
+    {
+      "name": "奈曼",
+      "verdict": "PASS",
+      "checked_segments": "约(704,296)→(757,295)→(807,326)，西棕线至(700,347)，南棕线至(800,400)，东河",
+      "observation": "北河、东西棕/河边与南棕线均贴合；没有把敖汉上半部吞入。",
+      "deviating_segments": []
+    },
+    {
+      "name": "敖汉",
+      "verdict": "PASS",
+      "checked_segments": "西北棕线(700,347)→(647,400)→(620,439)，东北棕线(700,347)→(755,366)→(800,400)，南河",
+      "observation": "三角色域由棕线与河流围定，未以直切替代弯曲南河。",
+      "deviating_segments": []
+    },
+    {
+      "name": "土默特",
+      "verdict": "PASS",
+      "checked_segments": "北棕线约(9,386)→(150,395)→(304,369)，东棕线至(118,546)，南河与左图缘",
+      "observation": "可见棕线与河道吻合；轮盘遮挡背景不当作可见精确地理线。",
+      "deviating_segments": []
+    },
+    {
+      "name": "喀喇沁",
+      "verdict": "PASS",
+      "checked_segments": "西北与土默特共享棕线；东北棕线约(297,410)→(361,428)→(391,474)；南长城约(191,602)→(338,508)→(394,479)",
+      "observation": "长城城垛与棕线走向相符，未沿城内侧直切或吞宣府。",
+      "deviating_segments": []
+    },
+    {
+      "name": "朵颜",
+      "verdict": "PASS",
+      "checked_segments": "北河约(449,446)→(622,440)→(679,418)；东山脊向西支(654,466)→(633,485)；南长城",
+      "observation": "采用通向山海关/长城的西支；未改用宁远北侧内部东支。山海关字牌遮挡处不声称逐像素可见。",
+      "deviating_segments": []
+    },
+    {
+      "name": "鄂尔多斯",
+      "verdict": "PASS",
+      "checked_segments": "北河约(9,511)→(192,574)；东侧长城至可见末端约(79,753)；标题遮挡桥(79,753)→(9,790)",
+      "observation": "第五版可见段沿河和长城；西南已取消沿恨字形闭合及水平截断。近似斜桥两侧mask相接，未见空隙，桥在长城末端和图缘接上。",
+      "deviating_segments": [],
+      "declared_approximation": {
+        "segment": [
+          [
+            79,
+            753
+          ],
+          [
+            9,
+            790
+          ]
+        ],
+        "first_anchor": "可见长城末端近似定位",
+        "second_anchor": "图缘近似锚，不是第二个可见地理线端点",
+        "reason": "标题恨字覆盖后续印刷线；本桥只用于最小闭合，不能称为原图精确描线。"
+      }
+    }
+  ],
+  "verdict": "PASS",
+  "claim_boundary": "通过仅指所列可见源图几何，加已明确声明的标题遮挡近似桥。被印刷UI遮挡的精确线不因此获证；不代表规则、正式数据、应用UI、教程或最终交付PASS。"
+}

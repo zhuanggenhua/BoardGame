@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-10T01:10:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "楼层切换与结束回合那排按钮位于同一个高度。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/roomFloorSwitcherSurface.tsx 底边改为 bottom-1，与操作栏 betrayal-action-rail 同一锚点。",
+        "src/games/betrayal/Board.tsx 把切层钮从地图覆盖层挪到与操作栏同级的抬头显示区域。",
+        "e2e/betrayal/floor-switcher-visual.e2e.ts 2 passed：切层钮底边与结束回合底边差不超过十二像素。",
+        "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts 2 passed：电脑与手机横屏同样断言同高。",
+        "01、03 电脑图切层钮底边与移动探索交易使用结束回合同一底边；02 手机横屏同高。"
+      ]
+    },
+    {
+      "requirement": "切层钮仍在牌桌右下，紧凑上下箭头加当前楼层，不把继续悬浮球当占位。",
+      "status": "PASS",
+      "evidence": [
+        "切层钮仍是 right-[228px]，避开右侧牌堆和队友，不给继续按钮留空。",
+        "01、03 切层钮在右下，继续按钮可重叠；02 手机横屏切层钮与继续按钮叠在底边。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-floor-action-align-20261009/01-PC-1920x1080-切层与结束回合同高.jpg",
+    "evidence/betrayal-floor-action-align-20261009/03-PC-1920x1080-一层切换后切层与结束回合同高.jpg",
+    "evidence/betrayal-floor-action-align-20261009/02-Vivo-796x360-切层与结束回合同高.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

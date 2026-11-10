@@ -1,0 +1,40 @@
+{
+  "media": [
+    {
+      "path": "00-壳内固定控件-提示卡已加载-整屏.jpg",
+      "chainId": "dicethrone-壳内固定控件-936x432",
+      "chainStep": "1",
+      "sourceRun": "20261012-dicethrone-shell-fixed-controls-r8",
+      "sourceDir": "evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "真实横屏入口加载完成，提示卡图片与两个放大镜入口已经可见。",
+      "description": "手机横屏整屏显示已加载的提示卡、玩家面板和两个放大镜入口。"
+    },
+    {
+      "path": "01-壳内固定控件-玩家面板放大镜-整屏.jpg",
+      "chainId": "dicethrone-壳内固定控件-936x432",
+      "chainStep": "2",
+      "sourceRun": "20261012-dicethrone-shell-fixed-controls-r8",
+      "sourceDir": "evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "提示卡收起后保留玩家面板放大镜与完整棋盘上下文。",
+      "description": "提示卡收起后整屏显示玩家面板放大镜及完整棋盘上下文。"
+    },
+    {
+      "path": "02-壳内固定控件-提示卡放大镜-整屏.jpg",
+      "chainId": "dicethrone-壳内固定控件-936x432",
+      "chainStep": "3",
+      "sourceRun": "20261012-dicethrone-shell-fixed-controls-r8",
+      "sourceDir": "evidence/dicethrone/dicethrone-shell-fixed-controls-20261012/final",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "提示卡重新展开后保留规则图、放大镜和完整棋盘上下文。",
+      "description": "提示卡重新展开后整屏显示规则图、放大镜和玩家操作上下文。"
+    }
+  ]
+}

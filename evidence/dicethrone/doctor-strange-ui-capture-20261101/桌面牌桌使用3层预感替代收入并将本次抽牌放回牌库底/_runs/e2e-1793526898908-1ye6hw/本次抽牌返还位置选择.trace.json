@@ -1,0 +1,373 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "本次抽牌返还位置选择",
+  "sourceRun": "1793527031441-122080-dfc79eb9-80aa-4c07-830d-14f0887b0ef4",
+  "sourceRevision": "c6e7b4e598212963b951e1542d8257f685fd35ecf34782588a7c83faaf431d20",
+  "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+  "status": "PASS",
+  "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。",
+  "steps": [
+    {
+      "id": "income-return-position",
+      "action": "选择一张本次抽牌并显示返还位置",
+      "before": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [
+            "来个六！ action 1 CP",
+            "就这？ action 0 CP",
+            "抬一手！ action 1 CP"
+          ],
+          "choiceIds": [
+            "dt-hand-card-option-card-play-six",
+            "dt-hand-card-option-card-just-this",
+            "dt-hand-card-option-card-give-hand"
+          ],
+          "selectedChoiceIds": [
+            "dt-hand-card-option-card-play-six"
+          ],
+          "modalButtonLabels": [
+            "确认"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "@media (max-height: 540px) {\n  .dt-card-pool {\n    --dt-card-pool-readable-height: calc(var(--runtime-viewport-height, 100dvh) - max(0.25rem, env(safe-area-inset-top)) - max(0.25rem, env(safe-area-inset-bottom)) - 3.5rem);\n  }\n  .dt-card-pool .dt-card-pool-panel { top: max(0.25rem, env(safe-area-inset-top)); bottom: max(0.25rem, env(safe-area-inset-bottom)); }\n  .dt-card-pool .dt-card-pool-surface { display: grid; grid-template-columns: minmax(0, 1fr) 8.5rem; grid-template-rows: 1fr auto 1fr; column-gap: 0.75rem; padding-block: 0.25rem; }\n  .dt-card-pool .dt-card-pool-backdrop { bottom: 0 !important; background-color: rgba(2, 6, 23, 0.92); }\n  .dt-card-pool .dt-card-pool-title { grid-column: 2; grid-row: 1; align-self: end; font-size: 1rem; }\n  .dt-card-pool .dt-card-pool-search { grid-column: 2; grid-row: 2; width: 100%; }\n  .dt-card-pool .dt-card-pool-selection { grid-column: 1; grid-row: 1 / 4; height: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 0; }\n  .dt-card-pool .dt-card-pool-track { width: max-content; flex-wrap: nowrap; }\n  .dt-card-pool .dt-card-pool-card { --dt-card-pool-render-width: var(--dt-card-pool-reader-width); }\n  .dt-card-pool .dt-card-pool-actions { grid-column: 2; grid-row: 3; align-self: start; flex-direction: column; }\n}\n选择放回牌库的牌确认",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序",
+            "选择放回牌库的牌"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "income",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 2,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-income",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-strange-see-the-future",
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "after": {
+        "visible": {
+          "magnifyVisible": false,
+          "cardSpotlightId": null,
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [
+            "牌库顶",
+            "牌库底"
+          ],
+          "choiceIds": [
+            "",
+            ""
+          ],
+          "selectedChoiceIds": [],
+          "modalButtonLabels": [
+            "牌库顶",
+            "牌库底"
+          ],
+          "diceInteractionHintText": null,
+          "diceInteractionHintTitle": null,
+          "diceInteractionHintDetail": null,
+          "modalText": "技能结算选择放在牌库顶还是底？牌库顶牌库底",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序",
+            "技能结算选择"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "income",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 2,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "strange-income",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 4
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-strange-see-the-future",
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand"
+              ],
+              "deckCount": 27,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": "in_progress"
+        }
+      },
+      "assertions": [
+        {
+          "name": "牌库顶和牌库底均可选择",
+          "actual": {
+            "top": true,
+            "bottom": true
+          },
+          "expected": {
+            "top": true,
+            "bottom": true
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-income-return-position",
+      "stepId": "income-return-position",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "f35d26be2fe8e40525e926a722a985507f51b53a749d2683709ef31f8a6f6d44"
+    }
+  ]
+}

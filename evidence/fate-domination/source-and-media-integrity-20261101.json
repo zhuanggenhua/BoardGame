@@ -1,0 +1,11 @@
+{
+  "status": "REVISE",
+  "scope": "source-and-media-integrity-only",
+  "media": 90,
+  "groups": 11,
+  "sourceRevision": "81cf6eeeef030cafad8413f83e91df1935ccd8eb69882f5b68f70450976e6110",
+  "sourceMatches": false,
+  "bad": [],
+  "productionTutorial": "REVISE-unpublished",
+  "displayAllowed": false
+}

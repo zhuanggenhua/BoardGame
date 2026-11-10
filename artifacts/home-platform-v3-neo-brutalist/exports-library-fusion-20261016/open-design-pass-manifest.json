@@ -1,0 +1,93 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "lobby",
+  "evidenceCategory": "independent",
+  "title": "收藏库融合设计：桌面与手机核心流程",
+  "humanApproval": "not-approved",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "dot-root-library-fusion",
+      "reason": "用户明确要求主代理亲自设计与逐图验收；已逐张查看原始整屏，修复低高度裁切后补审两张"
+    },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node --test artifacts/home-platform-v3-neo-brutalist/library-fusion.contract.test.mjs",
+      "node scripts/infra/vitest-cli-safe.mjs run --config artifacts/home-platform-v3-neo-brutalist/vitest.config.ts --configLoader native"
+    ],
+    "evidence": [
+      "fusion-e2e-report.json",
+      "v1-room-review-summary.json",
+      "候选契约六项和原有首页合同一项通过；浏览器核心链路与低高度修复实测，视觉判定另由主代理完成"
+    ]
+  },
+  "sourceSnapshot": {
+    "index.html": "7e9cf0277e240c0be4c6dbe6a54414cbd5342dfcd39711831f2544861aad0fb5",
+    "mobile.css": "4d49892b20a48f30039305b910863948a1024636f7cf53094a850b4226296b7d"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "media": [
+    "home-1920.png",
+    "home-hover-1920.png",
+    "home-1280.png",
+    "home-bottom-1280.png",
+    "home-1024x600.png",
+    "game-top-1024x600-v1.png",
+    "game-rooms-friends-1024x600-v1.png",
+    "mobile-home-375.png",
+    "mobile-search-375.png",
+    "mobile-return-375.png",
+    "mobile-details-375.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "保留桌面收藏布局并适配中等与低高度窗口",
+      "status": "PASS",
+      "evidence": [
+        "home-1920.png",
+        "home-1280.png",
+        "home-bottom-1280.png",
+        "game-top-1024x600-v1.png",
+        "game-rooms-friends-1024x600-v1.png"
+      ]
+    },
+    {
+      "requirement": "手机游戏优先，搜索排序返回及详情操作保持可用",
+      "status": "PASS",
+      "evidence": [
+        "mobile-home-375.png",
+        "mobile-search-375.png",
+        "mobile-return-375.png",
+        "mobile-details-375.png",
+        "fusion-e2e-report.json"
+      ]
+    },
+    {
+      "requirement": "满员房间禁用，开放房间可操作且不受祖先裁切",
+      "status": "PASS",
+      "evidence": [
+        "v1-room-review-summary.json",
+        "mobile-details-375.png"
+      ]
+    }
+  ],
+  "limitations": [
+    "本交付仅收藏库融合与相关详情、响应式核心链路；不代表整站或山屋惊魂体验通过",
+    "最新九张未变场景沿用首轮原图，低高度游戏页使用修正后的两张；失败旧图不进入交付目录",
+    "设计原型的房间动作仍为既有模拟行为，未宣称真实联机后端验证"
+  ]
+}

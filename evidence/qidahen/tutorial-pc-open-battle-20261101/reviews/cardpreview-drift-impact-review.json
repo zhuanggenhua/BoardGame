@@ -1,0 +1,386 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r134_final_baseline",
+  "scope": "仅判定上述精确旧新哈希之间的导出变化不影响R134七大恨当前79记录及49媒体目标链，不豁免未知漂移，不声称全部源码字节相同。",
+  "file": "src/components/common/media/CardPreview.tsx",
+  "capturedRawHash": "c3bbb402d95283e8681410537b4f9ff5100bf4bad3c0d0670731dd8088000c28",
+  "capturedNormalizedHash": "ba34d5333c242b20b9061e40ec45248ab89015de5a24a5ff45047ec55718a8f8",
+  "currentRawHash": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269",
+  "currentNormalizedHash": "4455f9bf5da75ba70afe60e9502758096bcf3575ce5a71581d2757575691111b",
+  "actualByteDrift": 1,
+  "otherSourceFilesUnchanged": 715,
+  "ruleSource": ".spec/knowledge/standards/e2e-verification.md:26-27",
+  "changedSymbols": [
+    {
+      "symbol": "import:../../../engine/primitives/spriteAtlas",
+      "change": "在原有模块导入中新增computeSpriteAspectRatio命名绑定，未新增模块加载或顶层调用。"
+    },
+    {
+      "symbol": "getCardPreviewAspectRatio",
+      "change": "新增四行atlas类型分支，读取注册atlas并调用computeSpriteAspectRatio；其余语句及CardPreview组件未改。"
+    }
+  ],
+  "machineEvidence": {
+    "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\cardpreview-drift-ast-evidence.json",
+    "recoveredBeforeMatchesServedSource": true,
+    "onlyTwoChangedStatements": true,
+    "remainingStatementsUnchanged": true,
+    "allFourDirectQidahenImportsOnlyCardPreview": true,
+    "independentWholeSourceCheck": {
+      "method": "只在内存中删除新增命名绑定及精确四行atlas分支，比较规范化LF全文；不写源码。",
+      "strippedCurrentEqualsCapturedBefore": true,
+      "strippedCurrentNormalizedHash": "ba34d5333c242b20b9061e40ec45248ab89015de5a24a5ff45047ec55718a8f8"
+    }
+  },
+  "productionConsumers": [
+    {
+      "path": "src/components/game/framework/widgets/CardPreviewTooltip.tsx",
+      "line": 77,
+      "loaded": true,
+      "callCondition": "Tooltip组件挂载且previewRef未自带aspectRatio时即调用；不以hover作为helper的执行门槛。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/BoardOverlays.tsx",
+      "line": 95,
+      "loaded": false,
+      "callCondition": "本次目标链未加载的其它游戏放大层。"
+    }
+  ],
+  "loadedConsumers": [
+    {
+      "path": "src/components/game/framework/widgets/CardPreviewTooltip.tsx",
+      "changedExportConsumedInRecordedChain": false,
+      "callPath": [
+        "GameHUD.actionLogAction.content",
+        "ActionLogSegments",
+        "CardPreviewTooltip",
+        "getCardPreviewAspectRatio"
+      ],
+      "mountCondition": "FabMenu初始isOpen=false、activeItemId=null；日志Panel未激活时在返回portal前返回null，未挂载ActionLogSegments及其Tooltip。"
+    },
+    {
+      "path": "src/components/common/media/CardPreview.tsx",
+      "directQidahenImports": [
+        {
+          "path": "src/games/qidahen/Board.tsx",
+          "module": "../../components/common/media/CardPreview",
+          "names": [
+            "CardPreview"
+          ]
+        },
+        {
+          "path": "src/games/qidahen/ui/QidahenFactionSelectionScreen.tsx",
+          "module": "../../../components/common/media/CardPreview",
+          "names": [
+            "CardPreview"
+          ]
+        },
+        {
+          "path": "src/games/qidahen/ui/QidahenInspectPanel.tsx",
+          "module": "../../../components/common/media/CardPreview",
+          "names": [
+            "CardPreview"
+          ]
+        },
+        {
+          "path": "src/games/qidahen/ui/QidahenTurnChoicePanel.tsx",
+          "module": "../../../components/common/media/CardPreview",
+          "names": [
+            "CardPreview"
+          ]
+        }
+      ],
+      "consumedExport": "CardPreview",
+      "consumedExportChanged": false,
+      "qidahenSizePath": "Board内CardPreviewFit使用atlas frame尺寸或rawWidth/rawHeight；自有放大层也使用rawWidth/rawHeight，不调用变化helper。"
+    }
+  ],
+  "logPathEvidence": [
+    {
+      "path": "src/components/system/FabMenu.tsx",
+      "lines": [
+        193,
+        194,
+        1031
+      ],
+      "fact": "初始关闭且无活动项；非活动Panel返回null，React元素content的构造本身不执行日志子组件。"
+    },
+    {
+      "path": "src/components/game/framework/widgets/GameHUD.tsx",
+      "lines": [
+        425,
+        445
+      ],
+      "fact": "变化helper的已加载路径来自action-log内容中的ActionLogSegments。"
+    },
+    {
+      "path": "src/components/game/framework/widgets/CardPreviewTooltip.tsx",
+      "lines": [
+        75,
+        77,
+        147,
+        191
+      ],
+      "fact": "helper在Tooltip挂载时计算比例；hover与点击仅控制其预览和放大portal。"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "fact": "已检索整个年度测试，无日志打开、日志卡名hover及日志tooltip操作；本轮检视操作指向qidahen-card-magnify-overlay。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\behavior-trace.json",
+      "fact": "79记录和49媒体无日志面板或日志tooltip状态；原媒体图审报告及本人两张新代表图没有日志面板。"
+    }
+  ],
+  "unaffectedStates": [
+    {
+      "id": "frontier-goal",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\00-frontier-goal.png",
+      "sha256": "78252187c7c6b5c48e8e20f6cf56145fc87e6918bf7fe81a87896680499a3541"
+    },
+    {
+      "id": "opening-move",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\01-opening-move.png",
+      "sha256": "e85125519e078898b1aedc2e3681900e74eccb42c4d432c4c5fda971393f0f90"
+    },
+    {
+      "id": "prepare-hand",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\02-prepare-hand.png",
+      "sha256": "49779c78d0b6bf0821e6bd7a561612aa7b3ae4c63cd47d91e9f3994ba661d8f8"
+    },
+    {
+      "id": "recruit-payment",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\03-recruit-payment.png",
+      "sha256": "ec0ac99437fd898a1ba1168b5f205c2c6cac0e4c54cfc9d00d65406ac27bb475"
+    },
+    {
+      "id": "recruit-payment-inspect",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\04-recruit-payment-inspect.png",
+      "sha256": "fb08035990b7dfb1e212eb88c912df9b0b5561c9f3d916b3e5caaf30f60542fe"
+    },
+    {
+      "id": "recruit-source",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\05-recruit-source.png",
+      "sha256": "3529ca85c38407556fb88c78e0b1c1a4660b9a65459f11ccc3fe0ec7c44c2ab6"
+    },
+    {
+      "id": "recruit-troops",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\06-recruit-troops.png",
+      "sha256": "1e1da35788734e6edcfbae6edafa22eaf296e3d9b012ae947e6061ede19701c8"
+    },
+    {
+      "id": "farm-action",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\07-farm-action.png",
+      "sha256": "08e64281f68555b942dd61b1306ec6d605fac3456732ab6380b6e754a79f1f68"
+    },
+    {
+      "id": "reclaim-action",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\08-reclaim-action.png",
+      "sha256": "61a04a092f254f0c187b3bf8eb6641957c220a3072ae525c51bf2a502f8a263e"
+    },
+    {
+      "id": "reclaim-target",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\09-reclaim-target.png",
+      "sha256": "e340a0da689e98123967a35eed7847aa410a5ae69ad3390e5d73a8c09238452b"
+    },
+    {
+      "id": "midyear",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\10-midyear.png",
+      "sha256": "c083a39c50f15aaf7cd0454c3b95654baf521649e2615f2de1b72c0a673d87e5"
+    },
+    {
+      "id": "hand-limit",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\11-hand-limit.png",
+      "sha256": "f460078b0c3af1b1b108e2600d1606a6a3e41c742cf34af50685051a236b7db2"
+    },
+    {
+      "id": "upgrade-card",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\12-upgrade-card.png",
+      "sha256": "a0086cbabb65f6a5034fad28f2910004fbb734dfa8a1f66c84336fa20c744383"
+    },
+    {
+      "id": "dispatch-source",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\13-dispatch-source.png",
+      "sha256": "6aa1ccef55cc9fe6dff17c6f4d6a24141da2170684e761c414181afc68e0e1c4"
+    },
+    {
+      "id": "dispatch-troops",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\14-dispatch-troops.png",
+      "sha256": "eee42ea28fdad9db40dd53aab6abc56028d8f6b9f625eb5b298e01049fcf6abf"
+    },
+    {
+      "id": "dispatch-troops-selected",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\15-dispatch-troops-selected.png",
+      "sha256": "5256ea298b067e952dfca24139bae0a8584ca5858a64a2f6853939fdb992efd0"
+    },
+    {
+      "id": "dispatch-target",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\16-dispatch-target.png",
+      "sha256": "6f0f0a0b7860563147817650ec3e03eae44423f62904f6a1f2ded9008e70125c"
+    },
+    {
+      "id": "tactic-card",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\17-tactic-card.png",
+      "sha256": "7830539faf7a874c843888715261e2dd5f43834ccae06c12bf58cb9aa0671627"
+    },
+    {
+      "id": "tactic-card-selected",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\18-tactic-card-selected.png",
+      "sha256": "4954b85ee34aab6dafa2ee38de48a6a67e63319c2a2241d6e17478dbc258e9f9"
+    },
+    {
+      "id": "battle-artillery-rolling",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "1e66d6074ce4abb96f4e0428716e179025df93f7e325fa52faeae6e241371dda"
+    },
+    {
+      "id": "battle-artillery-damage",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "c90e9fd1a8b2522cc93d1c54786d3701a52d4206a00dfd097daed4cef8ded03b"
+    },
+    {
+      "id": "battle-cavalry-rolling",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "1eae9d1f234bd2f2ab95a89cc25bd07d64ce23dbe1858a363ea79da8a5f5c217"
+    },
+    {
+      "id": "battle-cavalry-damage",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "3ea240c6eee423f1a4067996b64fd10c9e561f905b51b1e9a4143c952975a67e"
+    },
+    {
+      "id": "battle-infantry-rolling",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "836831b9a56aebf07c6b57608c407faa7a25914fe6703c61c5ac820ccd60a07f"
+    },
+    {
+      "id": "battle-infantry-damage",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "e5528a875a0d29b8207b18cc50b3c5e9714d06ecbba500ee70ced355c99b1222"
+    },
+    {
+      "id": "battle-real-time",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-real-time.webm",
+      "sha256": "558feaf903d055f327a33997b15df2d597e8a056f011431111053101c28cc033"
+    },
+    {
+      "id": "occupy",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\26-occupy.png",
+      "sha256": "c298488452c441776a4689c5bf0e34ad2f1e0b5772aa20696bd1c3fe9bbc77d0"
+    },
+    {
+      "id": "occupy-report",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\27-occupy-report.png",
+      "sha256": "4b716cfa2c8972492fe2a33f2822f9dc417d4b1dd46e2f888e1830f46d6ea2c4"
+    },
+    {
+      "id": "opponent-round",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\28-opponent-round.png",
+      "sha256": "fa03aca756300099221c8e4d74f6160d29eb2bc764acc78a8b3d840c7560911a"
+    },
+    {
+      "id": "diplomacy-target",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\29-diplomacy-target.png",
+      "sha256": "04e55ce010800ffcb6e8e0bb7cf2001ed2645fae35f3dddca5a9656656870533"
+    },
+    {
+      "id": "diplomacy-finish",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\30-diplomacy-finish.png",
+      "sha256": "d2061e0d2f7ca051c02063431e74cf5fdc13d8eea4673dfa950d95621bf1f722"
+    },
+    {
+      "id": "hire-action",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\31-hire-action.png",
+      "sha256": "a372ebd8db3f3954fb54e86e908bd325a462c5873a1bac8f15844b670fdb48c8"
+    },
+    {
+      "id": "hire-target",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\32-hire-target.png",
+      "sha256": "a18efe3663aa7c95cb1792a46fa15dbd6af8896df7b9533b2b96d6cbdaa81e72"
+    },
+    {
+      "id": "new-year",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\33-new-year.png",
+      "sha256": "342c54ba0b37eaa31eb22f504f41332f712f189baea8f1772e57bbadbe99db91"
+    },
+    {
+      "id": "maintain-shanhai",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\34-maintain-shanhai.png",
+      "sha256": "6c7ab0936bf847eba79507cfbd322384ac85f90c9772cceb38ca516fc8c4a71f"
+    },
+    {
+      "id": "upkeep-yehe",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\35-upkeep-yehe.png",
+      "sha256": "76a8507bb93907ef513699af234cceea933d7a7784bfa901410e2078acd09a47"
+    },
+    {
+      "id": "upkeep-yehe-selected",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\36-upkeep-yehe-selected.png",
+      "sha256": "836cf77cc623e2264a4ac9d22d3f40fbf8909369f9d2b6380a3b9f5d0c26ab7c"
+    },
+    {
+      "id": "hand-scroll-end",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\37-hand-scroll-end.png",
+      "sha256": "9e4d31f627cb4c141ccd43f04832e24d7a5cb64b9b302ca5f37801386898f78d"
+    },
+    {
+      "id": "upkeep-pyongyang",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\38-upkeep-pyongyang.png",
+      "sha256": "60d5f8c28dec872cc876e75b2ed3387c05d03f3b767f08c1817f2addba9aa916"
+    },
+    {
+      "id": "upkeep-pyongyang-selected",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\39-upkeep-pyongyang-selected.png",
+      "sha256": "354f1b0c6b9cd82ee87103ab61b3cb7db7621fe18b605a25692b04f8b81e7c73"
+    },
+    {
+      "id": "claim-year",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\40-claim-year.png",
+      "sha256": "0e2efb88b64d2f7a7c651624ebe650010402981916577893a4ff83f68cdc1755"
+    },
+    {
+      "id": "new-order",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\41-new-order.png",
+      "sha256": "26cf079f820c348107017ffc3b30e552ecbc87f4bc857e2ed5088bdd20a65b33"
+    },
+    {
+      "id": "year-character",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\42-year-character.png",
+      "sha256": "2221a33ed903513fb9fdfa4bc66ac640389be86ff78a971bd0893c59297d3cc0"
+    },
+    {
+      "id": "year-character-inspect",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\43-year-character-inspect.png",
+      "sha256": "713f6b6dad44a0a582a74d9c6c1603f93bd831ede0228e2adb538923e76fab20"
+    },
+    {
+      "id": "year-ready",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\44-year-ready.png",
+      "sha256": "62d6262f9f971486238d2bc3cab028ecc3e16557973069500c0db4488a2c3eb5"
+    },
+    {
+      "id": "training-target",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\45-training-target.png",
+      "sha256": "9e8efd7a7e3848afa860a3cc2850ed0eb52503509c24c9f999d408542daec0d4"
+    },
+    {
+      "id": "training-second-target",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\46-training-second-target.png",
+      "sha256": "d6176ef978bc9b76e0e2073dcc87e361a95768eef44cb4a587dd1b6ec4e7c7ba"
+    },
+    {
+      "id": "training-finish",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\47-training-finish.png",
+      "sha256": "54f8e8b866d2f094c08fb5e31e0c13198153bc2f0cae05494f7a5b37d36c0a37"
+    },
+    {
+      "id": "finish",
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\48-finish.png",
+      "sha256": "ea58b2edd49854af21d7508684122c03bea05a43902d28233f8612050bb75df4"
+    }
+  ],
+  "scopeConclusion": "变化helper未被本条链挂载执行，七大恨实际可见卡牌消费路径及其声明未变；49媒体及原79记录继续有效。原raw哈希差异一项如实保留，不替换capturedHash，不用模块加载直接等同符号消费。",
+  "futureLogSpecialtyBoundary": "此结论不覆盖打开操作日志后的atlas卡名预览。若未来验收该路径，最小重跑为打开日志、atlas卡名hover、点击放大及关闭，核对比例和原入口；无需因本变化重跑骰子或完整年度链。",
+  "unknownFutureDriftPolicy": "只适用于所列精确旧新哈希和两个变更语句；任何后续未知差异仍须阻止相关链并重新分析，不设目录白名单。",
+  "preservation": "未修改CardPreview.tsx、behavior-trace.json、AST机器证据或原图审报告；未启动浏览器或重读媒体。"
+}

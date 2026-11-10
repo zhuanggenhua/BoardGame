@@ -1,0 +1,72 @@
+{
+  "reviewer": { "kind": "subagent" },
+  "status": "REVISE",
+  "media": [
+    {
+      "path": "m01-收藏库主页.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶栏只有易桌游品牌、汉堡、铃铛和头像街，没有发现/收藏库/上传文字导航；主栏是新情报横卡加我的游戏两列封面，游戏列表不占主栏；底栏三键且收藏库黄绿高亮；对局悬浮条叠在封面上方、底栏仍在。"
+    },
+    {
+      "path": "m02b-游戏列表抽屉.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "左侧抽屉打开，可见主页和大杀四方、王权骰铸等游戏名；右侧内容被遮罩压住，底栏仍在。"
+    },
+    {
+      "path": "m02-收藏库游戏页.png",
+      "status": "REVISE",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "封面下纵向四键重连进入/教程模式/移出收藏/配置表，键间有空隙，主 CTA 是重连不是创建房间，列表已关、底栏在。失败：封面到对局条之间看不见「当前房间」「玩过的好友」通栏。最小修复：把房间卡、好友卡紧贴四键下方且首屏能看见，房间在好友上面。"
+    },
+    {
+      "path": "m05-发现两列.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "游戏库正好两列竖封面，王权骰铸/大杀四方/山屋惊魂/七大恨，游戏名叠在图内；底栏发现高亮；不是六列。"
+    },
+    {
+      "path": "m05b-发现点开展开.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "大杀四方封面上展开介绍文字，仍停在两列网格里，没有全屏详情弹层。"
+    },
+    {
+      "path": "m06-游戏详情.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "几乎全屏 sheet，右上正方形叉，可见大厅页签和房间列表，不是居中小卡片。"
+    },
+    {
+      "path": "m06c-销毁确认.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "销毁当前房间对话框左右留白、明显窄于 375，右上正方形叉、没有取消文字，底部居中粉红销毁。"
+    },
+    {
+      "path": "m06d-创建房间.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "创建房间对话框宽度约 100%-32，右上叉、无取消文字，可见房间名/密码/人数，底部居中创建。"
+    },
+    {
+      "path": "m07-上传页.png",
+      "status": "REVISE",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "单列表单，链接下有「粘贴后自动检测能否打开」，底栏上传高亮。失败：分类下面直接是规则文档，看不见人数两个下拉。最小修复：分类下方排出最少/最多人数两个下拉，封面/提交区叠在表单下且可滚到。"
+    },
+    {
+      "path": "m08-个人主页.png",
+      "status": "REVISE",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶图封面通栏，身份衡、编辑个人资料、游玩时长/局数/收藏纵向叠放，统计没有排行或评分，底部是全站对局条不是资料字段。失败：最新动态只露出残字，看不见带局数·排行·分数的动态行。最小修复：资料流可滚到至少一行动态（局数·排行·分数）露出对局条之上。"
+    },
+    {
+      "path": "m08b-顶栏抽屉.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "顶栏面板里有搜索游戏、操作指南、中文，底栏仍在。"
+    }
+  ]
+}

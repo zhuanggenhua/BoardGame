@@ -1,0 +1,487 @@
+{
+  "status": "PASS",
+  "comparison": "R18 → R28",
+  "statusMeaning": "保留此前独立审查的旧新职责分析，本次独立核对七项职责在 R28 当前行为链与媒体中的映射及媒体语义；未把旧 PASS 当作当前视觉验收，也未把支付面板截图当作关闭动作证据。",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r28_visual_delta3"
+  },
+  "reviewedAt": "2026-10-26T03:08:44.583Z",
+  "reviewScope": "职责映射、当前文件存在、索引绑定、R28 trace状态与媒体哈希；视觉变化的五张图另见 .visual-review-20261026-r28-direct.json。",
+  "sourceBaseline": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/.baseline-review-r27-source.json",
+  "inputSource": "e2e/qidahen/qidahen-closeout.e2e.ts",
+  "summary": {
+    "requirements": 7,
+    "pass": 7,
+    "revise": 0,
+    "afterMedia": 31
+  },
+  "requirements": [
+    {
+      "status": "PASS",
+      "requirement": "入口与胜利条件及固定手牌首步",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00a-继续后-选择首个行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02d-轮盘后选择手牌行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02e-两种行动完成-征召结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/02-固定先完成手牌行动.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留三种胜利条件，并从正式开局进入手牌征召；教程固定示范先征召，不再把行动顺序做成课程分支。",
+      "preservedActions": "阅读胜利条件，继续到真实行动窗口，并点击高亮的征召军队。",
+      "changes": "移除轮盘先行后再返回手牌行动的教程路径；正式规则仍允许玩家决定行动顺序，教程只演示一条连续路径。",
+      "duplicateDecision": "旧入口与轮盘先行分支不是重复画面；合并为入口和固定首步职责，保留当前开局及征召提示两个状态。",
+      "changeAuthority": "用户指出第二步的分叉与目标错位，要求彻底重构为连贯的边玩边学流程。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "入口链从 welcome 进入固定征召步骤；当前提示和目标高亮不再承担行动顺序课程分支。后续真实征召点击由一格等主线链路承接。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-entry.json",
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-one-grid.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/00-唯一入门入口-直接进入胜利条件.png",
+          "sha256": "81d70b31347c1d7f2f8cf799abe9b7d401d34e00c9582e08b8cac858eeb0ca6f",
+          "chainId": "basic-opening-entry",
+          "uiStateId": "basic-opening-entry-ui-01",
+          "behaviorStepId": "basic-opening-entry-capture-001",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-entry.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/02-固定先完成手牌行动.png",
+          "sha256": "c37a0a313cd86607cf7ad9e7e40aec9d504a5f68d1b3b000085a0a6db074d2ef",
+          "chainId": "basic-opening-entry",
+          "uiStateId": "basic-opening-entry-ui-02",
+          "behaviorStepId": "basic-opening-entry-capture-003",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-entry.json"
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "requirement": "征召后两格轮盘行动",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02a-轮盘三格费用与落点说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/11-教程结束后同局下一位玩家可操作.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-确认弃置手牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘走法悬停-显示费用与效果.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/11-教程结束后同局下一位玩家可操作.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留征召支付、建军、两格轮盘指定一名对手抽牌及军屯落点结果。",
+      "preservedActions": "真实完成征召后选两格、指定对手并结算军屯，然后继续同局。",
+      "changes": "把原手牌征召与轮盘结果绑定到一条真实行为链，并去掉行动顺序分叉。",
+      "duplicateDecision": "征召窗口、候选编制、轮盘选择、对手选择和军屯结果是不同可见交互状态，保留必要状态而不按每一步机械截图。",
+      "changeAuthority": "用户要求从真实局面解释并让玩家实际操作，且不把行动顺序变成课程选择。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前链路依次承接手牌支付、目标区域、部队编制、征召结果、两格选择、对手选择及军屯结果；结尾退出教程后同局仍有真实轮盘输入。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-征召支付-点击看查看牌面.png",
+          "sha256": "8d0ae9eae90f4e96b681c48ac3e44198fb64e9dba560046ca53eae264b9d1043",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-01",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-007",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07-支付1张手牌.png",
+          "sha256": "0f9d45b535bfa3d8b2c47b3c112450784d935c3db779753db4867623f7206ed5",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-02",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-008",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/07a-确认弃置手牌.png",
+          "sha256": "da6052752af9daa988749e7b6f03cab944a84a9d99f0e4b26efd0cdd87c7fc8b",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-03",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-010",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/08-选择宣府建军位置.png",
+          "sha256": "776bd3f2c91420796e9452f325913b9e6e6913e93a3357336edae776ddc097c3",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-04",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-012",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09-选择建军方式.png",
+          "sha256": "c4e5a8fcf9576350c920c00621a84357953bc0d94b93d4ad8a9d640e8b6c53df",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-05",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-014",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/10-征召结果-轮盘行动待完成.png",
+          "sha256": "8f0eb9e2a9176ca83e0616c9c9b31cc72bad92cf81bdbaa5c6f02a715b72b897",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-06",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-016",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘走法悬停-显示费用与效果.png",
+          "sha256": "cfacddc972c0bda8568d2c85d3936411684a5d67545e9a6fc7d2434f4416c365",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-07",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-018",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03-轮盘选择-三种走法均可选择.png",
+          "sha256": "34f794790cb494039cf498fd88d0b0f56b89e9bea9130cd7303ab093c94bce57",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-08",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-019",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03a-轮盘两格-选择对手抽牌.png",
+          "sha256": "a77c8ef40408a8c1a2f315d61b62aa3626e68ae9dfc663faf36a68169928a462",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-09",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-021",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03b-轮盘两格-进入军屯并结算.png",
+          "sha256": "7a6d4a8c2d18169fa62b82f5ac558d52c82127149190816e630049ddc5239da3",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-10",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-023",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/11-教程结束后同局下一位玩家可操作.png",
+          "sha256": "b9f7b0f611160b703151ad81a72b25260df4ddec41b3ebdc0154facc6f3970d6",
+          "chainId": "basic-opening-recruit-wheel",
+          "uiStateId": "basic-opening-recruit-wheel-ui-11",
+          "behaviorStepId": "basic-opening-recruit-wheel-capture-026",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-wheel.json"
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "requirement": "三格轮盘征兵训练与继续",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03l-教程退场后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03l-教程退场后同局继续.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留三格移动后实际支付、选择征兵或训练、额外训练和结束行动。",
+      "preservedActions": "选择三格、确认对手补牌、完成征兵训练操作并继续同一局。",
+      "changes": "保留为条件路线，不要求所有玩家为学习其他规则而强行选择三格。",
+      "duplicateDecision": "规则说明、目标高亮、支付、结果与继续是不同界面状态，数值变化由 E2E 和 Vitest 断言。",
+      "changeAuthority": "用户要求尊重真实互斥选项，并按操作后果教规则；不把数值正确性转嫁给截图。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前三格输入进入真实支付，再选择训练、征兵、额外训练支付和目标，最后结束行动并退出教程继续同局；这些不是要求同一玩家依次尝试三种格数。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+          "sha256": "6dd83e84f90aa3289595d69583d43972be7bd6a2d00b381ba9dcabd110c65935",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-01",
+          "behaviorStepId": "basic-opening-three-grid-capture-010",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03e-征兵训练选择行动前规则译文.png",
+          "sha256": "cdd92e065887a9fd4fcaa496dd9339ffee098a2df01deac4c4816e4b1fdcb137",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-02",
+          "behaviorStepId": "basic-opening-three-grid-capture-013",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03f-训练目标选择与等级提示.png",
+          "sha256": "6551f31affff16b75ca7a4d16a985dde0d541ba623b0e54fe06c5d6a57e7da12",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-03",
+          "behaviorStepId": "basic-opening-three-grid-capture-015",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03g-征兵训练结算结果.png",
+          "sha256": "35acec528d3abca2afde9fe7c8ea90d20bdd4706efeacd552e174d65bc9d294b",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-04",
+          "behaviorStepId": "basic-opening-three-grid-capture-017",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03h-征兵目标本土限制与候选区域.png",
+          "sha256": "6520a104698ee8536adac0751ca227167e400b5a5322e8101c28a4a4c6aa86de",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-05",
+          "behaviorStepId": "basic-opening-three-grid-capture-019",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03i-额外训练规则与弃牌.png",
+          "sha256": "ddc360c816998c11bc37d91592d576a7c030c26fd5e431c18b26415bf98e1582",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-06",
+          "behaviorStepId": "basic-opening-three-grid-capture-022",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03j-额外训练目标与结果.png",
+          "sha256": "2fb3347d120938301fad85e1d57560fdfc636b964d4d3e33aa84bace314503b6",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-07",
+          "behaviorStepId": "basic-opening-three-grid-capture-025",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03k-征兵训练结果与轮盘结算.png",
+          "sha256": "cf30a68112e2395f0470620ac8a1ff650458cce2690e2f5d7a74ffb13c9173b4",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-08",
+          "behaviorStepId": "basic-opening-three-grid-capture-028",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03l-教程退场后同局继续.png",
+          "sha256": "895f760ee4467b490a5fad1a5130dc233504561f528d921cb92e90ea65ea386f",
+          "chainId": "basic-opening-three-grid",
+          "uiStateId": "basic-opening-three-grid-ui-09",
+          "behaviorStepId": "basic-opening-three-grid-capture-031",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-three-grid.json"
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "requirement": "一格开垦与同局继续",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-一格开垦前-选择轮盘走法.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留轮盘一格走法进入开垦并显示结果，以及退出教程后继续同局。",
+      "preservedActions": "在真实轮盘选一格、查看开垦结果，再继续同一局。",
+      "changes": "把一格走法作为互斥合法路线单独验证，不要求玩家依次完成其他格数路线。",
+      "duplicateDecision": "轮盘选择前和开垦后的结果是不同实质界面状态，继续对局状态由行为链关联。",
+      "changeAuthority": "用户明确指出一格、两格、三格是互斥选择，不能排成连续步骤。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前一格链在完成征召后进入开垦结果，退出教程后发生下一次真实轮盘输入，保留这一互斥路线的结果与继续职责。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-one-grid.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03c-轮盘一格-进入开垦并结算.png",
+          "sha256": "58862ca8e2812e6ccee411ad5ecf0df9bdc356a51142fca1425cdd91b9a9812e",
+          "chainId": "basic-opening-one-grid",
+          "uiStateId": "basic-opening-one-grid-ui-01",
+          "behaviorStepId": "basic-opening-one-grid-capture-010",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-one-grid.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+          "sha256": "081bae41b00dfe931fbfd52eaaf1a586fb4bcd7700ab587884507e8988b8de98",
+          "chainId": "basic-opening-one-grid",
+          "uiStateId": "basic-opening-one-grid-ui-02",
+          "behaviorStepId": "basic-opening-one-grid-capture-013",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-one-grid.json"
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "requirement": "川兵征召结果",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09a-选择川兵后的实际结果.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留征召行动支付后可选川兵编制的真实结果。",
+      "preservedActions": "支付征召费用、选择川兵并查看真实建立结果。",
+      "changes": "从宽泛的手牌征召职责拆出川兵互斥结果，绑定本轮独立行为链。",
+      "duplicateDecision": "川兵与炮兵是互斥编制且结算不同，不能用一个结果截图替代。",
+      "changeAuthority": "用户要求真实操作和选择结果有实际证据，不以规则数值截图替代交互验收。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前链实际支付、选择目标并点击川兵编制，结果媒体绑定该次输入；它只承担川兵互斥结果的可见状态职责。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-chuanbing.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09a-选择川兵后的实际结果.png",
+          "sha256": "77522d79d3e3af587f6b95e42407ae0e4bb9ab07711188e6c64d2afe33bc2616",
+          "chainId": "basic-opening-recruit-chuanbing",
+          "uiStateId": "basic-opening-recruit-chuanbing-ui-01",
+          "behaviorStepId": "basic-opening-recruit-chuanbing-capture-007",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-chuanbing.json"
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "requirement": "炮兵征召结果",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09b-选择炮兵后的实际结果.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留征召行动中炮兵编制的真实结果。",
+      "preservedActions": "支付征召费用、选择炮兵并查看真实建立结果。",
+      "changes": "从宽泛的手牌征召职责拆出炮兵互斥结果，绑定本轮独立行为链。",
+      "duplicateDecision": "炮兵与川兵是互斥编制且结算不同，不能合并为同一结果。",
+      "changeAuthority": "用户要求真实操作和选择结果有实际证据，不以规则数值截图替代交互验收。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "当前链实际支付、选择目标并点击炮兵编制，结果媒体绑定该次输入；它只承担炮兵互斥结果的可见状态职责。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-artillery.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/09b-选择炮兵后的实际结果.png",
+          "sha256": "1d1d8f9847a18353710d121c9f163a224e5109a31d75947711b509c4ec02f298",
+          "chainId": "basic-opening-recruit-artillery",
+          "uiStateId": "basic-opening-recruit-artillery-ui-01",
+          "behaviorStepId": "basic-opening-recruit-artillery-capture-007",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-recruit-artillery.json"
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "requirement": "移动端长按检视手牌",
+      "before": [
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-01-首个行动选择-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-01-固定先完成手牌行动.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-03-征召支付-长按手牌打开检视.png",
+        "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-05-选牌后确认征召支付.png"
+      ],
+      "baselineSource": "旧 R18 PASS 清单和 .baseline-review.json 的 R18 媒体职责；正式规则源与当前 Qidahen tutorial.ts、语言包、R28 同源行为 trace。R18 的 PASS 不作为本轮验收证据。",
+      "preservedInformation": "保留移动端长按检视当前手牌并返回支付窗口的交互。",
+      "preservedActions": "在支付窗口长按手牌查看，再回到原支付状态并选牌确认。",
+      "changes": "用本轮移动端真实入口与行为链重取证；界面关闭后的支付恢复状态由行为日志记录，视觉重复帧不重复收录。",
+      "duplicateDecision": "桌面点击检视与移动长按属于不同输入方式，移动端状态单独保留。",
+      "changeAuthority": "用户要求按实际 UI 和交互验收，不让教程结束或退出后残留遮罩。",
+      "mappingVerdict": "PASS",
+      "mappingObservation": "移动02媒体只证明长按前的支付面板，不能证明关闭动作。长按输入和检视图由当前 trace 关联；关闭按钮真实点击、检视隐藏及支付状态不变由本轮 E2E 中的 close 操作与断言承接，关闭后同像素支付图在 trace 的 skippedDuplicateScreenshots 中跳过。",
+      "behaviorEvidence": [
+        "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-mobile-hand-inspect.json"
+      ],
+      "afterBindings": [
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-00-开场-胜利条件说明.png",
+          "sha256": "b45982affb3a7deec3f6048d5106a59f923790003729acebf065d055acc6294e",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-01",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-001",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-mobile-hand-inspect.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-01-固定先完成手牌行动.png",
+          "sha256": "fb550588019f05d33cec77aaded26a6783d55072624c61ea5d7b0042ddf24bd6",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-02",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-003",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-mobile-hand-inspect.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-02-征召支付-手牌检视前.png",
+          "sha256": "987f49ebd90dfd0b59f8ca45741788d0dd79112e3ab5e01b08166c81543a6e70",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-03",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-005",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-mobile-hand-inspect.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-03-征召支付-长按手牌打开检视.png",
+          "sha256": "6f516d8eba440af3941cb99021f2afe2e2de27595402a2ba3a8215467f649573",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-04",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-007",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-mobile-hand-inspect.json"
+        },
+        {
+          "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r28-final/media/移动-05-选牌后确认征召支付.png",
+          "sha256": "acce68240cd0ed18b98af9f5401ea200b2c6376e8be677220d14bbe7991e6951",
+          "chainId": "basic-opening-mobile-hand-inspect",
+          "uiStateId": "basic-opening-mobile-hand-inspect-ui-05",
+          "behaviorStepId": "basic-opening-mobile-hand-inspect-capture-010",
+          "trace": "evidence/qidahen/behavior-traces/20261026-r28-fixed-hand-action-final/basic-opening-mobile-hand-inspect.json"
+        }
+      ]
+    }
+  ]
+}

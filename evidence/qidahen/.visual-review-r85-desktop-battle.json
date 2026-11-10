@@ -1,0 +1,153 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r85_final_desktop_battle"
+  },
+  "sourceRevision": "sha256:5dd8f006e8ef67e0693258352e4d60d3f131833a85518f26e35479dc2a685e4b",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "scope": "仅本索引第八至第十四张共七张桌面截图；不覆盖其它截图、移动端或规则数值。",
+  "score": {
+    "任务清晰度": 20,
+    "视觉层级": 14,
+    "对象可识别性": 15,
+    "状态与动作载体": 14,
+    "布局完整性": 14,
+    "素材完整性": 10,
+    "操作人体工学": 9,
+    "total": 96
+  },
+  "negativeEffects": [
+    {
+      "object": "手牌与战术确认",
+      "currentDecision": "支付和战术选择仍需要比较手牌。",
+      "carrier": "底部半露手牌保留名称和放大镜，选中牌抬升，确认条在牌顶上方。",
+      "result": "选中实体牌完整露出，底边与圆角均在视口内；确认条未遮卡面，其它候选仍可发现并比较。"
+    },
+    {
+      "object": "真实部队与来源目标",
+      "currentDecision": "选兵和开战仍依赖地图原地区的部队。",
+      "carrier": "辽北四张部队原位保留，右侧面板集中承载来源至目标、河流宽度、战术加成和开战。",
+      "result": "面板未盖住来源部队；可选与已选有不同边界和勾形反馈。"
+    },
+    {
+      "object": "轮盘、资源与牌堆",
+      "currentDecision": "轮盘、当前玩家资源、牌堆数量和其它合法手牌仍影响继续决策。",
+      "carrier": "左上轮盘、顶部玩家面板、两侧牌堆与底部手牌均保留原有独立位置。",
+      "result": "主战斗面板与教程未挤掉上述对象；其余地图地区可能被浮层局部覆盖，不据此声称全地图无遮挡。"
+    },
+    {
+      "object": "合法骑兵劫掠与战后选择",
+      "currentDecision": "劫掠替代入口、占领及撤回仍是当前可见决策。",
+      "carrier": "劫掠两项置于主开战按钮下，战后两项置于骰子与幸存结果下。",
+      "result": "名称完整且主次明确，未因集中主战斗而删除合法替代。"
+    },
+    {
+      "object": "教程退出与同局继续",
+      "currentDecision": "结束教学后仍应回到既有对局。",
+      "carrier": "结束提示、同一地图占领状态、当前蒙古方及后续弃牌托盘形成连续前后状态。",
+      "result": "退出教程没有留下无职责空壳，地图、轮盘与手牌继续可见。"
+    }
+  ],
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "sha256": "a1df39a8f3882b9f5b3d98a9c14c57e0e3d850c3e7b051576774a2b63a7d98c9",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付托盘在手牌上方，银两与鸳鸯阵名称可辨，未选支付与禁用确认清楚；轮盘、玩家资源、两侧牌堆及地图部队仍有各自承载。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "sha256": "fba426aead081a04adf72c61019a736044d74d4bf780cdf9b16800ac801c04f6",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "鸳鸯阵实体牌完整抬起，金色底边和圆角均在视口内，已选标记贴在牌下部；确认与取消横条位于牌顶上方，不压卡面；其它候选仍半露且名称可比较。向下延伸的蓝色教程外框不是实体牌边界，经局部放大辅助核对后确认。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05b-出兵选择前与真实兵牌引导.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/05b-出兵选择前与真实兵牌引导.png",
+      "sha256": "bfe561c6935724b8e084a9d1c3731f347ba34c07497a5f4413ceb1f5da18743a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北的四张真实部队牌位于地图原地区，全部有绿色可选反馈；教程准确指向第四支，未选出兵与暗色开战按钮一致。来源至目标、河流宽度和已生效战术等级加成集中在右侧面板，未再次重复选兵指令。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png",
+      "sha256": "ca45a82a5fc303b287a063c3dee9e8c6d9e830d3d1dee04f5b62322b76ae68b7",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四张部队的金色主边界与勾形标记可见，与选前绿色候选边界有区别；出兵计数已满且开战成为大面积红色主按钮。两项骑兵劫掠入口名称完整，面积与层级低于开战。地图部队和当前目标仍可辨。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/07-战后幸存部队与占领选择.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/07-战后幸存部队与占领选择.png",
+      "sha256": "4c68e1dd1039ae994a1ef03cdac817c23ab0a0ab543b45e8d775dc7ab6a21644",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧战后选择标题完整，三段骰子结果以点数与合计呈现，没有重复的大段掷骰文字；占领与撤回按钮均完整可读，接在幸存部队结果之后。教程未压住战后面板和占领入口。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/08-叶赫部占领结果.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/08-叶赫部占领结果.png",
+      "sha256": "0b4483b453431b8fab67c0026035e59868aba3bdb27c4f1a8af087ab9c156b9f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "占领后叶赫部区域中的部队与明方标记仍可辨，玩家面板已切换当前蒙古方；教程结束提示提供完成并返回，轮盘、地图及新当前方手牌继续保留。截图仅证明可见结果与继续入口，不证明结算数值正确。",
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png",
+      "source": "evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png",
+      "sha256": "afb9f8bfe77c5b2685ae1a3274bc5b5eef66fbbba874145b7ef5b395efe1aa88",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程浮层已经消失，原地图与占领后的地区状态仍在；蒙古当前标记、征兵训练弃牌托盘与确认弃牌入口清楚，半露手牌和轮盘均保留，显示玩家可在同一局中继续决策。",
+      "issues": []
+    }
+  ]
+}

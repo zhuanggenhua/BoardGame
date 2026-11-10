@@ -1,0 +1,941 @@
+{
+  "status": "blocked-or-failed-before-reproduction",
+  "error": {
+    "name": "Error",
+    "message": "正式开房流程未能自然推进到计划阶段：[{\"href\":\"http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=0\",\"phase\":\"reset\",\"phaseActorId\":\"0\",\"currentPlayerId\":\"0\",\"turnNumber\":\"1\",\"planButton\":null,\"turnEndButton\":null,\"overlay\":{\"ariaHidden\":\"true\",\"text\":\"\",\"sourceCardId\":null},\"shelf\":{\"planningEnabled\":\"false\",\"visibleCardCount\":\"6\"},\"cards\":[{\"sourceCardId\":\"3725\",\"ariaLabel\":\"法师魔杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":144,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3711\",\"ariaLabel\":\"巨熊皮甲\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":426.359375,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3710\",\"ariaLabel\":\"群兽法杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":708.71875,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3802\",\"ariaLabel\":\"法术\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":991.078125,\"top\":917.84375,\"width\":269.671875,\"height\":378.15625}},{\"sourceCardId\":\"3709\",\"ariaLabel\":\"元素斗篷\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1274.25,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3707\",\"ariaLabel\":\"重生腰带\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1556.609375,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}}],\"drafts\":[]},{\"href\":\"http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=1\",\"phase\":\"reset\",\"phaseActorId\":\"0\",\"currentPlayerId\":\"0\",\"turnNumber\":\"1\",\"planButton\":null,\"turnEndButton\":null,\"overlay\":{\"ariaHidden\":\"true\",\"text\":\"\",\"sourceCardId\":null},\"shelf\":{\"planningEnabled\":\"false\",\"visibleCardCount\":\"6\"},\"cards\":[{\"sourceCardId\":\"3706\",\"ariaLabel\":\"阿希拉法杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":144,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3801\",\"ariaLabel\":\"法术\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":426.359375,\"top\":917.84375,\"width\":269.671875,\"height\":378.15625}},{\"sourceCardId\":\"3725\",\"ariaLabel\":\"法师魔杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":709.53125,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3708\",\"ariaLabel\":\"风龙皮甲\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":991.890625,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3715\",\"ariaLabel\":\"偏移护腕\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1274.25,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3714\",\"ariaLabel\":\"破晓指环\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1556.609375,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}}],\"drafts\":[]}]",
+    "stack": "Error: 正式开房流程未能自然推进到计划阶段：[{\"href\":\"http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=0\",\"phase\":\"reset\",\"phaseActorId\":\"0\",\"currentPlayerId\":\"0\",\"turnNumber\":\"1\",\"planButton\":null,\"turnEndButton\":null,\"overlay\":{\"ariaHidden\":\"true\",\"text\":\"\",\"sourceCardId\":null},\"shelf\":{\"planningEnabled\":\"false\",\"visibleCardCount\":\"6\"},\"cards\":[{\"sourceCardId\":\"3725\",\"ariaLabel\":\"法师魔杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":144,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3711\",\"ariaLabel\":\"巨熊皮甲\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":426.359375,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3710\",\"ariaLabel\":\"群兽法杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":708.71875,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3802\",\"ariaLabel\":\"法术\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":991.078125,\"top\":917.84375,\"width\":269.671875,\"height\":378.15625}},{\"sourceCardId\":\"3709\",\"ariaLabel\":\"元素斗篷\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1274.25,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3707\",\"ariaLabel\":\"重生腰带\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1556.609375,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}}],\"drafts\":[]},{\"href\":\"http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=1\",\"phase\":\"reset\",\"phaseActorId\":\"0\",\"currentPlayerId\":\"0\",\"turnNumber\":\"1\",\"planButton\":null,\"turnEndButton\":null,\"overlay\":{\"ariaHidden\":\"true\",\"text\":\"\",\"sourceCardId\":null},\"shelf\":{\"planningEnabled\":\"false\",\"visibleCardCount\":\"6\"},\"cards\":[{\"sourceCardId\":\"3706\",\"ariaLabel\":\"阿希拉法杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":144,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3801\",\"ariaLabel\":\"法术\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":426.359375,\"top\":917.84375,\"width\":269.671875,\"height\":378.15625}},{\"sourceCardId\":\"3725\",\"ariaLabel\":\"法师魔杖\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":709.53125,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3708\",\"ariaLabel\":\"风龙皮甲\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":991.890625,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3715\",\"ariaLabel\":\"偏移护腕\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1274.25,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}},{\"sourceCardId\":\"3714\",\"ariaLabel\":\"破晓指环\",\"primaryAction\":null,\"primaryActionState\":null,\"browseInspectable\":\"true\",\"secondaryInspect\":null,\"selectedCount\":null,\"copyCount\":\"1\",\"disabled\":false,\"visible\":true,\"rect\":{\"left\":1556.609375,\"top\":917.84375,\"width\":268.859375,\"height\":378.15625}}],\"drafts\":[]}]\n    at advanceBothPlayersToPlanning (file:///D:/gongzuo/webgame/BoardGame/artifacts/mage-wars-formal-click-repro-20260913/repro-formal-open-room-click.mjs:302:9)\n    at async file:///D:/gongzuo/webgame/BoardGame/artifacts/mage-wars-formal-click-repro-20260913/repro-formal-open-room-click.mjs:461:3"
+  },
+  "currentHostUrl": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=0",
+  "currentGuestUrl": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=1",
+  "hostState": {
+    "href": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=0",
+    "phase": "reset",
+    "phaseActorId": "0",
+    "currentPlayerId": "0",
+    "turnNumber": "1",
+    "planButton": null,
+    "turnEndButton": null,
+    "overlay": {
+      "ariaHidden": "true",
+      "text": "",
+      "sourceCardId": null
+    },
+    "shelf": {
+      "planningEnabled": "false",
+      "visibleCardCount": "6"
+    },
+    "cards": [
+      {
+        "sourceCardId": "3725",
+        "ariaLabel": "法师魔杖",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 144,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3711",
+        "ariaLabel": "巨熊皮甲",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 426.359375,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3710",
+        "ariaLabel": "群兽法杖",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 708.71875,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3802",
+        "ariaLabel": "法术",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 991.078125,
+          "top": 917.84375,
+          "width": 269.671875,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3709",
+        "ariaLabel": "元素斗篷",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 1274.25,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3707",
+        "ariaLabel": "重生腰带",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 1556.609375,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      }
+    ],
+    "drafts": []
+  },
+  "guestState": {
+    "href": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=1",
+    "phase": "reset",
+    "phaseActorId": "0",
+    "currentPlayerId": "0",
+    "turnNumber": "1",
+    "planButton": null,
+    "turnEndButton": null,
+    "overlay": {
+      "ariaHidden": "true",
+      "text": "",
+      "sourceCardId": null
+    },
+    "shelf": {
+      "planningEnabled": "false",
+      "visibleCardCount": "6"
+    },
+    "cards": [
+      {
+        "sourceCardId": "3706",
+        "ariaLabel": "阿希拉法杖",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 144,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3801",
+        "ariaLabel": "法术",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 426.359375,
+          "top": 917.84375,
+          "width": 269.671875,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3725",
+        "ariaLabel": "法师魔杖",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 709.53125,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3708",
+        "ariaLabel": "风龙皮甲",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 991.890625,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3715",
+        "ariaLabel": "偏移护腕",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 1274.25,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      },
+      {
+        "sourceCardId": "3714",
+        "ariaLabel": "破晓指环",
+        "primaryAction": null,
+        "primaryActionState": null,
+        "browseInspectable": "true",
+        "secondaryInspect": null,
+        "selectedCount": null,
+        "copyCount": "1",
+        "disabled": false,
+        "visible": true,
+        "rect": {
+          "left": 1556.609375,
+          "top": 917.84375,
+          "width": 268.859375,
+          "height": 378.15625
+        }
+      }
+    ],
+    "drafts": []
+  },
+  "diagnostics": {
+    "baseUrl": "http://127.0.0.1:4275",
+    "gameServerUrl": "http://127.0.0.1:18000",
+    "viewport": {
+      "width": 2560,
+      "height": 1304
+    },
+    "deviceScaleFactor": 1,
+    "targetCardIds": [
+      "2819",
+      "2906"
+    ],
+    "headless": true,
+    "hostErrors": [
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: qidahen/thumbnails/cover, currentSrc: /assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:blob:http://127.0.0.1:4275/049d2f6d-8637-4114-8b3f-0c48488e8354:0:Failed to load resource: net::ERR_FILE_NOT_FOUND",
+      "console:blob:http://127.0.0.1:4275/6ce859fb-2cda-4f14-92e8-617a6da4baa9:0:Failed to load resource: net::ERR_FILE_NOT_FOUND",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: dicethrone/thumbnails/fengm, currentSrc: /assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: cardia/thumbnails/title, currentSrc: /assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}"
+    ],
+    "guestErrors": []
+  },
+  "timeline": [
+    {
+      "step": "open-home",
+      "at": "2026-09-12T16:27:01.777Z"
+    },
+    {
+      "step": "formal-match-created",
+      "at": "2026-09-12T16:27:13.284Z",
+      "matchId": "GZiS9z1oZDx",
+      "hostUrl": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=0",
+      "hostState": {
+        "href": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=0",
+        "phase": "reset",
+        "phaseActorId": "0",
+        "currentPlayerId": "0",
+        "turnNumber": "1",
+        "planButton": null,
+        "turnEndButton": null,
+        "overlay": {
+          "ariaHidden": "true",
+          "text": "",
+          "sourceCardId": null
+        },
+        "shelf": {
+          "planningEnabled": "false",
+          "visibleCardCount": "6"
+        },
+        "cards": [
+          {
+            "sourceCardId": "3725",
+            "ariaLabel": "法师魔杖",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 144,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3711",
+            "ariaLabel": "巨熊皮甲",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 426.359375,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3710",
+            "ariaLabel": "群兽法杖",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 708.71875,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3802",
+            "ariaLabel": "法术",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 991.078125,
+              "top": 917.84375,
+              "width": 269.671875,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3709",
+            "ariaLabel": "元素斗篷",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 1274.25,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3707",
+            "ariaLabel": "重生腰带",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 1556.609375,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          }
+        ],
+        "drafts": []
+      },
+      "hostCredentialsKeys": [
+        "match_creds_GZiS9z1oZDx"
+      ]
+    },
+    {
+      "step": "guest-joined-for-phase-progression",
+      "at": "2026-09-12T16:27:16.785Z",
+      "matchId": "GZiS9z1oZDx",
+      "guestUrl": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=1",
+      "guestState": {
+        "href": "http://127.0.0.1:4275/play/mage-wars/match/GZiS9z1oZDx?playerID=1",
+        "phase": "reset",
+        "phaseActorId": "0",
+        "currentPlayerId": "0",
+        "turnNumber": "1",
+        "planButton": null,
+        "turnEndButton": null,
+        "overlay": {
+          "ariaHidden": "true",
+          "text": "",
+          "sourceCardId": null
+        },
+        "shelf": {
+          "planningEnabled": "false",
+          "visibleCardCount": "6"
+        },
+        "cards": [
+          {
+            "sourceCardId": "3706",
+            "ariaLabel": "阿希拉法杖",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 144,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3801",
+            "ariaLabel": "法术",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 426.359375,
+              "top": 917.84375,
+              "width": 269.671875,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3725",
+            "ariaLabel": "法师魔杖",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 709.53125,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3708",
+            "ariaLabel": "风龙皮甲",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 991.890625,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3715",
+            "ariaLabel": "偏移护腕",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 1274.25,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          },
+          {
+            "sourceCardId": "3714",
+            "ariaLabel": "破晓指环",
+            "primaryAction": null,
+            "primaryActionState": null,
+            "browseInspectable": "true",
+            "secondaryInspect": null,
+            "selectedCount": null,
+            "copyCount": "1",
+            "disabled": false,
+            "visible": true,
+            "rect": {
+              "left": 1556.609375,
+              "top": 917.84375,
+              "width": 268.859375,
+              "height": 378.15625
+            }
+          }
+        ],
+        "drafts": []
+      }
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:16.795Z",
+      "index": 0,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:16.993Z",
+      "index": 1,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:17.194Z",
+      "index": 2,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:17.394Z",
+      "index": 3,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:17.627Z",
+      "index": 4,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:17.854Z",
+      "index": 5,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:18.053Z",
+      "index": 6,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:18.254Z",
+      "index": 7,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:18.457Z",
+      "index": 8,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:18.658Z",
+      "index": 9,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:18.849Z",
+      "index": 10,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:19.039Z",
+      "index": 11,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:19.242Z",
+      "index": 12,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:19.437Z",
+      "index": 13,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:19.639Z",
+      "index": 14,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:19.830Z",
+      "index": 15,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:20.025Z",
+      "index": 16,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:20.216Z",
+      "index": 17,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:20.417Z",
+      "index": 18,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:20.612Z",
+      "index": 19,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:20.801Z",
+      "index": 20,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:21.003Z",
+      "index": 21,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:21.195Z",
+      "index": 22,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:21.401Z",
+      "index": 23,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:21.599Z",
+      "index": 24,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:21.802Z",
+      "index": 25,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:22.002Z",
+      "index": 26,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:22.204Z",
+      "index": 27,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:22.404Z",
+      "index": 28,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:22.608Z",
+      "index": 29,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:22.804Z",
+      "index": 30,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:22.994Z",
+      "index": 31,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:23.195Z",
+      "index": 32,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:23.383Z",
+      "index": 33,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:23.604Z",
+      "index": 34,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:23.798Z",
+      "index": 35,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:24.003Z",
+      "index": 36,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:24.202Z",
+      "index": 37,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:24.403Z",
+      "index": 38,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    },
+    {
+      "step": "phase-poll",
+      "at": "2026-09-12T16:27:24.601Z",
+      "index": 39,
+      "phases": [
+        "reset",
+        "reset"
+      ]
+    }
+  ],
+  "artifacts": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\01-formal-home-game-details.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\02-formal-create-room-modal.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\03-formal-spellbook-selection.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\04-formal-spellbook-selection-complete.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\05-formal-match-host-board-entry.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\06-formal-match-guest-board-entry.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\failure-host-current-screen.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-27-01-195Z-4275\\failure-guest-current-screen.png"
+  ]
+}

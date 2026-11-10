@@ -1,0 +1,1835 @@
+{
+  "scope": "D组本轮全部新交互十二张正式原图逐图私人审查",
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "independent-agent",
+    "id": "/root/doctor_full_inventory"
+  },
+  "reviewedAt": "2026-11-01T10:12:34.699Z",
+  "run": "e2e-1793526898908-1ye6hw",
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "revise": 0,
+    "freshlyRead": 6,
+    "inheritedOwnIdenticalRead": 6
+  },
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区三张法术-桌面.png",
+      "sha256": "06092157c445e773c362a7785eb1554867678a45c866ff6e3ef53eb928b5cafd",
+      "label": "30-公开准备区三张法术-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "维山帝之书的数量为三，当前窗口显示两张可识别的正式小卡；牌桌阶段、资源、骰盘和手牌入口保持原位置。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "583b2c8e0674dc841758c15a71638c5bb7a4a703125eba97884144f9f7eb2458",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-public-prepared-browse",
+      "behaviorStepId": "public-prepared-browse",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人实际读取本次正式源原图后独立判定",
+      "pixelComparison": {
+        "matchesOwnR4Read": false,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": null
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "CenterBoard.tsx / renderPreparedSpells",
+          "difference": "保留原书区物理位置、数量、横向浏览及点原卡阅读；去除强制满高与卡外白框，比例交由原CardPreview；仅该区提升到原技能命中层上。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定30-公开准备区三张法术-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区三张法术-桌面.png",
+            "observation": "维山帝之书三张标记位于原被动书区，中央棋盘和当前主阶段没有被新浮层抢占。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区三张法术-桌面.png",
+            "observation": "书区贴合玩家板左下原槽，数量标题在上、小卡横向并列，未把卡牌移到日志或工具区。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区三张法术-桌面.png",
+            "observation": "正式小卡只保留自身印刷边界，准备区原容器承担归属，未重加白色套框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 18
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 13
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 92,
+        "method": "本次亲自读取正式原图后独立七维评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区三张法术-桌面.png",
+          "observation": "先根据数量定位准备区，再横向找回第三张并点击原卡阅读。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区三张法术-桌面.png",
+          "observation": "保留原书区物理位置、数量、横向浏览及点原卡阅读；去除强制满高与卡外白框，比例交由原原卡面组件；仅该区提升到原技能命中层上。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "阶段、生命与战斗点数、骰盘、牌库和原扇形手牌入口均保留；准备区默认只证明数量及当前可识别小卡，第三张正文通过原横滚与检视恢复。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "没有为露出三张而缩小牌面正文；第三张由数量标记提示集合存在，真实横滚和点开须由同源行为轨迹另证。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=CenterBoard.tsx / renderPreparedSpells",
+        "uncoveredElements": [],
+        "decisions": "CenterBoard.tsx / renderPreparedSpells继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "数量与当前小卡身份可见，不以本图证明第三张完整正文或滚动可点。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-桌面.png",
+      "sha256": "7c1858ee12552efe629542eedd4082d5166457ca292565cab121372481f209d6",
+      "label": "31-公开准备区原卡阅读-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "瓦尔托尔之汽在原居中阅读层完整展开，准备和施放正文清楚，关闭按钮位于牌面右上；背景准备区已经显示被找到的绿色法术。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "583b2c8e0674dc841758c15a71638c5bb7a4a703125eba97884144f9f7eb2458",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-public-prepared-reader-1440",
+      "behaviorStepId": "public-prepared-reader-1440",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人实际读取本次正式源原图后独立判定",
+      "pixelComparison": {
+        "matchesOwnR4Read": false,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": null
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "CenterBoard.tsx 原卡点击 / BoardOverlays.tsx / MagnifyOverlay",
+          "difference": "由原准备卡onMagnifyCard进入既有Board放大状态；原右上关闭保留，单卡尺寸按正式帧比例约束。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定31-公开准备区原卡阅读-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-桌面.png",
+            "observation": "瓦尔托尔之汽完整牌面成为中央唯一阅读焦点，准备及施放正文没有被背景棋盘争夺。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-桌面.png",
+            "observation": "卡面居中展开，右上关闭独立，卡底未越出下缘；背景书区显示已被横向找到的绿色小卡。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-桌面.png",
+            "observation": "阅读使用原单卡层，未用额外摘要、第二张假牌或印刷套框代替正式牌面。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 15
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 15
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 96,
+        "method": "本次亲自读取正式原图后独立七维评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-桌面.png",
+          "observation": "阅读正文后点击右上关闭返回公开准备区。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-桌面.png",
+          "observation": "由原准备卡卡牌放大回调进入既有原牌桌放大状态；原右上关闭保留，单卡尺寸按正式帧比例约束。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "背景准备区数量仍为三；阅读层临时遮住部分牌桌但原明确关闭可返回，当前图只证明阅读而不证明规则提交。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "正式卡从缩略身份入口进入原放大层，没有改成第二套阅读状态或改变准备卡区；关闭后保持卡区由行为另证。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=CenterBoard.tsx 原卡点击 / BoardOverlays.tsx / MagnifyOverlay",
+        "uncoveredElements": [],
+        "decisions": "CenterBoard.tsx 原卡点击 / BoardOverlays.tsx / MagnifyOverlay继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "本图只证明UI表达，不证明伤害、资源或规则结算正确。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-横屏.png",
+      "sha256": "90c9cea49cb9b00fad5f4a66bbaf39e8bb5a59a312b206d68f2c3b38a2bd2d48",
+      "label": "32-公开准备区原卡阅读-横屏.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "横屏中的整张绿色法术与上下正文完整可读，关闭按钮独立清楚，牌面未拉伸或被下边裁掉。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "583b2c8e0674dc841758c15a71638c5bb7a4a703125eba97884144f9f7eb2458",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-public-prepared-reader-812",
+      "behaviorStepId": "public-prepared-reader-812",
+      "viewport": "mobile",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人本轮已实际读取且通过的原图与当前正式原图SHA逐字节相同；核对同一性后继承本人具体观察，不沿用更早历史PASS",
+      "pixelComparison": {
+        "matchesOwnR4Read": true,
+        "matchesOwnInterruptedR5Read": true,
+        "sourceReport": "temp/doctor-full-visual-d-r4-20261101.json"
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "BoardOverlays.tsx / MagnifyOverlay（由CenterBoard原卡入口打开）",
+          "difference": "同一个原阅读层随视口调整，未新建移动版阅读页面；按正式帧比例限制高度，原明确关闭位置保留。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定32-公开准备区原卡阅读-横屏.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-横屏.png",
+            "observation": "横屏仍以完整绿色法术为主焦点，准备与施放两段能直接阅读。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-横屏.png",
+            "observation": "卡面上沿、下沿均在视口内，右上关闭与正文分离，横纵比例自然。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-横屏.png",
+            "observation": "沿用同一张正式卡与原阅读背景，没有为横屏增加另一个卡牌壳或摘要面。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 15
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 95,
+        "method": "图面像素与本人本轮已读原图完全一致，核对当前源后保留具体图面观察与评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-横屏.png",
+          "observation": "阅读后用原关闭控件返回牌桌。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\公开准备区原卡阅读-横屏.png",
+          "observation": "同一个原阅读层随视口调整，未新建移动版阅读页面；按正式帧比例限制高度，原明确关闭位置保留。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "背景牌桌只作为阅读来源上下文；关闭入口保留，不把当前绿色法术当新选择或已施放结果。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "此图由桌面打开后调整视口得到，只证明已打开阅读的横屏排版，不证明横屏原卡入口、实体长按或触摸滚动。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=BoardOverlays.tsx / MagnifyOverlay（由CenterBoard原卡入口打开）",
+        "uncoveredElements": [],
+        "decisions": "BoardOverlays.tsx / MagnifyOverlay（由CenterBoard原卡入口打开）继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "仅证明桌面已打开后调整视口的阅读层，未证明横屏原入口或实体触控。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家目标候选-桌面.png",
+      "sha256": "7976c9e4a633fc580bdc82a9db30964cc3525f651b1a859566b00aacbfc9ba63",
+      "label": "33-所有玩家目标候选-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "本人、队友和两名敌方四个席位同屏可见，关系色与文字能区分归属；未选时确认是灰色，下一步应先点一个玩家。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "583b2c8e0674dc841758c15a71638c5bb7a4a703125eba97884144f9f7eb2458",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-all-player-candidates",
+      "behaviorStepId": "all-player-candidates",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人本轮已实际读取且通过的原图与当前正式原图SHA逐字节相同；核对同一性后继承本人具体观察，不沿用更早历史PASS",
+      "pixelComparison": {
+        "matchesOwnR4Read": true,
+        "matchesOwnInterruptedR5Read": true,
+        "sourceReport": "temp/doctor-full-visual-d-r4-20261101.json"
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "InteractionOverlay.tsx / PlayerCardShell / GameModal",
+          "difference": "沿用旧玩家卡、关系与席位及原确认，不重造玩家列表；旧组件本身没有头像，不虚构遗漏。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定33-所有玩家目标候选-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家目标候选-桌面.png",
+            "observation": "授予即视感的任务标题在四个玩家候选上方，未选的灰色确认清楚要求先选目标。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家目标候选-桌面.png",
+            "observation": "前三张等宽卡一行，第四张居中下一行；下方确认与候选组中心轴一致。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家目标候选-桌面.png",
+            "observation": "玩家关系色、原席位圆标和原卡表面负责归属；没有新加英雄摘要或重复头像层。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 94,
+        "method": "图面像素与本人本轮已读原图完全一致，核对当前源后保留具体图面观察与评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家目标候选-桌面.png",
+          "observation": "点击需要获得即视感的玩家卡，再使用原确认按钮。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家目标候选-桌面.png",
+          "observation": "沿用旧玩家卡、关系与席位及原确认，不重造玩家列表；旧组件本身没有头像，不虚构遗漏。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "本人、队友和两名敌方全部候选在场；背景资源、阶段、原手牌与来源弃牌仍能定位，不以单个对手替代全体玩家。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "四人候选保持原完整选择器布局，不收成下拉摘要；暂时暗化背景而不移除正式玩家对象。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=InteractionOverlay.tsx / PlayerCardShell / GameModal",
+        "uncoveredElements": [],
+        "decisions": "InteractionOverlay.tsx / PlayerCardShell / GameModal继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "本图只证明UI表达，不证明伤害、资源或规则结算正确。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家队友已选-桌面.png",
+      "sha256": "6ec9c6dcc15c36424e2615bff96d114f333a0f0ec8244fe6d3dbe77435f4fd12",
+      "label": "34-所有玩家队友已选-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "队友玩家卡以贴边金色边界标记，其他三个候选保持可见可比较，原确认按钮已高亮，归属没有跳到敌方。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "583b2c8e0674dc841758c15a71638c5bb7a4a703125eba97884144f9f7eb2458",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-all-player-selected",
+      "behaviorStepId": "all-player-selected",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人本轮已实际读取且通过的原图与当前正式原图SHA逐字节相同；核对同一性后继承本人具体观察，不沿用更早历史PASS",
+      "pixelComparison": {
+        "matchesOwnR4Read": true,
+        "matchesOwnInterruptedR5Read": true,
+        "sourceReport": "temp/doctor-full-visual-d-r4-20261101.json"
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "InteractionOverlay.tsx / PlayerCardShell / 原GameButton",
+          "difference": "保留原候选卡与原选中金边、确认提交语法；ChoiceObjectSelection只映射正式option，不新增玩家状态。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定34-所有玩家队友已选-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家队友已选-桌面.png",
+            "observation": "队友卡贴边金色高亮与下方亮色确认共同表达待提交，其余三人仍可比较。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家队友已选-桌面.png",
+            "observation": "选中卡保持原位置和原尺寸，确认继续在组下中轴，没有把当前目标移到旁栏。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家队友已选-桌面.png",
+            "observation": "高亮只强化队友卡边界，未盖住关系文字、席位标识或其它候选。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 15
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 95,
+        "method": "图面像素与本人本轮已读原图完全一致，核对当前源后保留具体图面观察与评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家队友已选-桌面.png",
+          "observation": "核对队友归属后点击下方确认。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793526898908-1ye6hw\\所有玩家队友已选-桌面.png",
+          "observation": "保留原候选卡与原选中金边、确认提交语法；原对象选择适配只映射正式正式选项，不新增玩家状态。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "四个玩家身份与关系仍完整，选中归属明确指向队友；背景阶段及资源未被移到另一套摘要。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "选择反馈没有隐藏或压暗其它玩家到无法辨认；这是本地已选待确认画面，不声明即视感已经发放。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=InteractionOverlay.tsx / PlayerCardShell / 原GameButton",
+        "uncoveredElements": [],
+        "decisions": "InteractionOverlay.tsx / PlayerCardShell / 原GameButton继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "本图只证明UI表达，不证明伤害、资源或规则结算正确。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-桌面.png",
+      "sha256": "7a7352045b07ca89faa6b38328c32fd55e8c9c9a202a55203238689e84508bef",
+      "label": "35-多持有人状态候选-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "本人致盲与敌方眩目两个图标完整可见，说明在右侧空位，未盖标题、候选或跳过。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "e399be61c3bd0945eb62b59fae5037db4e2f8c455cacd19474320ec67e972d4a",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-status-multiple-1440",
+      "behaviorStepId": "status-multiple-1440",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人实际读取本次正式源原图后独立判定",
+      "pixelComparison": {
+        "matchesOwnR4Read": false,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": null
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "InteractionOverlay.tsx 状态持有人 / SelectableEffectsContainer / 原InfoTooltip",
+          "difference": "沿用旧完整持有人卡、状态选择和跳过；仅多人入口给原InfoTooltip可选避让矩形及整组边界，未传的旧默认不变。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定35-多持有人状态候选-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-桌面.png",
+            "observation": "本人蓝色致盲与敌方黄色眩目在中央持有人卡中完整可见，说明退到右侧不再夺走候选。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-桌面.png",
+            "observation": "两卡并列、标题和跳过居中，右侧说明没有与标题、状态本体或跳过相交。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-桌面.png",
+            "observation": "原持有人卡分组与正式状态图标承担归属，说明仅解释致盲，没有充当选择对象。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 18
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 8
+          }
+        ],
+        "total": 92,
+        "method": "本次亲自读取正式原图后独立七维评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-桌面.png",
+          "observation": "比较本人致盲和敌方眩目，直接点所需状态，或用原跳过继续。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-桌面.png",
+          "observation": "沿用旧完整持有人卡、状态选择和跳过；仅多人入口给原原说明组件可选避让矩形及整组边界，未传的旧默认不变。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "两个状态图标和两位持有人文字均可辨认；说明位于已暗化背景的右侧，当前未操作的骰盘上下文不替代状态候选。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "说明从遮住相邻状态的中间位置迁到可用空位，原状态集合和直接点图标操作不变，不额外增加先选玩家步骤。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=InteractionOverlay.tsx 状态持有人 / SelectableEffectsContainer / 原InfoTooltip",
+        "uncoveredElements": [],
+        "decisions": "InteractionOverlay.tsx 状态持有人 / SelectableEffectsContainer / 原InfoTooltip继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "本图只证明UI表达，不证明伤害、资源或规则结算正确。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-横屏.png",
+      "sha256": "b1bf9c61f1a6411dd719796866182ed23dd2c08a3478790b1bfb49841c601c94",
+      "label": "36-多持有人状态候选-横屏.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "横屏两个状态图标与各自归属完整，说明落在左下空位，中央跳过和上方标题均清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "e399be61c3bd0945eb62b59fae5037db4e2f8c455cacd19474320ec67e972d4a",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-status-multiple-812",
+      "behaviorStepId": "status-multiple-812",
+      "viewport": "mobile",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人实际读取本次正式源原图后独立判定",
+      "pixelComparison": {
+        "matchesOwnR4Read": false,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": null
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "InteractionOverlay.tsx / SelectableStatusBadge / InfoTooltip多人避让",
+          "difference": "复用同一个状态窗口与原说明组件，按本轮实际遮挡给多人入口避让；原单持有人紧凑窗口不变。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定36-多持有人状态候选-横屏.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-横屏.png",
+            "observation": "横屏中两个状态候选仍是中央主对象，致盲说明改落左下空位，跳过在中央下方保持独立。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-横屏.png",
+            "observation": "标题在上，两持有人卡并排；左下说明与两图标、标题及跳过均留出可见间隔。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-横屏.png",
+            "observation": "原深色状态卡、状态本体及说明分工明确，没有靠压缩图标或新增摘要规避遮挡。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 94,
+        "method": "本次亲自读取正式原图后独立七维评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-横屏.png",
+          "observation": "阅读左下说明后直接点所需状态；不需要先单独选择玩家。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793526898908-1ye6hw\\多持有人状态候选-横屏.png",
+          "observation": "复用同一个状态窗口与原说明组件，按本轮实际遮挡给多人入口避让；原单持有人紧凑窗口不变。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "本人致盲、敌方眩目、各自归属以及跳过同时可见；不再只剩敌方图标的金色弧线。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "没有隐藏任一持有人或删除说明来让测试通过；原说明仅在真实空位展开，当前图不外推所有未来密度。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=InteractionOverlay.tsx / SelectableStatusBadge / InfoTooltip多人避让",
+        "uncoveredElements": [],
+        "decisions": "InteractionOverlay.tsx / SelectableStatusBadge / InfoTooltip多人避让继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "当前横屏是浏览器视口；不冒充实体手机长按或触控。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\无合法状态仅跳过-桌面.png",
+      "sha256": "9f84e4683e522f7820be7f24ac09292196f3717061dbc457006f8f8c294b46b4",
+      "label": "37-无合法状态仅跳过-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "中央只有原技能选择窗、状态选择任务和跳过按钮，没有虚假状态图标、空玩家卡或错误的确认对象。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "9a3e56627162c6a2ec1bbe8ec4c08502292ff175e8449fd8d73e6b3227a6fb1f",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-status-empty-1440",
+      "behaviorStepId": "status-empty-1440",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人本轮已实际读取且通过的原图与当前正式原图SHA逐字节相同；核对同一性后继承本人具体观察，不沿用更早历史PASS",
+      "pixelComparison": {
+        "matchesOwnR4Read": true,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": "temp/doctor-full-visual-d-r4-20261101.json"
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "ChoiceModal.tsx / GameModal / 原GameButton option",
+          "difference": "零对象候选时仍由原文字choice窗口承接唯一skip，不创建第二个空状态UI。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定37-无合法状态仅跳过-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\无合法状态仅跳过-桌面.png",
+            "observation": "居中的状态结算任务与唯一跳过构成清楚路径，没有假状态吸引玩家去点。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\无合法状态仅跳过-桌面.png",
+            "observation": "标题、任务说明与宽跳过按钮纵向排列，弹窗四边留白均匀，按钮完整在屏内。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\无合法状态仅跳过-桌面.png",
+            "observation": "保留原文字选择窗和原平面选项，不用空头像或空状态框增加无职责装饰。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 94,
+        "method": "图面像素与本人本轮已读原图完全一致，核对当前源后保留具体图面观察与评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\无合法状态仅跳过-桌面.png",
+          "observation": "点击唯一的跳过按钮继续原结算。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793526898908-1ye6hw\\无合法状态仅跳过-桌面.png",
+          "observation": "零对象候选时仍由原文字choice窗口承接唯一跳过，不创建第二个空状态UI。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "当前无合法候选，原跳过是实际规则选择；背景被临时阅读窗暗化，不把零候选变成状态加载失败。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "未制造空候选卡、未来状态占位或虚假结算对象；选择完成后返回原流程由行为另证。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=ChoiceModal.tsx / GameModal / 原GameButton option",
+        "uncoveredElements": [],
+        "decisions": "ChoiceModal.tsx / GameModal / 原GameButton option继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "本图只证明UI表达，不证明伤害、资源或规则结算正确。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\神秘飞弹原技能分支-桌面.png",
+      "sha256": "a495db62f04ded47981b46fed1e1382448be2c140cd28b576617773b6658f975",
+      "label": "38-秘术雷击原技能分支-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "秘术雷击小顺子正文显示六点攻击后施法，大顺子显示九点攻击后施法，原不发动入口也保留，两个分支不再是相同摘要。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "0ca7028a10c19640a5f0229d224e63589f0e62b6f66a7fb1c7f5f1e3e365ebe2",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-bolt-original-ability-choice",
+      "behaviorStepId": "bolt-original-ability-choice",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人实际读取本次正式源原图后独立判定",
+      "pixelComparison": {
+        "matchesOwnR4Read": false,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": null
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "AbilityChoiceModal.tsx / abilityChoiceText.ts / 博士variant locale",
+          "difference": "沿用原分支组件，按已锁玩家板与运行时同义事实补中英name+description，原共享resolver和能力规则不变。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定38-秘术雷击原技能分支-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\神秘飞弹原技能分支-桌面.png",
+            "observation": "两个秘术雷击分支分别显示六点和九点攻击后施法，玩家能直接比较实际差异再决定。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\神秘飞弹原技能分支-桌面.png",
+            "observation": "两张原按钮同宽纵向排列，分支正文各一行完整，标题与不发动入口没有挤到正文上。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\神秘飞弹原技能分支-桌面.png",
+            "observation": "原技能分支窗口及原按钮保留，只补正式变体文字，没有新建效果卡或额外说明条。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 94,
+        "method": "本次亲自读取正式原图后独立七维评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\神秘飞弹原技能分支-桌面.png",
+          "observation": "比较六点与九点两条实际效果，再点本次要发动的顺子分支或不发动。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\神秘飞弹原技能分支-桌面.png",
+          "observation": "沿用原分支组件，按已锁玩家板与运行时同义事实补中英name+description，原共享resolver和能力规则不变。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "小顺子、大顺子和不发动三个决策入口都在同一原窗；六点九点是图面可读差异，不由图审宣称规则结算正确。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "原先相同泛化摘要已由正式变体说明取代，没有改技能规则、顺子触发或按钮提交标识。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=AbilityChoiceModal.tsx / abilityChoiceText.ts / 博士variant locale",
+        "uncoveredElements": [],
+        "decisions": "AbilityChoiceModal.tsx / abilityChoiceText.ts / 博士variant locale继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "本图只证明UI表达，不证明伤害、资源或规则结算正确。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放完整候选-桌面.png",
+      "sha256": "7d60e43d110a80b5c4e11c101e1ad52b2a789f44489cddd5a2e9b9fbfed8cc69",
+      "label": "39-弃牌直接施放完整候选-桌面.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "标题明确选择施放法术，搜索和八张总量可见；首行五张正式牌面完整，下行三张露出上部，当前比较窗口可纵向浏览，跳过位于原候选下方。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "0ca7028a10c19640a5f0229d224e63589f0e62b6f66a7fb1c7f5f1e3e365ebe2",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-discard-cast-candidates",
+      "behaviorStepId": "discard-cast-candidates",
+      "viewport": "desktop",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人实际读取本次正式源原图后独立判定",
+      "pixelComparison": {
+        "matchesOwnR4Read": false,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": null
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "ChoiceObjectSelection → InteractionOverlay原卡池 / CardPreview / 原搜索与确认",
+          "difference": "同一旧完整卡池扩展正式discard来源和cast允许skip，保留选择、再次点取消、确认；没有把弃牌施放误接成准备。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定39-弃牌直接施放完整候选-桌面.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放完整候选-桌面.png",
+            "observation": "施放法术标题、搜索与八张计数在上，正式法术卡面为主体，原跳过位于候选区下方。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放完整候选-桌面.png",
+            "observation": "首行五张卡顶底规整，后排三张露出上部提示尚有内容；下方跳过没有盖住首行正文。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放完整候选-桌面.png",
+            "observation": "没有给印刷卡再套底框；原暗化层用于从复杂棋盘中分出当前选择。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 18
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 13
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 92,
+        "method": "本次亲自读取正式原图后独立七维评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放完整候选-桌面.png",
+          "observation": "阅读当前牌面，必要时搜索或纵向找回后排，再选择法术或跳过。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放完整候选-桌面.png",
+          "observation": "同一旧完整卡池扩展正式弃牌区来源和施放允许跳过，保留选择、再次点取消、确认；没有把弃牌施放误接成准备。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "八张授权候选保留，当前五张完整阅读窗口与后排标题可见；后排正文要纵滚或检视恢复，不宣称八张正文同时全可读。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "候选没有为了同屏塞满而缩成图案；原搜索、纵向浏览和检视承接后排恢复，正式来源仍是弃牌堆。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=ChoiceObjectSelection → InteractionOverlay原卡池 / CardPreview / 原搜索与确认",
+        "uncoveredElements": [],
+        "decisions": "ChoiceObjectSelection → InteractionOverlay原卡池 / CardPreview / 原搜索与确认继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "后排三张仅露上部，恢复正文由原纵滚与检视另证。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放八牌候选-横屏.png",
+      "sha256": "9676009ce25decaaec6e4efdda6a1a5c87728e92fe7184534b45c7e1aaee866f",
+      "label": "40-弃牌直接施放八牌候选-横屏.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "横屏左侧三张正式法术以可读尺度横向展开，右侧保留施放标题、搜索、八张总量和跳过；正文没有被检视按钮压住。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "0ca7028a10c19640a5f0229d224e63589f0e62b6f66a7fb1c7f5f1e3e365ebe2",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-discard-cast-phone-candidates",
+      "behaviorStepId": "discard-cast-phone-candidates",
+      "viewport": "mobile",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人本轮已实际读取且通过的原图与当前正式原图SHA逐字节相同；核对同一性后继承本人具体观察，不沿用更早历史PASS",
+      "pixelComparison": {
+        "matchesOwnR4Read": true,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": "temp/doctor-full-visual-d-r4-20261101.json"
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "InteractionOverlay原CardPool短屏布局 / CardPreview / 原搜索与GameButton",
+          "difference": "保留原卡池数据、选择与阅读owner，短屏把原纵滚改为同层横滚并移原动作到右栏；桌面常规布局不重画。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定40-弃牌直接施放八牌候选-横屏.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放八牌候选-横屏.png",
+            "observation": "左侧三张完整法术承担比较，右侧标题、搜索、八张计数和跳过组成原任务与动作区。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放八牌候选-横屏.png",
+            "observation": "三张卡上沿与下沿一致，正文到卡底均完整；侧栏不会盖住卡面或检视控件。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放八牌候选-横屏.png",
+            "observation": "短屏只重排原卡池，正式牌的印刷边界保真，没有额外黑卡或套框。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 18
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 15
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 94,
+        "method": "图面像素与本人本轮已读原图完全一致，核对当前源后保留具体图面观察与评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放八牌候选-横屏.png",
+          "observation": "横向浏览其余法术，或通过右侧搜索定位，再选择或跳过。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌直接施放八牌候选-横屏.png",
+          "observation": "保留原卡池数据、选择与阅读owner，短屏把原纵滚改为同层横滚并移原动作到右栏；桌面常规布局不重画。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "当前三张窗口完整，其余五张由同一横向候选区及搜索恢复；右侧原跳过始终可见。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "没有缩小卡面去假装八张全放下，候选集合和源卡区未变；实际横向恢复由同源行为另证，不冒充实体触控。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=InteractionOverlay原CardPool短屏布局 / CardPreview / 原搜索与GameButton",
+        "uncoveredElements": [],
+        "decisions": "InteractionOverlay原CardPool短屏布局 / CardPreview / 原搜索与GameButton继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "当前横屏是浏览器视口；不冒充实体手机长按或触控。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌搜索无匹配可清除-横屏.png",
+      "sha256": "2cc5b959e143266bb8c7ca10bd9f64fbd719c65c6d9419b70e2965b73bb4163d",
+      "label": "41-弃牌搜索无匹配可清除-横屏.png",
+      "status": "PASS",
+      "reviewer": {
+        "kind": "independent-agent",
+        "id": "/root/doctor_full_inventory"
+      },
+      "observation": "搜索无匹配时左侧明确提示没有匹配的牌，右侧保留搜索清除、零张结果计数与跳过，没有把空集合画成虚假法术。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "claimScope": "interaction-ui",
+      "sourceRun": "e2e-1793526898908-1ye6hw",
+      "sourceRevision": "0ca7028a10c19640a5f0229d224e63589f0e62b6f66a7fb1c7f5f1e3e365ebe2",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "uiStateId": "doctor-strange-discard-cast-phone-search-empty",
+      "behaviorStepId": "discard-cast-phone-search-empty",
+      "viewport": "mobile",
+      "sourceIdentity": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.source-identity.json",
+      "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\.e2e-image-index.json",
+      "reviewMethod": "本人本轮已实际读取且通过的原图与当前正式原图SHA逐字节相同；核对同一性后继承本人具体观察，不沿用更早历史PASS",
+      "pixelComparison": {
+        "matchesOwnR4Read": true,
+        "matchesOwnInterruptedR5Read": false,
+        "sourceReport": "temp/doctor-full-visual-d-r4-20261101.json"
+      },
+      "oldUiComparison": [
+        {
+          "ref": "90b7dba67^",
+          "component": "InteractionOverlay原CardPool搜索 / 原empty提示 / GameButton skip",
+          "difference": "沿用原搜索、清除和empty分支；短屏只重排其位置，未生成假候选或第二套筛选集合。",
+          "necessity": "对照旧完整承载，只处理本轮真实新交互的阅读、选择归属或已证实遮挡与信息缺口。"
+        }
+      ],
+      "layoutAudit": {
+        "scopeSource": "evidence/dicethrone/doctor-strange-full-ui-reaudit-20261101.md；本图限定41-弃牌搜索无匹配可清除-横屏.png",
+        "source": ".spec/knowledge/standards/ui-change-gates.md#布局与空间",
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌搜索无匹配可清除-横屏.png",
+            "observation": "没有匹配的牌提示在原候选区域，右侧搜索及零张计数解释集合为空，跳过仍是清楚合法动作。"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌搜索无匹配可清除-横屏.png",
+            "observation": "空结果提示没有越界，右侧标题、输入、计数和跳过保持同一列；清除入口没有压住跳过。"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌搜索无匹配可清除-横屏.png",
+            "observation": "空结果是清楚文字空态，不是黑色假法术、空卡背或未来对象槽。"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "name": "任务清晰度",
+            "max": 20,
+            "score": 19
+          },
+          {
+            "name": "视觉层级",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "对象可识别性",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "状态与动作载体",
+            "max": 15,
+            "score": 14
+          },
+          {
+            "name": "布局完整性",
+            "max": 15,
+            "score": 13
+          },
+          {
+            "name": "素材完整性",
+            "max": 10,
+            "score": 10
+          },
+          {
+            "name": "操作人体工学",
+            "max": 10,
+            "score": 9
+          }
+        ],
+        "total": 93,
+        "method": "图面像素与本人本轮已读原图完全一致，核对当前源后保留具体图面观察与评分；不以测试结果打分。"
+      },
+      "targetRequirements": [
+        {
+          "requirement": "当前对象与玩家下一步直接可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌搜索无匹配可清除-横屏.png",
+          "observation": "清除搜索恢复原八张候选，或选择跳过。"
+        },
+        {
+          "requirement": "保留原完整UI信息、正式素材与唯一承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793526898908-1ye6hw\\弃牌搜索无匹配可清除-横屏.png",
+          "observation": "沿用原搜索、清除和空结果分支；短屏只重排其位置，未生成假候选或第二套筛选集合。"
+        }
+      ],
+      "protectedSlots": [
+        {
+          "objects": "当前决策对象、来源、资源、牌区、原操作",
+          "status": "PASS",
+          "observation": "原八张集合仅被当前搜索过滤，清除入口与跳过保留，不把没有匹配误画成失去全部法术。"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "objects": "本图移动、临时覆盖或窗口化的对象",
+          "status": "PASS",
+          "observation": "清除搜索可恢复正式候选；两种既有清除标记同时存在是原搜索控件细节，当前仍能清楚找回，未以本次改动重画共享搜索。"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "ledger": "temp/doctor-full-inventory-20261101.json 25交互族；本条owner=InteractionOverlay原CardPool搜索 / 原empty提示 / GameButton skip",
+        "uncoveredElements": [],
+        "decisions": "InteractionOverlay原CardPool搜索 / 原empty提示 / GameButton skip继续承接本图正式对象、读取与原动作；没有平行产品状态。"
+      },
+      "hardFailures": [],
+      "issues": [],
+      "evidenceLimit": "当前横屏是浏览器视口；不冒充实体手机长按或触控。"
+    }
+  ],
+  "previousDiagnostic": "temp/doctor-full-visual-d-r4-20261101.json",
+  "previousDiagnosticDisposition": "原十二图九通过三退回及原哈希完整保留，原多人遮挡两项与原变体泛化一项不混入最终media；当前R6分别重新取证。",
+  "recheckHistory": [
+    {
+      "run": "e2e-1793525232024-d0oukw",
+      "finding": "本人曾私有重读多人修后两张，分别九十二和九十四分通过；仅记录过程，不作为最终media源。"
+    },
+    {
+      "run": "e2e-1793525351005-77m5hl",
+      "finding": "本人读取五张后目录意外消失；仅保存实际观察与原计划哈希，未用丢失证据放行。"
+    }
+  ],
+  "scopeAccuracy": {
+    "closed": "当前D组公开准备区数量与阅读、全体玩家候选/队友已选、多持有人状态与说明、零状态跳过、原技能分支差异、弃牌施法桌面/横屏及搜索空态均有对应当前正式媒体。",
+    "notClaimed": [
+      "不把公开准备区常态小卡当全部正文同屏可读",
+      "不把桌面打开后横屏resize当横屏原入口或实体触控",
+      "不以图片判断六点九点规则实际结算",
+      "不把浏览器resize当真实断线同步或重挂载验证",
+      "不外推其它英雄全部移动适配、生产部署或用户最终认可"
+    ]
+  },
+  "limitations": [
+    "同一UI参数分支由同源行为及已有规则测试另证，不为每张法术重复拍图。",
+    "最终媒体源均为当前R6正式evidence副本；归档/14条通过只证明取证链，不替代本人逐图视觉判断。"
+  ],
+  "crossCheckFacts": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793526898908-1ye6hw\\全知之眼次张法术已选-桌面.png",
+      "sha256": "d69bc88e71285dd4847c27174c21a4f43412ab31e76f8d739cd7667455933eaf",
+      "label": "16-牌库顶五第二张已选.png",
+      "readMethod": "每次只打开这一个精确绝对路径，原图与路径在同次调用绑定；本人独立交叉读图",
+      "facts": {
+        "actualTitle": "从牌库顶5张中选择至多2个法术",
+        "observation": "标题明确牌库顶五；法瑞拉之牙已选标记、原检视和确认均可见，图面不是弃牌堆标题。"
+      },
+      "scope": "仅回答被触发的两个交叉疑点；不代替A组逐图PASS或评分"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793526898908-1ye6hw\\预感返还横向浏览末张-横屏.png",
+      "sha256": "b5de1bc9a77ad0e6df675f9170577e97349f5e457e025f64214e596c27d81b43",
+      "label": "47-预感返还横向浏览末张-横屏.png",
+      "readMethod": "每次只打开这一个精确绝对路径，原图与路径在同次调用绑定；本人独立交叉读图",
+      "facts": {
+        "actualTitle": "选择放回牌库的牌",
+        "observation": "右侧栏仍有两行任务标题与灰色确认按钮；左侧三张返还候选和下方检视也在，标题与确认没有消失。"
+      },
+      "scope": "仅回答被触发的两个交叉疑点；不代替A组逐图PASS或评分"
+    }
+  ],
+  "fullScopeAccuracyReview": {
+    "plan": "temp/doctor-full-plan-20261101.json",
+    "planRun": "e2e-1793526898908-1ye6hw",
+    "plannedMediaCount": 48,
+    "status": "范围匹配；不是代其它审查者放行",
+    "mappings": [
+      {
+        "families": "手牌真实准备、公开准备区浏览及阅读",
+        "media": [
+          "30",
+          "31",
+          "32"
+        ],
+        "boundary": "正文恢复由原卡检视，滚动与点卡由行为记录另证；常态不冒充三张正文同屏。"
+      },
+      {
+        "families": "弃牌准备、顶五准备、重排、准备区施放、弃牌直接施放",
+        "media": [
+          "01-04",
+          "15-20",
+          "39-41"
+        ],
+        "boundary": "不同卡区与准备/施放语义均有代表；相同完整UI的规则参数按行为映射，不逐法术重复截图。"
+      },
+      {
+        "families": "预感分支、本次抽牌返还、顶底选择及横屏浏览",
+        "media": [
+          "11",
+          "11b",
+          "12-14",
+          "29",
+          "46",
+          "47"
+        ],
+        "boundary": "常规、一层、三层与返顶/底不因相同按钮UI重复拍图；数值和候选授权另测。"
+      },
+      {
+        "families": "敌方目标、全玩家目标、单/多持有人状态与零状态跳过",
+        "media": [
+          "05-10",
+          "33-37"
+        ],
+        "boundary": "候选范围与不同layout分派均有对应图；不把单个敌方或单持有人外推所有布局。"
+      },
+      {
+        "families": "奖励骰、队友重复重投、即视感、原技能分支",
+        "media": [
+          "21-26",
+          "38",
+          "44"
+        ],
+        "boundary": "保留实际UI语法；寒冰藤蔓/塞拉芬之盾等同族规则结果不由图片或单一Astral源外推正确。"
+      },
+      {
+        "families": "候选阅读、来源卡持续阅读、取消/再次点取消/跳过、角色排序",
+        "media": [
+          "27-29",
+          "42-45",
+          "各自候选/已选态"
+        ],
+        "boundary": "关闭与选择守恒由行为记录；纯截图不证明计时持续、同步恢复或完整联网。"
+      }
+    ],
+    "excludedCorrectly": [
+      "无生产发起者prepare-hand未虚构成新UI",
+      "18张既有公共牌未被扩成逐牌全流程截图",
+      "未将其它英雄全移动适配、生产部署、实体触控、浏览器断线恢复塞入当前目标"
+    ],
+    "remainingLimits": [
+      "本人的最终视觉PASS只覆盖D12；其余36图需各自实际审查者报告与最终门禁，不能由本报告补齐。",
+      "当前总48是计划媒体数量，必须另外校验媒体哈希/索引/manifest/查看器；范围审查不代替这些动作。"
+    ]
+  }
+}

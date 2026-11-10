@@ -1,0 +1,121 @@
+[
+  {
+    "chainId": "奇异博士内部初始化法术准备-手机横屏",
+    "sourceRun": "1792899941431-34440-0eadc74b-9813-43ef-8656-c1b551fe25ec",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/awareness-mobile.trace.json",
+    "requiredSteps": [
+      "internal-setup-public-prepared-spells",
+      "internal-setup-select-awareness",
+      "internal-setup-choose-spell-from-discard",
+      "internal-setup-select-opponent-cp-target",
+      "internal-setup-spell-prepared"
+    ]
+  },
+  {
+    "chainId": "奇异博士全知之眼顶五法术流程",
+    "sourceRun": "1792899973353-34440-11dd2593-c276-48e3-883d-f19d7b120040",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/all-seeing-eye.trace.json",
+    "requiredSteps": [
+      "ultimate-five-amulet-ready",
+      "ultimate-select-before-resolution",
+      "ultimate-prepare-top-five",
+      "ultimate-prepare-spell-target",
+      "ultimate-order-remaining-cards",
+      "ultimate-post-damage-cast-choice",
+      "ultimate-attack-settled"
+    ]
+  },
+  {
+    "chainId": "奇异博士即视感重开阶段",
+    "sourceRun": "1792899955938-34440-2c649d81-1ab2-4eb2-ab9b-5e5bcb5f8033",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/deja-vu.trace.json",
+    "requiredSteps": [
+      "deja-vu-ready-after-rolls",
+      "deja-vu-token-hover",
+      "deja-vu-restarted-rolls"
+    ]
+  },
+  {
+    "chainId": "奇异博士内部初始化法术准备-桌面",
+    "sourceRun": "1792899930177-34440-72635de7-9dab-4702-bd40-bfafc830c56b",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/awareness-desktop.trace.json",
+    "requiredSteps": [
+      "internal-setup-public-prepared-spells",
+      "internal-setup-select-awareness",
+      "internal-setup-choose-spell-from-discard",
+      "internal-setup-select-opponent-cp-target",
+      "internal-setup-spell-prepared"
+    ]
+  },
+  {
+    "chainId": "奇异博士星际侵入奖励骰结算",
+    "sourceRun": "1792899988972-34440-8d95e657-b9ce-49f5-8216-d1b23966b637",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/astral-invasion.trace.json",
+    "requiredSteps": [
+      "astral-incursion-ready",
+      "astral-incursion-selected",
+      "astral-bonus-dice-pending",
+      "astral-bonus-dice-confirmed"
+    ]
+  },
+  {
+    "chainId": "奇异博士预感替代收入抽牌返还",
+    "sourceRun": "1792899966444-34440-ab97fda6-b0a7-4090-bb37-1fe30f728230",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/premonition-income.trace.json",
+    "requiredSteps": [
+      "income-replacement-choice",
+      "income-return-drawn-card",
+      "income-return-position",
+      "income-returned-to-bottom"
+    ]
+  },
+  {
+    "chainId": "奇异博士深红系带真实施加",
+    "sourceRun": "1792899998182-34440-a7ef3ce1-5bb6-4e9f-9b70-4f2908d6edd8",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/crimson-bands.trace.json",
+    "requiredSteps": [
+      "crimson-bands-spell-in-hand",
+      "crimson-bands-select-opponent",
+      "crimson-bands-status-granted"
+    ]
+  },
+  {
+    "chainId": "奇异博士真实联机选角隐藏门禁",
+    "sourceRun": "1792900004510-34440-b69ef9a6-2a05-4e1c-93e6-13e5a1ff2f9e",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/hidden-selection.trace.json",
+    "requiredSteps": [
+      "online-room-create-confirmation",
+      "online-room-created-selection-visible",
+      "online-selection-mobile-viewport"
+    ]
+  },
+  {
+    "chainId": "奇异博士队友使用值得拥有重掷队友骰子",
+    "sourceRun": "1792899948708-34440-2c14d8f8-0124-4271-b415-d2e3847ba7f3",
+    "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+    "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+    "evidence": "traces/worthy-teammate.trace.json",
+    "requiredSteps": [
+      "worthy-teammate-roll-ready",
+      "worthy-teammate-dice-targets",
+      "worthy-teammate-dice-selected",
+      "worthy-teammate-reroll-settled"
+    ]
+  }
+]

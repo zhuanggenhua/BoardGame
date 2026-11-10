@@ -1,0 +1,29 @@
+{
+  "purpose": "private failed-state visual diagnosis; not acceptance",
+  "verdict": "REVISE",
+  "source": "D:/gongzuo/webgame/BoardGame/test-results/playwright-artifacts/e2e-1793534456887-nr9x0h/dicethrone-doctor-strange--c0aa4-）-手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术-chromium/test-failed-1.png",
+  "sourceExists": true,
+  "viewport": { "width": 812, "height": 375 },
+  "scope": "one R2 failure screenshot captured before current 32px button restoration; product files read only",
+  "observations": [
+    "顶部居中标题为“从弃牌堆选择1个法术并准备”，单行显示。",
+    "中央为单张竖直法术候选牌，下面居中为灰色禁用“确认”按钮；未出现短屏右侧任务栏或横向大牌轨道。",
+    "候选牌底部文字紧贴并到达可见池底边，末行有裁切现象；图片不能独立提供精确DOM裁切数值。",
+    "确认按钮与候选牌之间仍有可见间隙，没有压住候选牌本身。",
+    "确认按钮位于半透明遮罩前景，位置覆盖了后方被压暗手牌的上部区域；这张图不能据此认定需要重排，因为此时手牌属于弹窗背后的页面内容。",
+    "候选牌竖直、未见拉伸变形；未见额外底部说明框、检查按钮或底部独立动作行。",
+    "本图处于未选中、确认禁用状态，不能证明选中后的确认可操作性或最终准备结果。"
+  ],
+  "reportedRuntimeMeasurement": {
+    "source": "parent supplied current R2 measurement, not independently recomputed from screenshot",
+    "candidateBottom": 270.84,
+    "poolBottom": 266,
+    "overflowPx": 4.84
+  },
+  "minimumCorrection": "仅校正原40vh滚动视口的内容盒/padding计算或可滚动范围，让候选牌底部完整进入视口；保持现有卡尺寸、纵向构图、上标题下动作，不新增侧栏。当前滚动盒为max-h-[min(40vh,28rem)]与py-3，加入box-content可让40vh作为内容上限并把上下padding置于其外，理论增出的24px覆盖父线程实测4.84px裁切；是否受上层收缩影响需重拍确认。",
+  "freshnessLimit": "父线程已把两处动作按钮从44px恢复为32px，并撤销手牌额外3px；本R2失败截图不覆盖这两项最新状态。",
+  "remainingEvidence": "校正后需同一入口重新截图，核实卡底完整；另需真实点击后的选中与确认结果。",
+  "acceptancePass": false,
+  "historical49ImagesUsed": false,
+  "productFilesChanged": false
+}

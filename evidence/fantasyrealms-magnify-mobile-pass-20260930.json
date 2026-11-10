@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "936x432 手机横屏下点击卡牌放大镜后，放大卡牌完整可见",
+      "status": "PASS",
+      "evidence": [
+        "test-results/evidence-screenshots/fantasyrealms/magnify-mobile-final/01-clicked-magnify-mobile.png",
+        "真实入口点击 .fr-card-magnify-button 后生成放大层",
+        "放大卡牌几何：264.95x367.98，边界 x=335.52..600.47，y=32..399.98"
+      ]
+    },
+    {
+      "requirement": "点击放大后页面不发生横向或纵向溢出，关闭入口仍可见",
+      "status": "PASS",
+      "evidence": [
+        "同一张点击放大态截图",
+        "document overflow 为 936x432",
+        "关闭按钮位于放大卡牌右上角且可见"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\fantasyrealms\\magnify-mobile-final\\01-clicked-magnify-mobile.png"
+  ]
+}

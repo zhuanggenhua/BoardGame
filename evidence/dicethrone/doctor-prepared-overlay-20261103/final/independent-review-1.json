@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/prepared_mobile_final",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏三张.png",
+      "sha256": "93f75b5bef8440023ab263f86aa43b7a799199a855dd1d7f69cc51efe3931ad0",
+      "observation": "三张首页显示首张，牌面形状正常覆盖技能槽，无新增底框；1/3 与右箭头可辨，邻槽未被遮挡。",
+      "status": "PASS",
+      "hardFailures": []
+    },
+    {
+      "sha256": "c897e503a5d722d5dc732e8b21574576dfffd9dfbc9cba5f482317f30d8ce029",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏三张-浏览末张.png",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "末张绿色牌完整呈现，3/3 与左箭头可辨；牌面比例正常，无额外底框或邻槽遮挡。"
+    },
+    {
+      "hardFailures": [],
+      "status": "PASS",
+      "sha256": "37d5295fc39dc7194d4c97f00824125537813596a205bef71dc092458ef8ecff",
+      "observation": "换牌后首页显示首张及 1/2，右箭头可辨；牌面等比、完整，无新增底框和邻槽遮挡。",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏换牌两张.png"
+    },
+    {
+      "observation": "第二张蓝色牌完整显示，2/2 与左箭头可辨；牌面等比，无新增底框和邻槽遮挡。",
+      "hardFailures": [],
+      "sha256": "a16bb0cc7ed8adba4bab70f1b97d1f51f4adaf79291a5538d659cee89ef8183d",
+      "status": "PASS",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏换牌两张-浏览末张.png"
+    },
+    {
+      "sha256": "ed4ecd91288db0167e63c2972a92e48c096ad8409b167c6a868f02685064c3f3",
+      "hardFailures": [],
+      "observation": "牌组恢复三张后首页回到首张，1/3 与右箭头可辨；牌面比例正常，邻槽无遮挡。",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏恢复三张.png",
+      "status": "PASS"
+    },
+    {
+      "sha256": "c897e503a5d722d5dc732e8b21574576dfffd9dfbc9cba5f482317f30d8ce029",
+      "hardFailures": [],
+      "observation": "与横屏三张浏览末张文件哈希一致，沿用该实际读图：绿色末张完整，3/3 与左箭头可辨，邻槽无遮挡。",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\横屏恢复三张-浏览末张.png",
+      "status": "PASS"
+    }
+  ]
+}

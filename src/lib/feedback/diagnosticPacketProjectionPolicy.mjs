@@ -9,6 +9,8 @@ const SAFE_MISSING_FIELDS = new Set([
     'correlation.stateRevision',
     'correlation.decisionEpoch',
     'randomCursor',
+    'privateReplay',
+    'privateReplay.trigger',
     'snapshots.at',
     'snapshots.privateStateRedacted',
     'snapshots.before',

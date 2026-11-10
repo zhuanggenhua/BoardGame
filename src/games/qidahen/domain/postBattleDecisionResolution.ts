@@ -23,6 +23,7 @@ import {
 } from './pendingBattleCombatSupport';
 import {
     getActionRuleDisplayRegionName,
+    getEffectiveHomelandController,
 } from './regionRuleSemantics';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import {
@@ -326,17 +327,18 @@ export const resolvePostBattleDecision = (
                 };
             }
             if (choice.mode === 'occupy') {
+                const returnsToHomeland = getEffectiveHomelandController(state, region.id) === selection.attackerFactionId;
                 const occupiedRegion = {
                     ...region,
                     controller: selection.attackerFactionId,
-                    diplomacyMarkerFaction: selection.originalController === 'neutral' ? selection.attackerFactionId : null,
-                    diplomacyMarkerSide: selection.originalController === 'neutral' ? 'vassal' as const : null,
+                    diplomacyMarkerFaction: returnsToHomeland ? null : selection.attackerFactionId,
+                    diplomacyMarkerSide: returnsToHomeland ? null : 'vassal' as const,
                     population: occupiedPopulation,
                     troops: selection.survivingTroops,
                     siegeState: null,
                     cityState: null,
                     specialTroops: mergedSurvivingSpecialTroops,
-                    note: `${region.name} 被攻下后由 ${selection.originalController === 'neutral' ? `${dependencies.toFactionLabel(selection.attackerFactionId)}附庸` : dependencies.toFactionLabel(selection.attackerFactionId)} 占领，并进驻 ${selection.survivingTroops} 个幸存部队${plunderPopulation > 0 ? `，劫掠移除 ${plunderPopulation} 人口` : ''}。`,
+                    note: `${region.name} 被攻下后由 ${returnsToHomeland ? dependencies.toFactionLabel(selection.attackerFactionId) : `${dependencies.toFactionLabel(selection.attackerFactionId)}附庸`} 占领，并进驻 ${selection.survivingTroops} 个幸存部队${plunderPopulation > 0 ? `，劫掠移除 ${plunderPopulation} 人口` : ''}。`,
                 };
                 return {
                     ...occupiedRegion,
@@ -372,8 +374,6 @@ export const resolvePostBattleDecision = (
             const resetRegion = {
                 ...region,
                 controller: selection.originalController,
-                diplomacyMarkerFaction: null,
-                diplomacyMarkerSide: null,
                 population: battleMode === 'city' && isQidahenCityRuntimeRegion(region.id) ? 0 : Math.max(0, region.population - plunderPopulation),
                 troops: 0,
                 siegeState: null,

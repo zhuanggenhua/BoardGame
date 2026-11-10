@@ -1,0 +1,41 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "小黑屋选角 UI 减少边框与单击确认验收",
+  "generatedAt": "2026-10-01T20:18:17+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-image",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "选角页减少多层边框，角色本体成为第一视觉主体",
+      "status": "PASS",
+      "evidence": [
+        "01-角色选择-减边框.png：1600x900 当前工作树截图；角色候选、左侧详情和底部操作区同屏可读，外框和分栏线已收敛。"
+      ]
+    },
+    {
+      "requirement": "角色确认完成后只需一次点击并进入剧本卡确认阶段",
+      "status": "PASS",
+      "evidence": [
+        "02-单击确认-进入剧本卡阶段.png：1600x900 当前工作树截图；角色状态为 1/3 已准备，主按钮已切换为确认此剧本卡。"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/betrayal/character-select-refactor-final-20261001/01-角色选择-减边框.png",
+    "test-results/evidence-screenshots/betrayal/character-select-refactor-final-20261001/02-单击确认-进入剧本卡阶段.png"
+  ],
+  "visualAudit": {
+    "document": "evidence/betrayal-character-select-refactor-visual-audit-20261001.md",
+    "mediaCount": 2,
+    "passCount": 2,
+    "reviseCount": 0
+  },
+  "notes": [
+    "剧本候选弹层在 900px 高度下需要滚动，未纳入最终交付组，避免把裁切状态当成 PASS。"
+  ]
+}

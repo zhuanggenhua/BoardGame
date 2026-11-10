@@ -1,0 +1,4 @@
+{
+  "message": "BG_REPRO_STORAGE_EXPORT is required for the real-snapshot scenario",
+  "stack": "Error: BG_REPRO_STORAGE_EXPORT is required for the real-snapshot scenario\n    at runRealSnapshotRestore (file:///D:/gongzuo/webgame/BoardGame/scripts/verify/betrayal-rabbit-foot-real-browser-repro.mjs:546:11)\n    at main (file:///D:/gongzuo/webgame/BoardGame/scripts/verify/betrayal-rabbit-foot-real-browser-repro.mjs:1070:42)"
+}

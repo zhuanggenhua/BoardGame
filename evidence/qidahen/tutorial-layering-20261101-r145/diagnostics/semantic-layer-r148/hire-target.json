@@ -1,0 +1,380 @@
+{
+  "hint": {
+    "x": 846.203125,
+    "y": 387.09375,
+    "width": 310,
+    "height": 238.25,
+    "top": 387.09375,
+    "right": 1156.203125,
+    "bottom": 625.34375,
+    "left": 846.203125
+  },
+  "anchor": {
+    "id": "qidahen-map-region-focus-name",
+    "bounds": {
+      "x": 790.203125,
+      "y": 496.21875,
+      "width": 36,
+      "height": 20,
+      "top": 496.21875,
+      "right": 826.203125,
+      "bottom": 516.21875,
+      "left": 790.203125
+    }
+  },
+  "surfaces": [
+    {
+      "id": "qidahen-map-region-focus-name",
+      "bounds": {
+        "x": 790.203125,
+        "y": 496.21875,
+        "width": 36,
+        "height": 20,
+        "top": 496.21875,
+        "right": 826.203125,
+        "bottom": 516.21875,
+        "left": 790.203125
+      }
+    }
+  ],
+  "guards": [
+    {
+      "selector": "[data-testid=\"qidahen-turn-choice\"]",
+      "id": "qidahen-turn-choice",
+      "bounds": {
+        "x": 1490,
+        "y": 276,
+        "width": 350,
+        "height": 116,
+        "top": 276,
+        "right": 1840,
+        "bottom": 392,
+        "left": 1490
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-13",
+      "bounds": {
+        "x": 313,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 495,
+        "bottom": 1205.5,
+        "left": 313
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-14",
+      "bounds": {
+        "x": 441,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 623,
+        "bottom": 1205.5,
+        "left": 441
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-15",
+      "bounds": {
+        "x": 569,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 751,
+        "bottom": 1205.5,
+        "left": 569
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-16",
+      "bounds": {
+        "x": 697,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 879,
+        "bottom": 1205.5,
+        "left": 697
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-17",
+      "bounds": {
+        "x": 825,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1007,
+        "bottom": 1205.5,
+        "left": 825
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-18",
+      "bounds": {
+        "x": 953,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1135,
+        "bottom": 1205.5,
+        "left": 953
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-19",
+      "bounds": {
+        "x": 1081,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1263,
+        "bottom": 1205.5,
+        "left": 1081
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-20",
+      "bounds": {
+        "x": 1209,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1391,
+        "bottom": 1205.5,
+        "left": 1209
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-21",
+      "bounds": {
+        "x": 1337,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1519,
+        "bottom": 1205.5,
+        "left": 1337
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-22",
+      "bounds": {
+        "x": 1465,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1647,
+        "bottom": 1205.5,
+        "left": 1465
+      }
+    },
+    {
+      "selector": "[data-qidahen-hand-scroll-face]",
+      "id": null,
+      "bounds": {
+        "x": 247,
+        "y": 1047.25,
+        "width": 28,
+        "height": 28,
+        "top": 1047.25,
+        "right": 275,
+        "bottom": 1075.25,
+        "left": 247
+      }
+    },
+    {
+      "selector": "[data-qidahen-hand-scroll-face]",
+      "id": null,
+      "bounds": {
+        "x": 1645,
+        "y": 1047.25,
+        "width": 28,
+        "height": 28,
+        "top": 1047.25,
+        "right": 1673,
+        "bottom": 1075.25,
+        "left": 1645
+      }
+    },
+    {
+      "selector": "[data-fab-id=\"chat\"]",
+      "id": null,
+      "bounds": {
+        "x": 1792,
+        "y": 80,
+        "width": 48,
+        "height": 48,
+        "top": 80,
+        "right": 1840,
+        "bottom": 128,
+        "left": 1792
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-player-float\"]",
+      "id": "qidahen-player-float",
+      "bounds": {
+        "x": 740,
+        "y": 16,
+        "width": 720,
+        "height": 58,
+        "top": 16,
+        "right": 1460,
+        "bottom": 74,
+        "left": 740
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-action-wheel\"]",
+      "id": "qidahen-action-wheel",
+      "bounds": {
+        "x": 136,
+        "y": 8,
+        "width": 438,
+        "height": 438,
+        "top": 8,
+        "right": 574,
+        "bottom": 446,
+        "left": 136
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-chronology-zone\"]",
+      "id": "qidahen-chronology-zone",
+      "bounds": {
+        "x": 80,
+        "y": 542,
+        "width": 320,
+        "height": 214,
+        "top": 542,
+        "right": 400,
+        "bottom": 756,
+        "left": 80
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-korea-zone\"]",
+      "id": "qidahen-korea-zone",
+      "bounds": {
+        "x": 1714,
+        "y": 104,
+        "width": 156,
+        "height": 140,
+        "top": 104,
+        "right": 1870,
+        "bottom": 244,
+        "left": 1714
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-draw-anchor\"]",
+      "id": "qidahen-draw-anchor",
+      "bounds": {
+        "x": 44,
+        "y": 866,
+        "width": 154,
+        "height": 214,
+        "top": 866,
+        "right": 198,
+        "bottom": 1080,
+        "left": 44
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-discard-anchor\"]",
+      "id": "qidahen-discard-anchor",
+      "bounds": {
+        "x": 1722,
+        "y": 866,
+        "width": 154,
+        "height": 214,
+        "top": 866,
+        "right": 1876,
+        "bottom": 1080,
+        "left": 1722
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-1-army-ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1",
+      "bounds": {
+        "x": 766.7560424804688,
+        "y": 542.0787353515625,
+        "width": 18.7650146484375,
+        "height": 18.76507568359375,
+        "top": 542.0787353515625,
+        "right": 785.5210571289062,
+        "bottom": 560.8438110351562,
+        "left": 766.7560424804688
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-1-control",
+      "bounds": {
+        "x": 790.2123413085938,
+        "y": 522.2311401367188,
+        "width": 20.93023681640625,
+        "height": 20.93023681640625,
+        "top": 522.2311401367188,
+        "right": 811.142578125,
+        "bottom": 543.161376953125,
+        "left": 790.2123413085938
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-population=\"true\"]",
+      "id": "qidahen-map-population-city-region-1",
+      "bounds": {
+        "x": 792.0166625976562,
+        "y": 548.5743408203125,
+        "width": 18.7650146484375,
+        "height": 18.7650146484375,
+        "top": 548.5743408203125,
+        "right": 810.7816772460938,
+        "bottom": 567.33935546875,
+        "left": 792.0166625976562
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-map-region-focus-name\"]",
+      "id": "qidahen-map-region-focus-name",
+      "bounds": {
+        "x": 790.203125,
+        "y": 496.21875,
+        "width": 36,
+        "height": 20,
+        "top": 496.21875,
+        "right": 826.203125,
+        "bottom": 516.21875,
+        "left": 790.203125
+      }
+    }
+  ],
+  "gap": 20,
+  "fullChainClaimed": false
+}

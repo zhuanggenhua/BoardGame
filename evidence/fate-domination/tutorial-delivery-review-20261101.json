@@ -1,0 +1,910 @@
+{
+  "verdict": "REVISE",
+  "status": "REVISE",
+  "gameId": "fate-domination",
+  "evidenceCategory": "tutorial",
+  "sourceRevision": "81cf6eeeef030cafad8413f83e91df1935ccd8eb69882f5b68f70450976e6110",
+  "sourceRun": "1793529631948-117808-94f95a0c-50ea-4828-a024-342525c1b497",
+  "reason": "生产仍是旧教程代码；本地现有通过项不能代替生产代码回验。源码身份须在提交前再次核对。",
+  "display": {
+    "finalPassBeforeOpen": false
+  },
+  "sourceIdentityCurrent": false,
+  "media": [
+    {
+      "order": 1,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/01-固定身份进入规则课程，未部署且不出现选角.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/01-固定身份进入规则课程，未部署且不出现选角.png",
+      "sha256": "bdc5f01eec4a3617d7bbcf073a6f2c4f175a939475c5ac1b87d9679eeac476bd",
+      "uiStateId": "intro",
+      "status": "PASS",
+      "observation": "棋盘没有提前部署的立牌；开场只见中文胜负原句及本人控制关系，没有选角或对手名册。技能在右，威力在左。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "固定身份进入规则课程，未部署且不出现选角",
+      "behaviorStepId": "capture-intro"
+    },
+    {
+      "order": 2,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/02-魔术工房的三个 +1 点位可选.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/02-魔术工房的三个 +1 点位可选.png",
+      "sha256": "93f2632042c5f6915bf5bbc95100722fced7e5d2d5f56c101cd2b2f419e2c31b",
+      "uiStateId": "lesson-deploymentChoice",
+      "status": "PASS",
+      "observation": "工房三个同值+1空点均有高亮；战场最高空位也可选。教学要求选择具体点位，没有把区域直接当已部署。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "魔术工房的三个 +1 点位可选",
+      "behaviorStepId": "capture-lesson-deploymentChoice"
+    },
+    {
+      "order": 3,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/03-选中工房第二点位后仍未提交，可撤回或改选.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/03-选中工房第二点位后仍未提交，可撤回或改选.png",
+      "sha256": "c841412e99c95c4c1fea338c1628c330c0094956be1d22135da924b00ce397c6",
+      "uiStateId": "deployment-selected",
+      "status": "PASS",
+      "observation": "工房第二点显示待确认头像；其它合法点仍亮。确认和取消独立，尚未形成正式落位。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "选中工房第二点位后仍未提交，可撤回或改选",
+      "behaviorStepId": "capture-deployment-selected"
+    },
+    {
+      "order": 4,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/09-确认后棋子才落在已选魔术工房点位.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/09-确认后棋子才落在已选魔术工房点位.png",
+      "sha256": "bc100bd4c40936758c916a416cddab9191848e0faf2bac16ca1e45967ce04275",
+      "uiStateId": "deployment-landed",
+      "status": "PASS",
+      "observation": "主线选中的工房点已由正式头像占用；战略部署按钮处蓝色焦点，时机、支付1魔力抽2张和当前操作同屏。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "确认后棋子才落在已选魔术工房点位",
+      "behaviorStepId": "capture-deployment-landed"
+    },
+    {
+      "order": 5,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/10-御主能力直接位于角色旁，右侧只读说明，不打开详情发动.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/10-御主能力直接位于角色旁，右侧只读说明，不打开详情发动.png",
+      "sha256": "ed83686d9cf8f9ab67331b9eae776b6dd878097d5bef6c8cd7e43c8279e18d36",
+      "uiStateId": "master-ability-tooltip",
+      "status": "PASS",
+      "observation": "只读能力tip在按钮右侧，教程正文仍在；没有打开玩家详情，也没有挤动威力、手牌或技能区。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "御主能力直接位于角色旁，右侧只读说明，不打开详情发动",
+      "behaviorStepId": "capture-master-ability-tooltip"
+    },
+    {
+      "order": 6,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/11-先移动再出牌及移动目的.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/11-先移动再出牌及移动目的.png",
+      "sha256": "1f627c96be1b9bd995e40d7bb63a93553b7bc6516fae6076651937b667a2caa0",
+      "uiStateId": "lesson-movement",
+      "status": "PASS",
+      "observation": "蓝框指向棋盘上的韦伯；提示完整写出点棋子、选深山町、确认移动及争夺事件战果的目的。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "先移动再出牌及移动目的",
+      "behaviorStepId": "capture-lesson-movement"
+    },
+    {
+      "order": 7,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/14-点棋盘本人棋子后显示合法地点，等待选择目的地.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/14-点棋盘本人棋子后显示合法地点，等待选择目的地.png",
+      "sha256": "29910e95c5cff338f3040e1dfe70bed4822c436a0e6bece210ec9ae8b5995da4",
+      "uiStateId": "movement-choosing",
+      "status": "PASS",
+      "observation": "选移动后合法目的地有边界，原棋子可识别；没有给不可移动区青色遮罩。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "点棋盘本人棋子后显示合法地点，等待选择目的地",
+      "behaviorStepId": "capture-movement-choosing"
+    },
+    {
+      "order": 8,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/15-移动目标与确认分开，取消不支付.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/15-移动目标与确认分开，取消不支付.png",
+      "sha256": "6abbbaadd39d39ccedd05c50e3d27a2ae0a1c35e9fe22751d299796365011ab1",
+      "uiStateId": "movement-cancel",
+      "status": "PASS",
+      "observation": "目的地已选中并有区别于候选的反馈；确认与取消仍可操作。当前牌桌及原位置上下文可见。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "移动目标与确认分开，取消不支付",
+      "behaviorStepId": "capture-movement-cancel"
+    },
+    {
+      "order": 9,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/16-抵达交战战场后无法常规移动的原因.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/16-抵达交战战场后无法常规移动的原因.png",
+      "sha256": "da605b7d1d13a24dcad05d623a485ae58d9314b9566a29e17f26728dd051dea2",
+      "uiStateId": "lesson-engagement",
+      "status": "PASS",
+      "observation": "落位战场后显示交战原文；明确将“与对手同在战场”连接到不能常规移动，没有暗示所有移动均失效。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "抵达交战战场后无法常规移动的原因",
+      "behaviorStepId": "capture-lesson-engagement"
+    },
+    {
+      "order": 10,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/17-攻击牌费用、威力与时机.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/17-攻击牌费用、威力与时机.png",
+      "sha256": "c73868eb39cd74139ebd4619ebd703df865eb9c17abb54cafe0eae2a7d85c5ee",
+      "uiStateId": "lesson-cardReading",
+      "status": "PASS",
+      "observation": "攻击大牌完整纵向可见，普通牌与技能位置清楚；费用/威力原句和长按或右键检视操作相邻。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "攻击牌费用、威力与时机",
+      "behaviorStepId": "capture-lesson-cardReading"
+    },
+    {
+      "order": 11,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/18-首次读骑乘原卡后再筹备费用与选牌.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/18-首次读骑乘原卡后再筹备费用与选牌.png",
+      "sha256": "620d659690ea40cf0ee6c1dd09fcb49199906160e2177da095deecfb9ba5cd43",
+      "uiStateId": "hand-inspection",
+      "status": "PASS",
+      "observation": "骑乘完整卡图在前景，魔耗、威力及行动效果可读；关闭按钮可达。教学没有在其下继续指挥牌桌。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "首次读骑乘原卡后再筹备费用与选牌",
+      "behaviorStepId": "capture-hand-inspection"
+    },
+    {
+      "order": 12,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/19-技能出牌门槛与令咒恢复魔力.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/19-技能出牌门槛与令咒恢复魔力.png",
+      "sha256": "ab9684af611e21fc651a32be0681cca9189c2be88af396bdef391c9c772d316d",
+      "uiStateId": "lesson-sealMana",
+      "status": "PASS",
+      "observation": "焦点在实际令咒入口；文字说明为打出骑乘补足8魔力门槛，包含选择恢复并确认的实际操作。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "技能出牌门槛与令咒恢复魔力",
+      "behaviorStepId": "capture-lesson-sealMana"
+    },
+    {
+      "order": 13,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/21-令咒选择效果后明确确认.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/21-令咒选择效果后明确确认.png",
+      "sha256": "acc2e37b516bc94ee7ed3327285357998c6e027a7e9477a5d7a290e2a710f792",
+      "uiStateId": "seal-mana",
+      "status": "PASS",
+      "observation": "恢复魔力高亮而其它效果未选；确认按钮可达，当前选择和正式提交有清楚区别。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "令咒选择效果后明确确认",
+      "behaviorStepId": "capture-seal-mana"
+    },
+    {
+      "order": 14,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/22-第一次选牌：点牌选择、再点撤回，选齐后确认攻击.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/22-第一次选牌：点牌选择、再点撤回，选齐后确认攻击.png",
+      "sha256": "e7b5bf7151ffd25065647f30d7ea844c30006fd1a7fdf2677cdd1c0609b501b5",
+      "uiStateId": "lesson-mixedAttack",
+      "status": "PASS",
+      "observation": "第一次普通/技能混选的规则和点选、再点撤回、确认三步可读；提示没有盖住要点的牌。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "第一次选牌：点牌选择、再点撤回，选齐后确认攻击",
+      "behaviorStepId": "capture-lesson-mixedAttack"
+    },
+    {
+      "order": 15,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/23-两张草稿及一级预计威力，确认前可撤回.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/23-两张草稿及一级预计威力，确认前可撤回.png",
+      "sha256": "32030132a4b737ae7f291940a9e1c66ee4f3e11b1b8ed5ee73a2eb90ed4d264a",
+      "uiStateId": "draft",
+      "status": "PASS",
+      "observation": "两张暂存牌位于剩余手牌上方，预计合计威力在暂存左；确认操作仍在右侧技能上方。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "两张草稿及一级预计威力，确认前可撤回",
+      "behaviorStepId": "capture-draft"
+    },
+    {
+      "order": 16,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/25-已打出的骑乘可以发动.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/25-已打出的骑乘可以发动.png",
+      "sha256": "07b930880cd9bad8dae69feb2881621ddf3a34235adf62a901db8d0e2d4794f3",
+      "uiStateId": "lesson-riding",
+      "status": "PASS",
+      "observation": "骑乘已经明置进入攻击区，其激活条件和至多三张的行动条款在当前时刻出现。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "已打出的骑乘可以发动",
+      "behaviorStepId": "capture-lesson-riding"
+    },
+    {
+      "order": 17,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/26-骑乘候选卡面完整，轻描边区分选择与实付费用.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/26-骑乘候选卡面完整，轻描边区分选择与实付费用.png",
+      "sha256": "9dcc60a64111e972c5bfe5b1c1a7b42adc12bf71d3b764cbe19e7396417cfaa7",
+      "uiStateId": "riding",
+      "status": "PASS",
+      "observation": "三个候选轻描边区分已选；“已选3/3·实付1/6魔力”现在有深底可读。确认/取消和原普通攻击暂存分开。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "骑乘候选卡面完整，轻描边区分选择与实付费用",
+      "behaviorStepId": "capture-riding"
+    },
+    {
+      "order": 18,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/27-发动已打出的急行前往新都.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/27-发动已打出的急行前往新都.png",
+      "sha256": "17561a5be49c488cdeb0ceb5620e9edad3ee849ab07e5884c926a407f4aefa24",
+      "uiStateId": "lesson-actionAbility",
+      "status": "PASS",
+      "observation": "急行已在打出的牌中，提示给出免费、无视交战及前往新都的当前行动；不是提前讲尚不可用的技能。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "发动已打出的急行前往新都",
+      "behaviorStepId": "capture-lesson-actionAbility"
+    },
+    {
+      "order": 19,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/28-急行结算后，韦伯已抵达新都.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/28-急行结算后，韦伯已抵达新都.png",
+      "sha256": "c1251ba5623d38befd4dc9ad104c9a019252eedff50cc31100fcc22e70914221",
+      "uiStateId": "effect-move-result",
+      "status": "PASS",
+      "observation": "急行后韦伯实际位于新都；手牌、威力与技能保持原槽位，动作结果没有被新说明弹窗盖住。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "急行结算后，韦伯已抵达新都",
+      "behaviorStepId": "capture-effect-move-result"
+    },
+    {
+      "order": 20,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/29-对手一级威力与无框单排出牌同时可比较.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/29-对手一级威力与无框单排出牌同时可比较.png",
+      "sha256": "c0995394725b395601d0a0b6f0463a9d7ba53871dc1b54cc247292ef02fb4955",
+      "uiStateId": "public-cards",
+      "status": "PASS",
+      "observation": "头像旁是一排无外框已打出牌，对手威力仍在一级摘要可读，不需要详情弹窗查临时战力。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "对手一级威力与无框单排出牌同时可比较",
+      "behaviorStepId": "capture-public-cards"
+    },
+    {
+      "order": 21,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/30-真实从者揭示与技能公开.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/30-真实从者揭示与技能公开.png",
+      "sha256": "f862094f4b14ed86008895e870787202c54ea4ad0cb8b2ac3567b879fea4410f",
+      "uiStateId": "lesson-revelation",
+      "status": "PASS",
+      "observation": "从者真实公开后才出现玩家2间桐慎二的归属与真名解放原文；没有开场介绍全部对手。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "真实从者揭示与技能公开",
+      "behaviorStepId": "capture-lesson-revelation"
+    },
+    {
+      "order": 22,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/31-已揭示对手的静态身份与技能可检视.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/31-已揭示对手的静态身份与技能可检视.png",
+      "sha256": "3c97f84ef808de404bd2026aa818551f183b67e8f1d873833b2807ab2021f41d",
+      "uiStateId": "opponent-detail-revealed",
+      "status": "PASS",
+      "observation": "可选详情里御主、从者、令咒和三张技能完整；牌距紧凑，没有临时威力或发动按钮。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "已揭示对手的静态身份与技能可检视",
+      "behaviorStepId": "capture-opponent-detail-revealed"
+    },
+    {
+      "order": 23,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/33-战力结算.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/33-战力结算.png",
+      "sha256": "70a9f2e2bf3056ecaf45cc47716c4f7f1e482c8e2346026c14a561fd178bd6fd",
+      "uiStateId": "lesson-settlement",
+      "status": "PASS",
+      "observation": "结算课与本人/对手当前威力同屏；原文解释攻击、地利、能力和局势天气，以及战场事件奖励。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "战力结算",
+      "behaviorStepId": "capture-lesson-settlement"
+    },
+    {
+      "order": 24,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/34-回合结束后，技能返回技能区，普通攻击进入弃牌堆.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/34-回合结束后，技能返回技能区，普通攻击进入弃牌堆.png",
+      "sha256": "da6b4413a6db96875f63da142ff9f4f4f687cf952c6466cf96102aeb8105a6bd",
+      "uiStateId": "lesson-discard",
+      "status": "PASS",
+      "observation": "新蓝框准确落在本人弃牌图标与数量；“点击弃牌堆查看本轮收回的普通攻击牌”接在收牌原文后，主牌桌未移位。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "回合结束后，技能返回技能区，普通攻击进入弃牌堆",
+      "behaviorStepId": "capture-lesson-discard"
+    },
+    {
+      "order": 25,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/35-回合收牌后检视弃牌堆，只说明当前查看动作.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/35-回合收牌后检视弃牌堆，只说明当前查看动作.png",
+      "sha256": "af7d2a3ff79b0ba10102a1cebe48062885f827b3d88a9f0a0c25672295ce8e1f",
+      "uiStateId": "discard",
+      "status": "PASS",
+      "observation": "弃牌堆真实窗口横排四张普通攻击，卡面完整可检视，关闭入口明确；课程已让出前景。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "回合收牌后检视弃牌堆，只说明当前查看动作",
+      "behaviorStepId": "capture-discard"
+    },
+    {
+      "order": 26,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/36-后续回合部署到深山町的最高空位，读取地利.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/36-后续回合部署到深山町的最高空位，读取地利.png",
+      "sha256": "8758758c0021f1c6260ab8a39c585905fb7a879bc33f0e2e21baaaa7f89b15d5",
+      "uiStateId": "lesson-battleDeployment",
+      "status": "PASS",
+      "observation": "第三回合首次战场部署显示言峰已占+3，当前可选+1等最高空位亮起；地利原句和选深山町的指令同时可读。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "后续回合部署到深山町的最高空位，读取地利",
+      "behaviorStepId": "capture-lesson-battleDeployment"
+    },
+    {
+      "order": 27,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/37-在战场准备一明一暗两张攻击.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/37-在战场准备一明一暗两张攻击.png",
+      "sha256": "6e1e7bbb5f65a70d440f4e15e3b92ff8326db08ca0e11814d5e04fc4e83841f0",
+      "uiStateId": "lesson-battlefieldDarkAttack",
+      "status": "PASS",
+      "observation": "实际位于战场时才教至少一明置及暗置不消耗/不计威力；明置第一张、切暗置、再选第二张的操作通顺。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "在战场准备一明一暗两张攻击",
+      "behaviorStepId": "capture-lesson-battlefieldDarkAttack"
+    },
+    {
+      "order": 28,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/39-明暗混合草稿与暗置标记，确认前仍可撤回.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/39-明暗混合草稿与暗置标记，确认前仍可撤回.png",
+      "sha256": "86058fe742ddc50fa6391f40619228ad17627a7fdca30d9b7d527169038444cc",
+      "uiStateId": "dark-draft",
+      "status": "PASS",
+      "observation": "一明一暗暂存清楚，暗置牌有“暗置”标签；预计威力仍在左，确认可达，未提前当成打出完成。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "明暗混合草稿与暗置标记，确认前仍可撤回",
+      "behaviorStepId": "capture-dark-draft"
+    },
+    {
+      "order": 29,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/40-另一御主首次使用的实际能力及玩家归属.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/40-另一御主首次使用的实际能力及玩家归属.png",
+      "sha256": "b68dbb041c68e644d1a69ca9d20589dfc3dabec905fa0a873da6b96489fa75df",
+      "uiStateId": "lesson-masterAbility-m_kirei-s3",
+      "status": "PASS",
+      "observation": "对手玩家3与言峰绮礼、执行者和+2原文同框；当前是他席实际效果，没有误指挥学员发动。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "另一御主首次使用的实际能力及玩家归属",
+      "behaviorStepId": "capture-lesson-masterAbility-m_kirei-s3"
+    },
+    {
+      "order": 30,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/41-战后恢复令咒选择.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/41-战后恢复令咒选择.png",
+      "sha256": "96b09cfd1b3fed9b5e2a314ae1cb59aca9f5e26cfe89decaa3960970b02dbaa0",
+      "uiStateId": "lesson-postBattle",
+      "status": "PASS",
+      "observation": "战后E12事件本体与恢复/不恢复同时出现；没有选定时确认禁用，教程没有叠在选择窗上。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "战后恢复令咒选择",
+      "behaviorStepId": "capture-lesson-postBattle"
+    },
+    {
+      "order": 31,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/42-选择恢复后仍需确认，当前令咒尚未变化.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/42-选择恢复后仍需确认，当前令咒尚未变化.png",
+      "sha256": "1bce6a4cfd5e3c9d88bb54930849a9f5d5390b5dd43c236875c9424e73f118ba",
+      "uiStateId": "post-battle",
+      "status": "PASS",
+      "observation": "选择恢复后选项高亮，仍需确认；事件卡与两项选择未丢失。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "选择恢复后仍需确认，当前令咒尚未变化",
+      "behaviorStepId": "capture-post-battle"
+    },
+    {
+      "order": 32,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/43-第十日淘汰状态.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/43-第十日淘汰状态.png",
+      "sha256": "529b63aac1909c461cd4501b57f9c9c4a2d7081e8d9a8f2a2a61b56db004e6b1",
+      "uiStateId": "lesson-elimination",
+      "status": "PASS",
+      "observation": "进入第十一日前的淘汰观察时，本人头像上有明确红色斜杠；课程使用第十天淘汰原文。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "第十日淘汰状态",
+      "behaviorStepId": "capture-lesson-elimination"
+    },
+    {
+      "order": 33,
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/45-自然十一轮终局与结果.png",
+      "source": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/45-自然十一轮终局与结果.png",
+      "sha256": "8fad1e66fcb691ccf79fa673910ad269ff7e21a30d2ee3c5a01bae5ef8ca7774",
+      "uiStateId": "terminal",
+      "status": "PASS",
+      "observation": "自然十一轮后的赢家和三席结果清楚，教程已退场；再来一局和返回大厅为真实可见入口。",
+      "reviewer": {
+        "kind": "primary-agent",
+        "id": "/root"
+      },
+      "method": "主代理直接读取整屏；机械重跑字节相同的原图按SHA沿用同一已读图面判断。不是历史用户否定图组。",
+      "displayRole": "main-flow",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-native-broken-image"
+      ],
+      "boundary": "图面可读性结论；费用、权威状态、隐私、命令拒绝和数值正确性另由行为证据判定。",
+      "transition": "自然十一轮终局与结果",
+      "behaviorStepId": "capture-terminal"
+    }
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/04-确认后棋子落在三处合法 +1 点位中的第三处.png",
+      "sha256": "83e70462ff8799b310d192a178de8d085f30af40cb7c7e6277db1fe40bcf633e",
+      "uiStateId": "deployment-landed-workshop-third-option",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/05-可选部署：确认深山町前查看所选点位的地利.png",
+      "sha256": "56d1452a9f16e23eb81d60cef122f12d52d655a05481c6899b8958eb9e54c798",
+      "uiStateId": "deployment-terrain-preview",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/06-确认后棋子实际落位深山町，教程继续.png",
+      "sha256": "c89fb580a1aa6cb8f997977d3076c6455062051a7327ef08ffd6a3818a02ccea",
+      "uiStateId": "deployment-landed-miyama",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/07-拖动地图显露被底部卡牌覆盖的合法部署点位.png",
+      "sha256": "239c1a3162c15f149ad297b0109894ad2bcb0f6bb293488c2956ce454232e015",
+      "uiStateId": "deployment-map-pan",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/08-确认后棋子实际落位新都，教程继续.png",
+      "sha256": "02a87ff9e0ca6e55aa8d1d64be5c2890a4c42722d5a31bf6d9e8881d7363abdf",
+      "uiStateId": "deployment-landed-shinto",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/12-地图平移与缩放后的视野变化.png",
+      "sha256": "2c7b2877154b39825dd9a2150336e4e1889679b0deccdef550a8091a4abd2450",
+      "uiStateId": "navigation-zoomed",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/13-牌堆计数与一级资源威力同帧可读.png",
+      "sha256": "bbe500979f21eb5c7e314416cb9e860bf3c74b967bff381b0c167deac993658b",
+      "uiStateId": "deck-count",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/20-令咒未选效果时不能提交.png",
+      "sha256": "6fbe5f3f6e665ce35cb6d67ffbe23b658d6239df485b4e3e6dfd22a3a8f71107",
+      "uiStateId": "seal-cancel",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/24-2560桌面的大牌、一级威力与常显技能区.png",
+      "sha256": "f0453e4916ec646d21c6614fe44d9ba2c0268301c2ab99f1fe51b96edbe32339",
+      "uiStateId": "cards-wide-desktop",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/32-行动结束，进入战斗阶段.png",
+      "sha256": "5137921902f61ae0e574dbaddc04cb21e1070e69a37bd9d4cd76ff15b63083a9",
+      "uiStateId": "lesson-battle",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/38-切换到暗置选牌，尚未选中暗置牌.png",
+      "sha256": "54b2e7c419d96f99aea3be8fcf2889b4a5c649995b5cf78c33fc0a7a5013e1aa",
+      "uiStateId": "dark-mode",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/44-淘汰详情保留静态身份，不显示临时威力.png",
+      "sha256": "cc633726517e0c6ef0493caf4facade68d0a2ffe0382932891313949f46c9ff5",
+      "uiStateId": "eliminated-detail",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/46-凛的宝石、关联攻击与升华原卡同页，阅读不改变选择.png",
+      "sha256": "9a8078c4bbd4d52456146e2ce347b07d62c601db3a30cb4493e78340bb5adc5a",
+      "uiStateId": "after-completion",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/47-受限桌面滚至肯尼斯末张关联卡并阅读，候选及确认仍可达.png",
+      "sha256": "9ea4b7c1284f0aa4f3663c67190c79325f8e2edc30ae47c4efb05e9b71c591ad",
+      "uiStateId": "identity-constrained",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/tutorial-real-entry.e2e/Fate-正式教程：真实开局、所有学员命令、自动他席、恢复与终局/_runs/e2e-1793529621247-9tgsmx/48-时臣四道具、追加技能攻击及升华资料不受三槽限制.png",
+      "sha256": "4e2e92409bde1548d6a96d52a3bfe852b0b5f34acd3809d4c3e0e06247a6a6c8",
+      "uiStateId": "identity-tokiomi",
+      "reason": "回退替代分支、相机/视口验证、重复模式或可选资料验证；不冒充自然主线的下一步。"
+    }
+  ],
+  "reviewFile": "evidence/fate-domination/primary-visual-review-20261101.json",
+  "authoredContentReview": "evidence/fate-domination/authored-content-review-20261101.json",
+  "boundaries": [
+    "三条部署分支的全文重审和正式领域复演，不等于三条全程浏览器链。",
+    "完整角色能力、全卡、AI策略、音频等未完成项独立保留。"
+  ],
+  "sourceDrift": {
+    "file": "vite.config.ts",
+    "change": "范围外新增后台recharts预构建；Fate及实际共享运行源码未漂移。",
+    "disposition": "不改写原sourceRevision；实际发布版本另行复核。"
+  }
+}

@@ -1,0 +1,767 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/audit_r18_changed_ui; /root/review_a1; /root/review_a2; /root/review_mobile_r09"
+  },
+  "summary": {
+    "total": 36,
+    "pass": 36,
+    "revise": 0,
+    "blocked": 0,
+    "directlyReviewed": 9,
+    "carriedForwardBySha": 27,
+    "failedPaths": []
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00-唯一入门入口-直接进入胜利条件.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\00-唯一入门入口-直接进入胜利条件.png",
+      "sha256": "0e91c223ecdffd1902c44d09eabd32c476c18df80f1355db5f8bcd573fb2b4a9",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜利条件弹窗和“下一步”清晰可见，地图背景未遮住目标。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\00-唯一入门入口-直接进入胜利条件.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\00-唯一入门入口-直接进入胜利条件.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/00a-继续后-选择首个行动.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\00a-继续后-选择首个行动.png",
+      "sha256": "f76d3978ff9ef125555898fbfe0e0b99cd72141d6aa3515fd460de839fec2fe7",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘高亮、首个行动说明与右侧“征召军队”按钮均可见。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\00a-继续后-选择首个行动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\00a-继续后-选择首个行动.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-00-开场-胜利条件说明.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-00-开场-胜利条件说明.png",
+      "sha256": "b45982affb3a7deec3f6048d5106a59f923790003729acebf065d055acc6294e",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜利条件提示和下一步按钮清楚可见；三张手牌完整留在屏幕内，底边无遮挡，文字无乱码。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "unchangedEvidence": "R18 与已审移动端截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-00-开场-胜利条件说明.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r12-mobile\\移动-00-开场-胜利条件说明.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-01-首个行动选择-轮盘或征召.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-01-首个行动选择-轮盘或征召.png",
+      "sha256": "8a13970fa24b421e83dc125d5b3da7766ceeac1bb1370b5be97e22118b6abea2",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "首个行动提示与轮盘及右侧征召入口对应，两处目标均可见；手牌完整，提示未遮住可操作区域。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "unchangedEvidence": "R18 与已审移动端截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-01-首个行动选择-轮盘或征召.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r12-mobile\\移动-01-首个行动选择-轮盘或征召.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "sourceReviewEntry": "/items/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-02-征召支付-手牌检视前.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-02-征召支付-手牌检视前.png",
+      "sha256": "a869ea1a8734bafe5d722d8ec085420bd76dea534c90af0392465cd2811265ff",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召说明提示长按检视；支付区在手牌上方，按钮与完整牌列清楚分离，无底边裁切或遮挡。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "unchangedEvidence": "R18 与已审移动端截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-02-征召支付-手牌检视前.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r12-mobile\\移动-02-征召支付-手牌检视前.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "sourceReviewEntry": "/items/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-03-征召支付-长按手牌打开检视.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-03-征召支付-长按手牌打开检视.png",
+      "sha256": "b8bc49b44b426afa9a0515ec64c15b911df3ccca96a7f04f0a00db868d552764",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "长按后的检视卡完整居中且正文可读，关闭按钮清楚可见；检视浮层处于前景，未裁切当前检视目标。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "unchangedEvidence": "R18 与已审移动端截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-03-征召支付-长按手牌打开检视.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r12-mobile\\移动-03-征召支付-长按手牌打开检视.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r12-mobile.json",
+      "sourceReviewEntry": "/items/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/移动-05-选牌后确认征召支付.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final-mobile\\移动-05-选牌后确认征召支付.png",
+      "sha256": "615f5b37822e9b5f0e97405e4d5c1ef6024363b9175bd38c65b79174f8c83572",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏下已选牌与确认按钮清楚可见，教程提示没有遮挡操作入口。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-一格开垦前-选择轮盘走法.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03c-一格开垦前-选择轮盘走法.png",
+      "sha256": "3c6525a2d8bf5df183ab714530697f7cf35d8a591bc1652d7806ea400a20a287",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示要求选择轮盘走法，轮盘可选区域高亮且提示未遮挡。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03c-一格开垦前-选择轮盘走法.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03c-一格开垦前-选择轮盘走法.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘一格-进入开垦并结算.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03c-轮盘一格-进入开垦并结算.png",
+      "sha256": "dac50f5553dbcadf5d7f4b3d1ac0c7958c33e1a108b89d2872b7f26839fdb7ab",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘结果说明和“完成并返回”按钮清晰；底部手牌较密但不遮住提示。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03c-轮盘一格-进入开垦并结算.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03c-轮盘一格-进入开垦并结算.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "sha256": "81b1ac3b71ad274ae25206b0785160f5443134c3daf7438c681b7a010e679200",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图结果提示和右侧行动摘要可见，未见教程控件残留或遮挡结果。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09b-选择炮兵后的实际结果.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\09b-选择炮兵后的实际结果.png",
+      "sha256": "5fb0bde63faa47bd2bf57ec3961b7de6e8316a37ea389f64af1f5c3429f03f71",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算提示与右侧高亮行动摘要相邻可读，下一步控件清晰。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\09b-选择炮兵后的实际结果.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\09b-选择炮兵后的实际结果.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09a-选择川兵后的实际结果.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\09a-选择川兵后的实际结果.png",
+      "sha256": "a0e09d0a47d48737b9a6537526a04b788be86f8036e35c4681f0b31398f63dd1",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算提示和右侧高亮摘要均可见，未见明显裁切或遮挡。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\09a-选择川兵后的实际结果.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\09a-选择川兵后的实际结果.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02-选择首个行动-轮盘或征召.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02-选择首个行动-轮盘或征召.png",
+      "sha256": "0c49a3bb5044f46a91763e1395436a477c865acc0d64af2aea7173745a6abeea",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两种行动入口均可辨认：轮盘选项高亮，右侧“征召军队”按钮可见。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02-选择首个行动-轮盘或征召.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\02-选择首个行动-轮盘或征召.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a1.json",
+      "sourceReviewEntry": "/items/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-征召支付-点击看查看牌面.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\07a-征召支付-点击看查看牌面.png",
+      "sha256": "73b59d86aceff813a4a41ce7a07643866160c8f54f036654846392d1826a08e8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "放大牌面清楚，关闭按钮可见，支付状态仍留在原位。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07-支付1张手牌.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\07-支付1张手牌.png",
+      "sha256": "137b7c7ad5748bb6a36a77d8d4859dffc0d44152269fb34d65b7e47dd41001f1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌、支付进度及确认按钮可见，未选牌时确认按钮呈禁用状态。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/07a-确认弃置手牌.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\07a-确认弃置手牌.png",
+      "sha256": "898987783d84b104ddc03ded697ee14df36f26f25cc193dce8c8d897bca698b0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选牌标记、1/1 支付进度和高亮确认按钮均清楚。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/08-选择宣府建军位置.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\08-选择宣府建军位置.png",
+      "sha256": "4628eb7774915c5e0ad1cbc9a5de0b24f3ce1bdb2b546e7f0d0e731d1aee7ffc",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宣府标注和蓝色目标圈/边框可见，教程提示点击宣府选位置；右侧提示说明先选建军地区再选方式，目标未被遮挡，放大地图仍可读。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\08-选择宣府建军位置.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\08-选择宣府建军位置.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "sourceReviewEntry": "/items/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/09-选择建军方式.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\09-选择建军方式.png",
+      "sha256": "a860e12084ac4a46c1e053cbfc5fd0dee7488dc007967dd6686e544d03ab1703",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧建军方案面板被蓝框突出，教程提示选择一项并在宣府建立；选项与说明对应，文字可辨且未见裁切。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\09-选择建军方式.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\09-选择建军方式.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "sourceReviewEntry": "/items/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/10-征召结果-轮盘行动待完成.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\10-征召结果-轮盘行动待完成.png",
+      "sha256": "50ad3b5fabce60c42ed14a5835159f25345dde9c7fc1155285e8b7cb28a183e9",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召军队结果摘要被蓝框突出，教程说明已结算并指向地图与右侧摘要，同时提示轮盘行动未执行；遮罩下目标和说明仍可读。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\10-征召结果-轮盘行动待完成.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\10-征召结果-轮盘行动待完成.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "sourceReviewEntry": "/items/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02a-轮盘三格费用与落点说明.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02a-轮盘三格费用与落点说明.png",
+      "sha256": "25f03508c58bbb2c5fdb1333553d44c37844443f6fffb9efed947d04812b157a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘可选区域和费用说明清楚，教程提示没有遮住目标。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03-轮盘选择-三种走法均可选择.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03-轮盘选择-三种走法均可选择.png",
+      "sha256": "aed43567e3f9885d52b9b6ece66aa2765e6e530fad7bd1a293fc8ce9f05934c1",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘焦点框和绿色可选扇区清楚，教程提示选择一种轮盘走法；可交互目标集中可见，无明显布局、裁切或遮挡问题。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03-轮盘选择-三种走法均可选择.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03-轮盘选择-三种走法均可选择.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-a2.json",
+      "sourceReviewEntry": "/items/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03a-轮盘两格-选择对手抽牌.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03a-轮盘两格-选择对手抽牌.png",
+      "sha256": "d6c29437c7f56bd3749d7c1c67b2d51546265c5e36934dc0672a7d87f9c3933c",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "“选择一名对手抽牌”弹窗及两名对手按钮清晰，说明框未遮住选项。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03a-轮盘两格-选择对手抽牌.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03a-轮盘两格-选择对手抽牌.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03b-轮盘两格-进入军屯并结算.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03b-轮盘两格-进入军屯并结算.png",
+      "sha256": "db33f6fd49ae7423d636efbfcb03af77db499f873e10eb31a7e7c1bff435b6a1",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "完成提示与右侧行动摘要可见，“完成并返回”按钮清楚。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03b-轮盘两格-进入军屯并结算.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03b-轮盘两格-进入军屯并结算.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "sourceReviewEntry": "/items/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/11-教程结束后同局下一位玩家可操作.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\11-教程结束后同局下一位玩家可操作.png",
+      "sha256": "36da24fab9061f356e4307dadb86ca3302e15d34dec3e1803c46e4c00e99654b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一位玩家标记和可操作的弃牌确认入口可见。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "sha256": "aeb78645e2e0502e140e5e00d87825f39ccbcd8a9e875113f5826dc5c1435306",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌说明、手牌区和“确认弃牌”控件都可见，说明框未挡住操作区。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03c-轮盘三格-进入征兵训练弃牌窗口.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "sourceReviewEntry": "/items/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03e-征兵训练选择行动前规则译文.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03e-征兵训练选择行动前规则译文.png",
+      "sha256": "9e19e1951ff23914223b3b3b97346077b4eaf1c45e13cce81b732c1a60bc30e6",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "说明文字可读，右侧征兵、训练及结束选项完整可见。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03e-征兵训练选择行动前规则译文.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03e-征兵训练选择行动前规则译文.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "sourceReviewEntry": "/items/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03f-训练目标选择与等级提示.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03f-训练目标选择与等级提示.png",
+      "sha256": "1a58e29f79f7a5e0db8d2a44f0ced0fdc40ff85209778c65b48a8bb40166fc9a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧候选部队及等级变化可见，提示未挡住候选列表。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03g-征兵训练结算结果.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03g-征兵训练结算结果.png",
+      "sha256": "8ed7eb4f0b6a2620824ff30178473f0246447545ab1bb82866bedebf9c43c173",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练结算提示与右侧后续选项同时可见，控件未被说明框遮挡。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03g-征兵训练结算结果.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03g-征兵训练结算结果.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b1.json",
+      "sourceReviewEntry": "/items/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03h-征兵目标本土限制与候选区域.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03h-征兵目标本土限制与候选区域.png",
+      "sha256": "debdde10e90336c708e8cac2ecd0c820e3693d80fe30bc46199377e106c149ea",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "新文案明确指向右侧列表；候选区域行完整可见，提示框与列表未重叠。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-three-grid-target.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03i-额外训练规则与弃牌.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03i-额外训练规则与弃牌.png",
+      "sha256": "61d2065e187ba6e25ae5aee330b6eec04c65bb8d7ff086f1feb571474d2feaa9",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程提示选择一张手牌作为额外支付，底部额外训练弃牌栏及“确认弃牌”按钮被蓝框突出；可见银两牌供选择，提示与控件对应，未见遮挡裁切。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03i-额外训练规则与弃牌.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03i-额外训练规则与弃牌.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "sourceReviewEntry": "/items/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03j-额外训练目标与结果.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03j-额外训练目标与结果.png",
+      "sha256": "11d8d1eb097fa11cdb2b2844cbc29395a61718e5f6022fbb754296d59e9d5290",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "当前征兵结果和可选训练目标均清晰，操作面板未遮挡列表。",
+      "reviewMode": "direct",
+      "carriedForwardFrom": null,
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r18-changes.json",
+      "sourceReviewEntry": "/items/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03k-征兵训练结果与轮盘结算.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03k-征兵训练结果与轮盘结算.png",
+      "sha256": "352219071f09caf8af16f7e00bbae53c57b6ad418681cfc2f5ad0a77bb77726e",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧征兵训练摘要蓝框高亮，顶部说明提示右侧摘要显示本回合最后一项结果并提供完成返回按钮；对应清晰，遮罩和布局未妨碍阅读。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03k-征兵训练结果与轮盘结算.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03k-征兵训练结果与轮盘结算.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "sourceReviewEntry": "/items/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/03l-教程退场后同局继续.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03l-教程退场后同局继续.png",
+      "sha256": "dc74596b77bcbfe2006188c8fb49a816b5d561882fed33e9d5ced337ae4688ef",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程浮层已退场，棋盘、手牌和右侧行动入口都完整显示，无残留焦点或遮罩；卡牌底部未裁切，可见同一界面继续操作。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\03l-教程退场后同局继续.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\03l-教程退场后同局继续.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "sourceReviewEntry": "/items/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02b-先轮盘后手牌-轮盘结算结果.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02b-先轮盘后手牌-轮盘结算结果.png",
+      "sha256": "dc24991e90c3406cdb11e000f632dea2dde293d53a731d2e6fd5199490e4f73e",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程框说明右侧摘要显示轮盘结果并提示仍有手牌行动；右侧摘要被蓝框突出，教程下一步按钮可见，映射清楚。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02b-先轮盘后手牌-轮盘结算结果.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\02b-先轮盘后手牌-轮盘结算结果.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "sourceReviewEntry": "/items/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02d-轮盘后选择手牌行动.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02d-轮盘后选择手牌行动.png",
+      "sha256": "f0adf408590974ff7dec9569d192e5d9b50efe3815d490afd64f02002c4ceb56",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘已完成提示要求点击右侧“征召军队”，该按钮被蓝框高亮；暗化背景下文字和目标仍清楚，无裁切遮挡。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02d-轮盘后选择手牌行动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\02d-轮盘后选择手牌行动.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "sourceReviewEntry": "/items/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261026-r18-final/media/02e-两种行动完成-征召结果.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02e-两种行动完成-征召结果.png",
+      "sha256": "8580f8c2f1ff89819667657ec9528d645491e8e7dd95ece806abaaaee340424d",
+      "status": "carried-forward",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧征召军队摘要蓝框高亮，完成返回提示说明可继续本局；手牌和行动区域仍可见，教程控件与结果摘要对应清晰。",
+      "reviewMode": "carried-forward",
+      "carriedForwardFrom": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "unchangedEvidence": "当前截图与 R16 已审截图的 SHA-256 完全一致，界面内容未变，沿用原逐图审查结论。",
+      "unchangedEvidenceFiles": [
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r18-final\\02e-两种行动完成-征召结果.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\qidahen\\tutorial-basic-opening-20261026-r16-final\\media\\02e-两种行动完成-征召结果.png"
+      ],
+      "independentReviewFile": "test-results/evidence-image-validation/codex-tutorial-20261026-r16-desktop-b2.json",
+      "sourceReviewEntry": "/items/7"
+    }
+  ]
+}

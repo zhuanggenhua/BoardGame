@@ -1,0 +1,883 @@
+{
+  "schemaVersion": 1,
+  "reviewer": {
+    "id": "/root/r169_content_delta",
+    "actualRole": "本次独立内容增量审查子代理",
+    "identitySource": "当前被派发任务的 canonical task name",
+    "independence": "未参与实现；只读取源码、语言包及既有内容审查；只写本 JSON"
+  },
+  "reviewedAtUtc": "2026-11-03T01:43:10.089Z",
+  "mode": "content-and-static-causality-delta-review",
+  "target": {
+    "game": "qidahen",
+    "manifest": "basic-opening",
+    "revision": 27,
+    "environment": "当前本地工作区",
+    "goal": "正常连续对局覆盖手牌轮盘、战斗、年中、新年及次年训练；提示仅补必要规则含义与非显然输入，中文正文忠实简体译文",
+    "writeScope": [
+      ".tmp/qidahen-final-content-review-r169.json"
+    ]
+  },
+  "baseline": {
+    "path": ".tmp/qidahen-gameui-content-review-20261102.json",
+    "sha256": "1fefeb7e3756a5525da9cffa23762b6dbb4382a3911c6000a1811a1a53ce9b05",
+    "reviewer": "/root/strategy_reference_review",
+    "revision": 27,
+    "verdict": "内容与静态因果合同审查通过；不代表完整产品/图面/规则全分支验收",
+    "sourceIdentityProof": [
+      {
+        "path": "src/games/qidahen/annualTutorial.ts",
+        "headWithCRLFSha256": "027c3321414986d293e3f2d1a8c869ed044b33c1412205f8c9e3b5a861ae3633",
+        "baselineSha256": "027c3321414986d293e3f2d1a8c869ed044b33c1412205f8c9e3b5a861ae3633"
+      },
+      {
+        "path": "public/locales/zh-CN/game-qidahen.json",
+        "headWithCRLFSha256": "9a74e5f72a2612622192c0b3ae7933088667bb163ef7bcdab23c8787be58da5c",
+        "baselineSha256": "9a74e5f72a2612622192c0b3ae7933088667bb163ef7bcdab23c8787be58da5c"
+      },
+      {
+        "path": "public/locales/en/game-qidahen.json",
+        "headWithCRLFSha256": "dba459020e41806cd67361b817ec4a697f8558336152fadbc6ef7e12df426e46",
+        "baselineSha256": "dba459020e41806cd67361b817ec4a697f8558336152fadbc6ef7e12df426e46"
+      }
+    ],
+    "proof": "三份 HEAD 内容统一 CRLF 后逐份哈希完全命中旧报告 sourceIdentity；因此 git diff 对应确切已审基线，而非仅靠提交名或任务摘要推测。"
+  },
+  "currentFileHashes": [
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "6d6e79a47074daf08039161fd223a668f6956fef9b5478b59a3d789107c3b449",
+      "baselineSha256": "027c3321414986d293e3f2d1a8c869ed044b33c1412205f8c9e3b5a861ae3633",
+      "unchanged": false,
+      "inspection": "读取当前全文、与已审版本精确比较"
+    },
+    {
+      "path": "public/locales/zh-CN/game-qidahen.json",
+      "sha256": "6100bb3d6238349e585aedaf171fb81550b086a01081f9ef23b733dbf2ff9b35",
+      "baselineSha256": "9a74e5f72a2612622192c0b3ae7933088667bb163ef7bcdab23c8787be58da5c",
+      "unchanged": false,
+      "inspection": "读取当前全文、与已审版本精确比较"
+    },
+    {
+      "path": "public/locales/en/game-qidahen.json",
+      "sha256": "5842921ca1204fd1a0dc8d4842c272dabf45dbba61347a4575b45e0ca14642b2",
+      "baselineSha256": "dba459020e41806cd67361b817ec4a697f8558336152fadbc6ef7e12df426e46",
+      "unchanged": false,
+      "inspection": "读取当前全文、与已审版本精确比较"
+    },
+    {
+      "path": "docs/games/qidahen/records/qidahen-annual-tutorial-design-20261030.md",
+      "sha256": "7cc34a3b3669cd08411344eba5c89bca992c2de6e651d98a9b34c59b311fb0ae",
+      "baselineSha256": "7cc34a3b3669cd08411344eba5c89bca992c2de6e651d98a9b34c59b311fb0ae",
+      "unchanged": true,
+      "inspection": "仅核对文件哈希；未重读正文或图片"
+    },
+    {
+      "path": "docs/games/qidahen/records/qidahen-full-tutorial-rebuild-20261101.md",
+      "sha256": "adb2998e5d6c26957a788d9e52875294d72e068817a563ea2ad6ccc9dd02e3db",
+      "baselineSha256": "adb2998e5d6c26957a788d9e52875294d72e068817a563ea2ad6ccc9dd02e3db",
+      "unchanged": true,
+      "inspection": "仅核对文件哈希；未重读正文或图片"
+    },
+    {
+      "path": "src/games/qidahen/rule/七大恨规则.md",
+      "sha256": "57243737ab4484b97922278bce85cc944cb491d04234d78ca3e49aa8b27b5fc7",
+      "baselineSha256": "57243737ab4484b97922278bce85cc944cb491d04234d78ca3e49aa8b27b5fc7",
+      "unchanged": true,
+      "inspection": "仅核对文件哈希；未重读正文或图片"
+    },
+    {
+      "path": "D:/gongzuo/webgame/gameasset/七大恨 中文mod/七大恨规则.pdf",
+      "sha256": "9a81be7a232309a5d097db3af88ee091857e168fd4855fb596ff2c71f3a2e27a",
+      "baselineSha256": "9a81be7a232309a5d097db3af88ee091857e168fd4855fb596ff2c71f3a2e27a",
+      "unchanged": true,
+      "inspection": "仅核对文件哈希；未重读正文或图片"
+    }
+  ],
+  "coveredNodes": [
+    {
+      "id": "opening-opponents",
+      "order": 1,
+      "presentation": "hidden-automation",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "frontier-goal",
+      "order": 2,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "opening-move",
+      "order": 3,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "farm-action",
+      "order": 4,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "farm-target",
+      "order": 5,
+      "presentation": "self-explanatory-ui",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "reclaim-action",
+      "order": 6,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "reclaim-target",
+      "order": 7,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "recruit-action",
+      "order": 8,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "recruit-payment",
+      "order": 9,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "recruit-confirm",
+      "order": 10,
+      "presentation": "self-explanatory-ui",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "recruit-source",
+      "order": 11,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "recruit-troops",
+      "order": 12,
+      "presentation": "authored-content",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "opening-finish",
+      "order": 13,
+      "presentation": "self-explanatory-ui",
+      "section": "开局目标和前线准备",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "midyear",
+      "order": 14,
+      "presentation": "authored-content",
+      "section": "年中收入与回合开头超限",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "hand-limit",
+      "order": 15,
+      "presentation": "authored-content",
+      "section": "年中收入与回合开头超限",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "battle-move",
+      "order": 16,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upgrade-card",
+      "order": 17,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upgrade-payment",
+      "order": 18,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upgrade-confirm",
+      "order": 19,
+      "presentation": "self-explanatory-ui",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "dispatch-action",
+      "order": 20,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "dispatch-payment",
+      "order": 21,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "dispatch-source",
+      "order": 22,
+      "presentation": "self-explanatory-ui",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "dispatch-troops",
+      "order": 23,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "本轮重审中英文变化及前后因果"
+    },
+    {
+      "id": "dispatch-target",
+      "order": 24,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "defender-response",
+      "order": 25,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "tactic-card",
+      "order": 26,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "battle-roll",
+      "order": 27,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "occupy",
+      "order": 28,
+      "presentation": "authored-content",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "battle-finish",
+      "order": 29,
+      "presentation": "self-explanatory-ui",
+      "section": "军备、出兵与野战占领",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "opponent-round",
+      "order": 30,
+      "presentation": "hidden-automation",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "diplomacy-move",
+      "order": 31,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "diplomacy-action",
+      "order": 32,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "diplomacy-target",
+      "order": 33,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "diplomacy-finish",
+      "order": 34,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "hire-action",
+      "order": 35,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "hire-payment",
+      "order": 36,
+      "presentation": "self-explanatory-ui",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "hire-target",
+      "order": 37,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "diplomacy-round-finish",
+      "order": 38,
+      "presentation": "self-explanatory-ui",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "save-hand",
+      "order": 39,
+      "presentation": "authored-content",
+      "section": "西线外交与驻防",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "new-year",
+      "order": 40,
+      "presentation": "authored-content",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "maintain-shanhai",
+      "order": 41,
+      "presentation": "authored-content",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "maintenance-first-card",
+      "order": 42,
+      "presentation": "self-explanatory-ui",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "maintenance-second-card",
+      "order": 43,
+      "presentation": "self-explanatory-ui",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "abandon-jinzhou",
+      "order": 44,
+      "presentation": "authored-content",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "abandon-ningyuan",
+      "order": 45,
+      "presentation": "self-explanatory-ui",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "abandon-inner-wall",
+      "order": 46,
+      "presentation": "authored-content",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "abandon-outer-wall",
+      "order": 47,
+      "presentation": "self-explanatory-ui",
+      "section": "新年朝贡及防线预算",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upkeep-datong",
+      "order": 48,
+      "presentation": "authored-content",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upkeep-yehe",
+      "order": 49,
+      "presentation": "authored-content",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upkeep-xianxing",
+      "order": 50,
+      "presentation": "authored-content",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "other-upkeep",
+      "order": 51,
+      "presentation": "hidden-automation",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upkeep-liaobei",
+      "order": 52,
+      "presentation": "authored-content",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upkeep-pyongyang",
+      "order": 53,
+      "presentation": "authored-content",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "upkeep-hanseong",
+      "order": 54,
+      "presentation": "self-explanatory-ui",
+      "section": "新年补给与军队整编",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "claim-year",
+      "order": 55,
+      "presentation": "authored-content",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "chronology-first-card",
+      "order": 56,
+      "presentation": "self-explanatory-ui",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "chronology-second-card",
+      "order": 57,
+      "presentation": "self-explanatory-ui",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "chronology-third-card",
+      "order": 58,
+      "presentation": "self-explanatory-ui",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "new-order",
+      "order": 59,
+      "presentation": "authored-content",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "year-character",
+      "order": 60,
+      "presentation": "authored-content",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "year-ready",
+      "order": 61,
+      "presentation": "hidden-automation",
+      "section": "纪年领取、新顺位与人物",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-move",
+      "order": 62,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-action",
+      "order": 63,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-payment",
+      "order": 64,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-payment-confirm",
+      "order": 65,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-kind",
+      "order": 66,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-target",
+      "order": 67,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-second-kind",
+      "order": 68,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-second-target",
+      "order": 69,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-third-kind",
+      "order": 70,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-third-target",
+      "order": 71,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-recruit-kind",
+      "order": 72,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-recruit-target",
+      "order": 73,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-finish",
+      "order": 74,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-slot-finish",
+      "order": 75,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "training-round-finish",
+      "order": 76,
+      "presentation": "self-explanatory-ui",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    },
+    {
+      "id": "finish",
+      "order": 77,
+      "presentation": "authored-content",
+      "section": "次年前线训练和新建目标",
+      "reviewMode": "当前顺序和句子与已审基线比较；未变语义沿用旧审查"
+    }
+  ],
+  "coveredSections": [
+    {
+      "name": "开局目标和前线准备",
+      "nodeIds": [
+        "opening-opponents",
+        "frontier-goal",
+        "opening-move",
+        "farm-action",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "opening-finish"
+      ],
+      "start": "opening-opponents",
+      "end": "opening-finish",
+      "baselineCausalCriteria": "公开控制增长纪年目标，先军屯补牌补军，开垦产生税赋资格，再势力征召备战和留守。不是给玩家自由挑课程，也没有三种轮盘移动依次体验。",
+      "currentImpact": "原目标、军屯补军补牌、开垦取得税赋资格、手牌征召和留守因果不变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "年中收入与回合开头超限",
+      "nodeIds": [
+        "midyear",
+        "hand-limit"
+      ],
+      "start": "midyear",
+      "end": "hand-limit",
+      "baselineCausalCriteria": "其他席位真实推进公共轮盘触发全体年中；税赋和漕运补牌导致下一回合超过15才要求弃6，保留本场实际战术/军备。",
+      "currentImpact": "轮盘年中触发、全体收入、下一回合15张上限及弃6张的合同不变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "军备、出兵与野战占领",
+      "nodeIds": [
+        "battle-move",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish"
+      ],
+      "start": "battle-move",
+      "end": "battle-finish",
+      "baselineCausalCriteria": "军备为本战炮兵服务，手牌动作与轮盘付费分别发生；来源→具体步兵/炮兵→目标→守方回应→战术→分阶段骰果→占领，回到同一纪年控制增长目标。",
+      "currentImpact": "文案唯一变化把历史限定词改成明确数量；来源仍为辽北，仍选两支2级步兵与同一支1级炮兵。军备支付、轮盘支付、过河宽度、守方响应、战术、分阶段战斗与占领的前后合同均未变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "西线外交与驻防",
+      "nodeIds": [
+        "opponent-round",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand"
+      ],
+      "start": "opponent-round",
+      "end": "save-hand",
+      "baselineCausalCriteria": "叶赫占领后改管西线：取消外喀尔喀蒙古友好不声称夺得控制，首次雇佣补强大同，新增部队与人口差形成后续耗损选择；保留手牌为新年预算服务。",
+      "currentImpact": "占领后转西线、取消友好不夺控制、首次雇佣两支2级兵、大同超人口与留牌的合同不变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "新年朝贡及防线预算",
+      "nodeIds": [
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall"
+      ],
+      "start": "new-year",
+      "end": "abandon-outer-wall",
+      "baselineCausalCriteria": "朝贡→防线维护→耗损→纪年→人物的真实次序；先说明山海关价值及破败后果，再维护/弃牌；其余防线放弃对应真实费用取舍。",
+      "currentImpact": "朝贡、维护、耗损、纪年、人物顺序不变。新增避让选择器可能影响维护提示位置，但不新增教学内容、读卡步骤或规则条件；是否同帧可读留待图审。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "新年补给与军队整编",
+      "nodeIds": [
+        "upkeep-datong",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "other-upkeep",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong"
+      ],
+      "start": "upkeep-datong",
+      "end": "upkeep-hanseong",
+      "baselineCausalCriteria": "先以刚雇佣的大同撤旧兵示范差额，再处理叶赫大明正规军非汉人例外、朝鲜无人口和辽北超额；移除朝鲜雇佣军保留纪年费用，不误称移兵自动丢控制。",
+      "currentImpact": "大同撤旧兵、叶赫非汉人补给限制、朝鲜无人口、辽北差额支持及移除不改控制的合同不变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "纪年领取、新顺位与人物",
+      "nodeIds": [
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "year-ready"
+      ],
+      "start": "claim-year",
+      "end": "year-ready",
+      "baselineCausalCriteria": "占领增长兑现资格；同分旧顺位靠后优先；半手牌向上取整领取本年卡，再按接任卡顺位出人物，全部完成才公开再下一张。人物不是手牌。",
+      "currentImpact": "控制增长资格、半手牌向上取整、新顺位与人物选择、全部出场后公开下张的合同不变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    },
+    {
+      "name": "次年前线训练和新建目标",
+      "nodeIds": [
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-second-kind",
+        "training-second-target",
+        "training-third-kind",
+        "training-third-target",
+        "training-recruit-kind",
+        "training-recruit-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ],
+      "start": "training-move",
+      "end": "finish",
+      "baselineCausalCriteria": "新公开建军条件让征兵有用途；训练原实际参战炮兵和两支步兵，再在曾开垦辽东征1兵，人口容量与税赋资格变化有前因。4次同费，用完才说明额外弃牌训练，保留最后手牌正常收尾。",
+      "currentImpact": "训练仍引用出兵和参战的同一炮兵ID与两步兵ID，军备上限与战术临时骰差异不变；三训练一次征兵、辽东人口及税赋取舍、保留末牌和收尾目标不变。",
+      "verdict": "PASS：限定内容与静态因果层"
+    }
+  ],
+  "carriedForward": {
+    "scope": "77节点/8段的既有内容和静态因果审查。49个未变 authored-content 节点、23个无提示正式输入节点和4个隐藏自动化节点沿用；dispatch-troops未改的规则句沿用，其变更的中英文选择句重新核对。",
+    "baselineReadAllItems": true,
+    "currentManifestReadInFull": true,
+    "currentBothAnnualLocaleTextsReadInFull": true,
+    "counts": {
+      "totalNodes": 77,
+      "sections": 8,
+      "authoredContent": 50,
+      "unchangedAuthoredNodes": 49,
+      "selfExplanatoryInputs": 23,
+      "hiddenAutomation": 4
+    },
+    "unchangedContract": "修订号27、节点ID/顺序、命令、操作者、目标ID、白名单、自动行动、推进条件、随机序列、自解释步骤隐藏和正文键未改变。",
+    "sources": "两作者记录、仓内规则文本和PDF的当前哈希均与旧报告一致；规则来源核对沿用旧报告，不冒称本次重新读PDF、卡面或完整亲玩。"
+  },
+  "actualDelta": {
+    "manifest": {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "kind": "新增避让选择器",
+      "before": "CURRENT_MAP_TASK_PROTECTION 不含 [data-qidahen-fortification-context]",
+      "after": "CURRENT_MAP_TASK_PROTECTION 追加 [data-qidahen-fortification-context]",
+      "impact": "只扩展提示浮层避让的地图城防上下文。保护集合由 action/info 及 wheel helper 消费；可能改变多个节点浮层几何，未改变其文字、教学对象或输入。",
+      "semanticEquivalenceProof": "当前源码移除这一新增选择器后，换行归一内容与已审 HEAD 全文一致。"
+    },
+    "locales": [
+      {
+        "lang": "zh-CN",
+        "key": "dispatch-troops",
+        "before": "野战以存活的步兵、骑兵数量判胜负，同数时守方胜。辽北到叶赫部隔河，战场宽度为2，炮兵不占宽度。选两支2级步兵和原有的1级炮兵，再确认。",
+        "after": "野战以存活的步兵、骑兵数量判胜负，同数时守方胜。辽北到叶赫部隔河，战场宽度为2，炮兵不占宽度。选两支2级步兵和一支1级炮兵，再确认。"
+      },
+      {
+        "lang": "en",
+        "key": "dispatch-troops",
+        "before": "The side with more surviving infantry and cavalry wins a field battle; ties favor the defender. The river to Yehe gives a battle width of 2, while artillery ignores that width. Select two level-2 infantry and the existing level-1 artillery, then confirm.",
+        "after": "The side with more surviving infantry and cavalry wins a field battle; ties favor the defender. The river to Yehe gives a battle width of 2, while artillery ignores that width. Select two level-2 infantry and one level-1 artillery, then confirm."
+      }
+    ],
+    "localeComparisons": [
+      {
+        "lang": "zh-CN",
+        "keys": 50,
+        "unchanged": 49,
+        "changed": [
+          "dispatch-troops"
+        ],
+        "added": [],
+        "removed": []
+      },
+      {
+        "lang": "en",
+        "keys": 50,
+        "unchanged": 49,
+        "changed": [
+          "dispatch-troops"
+        ],
+        "added": [],
+        "removed": []
+      }
+    ],
+    "dispatchCausality": {
+      "previous": "dispatch-payment 支付轮盘行动，dispatch-source 选辽北。",
+      "current": "dispatch-troops 仍指向辽北地图区并允许既有两个 sourceInfantry 和唯一 sourceArtillery ID。",
+      "next": "dispatch-target 仍选叶赫，再进入守方响应、战术、战斗和占领；次年 training-target 仍使用相同 sourceArtillery ID。",
+      "finding": "“一支/one”直接给出选择数量，没有新设部队、改变类型/等级或暗示已升级；炮兵宽度和野战判胜规则句完全未改，中英事实一致。",
+      "classification": "必要新增功能说明：对本次正式部队选择及确认的输入说明；其目标ID和数量由当前 manifest 静态合同直接支撑。",
+      "sourceReferences": [
+        "src/games/qidahen/annualTutorial.ts:5",
+        "src/games/qidahen/annualTutorial.ts:6",
+        "src/games/qidahen/annualTutorial.ts:90",
+        "src/games/qidahen/annualTutorial.ts:134"
+      ]
+    }
+  },
+  "findings": [],
+  "conclusion": "PASS：确定增量未引入已证实的文案、对象或静态因果缺陷；其余未变内容明确沿用既有77节点/8段审查。此结论仅为内容增量审查，不是完整产品或运行视觉通过。",
+  "uncovered": [
+    "本次未启动浏览器、运行测试、读取任何图片；未重读PDF正文或卡面，未重新全流程亲玩。",
+    "本次不证明当前布局不存在重复播报、对象真实同帧可见、提示无遮挡、真实输入可完成、连续状态结算正确或生命周期可恢复。新增避让选择器的实际图面效果须由本轮图审覆盖。",
+    "旧报告范围外的城市围城、海运、骑兵劫掠/败退、其他势力专属行动、全部人物/事件分支及争议勘误保持范围外。",
+    "未重新独立审计 Board.tsx 等其他当前实现变更；本报告仅评估指定 manifest/语言包增量对玩家句子与静态教学链的影响。"
+  ],
+  "filesModifiedByReviewer": [
+    ".tmp/qidahen-final-content-review-r169.json"
+  ]
+}

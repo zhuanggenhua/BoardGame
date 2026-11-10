@@ -1,0 +1,4 @@
+{
+  "message": "page.goto: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "stack": "page.goto: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn\", waiting until \"domcontentloaded\"\u001b[22m\n\n    at gotoTutorial (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:140:14)\n    at runRabbitConfirm (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:707:9)\n    at async main (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\betrayal-rabbit-foot-real-browser-repro.mjs:1163:30)"
+}

@@ -1,0 +1,111 @@
+{
+  "reviewer": "/root/viewer_loading_review",
+  "reviewedAt": "2026-11-02",
+  "objective": "独立窄审查同一查看器链接加载修复：现场图库和04原图是否可见，以及五个改动文件是否引入明显兼容或错误释放回归。",
+  "environment": {
+    "workspace": "D:/gongzuo/webgame/BoardGame",
+    "url": "http://127.0.0.1:4867/?key=ac4b3089e113",
+    "method": "私有读取两张原始整屏截图；只读代码diff、新模块与新测试；读取既有测试和HTTP实测记录。审查者未操作浏览器、未重新执行HTTP实测。"
+  },
+  "visualReview": {
+    "verdict": "PASS",
+    "claimScope": "仅两张现场截图中查看器媒体加载可见性，不审游戏规则、教程质量或全部52张图。",
+    "items": [
+      {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/e2e-viewer-loading-20261102/gallery-after.png",
+        "sha256": "fbda4dc77bb1fe0b9d8d8ad9888e87e9707b4471dba0a81f0d082d81c5703404",
+        "screenshotSize": "1123x719",
+        "status": "PASS",
+        "observation": "图库中可见的多张地图缩略图有真实地图、棋子、文字和卡牌内容；04缩略图有青色选中边界，并与左侧04索引高亮对应。画布上方是连续网格背景，不是媒体框内黑色占位。未见破图图标、错误提示或当前主体被未加载黑块替代。底栏本图记录当前挂载35/35、加载图片35张；这仅是截图文字，未据此断言52张全部视觉通过。"
+      },
+      {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/e2e-viewer-loading-20261102/detail-after.png",
+        "sha256": "79d3b650795ccb2da0c67b9b6ddafda4093682c1d20accefcd30e067634067e6",
+        "screenshotSize": "1123x719",
+        "status": "PASS",
+        "observation": "04详情标题和左侧04高亮一致；中央完整矩形内真实呈现地图、轮盘、棋子、卡牌与教程浮层，未见查看器加载占位黑块、破图或错误提示。原图上下左右边界可辨，显示比例与16:9一致；底栏标注1920×1080原图、缩放43%、4/52。左右切图箭头和关闭入口可见；静态截图不能证明点击和切换动作已经执行。"
+      }
+    ],
+    "hardFailures": [],
+    "limits": [
+      "仅证明截图时刻这两个现场的主体可见，不单独证明首次加载耗时或持续轮询稳定性。",
+      "未逐图审查52张原始游戏截图，也不扩展到游戏规则或教程设计验收。"
+    ]
+  },
+  "codeReview": {
+    "verdict": "PASS",
+    "scope": [
+      ".tools/e2e-image-viewer/server.mjs",
+      ".tools/e2e-image-viewer/directory-key-lookup.mjs",
+      ".tools/e2e-image-viewer/directory-key-lookup.test.mjs",
+      ".tools/e2e-image-viewer/web/app.js",
+      ".tools/e2e-image-viewer/web/app.test.mjs"
+    ],
+    "checks": [
+      {
+        "criterion": "异步错误传播与调用点",
+        "status": "PASS",
+        "observation": "list和media调用点均等待异步目录恢复；失败回到既有createServer的try/catch并返回400。readdir和realpath失败仍按旧遍历语义跳过，未新增吞掉最终未找到错误的路径。"
+      },
+      {
+        "criterion": "旧key身份与恢复范围",
+        "status": "PASS",
+        "observation": "目录身份仍为真实路径转小写后的SHA1前12位。搜索根、深度优先顺序、20000目录上限、匹配后跳过子树以及未找到/不唯一错误文字沿用。恢复后仍经resolveDirectory执行仓内真实路径校验。"
+      },
+      {
+        "criterion": "媒体读取与范围请求兼容",
+        "status": "PASS",
+        "observation": "媒体路径范围校验、文件类型、GET/HEAD、字节Range和流式响应逻辑未改；只在原目录解析点加入await。没有发现绕过目录边界或扩大媒体范围的改动。"
+      },
+      {
+        "criterion": "在途Promise合并与失败释放",
+        "status": "PASS",
+        "observation": "后端按key和roots复用同一个在途Promise，finally删除条目；前端loadDirectory复用当前Promise，finally置空，因此成功、fetch失败和处理响应抛错后都能重试。前端原有调用方均保留catch。已加载目录标题不会在普通刷新时反复变为读取中。"
+      },
+      {
+        "criterion": "新增测试与既有记录",
+        "status": "PASS",
+        "observation": "新后端测试覆盖稳定key、事件循环让出、同键Promise复用、失败释放后重试；新前端测试覆盖轮询/手动刷新合并、成功后再刷新、失败后释放及标题保留。既有tests.log记载9项通过，其中包括媒体Range、目录与索引兼容；本审查者未重跑测试。"
+      }
+    ],
+    "findings": [],
+    "limits": [
+      "这是指定五文件的明显回归审查，不宣称全仓或所有文件系统边界覆盖。",
+      "无效旧key仍可在上次查找结束后重新扫描，完成结果不缓存；这是保留原恢复语义，当前异步改造与请求合并没有声称消除此类磁盘工作。"
+    ],
+    "fileHashes": [
+      {
+        "path": ".tools/e2e-image-viewer/server.mjs",
+        "sha256": "725b3e79e566478b2df3f8b4fa2135312031bbd507403a633157b2e9352f02eb"
+      },
+      {
+        "path": ".tools/e2e-image-viewer/directory-key-lookup.mjs",
+        "sha256": "5f4a82739d1f4dbd96d638c56303e6c289140bc61ff7cfaf20ce07999657d553"
+      },
+      {
+        "path": ".tools/e2e-image-viewer/directory-key-lookup.test.mjs",
+        "sha256": "7797907988d2f44dfc173a22d1883711a0bd67f9d0e836e6e0636384458db72e"
+      },
+      {
+        "path": ".tools/e2e-image-viewer/web/app.js",
+        "sha256": "73397b5de5cc4e1b3414145fef39c4f7e707e3d38b293c8ea10a8d43b7d668d1"
+      },
+      {
+        "path": ".tools/e2e-image-viewer/web/app.test.mjs",
+        "sha256": "d3482bcd4d6af73b9c5ff4d282ba8f8c497b857d2af06abdd02cac90a8851cb7"
+      }
+    ]
+  },
+  "recordReview": {
+    "tests": "evidence/e2e-viewer-loading-20261102/tests.log记录9项通过、0失败。",
+    "http": "evidence/e2e-viewer-loading-20261102/http-after.json记录缺失key扫描期间12次health均200，最大9.0072ms，正常list38.6496ms，52媒体GET200及sha256字段；这里只引用该实测记录，不以200代替本审查者的图片观察。"
+  },
+  "summary": {
+    "visual": "两张指定现场在媒体加载可见性范围PASS。",
+    "code": "指定五文件未发现明显回归。",
+    "changedByReviewer": [
+      "evidence/e2e-viewer-loading-20261102/independent-review.json"
+    ],
+    "sourceCodeChangedByReviewer": false
+  }
+}

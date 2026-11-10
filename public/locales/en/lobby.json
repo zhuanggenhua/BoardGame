@@ -331,6 +331,10 @@
     "manageWorks": "Manage my works"
   },
   "packageManager": {
+    "desktopFgoDownload": "Download battle assets",
+    "desktopFgoProgress": "Downloading {{done}}/{{total}}",
+    "desktopFgoComplete": "Battle assets downloaded",
+    "desktopFgoRetry": "Retry battle asset download",
     "cardLabel": "{{game}} mobile package management",
     "eyebrow": "Mobile Package",
     "mode": "On-demand",

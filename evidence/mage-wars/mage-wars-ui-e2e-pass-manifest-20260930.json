@@ -1,0 +1,135 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "auditSubject": "Mage Wars 当前有 UI 但需要补齐真实端到端证据的对象",
+  "generatedAt": "2026-09-30T16:30:00+08:00",
+  "run": {
+    "commands": [
+      "node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/mage-selection.e2e.ts -> 5 passed",
+      "node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/online-runtime.e2e.ts \"法师魔杖\" -> 1 passed",
+      "node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/online-runtime.e2e.ts \"元素魔杖\" -> 1 passed",
+      "node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/online-runtime.e2e.ts \"操作日志与撤回\" -> 1 passed",
+      "MAGE_WARS_RECORD_FX_VIDEO=1 node scripts/infra/run-e2e-single.mjs default e2e/mage-wars/online-runtime.e2e.ts \"正式页面有效果骰近战攻击独立证据覆盖\" -> 1 passed"
+    ],
+    "result": "当前工作树目标 E2E 全部通过",
+    "mediaRoot": "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930",
+    "mediaCount": 42,
+    "interactionCount": 5
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false,
+    "blockedReason": "逐图图面验收发现 02-法师魔杖-绑定选择-候选法术.jpg 弹层遮挡、候选本体不可读并泄漏内部 ID；旧媒体与旧 PASS 自动降级。",
+    "viewerUrl": null
+  },
+  "requirements": [
+    {
+      "requirement": "法师魔杖：真实牌桌完成来源、目标、绑定法术、支付、快速重绑和结算",
+      "status": "REVISE",
+      "evidence": [
+        "e2e/mage-wars/online-runtime.e2e.ts：正式页面法师魔杖施放和快速重绑覆盖法术选择 UI",
+        "旧截图 02-法师魔杖-绑定选择-候选法术.jpg：弹层过大、候选法术本体不可读、泄漏内部 ID；需同源重拍"
+      ]
+    },
+    {
+      "requirement": "元素魔杖：真实牌桌完成来源、目标、绑定法术、快速重绑和结算",
+      "status": "REVISE",
+      "evidence": [
+        "e2e/mage-wars/online-runtime.e2e.ts：正式页面元素魔杖施放和快速重绑覆盖法术选择 UI",
+        "元素魔杖 6 张当前运行整屏截图：07-12"
+      ]
+    },
+    {
+      "requirement": "操作日志与撤回：真实移动、申请、审批、状态回退和收口",
+      "status": "REVISE",
+      "evidence": [
+        "e2e/mage-wars/online-runtime.e2e.ts：正式页面操作日志与撤回 UI 覆盖真实移动、申请、同意和状态回退",
+        "操作日志与撤回 4 张当前运行整屏截图：13-16"
+      ]
+    },
+    {
+      "requirement": "效果骰新 UI：真实近战攻击包含来源、斩击、原生 D12 停稳、燃烧 token 落地和同次 GIF",
+      "status": "REVISE",
+      "evidence": [
+        "e2e/mage-wars/online-runtime.e2e.ts：正式页面有效果骰近战攻击独立证据覆盖 -> 1 passed",
+        "同次运行生成 46 帧 GIF、4 张截图和稳定 PASS 记录",
+        "效果骰 5 个当前媒体：17-21"
+      ]
+    },
+    {
+      "requirement": "选书页与组书编辑器：真实选择、响应式视口、取消、新建、导入、筛选、详情、保存、使用、编辑、删除和回到牌桌计划",
+      "status": "REVISE",
+      "evidence": [
+        "e2e/mage-wars/mage-selection.e2e.ts -> 5 passed",
+        "选书页与组书编辑器 21 个当前运行整屏截图：22-42",
+        "对手法师名称按真实 HUD aria-label 承载断言，不再错误要求其出现在棋盘正文"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/01-法师魔杖-施放前-来源与目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/02-法师魔杖-绑定选择-候选法术.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/03-法师魔杖-施放结算-绑定结果.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/04-法师魔杖-快速重绑入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/05-法师魔杖-快速重绑选择.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/06-法师魔杖-快速重绑结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/07-元素魔杖-施放前-来源与目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/08-元素魔杖-绑定选择-候选法术.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/09-元素魔杖-施放结算-绑定结果.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/10-元素魔杖-快速重绑入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/11-元素魔杖-快速重绑选择.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/12-元素魔杖-快速重绑结算.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/13-操作日志-真实记录.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/14-撤回入口-对手申请.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/15-撤回审批-同意请求.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/16-撤回完成-状态回退.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/17-效果骰近战攻击-实际动效.gif",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/18-效果骰近战攻击-来源和目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/19-效果骰近战攻击-斩击过程.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/20-效果骰近战攻击-原生骰面停稳.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/21-效果骰近战攻击-燃烧状态落地.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/22-选书页-2560x1304适配.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/23-选书页-1081x585等比缩放.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/24-新建法术书-取消前候选.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/25-新建法术书-取消后回选书页.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/26-选书页-四本标准书与双方目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/27-选书页-双方选中法师书.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/28-选书确认后-正式牌桌绑定.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/29-组书-标准书绑定.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/30-组书-先选绑定法师.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/31-组书-法师详情入口.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/32-组书-导入列表.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/33-组书-墙体类型筛选.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/34-组书-法师详情展开.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/35-组书-保存命名副本.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/36-组书-标准书与命名副本同库.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/37-组书-命名副本绑定P1.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/38-组书-编辑命名副本.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/39-组书-删除命名副本.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/40-组书-计划槽1.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/41-组书-计划槽2.jpg",
+    "test-results/evidence-screenshots/mage-wars/ui-e2e-audit-20260930/42-组书-提交计划后进入准备区.jpg"
+  ],
+  "visualAudit": [
+    {
+      "media": "02-法师魔杖-绑定选择-候选法术.jpg",
+      "target": "法师魔杖绑定选择态",
+      "action": "点击法师魔杖 -> 己方法师 -> 候选法术选择",
+      "visibleResult": "候选法术应以正式牌面本体可读显示，且不泄漏内部 ID",
+      "protectedAreas": ["竞技场", "底部法术书牌列", "己方 HUD", "取消入口"],
+      "verdict": "REVISE",
+      "issues": [
+        "中央弹层过大并遮挡持续决策对象",
+        "候选项主要是文字行，玩家不能第一眼辨认要点哪张牌",
+        "targetPlayer.mageId 作为可见文本泄漏内部 ID"
+      ]
+    }
+  ],
+  "notes": [
+    "本清单只覆盖当前用户要求：当前 Mage Wars 有 UI、需要真实端到端闭环和截图证据的对象。",
+    "静态扫描得到的正式运行时 UI 缺口数为 0；mock/probe 不计入玩家 UI。",
+    "所有 2026-09-30 媒体已降级为历史 / 诊断证据；新媒体必须在修复后逐图审计全部 PASS 才能重新升级。"
+  ]
+}

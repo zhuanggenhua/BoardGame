@@ -1,0 +1,26 @@
+[
+  {
+    "id": "edge-protected-09",
+    "asset": "ability-cards",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-full\\ability-cards.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 18203154
+  },
+  {
+    "id": "edge-protected-09",
+    "asset": "player-board",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-full\\player-board.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 5390324
+  },
+  {
+    "id": "edge-protected-09",
+    "asset": "tip",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\\u5723\u9a91\u58eb\u7d20\u6750\u538b\u7f29\\20261015T122010Z\\preprocess-full\\tip.png",
+    "alphaExact": true,
+    "edgePixelsExactBeforeEncoding": true,
+    "changedOpaqueRgbPixels": 1276008
+  }
+]

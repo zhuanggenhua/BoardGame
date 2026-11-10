@@ -1,0 +1,622 @@
+{
+  "status": "FAIL",
+  "targetUrl": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T12-30-25-114Z",
+  "screenshots": {
+    "beforeClick": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T12-30-25-114Z\\01-before-click-regrowth-belt.png",
+    "afterCardClick": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T12-30-25-114Z\\02-after-click-regrowth-belt-target-highlight.png",
+    "afterMageClick": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-regrowth-belt-real-browser-repro\\2026-09-13T12-30-25-114Z\\03-after-click-own-mage-regrowth-equipped.png"
+  },
+  "snapshots": {
+    "beforeClick": {
+      "label": "before-card-click",
+      "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "devicePixelRatio": 1
+      },
+      "phase": "initiativeQuickcast",
+      "currentPlayerId": "0",
+      "phaseActorId": "0",
+      "card": {
+        "exists": true,
+        "rect": {
+          "x": 1731,
+          "y": 847.9,
+          "width": 159.3,
+          "height": 224.1,
+          "right": 1890.3,
+          "bottom": 1072
+        },
+        "center": {
+          "x": 1810.6,
+          "y": 960
+        },
+        "element": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hit": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hitInsideElement": true,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": false,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMage": {
+        "exists": true,
+        "rect": {
+          "x": 411.3,
+          "y": 765.5,
+          "width": 88.5,
+          "height": 124.8,
+          "right": 499.8,
+          "bottom": 890.3
+        },
+        "center": {
+          "x": 455.6,
+          "y": 827.9
+        },
+        "element": {
+          "tagName": "div",
+          "testId": "mage-wars-zone-mage-entity",
+          "sourceCardId": null,
+          "playerId": "0",
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "驯兽师学徒",
+          "className": "group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150 h-[clamp(13rem,19.25vh,16rem)] pointer-events-auto"
+        },
+        "hit": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3711",
+          "playerId": null,
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "巨熊皮甲",
+          "className": "relative block shrink-0 cursor-zoom-in text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+        },
+        "hitInsideElement": false,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": false,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMageRole": null,
+      "selectedCardFrameCount": 0,
+      "targetMageRoleCount": 0,
+      "magnifyOverlayOpen": false,
+      "cardSelected": false,
+      "cardPrimaryActionState": "enabled",
+      "cardDisabled": false,
+      "player": {
+        "mana": 20,
+        "quickcastReady": true,
+        "actionReady": true,
+        "preparedSpellCardIds": [
+          3707
+        ],
+        "preparedSpellSlots": 1
+      },
+      "cardRelatedObjects": [],
+      "visibleTextIncludesRegrowthBelt": false
+    },
+    "afterCardClick": {
+      "label": "after-card-click",
+      "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "devicePixelRatio": 1
+      },
+      "phase": "initiativeQuickcast",
+      "currentPlayerId": "0",
+      "phaseActorId": "0",
+      "card": {
+        "exists": true,
+        "rect": {
+          "x": 1731,
+          "y": 847.9,
+          "width": 159.3,
+          "height": 224.1,
+          "right": 1890.3,
+          "bottom": 1072
+        },
+        "center": {
+          "x": 1810.6,
+          "y": 960
+        },
+        "element": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": "true",
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hit": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": "true",
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hitInsideElement": true,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": false,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMage": {
+        "exists": true,
+        "rect": {
+          "x": 411.3,
+          "y": 765.5,
+          "width": 88.5,
+          "height": 124.8,
+          "right": 499.8,
+          "bottom": 890.3
+        },
+        "center": {
+          "x": 455.6,
+          "y": 827.9
+        },
+        "element": {
+          "tagName": "div",
+          "testId": "mage-wars-zone-mage-entity",
+          "sourceCardId": null,
+          "playerId": "0",
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "驯兽师学徒",
+          "className": "group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150 h-[clamp(13rem,19.25vh,16rem)] pointer-events-auto"
+        },
+        "hit": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3711",
+          "playerId": null,
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "巨熊皮甲",
+          "className": "relative block shrink-0 cursor-zoom-in text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+        },
+        "hitInsideElement": false,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": false,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMageRole": null,
+      "selectedCardFrameCount": 1,
+      "targetMageRoleCount": 0,
+      "magnifyOverlayOpen": false,
+      "cardSelected": true,
+      "cardPrimaryActionState": "enabled",
+      "cardDisabled": false,
+      "player": {
+        "mana": 20,
+        "quickcastReady": true,
+        "actionReady": true,
+        "preparedSpellCardIds": [
+          3707
+        ],
+        "preparedSpellSlots": 1
+      },
+      "cardRelatedObjects": [],
+      "visibleTextIncludesRegrowthBelt": false
+    },
+    "beforeMageClick": {
+      "label": "before-mage-click",
+      "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "devicePixelRatio": 1
+      },
+      "phase": "initiativeQuickcast",
+      "currentPlayerId": "0",
+      "phaseActorId": "0",
+      "card": {
+        "exists": true,
+        "rect": {
+          "x": 1731,
+          "y": 847.9,
+          "width": 159.3,
+          "height": 224.1,
+          "right": 1890.3,
+          "bottom": 1072
+        },
+        "center": {
+          "x": 1810.6,
+          "y": 960
+        },
+        "element": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": "true",
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hit": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": "true",
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hitInsideElement": true,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": false,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMage": {
+        "exists": true,
+        "rect": {
+          "x": 411.3,
+          "y": 765.5,
+          "width": 88.5,
+          "height": 124.8,
+          "right": 499.8,
+          "bottom": 890.3
+        },
+        "center": {
+          "x": 455.6,
+          "y": 827.9
+        },
+        "element": {
+          "tagName": "div",
+          "testId": "mage-wars-zone-mage-entity",
+          "sourceCardId": null,
+          "playerId": "0",
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "驯兽师学徒",
+          "className": "group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150 h-[clamp(13rem,19.25vh,16rem)] pointer-events-auto"
+        },
+        "hit": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-spellbook-card",
+          "sourceCardId": "3711",
+          "playerId": null,
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "巨熊皮甲",
+          "className": "relative block shrink-0 cursor-zoom-in text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+        },
+        "hitInsideElement": false,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": false,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMageRole": null,
+      "selectedCardFrameCount": 1,
+      "targetMageRoleCount": 0,
+      "magnifyOverlayOpen": false,
+      "cardSelected": true,
+      "cardPrimaryActionState": "enabled",
+      "cardDisabled": false,
+      "player": {
+        "mana": 20,
+        "quickcastReady": true,
+        "actionReady": true,
+        "preparedSpellCardIds": [
+          3707
+        ],
+        "preparedSpellSlots": 1
+      },
+      "cardRelatedObjects": [],
+      "visibleTextIncludesRegrowthBelt": false
+    },
+    "afterMageClick": {
+      "label": "after-mage-click",
+      "href": "http://127.0.0.1:4273/play/mage-wars?playerID=0",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "devicePixelRatio": 1
+      },
+      "phase": "initiativeQuickcast",
+      "currentPlayerId": "0",
+      "phaseActorId": "0",
+      "card": {
+        "exists": true,
+        "rect": {
+          "x": 1731,
+          "y": 847.9,
+          "width": 159.3,
+          "height": 224.1,
+          "right": 1890.3,
+          "bottom": 1072
+        },
+        "center": {
+          "x": 1810.6,
+          "y": 960
+        },
+        "element": {
+          "tagName": "button",
+          "testId": "mage-wars-desktop-prepared-card",
+          "sourceCardId": "3707",
+          "playerId": null,
+          "primaryAction": "true",
+          "primaryActionState": "enabled",
+          "secondaryInspect": "true",
+          "selected": "true",
+          "disabled": false,
+          "ariaLabel": "重生腰带",
+          "className": "relative block h-full w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 cursor-pointer"
+        },
+        "hit": {
+          "tagName": "div",
+          "testId": "mage-wars-card-magnify-overlay",
+          "sourceCardId": null,
+          "playerId": null,
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": null,
+          "className": "fixed inset-0 bg-black/30 flex items-center justify-center p-8 transition-opacity duration-75 "
+        },
+        "hitInsideElement": false,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": true,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMage": {
+        "exists": true,
+        "rect": {
+          "x": 411.3,
+          "y": 765.5,
+          "width": 88.5,
+          "height": 124.8,
+          "right": 499.8,
+          "bottom": 890.3
+        },
+        "center": {
+          "x": 455.6,
+          "y": 827.9
+        },
+        "element": {
+          "tagName": "div",
+          "testId": "mage-wars-zone-mage-entity",
+          "sourceCardId": null,
+          "playerId": "0",
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": "驯兽师学徒",
+          "className": "group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150 h-[clamp(13rem,19.25vh,16rem)] pointer-events-auto"
+        },
+        "hit": {
+          "tagName": "div",
+          "testId": "mage-wars-card-magnify-overlay",
+          "sourceCardId": null,
+          "playerId": null,
+          "primaryAction": null,
+          "primaryActionState": null,
+          "secondaryInspect": null,
+          "selected": null,
+          "disabled": false,
+          "ariaLabel": null,
+          "className": "fixed inset-0 bg-black/30 flex items-center justify-center p-8 transition-opacity duration-75 "
+        },
+        "hitInsideElement": false,
+        "hitInspectButton": false,
+        "hitMagnifyOverlay": true,
+        "cursor": "url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-pg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M14%203%20C14%203%2014%2014%2014%2014%20L10%2012%20C9%2011.5%207.5%2012%208%2013.5%20L12%2020%20L12%2027%20L22%2027%20L24%2020%20C24%2020%2026%2014%2026%2013%20C26%2011.5%2024%2011%2023%2012%20L22%2013%20C22%2012%2021%2010.5%2019.5%2011%20L19%2012%20C19%2011%2017.5%209.5%2016.5%2010.5%20L16%2012%20L16%203%20C16%201.5%2014%201.5%2014%203%20Z%22%20fill%3D%22url(%23ft-pg)%22%20stroke%3D%22%2300e5ff%22%20stroke-width%3D%221.6%22%20stroke-linejoin%3D%22round%22%20filter%3D%22url(%23ft-g)%22%2F%3E%3Cline%20x1%3D%2214%22%20y1%3D%225%22%20x2%3D%2214%22%20y2%3D%2212%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cline%20x1%3D%2216%22%20y1%3D%224%22%20x2%3D%2216%22%20y2%3D%2211%22%20stroke%3D%22rgba(0%2C229%2C255%2C0.45)%22%20stroke-width%3D%220.8%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E\") 14 3, pointer"
+      },
+      "selfMageRole": null,
+      "selectedCardFrameCount": 1,
+      "targetMageRoleCount": 0,
+      "magnifyOverlayOpen": true,
+      "cardSelected": true,
+      "cardPrimaryActionState": "enabled",
+      "cardDisabled": false,
+      "player": {
+        "mana": 20,
+        "quickcastReady": true,
+        "actionReady": true,
+        "preparedSpellCardIds": [
+          3707
+        ],
+        "preparedSpellSlots": 1
+      },
+      "cardRelatedObjects": [],
+      "visibleTextIncludesRegrowthBelt": false
+    }
+  },
+  "passChecks": {
+    "cardVisibleBeforeClick": true,
+    "cardCenterHitsCardBody": true,
+    "cardPrimaryActionEnabledBeforeClick": true,
+    "noMagnifyBeforeClick": true,
+    "cardSelectedAfterCardClick": true,
+    "ownMageBecomesTargetAfterCardClick": false,
+    "noMagnifyAfterCardClick": true,
+    "cardLeavesPreparedAfterMageClick": false,
+    "manaSpentAfterMageClick": false,
+    "regrowthEquipmentCreatedOnMage": false,
+    "noMagnifyAfterMageClick": false
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting...",
+      "at": "2026-09-13T12:30:26.680Z"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected.",
+      "at": "2026-09-13T12:30:26.708Z"
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+      "at": "2026-09-13T12:30:26.850Z"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙",
+      "at": "2026-09-13T12:30:26.897Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T12:30:28.478Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-13T12:30:28.483Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T12:30:28.482Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"timeoutMs\":120000}",
+      "at": "2026-09-13T12:30:28.483Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T12:30:28.490Z\",\"stage\":\"load-start\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}",
+      "at": "2026-09-13T12:30:28.493Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T12:30:28.491Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"mage-wars\"}",
+      "at": "2026-09-13T12:30:28.497Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-13T12:30:28.533Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"namespace\":\"game-mage-wars\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":43}",
+      "at": "2026-09-13T12:30:28.537Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T12:30:28.788Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":306}",
+      "at": "2026-09-13T12:30:28.792Z"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-13T12:30:28.789Z\",\"stage\":\"load-success\",\"gameId\":\"mage-wars\",\"durationMs\":298}",
+      "at": "2026-09-13T12:30:28.792Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"reset\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T12:30:29.091Z"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}",
+      "at": "2026-09-13T12:30:29.092Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":2,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T12:30:29.110Z"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 2, activePhaseElapsedMs: null}",
+      "at": "2026-09-13T12:30:29.110Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"mage-wars\",\"hasAiSeat\":true,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"initiativeQuickcast\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"local-ai\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T12:30:29.508Z"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: mage-wars, hasAiSeat: true, currentPlayerId: 0}",
+      "at": "2026-09-13T12:30:29.509Z"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"idle\",\"gameId\":\"mage-wars\",\"matchId\":\"local:mage-wars:12345\",\"decisionElapsedMs\":5,\"activePhaseElapsedMs\":null,\"scheduledRetry\":false} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;",
+      "at": "2026-09-13T12:30:29.515Z"
+    },
+    {
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: idle, gameId: mage-wars, matchId: local:mage-wars:12345, decisionElapsedMs: 5, activePhaseElapsedMs: null}",
+      "at": "2026-09-13T12:30:29.515Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): mage-wars/board/standard-arena",
+      "at": "2026-09-13T12:30:37.104Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 2 (public-fallback): mage-wars/board/standard-arena",
+      "at": "2026-09-13T12:30:45.303Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] CDN 不可用，已降级到本地资源: mage-wars/board/standard-arena",
+      "at": "2026-09-13T12:30:45.363Z"
+    },
+    {
+      "type": "warning",
+      "text": "[OptimizedImage] CDN 不可用，已降级到本地资源: mage-wars/board/standard-arena",
+      "at": "2026-09-13T12:30:45.391Z"
+    }
+  ]
+}

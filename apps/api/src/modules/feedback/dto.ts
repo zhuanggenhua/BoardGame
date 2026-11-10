@@ -656,7 +656,16 @@ export class AttachPrivateReplayDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(1500000)
-    privateReplay!: string;
+    @IsOptional()
+    privateReplay?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    privateReplayTriggerCaptured?: boolean;
+
+    @IsIn(['private_replay_attachment_failed'])
+    @IsOptional()
+    captureError?: 'private_replay_attachment_failed';
 }
 
 export class UpdateFeedbackStatusDto {

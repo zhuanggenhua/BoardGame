@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-02T10:26:28.1767631+08:00",
+  "objective": "仅当前焦点4原图：桌面/横屏候选与已选待确认态的私有交叉图审",
+  "runId": "e2e-1793586082157-9s0oap",
+  "readMethod": "tools.view_image detail=original逐张实际读取；未使用缩略索引或旧图代替",
+  "verdict": "4张焦点原图局部通过：撤销已选标题被裁的误判；不代表整体交付通过",
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "items": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/桌面-弃牌准备选择态.png",
+      "hash": "eb37902e083d8fffcd3979dd20d31188fd4863114e1ae22f5bfd1d82c5e299c0",
+      "status": "passed",
+      "actualReadPath": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/桌面-弃牌准备选择态.png",
+      "oldUiComparison": "当前完整owner仍是InteractionOverlay；ChoiceObjectSelection仅接候选与原option ID。当前尺度来源为同游戏BoardOverlays原多卡阅读宽度族并按源frame ratio/自有内容窗口约束；不称恢复c057旧像素或历史小卡。",
+      "authorizationVerdict": "用户本轮否决因避让而缩小卡面并要求复用完整UI，当前大卡与原owner复用在授权内。卡面阅读优先不要求与下层手牌完全几何不交。标题在候选与已选图中均完整，不存在此前指认的本层指令裁切。",
+      "protectedSlots": [
+        "左侧阶段轨、生命50与CP3仍可见",
+        "右侧原骰盘与原动作栏仍可见",
+        "下层原手牌保留原尺寸/位置与下半部上下文，卡池前景覆盖部分上缘，不称完整无遮挡",
+        "本层顶部指令与下方确认按钮完整；两态标题区域原始像素完全一致"
+      ],
+      "negativeImpactChecks": [
+        "未见源比例压扁、牌面四角截断或额外厚底框",
+        "选中金色边界四边完整，未选态无错误金边",
+        "候选与已选顶部指令完整且区域像素一致；确认按钮完整，灰色禁用/黄色可用与选择状态一致",
+        "两图仅一合法候选；不据此宣称多候选搜索/纵滚覆盖",
+        "长按/右键检视行为采用主线程已验证E2E，静态图审未重做其行为测试"
+      ],
+      "hardFailures": [],
+      "observation": "中央法瑞拉之牙卡面约350px宽，名称、准备效果“1名对手失去1CP”、施放效果“将1次攻击增加3伤害。然后弃置本卡。”可直接阅读。卡片明显大于旧88..132px选择缩略卡，完整印刷比例无挤压，未添加额外底框。顶部“从弃牌堆选择1个法术并准备”全字完整，位于约y24..42；下方灰色“确认”完整，未选时禁用语义明确。当前只有一个合法候选，本图不证明多候选比较或搜索状态。",
+      "originalReportedStatus": "passed",
+      "titleReadCorrection": "辅助裁片仅帮助确认已读原图对象；原图候选/已选标题均在y24..40完整显示，非y0。独立PIL ImageChops.difference.getbbox()为null。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/桌面-法术卡已选待确认.png",
+      "hash": "6ee0d53f5cd4b3ae2d3ff24e74a963a41d9b1163604629ef38e6cfdaca3520b7",
+      "status": "passed",
+      "actualReadPath": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/桌面-法术卡已选待确认.png",
+      "oldUiComparison": "当前完整owner仍是InteractionOverlay；ChoiceObjectSelection仅接候选与原option ID。当前尺度来源为同游戏BoardOverlays原多卡阅读宽度族并按源frame ratio/自有内容窗口约束；不称恢复c057旧像素或历史小卡。",
+      "authorizationVerdict": "用户本轮否决因避让而缩小卡面并要求复用完整UI，当前大卡与原owner复用在授权内。卡面阅读优先不要求与下层手牌完全几何不交。标题在候选与已选图中均完整，不存在此前指认的本层指令裁切。",
+      "protectedSlots": [
+        "左侧阶段轨、生命50与CP3仍可见",
+        "右侧原骰盘与原动作栏仍可见",
+        "下层原手牌保留原尺寸/位置与下半部上下文，卡池前景覆盖部分上缘，不称完整无遮挡",
+        "本层顶部指令与下方确认按钮完整；两态标题区域原始像素完全一致"
+      ],
+      "negativeImpactChecks": [
+        "未见源比例压扁、牌面四角截断或额外厚底框",
+        "选中金色边界四边完整，未选态无错误金边",
+        "候选与已选顶部指令完整且区域像素一致；确认按钮完整，灰色禁用/黄色可用与选择状态一致",
+        "两图仅一合法候选；不据此宣称多候选搜索/纵滚覆盖",
+        "长按/右键检视行为采用主线程已验证E2E，静态图审未重做其行为测试"
+      ],
+      "hardFailures": [],
+      "observation": "中央法瑞拉之牙卡面约350px宽，名称、准备效果“1名对手失去1CP”、施放效果“将1次攻击增加3伤害。然后弃置本卡。”可直接阅读。卡片明显大于旧88..132px选择缩略卡，完整印刷比例无挤压，未添加额外底框。已选金色边界四边完整，选择与未选可区分；下方黄色“确认”完整且归属明确。顶部主指令“从弃牌堆选择1个法术并准备”完整。已实际读取辅助放大标题带，并对两张原图同区域独立进行逐像素比较，确认与候选态相同；原先指认y=0裁切属于审查误判，现撤销。",
+      "originalReportedStatus": "failed",
+      "titleReadCorrection": "辅助裁片仅帮助确认已读原图对象；原图候选/已选标题均在y24..40完整显示，非y0。独立PIL ImageChops.difference.getbbox()为null。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/手机横屏-弃牌准备选择态.png",
+      "hash": "bc257f80c6e30b7bb17302c5014290b6854c94a21a4ae06487013d44c0d8b882",
+      "status": "passed",
+      "actualReadPath": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/手机横屏-弃牌准备选择态.png",
+      "oldUiComparison": "当前完整owner仍是InteractionOverlay；ChoiceObjectSelection仅接候选与原option ID。当前尺度来源为同游戏BoardOverlays原多卡阅读宽度族并按源frame ratio/自有内容窗口约束；不称恢复c057旧像素或历史小卡。",
+      "authorizationVerdict": "用户本轮否决因避让而缩小卡面并要求复用完整UI，当前大卡与原owner复用在授权内。卡面阅读优先不要求与下层手牌完全几何不交。标题在候选与已选图中均完整，不存在此前指认的本层指令裁切。",
+      "protectedSlots": [
+        "左侧阶段轨、生命50与CP3仍可见",
+        "右侧原骰盘与原动作栏仍可见",
+        "下层原手牌保留原尺寸/位置与下半部上下文，卡池前景覆盖部分上缘，不称完整无遮挡",
+        "本层顶部指令与下方确认按钮完整；两态标题区域原始像素完全一致"
+      ],
+      "negativeImpactChecks": [
+        "未见源比例压扁、牌面四角截断或额外厚底框",
+        "选中金色边界四边完整，未选态无错误金边",
+        "候选与已选顶部指令完整且区域像素一致；确认按钮完整，灰色禁用/黄色可用与选择状态一致",
+        "两图仅一合法候选；不据此宣称多候选搜索/纵滚覆盖",
+        "长按/右键检视行为采用主线程已验证E2E，静态图审未重做其行为测试"
+      ],
+      "hardFailures": [],
+      "observation": "中央法瑞拉之牙卡面约144px宽、236px高，名称和准备/施放效果仍可识别，1CP与3伤害可分辨；侧边出版脚注较小可走已存在检视，不据此新增候选必须舒适读极小脚注的条件。卡片未压成历史小缩略卡，完整源比例无挤压，未见额外底框。顶部“从弃牌堆选择1个法术并准备”全字完整，位于约y24..42；下方灰色“确认”完整，未选时禁用语义明确。当前只有一个合法候选，本图不证明多候选比较或搜索状态。",
+      "originalReportedStatus": "passed",
+      "titleReadCorrection": "辅助裁片仅帮助确认已读原图对象；原图候选/已选标题均在y24..40完整显示，非y0。独立PIL ImageChops.difference.getbbox()为null。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/手机横屏-法术卡已选待确认.png",
+      "hash": "9c65984a718c26831832f63f99e570bae1a932dc615397b3a3570c098f9d1915",
+      "status": "passed",
+      "actualReadPath": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术/_runs/e2e-1793586082157-9s0oap/手机横屏-法术卡已选待确认.png",
+      "oldUiComparison": "当前完整owner仍是InteractionOverlay；ChoiceObjectSelection仅接候选与原option ID。当前尺度来源为同游戏BoardOverlays原多卡阅读宽度族并按源frame ratio/自有内容窗口约束；不称恢复c057旧像素或历史小卡。",
+      "authorizationVerdict": "用户本轮否决因避让而缩小卡面并要求复用完整UI，当前大卡与原owner复用在授权内。卡面阅读优先不要求与下层手牌完全几何不交。标题在候选与已选图中均完整，不存在此前指认的本层指令裁切。",
+      "protectedSlots": [
+        "左侧阶段轨、生命50与CP3仍可见",
+        "右侧原骰盘与原动作栏仍可见",
+        "下层原手牌保留原尺寸/位置与下半部上下文，卡池前景覆盖部分上缘，不称完整无遮挡",
+        "本层顶部指令与下方确认按钮完整；两态标题区域原始像素完全一致"
+      ],
+      "negativeImpactChecks": [
+        "未见源比例压扁、牌面四角截断或额外厚底框",
+        "选中金色边界四边完整，未选态无错误金边",
+        "候选与已选顶部指令完整且区域像素一致；确认按钮完整，灰色禁用/黄色可用与选择状态一致",
+        "两图仅一合法候选；不据此宣称多候选搜索/纵滚覆盖",
+        "长按/右键检视行为采用主线程已验证E2E，静态图审未重做其行为测试"
+      ],
+      "hardFailures": [],
+      "observation": "中央法瑞拉之牙卡面约144px宽、236px高，名称和准备/施放效果仍可识别，1CP与3伤害可分辨；侧边出版脚注较小可走已存在检视，不据此新增候选必须舒适读极小脚注的条件。卡片未压成历史小缩略卡，完整源比例无挤压，未见额外底框。已选金色边界四边完整，选择与未选可区分；下方黄色“确认”完整且归属明确。顶部主指令“从弃牌堆选择1个法术并准备”完整。已实际读取辅助放大标题带，并对两张原图同区域独立进行逐像素比较，确认与候选态相同；原先指认y=0裁切属于审查误判，现撤销。",
+      "originalReportedStatus": "failed",
+      "titleReadCorrection": "辅助裁片仅帮助确认已读原图对象；原图候选/已选标题均在y24..40完整显示，非y0。独立PIL ImageChops.difference.getbbox()为null。"
+    }
+  ],
+  "boundary": "保留原误判报告不修改；本更正仅覆盖同run同hash四张已实际读取原图，辅助裁片不替代原图。不代表16场景或整体交付PASS，未改产品，未向用户展示图，未生成PASSmanifest。此前已读其它卡面/布局观察无独立硬失败。",
+  "correctionOf": {
+    "path": "temp/doctor-cardpool-corrected-visual-20261102.json",
+    "sha256": "d44425a232c3beff84d06ab1a4bf646cb7e397f0ef9b85c5bc4a39168bd0f609",
+    "preservedUnmodified": true,
+    "originalMistake": "将已选图顶部指令误认为在y0裁切，与已判完整候选图的相同像素直接矛盾",
+    "withdrawnFindings": "原报告两项已选标题裁切hardFailure均撤销，不应据此改变产品UI"
+  },
+  "supplementalEvidence": {
+    "pixelComparisonReport": "temp/doctor-title-pixel-comparison-20261102.json",
+    "actualReadCrops": [
+      "D:/gongzuo/webgame/BoardGame/temp/doctor-title-band-桌面.png",
+      "D:/gongzuo/webgame/BoardGame/temp/doctor-title-band-手机横屏.png"
+    ],
+    "independentlyRecomputed": true,
+    "desktop": {
+      "diffBBox": null,
+      "pixelSha256": "93a51bbc0a7271a1df493296ddf019dbe22adaec0a52ac5de46e25c8d9cdd38c",
+      "region": [
+        480,
+        16,
+        960,
+        50
+      ]
+    },
+    "landscape": {
+      "diffBBox": null,
+      "pixelSha256": "9e9772ea3f79deca0e038dec0f00e8ade0b4a3ecf2dc037875bc85714d260a50",
+      "region": [
+        270,
+        16,
+        541,
+        50
+      ]
+    }
+  }
+}

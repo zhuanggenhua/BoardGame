@@ -1,0 +1,110 @@
+{
+  "ability-cards": {
+    "source": {
+      "path": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\generated\\ability-cards.png",
+      "bytes": 34271751,
+      "width": 7380,
+      "height": 4720,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "7c32cd79eaec4cf1e856dfd84c066ced6e049159fbbe0e80a90251943dd722cf"
+    },
+    "baseline": {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+      "bytes": 8452896,
+      "width": 7380,
+      "height": 4720,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "68d0df8ae6cedd3cce1e4045c6a24c3e87c82e1ab0c38be46630524c933212f4"
+    },
+    "old": {
+      "path": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+      "bytes": 357952,
+      "width": 1860,
+      "height": 2048,
+      "mode": "RGB",
+      "alphaExtrema": null,
+      "sha256": "d5a687ab0fcd6339ed05ad072171c978eb19b2d6679cd751bd5da72db74c5175"
+    }
+  },
+  "player-board": {
+    "source": {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\player-board.png",
+      "bytes": 16660274,
+      "width": 4005,
+      "height": 2476,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "4ffa4dd72d3124e7a53ea029b544fad11dc3617eb14b171426e3bbb874404a50"
+    },
+    "baseline": {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\player-board.webp",
+      "bytes": 3095888,
+      "width": 4005,
+      "height": 2476,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "11b4c2e50f5e2732cd38cc448afd4fe2fa89ae5c5cb21cd07f3f8f57e374bdd8"
+    },
+    "old": {
+      "path": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\player-board.webp",
+      "bytes": 517586,
+      "width": 2048,
+      "height": 1250,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "5604d728fb35cf4d19e958972d151541a2873ad4350afe0614b1e746a6816f9c"
+    }
+  },
+  "tip": {
+    "source": {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\tip.png",
+      "bytes": 3799573,
+      "width": 967,
+      "height": 1804,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "da0afb2bee0e504e726ff39d7256fc3aa4b9402e8189d03a15b443a0c3a9f5c1"
+    },
+    "baseline": {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\tip.webp",
+      "bytes": 743326,
+      "width": 967,
+      "height": 1804,
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "sha256": "30e1b62010aef2e75be2e31cb1f9abf8f3096100e024d7939ffbc0f18f49304f"
+    },
+    "old": {
+      "path": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\original\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\tip.webp",
+      "bytes": 317698,
+      "width": 1113,
+      "height": 2048,
+      "mode": "RGB",
+      "alphaExtrema": null,
+      "sha256": "8f336e0020b7a547f3a2821af8cc01d5aae3a42000849d9517f6bf193261dfbe"
+    }
+  }
+}

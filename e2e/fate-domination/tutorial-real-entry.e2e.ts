@@ -152,6 +152,8 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  screenshotStates.add('dark-mode');screenshotStates.add('dark-draft');
  const capture=async(key:string,name:string)=>{
   if(!screenshotStates.has(key)||seen.has(key))return;
+  // 教学截图要看清当前操作对象；保留真实演出并等待其自然退场。
+  await expect(page.getByTestId('fate-fgo-noble')).toHaveCount(0,{timeout:60000});
   if(await page.locator('.fd-identity-setup').isVisible())await readyImages(page,'.fd-identity-setup img');
   else await expect(page.getByTestId('fate-pixi-map-canvas-host')).toHaveAttribute('data-map-resource-status','ready');
   await expect.poll(()=>page.evaluate(()=>{

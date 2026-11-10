@@ -1,0 +1,229 @@
+{
+  "objective": "七大恨教程地图语义贴附、当前操作层及合法候选身份可辨诊断",
+  "scope": "仅12个合法保存点PC诊断，不冒充自然操作完整教程、不证明数值或规则结算",
+  "reviewer": "/root/r148_map_private",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "verdict": "REVISE",
+  "summary": {
+    "passed": 11,
+    "revise": 1,
+    "total": 12
+  },
+  "criteria": [
+    "说明必须自然对应真实地图名称/正式控制章/驻军/输入，不能仅靠gap或两个注释彼此接近判通过",
+    "保护当前教学焦点、当前可选兵牌人口、正式操作面板及所有合法候选的正式身份；允许覆盖无关低层地图实体",
+    "维护对象的名称注释必须贴真实驻军所属地区，不能贴省份外接矩形左上"
+  ],
+  "items": [
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/reclaim-target.png",
+      "sha256": "5f215255bb8ef92206a707f75d5e3c8dcf0c07943a86b38a4e864ad3fb30e41b",
+      "status": "REVISE",
+      "observation": "辽东注释位于正式控制章上方，3人口与3支驻军可辨；但候选保护版把白提示挤到右下朝鲜侧，说明与辽东名称、驻军之间隔着正式确认面板，第一眼归属不自然，必须返工。",
+      "reviewMethod": "私有重新读取本张原始整屏",
+      "sameAsPriorImage": false
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/recruit-source.png",
+      "sha256": "738df7fb4304c709958a91fc0a58ae2c2fa66fbb019ba641a4d9925951be6c71",
+      "status": "PASS",
+      "observation": "说明紧邻辽北注释与明控制章；辽北3人口、驻军、绿色区域和征召军队正式入口可辨，其余绿色候选身份章未被提示盖住。",
+      "reviewMethod": "私有重新读取本张原始整屏",
+      "sameAsPriorImage": false
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/dispatch-troops.png",
+      "sha256": "bbe0b8cf5b9c41a05af700b2d3b46cd538feeea1a8efd555eccd1b556536a9a7",
+      "status": "PASS",
+      "observation": "辽北注释贴在明章上方，说明位于其上侧；绿色可选步兵、骑兵、炮兵逐枚可辨，人口3与右侧出动确认清楚，没有把文字挪到远处地图空位。",
+      "reviewMethod": "私有重新读取本张原始整屏",
+      "sameAsPriorImage": false
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/dispatch-target.png",
+      "sha256": "00b1006a3f8801c7ea3358d24d350010fed7f5a98aef0191f63d2ec937f8d60c",
+      "status": "PASS",
+      "observation": "叶赫部注释位于正式蒙古章上缘，说明在其右侧；蒙古骑兵、人口2、白边地图区域与绿色其它候选身份可辨，右侧重新选部队及确认入口完整。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/diplomacy-target.png",
+      "sha256": "b1ad230c247dad59f9bcf296ab23ebb7fed40476b76df0b09b9cf43531ca5bd6",
+      "status": "PASS",
+      "observation": "候选保护版白提示移至外喀尔喀部左侧，注释与正式反面外交章相连；科尔沁部蒙古身份章、印刷地区名与绿色边界恢复可辨，正式结束外交入口完整。",
+      "reviewMethod": "私有重新读取本张原始整屏",
+      "sameAsPriorImage": false
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/hire-target.png",
+      "sha256": "4bc3d004d83273a92ee3ca5ba7a6dfba21ae58cd69d997e2647a37cead21657b",
+      "status": "PASS",
+      "observation": "白提示在大同上方，底边接近大同名称；名称贴正式明控制章，驻军和人口2仍可辨，绿色其它候选的控制章与右侧建立区域确认均保留。",
+      "reviewMethod": "私有重新读取本张原始整屏",
+      "sameAsPriorImage": false
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/upkeep-datong.png",
+      "sha256": "52371c91cb739c0af001da151282024135d6322c08bce0f2734d812febd10bb2",
+      "status": "PASS",
+      "observation": "与R147旧整屏对照，名称从区域外接矩形左上移到大同正式明章上缘；说明贴章右上，三枚绿色兵牌及人口2完整，维护面板和手牌支持入口保留。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/upkeep-yehe.png",
+      "sha256": "6462fc9aa84bc67aff0cf4fbf7b3ed3345131e012ef9aafad6baebb967b7e5b9",
+      "status": "PASS",
+      "observation": "与R147旧整屏对照，名称从远离驻军的左上方移到叶赫正式明章上方；说明贴章右侧，三支绿色驻军、人口2、维护面板和手牌完整。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/upkeep-xianxing.png",
+      "sha256": "0502df9457e36f7e42263e225c902d1b18a0c930c96ffe86d33612a30393d8be",
+      "status": "PASS",
+      "observation": "咸兴注释贴正式明章，提示位于章右上；咸兴印刷城市名、一支绿色驻军与维护输入清楚，没有要求避开非当前辽东实体而远离教学对象。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/upkeep-liaobei.png",
+      "sha256": "67367dcc80e1a9abb82769b38f52ec0681b681597c70f17770e53224b973d01e",
+      "status": "PASS",
+      "observation": "辽北名称贴正式明控制章，提示在章右上；当前七支兵牌逐枚可辨，人口3、绿色兵牌选择和右侧支持4支部队输入清楚。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/upkeep-pyongyang.png",
+      "sha256": "e1dae1ccceb2cfe42bbca62d1074ccb87ad66ce11d3e0b7e7d990e4265e1ca2b",
+      "status": "PASS",
+      "observation": "平壤名称贴正式明章，提示在其右上；当前平壤绿色雇佣兵、印刷城市名、随后汉城驻军和手牌均可辨，移除当前部队的操作归属清楚。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-candidates/occupy.png",
+      "sha256": "80548f8a15f12b52f1e39751fc908a4d2a868a063a8aae42b1a002b83d2983f8",
+      "status": "PASS",
+      "observation": "战后说明紧邻右侧战后选择面板，保留辽北到叶赫部语义；叶赫部红色地图主体、正式蒙古章、人口2及来源辽北部队可辨，占领和撤回按钮完整。",
+      "reviewMethod": "与已逐张私读原图sha256完全相同，沿用同源图面结论",
+      "sameAsPriorImage": true
+    }
+  ],
+  "priorAttempt": {
+    "directory": "diagnostics/semantic-layer-r148",
+    "verdict": "REVISE",
+    "summary": {
+      "total": 12,
+      "revise": 1,
+      "diagnosticOnly": 11
+    },
+    "items": [
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/reclaim-target.png",
+        "sha256": "f1d1ad4bb4fb466fcc87f53c27542ec4f6bade40b237f2c8cc985bc5eeff9d2a",
+        "status": "diagnostic-only",
+        "observation": "首批说明在辽东左侧，辽东注释贴正式明章上方，驻军与人口清楚。已实际对照R147远离辽东的旧图，关联改善。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/recruit-source.png",
+        "sha256": "138eb4458d5bd7758b114ccd004a1aaba211cad708c432af228147cf4c125ab3",
+        "status": "diagnostic-only",
+        "observation": "说明紧邻辽北注释与明控制章；辽北3人口、驻军、绿色区域和征召军队正式入口可辨，其余绿色候选身份章未被提示盖住。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/dispatch-troops.png",
+        "sha256": "e4e8ba420e154639f36037dfc07591966063e8d3f8673c1f86d642b378256a5d",
+        "status": "diagnostic-only",
+        "observation": "辽北注释贴在明章上方，说明位于其上侧；绿色可选步兵、骑兵、炮兵逐枚可辨，人口3与右侧出动确认清楚，没有把文字挪到远处地图空位。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/dispatch-target.png",
+        "sha256": "00b1006a3f8801c7ea3358d24d350010fed7f5a98aef0191f63d2ec937f8d60c",
+        "status": "diagnostic-only",
+        "observation": "叶赫部注释位于正式蒙古章上缘，说明在其右侧；蒙古骑兵、人口2、白边地图区域与绿色其它候选身份可辨，右侧重新选部队及确认入口完整。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/diplomacy-target.png",
+        "sha256": "6e5dcdebb1c8044ba356f74ee70738560affeb5c9ea920c202e3d27c27e2b5ff",
+        "status": "REVISE",
+        "observation": "首批提示(x1011..1321,y136..374)完全遮住真实合法候选科尔沁部的正式蒙古身份章和印刷地名；只保焦点外喀尔喀不足以保持候选身份可辨。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/hire-target.png",
+        "sha256": "9d7c1f8c728f1f3c9da878986f1b746b642737257064065f35df2f506d69f903",
+        "status": "diagnostic-only",
+        "observation": "首批说明位于大同右侧，当前大同注释、正式章、驻军与人口可辨；地图其它候选身份的保护在后续版补足。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/upkeep-datong.png",
+        "sha256": "52371c91cb739c0af001da151282024135d6322c08bce0f2734d812febd10bb2",
+        "status": "diagnostic-only",
+        "observation": "与R147旧整屏对照，名称从区域外接矩形左上移到大同正式明章上缘；说明贴章右上，三枚绿色兵牌及人口2完整，维护面板和手牌支持入口保留。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/upkeep-yehe.png",
+        "sha256": "6462fc9aa84bc67aff0cf4fbf7b3ed3345131e012ef9aafad6baebb967b7e5b9",
+        "status": "diagnostic-only",
+        "observation": "与R147旧整屏对照，名称从远离驻军的左上方移到叶赫正式明章上方；说明贴章右侧，三支绿色驻军、人口2、维护面板和手牌完整。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/upkeep-xianxing.png",
+        "sha256": "0502df9457e36f7e42263e225c902d1b18a0c930c96ffe86d33612a30393d8be",
+        "status": "diagnostic-only",
+        "observation": "咸兴注释贴正式明章，提示位于章右上；咸兴印刷城市名、一支绿色驻军与维护输入清楚，没有要求避开非当前辽东实体而远离教学对象。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/upkeep-liaobei.png",
+        "sha256": "67367dcc80e1a9abb82769b38f52ec0681b681597c70f17770e53224b973d01e",
+        "status": "diagnostic-only",
+        "observation": "辽北名称贴正式明控制章，提示在章右上；当前七支兵牌逐枚可辨，人口3、绿色兵牌选择和右侧支持4支部队输入清楚。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/upkeep-pyongyang.png",
+        "sha256": "e1dae1ccceb2cfe42bbca62d1074ccb87ad66ce11d3e0b7e7d990e4265e1ca2b",
+        "status": "diagnostic-only",
+        "observation": "平壤名称贴正式明章，提示在其右上；当前平壤绿色雇佣兵、印刷城市名、随后汉城驻军和手牌均可辨，移除当前部队的操作归属清楚。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148/occupy.png",
+        "sha256": "80548f8a15f12b52f1e39751fc908a4d2a868a063a8aae42b1a002b83d2983f8",
+        "status": "diagnostic-only",
+        "observation": "战后说明紧邻右侧战后选择面板，保留辽北到叶赫部语义；叶赫部红色地图主体、正式蒙古章、人口2及来源辽北部队可辨，占领和撤回按钮完整。",
+        "reviewMethod": "私有逐张读取原始整屏"
+      }
+    ],
+    "claimScope": "首批逐图观察仅保留当前焦点、输入、兵牌人口和R147语义对照的诊断事实；未追认所有候选身份均合格。外交有直接失败证据，其余不作最终PASS放行。"
+  },
+  "hardFailures": [
+    {
+      "impact": "玩家读完辽东开垦说明后，第一眼易归属于右侧操作面板或朝鲜区域",
+      "object": "reclaim-target",
+      "evidence": "候选保护版白提示左上(1423,400)，辽东注释左上(1388,204)，实际图面失去紧邻关系",
+      "fix": "保留真实候选control身份保护，重新求解当前辽东语义贴附，不扩大至所有军队人口避让"
+    }
+  ],
+  "negativeImpactChecks": [
+    "非当前地图实体允许被高层教程提示盖住；不以全地图像素不相交为门禁",
+    "当前焦点兵牌人口、手牌支持入口及正式确认面板逐图保留可辨",
+    "首批外交确认为科尔沁正式候选身份被盖后退回；新组外交已恢复"
+  ],
+  "limitations": [
+    "视觉只证明这些保存点的界面状态，不证明自然全链可达或数值结算正确"
+  ],
+  "userVisibleMediaPublished": false
+}

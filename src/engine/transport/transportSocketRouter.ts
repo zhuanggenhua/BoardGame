@@ -1,6 +1,7 @@
 import type { Server as IOServer, Socket as IOSocket } from 'socket.io';
 import logger from '../../../server/logger.js';
 import type { MatchState } from '../types';
+import type { FeedbackReplayCaptureRequest, FeedbackReplayCaptureResult } from './feedbackReplayCaptureTypes';
 import {
     parseDispatchPayloadMeta,
     resolveDispatchActorPlayerId,
@@ -46,7 +47,7 @@ export type GameSocketRouteHooks<TMatch extends GameSocketRouteMatch> = {
         credentials?: string,
     ) => Promise<boolean>;
     validateAdminDebugToken?: (token: string | null | undefined) => Promise<string | null>;
-    captureFeedbackReplay?: (match: TMatch, playerId: string, request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }) => Promise<{ accepted: boolean; captureId?: string }>;
+    captureFeedbackReplay?: (match: TMatch, playerId: string, request: FeedbackReplayCaptureRequest) => Promise<FeedbackReplayCaptureResult>;
     isAdminDebugCommand?: (match: TMatch, commandType: string) => boolean;
     handleAdminDebugCommand?: (
         matchID: string,
@@ -146,12 +147,28 @@ export function registerGameSocketRoutes<TMatch extends GameSocketRouteMatch>(
         });
 
         socket.on('feedback:capture', async (
-            matchID: string, request: { phase: 'prepare' } | { phase: 'attach'; feedbackId: string; captureId: string }, credentials?: string,
-            acknowledge?: (result: { accepted: boolean; captureId?: string }) => void,
+            matchID: string, request: FeedbackReplayCaptureRequest, credentials?: string,
+            acknowledge?: (result: FeedbackReplayCaptureResult) => void,
         ) => {
             try {
                 const info = hooks.getSocketInfo(socket.id);
-                if (!info || info.matchID !== matchID || !info.playerID || !request || (request.phase !== 'prepare' && (request.phase !== 'attach' || typeof request.feedbackId !== 'string' || !/^[a-f\d]{24}$/i.test(request.feedbackId) || typeof request.captureId !== 'string' || !/^[a-f\d-]{36}$/i.test(request.captureId)))
+                const validPrepare = request?.phase === 'prepare'
+                    && (!request.trigger || (
+                        typeof request.trigger.commandType === 'string'
+                        && request.trigger.commandType.length > 0
+                        && request.trigger.commandType.length <= 120
+                        && typeof request.trigger.playerId === 'string'
+                        && request.trigger.playerId === info?.playerID
+                        && Number.isInteger(request.trigger.stateIdBefore)
+                        && (request.trigger.randomCursorBefore === undefined || Number.isInteger(request.trigger.randomCursorBefore))
+                        && (request.trigger.requestId === undefined || (typeof request.trigger.requestId === 'string' && request.trigger.requestId.length <= 160))
+                    ));
+                const validAttach = request?.phase === 'attach'
+                    && typeof request.feedbackId === 'string'
+                    && /^[a-f\d]{24}$/i.test(request.feedbackId)
+                    && typeof request.captureId === 'string'
+                    && /^[a-f\d-]{36}$/i.test(request.captureId);
+                if (!info || info.matchID !== matchID || !info.playerID || (!validPrepare && !validAttach)
                     || !await hooks.validateCommandAuth(matchID, info.playerID, info.credentials ?? credentials)) {
                     acknowledge?.({ accepted: false });
                     return;

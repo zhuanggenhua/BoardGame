@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "title": "升级牌与法术牌覆盖对照",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceStatus": "not-claimed",
+  "productAcceptance": "not-claimed",
+  "media": [
+    {
+      "path": "01-旧升级牌覆盖参考.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\zhizhuxia-v2-final-user-view-20260920-png\\录入-04-蜘蛛侠重拳二级升级后.png",
+      "sha256": "ed6f59f0e2a63ff0f96df2979e9667f9618885cb578ee9d4680159940b646f7c",
+      "description": "蜘蛛侠升级牌覆盖技能槽的真实参考画面。",
+      "chainId": "覆盖参照",
+      "chainStep": "1",
+      "stage": "来源核查",
+      "sourceRun": "doctor-prepared-overlay-20261103",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\comparison"
+    },
+    {
+      "path": "02-奇异博士单张法术覆盖.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-capture-20261103\\桌面单张.png",
+      "sha256": "7b60453963f5c6a68b71fb3200eab7b89da7382d911e2b265159581694fc0e75",
+      "description": "当前奇异博士单张法术覆盖维山帝之书技能槽。",
+      "chainId": "覆盖参照",
+      "chainStep": "2",
+      "stage": "来源核查",
+      "sourceRun": "doctor-prepared-overlay-20261103",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-overlay-20261103\\comparison"
+    }
+  ]
+}

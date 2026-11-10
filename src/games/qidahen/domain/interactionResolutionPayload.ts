@@ -1,5 +1,5 @@
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
-import type { QidahenCore } from './types';
+import type { QidahenBattleRolls, QidahenCore, QidahenPendingTargetAction } from './types';
 import {
     type QidahenInteractionSourceId,
     isQidahenInteractionSourceId,
@@ -18,6 +18,7 @@ export type QidahenInteractionResolutionContext = {
     payload: QidahenResolvedPayload;
     event: GameEvent;
     random: RandomFn;
+    onBattleRolled?: (pending: QidahenPendingTargetAction, rolls: QidahenBattleRolls) => void;
 };
 
 export const readQidahenResolvedPayload = (event: GameEvent): QidahenResolvedPayload => {

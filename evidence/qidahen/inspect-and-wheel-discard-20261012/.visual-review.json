@@ -1,0 +1,84 @@
+{
+  "verdict": "PASS",
+  "score": 95,
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "image_acceptance_audit",
+    "subagentId": "01a12e08-6520-77c3-b574-c5fd2aec31d6",
+    "parentConfirm": "父代理已读取三张压缩预览并与子代理结论一致"
+  },
+  "target_requirements": [
+    {
+      "requirement": "悬浮地图地点时，地点功能/详情 tip 可见，不是空悬浮",
+      "status": "PASS",
+      "evidence": "前态在皮岛位置有深色地点 tip：标题「皮岛 · 大明」，含兵力/人口、特殊部队、接边、可达信息，以及「点击查看地点详情」。不是空悬浮。"
+    },
+    {
+      "requirement": "玩家面板军备不再截断显示科技树；悬浮窗可点开详情弹窗，弹窗含完整军备和弃牌堆",
+      "status": "PASS",
+      "evidence": "前态三家顶栏第二行是「军备详情」入口，未见「火炮技术」等截断科技名；大明条左侧悬浮「势力详情 / 大明 / 点击查看军备与弃牌堆」。中态打开「势力详情」弹窗，军备列出火炮技术至汉军八旗完整等级，底部有弃牌堆牌背与「7张」。"
+    },
+    {
+      "requirement": "点击详情不切换地图视角/镜头",
+      "status": "PASS",
+      "evidence": "中态是居中半透明遮罩上的详情弹窗，不是地图特写。轮盘、山海关、宁远、皮岛、底栏手牌、朝鲜牌库位置与前态同一全图机位，镜头未拉近或平移。"
+    },
+    {
+      "requirement": "点击轮盘走3进攻调度后，出现可见弃牌提示（需弃1张、确认弃牌），在选择部队之前",
+      "status": "PASS",
+      "evidence": "后态轮盘「时」落在进攻调度；顶栏「选择弃置的手牌」；中部红条「进攻调度 · 弃牌」「需弃 1 张 · 已选 0 张」「点击底部手牌弃 1 张，确认后才能选择进攻目标。」及「确认弃牌」。未见选部队/进攻目标主操作条。"
+    }
+  ],
+  "media": [
+    {
+      "path": "media/前态-地图地点与军备悬浮提示可见.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "全图棋盘上，顶栏大明旁有势力详情悬浮，提示可查看军备与弃牌堆；皮岛上有地点详情浮层，含兵力、特殊部队、接边和点击查看地点详情，玩家面板是军备入口而不是截断科技树。"
+    },
+    {
+      "path": "media/中态-详情弹窗显示军备与弃牌堆.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "同一全图机位上叠着大明势力详情弹窗，含完整军备等级列表、人物空态、弃牌堆牌背与张数，右上有关闭按钮，不是切镜头后的地点特写。"
+    },
+    {
+      "path": "media/后态-轮盘进攻调度弃牌提示可用.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "进攻调度已点出后，主操作是弃牌：顶栏写选择弃置的手牌，中部写需弃一张、已选零张和确认弃牌，底栏三张手牌可点，还没有进入部队选择。"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    {
+      "slot": "地图地点 tip",
+      "status": "PASS",
+      "note": "皮岛 tip 有标题、兵力人口、特殊部队、接边和点击查看地点详情，没有盖住主操作按钮。"
+    },
+    {
+      "slot": "玩家军备入口",
+      "status": "PASS",
+      "note": "顶栏为「军备详情」入口，截断科技名未出现；完整军备只在中态弹窗。"
+    },
+    {
+      "slot": "详情弹窗",
+      "status": "PASS",
+      "note": "前态与中态同一全图机位，详情是 overlay，不是镜头特写。"
+    },
+    {
+      "slot": "轮盘弃牌提示",
+      "status": "PASS",
+      "note": "后态同时可见需弃1张、已选0张、确认弃牌；部队选择尚未出现。"
+    },
+    {
+      "slot": "手牌与牌堆",
+      "status": "PASS",
+      "note": "底部手牌、抽牌堆和弃牌堆始终可见，弹窗没有把它们做成不可恢复。"
+    }
+  ],
+  "issues": []
+}

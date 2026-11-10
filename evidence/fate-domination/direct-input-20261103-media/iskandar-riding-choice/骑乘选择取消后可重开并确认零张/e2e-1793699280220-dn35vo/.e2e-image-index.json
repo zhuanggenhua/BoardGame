@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1793699280220-dn35vo/骑乘选择打开.png.jpg",
+      "chainId": "iskandar-riding-zero-cancel",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家在正式手牌上开启并操作骑乘选择",
+      "description": "行动阶段手牌进入骑乘选牌模式",
+      "uiStateId": "riding-open",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "行动阶段激活骑乘后，手牌切换为专用多选模式",
+      "behaviorStepId": "open-choice",
+      "sourceRevision": "8134eb0f637b9512d8194a09d538378209a56c39+tree-sha256:2c36696580bb0a73973ee548ed2239d2ae4c02b1e89866c63850519847ceedc3",
+      "requirements": [
+        "骑乘确认零张"
+      ],
+      "sourceRun": "1793699336810-469692-2d1baf37-646f-4c58-9ec6-f49c1910a4ed",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/iskandar-riding-choice.e2e/骑乘选择取消后可重开并确认零张/_runs/e2e-1793699280220-dn35vo"
+    }
+  ]
+}

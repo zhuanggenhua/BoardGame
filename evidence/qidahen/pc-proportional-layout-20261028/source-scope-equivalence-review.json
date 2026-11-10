@@ -1,0 +1,161 @@
+{
+  "status": "PASS",
+  "scope": "仅允许本次冻结运行的非教程basic-opening代表态三条流程与十张原图，在所列当前差异下沿用。不是整仓同版、不是当前教程战术节点验收。",
+  "capturedRevision": "f777f62a04ffc57716e3ff46546b8c1e906b561e0aea7e0f94a27df61cb1835c",
+  "sourceRun": "e2e-1793172488996-3m8alv",
+  "snapshotRoot": "D:/gongzuo/webgame/BoardGame/temp/qidahen-acceptance-snapshot-20261028",
+  "comparisonDomain": "snapshot-source-identity.json中全部已登记文件，外加本轮已执行测试的永久替代文件；不冒充仓库所有未登记/未跟踪文件盘点。",
+  "changedFiles": [
+    {
+      "path": "src/components/home/creator-center.css",
+      "captured": "6b7e0fd40699d337ce5caf3b228e8b0bf0a2aec84e82a71ae034c6bdb8921aa0",
+      "current": "8cfec3417604e7fb936f3bff92d18484039748129b292e56bf17d567f72d2671",
+      "reason": "差异仅为.creator-claim-form移动布局规则；七大恨/play入口没有创作者中心DOM，不匹配这些选择器。"
+    },
+    {
+      "path": "src/games/dicethrone/Board.tsx",
+      "captured": "74854a9cdd500341a34956efc82209ceec266c0f99552babd97d01de10104b98",
+      "current": "58c0ccca15de965e2ab648d161b608aa87ae7eed3f808c8cec8a640d6c3671ad",
+      "reason": "骰铸王权专属模块，通过manifest.client.generated.tsx的对应游戏延迟入口加载；本次qidahen运行不消费。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "captured": "5fdf3460469fa0405149a39e2de81072ff8690a9a9bba30afbec7ea55b93f6b0",
+      "current": "e681b3ad60c61a91c0e67ce3d8134b826e59b0a62f463c5ce1c7f268c6e74d85",
+      "reason": "骰铸王权专属UI模块，不在七大恨组件树中。"
+    },
+    {
+      "path": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "captured": "e6169393d8c56f4d45461f746340c4b09d54774e37930e645aeb431ce47b9950",
+      "current": "4e567a0481d38aec81abfb8519d31a680a131994a8ae1519784824d595e5ec39",
+      "reason": "本次独立复核额外发现的骰铸王权UI漂移；对应游戏模块延迟加载，不在七大恨组件树中。"
+    },
+    {
+      "path": "src/games/qidahen/tutorial.ts",
+      "captured": "31f32200d45350e529120d57fbca4cf3a0baa615db3422ad49cbb37a67aca0ee",
+      "current": "a9a6e49cbbf2017dfae04b079ae4563ac1c815754c1789d80026962139437ab9",
+      "reason": "只有basic-opening的play-tactic步骤新增avoidOverlapSelectors；本次test模式isActive=false/currentStep=null，该字段不被教程提示布局消费。"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-closeout.e2e.ts",
+      "captured": "f41254fee7bb2a9c970891c092518f11115be261ac612a6679e1b94478f35e55",
+      "current": "e70586cc178ec15933a9c20c1c4fcee9f69f0b0a00771f73bfcb08a9b73894d0",
+      "reason": "另一个教程收口测试文件；本次命令显式只执行mobile-population-layout.tmp.e2e.ts，不执行或导入该文件。"
+    },
+    {
+      "path": "e2e/qidahen/mobile-population-layout.tmp.e2e.ts",
+      "captured": "4cfd495195e100cc74bf32b21a3f74636df11521a5f2abfcc83cc20e9b70bceb",
+      "current": null,
+      "reason": "已执行旧测试从当前工作区移除并整理为pc-proportional-layout.e2e.ts；受测副本仍在冻结快照中，永久测试编译输出等价另列。"
+    },
+    {
+      "path": "src/engine/systems/TutorialSystem.ts",
+      "captured": "b2c96b2e9e2f0291e0bb5937dd775b4930ca25cee09346d34edcab78f35eff7d",
+      "current": "5661a2bb2d077793ce4c23537008221161416a2e7b1a6e7b0747e73be058fadc",
+      "reason": "运行结束后仅删除不存在的TutorialStep类型导入，并将commandBelongsToStep形参类型替换为TutorialManifest[steps][number]。精确还原受测哈希后独立验证TypeScript转译JavaScript严格相等；不是相对HEAD的全部历史逻辑差异。"
+    }
+  ],
+  "additionalCurrentFiles": [
+    {
+      "path": "e2e/qidahen/pc-proportional-layout.e2e.ts",
+      "current": "4178e227c9a47d2445cd2a6a410f703a2ba1552d9bfaeb49a288e121014412db",
+      "role": "替代已执行临时测试的永久回归文件；源码有类型标注变化，不能宣称源码逐字节相同。"
+    }
+  ],
+  "lockedDirectlyTestedFiles": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "captured": "58f7cefc1ed85ff4fc290fa752eadf09cc23f557b7934035542cc28d564c4f10",
+      "current": "58f7cefc1ed85ff4fc290fa752eadf09cc23f557b7934035542cc28d564c4f10"
+    },
+    {
+      "path": "src/games/qidahen/QidahenBoardShell.tsx",
+      "captured": "651d8675033f2f8b4414265a97b1dcc2dd427988e6901d17b1b520bbdf58a5ee",
+      "current": "651d8675033f2f8b4414265a97b1dcc2dd427988e6901d17b1b520bbdf58a5ee"
+    },
+    {
+      "path": "src/games/qidahen/qidahen-board.css",
+      "captured": "99bb115914340cec7aa8bf9d8637cbd050f46d91b9765f83acc68fd12d5e2fc1",
+      "current": "99bb115914340cec7aa8bf9d8637cbd050f46d91b9765f83acc68fd12d5e2fc1"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "captured": "929540561c5f9b14e6fbe070b26d3d41f94b3e2b320e5ee2366cfa730f9a9f0a",
+      "current": "929540561c5f9b14e6fbe070b26d3d41f94b3e2b320e5ee2366cfa730f9a9f0a"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx",
+      "captured": "b563738c799cf9db56b0b747ba9e4881ce6628d47889a5eedff0d78e6f89d1ce",
+      "current": "b563738c799cf9db56b0b747ba9e4881ce6628d47889a5eedff0d78e6f89d1ce"
+    },
+    {
+      "path": "src/games/qidahen/ui/populationLayout.ts",
+      "captured": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82",
+      "current": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82"
+    },
+    {
+      "path": "src/games/qidahen/data/runtime-region-graph.json",
+      "captured": "0f994d60cf192c7771aa88fe74d9c67c0b9c6fc341e50bdd1424545cd252cb45",
+      "current": "0f994d60cf192c7771aa88fe74d9c67c0b9c6fc341e50bdd1424545cd252cb45"
+    }
+  ],
+  "tutorialDelta": {
+    "path": "src/games/qidahen/tutorial.ts",
+    "before": "31f32200d45350e529120d57fbca4cf3a0baa615db3422ad49cbb37a67aca0ee",
+    "after": "a9a6e49cbbf2017dfae04b079ae4563ac1c815754c1789d80026962139437ab9",
+    "testedBytes": "evidence/qidahen/pc-proportional-layout-20261028/sources/tutorial-tested.ts",
+    "mechanicalCheck": "当前文件删除唯一新增avoidOverlapSelectors完整原始行后，所有字节与testedBytes及快照record哈希严格一致；未归一换行。",
+    "change": "basic-opening/play-tactic新增战术确认面板和手牌区的提示避让选择器；未改变命令、步骤推进或规则字段。",
+    "inactiveBranchesEvidence": [
+      "TestMatchRoom.tsx:168将tutorialSetup参数作为runtimeAdapter.resolveLocalSetup的初始化参数；该参数不将GameMode改为tutorial。",
+      "TestMatchRoom.tsx:343在实际棋盘外使用GameModeProvider mode=\"test\"。",
+      "TutorialContext.tsx:30-32仅向无GameMode或mode=\"tutorial\"消费者暴露教程；:561-582在test模式返回currentStep:null/isActive:false。",
+      "TutorialOverlay.tsx:200在!isActive或!currentStep时不执行提示定位；:238的avoidOverlapSelectors只来自当前步骤。",
+      "TestMatchRoom没有挂载TutorialOverlay或useMatchRoomTutorialLifecycle；教程提示层由useMatchRoomTutorialLifecycle.tsx:669-690仅在isTutorialLessonRoute且isActive时注册。本次/play测试入口不进入该教程课程路由。",
+      "本组三项测试均调用disableTutorial，但该helper仅写tutorial_skip；本结论依赖实际GameMode隔离消费链，不单凭localStorage名称推断。"
+    ]
+  },
+  "testEmissionEquivalence": {
+    "evidence": "evidence/qidahen/pc-proportional-layout-20261028/test-emission-equivalence.json",
+    "reportedEmittedJavaScriptIdentical": true,
+    "reportedSha256": "77cef7c1c6cd02c40a9c1d174f2e456d4ba98d7a4322cd9a8e1c256b45c6e156",
+    "independentCheck": "本审查另用当前本地TypeScript.transpileModule以ESNext/ES2022/ReactJSX且不输出sourceMap编译永久文件和冻结已执行文件，两份输出严格相等；不执行浏览器或测试。",
+    "limit": "等价证明永久测试的运行代码与已执行测试一致，不证明另一个qidahen-closeout测试已执行。"
+  },
+  "verification": {
+    "e2e": "e2e-run.log:3 passed (46.2s)",
+    "vitest": "vitest-results.json:11/11 passed,0 failed",
+    "directFileHashes": "geometry.json、map-reachability.json与当前七个直接源码文件全部一致",
+    "productionFilesModifiedByReviewer": false
+  },
+  "notCovered": [
+    "新增play-tactic教程提示避让的真实运行、教程完整链路及图面。",
+    "其它游戏和创作者中心的新增行为正确性；本报告仅判断它们与本次qidahen运行的隔离关系。",
+    "实体手机触感、8牌手指横滑；8牌首末tap已覆盖，横向滚动范围是scrollLeft设置验证。",
+    "Pixi触摸分支、完整联机、全部卡牌规则、全部战斗表现和自然抽到八牌的流程。",
+    "后续任何超出所列当前哈希的新漂移；本PASS不自动延伸。"
+  ],
+  "evidenceUseBoundary": "旧全文件同源表述必须收窄：只有七个直接受测源码字节一致；tutorial.ts是单行非激活分支的有限状态等价，不能标为整个文件同版。",
+  "postRunTutorialSystemTypeErasure": {
+    "status": "PASS",
+    "path": "src/engine/systems/TutorialSystem.ts",
+    "before": "b2c96b2e9e2f0291e0bb5937dd775b4930ca25cee09346d34edcab78f35eff7d",
+    "after": "5661a2bb2d077793ce4c23537008221161416a2e7b1a6e7b0747e73be058fadc",
+    "originalTestedIdentity": "snapshot-source-identity.json.files[src/engine/systems/TutorialSystem.ts]",
+    "restoration": "不归一原始换行；仅在TutorialStepSnapshot前恢复CRLF的TutorialStep类型导入，并将唯一commandBelongsToStep形参类型改回TutorialStep | undefined。重建字节SHA严格等于原受测record。未将当前已刷新的snapshot文件当作旧版。",
+    "delta": "仅类型导入与参数类型替换；没有增加/删除运行时表达式、分支、命令或状态写入。",
+    "emittedJavaScriptIdentical": true,
+    "emittedJavaScriptSha256": "098afbf6b21cf76ef1ae9e84bf9150a77b40fb1dfe5ea7be0ff0d6f04cdc9bec",
+    "emissionCompiler": "当前仓库本地TypeScript 5.9.3 transpileModule",
+    "emissionOptions": {
+      "module": "ESNext",
+      "target": "ES2022",
+      "jsx": "ReactJSX",
+      "sourceMap": false,
+      "fileName": "TutorialSystem.ts"
+    },
+    "scope": "类型擦除后运行代码等价，允许本次已执行三条流程和十图继续沿用。当前TypeScript源码字节与受测版不同，不能宣称整个文件字节同版。",
+    "notCovered": "不追加验收更早的教程系统逻辑、完整教程链或新教程提示；不把编译输出等价称为重新运行了浏览器或全仓typecheck。",
+    "productionSourceModifiedByReviewer": false
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "title": "看图侧栏临时交互检查",
+  "items": [
+    {
+      "label": "开局状态甲",
+      "description": "搜索描述标记甲",
+      "path": "01-开局甲.jpg"
+    },
+    {
+      "label": "中间状态乙",
+      "description": "筛选描述标记乙",
+      "path": "02-中间乙.jpg"
+    },
+    {
+      "label": "收尾状态丙",
+      "description": "记录描述标记丙",
+      "path": "03-收尾丙.jpg"
+    }
+  ]
+}

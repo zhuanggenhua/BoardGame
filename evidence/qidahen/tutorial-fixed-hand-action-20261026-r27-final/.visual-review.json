@@ -1,0 +1,484 @@
+{
+  "runId": "20261026-r27-fixed-hand-action-final",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/visual_r27_opening"
+  },
+  "reviewedAt": "2026-10-26T10:02:09+08:00",
+  "summary": {
+    "total": 31,
+    "pass": 31,
+    "revise": 0,
+    "failedPaths": []
+  },
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/00-唯一入门入口-直接进入胜利条件.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜利条件提示居中，文字和下一步按钮完整，主要棋盘与操作入口仍可见。",
+      "sha256": "81d70b31347c1d7f2f8cf799abe9b7d401d34e00c9582e08b8cac858eeb0ca6f",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/00-唯一入门入口-直接进入胜利条件.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/0"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/02-固定先完成手牌行动.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "文案明确本回合两项都要完成、当前先点击右侧“征召军队”；该按钮高亮，轮盘和征召按钮未被提示遮挡，没有二选一视觉暗示。",
+      "sha256": "c37a0a313cd86607cf7ad9e7e40aec9d504a5f68d1b3b000085a0a6db074d2ef",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/02-固定先完成手牌行动.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/1"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03-轮盘选择-三种走法均可选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘完整蓝框聚焦，提示说明三种走法及效果；轮盘区域和关键文字没有被遮挡。",
+      "sha256": "34f794790cb494039cf498fd88d0b0f56b89e9bea9130cd7303ab093c94bce57",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03-轮盘选择-三种走法均可选择.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/2"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03-轮盘走法悬停-显示费用与效果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "悬停说明显示在轮盘右侧，教学提示位于其下方，两块信息没有互相遮挡，文字可读。",
+      "sha256": "a3ce103e2e11a732b6dacdc18336e5cb6059a69ba52a4c2f1eee350b2501ee11",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03-轮盘走法悬停-显示费用与效果.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/3"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03a-轮盘两格-选择对手抽牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手选择框在轮盘附近，两个对手选项完整可见，提示文字清楚，未见裁切。",
+      "sha256": "a77c8ef40408a8c1a2f315d61b62aa3626e68ae9dfc663faf36a68169928a462",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03a-轮盘两格-选择对手抽牌.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/4"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03b-轮盘两格-进入军屯并结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算提示位于右上，行动摘要与轮盘仍可辨认，牌面和交互区域没有被裁切。",
+      "sha256": "7a6d4a8c2d18169fa62b82f5ac558d52c82127149190816e630049ddc5239da3",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03b-轮盘两格-进入军屯并结算.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/5"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌操作条居中偏下，确认按钮和下方手牌可见，提示没有遮住当前交互。",
+      "sha256": "6dd83e84f90aa3289595d69583d43972be7bd6a2d00b381ba9dcabd110c65935",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/6"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03c-轮盘一格-进入开垦并结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "落点说明、右侧行动摘要和结算提示均可见，轮盘目标没有被遮挡。",
+      "sha256": "58862ca8e2812e6ccee411ad5ecf0df9bdc356a51142fca1425cdd91b9a9812e",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03c-轮盘一格-进入开垦并结算.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/7"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图目标高亮，底部卡牌列和轮盘可见；没有教程遮罩或残留气泡，未见界面报错。",
+      "sha256": "081bae41b00dfe931fbfd52eaaf1a586fb4bcd7700ab587884507e8988b8de98",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/8"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03e-征兵训练选择行动前规则译文.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "规则文字与右侧操作选项完整显示，提示框和操作区分离，文本没有明显截断。",
+      "sha256": "cdd92e065887a9fd4fcaa496dd9339ffee098a2df01deac4c4816e4b1fdcb137",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03e-征兵训练选择行动前规则译文.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/9"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03f-训练目标选择与等级提示.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "训练候选列表、等级信息和教学提示均清晰；候选列表底部没有被视口裁切。",
+      "sha256": "6551f31affff16b75ca7a4d16a985dde0d541ba623b0e54fe06c5d6a57e7da12",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03f-训练目标选择与等级提示.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/10"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03g-征兵训练结算结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征兵训练面板和提示完整，操作选项及结束行动按钮可见，没有遮挡关键按钮。",
+      "sha256": "35acec528d3abca2afde9fe7c8ea90d20bdd4706efeacd552e174d65bc9d294b",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03g-征兵训练结算结果.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/11"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03h-征兵目标本土限制与候选区域.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图说明框位于候选区左侧，右侧区域列表完整可见，候选项没有被提示遮挡。",
+      "sha256": "6520a104698ee8536adac0751ca227167e400b5a5322e8101c28a4a4c6aa86de",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03h-征兵目标本土限制与候选区域.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/12"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03i-额外训练规则与弃牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "额外训练提示和弃牌操作条可见，下方可选手牌仍在画面内，主要控件未被遮住。",
+      "sha256": "ddc360c816998c11bc37d91592d576a7c030c26fd5e431c18b26415bf98e1582",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03i-额外训练规则与弃牌.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/13"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03j-额外训练目标与结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧训练候选列表和提示均可读，列表底部选项仍在屏幕范围内。",
+      "sha256": "2fb3347d120938301fad85e1d57560fdfc636b964d4d3e33aa84bace314503b6",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03j-额外训练目标与结果.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/14"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03k-征兵训练结果与轮盘结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "行动摘要提示、轮盘高亮和地图结果都可见，提示框没有挡住目标区域。",
+      "sha256": "cf30a68112e2395f0470620ac8a1ff650458cce2690e2f5d7a74ffb13c9173b4",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03k-征兵训练结果与轮盘结算.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/15"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/03l-教程退场后同局继续.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教学结束后无教程遮罩或气泡残留，轮盘、地图和后续操作区可见。",
+      "sha256": "895f760ee4467b490a5fad1a5130dc233504561f528d921cb92e90ea65ea386f",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/03l-教程退场后同局继续.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/16"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/07-支付1张手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌区域被高亮，支付进度及确认和取消按钮清楚可见，提示没有遮住选牌目标。",
+      "sha256": "9cc9dd320971b01c5d4851a54a890385204270408e326161d562f5a64943e4e2",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/07-支付1张手牌.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/17"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/07a-确认弃置手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选卡牌标记清楚，确认执行按钮高亮，提示框未遮挡操作条。",
+      "sha256": "f29b664559c46e52a54749995a909866d24b40cdbb4f6d4cfa9c24a34842fa40",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/07a-确认弃置手牌.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/18"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/07a-征召支付-点击看查看牌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌检视框居中，牌面文字和关闭按钮完整可见；支付操作与教学提示在背景中仍可辨认。",
+      "sha256": "52066ef4c6023c95239e82dd6c09269f1a241766d37ae0b05f6d160fb6197c43",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/07a-征召支付-点击看查看牌面.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/19"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/08-选择宣府建军位置.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "地图放大后目标区域高亮且名称标记清晰，提示在目标旁边，没有遮挡候选位置。",
+      "sha256": "776bd3f2c91420796e9452f325913b9e6e6913e93a3357336edae776ddc097c3",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/08-选择宣府建军位置.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/20"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/09-选择建军方式.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "建军方式候选项完整排列在右侧，提示位于选项左侧，所有可见按钮均未被遮住。",
+      "sha256": "c4e5a8fcf9576350c920c00621a84357953bc0d94b93d4ad8a9d640e8b6c53df",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/09-选择建军方式.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/21"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/09a-选择川兵后的实际结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结果提示与右侧说明框清晰可见，下一步按钮突出；遮罩后地图仍可辨认。",
+      "sha256": "77522d79d3e3af587f6b95e42407ae0e4bb9ab07711188e6c64d2afe33bc2616",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/09a-选择川兵后的实际结果.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/22"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/09b-选择炮兵后的实际结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结果提示和右侧说明框完整显示，下一步按钮可见，未见裁切或错误提示。",
+      "sha256": "1d1d8f9847a18353710d121c9f163a224e5109a31d75947711b509c4ec02f298",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/09b-选择炮兵后的实际结果.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/23"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/10-征召结果-轮盘行动待完成.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召结果提示和轮盘行动摘要可见，继续按钮及轮盘目标没有被遮挡。",
+      "sha256": "8f0eb9e2a9176ca83e0616c9c9b31cc72bad92cf81bdbaa5c6f02a715b72b897",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/10-征召结果-轮盘行动待完成.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/24"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/11-教程结束后同局下一位玩家可操作.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "后续玩家的手牌与操作条完整显示，没有教程提示或遮罩残留，交互区域可见。",
+      "sha256": "b9f7b0f611160b703151ad81a72b25260df4ddec41b3ebdc0154facc6f3970d6",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/11-教程结束后同局下一位玩家可操作.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/25"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-00-开场-胜利条件说明.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏提示框文字和下一步按钮可读，顶部玩家信息、右侧行动按钮与底部手牌都在视口内。",
+      "sha256": "b45982affb3a7deec3f6048d5106a59f923790003729acebf065d055acc6294e",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/移动-00-开场-胜利条件说明.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/26"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-01-固定先完成手牌行动.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示明确先完成手牌行动并点击征召军队，右侧目标按钮高亮；轮盘和征召按钮可见，没有二选一歧义。",
+      "sha256": "fb550588019f05d33cec77aaded26a6783d55072624c61ea5d7b0042ddf24bd6",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/移动-01-固定先完成手牌行动.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/27"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-03-征召支付-长按手牌打开检视.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "横屏长按检视框几乎占满高度但留有边距，卡面与关闭按钮可见；支付提示和手牌交互背景没有明显裁切。",
+      "sha256": "6f516d8eba440af3941cb99021f2afe2e2de27595402a2ba3a8215467f649573",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/移动-03-征召支付-长按手牌打开检视.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/28"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-04-关闭检视-回到征召支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "关闭检视后支付界面、手牌和确认控件恢复可见，教学提示完整，没有残留模态框。",
+      "sha256": "987f49ebd90dfd0b59f8ca45741788d0dd79112e3ab5e01b08166c81543a6e70",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/移动-04-关闭检视-回到征召支付.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/29"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27-final/media/移动-05-选牌后确认征召支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选标记和高亮确认按钮清楚可见，提示位于顶部，不遮挡关键手牌或操作。",
+      "sha256": "acce68240cd0ed18b98af9f5401ea200b2c6376e8be677220d14bbe7991e6951",
+      "source": "evidence/qidahen/tutorial-fixed-hand-action-20261026-r27/media/移动-05-选牌后确认征召支付.png",
+      "independentReviewFile": "../.visual-review-20261026-r27-opening.json",
+      "sourceReviewEntry": "/images/30"
+    }
+  ]
+}

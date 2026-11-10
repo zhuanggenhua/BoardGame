@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "reviewer": {
+    "id": "/root/final_code_small",
+    "identitySource": "本次独立子代理 NEW_TASK 的 canonical task name",
+    "independence": "独立只读源码审查，未实现或修复代码"
+  },
+  "reviewedAtUtc": "2026-11-02T16:58:37.5106348Z",
+  "target": "七大恨PC教程R163：仅复核兵牌阅读取景与墙体文字避让两个最新增量",
+  "conclusion": "通过（仅限定源码审查）",
+  "sourceHashes": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "24df298dd0947be035532540c244bceca7685477237b9850a76fd2a9336aeb06"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenFortificationHighlight.tsx",
+      "sha256": "bee33962bec713b33b5b98a4e01d6f848a4e42a35f5194541a23fb7362824534"
+    },
+    {
+      "path": "src/games/qidahen/ui/fortificationGeometry.ts",
+      "sha256": "9c077d7fdc4e2f363a14c56f60858e2300c6e4405fef0e851f72d602aa586405"
+    },
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "6d6e79a47074daf08039161fd223a668f6956fef9b5478b59a3d789107c3b449"
+    }
+  ],
+  "findings": [],
+  "checks": [
+    {
+      "name": "tutorial-token-focus-source",
+      "result": "Board.tsx:6651由真实tooltipAnchorTarget解析兵牌ID；annualTutorial.ts:134/136/138三步均同时提供city-region-7地区focus，实际路径不会被无focusKey前置返回挡住。"
+    },
+    {
+      "name": "token-reading-bounds",
+      "result": "Board.tsx:1642-1650从MapSceneLayer当前core.mapTokens查目标并合并同地区真实token范围；Board向该层传displayCore，因此当前显示对象与取景源一致。该集合至少含目标本身，未发现空集合Infinity问题。"
+    },
+    {
+      "name": "region-candidate-union",
+      "result": "Board.tsx:1632-1655地区模式保留地区mask边界，并入正式候选token范围；tutorialRegionFocus存在时通过展开后的runtime region ID限制对象，不引入其它地区候选。"
+    },
+    {
+      "name": "focus-effect-lifecycle",
+      "result": "兵牌ID及core.mapTokens均纳入mapFocusBounds memo依赖，父取景effect依赖tooltip兵牌ID与子层结果；现有ResizeObserver、MutationObserver、resize监听、待执行rAF有成对清理。限定增量未发现新的父子状态循环。"
+    },
+    {
+      "name": "wall-text-coordinate-space",
+      "result": "QidahenFortificationHighlight.tsx使用实际文字及同地图兵牌/人口getBoundingClientRect，候选地图坐标差通过getScreenCTM的a/b/c/d转为屏幕差值，同屏幕障碍及窗口边界比较；未发现混用坐标系。"
+    },
+    {
+      "name": "wall-position-lifecycle",
+      "result": "position绑定维护id，id变化先用该墙labelAnchor，避免另一墙的旧坐标直接套用；每次layout effect选择候选，状态回写在同id同坐标时返回current，未发现确定性无限更新。"
+    },
+    {
+      "name": "mask-and-input",
+      "result": "useId生成独立mask，userSpaceOnUse黑色费用圆只作用于polyline，文字不在mask内；整个SVG承载层pointer-events-none。本增量未更改正式输入处理或费用规则。"
+    }
+  ],
+  "limits": [
+    "未读图、未启动浏览器、未跑测试；不裁定实际文字或兵牌在R163画面的可读性与无遮挡。",
+    "主代理所述74操作、6生命周期PASS、725 consumed证据及源码一致性未由本代理独立执行或核验。",
+    "文字候选不可用时保留当前/默认坐标；源码不能证明每个实际视口一定存在候选位置。当前无直接失败入口，不列为缺陷。",
+    "不覆盖其它模块、无关脏工作区、规则全审或生产状态。"
+  ],
+  "verificationCommands": [
+    "Get-Content 与 rg：限定源码、直接使用点及教程三个兵牌锚点",
+    "Get-FileHash -Algorithm SHA256：报告四个源码文件"
+  ],
+  "filesModifiedByReviewer": [
+    ".tmp/qidahen-final-code-review-r163.json"
+  ],
+  "remainingRisk": "限定源码范围无已知确定缺陷；视觉与真实入口验收由主代理独立承担。"
+}

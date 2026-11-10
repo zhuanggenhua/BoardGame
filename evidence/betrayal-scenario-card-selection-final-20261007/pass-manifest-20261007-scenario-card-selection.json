@@ -1,0 +1,54 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-07T09:00:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "候选剧本弹窗移除冗余说明文案，PC 与手机同一入口默认显示至少两张完整候选卡，并保留滚动。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/scenario-card-selection.e2e.ts: 1 passed",
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts: 6 passed",
+        "候选列表 fullyVisibleCount >= 2",
+        "旧说明文案负向断言通过"
+      ]
+    },
+    {
+      "requirement": "底部三个操作按钮在 PC 与手机同排、可见并可点击。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts: 6 passed",
+        "PC 与 936x432 手机 CSS 视口截图已复核"
+      ]
+    },
+    {
+      "requirement": "不可运行剧本保持禁用并显示当前不可开始提示。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/scenario-card-selection.e2e.ts: disabled confirmation assertion passed",
+        "03-PC-不可运行剧本被阻止.jpg"
+      ]
+    },
+    {
+      "requirement": "选择可运行的木乃伊横行后进入开场过场，点击继续后进入牌桌。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/scenario-card-selection.e2e.ts: opening stage and board assertions passed",
+        "04-PC-确认可运行剧本进入牌桌.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-card-selection-final-20261007\\01-PC-候选弹窗三按钮同排.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-card-selection-final-20261007\\02-手机-候选弹窗三按钮同排.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-card-selection-final-20261007\\03-PC-不可运行剧本被阻止.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-card-selection-final-20261007\\04-PC-确认可运行剧本进入牌桌.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

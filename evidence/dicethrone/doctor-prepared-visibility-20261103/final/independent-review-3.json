@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/visibility_mobile",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏单张-法术显示.png",
+      "sha256": "8fce59d26e188f667860a2f5e01d242854c901bad81c1bce61be6385d7962d53",
+      "status": "PASS",
+      "observation": "单张法术显示，斜杠眼睛可辨，准备和施放正文未被遮挡，邻槽正常。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏单张-露出被动.png",
+      "sha256": "866f73d0cbbed4d0d1870c2a6d6041d4b6ad697e7ec56e2a042cdf6565ecfbfd",
+      "status": "PASS",
+      "observation": "单张法术隐藏，被动正文末行完整露出，眼睛按钮可辨，邻槽正常。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏单张-恢复法术.png",
+      "sha256": "8fce59d26e188f667860a2f5e01d242854c901bad81c1bce61be6385d7962d53",
+      "status": "PASS",
+      "observation": "单张法术恢复，卡面及准备和施放正文可见，按钮可辨。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏多张-法术显示.png",
+      "sha256": "002b6ba371189ab598768f4b686612e73f9f76a540c7a9bf87161b588eb1b908",
+      "status": "PASS",
+      "observation": "多张法术显示，眼睛、计数和翻牌箭头可辨，准备和施放正文未被遮挡。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏多张-露出被动.png",
+      "sha256": "5d52bd70c8cc502241a33cc6bdb23a4059901931acecb394ee977fe9104ec0ce",
+      "status": "PASS",
+      "observation": "多张法术隐藏，被动正文末行完整露出，眼睛按钮可辨，邻槽正常。",
+      "hardFailures": []
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\横屏多张-恢复法术.png",
+      "sha256": "ea25288fc91fafe60ddbd85c3c04fd10311ec1bffb8b433b8eb9bed7ef7f1db3",
+      "status": "PASS",
+      "observation": "多张法术恢复，卡面、正文、计数和翻牌箭头可见。",
+      "hardFailures": []
+    }
+  ]
+}

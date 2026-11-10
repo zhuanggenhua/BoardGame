@@ -1,0 +1,44 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-08T10:46:57Z",
+  "correctedAt": "2026-10-08",
+  "correction": "用户按整屏实图否定了旧 PASS：手机能力入口只露出‘特性：无…’，属性名与轨道错位；旧 E2E 的可点击和局部零重叠不足以证明可读性与整局 UI 合格。以下原记录只保留为失败基线。",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "在 796×360 CSS px、DPR 3 手机视口中，能力摘要不遮挡物品栏；点击后完整说明可读，PC 端完整能力显示保持正常。",
+      "status": "REVISE",
+      "evidence": [
+        "定向 Playwright E2E：1 passed，覆盖 1920×1080 PC 与 796×360 CSS px、DPR 3 手机视口。",
+        "手机能力入口与物品卡重叠面积为 0，物品卡中心命中仍落在物品卡。",
+        "手机完整能力正文计算字号为 16px；原图可见正文和关闭按钮。",
+        "PC 原图保留完整能力说明，手机端显示可点击的放大入口。"
+      ]
+    },
+    {
+      "requirement": "PC 与手机剧本书均只显示原有书页内容，不添加剧本名标题浮层；关闭后返回剧本选择页。",
+      "status": "REVISE",
+      "evidence": [
+        "定向 Playwright E2E 断言读本中没有重复剧本名“木乃伊横行”，标题浮层节点数量为 0。",
+        "PC 与手机原图均显示书页原有章节标题、正文、页码、翻页与关闭控件。",
+        "手机点击读本关闭键后读本隐藏，新增原图确认返回剧本选择页。",
+        "PC 原图上方变暗的“木乃伊横行”属于下层候选剧本卡，不在书页内；关闭后的手机原图能直接确认其所属位置。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-mobile-readable-ability-and-book-20261008/01-PC-1920x1080-能力与物品栏.jpg",
+    "evidence/betrayal-mobile-readable-ability-and-book-20261008/02-Vivo-796x360-DPR3-能力与物品栏.jpg",
+    "evidence/betrayal-mobile-readable-ability-and-book-20261008/03-Vivo-796x360-DPR3-点击后的能力详情.jpg",
+    "evidence/betrayal-mobile-readable-ability-and-book-20261008/04-PC-1920x1080-剧本书正文无额外标题.jpg",
+    "evidence/betrayal-mobile-readable-ability-and-book-20261008/05-Vivo-796x360-DPR3-剧本书正文无额外标题.jpg",
+    "evidence/betrayal-mobile-readable-ability-and-book-20261008/06-Vivo-796x360-DPR3-关闭剧本书返回选择页.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

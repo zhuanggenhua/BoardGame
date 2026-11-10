@@ -1,0 +1,6416 @@
+{
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "chainId": "fate-desktop-narrow-resting-state",
+  "chains": [
+    {
+      "id": "fate-inline-play-area-restoration",
+      "sourceRevision": "98af58e04ccf9cd651f25f854a07ae98b380c156c6c26da196d038d0bcce1313",
+      "steps": [
+        "unavailable-attack-toast",
+        "unavailable-skill-toast",
+        "skill-face-down-refused",
+        "desktop-card-magnifier",
+        "stage-real-card",
+        "retract-real-card",
+        "open-riding-choice",
+        "cancel-riding-choice",
+        "dense-direct-card-zone",
+        "saturated-attack-hand",
+        "empty-attack-hand",
+        "narrow-viewport",
+        "mobile-full-card-inspection"
+      ]
+    },
+    {
+      "id": "fate-desktop-narrow-resting-state",
+      "sourceRevision": "98af58e04ccf9cd651f25f854a07ae98b380c156c6c26da196d038d0bcce1313",
+      "steps": [
+        "desktop-narrow-resting-state",
+        "desktop-opponent-cards-open",
+        "desktop-opponent-card-inspection",
+        "desktop-player-detail-open",
+        "desktop-self-detail-compact",
+        "desktop-eliminated-detail"
+      ]
+    },
+    {
+      "id": "fate-touch-inspection-close-and-continue",
+      "sourceRevision": "a8aa95e27fd4fd14c4d33765d03a22f843bc4d7b13a97b3a4c3b5526db4f62f0",
+      "steps": [
+        "touch-hand-longpress",
+        "touch-inspection-open",
+        "touch-inspection-close-normal",
+        "touch-continue-action-after-close"
+      ]
+    }
+  ],
+  "sourceRun": "1793699027513-338116-e1a7b2bc-c62b-4340-9d12-bc2cc7891e54",
+  "sourceRevision": "98af58e04ccf9cd651f25f854a07ae98b380c156c6c26da196d038d0bcce1313",
+  "status": "PASS",
+  "outcome": "真实 Board 的行动手牌经正常准备/部署阶段进入行动；手牌本体选择后在上方原牌区暂选，卡牌本体撤回并返回手牌；真实普通攻击批次激活伊斯坎达尔骑乘，打开并取消骑乘选择后继续；密集代表态继续在原区浏览。独立桌面窄视口在指针离牌、检视关闭后核验全部席位和两类手牌；另一个同源真实 hasTouch/isMobile 上下文以真实准备、部署、基础攻击进入触屏检视，关闭后仍无悬停残留并继续提交结束行动。地图相机不随HUD、骑乘模式、出牌数量或检视窗口改变。密集状态使用真实卡牌定义，其中超过本局剩余卡数的实例由测试夹具补齐，不代表自然对局或游戏数量上限。",
+  "fixtureBoundary": {
+    "kind": "representative-layout-fixture-after-real-board-setup",
+    "ruleBehaviorClaim": false,
+    "cardDefinitionsAreReal": true,
+    "liveGameCardCount": 12,
+    "layoutOnlyInstanceCount": 8,
+    "instanceIds": [
+      "0:cardB2:3"
+    ]
+  },
+  "measurements": {
+    "emptyHandDesktop": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 512,
+        "y": 712.203125,
+        "left": 512,
+        "top": 712.203125,
+        "right": 1144.734375,
+        "bottom": 746.203125,
+        "width": 632.734375,
+        "height": 34
+      },
+      "selfDock": {
+        "x": 96,
+        "y": 616.90625,
+        "left": 96,
+        "top": 616.90625,
+        "right": 222,
+        "bottom": 984,
+        "width": 126,
+        "height": 367.09375
+      },
+      "phaseControl": {
+        "x": 1655,
+        "y": 634.671875,
+        "left": 1655,
+        "top": 634.671875,
+        "right": 1760,
+        "bottom": 764.171875,
+        "width": 105,
+        "height": 129.5
+      },
+      "skillZone": {
+        "x": 1200.734375,
+        "y": 784.546875,
+        "left": 1200.734375,
+        "top": 784.546875,
+        "right": 1824,
+        "bottom": 1080,
+        "width": 623.265625,
+        "height": 295.453125
+      },
+      "summary": {
+        "x": 340,
+        "y": 705.90625,
+        "left": 340,
+        "top": 705.90625,
+        "right": 500,
+        "bottom": 746.203125,
+        "width": 160,
+        "height": 40.296875
+      }
+    },
+    "desktopTwentyCards": {
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 512,
+        "y": 819.625,
+        "left": 512,
+        "top": 819.625,
+        "right": 1144.734375,
+        "bottom": 992,
+        "width": 632.734375,
+        "height": 172.375
+      },
+      "selfDock": {
+        "x": 96,
+        "y": 616.90625,
+        "left": 96,
+        "top": 616.90625,
+        "right": 222,
+        "bottom": 984,
+        "width": 126,
+        "height": 367.09375
+      },
+      "phaseControl": {
+        "x": 1681,
+        "y": 634.671875,
+        "left": 1681,
+        "top": 634.671875,
+        "right": 1760,
+        "bottom": 764.171875,
+        "width": 79,
+        "height": 129.5
+      },
+      "skillZone": {
+        "x": 1200.734375,
+        "y": 784.546875,
+        "left": 1200.734375,
+        "top": 784.546875,
+        "right": 1824,
+        "bottom": 1080,
+        "width": 623.265625,
+        "height": 295.453125
+      },
+      "rowScroll": {
+        "left": 512,
+        "right": 1144.734375,
+        "scrollLeft": 0,
+        "scrollWidth": 633,
+        "clientWidth": 633
+      },
+      "visibleCards": [
+        {
+          "id": "0:cardB2:3",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB2:2",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardluck:11",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "14",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "幸运",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB4:5",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardA2:9",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:0",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:1",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB3:4",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "blob:http://127.0.0.1:7273/20f92ed0-e2ab-485f-903a-8e49e971b41a"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ1:6",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "0",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "翻弄",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ3:8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "2",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "瞬间的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ2:7",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "1",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高速移动",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardSurveil:10",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "13",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "急行",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-1",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "4",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "低位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-2",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-3",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "6",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-4",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "7",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-5",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-6",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-7",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "blob:http://127.0.0.1:7273/ca41dd05-888a-460b-b504-e067586114f3"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        }
+      ],
+      "allVisibleCardArtLoaded": true
+    },
+    "pressureHand": {
+      "cards": [
+        {
+          "left": 340,
+          "right": 547.359375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 406.375,
+          "right": 613.734375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 472.75,
+          "right": 680.109375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 539.125,
+          "right": 746.484375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 605.5,
+          "right": 812.859375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 671.875,
+          "right": 879.234375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 738.25,
+          "right": 945.609375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 804.625,
+          "right": 1011.984375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 871,
+          "right": 1078.359375,
+          "bottom": 1080,
+          "width": 207.359375
+        },
+        {
+          "left": 937.375,
+          "right": 1144.734375,
+          "bottom": 1080,
+          "width": 207.359375
+        }
+      ],
+      "row": {
+        "scrollWidth": 805,
+        "clientWidth": 805,
+        "overflowX": "visible"
+      }
+    },
+    "mobileDense": {
+      "viewport": {
+        "width": 936,
+        "height": 432,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 436,
+        "y": 217.59375,
+        "left": 436,
+        "top": 217.59375,
+        "right": 602.96875,
+        "bottom": 344,
+        "width": 166.96875,
+        "height": 126.40625
+      },
+      "selfDock": {
+        "x": 40,
+        "y": 69.625,
+        "left": 40,
+        "top": 69.625,
+        "right": 166,
+        "bottom": 432,
+        "width": 126,
+        "height": 362.375
+      },
+      "phaseControl": {
+        "x": 716,
+        "y": 223.84375,
+        "left": 716,
+        "top": 223.84375,
+        "right": 832,
+        "bottom": 271.84375,
+        "width": 116,
+        "height": 48
+      },
+      "skillZone": {
+        "x": 638.96875,
+        "y": 278.125,
+        "left": 638.96875,
+        "top": 278.125,
+        "right": 896,
+        "bottom": 432,
+        "width": 257.03125,
+        "height": 153.875
+      },
+      "attackHand": {
+        "x": 284,
+        "y": 352,
+        "left": 284,
+        "top": 352,
+        "right": 602.96875,
+        "bottom": 432,
+        "width": 318.96875,
+        "height": 80
+      },
+      "summary": {
+        "x": 284,
+        "y": 284.859375,
+        "left": 284,
+        "top": 284.859375,
+        "right": 428,
+        "bottom": 344,
+        "width": 144,
+        "height": 59.140625
+      },
+      "skillHand": {
+        "x": 638.96875,
+        "y": 278.125,
+        "left": 638.96875,
+        "top": 278.125,
+        "right": 896,
+        "bottom": 432,
+        "width": 257.03125,
+        "height": 153.875
+      },
+      "summaryFontPx": "13px",
+      "playedCard": {
+        "x": 436,
+        "y": 222.171875,
+        "left": 436,
+        "top": 222.171875,
+        "right": 524,
+        "bottom": 344,
+        "width": 88,
+        "height": 121.828125
+      },
+      "phaseButton": {
+        "x": 784,
+        "y": 223.84375,
+        "left": 784,
+        "top": 223.84375,
+        "right": 832,
+        "bottom": 271.84375,
+        "width": 48,
+        "height": 48
+      },
+      "mobileShell": {
+        "x": 0,
+        "y": 0,
+        "left": 0,
+        "top": 0,
+        "right": 936,
+        "bottom": 432,
+        "width": 936,
+        "height": 432
+      },
+      "mobileShellTransform": "none",
+      "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+      "cardArtwork": [
+        {
+          "id": "0:cardB2:3",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB2:2",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardluck:11",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "14",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "幸运",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB4:5",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardA2:9",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:0",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB1:1",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardB3:4",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-high.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ1:6",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "0",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "翻弄",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ3:8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "2",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "瞬间的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardQ2:7",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "1",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高速移动",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "0:cardSurveil:10",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "13",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "急行",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-1",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "4",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "低位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-2",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "5",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "中位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-3",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "6",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-4",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "7",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "高位魔法",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-5",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 520,
+              "naturalHeight": 747,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-6",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 541,
+              "naturalHeight": 749,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-7",
+          "frameAtlasId": null,
+          "frameIndex": null,
+          "frameReady": null,
+          "images": [
+            {
+              "alt": "Card Preview",
+              "complete": true,
+              "naturalWidth": 542,
+              "naturalHeight": 757,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-high.webp"
+            }
+          ]
+        },
+        {
+          "id": "layout-fixture-attack-8",
+          "frameAtlasId": "fate-basic-attacks",
+          "frameIndex": "11",
+          "frameReady": true,
+          "images": [
+            {
+              "alt": "会心的一击",
+              "complete": true,
+              "naturalWidth": 6000,
+              "naturalHeight": 2100,
+              "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/basic-attack-atlas.webp"
+            }
+          ]
+        }
+      ],
+      "allVisibleCardArtLoaded": true
+    },
+    "mobileCardInspection": {
+      "viewport": {
+        "width": 936,
+        "height": 432,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "faceRect": {
+        "x": 340.75,
+        "y": 32,
+        "width": 254.5,
+        "height": 367.984375
+      },
+      "closeButtonRect": {
+        "x": 543.25,
+        "y": 36,
+        "width": 48,
+        "height": 48
+      },
+      "titleFontPx": "14px",
+      "closeButtonFontPx": "14px",
+      "artwork": [
+        {
+          "complete": true,
+          "width": 541,
+          "height": 749,
+          "alt": "Card Preview"
+        }
+      ],
+      "cardCenterHit": true,
+      "closeCenterHit": true,
+      "hoverPreviewPointerEvents": "none",
+      "focusReturned": true,
+      "mapTransformBefore": "translate(114.962px, 0px) scale(0.366412)",
+      "mapTransformAfter": "translate(114.962px, 0px) scale(0.366412)"
+    },
+    "desktopNarrowNormal": {
+      "viewport": {
+        "width": 1366,
+        "height": 768,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "playedRow": {
+        "x": 456,
+        "y": 355.015625,
+        "left": 456,
+        "top": 355.015625,
+        "right": 847.40625,
+        "bottom": 524.421875,
+        "width": 391.40625,
+        "height": 169.40625
+      },
+      "selfDock": {
+        "x": 40,
+        "y": 328.90625,
+        "left": 40,
+        "top": 328.90625,
+        "right": 166,
+        "bottom": 696,
+        "width": 126,
+        "height": 367.09375
+      },
+      "selfIdentity": {
+        "x": 40,
+        "y": 510.90625,
+        "left": 40,
+        "top": 510.90625,
+        "right": 166,
+        "bottom": 696,
+        "width": 126,
+        "height": 185.09375
+      },
+      "selfSeals": {
+        "x": 40,
+        "y": 380.90625,
+        "left": 40,
+        "top": 380.90625,
+        "right": 158,
+        "bottom": 500.90625,
+        "width": 118,
+        "height": 120
+      },
+      "phaseButton": {
+        "x": 1183,
+        "y": 435.875,
+        "left": 1183,
+        "top": 435.875,
+        "right": 1262,
+        "bottom": 514.875,
+        "width": 79,
+        "height": 79
+      },
+      "attackHand": {
+        "x": 284,
+        "y": 532.421875,
+        "left": 284,
+        "top": 532.421875,
+        "right": 847.40625,
+        "bottom": 768,
+        "width": 563.40625,
+        "height": 235.578125
+      },
+      "attackHandCard": {
+        "x": 283.984375,
+        "y": 540.953125,
+        "left": 283.984375,
+        "top": 540.953125,
+        "right": 447.984375,
+        "bottom": 768,
+        "width": 164,
+        "height": 227.046875
+      },
+      "skillHand": {
+        "x": 888.375,
+        "y": 534.328125,
+        "left": 888.375,
+        "top": 534.328125,
+        "right": 1326,
+        "bottom": 768,
+        "width": 437.625,
+        "height": 233.671875
+      },
+      "skillCard": null,
+      "playerRail": {
+        "x": 1108,
+        "y": 88,
+        "left": 1108,
+        "top": 88,
+        "right": 1350,
+        "bottom": 506,
+        "width": 242,
+        "height": 418
+      },
+      "seatList": {
+        "x": 1108,
+        "y": 88,
+        "left": 1108,
+        "top": 88,
+        "right": 1350,
+        "bottom": 244,
+        "width": 242,
+        "height": 156
+      },
+      "opponentSeats": [
+        {
+          "name": "AI 2 号位",
+          "rect": {
+            "x": 1112,
+            "y": 92,
+            "left": 1112,
+            "top": 92,
+            "right": 1346,
+            "bottom": 160,
+            "width": 234,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        },
+        {
+          "name": "AI 3 号位",
+          "rect": {
+            "x": 1112,
+            "y": 172,
+            "left": 1112,
+            "top": 172,
+            "right": 1346,
+            "bottom": 240,
+            "width": 234,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        }
+      ],
+      "inputCapabilities": {
+        "maxTouchPoints": 10,
+        "coarsePointer": false,
+        "hoverPointer": true
+      },
+      "hoverVisible": false
+    },
+    "peerRowStyle": {
+      "background": "rgba(0, 0, 0, 0)",
+      "border": "0px",
+      "wrap": "nowrap"
+    },
+    "selfDetail": {
+      "gaps": [
+        12,
+        12
+      ],
+      "widths": [
+        197,
+        197,
+        197
+      ]
+    },
+    "touchNormal": {
+      "viewport": {
+        "width": 936,
+        "height": 432,
+        "scrollX": 0,
+        "scrollY": 0
+      },
+      "selfDock": {
+        "x": 40,
+        "y": 69.625,
+        "left": 40,
+        "top": 69.625,
+        "right": 166,
+        "bottom": 432,
+        "width": 126,
+        "height": 362.375
+      },
+      "selfIdentity": {
+        "x": 40,
+        "y": 243.625,
+        "left": 40,
+        "top": 243.625,
+        "right": 166,
+        "bottom": 432,
+        "width": 126,
+        "height": 188.375
+      },
+      "selfSeals": {
+        "x": 40,
+        "y": 69.625,
+        "left": 40,
+        "top": 69.625,
+        "right": 158,
+        "bottom": 189.625,
+        "width": 118,
+        "height": 120
+      },
+      "selfSealArtwork": [
+        {
+          "x": 40,
+          "y": 79.625,
+          "left": 40,
+          "top": 79.625,
+          "right": 118,
+          "bottom": 188.8125,
+          "width": 78,
+          "height": 109.1875
+        },
+        {
+          "x": 58,
+          "y": 74.625,
+          "left": 58,
+          "top": 74.625,
+          "right": 136,
+          "bottom": 183.8125,
+          "width": 78,
+          "height": 109.1875
+        },
+        {
+          "x": 76,
+          "y": 69.625,
+          "left": 76,
+          "top": 69.625,
+          "right": 154,
+          "bottom": 178.8125,
+          "width": 78,
+          "height": 109.1875
+        }
+      ],
+      "phaseControl": {
+        "x": 716,
+        "y": 223.84375,
+        "left": 716,
+        "top": 223.84375,
+        "right": 832,
+        "bottom": 271.84375,
+        "width": 116,
+        "height": 48
+      },
+      "phaseButton": {
+        "x": 784,
+        "y": 223.84375,
+        "left": 784,
+        "top": 223.84375,
+        "right": 832,
+        "bottom": 271.84375,
+        "width": 48,
+        "height": 48
+      },
+      "attackHand": {
+        "x": 284,
+        "y": 280.8125,
+        "left": 284,
+        "top": 280.8125,
+        "right": 602.96875,
+        "bottom": 432,
+        "width": 318.96875,
+        "height": 151.1875
+      },
+      "attackHandCard": {
+        "x": 389.484375,
+        "y": 280.8125,
+        "left": 389.484375,
+        "top": 280.8125,
+        "right": 497.484375,
+        "bottom": 432,
+        "width": 108,
+        "height": 151.1875
+      },
+      "attackHandCardCenterHit": true,
+      "skillHand": {
+        "x": 638.96875,
+        "y": 278.125,
+        "left": 638.96875,
+        "top": 278.125,
+        "right": 896,
+        "bottom": 432,
+        "width": 257.03125,
+        "height": 153.875
+      },
+      "skillCard": null,
+      "skillHandCardCenterHit": true,
+      "playerRail": {
+        "x": 696,
+        "y": 64,
+        "left": 696,
+        "top": 64,
+        "right": 926,
+        "bottom": 228,
+        "width": 230,
+        "height": 164
+      },
+      "seatList": {
+        "x": 696,
+        "y": 64,
+        "left": 696,
+        "top": 64,
+        "right": 926,
+        "bottom": 220,
+        "width": 230,
+        "height": 156
+      },
+      "seatListScroll": {
+        "clientHeight": 156,
+        "scrollHeight": 156
+      },
+      "opponentSeats": [
+        {
+          "name": "AI 2 号位",
+          "rect": {
+            "x": 700,
+            "y": 68,
+            "left": 700,
+            "top": 68,
+            "right": 922,
+            "bottom": 136,
+            "width": 222,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        },
+        {
+          "name": "AI 3 号位",
+          "rect": {
+            "x": 700,
+            "y": 148,
+            "left": 700,
+            "top": 148,
+            "right": 922,
+            "bottom": 216,
+            "width": 222,
+            "height": 68
+          },
+          "summaryCenterHit": true,
+          "fullyVisible": true
+        }
+      ],
+      "inputCapabilities": {
+        "maxTouchPoints": 1,
+        "coarsePointer": true,
+        "hoverPointer": false
+      },
+      "dialogCount": 0
+    }
+  },
+  "behaviorFailures": [],
+  "steps": [
+    {
+      "id": "desktop-narrow-resting-state",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "action": "恢复真实行动手牌、窗口改为1366×768并将鼠标移到卡牌之外",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 936,
+            "height": 432,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 144.625,
+            "left": 284,
+            "top": 144.625,
+            "right": 602.96875,
+            "bottom": 268.859375,
+            "width": 318.96875,
+            "height": 124.234375
+          },
+          "summary": {
+            "x": 284,
+            "y": 209.71875,
+            "left": 284,
+            "top": 209.71875,
+            "right": 428,
+            "bottom": 268.859375,
+            "width": 144,
+            "height": 59.140625
+          },
+          "playedRow": {
+            "x": 436,
+            "y": 144.625,
+            "left": 436,
+            "top": 144.625,
+            "right": 602.96875,
+            "bottom": 268.859375,
+            "width": 166.96875,
+            "height": 124.234375
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 276.859375,
+            "left": 284,
+            "top": 276.859375,
+            "right": 602.96875,
+            "bottom": 432,
+            "width": 318.96875,
+            "height": 155.140625
+          },
+          "skillZone": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "skillHand": {
+            "x": 638.96875,
+            "y": 278.125,
+            "left": 638.96875,
+            "top": 278.125,
+            "right": 896,
+            "bottom": 432,
+            "width": 257.03125,
+            "height": 153.875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 362.375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 286,
+            "left": 176,
+            "top": 286,
+            "right": 280,
+            "bottom": 432,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 286,
+              "left": 176,
+              "top": 286,
+              "right": 280,
+              "bottom": 330,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 337,
+              "left": 176,
+              "top": 337,
+              "right": 280,
+              "bottom": 381,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 388,
+              "left": 176,
+              "top": 388,
+              "right": 280,
+              "bottom": 432,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 243.625,
+            "left": 40,
+            "top": 243.625,
+            "right": 166,
+            "bottom": 432,
+            "width": 126,
+            "height": 188.375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 69.625,
+            "left": 40,
+            "top": 69.625,
+            "right": 158,
+            "bottom": 189.625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 74.625,
+              "left": 40,
+              "top": 74.625,
+              "right": 118,
+              "bottom": 183.8125,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 69.625,
+              "left": 58,
+              "top": 69.625,
+              "right": 136,
+              "bottom": 178.8125,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 716,
+            "y": 223.84375,
+            "left": 716,
+            "top": 223.84375,
+            "right": 832,
+            "bottom": 271.84375,
+            "width": 116,
+            "height": 48
+          },
+          "phaseButton": {
+            "x": 784,
+            "y": 223.84375,
+            "left": 784,
+            "top": 223.84375,
+            "right": 832,
+            "bottom": 271.84375,
+            "width": 48,
+            "height": 48
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 880,
+              "y": 208,
+              "left": 880,
+              "top": 208,
+              "right": 924,
+              "bottom": 252,
+              "width": 44,
+              "height": 44
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 700,
+              "y": 68,
+              "left": 700,
+              "top": 68,
+              "right": 922,
+              "bottom": 136,
+              "width": 222,
+              "height": 68
+            },
+            {
+              "x": 700,
+              "y": 148,
+              "left": 700,
+              "top": 148,
+              "right": 922,
+              "bottom": 216,
+              "width": 222,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 436,
+            "y": 131.03125,
+            "left": 436,
+            "top": 131.03125,
+            "right": 524,
+            "bottom": 252.859375,
+            "width": 88,
+            "height": 121.828125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 282.484375,
+            "left": 283.984375,
+            "top": 282.484375,
+            "right": 391.984375,
+            "bottom": 432,
+            "width": 108,
+            "height": 149.515625
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<b>行动</b>",
+          "ridingControls": null,
+          "powerFont": "16px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 228,
+            "width": 230,
+            "height": 164
+          },
+          "seatList": {
+            "x": 696,
+            "y": 64,
+            "left": 696,
+            "top": 64,
+            "right": 926,
+            "bottom": 220,
+            "width": 230,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 700,
+                "y": 68,
+                "left": 700,
+                "top": 68,
+                "right": 922,
+                "bottom": 136,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 700,
+                "y": 148,
+                "left": 700,
+                "top": 148,
+                "right": 922,
+                "bottom": 216,
+                "width": 222,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 436,
+            "right": 602.96875,
+            "scrollLeft": 0,
+            "scrollWidth": 181,
+            "clientWidth": 167
+          },
+          "mapTransform": "translate(114.962px, 0px) scale(0.366412)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 936,
+            "bottom": 432,
+            "width": 936,
+            "height": 432
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 342.296875,
+            "left": 456,
+            "top": 342.296875,
+            "right": 576,
+            "bottom": 508.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<button type=\"button\" aria-label=\"结束行动\" class=\"fd-runtime-primary\" data-testid=\"fate-domination-primary-action\"><b>行动</b><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right board-shell-fixed-icon\" aria-hidden=\"true\"><path d=\"M5 12h14\"></p",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "desktop-narrow-viewport",
+          "actual": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "expected": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          }
+        },
+        {
+          "name": "pointer-leave-closes-hover-inspection",
+          "actual": 0,
+          "expected": 0
+        },
+        {
+          "name": "two-opponent-seats-visible-and-hittable",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "self-hud-and-primary-action-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "both-hand-zones-have-live-hit-centers",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "desktop-opponent-cards-open",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "action": "悬浮头像、跨越间隙移入牌排并停留超过2.5秒",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 342.296875,
+            "left": 456,
+            "top": 342.296875,
+            "right": 576,
+            "bottom": 508.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<button type=\"button\" aria-label=\"结束行动\" class=\"fd-runtime-primary\" data-testid=\"fate-domination-primary-action\"><b>行动</b><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right board-shell-fixed-icon\" aria-hidden=\"true\"><path d=\"M5 12h14\"></p",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 342.296875,
+            "left": 456,
+            "top": 342.296875,
+            "right": 576,
+            "bottom": 508.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<button type=\"button\" aria-label=\"结束行动\" class=\"fd-runtime-primary\" data-testid=\"fate-domination-primary-action\"><b>行动</b><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right board-shell-fixed-icon\" aria-hidden=\"true\"><path d=\"M5 12h14\"></p",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "cards-visible-after-pointer-transfer",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "desktop-opponent-card-inspection",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "action": "点击悬浮牌排中的公开牌",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 342.296875,
+            "left": 456,
+            "top": 342.296875,
+            "right": 576,
+            "bottom": 508.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<button type=\"button\" aria-label=\"结束行动\" class=\"fd-runtime-primary\" data-testid=\"fate-domination-primary-action\"><b>行动</b><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right board-shell-fixed-icon\" aria-hidden=\"true\"><path d=\"M5 12h14\"></p",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fd-inspection-backdrop\" data-opponent-open=\"true\" role=\"dialog\" aria-modal=\"true\" aria-label=\"幸运卡牌检视\" style=\"z-index: 2200;\"><div data-tutorial-id=\"fate-inspection\" class=\"fd-runtime-inspection is-pinned\" data-testid=\"fate-runtime-inspection\"><div class=\"fd-inspection-card-face\" data-testid=\"fate-inspection-card-face\"><div data-card-atlas-frame=\"true\" data-card-atlas-id=\"fate-basic-att",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "public-card-inspection-visible",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "desktop-player-detail-open",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "action": "从对手头像打开身份详情",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": true,
+          "skillHandCardCenterHit": true,
+          "phaseControlCenterHit": true,
+          "phaseControlCenterTarget": "<button type=\"button\" aria-label=\"结束行动\" class=\"fd-runtime-primary\" data-testid=\"fate-domination-primary-action\"><b>行动</b><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-arrow-right board-shell-fixed-icon\" aria-hidden=\"true\"><path d=\"M5 12h14\"></p",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 0,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": true,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fixed inset-0 bg-black/50 backdrop-blur-sm !bg-black/75\" style=\"will-change: opacity; z-index: 2100; opacity: 1;\"></div>",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "player-detail-dialog-visible",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "desktop-self-detail-compact",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "action": "在正式详情弹窗中切换到本人",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fixed inset-0 bg-black/50 backdrop-blur-sm !bg-black/75\" style=\"will-change: opacity; z-index: 2100; opacity: 1;\"></div>",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fixed inset-0 bg-black/50 backdrop-blur-sm !bg-black/75\" style=\"will-change: opacity; z-index: 2100; opacity: 1;\"></div>",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "self-details-selected",
+          "actual": "page",
+          "expected": "page"
+        }
+      ]
+    },
+    {
+      "id": "desktop-eliminated-detail",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "action": "打开淘汰详情代表态，核对红色状态与原卡牌布局",
+      "before": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fixed inset-0 bg-black/50 backdrop-blur-sm !bg-black/75\" style=\"will-change: opacity; z-index: 2100; opacity: 1;\"></div>",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "after": {
+        "visible": {
+          "viewport": {
+            "width": 1366,
+            "height": 768,
+            "scrollX": 0,
+            "scrollY": 0
+          },
+          "playedArea": {
+            "x": 284,
+            "y": 355.015625,
+            "left": 284,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 563.40625,
+            "height": 169.40625
+          },
+          "summary": {
+            "x": 284,
+            "y": 462.578125,
+            "left": 284,
+            "top": 462.578125,
+            "right": 444,
+            "bottom": 524.421875,
+            "width": 160,
+            "height": 61.84375
+          },
+          "playedRow": {
+            "x": 456,
+            "y": 355.015625,
+            "left": 456,
+            "top": 355.015625,
+            "right": 847.40625,
+            "bottom": 524.421875,
+            "width": 391.40625,
+            "height": 169.40625
+          },
+          "attackHand": {
+            "x": 284,
+            "y": 532.421875,
+            "left": 284,
+            "top": 532.421875,
+            "right": 847.40625,
+            "bottom": 768,
+            "width": 563.40625,
+            "height": 235.578125
+          },
+          "skillZone": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "skillHand": {
+            "x": 888.375,
+            "y": 534.328125,
+            "left": 888.375,
+            "top": 534.328125,
+            "right": 1326,
+            "bottom": 768,
+            "width": 437.625,
+            "height": 233.671875
+          },
+          "selfDock": {
+            "x": 40,
+            "y": 328.90625,
+            "left": 40,
+            "top": 328.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 367.09375
+          },
+          "masterAbilities": {
+            "x": 176,
+            "y": 550,
+            "left": 176,
+            "top": 550,
+            "right": 280,
+            "bottom": 696,
+            "width": 104,
+            "height": 146
+          },
+          "masterAbilityButtons": [
+            {
+              "x": 176,
+              "y": 550,
+              "left": 176,
+              "top": 550,
+              "right": 280,
+              "bottom": 594,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 601,
+              "left": 176,
+              "top": 601,
+              "right": 280,
+              "bottom": 645,
+              "width": 104,
+              "height": 44
+            },
+            {
+              "x": 176,
+              "y": 652,
+              "left": 176,
+              "top": 652,
+              "right": 280,
+              "bottom": 696,
+              "width": 104,
+              "height": 44
+            }
+          ],
+          "selfIdentity": {
+            "x": 40,
+            "y": 510.90625,
+            "left": 40,
+            "top": 510.90625,
+            "right": 166,
+            "bottom": 696,
+            "width": 126,
+            "height": 185.09375
+          },
+          "selfSeals": {
+            "x": 40,
+            "y": 380.90625,
+            "left": 40,
+            "top": 380.90625,
+            "right": 158,
+            "bottom": 500.90625,
+            "width": 118,
+            "height": 120
+          },
+          "selfSealArtwork": [
+            {
+              "x": 40,
+              "y": 385.90625,
+              "left": 40,
+              "top": 385.90625,
+              "right": 118,
+              "bottom": 495.09375,
+              "width": 78,
+              "height": 109.1875
+            },
+            {
+              "x": 58,
+              "y": 380.90625,
+              "left": 58,
+              "top": 380.90625,
+              "right": 136,
+              "bottom": 490.09375,
+              "width": 78,
+              "height": 109.1875
+            }
+          ],
+          "phaseControl": {
+            "x": 1183,
+            "y": 389.375,
+            "left": 1183,
+            "top": 389.375,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 125.5
+          },
+          "phaseButton": {
+            "x": 1183,
+            "y": 435.875,
+            "left": 1183,
+            "top": 435.875,
+            "right": 1262,
+            "bottom": 514.875,
+            "width": 79,
+            "height": 79
+          },
+          "selectionMode": null,
+          "hudFabButtons": [
+            {
+              "x": 1286,
+              "y": 520,
+              "left": 1286,
+              "top": 520,
+              "right": 1334,
+              "bottom": 568,
+              "width": 48,
+              "height": 48
+            }
+          ],
+          "hudPlayerRows": [
+            {
+              "x": 1112,
+              "y": 92,
+              "left": 1112,
+              "top": 92,
+              "right": 1346,
+              "bottom": 160,
+              "width": 234,
+              "height": 68
+            },
+            {
+              "x": 1112,
+              "y": 172,
+              "left": 1112,
+              "top": 172,
+              "right": 1346,
+              "bottom": 240,
+              "width": 234,
+              "height": 68
+            }
+          ],
+          "playedCard": {
+            "x": 456,
+            "y": 358.296875,
+            "left": 456,
+            "top": 358.296875,
+            "right": 576,
+            "bottom": 524.421875,
+            "width": 120,
+            "height": 166.125
+          },
+          "handCard": {
+            "x": 283.984375,
+            "y": 540.953125,
+            "left": 283.984375,
+            "top": 540.953125,
+            "right": 447.984375,
+            "bottom": 768,
+            "width": 164,
+            "height": 227.046875
+          },
+          "skillCard": null,
+          "attackHandCardCenterHit": false,
+          "skillHandCardCenterHit": false,
+          "phaseControlCenterHit": false,
+          "phaseControlCenterTarget": "<div class=\"fixed inset-0 bg-black/50 backdrop-blur-sm !bg-black/75\" style=\"will-change: opacity; z-index: 2100; opacity: 1;\"></div>",
+          "ridingControls": null,
+          "powerFont": "18px",
+          "redundantHandHints": 0,
+          "summaryFont": "13px",
+          "playAreaCards": [
+            {
+              "id": "0:cardB2:3",
+              "zone": "active",
+              "label": "检视 强打"
+            }
+          ],
+          "cardArtwork": [
+            {
+              "id": "0:cardB2:3",
+              "frameAtlasId": null,
+              "frameIndex": null,
+              "frameReady": null,
+              "images": [
+                {
+                  "alt": "Card Preview",
+                  "complete": true,
+                  "naturalWidth": 541,
+                  "naturalHeight": 749,
+                  "src": "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-mid.webp"
+                }
+              ]
+            }
+          ],
+          "handCount": 5,
+          "dialogCount": 1,
+          "galleryTriggerCount": 0,
+          "playerRail": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 506,
+            "width": 242,
+            "height": 418
+          },
+          "seatList": {
+            "x": 1108,
+            "y": 88,
+            "left": 1108,
+            "top": 88,
+            "right": 1350,
+            "bottom": 244,
+            "width": 242,
+            "height": 156
+          },
+          "seatListScroll": {
+            "clientHeight": 156,
+            "scrollHeight": 156
+          },
+          "opponentSeats": [
+            {
+              "name": "AI 2 号位",
+              "rect": {
+                "x": 1112,
+                "y": 92,
+                "left": 1112,
+                "top": 92,
+                "right": 1346,
+                "bottom": 160,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            },
+            {
+              "name": "AI 3 号位",
+              "rect": {
+                "x": 1112,
+                "y": 172,
+                "left": 1112,
+                "top": 172,
+                "right": 1346,
+                "bottom": 240,
+                "width": 234,
+                "height": 68
+              },
+              "summaryCenterHit": false,
+              "fullyVisible": true
+            }
+          ],
+          "inputCapabilities": {
+            "maxTouchPoints": 10,
+            "coarsePointer": false,
+            "hoverPointer": true
+          },
+          "rowScroll": {
+            "left": 456,
+            "right": 847.40625,
+            "scrollLeft": 0,
+            "scrollWidth": 391,
+            "clientWidth": 391
+          },
+          "mapTransform": "translate(55.3766px, -5.68434e-14px) scale(0.651399)",
+          "mobileShellTransform": "none",
+          "mobileShell": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "mapCanvas": {
+            "x": 0,
+            "y": 0,
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 768,
+            "width": 1366,
+            "height": 768
+          },
+          "boardHasRidingCameraMode": false,
+          "mapSafeStyle": ""
+        },
+        "authoritative": {
+          "phase": "action",
+          "currentPlayerId": "0",
+          "round": 1,
+          "hand": [
+            {
+              "id": "0:cardB2:3",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardB2:2",
+              "definitionId": "cardB2"
+            },
+            {
+              "id": "0:cardluck:11",
+              "definitionId": "cardluck"
+            },
+            {
+              "id": "0:cardB4:5",
+              "definitionId": "cardB4"
+            },
+            {
+              "id": "0:cardA2:9",
+              "definitionId": "cardA2"
+            },
+            {
+              "id": "0:cardB1:0",
+              "definitionId": "cardB1"
+            }
+          ],
+          "deckCount": 6,
+          "selectedAttackIds": [],
+          "activeAttackIds": [
+            "0:cardB2:3"
+          ],
+          "activeSkills": [
+            "sc_iskandar_1:3"
+          ],
+          "normalAttackPlayed": true,
+          "interactionId": null,
+          "interactionSourceId": null,
+          "activeFrameId": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "eliminated-red-visible",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "desktop-narrow-normal",
+      "stepId": "desktop-narrow-resting-state",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "1aa86b809230ea25980d2b68ce3f9a8ebc3ff6eaa3ad683a52ada72a7f76d6ba"
+    },
+    {
+      "id": "desktop-opponent-cards-open",
+      "stepId": "desktop-opponent-cards-open",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "ee915d6b4a3f0e6ced67a3d97aa1d9469e5dc0e594f6de19167555a2675f4958"
+    },
+    {
+      "id": "desktop-opponent-card-inspection",
+      "stepId": "desktop-opponent-card-inspection",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "79f8c2522cb73fcf8d6a386f84bda647e53ed1452262fd64cf4a714b59fcf396"
+    },
+    {
+      "id": "desktop-player-detail-open",
+      "stepId": "desktop-player-detail-open",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "23575d28aabfba60c70d5b48cec2b9486c62d10a843f3f1831afd7403603b5a6"
+    },
+    {
+      "id": "desktop-self-detail-compact",
+      "stepId": "desktop-self-detail-compact",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "5c00d91273260b2a694ff25b5fb9344733d76595edafc2416c907d1ade743968"
+    },
+    {
+      "id": "desktop-eliminated-detail",
+      "stepId": "desktop-eliminated-detail",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "fb154d78e38de3c4af2a0de44f00f674e726a86460ce8cf3b760fa43b49154c4"
+    }
+  ]
+}

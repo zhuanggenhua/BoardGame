@@ -19,6 +19,8 @@ interface Props {
     rolls: QidahenBattleRolls;
     sourceName: string;
     targetName: string;
+    sourceRegionId: string | null;
+    targetRegionId: string | null;
     attacker: QidahenBattleActor;
     defender: QidahenBattleActor;
     onFrameChange: (frame: QidahenBattleDiceFrame | null) => void;
@@ -78,8 +80,9 @@ function BattleLayoutReport({ rolls, attacker, defender, onComplete }: Pick<Prop
 }
 
 /** 战斗是当前结算主体，在地图空位投掷；双方军队、手牌和常驻HUD保持可见。 */
-export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, ...sequence }: Props) {
+export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceRegionId, targetRegionId, ...sequence }: Props) {
     const [frame, setFrame] = React.useState<QidahenBattleDiceFrame | null>(null);
+    const [links, setLinks] = React.useState<Array<{ x1: number; y1: number; x2: number; y2: number }>>([]);
     const [spaceUnavailable, setSpaceUnavailable] = React.useState(false);
     // 外层以战斗身份挂载；播放开始后，重排只改布局，不卸载物理序列重投。
     const [started, setStarted] = React.useState(false);
@@ -94,35 +97,56 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, ...sequen
             const regionIds = new Set([...document.querySelectorAll('[data-qidahen-battle-region-space]')]
                 .map(element => element.getAttribute('data-qidahen-battle-region-space')));
             // 人口此时不参与交战决策，不用它占满双方兵牌之间的投掷空地。
-            const regions = [...document.querySelectorAll('[data-qidahen-map-token-region]')]
-                .filter(element => regionIds.has(element.getAttribute('data-qidahen-map-token-region')))
+            const battleElements = [...document.querySelectorAll('[data-qidahen-map-token-region], [data-qidahen-army-group-region]')]
+                .filter(element => regionIds.has(element.getAttribute('data-qidahen-map-token-region') ?? element.getAttribute('data-qidahen-army-group-region')))
+            const regions = battleElements.map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+            const targetRects = battleElements
+                .filter(element => (element.getAttribute('data-qidahen-map-token-region') ?? element.getAttribute('data-qidahen-army-group-region')) === targetRegionId)
                 .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
-            const battlefield = regions.length ? {
-                left: Math.min(...regions.map(rect => rect.left)), top: Math.min(...regions.map(rect => rect.top)),
-                right: Math.max(...regions.map(rect => rect.right)), bottom: Math.max(...regions.map(rect => rect.bottom)),
+            const targetSpace = [...document.querySelectorAll('[data-qidahen-battle-region-space]')]
+                .find(element => element.getAttribute('data-qidahen-battle-region-space') === targetRegionId)?.getBoundingClientRect();
+            const focusRects = targetRects.length ? targetRects : targetSpace ? [targetSpace] : regions;
+            const battlefield = focusRects.length ? {
+                left: Math.min(...focusRects.map(rect => rect.left)), top: Math.min(...focusRects.map(rect => rect.top)),
+                right: Math.max(...focusRects.map(rect => rect.right)), bottom: Math.max(...focusRects.map(rect => rect.bottom)),
             } : null;
-            const spaces = getQidahenAvailableMapFrames(screen, [...protectedRects, ...regions], 8)
+            // 战场附近的人口标记与骰子属于同一阅读区域；不能只看静止帧，让运动中的骰子压住它。
+            const localPopulation = [...document.querySelectorAll('[data-qidahen-map-population-region]')]
+                .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0 && battlefield && Math.hypot(
+                    Math.max(battlefield.left - rect.right, rect.left - battlefield.right, 0),
+                    Math.max(battlefield.top - rect.bottom, rect.top - battlefield.bottom, 0)) <= Math.min(screen.width, screen.height) * 0.24);
+            const spaces = getQidahenAvailableMapFrames(screen, [...protectedRects, ...regions, ...localPopulation], 8)
                 .filter(rect => rect.width >= 240 && rect.height >= 220);
-            const candidates = spaces.map(space => {
+            const otherTokens = [...document.querySelectorAll('[data-qidahen-map-token-region], [data-qidahen-map-population-region]')]
+                .filter(element => element.hasAttribute('data-qidahen-map-population-region')
+                    || !regionIds.has(element.getAttribute('data-qidahen-map-token-region')))
+                .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+            const candidates = spaces.flatMap(space => {
                 const width = Math.min(420, space.width), height = Math.min(300, space.height);
                 const centerX = battlefield ? (battlefield.left + battlefield.right) / 2 : innerWidth / 2;
                 const centerY = battlefield ? (battlefield.top + battlefield.bottom) / 2 : innerHeight / 2;
-                const left = Math.max(space.left, Math.min(space.left + space.width - width, centerX - width / 2));
-                const top = Math.max(space.top, Math.min(space.top + space.height - height, centerY - height / 2));
+                const xs = [space.left, space.left + space.width - width, Math.max(space.left, Math.min(space.left + space.width - width, centerX - width / 2))];
+                const ys = [space.top, space.top + space.height - height, Math.max(space.top, Math.min(space.top + space.height - height, centerY - height / 2))];
+                return xs.flatMap(left => ys.map(top => {
                 const distance = battlefield ? Math.hypot(
                     Math.max(battlefield.left - left - width, left - battlefield.right, 0),
                     Math.max(battlefield.top - top - height, top - battlefield.bottom, 0)) : 0;
-                return { left, top, width, height, distance };
+                // 骰子可浮在地图上；标题和结果应避免盖住邻区可见兵牌和控制标记。
+                const labels = [{ left, top, right: left + width, bottom: top + 70 }, { left, top: top + height - 76, right: left + width, bottom: top + height }];
+                const overlap = (area: { left: number; right: number; top: number; bottom: number }) => otherTokens.reduce((total, token) => total + Math.max(0, Math.min(area.right, token.right) - Math.max(area.left, token.left)) * Math.max(0, Math.min(area.bottom, token.bottom) - Math.max(area.top, token.top)), 0);
+                const obstruction = labels.reduce((sum, label) => sum + overlap(label), 0) + overlap({ left, top, right: left + width, bottom: top + height }) * 0.2;
+                return { left, top, width, height, distance, obstruction };
+                }));
             });
-            // 地图先安置真实战场；骰子贴该战场的可用边缘，不再反推地图腾空。
-            candidates.sort((a, b) => a.distance - b.distance || b.width * b.height - a.width * a.height);
+            // 骰子优先贴近受击部队，同时为交战双方和上层界面留出空间。
+            candidates.sort((a, b) => a.obstruction - b.obstruction || a.distance - b.distance || b.width * b.height - a.width * a.height);
             const chosen = candidates[0];
             if (!chosen) {
                 setFrame(null);
                 setSpaceUnavailable(true);
                 return;
             }
-            const { distance: _distance, ...next } = chosen;
+            const { distance: _distance, obstruction: _obstruction, ...next } = chosen;
             setFrame(current => current && current.left === next.left && current.top === next.top && current.width === next.width && current.height === next.height ? current : next);
         };
         measure();
@@ -148,12 +172,46 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, ...sequen
             window.cancelAnimationFrame(measurementFrame);
             mutationObserver.disconnect(); mapTransformObserver.disconnect(); resizeObserver.disconnect();
         };
-    }, [spaceUnavailable]);
+    }, [spaceUnavailable, targetRegionId]);
+    React.useLayoutEffect(() => {
+        if (!frame || spaceUnavailable) return;
+        const measure = () => {
+            const root = document.querySelector('[data-testid="qidahen-battle-roll-sequence"]');
+            const damage = root?.getAttribute('data-battle-roll-state') === 'damage';
+            const next = (['attacker', 'defender'] as const).flatMap(side => {
+                const label = root?.querySelector(damage ? `[data-testid="qidahen-battle-result-${side}"]` : `[data-qidahen-battle-label="${side}"]`);
+                if (!label) return [];
+                const regionId = damage ? (side === 'attacker' ? targetRegionId : sourceRegionId) : (side === 'attacker' ? sourceRegionId : targetRegionId);
+                if (!regionId) return [];
+                const from = label.getBoundingClientRect();
+                const cx = (from.left + from.right) / 2, cy = (from.top + from.bottom) / 2;
+                const targets = [...document.querySelectorAll('[data-qidahen-map-token-region], [data-qidahen-army-group-region]')]
+                    .filter(element => (element.getAttribute('data-qidahen-map-token-region') ?? element.getAttribute('data-qidahen-army-group-region')) === regionId)
+                    .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0)
+                    .map(rect => ({ x: Math.max(rect.left, Math.min(rect.right, cx)), y: Math.max(rect.top, Math.min(rect.bottom, cy)) }))
+                    .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy));
+                const target = targets[0];
+                if (!target) return [];
+                const dx = target.x - cx, dy = target.y - cy;
+                const edge = Math.min(dx === 0 ? Infinity : from.width / 2 / Math.abs(dx), dy === 0 ? Infinity : from.height / 2 / Math.abs(dy), 1);
+                return [{ x1: cx + dx * edge, y1: cy + dy * edge, x2: target.x, y2: target.y }];
+            });
+            setLinks(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
+        };
+        let scheduled = 0;
+        const schedule = () => { cancelAnimationFrame(scheduled); scheduled = requestAnimationFrame(measure); };
+        const observer = new MutationObserver(schedule);
+        observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-battle-roll-state', 'data-battle-roll-phase'] });
+        schedule();
+        return () => { cancelAnimationFrame(scheduled); observer.disconnect(); };
+    }, [frame, sourceRegionId, targetRegionId, spaceUnavailable]);
     React.useLayoutEffect(() => { onFrameChange(frame); }, [frame, onFrameChange]);
     React.useLayoutEffect(() => () => onFrameChange(null), [onFrameChange]);
     if (spaceUnavailable) return <BattleLayoutReport {...sequence} />;
-    return frame ? createPortal(<div data-testid="qidahen-battle-roll-overlay" className="pointer-events-none fixed z-[170] [--spacing:4px]"
+    return frame ? createPortal(<><svg aria-hidden="true" className="pointer-events-none fixed inset-0 z-[169] h-full w-full">
+        {links.map((link, index) => <g key={index}><line x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke="#2a160b" strokeWidth="5" /><line x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke="#f6d48b" strokeWidth="2" /><circle cx={link.x2} cy={link.y2} r="4" fill="#f6d48b" stroke="#2a160b" /></g>)}
+    </svg><div data-testid="qidahen-battle-roll-overlay" className="pointer-events-none fixed z-[170] [--spacing:4px]"
         style={{ left: frame.left, top: frame.top, width: frame.width, height: frame.height, '--qidahen-battle-panel-height': `${frame.height}px` } as React.CSSProperties}>
         {started ? <QidahenBattleRollSequence {...sequence} /> : null}
-    </div>, document.body) : null;
+    </div></>, document.body) : null;
 }

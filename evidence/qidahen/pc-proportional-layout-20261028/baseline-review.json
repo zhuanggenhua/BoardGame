@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "①PC与横屏手机共用同一构图及缩放",
+      "status": "PASS",
+      "baselineSource": "用户明确要求手机与已认可桌面共用同一等比构图，已实际读取的桌面常态与桌面支付作为对象方位和结构对照，失败图不作为正确布局基线。",
+      "preservedInformation": "轮盘、三席公开读数、两张纪年、朝鲜牌堆、大明抽弃牌、手牌和原动作均保留。",
+      "preservedActions": "原轮盘与势力动作、手牌检视、支付确认取消及地图缩放复位继续由原承载提供。",
+      "changes": "各视口使用同一构图和统一尺度，宽屏字体与间距不再二次变化，手机不另排或独立放大，正式截图隐藏开发调试入口。",
+      "duplicateDecision": "沿用同一组正式对象及固定界面，不新增手机专用重复对象、文字列表或代理动作。",
+      "changeAuthority": "用户明确桌面等比合同授权本轮收敛，不将手机小字或等比留边另转成重排要求。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/01-桌面常态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/03-桌面支付.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/02-手机常态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/06-宽屏桌面常态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/07-小屏手机常态.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "②手牌支付保留对象与确认取消，八牌首末可触摸",
+      "status": "PASS",
+      "baselineSource": "采用已认可桌面手牌与原支付确认取消合同，旧八牌失败截图仅为首牌负向溢出的缺陷前态。",
+      "preservedInformation": "保留每张真实手牌、卡面、类别、查看入口、所选进度、已选标记及抽弃牌数量承载。",
+      "preservedActions": "保留主点击选牌、逐牌检视、确认执行和取消，本轮首末张真实触摸与取消由完整端到端行为证据支持。",
+      "changes": "八牌横排从完整首牌起始，牌本体与查看层保持相同滚动起点，末端局部露牌并保留横向浏览路径，支付条与牌顶分离。",
+      "duplicateDecision": "不复制第二套手牌或支付按钮，类别、查看与支付分别承担原有职责。",
+      "changeAuthority": "本轮获授权修复等比与多牌交互暴露的长期可达缺口，不把坏图认定为最后正常布局。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/03-桌面支付.png",
+        "D:/gongzuo/webgame/BoardGame/test-results/playwright-artifacts/e2e-1793169365273-g6g13m/qidahen-mobile-population--99e13-ts-手机触摸与多牌代表态-八张支付手牌的首末张可触摸-chromium/test-failed-1.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/03-桌面支付.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/04-手机支付.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/05-手机八张支付压力态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/08-桌面八张支付压力态.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "③地图人口未见新增相互重叠且原对象可浏览",
+      "status": "PASS",
+      "baselineSource": "采用既有桌面人口方块和正式可平移缩放地图合同，固定界面对场景的跨层覆盖不自动等同人口两两相撞。",
+      "preservedInformation": "原地区、人口连续读数、势力与军队对象仍由正式地图和原标记承载。",
+      "preservedActions": "保留真实地图缩放、连续上滑、惯性停止及原对象检视，具体行为由主任务冻结端到端证据支持。",
+      "changes": "本次等比改造未在可见局面中产生可指认的人口两两重叠，浏览后原先靠近手牌的地区与人口来到无遮挡位置。",
+      "duplicateDecision": "不新增影子人口、代理地区列表或另一套地图，仍在原场景中浏览原对象。",
+      "changeAuthority": "用户对人口重叠与桌面整体界面的质疑授权核查，本报告只作交互图面裁决，不将截图当所有区域数值或规则正确性的证明。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/01-桌面常态.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/screenshots/09-手机地图浏览前.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "④触摸浏览地图后可读取地区说明",
+      "status": "PASS",
+      "baselineSource": "沿用现有桌面悬浮地区说明的原对象及读取职责，用户原触摸浏览与检视需求为合同，旧已命中但无说明的失败图仅作为缺陷前态。",
+      "preservedInformation": "保留地区标题、属性分行及原说明内容承载，不以额外摘要或新文案替代。",
+      "preservedActions": "触摸缩放和连续上滑后停止惯性，再轻触原地区进入原说明，固定界面与手牌保持原位置。",
+      "changes": "旧图已移出地区却没有说明，新图在地区旁出现原说明卡，标题和信息结构可辨且没有被手牌遮住。",
+      "duplicateDecision": "复用原地区说明，不新增手机专用详情、重复提示或代理按钮。",
+      "changeAuthority": "本轮获授权修复真实触摸浏览后无法打开原地区说明的长期缺口，不把失败前态当认可基线。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/test-results/playwright-artifacts/e2e-1793171715724-lusngt/qidahen-mobile-population--c8a1f-原交互可达性-地图平移后可检视原先被手牌覆盖的人口地区-chromium/test-failed-1.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/09-手机地图浏览前.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/verified/10-手机地图平移检视后.png"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/pc-proportional-layout-20261028/independent-review-original.json",
+      "sourceReviewEntry": "/requirements/3"
+    }
+  ]
+}

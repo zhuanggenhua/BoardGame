@@ -1,0 +1,191 @@
+{
+  "status": "PASS",
+  "verdict": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/review_qidahen_tray"
+  },
+  "reviewedAt": "2026-10-26T09:53:33.998035+00:00",
+  "objective": "七大恨征召军队支付托盘的桌面确认/取消主次与手机横屏不遮牌局部验收",
+  "criteria": [
+    "支付目标、已选1/1与选牌名称可见",
+    "确认与取消有明确主次",
+    "真实卡牌与地图同屏",
+    "支付栏不遮挡选中卡头和手牌查看入口",
+    "目标组件无破图或裁切"
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "revise": 0
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/01-桌面支付确认与取消.png",
+      "status": "PASS",
+      "score": 94,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原始整屏可见征召军队、已选1/1和东北大军名称。确认执行保留纸色实底，取消本次行动采用次级无实底表达，主次清楚。托盘与已选卡顶有间隔，三张手牌及各自查看入口可见；地图、玩家条和牌堆未被本轮新增结构挤出。未见目标组件破图或裁切。",
+      "sha256": "364b85de2d2676b65f8e44802705cfe546bd4c6ec1493b0773712f9e8d3b200d",
+      "source": {
+        "run": "e2e-1793001825872-4pk2pc",
+        "entry": "/play/qidahen",
+        "testFile": "e2e/qidahen/first-step.e2e.ts",
+        "testCase": "有弃牌成本的势力行动在取消后不会执行，且重新打开时已选手牌会清空",
+        "evidenceRole": "当前实现局部交互UI代表态原始整屏"
+      },
+      "hardFailures": [],
+      "issues": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/02-手机横屏支付确认与取消.png",
+      "status": "PASS",
+      "score": 93,
+      "viewport": {
+        "width": 932,
+        "height": 430
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付托盘下缘已上移至纵坐标约236，已选手牌顶位于纵坐标约261，形成可见间隔；不再压住事件标签、卡头或看按钮。确认执行与取消本次行动均完整可见、文字清楚，支付进度已选1/1和选牌名称可读。三张真实手牌与地图同屏，已选标记清晰；本轮移动未挤掉手牌操作入口。截图只证明可见性，真实可点击与取消行为由独立端到端断言证明。",
+      "sha256": "e6e7b09ad547478266eb87884690464d1dd5ab53c7730c616355917e435ecb65",
+      "source": {
+        "run": "e2e-1793001825872-4pk2pc",
+        "entry": "/play/qidahen",
+        "testFile": "e2e/qidahen/first-step.e2e.ts",
+        "testCase": "有弃牌成本的势力行动在取消后不会执行，且重新打开时已选手牌会清空",
+        "evidenceRole": "当前实现局部交互UI代表态原始整屏"
+      },
+      "hardFailures": [],
+      "issues": []
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "桌面支付栏明确区分确认与取消，同时保留支付和手牌信息",
+      "status": "PASS",
+      "baselineSource": {
+        "boardSource": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/Board.before.tsx",
+        "runtimeEvidence": "开工前完整Board在同真实入口重跑所得原始整屏",
+        "log": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log",
+        "sha256": "072a24ae385648f8ecb9c2ba68f32b79a3662eefce0f8f3f8d6cf8663eb7b8ab"
+      },
+      "preservedInformation": [
+        "征召军队名称",
+        "支付进度已选1/1",
+        "已选牌东北大军名称",
+        "三张手牌本体与选择态",
+        "同屏玩家条、地图和牌堆"
+      ],
+      "preservedActions": [
+        "确认执行入口",
+        "取消本次行动入口",
+        "手牌选牌入口",
+        "手牌查看入口；点击结果由行为测试单独证明"
+      ],
+      "changes": [
+        "将原本同等纸色实底的确认/取消改为确认实底、取消次级表达",
+        "托盘仍位于同一手牌上方槽位，未增加确认层或第二套支付状态"
+      ],
+      "duplicateDecision": "不增加新提示、按钮或支付信息副本；复用原有托盘、现有选牌信息和两项动作，单一职责承载。",
+      "changeAuthority": "用户：该优化重构的可以做一下；前轮已明确支付确认与取消主次优化候选。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/01-桌面支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/01-桌面支付确认与取消.png"
+      ]
+    },
+    {
+      "requirement": "手机横屏支付栏与最高选中手牌保持间隔，不遮挡卡头和查看入口",
+      "status": "PASS",
+      "baselineSource": {
+        "boardSource": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/Board.before.tsx",
+        "runtimeEvidence": "开工前完整Board在同真实入口重跑所得原始整屏",
+        "log": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log",
+        "sha256": "4c20dd14abccf00847f8d77f249ddde6204260ceb8a5bd68f7494986422643c2"
+      },
+      "preservedInformation": [
+        "征召军队和已选1/1",
+        "已选牌名称",
+        "事件/战术/银两三张手牌本体",
+        "已选牌标记",
+        "地图与当前玩家条"
+      ],
+      "preservedActions": [
+        "确认执行入口",
+        "取消本次行动入口",
+        "手牌重新选择入口",
+        "三张手牌的看入口"
+      ],
+      "changes": [
+        "移动端支付托盘bottom由168调整为192，给最高卡头与放大查看入口留出间隔",
+        "取消采用次级样式；确认仍为主操作",
+        "当前整屏中托盘与选中卡头间存在可见间隔，hover态间隔>=8由E2E另行断言"
+      ],
+      "duplicateDecision": "仅移动既有临时托盘并区分既有操作的视觉主次；未隐藏手牌、未新增代理按钮或重复确认层。",
+      "changeAuthority": "用户：该优化重构的可以做一下；首次当前图面审查确认支付托盘遮住选中卡头，属于本轮支付交互直接依赖，实施最小避让修复。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/02-手机横屏支付确认与取消.png"
+      ],
+      "after": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/02-手机横屏支付确认与取消.png"
+      ]
+    }
+  ],
+  "elementResponsibilityAudit": {
+    "ledger": "requirements数组逐项职责对照",
+    "decisions": [
+      "支付进度与选牌名称由原托盘继续承载",
+      "卡面与查看入口由原手牌继续承载",
+      "确认承担支付提交、取消承担放弃草稿，不增添第三项同级动作"
+    ],
+    "uncoveredElements": [
+      "其它支付种类的图面代表态未覆盖"
+    ]
+  },
+  "negativeImpactChecks": [
+    "确认/取消动作入口均保留",
+    "手机手牌与查看入口没有为托盘让位而隐藏或缩小",
+    "地图和玩家条持续同屏；支付期间原轮盘不是当前操作对象",
+    "未增加常驻提示或第二支付面板"
+  ],
+  "behavioralVerification": {
+    "owner": "vitest",
+    "evidence": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/focused-tests.json",
+    "scope": "手牌托盘DOM行为与原支付领域测试；3项原有无关Board结构字串失败不包装成全绿",
+    "e2eEvidence": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-final.log",
+    "e2eResult": "1 passed；取消不扣牌、重新打开清空选牌、选中卡hover后与托盘间距断言"
+  },
+  "limitations": [
+    "仅桌面1920x1080与手机横屏932x430的征召军队已选1/1局部代表态",
+    "不证明轮盘支付、超手牌上限、孙元化科技的其它代表态",
+    "不证明竖屏或整游戏/教程全流程视觉通过",
+    "截图不单独证明数值结算与命令正确性"
+  ],
+  "hardFailures": [],
+  "formatNormalization": {
+    "actor": "/root",
+    "source": "review-original-raw.json",
+    "changes": [
+      "前后媒体路径规范为数组",
+      "观察段端到端缩写改为中文，未改变裁决及图面事实",
+      "观察段坐标字母改为中文纵坐标，数值及裁决不变"
+    ]
+  }
+}

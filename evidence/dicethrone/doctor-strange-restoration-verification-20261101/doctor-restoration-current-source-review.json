@@ -1,0 +1,1135 @@
+{
+  "reviewType": "只读当前源码恢复核对，不是视觉验收",
+  "createdAt": "2026-11-01T12:03:11.920896+00:00",
+  "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "ledger": "temp/doctor-restoration-ledger-cards.json",
+  "scope": [
+    "src/games/dicethrone/ui/InteractionOverlay.tsx",
+    "src/games/dicethrone/ui/HandArea.tsx",
+    "src/games/dicethrone/ui/handLayoutConstants.ts",
+    "src/games/dicethrone/ui/ChoiceModal.tsx",
+    "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+    "src/games/dicethrone/ui/components/GameButton.tsx",
+    "src/games/dicethrone/ui/components/GameModal.tsx"
+  ],
+  "sourceIdentity": [
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "sha256": "e5b895df57da16ba176b390d66d6a7232b3a96ea15e40a99d54f5c13bd67511c"
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "sha256": "5ea81eff511299025cf674b677b75ee83c4941872c815f0cfb201208aec09aaf"
+    },
+    {
+      "file": "src/games/dicethrone/ui/handLayoutConstants.ts",
+      "sha256": "ac184bf90ffc28eb78a01b73743c91749a293a6985dbd63ccc8f5c10b7b4cf7e"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "sha256": "f92f23f7ca5f274efd1d700591b593a5fe1d039891d8ee58252858fb079f5e98"
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "sha256": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "sha256": "7ae828f917fb6ca6cbde5978b2f7eb306de7f70d277819290af24f10280016a8"
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "sha256": "2389035e678f6969af88c7a342ff5af1e2ea4574debebb1fd98f8647b3ef6a86"
+    }
+  ],
+  "checks": [
+    {
+      "item": "候选卡原clamp与容量算法",
+      "holds": true,
+      "lines": [
+        23,
+        386
+      ]
+    },
+    {
+      "item": "原40vh纵滚及换行",
+      "holds": true,
+      "lines": [
+        464
+      ]
+    },
+    {
+      "item": "上方居中标题搜索、原4.25rem定位、下方动作",
+      "holds": true,
+      "lines": [
+        400,
+        401
+      ]
+    },
+    {
+      "item": "短屏新CSS/大卡/readerwidth已移除",
+      "holds": true
+    },
+    {
+      "item": "pb9、CardInspect底行、Check、hover scale1.02已移除",
+      "holds": true
+    },
+    {
+      "item": "旧上移/hover反馈恢复",
+      "holds": true,
+      "lines": [
+        515
+      ]
+    },
+    {
+      "item": "卡池额外底框移除，对比增强保留",
+      "holds": true
+    },
+    {
+      "item": "长按/右键只读原callback保留",
+      "holds": true
+    },
+    {
+      "item": "Choice真实候选/权限/区信息保留",
+      "holds": true
+    },
+    {
+      "item": "单持有人compact隔离，转移目标p4恢复",
+      "holds": true
+    },
+    {
+      "item": "手牌原宽12、本聊天额外底3已去",
+      "holds": true
+    },
+    {
+      "item": "其它任务弃牌/响应能力保留",
+      "holds": true
+    },
+    {
+      "item": "ChoiceModal卡grid/扩宽/移动gap2已去",
+      "holds": true
+    },
+    {
+      "item": "平面单列授权保留",
+      "holds": true
+    },
+    {
+      "item": "博士adapter未被改写",
+      "holds": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "type": "已证本聊天未授权可见改动漏撤",
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "lines": [
+        548,
+        559
+      ],
+      "evidence": "原c057卡池动作仅size=sm；当前GameButton sm min-h32被该class提升44；85条账已明确该项删除。本轮覆盖裁决没有给此变更授权。",
+      "consequence": "旧卡池确认/取消按钮高度被增加，未恢复原外形。",
+      "minimalFix": "删这两处min-h44；保留canCancel/文案/testid/原size=sm。"
+    },
+    {
+      "id": "R2",
+      "severity": "P1",
+      "type": "现存旧卡牌入口功能回归（非本轮恢复新引入）",
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "lines": [
+        696
+      ],
+      "related": [
+        {
+          "file": "src/games/dicethrone/Board.tsx",
+          "lines": [
+            1634,
+            1676
+          ]
+        },
+        {
+          "file": "src/games/dicethrone/hooks/useInteractionState.ts",
+          "lines": [
+            200
+          ]
+        }
+      ],
+      "evidence": "Overlay现在仅holder匹配才传selectedId；旧Board.statusInteraction只合并selected，没有透传localInteraction.selectedStatus.playerId；hook点状态只写selectedStatus。博士ChoiceObjectSelection显式写该字段，故博士用例不能证明旧卡牌入口正常。",
+      "consequence": "旧selectStatus状态选择可提交但选中图标没有selectedId反馈；同族旧选择入口被博士扩展字段误伤。",
+      "minimalFix": "在Board构造statusInteraction时透传localInteraction.selectedStatus?.playerId为selectedStatusPlayerId，保留原pending已选字段；不把Overlay改回跨holder统一高亮。",
+      "scope": "只读追查跨到Board/hook以证明消费链，未修改这些文件。"
+    }
+  ],
+  "overridingDecisions": [
+    {
+      "item": "多人tooltip避让",
+      "current": "保留optional边界/避让",
+      "reason": "主代理本次提供原候选被其它持有人说明遮挡的真实证据，覆盖前账建议；本审查仅确认未修改其它UI构图。"
+    },
+    {
+      "item": "ChoiceModal target头像/玩家props",
+      "current": "保留",
+      "reason": "主代理本次锁Thor targetPresentation无choiceKind真实consumer；当前thor.ts:21..23且103/242消费可复查，不能因博士改为adapter误撤。"
+    },
+    {
+      "item": "CSS hooks与共享22",
+      "current": "保留",
+      "reason": "无独立CSS规则命中dt-card-pool；22值与原高度相同。本次不为去重继续重构。"
+    },
+    {
+      "item": "HandArea origin-bottom-center",
+      "current": "保留待owner确认",
+      "reason": "本聊天原始写入命令未找到；主代理防误撤他人裁决，未把它声称为用户授权。"
+    }
+  ],
+  "ledgerEntryReview": [
+    {
+      "ledgerEntryId": 1,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        9,
+        9
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 2,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        14,
+        22
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 3,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        26,
+        48
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 4,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        62,
+        71
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 5,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        164,
+        165
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 6,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        176,
+        182
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 7,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        196,
+        205
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 8,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        210,
+        216
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 9,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        219,
+        219
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 10,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        239,
+        252
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 11,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        260,
+        261
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 12,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        276,
+        277
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 13,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        288,
+        288
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 14,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        343,
+        362
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 15,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        384,
+        388
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 16,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        416,
+        416
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 17,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        425,
+        438
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": "布局已复原；dt CSS钩子保留，block父级下shrink0无当前可见影响。"
+    },
+    {
+      "ledgerEntryId": 18,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        443,
+        445
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 19,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        449,
+        456
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": "布局已复原；dt CSS钩子保留，block父级下shrink0无当前可见影响。"
+    },
+    {
+      "ledgerEntryId": 20,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        498,
+        498
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 21,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        500,
+        504
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 22,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        516,
+        517
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 23,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        521,
+        526
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 24,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        530,
+        530
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 25,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        533,
+        548
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 26,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        550,
+        553
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 27,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        559,
+        562
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 28,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        568,
+        567
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 29,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        572,
+        580
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 30,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        582,
+        591
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 31,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        598,
+        598
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": "布局已复原；dt CSS钩子保留，block父级下shrink0无当前可见影响。"
+    },
+    {
+      "ledgerEntryId": 32,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        600,
+        619
+      ],
+      "previousDecision": "保留",
+      "review": "发现漏撤R1",
+      "note": "仍有两处min-h44，其余Choice语义按账保留。"
+    },
+    {
+      "ledgerEntryId": 33,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        641,
+        642
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 34,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        647,
+        664
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 35,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        672,
+        672
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 36,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        698,
+        698
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 37,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        711,
+        712
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 38,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        743,
+        743
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 39,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        751,
+        753
+      ],
+      "previousDecision": "保留",
+      "review": "候选保留但发现旧入口功能缺口R2",
+      "note": "Board旧statusInteraction未透传selectedStatusPlayerId；博士adapter正常不能代表旧卡牌。"
+    },
+    {
+      "ledgerEntryId": 40,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        756,
+        757
+      ],
+      "previousDecision": "恢复",
+      "review": "按主代理新证据覆盖前账",
+      "note": "多人tooltip真实遮挡最窄optional能力保留。"
+    },
+    {
+      "ledgerEntryId": 41,
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "snapshotRange": [
+        811,
+        811
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 42,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        14,
+        14
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 43,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        22,
+        29
+      ],
+      "previousDecision": "恢复",
+      "review": "可见宽/高已复原，等价结构按主代理裁决保留",
+      "note": "12本地；共享22高度不变；不追加重构。"
+    },
+    {
+      "ledgerEntryId": 44,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        33,
+        33
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 45,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        35,
+        36
+      ],
+      "previousDecision": "恢复",
+      "review": "本聊天额外3已恢复0，独立响应能力保留",
+      "note": "只读证明源码数值，不代表响应态视觉验收。"
+    },
+    {
+      "ledgerEntryId": 46,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        230,
+        231
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 47,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        235,
+        235
+      ],
+      "previousDecision": "非本聊天",
+      "review": "本聊天额外3已恢复0，独立响应能力保留",
+      "note": "只读证明源码数值，不代表响应态视觉验收。"
+    },
+    {
+      "ledgerEntryId": 48,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        263,
+        264
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 49,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        278,
+        279
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 50,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        282,
+        282
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 51,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        464,
+        477
+      ],
+      "previousDecision": "保留",
+      "review": "本聊天额外3已恢复0，独立响应能力保留",
+      "note": "只读证明源码数值，不代表响应态视觉验收。"
+    },
+    {
+      "ledgerEntryId": 52,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        586,
+        587
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 53,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        842,
+        853
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 54,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        873,
+        877
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 55,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        933,
+        933
+      ],
+      "previousDecision": "恢复",
+      "review": "可见宽/高已复原，等价结构按主代理裁决保留",
+      "note": "12本地；共享22高度不变；不追加重构。"
+    },
+    {
+      "ledgerEntryId": 56,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        954,
+        954
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 57,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        963,
+        967
+      ],
+      "previousDecision": "非本聊天",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 58,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        1067,
+        1067
+      ],
+      "previousDecision": "未证明",
+      "review": "主代理防误撤裁决保留",
+      "note": "owner尚未证明，不认作用户授权。"
+    },
+    {
+      "ledgerEntryId": 59,
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "snapshotRange": [
+        1127,
+        1129
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 60,
+      "file": "src/games/dicethrone/ui/handLayoutConstants.ts",
+      "snapshotRange": [
+        1,
+        5
+      ],
+      "previousDecision": "恢复",
+      "review": "可见宽/高已复原，等价结构按主代理裁决保留",
+      "note": "12本地；共享22高度不变；不追加重构。"
+    },
+    {
+      "ledgerEntryId": 61,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        10,
+        15
+      ],
+      "previousDecision": "恢复",
+      "review": "按主代理新证据覆盖前账",
+      "note": "Thor targetPresentation真实消费者保留头像及数据；博士仍走adapter；骰子预览非本聊天。"
+    },
+    {
+      "ledgerEntryId": 62,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        17,
+        17
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 63,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        26,
+        32
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 64,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        71,
+        72
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 65,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        84,
+        96
+      ],
+      "previousDecision": "恢复",
+      "review": "按主代理新证据覆盖前账",
+      "note": "Thor targetPresentation真实消费者保留头像及数据；博士仍走adapter；骰子预览非本聊天。"
+    },
+    {
+      "ledgerEntryId": 66,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        103,
+        103
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 67,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        150,
+        150
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 68,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        153,
+        153
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 69,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        162,
+        178
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 70,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        244,
+        278
+      ],
+      "previousDecision": "恢复",
+      "review": "已按原账复查恢复项",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 71,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        281,
+        281
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 72,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        283,
+        283
+      ],
+      "previousDecision": "恢复",
+      "review": "按主代理新证据覆盖前账",
+      "note": "Thor targetPresentation真实消费者保留头像及数据；博士仍走adapter；骰子预览非本聊天。"
+    },
+    {
+      "ledgerEntryId": 73,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        290,
+        292
+      ],
+      "previousDecision": "保留",
+      "review": "按主代理新证据覆盖前账",
+      "note": "Thor targetPresentation真实消费者保留头像及数据；博士仍走adapter；骰子预览非本聊天。"
+    },
+    {
+      "ledgerEntryId": 74,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        296,
+        311
+      ],
+      "previousDecision": "非本聊天",
+      "review": "按主代理新证据覆盖前账",
+      "note": "Thor targetPresentation真实消费者保留头像及数据；博士仍走adapter；骰子预览非本聊天。"
+    },
+    {
+      "ledgerEntryId": 75,
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "snapshotRange": [
+        313,
+        315
+      ],
+      "previousDecision": "恢复",
+      "review": "按主代理新证据覆盖前账",
+      "note": "Thor targetPresentation真实消费者保留头像及数据；博士仍走adapter；骰子预览非本聊天。"
+    },
+    {
+      "ledgerEntryId": 76,
+      "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "snapshotRange": [
+        1,
+        149
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 77,
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "snapshotRange": [
+        11,
+        11
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 78,
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "snapshotRange": [
+        32,
+        36
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 79,
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "snapshotRange": [
+        44,
+        44
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 80,
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "snapshotRange": [
+        85,
+        88
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 81,
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "snapshotRange": [
+        17,
+        33
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 82,
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "snapshotRange": [
+        54,
+        55
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 83,
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "snapshotRange": [
+        70,
+        73
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 84,
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "snapshotRange": [
+        83,
+        84
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    },
+    {
+      "ledgerEntryId": 85,
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "snapshotRange": [
+        90,
+        91
+      ],
+      "previousDecision": "保留",
+      "review": "已按原账复查；保留原能力/授权变更",
+      "note": ""
+    }
+  ],
+  "validation": {
+    "diffCheck": "7文件git diff --check exit0；仅LF转CRLF提示",
+    "tests": "未运行；没有将测试结果作为视觉依据",
+    "images": "未读取或生成",
+    "sourceMutations": "无；仅写本审查JSON"
+  },
+  "conclusion": "仍有R1未授权按钮高度漏撤及R2旧状态入口选中反馈缺口，尚不可按原始目标收口；其余主要恢复点在源码层符合账与主代理新裁决。",
+  "limits": [
+    "未运行真实浏览器，未审图片，不能证明最终视觉或运行验收",
+    "保留多人tooltip/Thor头像/origin等依主代理新证据与裁决，不把它们改写成用户新UI授权",
+    "hash代表写报告时文件；后续修改须复核"
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-10-22",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "规则教学使用准确的简体中文译文，并只呈现当前教学原子所需内容。",
+      "status": "PASS",
+      "evidence": [
+        "tutorial-design 标准、七大恨覆盖矩阵、中文语言包及 tutorialFlow 定向测试共同核对。"
+      ]
+    },
+    {
+      "requirement": "轮盘 1/2/3 格作为每回合互斥选项，从真实合法局面进入各自后续规则链。",
+      "status": "PASS",
+      "evidence": [
+        "Chromium E2E 完整运行 20/20 通过，覆盖三种走法与真实后果。"
+      ]
+    },
+    {
+      "requirement": "征兵训练真实完成弃牌、玩家选择行动、选择合法目标、额外训练及继续对局。",
+      "status": "PASS",
+      "evidence": [
+        "Chromium E2E 覆盖征兵训练支付与选择；定向 Vitest 覆盖费用和结算。"
+      ]
+    },
+    {
+      "requirement": "攻城后先展示围城、占领、撤回的区别；三条真实结果分支均完成交互与结算。",
+      "status": "PASS",
+      "evidence": [
+        "Chromium E2E 分别确认围城保留城市原控制与守军、占领改变控制并清除守军、撤回保留城市控制且把幸存部队退回友方区域。"
+      ]
+    },
+    {
+      "requirement": "教学卡不遮挡当前行动入口，战后选项说明可读，确认按钮不被悬浮控件覆盖。",
+      "status": "PASS",
+      "evidence": [
+        "Chromium E2E 对守城 / 撤退 / 战后操作区、聊天悬浮菜单相交、选项列表完整显示及占领确认按钮做几何断言；89 张图逐张视觉审 UI。"
+      ]
+    },
+    {
+      "requirement": "89 张最终整屏截图的教学焦点、交互提示、布局可读性和错误状态均逐张审核。",
+      "status": "PASS",
+      "evidence": [
+        "三名子代理逐张审核 r19 最终媒体 89/89；审查范围仅为 UI/交互，不承担规则数值判定。"
+      ]
+    }
+  ],
+  "verification": {
+    "e2e": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+    "e2eRunId": "tutorial-refactor-final-20261022-r19",
+    "e2eResult": "20 passed",
+    "targetedVitest": "4 个七大恨定向测试文件加 1 个教程生命周期测试文件，82/82 通过",
+    "targetedVitestCommand": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-wheel-economy-and-diplomacy.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/qidahen-wheel-dispatch-payment.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx --configLoader native",
+    "typecheck": "npm run typecheck: PASS",
+    "specLint": "npm run spec:lint: PASS",
+    "i18nCheck": "npm run i18n:check: PASS",
+    "diffCheck": "git diff --check: PASS",
+    "sourcePngCount": 107,
+    "decodedPngCount": 107,
+    "finalMediaCount": 89
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "qidahen-r19-visual-review",
+      "delegatedAuditors": [
+        {
+          "id": "visual_r19_batch_01",
+          "scope": "r19 final media 1-29",
+          "total": 29,
+          "pass": 29,
+          "revise": 0,
+          "failedPaths": []
+        },
+        {
+          "id": "visual_r19_batch_02",
+          "scope": "r19 final media 30-58",
+          "total": 29,
+          "pass": 29,
+          "revise": 0,
+          "failedPaths": []
+        },
+        {
+          "id": "visual_r19_batch_03",
+          "scope": "r19 final media 59-89",
+          "total": 31,
+          "pass": 31,
+          "revise": 0,
+          "failedPaths": []
+        }
+      ]
+    },
+    "reviewFile": ".visual-review.json",
+    "summary": "三名子代理逐张审核本清单 89 张整屏媒体；PASS 89，REVISE 0。截图仅证明 UI/交互可见性，规则数值由 Vitest 与 Chromium E2E 覆盖。"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "教程文案、规则步骤时序、轮盘走法、征兵训练选择和结算",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-wheel-economy-and-diplomacy.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/qidahen-wheel-dispatch-payment.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx --configLoader native"
+    ],
+    "evidence": [
+      "七大恨 4 个定向 Vitest 文件及 1 个教程生命周期文件：82/82 通过，覆盖征兵、训练、额外训练、轮盘费用与教程节点。",
+      "Chromium E2E：20/20 通过，确认真实点击、结果和教程后可继续对局。",
+      "视觉审计只核查 UI/交互可见性，不承担规则与数值正确性判定。"
+    ]
+  },
+  "knownLimitations": [
+    "此前全量 Qidahen Vitest 审计为 960/1025 通过、65 失败（8 个测试文件）。这些失败不由本轮 82 个定向测试或 20 条 Chromium E2E 覆盖，本清单的 PASS 只针对所列教程流程；全量失败仍需单独排查。"
+  ],
+  "media": [
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/00-教程目录-先选择章节.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/00a-目录选择后-阅读三种胜利条件.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/00b-继续后-进入行动流程说明.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03-轮盘选择-当前标记下选择1到3格.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/04-轮盘结算-新年到开垦并增加人口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/04a-手牌行动规则-四个同层行动.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/05-赐印招安规则原文.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/06-手牌行动-现在选择赐印招安.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/07b-赐印招安-3张手牌已选待确认.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/08-赐印招安-选择山海关接收区.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/10-赐印招安-部队位置与阵营变化.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03a-00-两格分支入口-轮盘标记与三种走法.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03a-轮盘两格-选择对手抽牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03b-轮盘两格-进入军屯并结算.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03d-征兵训练费用与次数原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03e-征兵训练选择行动前规则原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03f-征兵本土限制与候选区域.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/03g-征兵结算后返回手牌行动.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/14a-进攻调度规则-弃一张手牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/14b-进攻调度支付-手牌已选待确认.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15-进攻调度支付完成-地图部队选择可继续.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15a-00-开垦专题起点-轮盘标记与决策入口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15a-开垦第1步-点击高亮开垦.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15b-开垦第2步-看己方控制区人口增加.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15c-00-军屯专题起点-轮盘标记与决策入口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15c-军屯第1步-点击高亮军屯.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15d-军屯第2步-看补牌并建立正规军.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e-征兵训练第1步-点击高亮征兵训练.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e0-费用与次数原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e1-征兵与训练行动原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e2-炮兵等级限制原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15e3-轮盘落点等待支付.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15f-选择炮兵训练.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15g-炮兵训练结算结果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15h-本土征兵限制原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15i-征兵候选本土区域.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15j-征兵结算结果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15k-额外训练原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15l-额外训练弃牌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/15m-征兵训练汇总与继续对局.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/16-军备第1步-先点升级军备.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/17-军备第2步-点击底部手牌支付2张.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/18-军备第3步-看火炮技术升到2级.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/19-事件第1步-先点大汗令箭.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/20-事件第2步-点击底部手牌支付1张.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/21-事件第3步-选择征兵训练效果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/22-大汗令箭征兵训练行动原句.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/25-大汗令箭结算摘要.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/23-进攻第1步-点击突袭作战入口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/24-进攻第2步-弃1张手牌支付突袭.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/27a-进攻第6步-看占领结果摘要.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/27-00-撤退专题起点-野战败方待选撤退方式.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/28-撤退第1步-先看断后和溃退入口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/30-攻城第1步-真实守城宣告入口.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/30a-攻城第1a步-右侧断后结算城战.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31-攻城第2步-选择围城该区.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31b-围城结算后-山海关仍由守方控制.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-00-占领对照专题起点-守城决策.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-01-攻下城市后-选择占领或围城.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-02-同章选择占领目标.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31a-03-同章占领结算结果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/32-外交第1步-点击高亮外交雇佣.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/33-外交第2步-先放置友好标记.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/33a-外交第2a步-翻为附庸.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/33b-外交第2b步-移除他方控制标记.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/34-外交第3步-结束并结算雇佣军.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/36-跨年第1步-推进到年中并查看税赋与人物.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/37-跨年第2步-先看新年朝鲜朝贡.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/38-跨年第3步-进入新年防线维护.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/40-跨年第5步-看新顺位与人物刷新.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/41-跨年第6步-看到新年结算与新年份.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/移动-01-移动教程-手牌检视前.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/移动-02-移动教程-长按手牌打开检视.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/移动-03-移动教程-关闭检视回到牌桌.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31c-01-攻城战后处理-选择前.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31c-02-攻城战后处理-撤回确认前.png",
+    "evidence/qidahen/tutorial-refactor-20261022-r19/media/31c-03-攻城战后处理-撤回结果.png"
+  ]
+}

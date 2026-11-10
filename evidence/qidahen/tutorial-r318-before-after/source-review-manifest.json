@@ -1,0 +1,49 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "修改前后的截图都要有，比较部队归属、兵牌布局和相关画面是否退步",
+  "productAcceptance": "not-claimed",
+  "media": [
+    {
+      "file": "01-修改前-开局控制章重叠.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-token-r298\\frontier-goal.png",
+      "sha256": "479c9c3d81cf57837da3facfe82e9aec12f70ad7f63f2c127bb528983440d90c",
+      "description": "修改前：朵颜部与山海关控制章重叠。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "02-修改后-开局控制章.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r318-gameui-pc-20261108\\desktop\\00-frontier-goal.png",
+      "sha256": "95f4ed32cbebf69c94d7b26290757ad8898a6f3d9eb4d0d627a31a6ab60823c3",
+      "description": "修改后：同一开局状态的控制章与地名。",
+      "priorVerdict": "待最终逐图验收"
+    },
+    {
+      "file": "03-修改前-进攻目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r297-gameui-pc-20261108\\desktop\\17-dispatch-target.png",
+      "sha256": "1c3ec2506430c2b170ad87416144677750ba93377df43c2f306015b2f6a3f1e6",
+      "description": "修改前：进攻目标状态下辽北兵牌面板受轮盘遮挡。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "04-修改后-进攻目标.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r318-gameui-pc-20261108\\desktop\\21-dispatch-target.png",
+      "sha256": "bbecba28e61d4b91c645418ced7e8c6a636307f55aabdaacd1e16f9ee1f0290b",
+      "description": "修改后：同一目标步骤的来源、兵牌面板与叶赫部高亮。",
+      "priorVerdict": "待最终逐图验收"
+    },
+    {
+      "file": "05-修改前-外长城维护.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\.tmp\\qidahen-wall-r292\\abandon-outer-wall.png",
+      "sha256": "e0f68546d69ba3cfc0061abbe19e31fadb354aaf1c9d1bac8a1d160d6aaae5b7",
+      "description": "修改前：外长城维护步骤中墙线被固定牌堆及纪年牌遮挡。",
+      "priorVerdict": "REVISE"
+    },
+    {
+      "file": "06-修改后-外长城维护.png",
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r318-gameui-pc-20261108\\desktop\\43-abandon-outer-wall.png",
+      "sha256": "7e53fede124e3229450da318c06fa921ead7855508078e98348c5e92eafece00",
+      "description": "修改后：同一维护步骤的墙线及牌堆布局。",
+      "priorVerdict": "待最终逐图验收"
+    }
+  ]
+}

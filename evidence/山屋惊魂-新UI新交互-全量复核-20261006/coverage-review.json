@@ -1,0 +1,96 @@
+{
+  "verdict": "REVIEW",
+  "scope": "山屋惊魂新 UI / 新交互全量复核视图",
+  "note": "此视图合并多个已留存真实浏览器运行的证据目录；用于完整范围复核，不把混合运行冒充单次黄金 PASS。",
+  "generatedAt": "2026-10-06T04:30:04.063Z",
+  "groups": [
+    {
+      "key": "event-ui",
+      "label": "event-ui",
+      "count": 57
+    },
+    {
+      "key": "omen",
+      "label": "omen",
+      "count": 5
+    },
+    {
+      "key": "active-item",
+      "label": "active-item",
+      "count": 6
+    },
+    {
+      "key": "trade",
+      "label": "trade",
+      "count": 6
+    },
+    {
+      "key": "monster",
+      "label": "monster",
+      "count": 35
+    },
+    {
+      "key": "haunt-main",
+      "label": "haunt-main",
+      "count": 21
+    },
+    {
+      "key": "hero",
+      "label": "hero",
+      "count": 7
+    },
+    {
+      "key": "traitor",
+      "label": "traitor",
+      "count": 7
+    },
+    {
+      "key": "video",
+      "label": "video",
+      "count": 1
+    },
+    {
+      "key": "event-full",
+      "label": "event-full",
+      "count": 121
+    },
+    {
+      "key": "confirm-fx",
+      "label": "confirm-fx",
+      "count": 13
+    },
+    {
+      "key": "roll-confirm",
+      "label": "roll-confirm",
+      "count": 11
+    }
+  ],
+  "itemCount": 290,
+  "sourceRuns": [
+    "betrayal-event-choice-coverage-20261004-new-ui",
+    "betrayal-omen-haunt-202609",
+    "betrayal-active-possession-202609",
+    "betrayal-trade-202609",
+    "betrayal-mummy-monster-20261001",
+    "betrayal-main-golden-chain-20261001",
+    "betrayal-hero-actions-20261001",
+    "betrayal-traitor-actions-20261001",
+    "betrayal-golden-video-20261001",
+    "betrayal-event-card-continuity-mixed",
+    "betrayal-discovery-confirmation-202609",
+    "betrayal-roll-confirmation-202609"
+  ],
+  "coverage": [
+    "事件牌与物品新 UI / 新交互",
+    "预兆牌与作祟检定",
+    "主动持有物使用",
+    "交易交互",
+    "木乃伊怪物移动、攻击、偷取、伤害与死亡保护",
+    "找真名、驱逐、英雄胜利",
+    "叛徒行动、交付与叛徒胜利",
+    "黄金端到端录屏",
+    "事件牌全量承接与特殊交互",
+    "物品 / 预兆确认与飞行动画",
+    "事件骰与发现牌确认重构"
+  ]
+}

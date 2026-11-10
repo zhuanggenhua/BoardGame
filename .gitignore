@@ -115,6 +115,9 @@ public/**/*.webm
 !public/assets/**/assets-manifest.json
 !public/assets/**/*.json
 
+# FGO 模型和演出数据由素材服务器提供，不提交 Git。
+public/assets/fate-domination/fgo/**
+
 # 赞助二维码等小图（允许提交）
 !public/logos/
 !public/logos/**
@@ -168,6 +171,7 @@ production/session-logs/
 
 # Codex/OMX 状态文件
 .omx/
+/codex-session-*.md
 
 # .spec/ 是唯一 AI 规范源；这些目录由 npm run spec:hosts 再生。
 /.codex/skill/

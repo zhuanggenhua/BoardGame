@@ -1,0 +1,14 @@
+{
+  "run": "e2e-1793537696114-oy6toq,e2e-1793537707962-ge7xsw",
+  "cases": 15,
+  "media": 53,
+  "carriedForwardFromRejectedPackage": 0,
+  "byteIdenticalWithinCurrentRestoration": 23,
+  "baseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "ledger": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-restoration-verification-20261101\\doctor-restoration-final-ledger.json",
+  "reports": [
+    "temp/doctor-restoration-visual-a-final.json",
+    "temp/doctor-restoration-visual-b-final.json",
+    "temp/doctor-restoration-visual-c-final.json"
+  ]
+}

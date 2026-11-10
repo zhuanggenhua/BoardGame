@@ -125,7 +125,7 @@ export function buildQidahenTurnChoice(core: QidahenCore, data: QidahenTurnResol
             const force = getQidahenUpkeepForce(core, task);
             const payableCards = !hasActiveCharacter(core, task.factionId, 'ming-wei-zhongxian') ? cards(task.factionId) : [];
             const removable = expandSpecialTroopStacksToCompatPieces(force.specialTroops);
-            return { title: `${core.regions.find(region => region.id === task.regionId)!.name} · 尚需支持${data.upkeepRemaining ?? task.required}支部队`,
+            return { title: `${core.regions.find(region => region.id === task.regionId)!.name} · 需支持或移除${data.upkeepRemaining ?? task.required}支部队`,
                 factionId: task.factionId, min: 1, max: data.upkeepRemaining ?? task.required,
                 candidates: [
                     ...payableCards.map(card => ({ id: card.id, label: card.label, value: card.id, displayMode: 'card' as const })),

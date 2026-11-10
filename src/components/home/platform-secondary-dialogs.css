@@ -82,7 +82,7 @@ html[data-home-entry-style="modern"] [data-platform-dialog="about"] p.truncate {
     html[data-home-entry-style="modern"] .platform-cursor-variant-cells img { width: 100% !important; max-width: 28px; height: auto !important; aspect-ratio: 1; object-fit: contain; }
 }
 @media (max-width: 1023px) {
-    html[data-home-entry-style="modern"] [data-testid="feedback-image-preview"] > button { opacity: 1; }
+    html[data-home-entry-style="modern"] [data-testid="feedback-image-preview"] > button { display: grid; place-items: center; min-width: 44px; min-height: 44px; opacity: 1; }
     html[data-home-entry-style="modern"] [data-platform-dialog] { box-shadow: 4px 4px #d5ff00; }
     html[data-home-entry-style="modern"] [data-platform-dialog="account"] { padding: 20px; }
     html[data-home-entry-style="modern"] [data-platform-dialog="cursor"] .grid-cols-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }

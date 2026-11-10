@@ -1,0 +1,704 @@
+{
+  "targetUrl": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-diagnostic\\2026-09-09T19-35-11-316Z",
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-diagnostic\\2026-09-09T19-35-11-316Z\\final.png",
+  "samples": [
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    },
+    {
+      "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+      "readyState": "complete",
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "hasTutorialOverlayCard": false,
+      "activeStepDom": null,
+      "contextDiagnostics": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "bodyText": "正在准备对局…加载游戏模块…"
+    }
+  ],
+  "logs": [
+    {
+      "at": 1788982515883,
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": 1788982515898,
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": 1788982515967,
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": 1788982515991,
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": 1788982516485,
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": 1788982566196,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:36:06.195Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": 1788982566197,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:36:06.196Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": 1788982566200,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": 1788982566201,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": 1788982566734,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:36:06.733Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": 1788982566734,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:36:06.733Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": 1788982567717,
+      "type": "warning",
+      "text": "🟡 [性能] 平均 39.6 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": 1788982570154,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:36:10.153Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":3421}"
+    }
+  ]
+}

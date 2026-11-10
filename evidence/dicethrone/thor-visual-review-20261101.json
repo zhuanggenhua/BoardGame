@@ -1,0 +1,483 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "thor-interaction-visual-review-20261101"
+  },
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/01-索尔正式角色板与手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "索尔正式角色板与多张能力牌完整可辨，右侧旧骰盘和手牌区域同时可见，画面没有新增交互弹窗。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/01-索尔正式角色板与卡牌.png",
+      "sha256": "bcdd487be7a29a49a022402b0746b7ff036eef04dee8a144caf5cce9b0dfe1d1",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/02-弃牌飞掷从手牌区选择成本.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌飞掷提示、待选手牌和取消入口都在手牌区可见，没有出现额外弃牌弹窗，骰盘仍保持原位。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/02-弃牌飞掷选择成本.png",
+      "sha256": "11cde8a01a4ac835ec5539dd2c09d6ce351c58dd96d488fa35f8671eac977b81",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/03-取消弃牌支付返回原操作.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "取消后原骰盘与手牌区恢复在牌桌上，成本选择层关闭，没有残留确认按钮或第二套手牌选择界面。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/03-取消弃牌支付且资源未扣.png",
+      "sha256": "2e3e432db48486e4ff5e0753e92543b45def2c9416939577d3e1cf90567180d8",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/04-弃置成本后回到原骰盘结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付后的飞掷结算仍显示在原骰盘区域，原有阶段和操作按钮清楚可辨，没有新加的弃牌弹窗。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/04-手牌区弃置成本后飞掷结算.png",
+      "sha256": "c3b780f71ffdfb22724d3153a5ff94841051a4c0f1b433b2f530c1f266216285",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/05-奥丁空选仍显示原确认入口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧原骰盘显示五颗奥丁效果骰，顶部提示说明可确认保留结果，原确认按钮仍可见，没有额外重置入口。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔奥丁之力II可用原确认入口跳过额外重掷/_runs/e2e-1793502053186-pq2d31/01-奥丁效果骰空选时沿用原确认入口.png",
+      "sha256": "d66a8003f1fb15f18bfd0aa64db8af2126ef5779c57424a2cbebabb9f7db61c8",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/06-奥丁空选确认后进入原防御流程.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认后界面切入原防御掷骰阶段，防御骰盘和阶段栏可辨，中部等待层对应对手思考状态。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔奥丁之力II可用原确认入口跳过额外重掷/_runs/e2e-1793502053186-pq2d31/02-空选确认后直接收口且进入防御投掷.png",
+      "sha256": "71cf84b7e061d1890d9ab1cbaa8e87b072813fbab928a1ee73992eb6bc6af056",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/07-奥丁五颗效果骰沿旧骰盘等待选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "五颗效果骰位于右侧旧骰盘，选择提示贴在骰盘上缘，原确认入口可见，没有新增独立交互面板。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/06-奥丁效果骰等待选择重掷骰子.png",
+      "sha256": "0ad9c8d1f6e3aa732616f3b94b44f853c72d9b0e27381ec1eb752120523bc3b0",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/08-奥丁两颗骰子沿原重掷按钮提交.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两颗骰子以原选中标记突出，原重掷和确认按钮并列显示，提示未遮住骰子或操作。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/07-使用原整组重掷动作提交两颗所选骰子.png",
+      "sha256": "9cf1643f6972eac5427f15484ad6d88d7c4512650179d183f9e385b075ba0ebc",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/09-奥丁重掷后沿原确认收口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重掷后的骰面继续显示在旧骰盘中，原确认按钮仍可用，没有增加新的重置或确认控件。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1793502053186-pq2d31/08-整组重掷一次完成并保留原确认收口.png",
+      "sha256": "9ba0225fcb8a09d252a7dca01485f60166c9349d8c697612ff07a94d49433eb3",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/10-当之无愧只显示固定四或五.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "旧版琥珀提示恢复顶部居中，明确提示选择目标点数；固定 4/5、取消和确认入口均可见，未出现加减控件。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793514090320-chz8eo/03-当之无愧直接选择固定目标四或五.png",
+      "sha256": "590cd2b4d29d67ba5fdf51593a252ddf11f5a406f8d02e69012966cc59160514",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/11-选择四后沿旧骰盘点选目标骰.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部居中提示“选择要设为4的骰子”；旧骰盘仍承载五颗候选，4 高亮、取消和确认入口可辨。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793514090320-chz8eo/04-选择四后沿原固定值流程点选骰子.png",
+      "sha256": "d55f932a9dbf82623eeca70dc4fadc42dbb8e2493bf5961abaf1e2bdeb765a96",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/12-当之无愧只改目标骰为四.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "旧骰盘显示目标骰变为四，其余骰子留在原位置，投掷、确认和结算按钮均清楚可辨。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1793502053186-pq2d31/05-改为四且其余骰子保持.png",
+      "sha256": "7d20215ff595751cdf5b93cb887bdc943d22dbc92acf926c500e439475331b37",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/13-当之无愧选择五后仍可取消.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部居中提示目标 5；骰盘仍显示原骰值，取消可用且确认禁用，未增加新控件。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793514090320-chz8eo/01-当之无愧取消前选择五但尚未改骰.png",
+      "sha256": "bde7f4c5f39a70dfd2e91da5fe25cd41917bdf247e4652575909f50481a90f26",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/14-取消后原骰值和卡牌返回手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "取消后原骰盘回到普通投掷状态，卡牌特写与手牌区域可见，没有额外确认弹窗。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793502053186-pq2d31/02-取消改骰后骰面保持且卡牌资源退回.png",
+      "sha256": "dda9dfda94cb5476ba02935e185b51a6405a83e490ac51eb0d6855c609b99a12",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/15-再次提交后只显示目标骰为五.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重新提交后旧骰盘显示目标骰为五，其他骰子和原有阶段操作仍可见。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔当之无愧选择五后取消不提交改骰/_runs/e2e-1793502053186-pq2d31/03-重新出牌选择五后原固定流程完成改骰.png",
+      "sha256": "6f32419ad6cca4ffcb5ee131fca9914b5e08b856d4cc87c1a0f37917ba738d5b",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/16-不愧是我队友重投-队友持牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四席牌桌里队友持有对应卡牌，索尔骰盘和骰子归属区域同时可见；默认手牌露出态的卡片下缘贴近视口边缘。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/01-不愧是我同骰两次-队友持有真实卡牌与掷骰归属可见.png",
+      "sha256": "dc4bac5d5d6b3348a7d2c19ed72f7a8d72b90f2e795abca18bf0027d9b4c82ac",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/17-不愧是我队友重投-卡牌特写.png",
+      "status": "REVISE",
+      "checks": [
+        "duplicate-frame",
+        "card-spotlight-not-captured"
+      ],
+      "observation": "源E2E两个状态截图SHA-256完全相同；截图helper移走指针后卡牌特写自动关闭，故未捕获该状态。待保留指针重拍并复核。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/01-不愧是我同骰两次-队友出牌后的卡牌特写.png",
+      "sha256": "70bd4a2068c4e45a96d65558beeadf19cd53fda5c133bae5100dce394ff2272a",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/18-不愧是我队友重投-骰主选骰.png",
+      "status": "REVISE",
+      "checks": [
+        "duplicate-frame",
+        "card-spotlight-not-captured"
+      ],
+      "observation": "源E2E两个状态截图SHA-256完全相同；截图helper移走指针后卡牌特写自动关闭，故未捕获该状态。待保留指针重拍并复核。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/01-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "sha256": "70bd4a2068c4e45a96d65558beeadf19cd53fda5c133bae5100dce394ff2272a",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/19-不愧是我队友重投-进度确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部居中提示显示 2/2 就绪和“确认重投”下一步；旧骰盘的原确认按钮启用，两个骰子标记已选择。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/01-不愧是我同骰两次-提示说明重投规则与下一步确认.png",
+      "sha256": "1b2cadda1527b55295e710074c12c4bf5a03c4e23aae324e0a45569a250a0172",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/20-不愧是我队友重投-重投结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重投结果回到旧骰盘，玩家区域和阶段信息仍清楚可辨，没有残留新交互面板。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/01-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "sha256": "87457cf4e5a00964b61b30f637917526dc456bfd94027d81d3e3a1666991842d",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/21-我又行了队友选骰-队友持牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四席牌桌里队友持有对应卡牌，索尔骰盘和骰子归属区域同时可见；默认手牌露出态的卡片下缘贴近视口边缘。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/02-我又行了任选两骰-队友持有真实卡牌与掷骰归属可见.png",
+      "sha256": "b8a014455314f321cb13fd378ebbfa0ff8fcecb8b0acb459a54bb49069c8f84e",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/22-我又行了队友选骰-卡牌特写.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌特写可读；顶部居中提示显示 0/5 与剩余次数、骰盘确认说明，骰盘及跳过入口保留。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/02-我又行了任选两骰-队友出牌后的卡牌特写.png",
+      "sha256": "047e941edd57132c33b91d19b8d9af763b1897ee9165773d55f850e6962d057a",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/23-我又行了队友选骰-骰主选骰.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "提示位于顶部居中，说明剩余选择次数和原骰盘确认；索尔直接操作右侧旧骰盘，候选没有被卡面遮挡。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/02-我又行了任选两骰-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "sha256": "9a11d9d7a6043995677501fc175009095cefe778635f647d95097ea71e7515be",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/24-我又行了队友选骰-进度确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部居中提示显示 2/5 及剩余次数、骰盘确认说明；原骰盘确认按钮可用且两个选择标记可见。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/02-我又行了任选两骰-提示说明重投规则与下一步确认.png",
+      "sha256": "3167458fec7f89052b304a1146cdf5e332200134f32161e74bccfc8604d08552",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/25-我又行了队友选骰-重投结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重投结果回到旧骰盘，玩家区域和阶段信息仍清楚可辨，没有残留新交互面板。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/02-我又行了任选两骰-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "sha256": "39b4bad1ac7ccd500bf90f519e75de9776447f453990934bdcd1f29bf1aa788a",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/26-就这队友防御重投-队友持牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "四席牌桌里队友持有对应卡牌，索尔骰盘和骰子归属区域同时可见；默认手牌露出态的卡片下缘贴近视口边缘。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/03-就这防御骰重掷-队友持有真实卡牌与掷骰归属可见.png",
+      "sha256": "59a5836b497ea6fe39fa3cbcb6ed2c9c11c9474f10418a4b70c37d0589bf16c4",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/27-就这队友防御重投-卡牌特写.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "防御卡特写与总伤害 8 同屏；上方居中提示显示 0/5 和重投说明，原防御阶段入口仍可见。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/03-就这防御骰重掷-队友出牌后的卡牌特写.png",
+      "sha256": "d24cb7bd11e45c39c65f9ad08ddc059a974aa09df38586c5818b6777335d9252",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/28-就这队友防御重投-骰主选骰.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部居中提示保留剩余次数和确认说明；总伤害 8 与右侧防御骰盘同屏，索尔为实际骰主。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/03-就这防御骰重掷-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "sha256": "ff03a406f9d3e3d1069e589764f0d44345e09cc5dce8f35a5c13838d59df0e4e",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/29-就这队友防御重投-进度确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顶部居中提示显示 2/5、剩余重投次数及原骰盘确认说明；两个选中标记、确认按钮和总伤害 8 可见。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793514545381-ab85t5/03-就这防御骰重掷-提示说明重投规则与下一步确认.png",
+      "sha256": "a4a89b1374106b49117710d7b957b928d91f4f31b8b98942c749ed1e41fcf512",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/30-就这队友防御重投-重投结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "重投结果回到旧骰盘，玩家区域和阶段信息仍清楚可辨，没有残留新交互面板。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/03-就这防御骰重掷-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "sha256": "397885e38c050e6d21594b81c4f3d0492e677a68d3164190f3fb1dc3b91e9b34",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/31-二对二伤害响应-索尔原窗口.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "索尔处于原受伤响应界面，骰盘、阶段栏和响应操作可见，牌桌没有新增替代窗口。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/04-下次一定触发前索尔本人处于八点受伤响应.png",
+      "sha256": "1752b24cc4c70f43e8620107f239ecf7f09584f4faea0545f7622ae27472e937",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/32-二对二伤害响应-队友减伤卡.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "队友防护卡特写可读，索尔的待伤害响应区域仍在牌桌中，原操作入口没有被新弹窗替代。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/05-队友打出下次一定后索尔待结算伤害从八降至二.png",
+      "sha256": "8ecc34e57051339e208acdf9c79ca79f02844ecf9fa61a5be1369d07fd83eef1",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/33-二对二伤害响应-待结算卡面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌特写与索尔待结算区域同时可见，说明内容清楚，骰盘和阶段栏未被遮挡。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/05-下次一定卡牌特写与八减至二的待结算状态.png",
+      "sha256": "2c2002fcbfc65c5239a758ec8b58a84d577c51edeb53f82ec972f50cc93ecb64",
+      "independentReviewFile": "visual-review.json"
+    },
+    {
+      "path": "test-results/evidence-screenshots/dicethrone/thor-shared-interactions-final-20261101/34-二对二伤害响应-索尔完成响应.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "原响应操作结束后生命变化效果在牌桌中可见，骰盘与玩家区域仍清晰。",
+      "source": "test-results/evidence-screenshots/dicethrone/thor-2v2-shared-dice-real-entry.e2e/索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互/_runs/e2e-1793503226459-3i4yfg/06-索尔确认继续受伤后只扣除剩余二点生命.png",
+      "sha256": "57ceb77adec85457b1940ee67e2ce69197eb3b931b439eb4082e60dab5780444",
+      "independentReviewFile": "visual-review.json"
+    }
+  ]
+}

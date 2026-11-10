@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "reviewer": {
+    "id": "/root/gameui_code_delta_review",
+    "identitySource": "collaboration.list_agents returned this canonical agent_name",
+    "independence": "独立子代理；未实施源码修改"
+  },
+  "reviewedAtUtc": "2026-11-02T11:41:33.3977403Z",
+  "target": "七大恨 PC 连续年度教程：R160 前源码复核（战前取景来源、平壤候选边界、费用留空mask）",
+  "conclusion": "通过（仅源码范围）",
+  "sourceHashes": [
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "sha256": "41a1e2f4fbe2984c28627564bc0cd0964670392572017780786cd4282d05d357"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapRegionFocus.ts",
+      "sha256": "09a546497e9cf4dd43eff53ed049c0b5e800c7993798ee8d3029b7bca910ca93"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "8a7197aff85ae315fb6948c938fe88e4b1687e82b9669089eed6d081e901489c"
+    },
+    {
+      "path": "src/games/qidahen/ui/fortificationGeometry.ts",
+      "sha256": "9c077d7fdc4e2f363a14c56f60858e2300c6e4405fef0e851f72d602aa586405"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenFortificationHighlight.tsx",
+      "sha256": "10ca34b3f9e8ab83edf13925f91a08121486d4a67ae9eb47dee4bafdded85796"
+    },
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "6d6e79a47074daf08039161fd223a668f6956fef9b5478b59a3d789107c3b449"
+    },
+    {
+      "path": "e2e/qidahen/battleRecording.ts",
+      "sha256": "16b6159f31b785fbd016819e5534fec87504d282020b09278316b46d7a2db518"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "c2b63aee7418fc64d13bf48378844371f92f1315d38d3aec56c9b01e30e93329"
+    }
+  ],
+  "findings": [
+    {
+      "id": "QIDAHEN-R159-P2-001",
+      "priority": "P2",
+      "status": "closed-source-reviewed",
+      "title": "战斗取景必须使用地图正在显示的战前快照",
+      "location": {
+        "path": "src/games/qidahen/Board.tsx",
+        "line": 6677
+      },
+      "consequence": "结算立即扣除部队或重新排牌、地图继续播放战前快照时，取景会遗漏实际仍在显示的战前军队；全歼且待战后占领的守军尤其可能被排除，不能保证双方完整可见。",
+      "evidence": [
+        "Board.tsx:6677 使用 core.mapTokens 计算 focusRegion。",
+        "Board.tsx:6745 MapSceneLayer 消费 displayCore。",
+        "ui/useQidahenBattlePresentation.ts:19、25 在 active 时保留 previousCore 为 before 并返回该战前显示快照。",
+        "domain/pendingBattleStateTransition.ts:149 将 resolution.regions 写入 core；domain/coreDerivedState.ts:47 从结算后的 regions/pieces 重新生成 mapTokens。",
+        "ui/QidahenBattleRollOverlay.tsx 仅根据当前 DOM 避让和排骰，不负责把被地图取景遗漏的对象移入视口。"
+      ],
+      "blocker": "源码阻塞已消除；真实入口运行及视觉验收由主代理另行完成。",
+      "minimalRemedy": "将战斗 focusRegion 的集合和 effect 依赖一起改为 displayCore.mapTokens；随后由主代理完成同入口重跑及图审。",
+      "ownerAcknowledgement": "主代理已接受，计划R159结束后修正并R160完整重跑。",
+      "closureEvidence": [
+        "Board.tsx:6689 战斗取景改为displayCore.mapTokens，与MapSceneLayer core={displayCore}一致。",
+        "Board.tsx:6749 effect依赖同步为displayCore.mapTokens，战前快照切入时会重算取景。",
+        "本关闭只指源码根因修复经独立审查确认；本代理未执行R160或图审。"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "dependency-cycle",
+      "result": "未发现地图与骰盘互相反推；地图取景不再避让battleDiceFrame，骰盘读取投影后DOM。"
+    },
+    {
+      "name": "visible-null-state",
+      "result": "focusQidahenMapRegion 为 null 时不设置ready；layoutReady身份和frame一致后开始播放。"
+    },
+    {
+      "name": "observer-lifecycle",
+      "result": "限定改动中MutationObserver、ResizeObserver、resize/scroll监听与待执行rAF均有清理；portal新节点会重新绑定ResizeObserver。"
+    },
+    {
+      "name": "fortification-state",
+      "result": "墙体几何和高亮只负责表现及取景，不改规则状态；费用2/6位置使用圆形mask留空。未重核素材坐标。"
+    },
+    {
+      "name": "assertion-integrity",
+      "result": "断言从整省AABB改为真实兵牌、控制和人口的在屏/无遮挡检查，与本轮目标一致；仍保留物理状态和实际采帧检查。未发现单纯替换断言隐藏原故障的明确证据。"
+    },
+    {
+      "name": "selected-candidate-focus-delta",
+      "result": "MapSceneLayer:1623按正式候选/选中ID得到稳定mapFocusTokenIdsKey；memo以该key和core.mapTokens作为依赖，在已有地区边界上合并实际token的正负24px范围。没有直接依赖调用方每次新建的inline选中数组，未发现父子state循环或第二套规则状态。"
+    },
+    {
+      "name": "cost-mask-delta",
+      "result": "fortificationGeometry与QidahenFortificationHighlight相对初审SHA256不变；useId生成独立mask，maskUnits=userSpaceOnUse，黑色费用圆只遮墙线，不遮原地图或改费用。仅确认源码机制，不替代原图核准。"
+    }
+  ],
+  "limits": [
+    "本代理未跑测试、浏览器或读取图片。",
+    "主代理所述此前unit结果、R159真实失败及后续R160运行结果未由本代理独立执行或核验。",
+    "地图人口布局由QidahenMapPopulationLayer独立投影；新Board取景只含token点加45边距，源码审查不能证明所有人口位置都在该范围。缺直接失败场景，未列为Finding。",
+    "墙体原图核准由其它独立代理承担；本审查不对坐标贴合度作视觉裁决。",
+    "本报告仅覆盖所列源码和直接依赖；不覆盖无关脏工作区、部署或规则全审。"
+  ],
+  "verificationCommands": [
+    "git diff -- <限定文件清单>",
+    "Get-Content / rg：限定源码及直接状态与渲染依赖",
+    "Get-FileHash -Algorithm SHA256：八个限定文件"
+  ],
+  "filesModifiedByReviewer": [
+    ".tmp/qidahen-gameui-code-delta-review-20261102.json"
+  ],
+  "initialSourceHashes": [
+    {
+      "path": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+      "sha256": "41a1e2f4fbe2984c28627564bc0cd0964670392572017780786cd4282d05d357"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapRegionFocus.ts",
+      "sha256": "09a546497e9cf4dd43eff53ed049c0b5e800c7993798ee8d3029b7bca910ca93"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "ca3d8a64a2a708e4ade51642d3a3d0f65b71419bd62297a7005769c9705fe64a"
+    },
+    {
+      "path": "src/games/qidahen/ui/fortificationGeometry.ts",
+      "sha256": "9c077d7fdc4e2f363a14c56f60858e2300c6e4405fef0e851f72d602aa586405"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenFortificationHighlight.tsx",
+      "sha256": "10ca34b3f9e8ab83edf13925f91a08121486d4a67ae9eb47dee4bafdded85796"
+    },
+    {
+      "path": "src/games/qidahen/annualTutorial.ts",
+      "sha256": "6d6e79a47074daf08039161fd223a668f6956fef9b5478b59a3d789107c3b449"
+    },
+    {
+      "path": "e2e/qidahen/battleRecording.ts",
+      "sha256": "16b6159f31b785fbd016819e5534fec87504d282020b09278316b46d7a2db518"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-annual-tutorial.e2e.ts",
+      "sha256": "c2b63aee7418fc64d13bf48378844371f92f1315d38d3aec56c9b01e30e93329"
+    }
+  ],
+  "followupScope": [
+    "仅复查displayCore.mapTokens读取与对应effect依赖。",
+    "仅复查真实候选token边界并入地区取景及稳定key依赖。",
+    "仅复查费用数字留空mask；未扩大其它实现审查。"
+  ]
+}

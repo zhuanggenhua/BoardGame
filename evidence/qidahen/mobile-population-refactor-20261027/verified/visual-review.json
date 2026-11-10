@@ -1,0 +1,203 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/final_visual_scoped"
+  },
+  "limitations": [
+    "使用basic-opening独立代表态；不证明完整联机开局、自然抽牌或整游戏规则审计。",
+    "内部另覆盖2560×1304与六张合法普通手牌滚动；未覆盖手机竖屏、其它手机尺寸及所有游戏阶段。",
+    "全仓类型检查及Board旧源码字串套件未全部通过；本清单只证明本轮布局与直接交互。"
+  ],
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/01-桌面棋盘代表态.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "8e9a44a41c137d5994dddea3df1874cef332cc3689b19d2ab687c44cb1ef549b",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\01-桌面常态.png",
+      "proxyScale": 0.75,
+      "observation": "三席公开读数、轮盘、两张纪年、朝鲜牌库12/弃牌5、大明抽20/弃7、三张手牌及右侧动作均在。人口数字互相分离，窄区短引线与落点可辨。地图缩放/复位完整；右侧动作和工具、退出各有独立空间。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "8e9a44a41c137d5994dddea3df1874cef332cc3689b19d2ab687c44cb1ef549b",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256",
+      "description": "三席状态、轮盘、纪年、朝鲜与牌堆保留；人口按区域锚定",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/01-桌面常态.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/final-original-review.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/02-手机横屏棋盘代表态.png",
+      "status": "PASS",
+      "score": 92,
+      "sha256": "d7268fb4c884e1be488be5fdcfadd3c9192c590675f916a339e94b88f3261660",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\03-手机横屏常态.png",
+      "proxyScale": 1,
+      "observation": "936×432常态保留三席、两纪年、朝鲜实际牌库/弃牌及大明抽弃牌。手牌标题、类别和查看面分别承载；右侧动作不碰工具/退出。减号、复位、加号均完整，人口黄块与军队视觉可分。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "d7268fb4c884e1be488be5fdcfadd3c9192c590675f916a339e94b88f3261660",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256",
+      "description": "标准936×432横屏保留原规则对象，地图控件和行动区不被工具遮住",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/03-手机横屏常态.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/final-original-review.json",
+      "sourceReviewEntry": "/media/2"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/03-手机横屏支付选择.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "a7e93e8c25729f937480699cceaad88e485cf41c02ca8817206d21e16f9646c4",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\04-手机横屏支付选择.png",
+      "proxyScale": 1,
+      "observation": "先选东北大旱支付牌后，征召军队支付栏显示1/1及所选牌名，确认/取消清楚。栏下沿与选中牌上沿有间隔，未压类别、标题或查看入口，选中描边和已选状态可辨。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "a7e93e8c25729f937480699cceaad88e485cf41c02ca8817206d21e16f9646c4",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256",
+      "description": "选入支付牌后，确认与取消可辨，托盘不压卡面标题及查看入口",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/04-手机横屏支付选择.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/final-original-review.json",
+      "sourceReviewEntry": "/media/3"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/04-手机横屏卡牌检视.png",
+      "status": "PASS",
+      "score": 95,
+      "sha256": "51d8e3a88e710641ce8dcb5fa5dc21ab628bde6b8b7ca410f31f35f8d222790e",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\05-手机横屏检视.png",
+      "proxyScale": 1,
+      "observation": "东北大旱检视牌保持比例、完整正文可读；右上黑圆白叉清晰，未另占正文行。遮罩建立阅读焦点，底层原选中牌状态仍在，具备明确关闭返回入口。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "51d8e3a88e710641ce8dcb5fa5dc21ab628bde6b8b7ca410f31f35f8d222790e",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256",
+      "description": "从手牌查看当前牌，放大层关闭入口清楚",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/05-手机横屏检视.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/final-original-review.json",
+      "sourceReviewEntry": "/media/4"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/05-桌面支付选择.png",
+      "status": "PASS",
+      "score": 94,
+      "sha256": "90d3ae240d0e0beb0e615ffbde3f84f6d08feb62efdc11692b2a468bbec83a88",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\review-proxies\\06-桌面支付选择.png",
+      "proxyScale": 0.75,
+      "observation": "桌面支付栏与抬升选中牌上沿分离，东北大旱标题、类别、查看均无覆盖；确认/取消贴近当前手牌。公开固定界面、纪年和牌堆仍保留。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "carriedForwardFrom": {
+        "report": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\final-visual-review.json",
+        "sourceRevision": "67b748a948d1f83e0ad98cd45af2205f323da8417f212db816948e6efe38911c",
+        "sha256": "90d3ae240d0e0beb0e615ffbde3f84f6d08feb62efdc11692b2a468bbec83a88",
+        "reason": "原始媒体字节完全相同，沿用逐图PASS，不重新读图。"
+      },
+      "reviewMethod": "carried-forward-by-identical-sha256",
+      "description": "同一支付状态的桌面对照，托盘与选中牌上沿分离",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/06-桌面支付选择.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/final-original-review.json",
+      "sourceReviewEntry": "/media/5"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/06-手机横屏地图目标.png",
+      "status": "PASS",
+      "score": 93,
+      "sha256": "d5207e6021aacde8ad922e6741e5d5c3589f2ecff987d79f071f50d3b25182eb",
+      "viewport": {
+        "width": 936,
+        "height": 432
+      },
+      "proxy": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-mobile-population-20261027\\current-review-proxies\\08-手机横屏地图目标.png",
+      "proxyScale": 1.0,
+      "observation": "最新招安目标态镜头更完整地容纳南侧区域；右侧能看到地图边缘底色。区域贴合描边和浅色填充清楚，控制/军队/人口本体可辨。右侧仅一处原决策提示，无重复绿色横幅；减号/复位/加号、三席、两纪年、两方牌堆均保留，提示/工具/退出互不侵占。",
+      "hardFailures": [],
+      "userDisplayRecommended": true,
+      "reviewMethod": "incremental-full-frame-proxy-visual-review",
+      "previousSha256": "21a121ff7d114bd49a375784b9a158a9e8ded2d8efe25967d823544ea9aee6e9",
+      "description": "实际支付后进入地图目标选择，右侧单一提示与地图高亮同时可见",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/raw-current/08-手机横屏地图目标.png",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/mobile-population-refactor-20261027/verified/final-original-review.json",
+      "sourceReviewEntry": "/media/7"
+    }
+  ]
+}

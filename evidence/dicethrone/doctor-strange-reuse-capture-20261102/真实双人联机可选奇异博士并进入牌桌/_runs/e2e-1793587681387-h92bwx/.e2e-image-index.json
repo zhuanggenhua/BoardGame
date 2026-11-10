@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "真实选角入口-奇异博士可选-桌面.png",
+      "chainId": "奇异博士在线角色选择界面",
+      "chainStep": "桌面角色候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-available-desktop-selection",
+      "behaviorStepId": "online-room-created-selection-visible",
+      "description": "真实选角页展示可选奇异博士及实施中徽标。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "创建联机房间并显示真实角色选择界面",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "创建联机房间并显示真实角色选择界面",
+      "sourceRevision": "430fe88b97f6e2c17f9baec7d2504bb4b2dece374e562629f73ad0e37fa7324a",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士真实玩家选择界面"
+      ],
+      "sourceRun": "1793587863106-262516-7eefbf9a-3eab-477e-9750-f9c57f561846",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "真实选角入口-奇异博士可选-窄屏.png",
+      "chainId": "奇异博士在线角色选择界面",
+      "chainStep": "手机横屏角色候选",
+      "stage": "独特界面态",
+      "uiStateId": "doctor-strange-available-mobile-selection",
+      "uiChange": "layout",
+      "uiChangeReason": "同一真实选角页切换到 812×375 窄屏。",
+      "behaviorStepId": "online-selection-mobile-viewport",
+      "description": "手机横屏真实选角页显示奇异博士及实施中徽标。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "切换同一选角入口为手机横屏视口",
+      "sourceRevision": "430fe88b97f6e2c17f9baec7d2504bb4b2dece374e562629f73ad0e37fa7324a",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士真实玩家选择界面"
+      ],
+      "sourceRun": "1793587863106-262516-7eefbf9a-3eab-477e-9750-f9c57f561846",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "房主真实选择奇异博士.png",
+      "chainId": "房主选择奇异博士",
+      "chainStep": "角色已选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-selected-by-host",
+      "behaviorStepId": "host-selects-doctor-strange",
+      "description": "房主选中奇异博士，卡面显示房主选择标记。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "房主点击奇异博士角色卡。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "房主点击奇异博士角色卡。",
+      "sourceRevision": "430fe88b97f6e2c17f9baec7d2504bb4b2dece374e562629f73ad0e37fa7324a",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士真实玩家选择界面"
+      ],
+      "sourceRun": "1793587863106-262516-7eefbf9a-3eab-477e-9750-f9c57f561846",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793587681387-h92bwx"
+    },
+    {
+      "path": "双方选角并由客人准备.png",
+      "chainId": "双方选角并准备",
+      "chainStep": "双方角色就绪",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-opponent-ready",
+      "behaviorStepId": "guest-selects-monk-and-ready",
+      "description": "客人选中武僧并准备，房主看到可开始状态。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "客人完成选角并提交准备。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "客人完成选角并提交准备。",
+      "sourceRevision": "430fe88b97f6e2c17f9baec7d2504bb4b2dece374e562629f73ad0e37fa7324a",
+      "e2eSourceRevision": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+      "requirements": [
+        "奇异博士真实玩家选择界面"
+      ],
+      "sourceRun": "1793587863106-262516-7eefbf9a-3eab-477e-9750-f9c57f561846",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/真实双人联机可选奇异博士并进入牌桌/_runs/e2e-1793587681387-h92bwx"
+    }
+  ]
+}

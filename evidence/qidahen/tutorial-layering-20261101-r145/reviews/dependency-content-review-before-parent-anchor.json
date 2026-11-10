@@ -1,0 +1,562 @@
+{
+  "status": "PASS-DEPENDENCY-AND-CONTENT-PRESERVATION-ONLY",
+  "reviewer": "/root/layer_scope_review",
+  "reviewedAt": "2026-11-01T11:24:24.982449+00:00",
+  "reviewKind": "readonly-layer-scope-and-content-dependency-review",
+  "codeModified": false,
+  "claimScope": "本轮选择器收窄及对应断言边界；52条不变内容、正式身份与既有内容审查依赖；源码不变的存储/共享缓存依赖。不是完整主链、全图视觉或用户认可。",
+  "sourceHashes": {
+    "src/games/qidahen/annualTutorial.ts": "a1273bfd9087a5075d3ffbf276bd0888e6b48c3c71aa4441e2e3407ed0edacc7",
+    "src/games/qidahen/Board.tsx": "1f91345cebb89d7475b5853c8b0b20d6fff64551c8a452a4ebdcd07553aeb25d",
+    "src/components/tutorial/TutorialOverlay.tsx": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+    "src/engine/types.ts": "eaf214b066828fe8362467a9c3f428fc465c8056ba541195364c3bdfabde4197",
+    "e2e/qidahen/qidahen-annual-tutorial.e2e.ts": "8fa123764ef34e10cdd40ab8675274192d2774a65acb5bf236c69098862a79a9",
+    "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts": "1d9a0cc04a68f93cf981c9dac113adfa9444949928020d39aa30a3b60fe1b678",
+    "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+    "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6"
+  },
+  "archivedContentInput": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/content-input.json",
+    "sha256": "6f174ceb3c9cc7ac44088c0692fca92a29f93817b40d43a075969b64282c286f",
+    "exactCopyOf": "test-results/qidahen-layering-content-input.json",
+    "sourceHashesMatchCurrent": true
+  },
+  "priorContentReport": {
+    "path": "evidence/qidahen/tutorial-full-causal-20261101/reviews/content-review-final.json",
+    "sha256": "345c2e994a30344b6172d59eb84c645f9c14a314206d97c4748db964da44a886",
+    "originalInputMissing": true,
+    "missingPath": "test-results/qidahen-full-rebuild-content-input.json",
+    "directOldNewInputObjectOrByteComparisonCompleted": false
+  },
+  "contentPreservation": {
+    "revision": 23,
+    "visiblePrompts": 52,
+    "all52PromptObjectsEqualToPriorReviewProjection": true,
+    "comparedFields": [
+      "id",
+      "chinese",
+      "english",
+      "target",
+      "commands",
+      "allowedTargets",
+      "event",
+      "infoStep"
+    ],
+    "languageFilesByteHashesUnchanged": true,
+    "promptOrderUnchanged": true,
+    "exactSourceReconstruction": {
+      "method": "仅内存替换当前HUD_PROTECTION/CURRENT_MAP_TASK_PROTECTION声明块为首轮只读记录的旧PROTECTED_UI，保留全文CRLF字节；未写出伪原input或替换产品文件。",
+      "reconstructedAnnualSha256": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1",
+      "matchesPriorReviewedAnnualSource": true,
+      "proves": "除声明保护选择器的局部块外，课程源码所有其余字节相同；包括步骤、版本、隐藏自动化合同与actions、正式命令/目标/事件。",
+      "doesNotProve": "旧新完整input对象/字节相等；布局或新真实主链通过。"
+    },
+    "hiddenAutomation": {
+      "count": 4,
+      "ids": [
+        "opening-opponents",
+        "opponent-round",
+        "other-upkeep",
+        "year-ready"
+      ],
+      "unchangedByExactAnnualReconstruction": true
+    },
+    "carriedContentVerdict": "可沿用旧52条内容、必要性、前因后果及中英文规则含义的PASS-content-only；首轮REVISE历史保留，不能用内容PASS恢复旧布局PASS。"
+  },
+  "archivedTraceCrosscheck": {
+    "path": "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop-raw.json",
+    "sha256": "01842e503d724deeaf7a1e580d27971d5b9573fed3d1a85c0e6fc5b1deb40220",
+    "statusInArchive": "PASS",
+    "currentPromptsMatchArchivedActualNodeOrder": true,
+    "actualIdentityChecks": [
+      {
+        "id": "frontier-goal",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "opening-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "farm-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "reclaim-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "reclaim-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "prepare-hand",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "recruit-action",
+        "action": "CONFIRM_PREVIEW_ACTION",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "recruit-payment",
+        "action": "SELECT_PAYMENT_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "recruit-source",
+        "action": "SELECT_REGION",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "recruit-troops",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "midyear",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "hand-limit",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "battle-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upgrade-first",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upgrade-card",
+        "action": "CONFIRM_PREVIEW_ACTION",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upgrade-payment",
+        "action": "SELECT_PAYMENT_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "dispatch-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "dispatch-payment",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "dispatch-troops",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "dispatch-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "defender-response",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "tactic-card",
+        "action": "PLAY_TACTIC_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "battle-roll",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "occupy",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "diplomacy-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "diplomacy-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "diplomacy-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "diplomacy-finish",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "hire-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "hire-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "save-hand",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "new-year",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "maintain-shanhai",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "abandon-jinzhou",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "abandon-inner-wall",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upkeep-datong",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upkeep-yehe",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upkeep-xianxing",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upkeep-liaobei",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "upkeep-pyongyang",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "claim-year",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "new-order",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "year-character",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-payment",
+        "action": "SELECT_PAYMENT_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-target",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-second-target",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-recruit-kind",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-recruit-target",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "training-finish",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      },
+      {
+        "id": "finish",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace中实际记录targetIds的节点；DOM高亮与事件身份由52项uiContract深相等证明"
+      }
+    ],
+    "scope": "归档实际链与不变正式身份的对应证据；不冒称当前布局重新运行。"
+  },
+  "layerScopeReview": {
+    "status": "PASS-static-scope",
+    "removed": "教程所有army、明控制标记、明人口的全局禁覆盖选择器；战术面板全地图token扫描收窄为当前protected对象。",
+    "preserved": [
+      "同层HUD与手牌/牌堆/轮盘/正式操作面板",
+      "Board正式派生的当前来源、目标、地图候选、战斗与维修上下文token及人口",
+      "当前可提交部队和全部招募候选，包括非推荐选项"
+    ],
+    "sharedBoundary": "Overlay/API/缓存及Board在本轮未改；分类在游戏声明owner，未引入自动DOM层级推断或第二套保护状态。",
+    "sourceIdentityChecks": {
+      "boardMatchesArchivedActualBrowserSource": true,
+      "overlayMatchesArchivedActualBrowserSource": true
+    },
+    "finding": "未发现本轮范围新增正式命令、权限、规则、文案、步骤或版本变更。"
+  },
+  "targetedRegressionEvidence": {
+    "test": "真实教程入口1362x780，轮盘说明邻接与正式地图pan不移动HUD/hint",
+    "red": {
+      "gap": 533.8972811341571,
+      "expectedMaxGap": 64,
+      "log": "test-results/qidahen-layering-red.log",
+      "sha256": "db4370dc78c70ae2b0d716d40d5a9975e8a3efe4175931f13fb925cec001b8c9"
+    },
+    "green": {
+      "gap": 10.2874755859375,
+      "log": "test-results/qidahen-layering-green-owner.log",
+      "sha256": "eb8687fb649574db6d168aca5e5612181633da3a125bb9eae56e83f4f1c61d23",
+      "formalPanChanged": true,
+      "wheelUnchanged": true,
+      "hintUnchanged": true,
+      "receipt": "test-results/qidahen-layering/after-formal-pan/receipt.json",
+      "receiptSha256": "b455e2a83d13502bbd5460b4e49913e2b2df8ae766216e35b8575049303e8355"
+    },
+    "executionByReviewer": false,
+    "scope": "审阅指定日志与回执；未重新执行测试或审阅原图。"
+  },
+  "unchangedDependencyReviews": [
+    {
+      "report": "evidence/qidahen/tutorial-full-causal-20261101/reviews/layout-performance-review.json",
+      "sha256": "63874e9472f806d289008dfb7b50974bd4b65224f781bd2e5851ab78fd70de39",
+      "sourceChecks": [
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "previousSha256": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+          "currentSha256": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+          "unchanged": true
+        },
+        {
+          "path": "src/components/tutorial/__tests__/TutorialOverlay.layout.test.tsx",
+          "previousSha256": "68e2095382530ee315a42609bece4d3ecb6ea1cda40257533e2f23a0ae0ef7fd",
+          "currentSha256": "68e2095382530ee315a42609bece4d3ecb6ea1cda40257533e2f23a0ae0ef7fd",
+          "unchanged": true
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "previousSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+          "currentSha256": "1d9a0cc04a68f93cf981c9dac113adfa9444949928020d39aa30a3b60fe1b678",
+          "unchanged": false
+        },
+        {
+          "path": "e2e/qidahen/tutorialPointer.ts",
+          "previousSha256": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295",
+          "currentSha256": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295",
+          "unchanged": true
+        }
+      ],
+      "reuseScope": "仅源码不变的静态依赖结论及原报告明示范围；历史测试不是当前整份diagnostic spec重新执行",
+      "newTestExecutionClaimed": false
+    },
+    {
+      "report": "evidence/qidahen/tutorial-full-causal-20261101/reviews/storage-review-final.json",
+      "sha256": "a5cf47d7acf43d31c5331727aabfa2f01b048f513ff9829d635c2953e6923d34",
+      "sourceChecks": [
+        {
+          "path": "src/engine/transport/localSessionCodec.ts",
+          "previousSha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+          "currentSha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/localSession.ts",
+          "previousSha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+          "currentSha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/__tests__/localSessionCodec.test.ts",
+          "previousSha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+          "currentSha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/useLocalProviderSession.ts",
+          "previousSha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+          "currentSha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/localProviderBootstrap.ts",
+          "previousSha256": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+          "currentSha256": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+          "unchanged": true
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "previousSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+          "currentSha256": "1d9a0cc04a68f93cf981c9dac113adfa9444949928020d39aa30a3b60fe1b678",
+          "unchanged": false
+        }
+      ],
+      "reuseScope": "仅源码不变的静态依赖结论及原报告明示范围；历史测试不是当前整份diagnostic spec重新执行",
+      "newTestExecutionClaimed": false
+    }
+  ],
+  "limitations": [
+    "旧完整content input不存在，未声称两个input文件直接深比较或字节相等。",
+    "本轮改变保护集合会改变多步布局，必须重跑当前主链和全部受改布局媒体视觉验收；旧布局PASS不沿用。",
+    "当前diagnostic spec与旧报告hash不同；旧4项记录不证明新增分层用例或当前整份spec执行。",
+    "共享缓存静止采样性能结论仅沿用旧报告指定场景；首次/动态求解最坏O(P³)及动态场景未证明边界保留。",
+    "存储旧报告的同步编码停顿、origin容量、失败反馈及真实晚期刷新限制保留；本审查不替其补PASS。",
+    "未运行测试、未看图、未判视觉PASS；本报告仅写入新evidence reviews及归档input。"
+  ],
+  "findings": []
+}

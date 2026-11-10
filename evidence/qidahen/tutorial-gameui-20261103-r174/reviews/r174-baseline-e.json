@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagents",
+    "id": "/root/r174_e2"
+  },
+  "requirements": [
+    {
+      "requirement": "年度地图决定与提示关联",
+      "status": "PASS",
+      "baselineSource": "实际读取旧版锦州放弃维护整屏，与当前雇佣目标、山海关维护、锦州放弃及大同供养四张整屏；历史图仅用于职责对照，不恢复旧版整体结论。",
+      "preservedInformation": "保留地图地名、阵营标记、城防、部队、等级、人口读数、底部手牌及弃牌堆；锦州放弃维护的后果和资源取舍仍由教程解释，正式请求显示当前待处理城名。",
+      "preservedActions": "锦州维护与放弃维护仍由同一请求区的两个按钮承接；当前山海关也保留这两个入口；雇佣军通过地图区域选择并确认，大同供养通过手牌或部队对象与下方确认区承接。",
+      "changes": "当前维护请求标题补出大明阵营，顶部当前回合标记更明确；当前相邻兵牌排布更易分辨；大同候选部队使用贴体绿色边界和白色推荐边界，地图区域与教程目标对应。",
+      "duplicateDecision": "教程解释决策理由与后果，正式请求只承接本次选择；锦州和山海关均只有一组维护与放弃按钮，大同只有一处确认区，未见第二套同类导航或重复决策。",
+      "changeAuthority": "依据本轮最终候选审查合同核对阵营归属、提示与实际对象关联、候选边界及信息保留；仅裁决这五张实读整屏中的可见表达，不推断规则数值、未读流程或商业教程体验。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/35-abandon-jinzhou.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/31-hire-target.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/34-maintain-shanhai.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/35-abandon-jinzhou.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/38-upkeep-datong.png"
+      ],
+      "actualReviewer": "/root/r174_e2",
+      "sourcePartFile": "reviews/r174-baseline-e2.json",
+      "sourcePartEntry": 0
+    }
+  ]
+}

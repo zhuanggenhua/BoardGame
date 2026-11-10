@@ -1,0 +1,59 @@
+{
+  "title": "山屋惊魂切层贴底与属性飘字居中验收",
+  "media": [
+    {
+      "path": "01-PC-1920x1080-开局无飘字切层贴底.jpg",
+      "chainId": "floor-true-corner",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-float-center-20261009",
+      "stage": "前态",
+      "description": "电脑开局牌桌，门厅棋子上方没有属性飘字，楼层切换贴在地图右下角，与继续按钮同一底边，没有给悬浮球留空。"
+    },
+    {
+      "path": "02-Vivo-796x360-开局无飘字切层贴底.jpg",
+      "chainId": "floor-true-corner",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-float-center-20261009",
+      "stage": "中态",
+      "description": "手机横屏同一开局，门厅没有属性飘字，楼层切换仍贴地图右下角，与继续按钮重叠在底边。"
+    },
+    {
+      "path": "03-PC-1920x1080-一层切换后切层仍贴底.jpg",
+      "chainId": "floor-true-corner",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/floor-switcher-visual.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-float-center-20261009",
+      "stage": "后态",
+      "description": "玩家切到一层后，楼层切换仍是右下角上下箭头加一层字样，贴着地图底边，没有抬高去躲继续按钮。"
+    },
+    {
+      "path": "04-PC-1920x1080-属性飘字出现前.jpg",
+      "chainId": "trait-float-center",
+      "chainStep": "一",
+      "sourceRun": "e2e/betrayal/trait-track-ui.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-float-center-20261009",
+      "stage": "前态",
+      "description": "门厅两名探索者叠在一起，棋子上方没有属性飘字，牌桌处于变化前的稳定开局。"
+    },
+    {
+      "path": "05-PC-1920x1080-属性飘字贴棋子居中.jpg",
+      "chainId": "trait-float-center",
+      "chainStep": "二",
+      "sourceRun": "e2e/betrayal/trait-track-ui.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-float-center-20261009",
+      "stage": "中态",
+      "description": "只改当前玩家力量后，减一力量飘字出现在该棋子正上方并水平居中，没有落到房间左上角。"
+    },
+    {
+      "path": "06-PC-1920x1080-属性飘字消退后.jpg",
+      "chainId": "trait-float-center",
+      "chainStep": "三",
+      "sourceRun": "e2e/betrayal/trait-track-ui.e2e.ts",
+      "sourceDir": "evidence/betrayal-floor-float-center-20261009",
+      "stage": "后态",
+      "description": "属性飘字消退后门厅只剩两枚棋子，没有残留品红数字。"
+    }
+  ]
+}

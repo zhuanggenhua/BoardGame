@@ -1,0 +1,57 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-10T18:02:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "随机派系仍从全量可选派系中抽取真实结果，状态落地并占用该派系。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Playwright E2E 通过：随机卡点击后 playerSelections[0] 产生真实 factionId，takenFactions 同步包含该 factionId。",
+        "三张标注图均来自本次移除内层描边后的当前工作树 E2E。"
+      ]
+    },
+    {
+      "requirement": "随机落地后，选中的派系卡自动回到当前视口，玩家能直接看到是哪一张。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 直接读取目标卡 getBoundingClientRect，断言 top >= 0 且 bottom <= window.innerHeight；用例通过。",
+        "02-labeled-faction-selected.png 用红框直接圈出动作英雄（action_heroes），位置在当前视口中部。"
+      ]
+    },
+    {
+      "requirement": "选中效果只修改既有外框颜色与缩放，不叠加第二层内描边。",
+      "status": "PASS",
+      "evidence": [
+        "选中样式继续使用既有外框的 border-green-500、scale-105、-translate-y-2。",
+        "FactionSelection.tsx 已移除派系卡内容层的 border utility；E2E 断言 .smashup-card-inner 不再包含独立 border 类。",
+        "02-faction-selected.png 是本次样式修改后的原图，标注红框只存在于单独说明副本。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\01-faction-before.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\02-faction-selected.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\03-faction-after-scroll.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\01-labeled-faction-before.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\02-labeled-faction-selected.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\03-labeled-faction-after-scroll.png"
+  ],
+  "labeledImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\01-labeled-faction-before.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\02-labeled-faction-selected.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\smashup-faction-selection-fixed-r2-20261010\\03-labeled-faction-after-scroll.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "sourceImagesNote": "sourceImages 与 NN-labeled-* 一一对应；中态标注只在额外说明区和目标卡外框中增加信息，不覆盖原始截图内容。"
+}

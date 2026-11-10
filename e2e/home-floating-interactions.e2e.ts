@@ -40,6 +40,16 @@ for (const mobile of [false, true]) {
             expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);
             await settings(page);
             await page.keyboard.press('Escape');
+            const sections = page.getByRole('navigation', { name: '个人中心分区' });
+            for (const label of ['我的投稿', '我的作品']) {
+                await sections.getByRole('button', { name: label, exact: true }).click();
+                await expect(sections.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
+                await expect(fab).toBeVisible();
+                expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);
+                await settings(page);
+                await expect(page.getByTestId('fab-panel-settings')).toBeVisible();
+                await page.keyboard.press('Escape');
+            }
             await openHomeUpload(page, mobile);
             await expect(page.locator('.platform-upload-form')).toBeVisible();
             await expect(fab).toBeVisible();
@@ -48,7 +58,7 @@ for (const mobile of [false, true]) {
             await capture(page,`${mobile?'手机':'桌面'}-投稿保留原浮窗设置`);
             await page.keyboard.press('Escape');
             expect(await page.evaluate(key => localStorage.getItem(key),key)).toBe(saved);
-            await record(`${mobile ? '手机' : '桌面'}-浮球拖拽`, { input: mobile ? '浏览器真实触控事件' : '真实鼠标拖拽', key, before, saved, reloadPersisted: true, settingsOperable: true });
+            await record(`${mobile ? '手机' : '桌面'}-浮球拖拽`, { input: mobile ? '浏览器真实触控事件' : '真实鼠标拖拽', key, before, saved, reloadPersisted: true, settingsOperable: true, creatorTabs: ['我的投稿', '我的作品'] });
         } finally { await context.close(); }
     });
 }

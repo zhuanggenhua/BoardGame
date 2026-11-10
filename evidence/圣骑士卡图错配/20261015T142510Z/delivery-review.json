@@ -1,0 +1,172 @@
+{
+  "objective": "独立审查本轮图序及明确文案修复，不扩展到既存规则玩法修复",
+  "agentId": "/root/audit_frames_22_32",
+  "method": "只读Git差异、逐卡已锁合同与收据、文件SHA256；未重新读图、未测试、未联网",
+  "verdict": "APPROVE",
+  "blockingFindings": [],
+  "mapping": {
+    "matchesLockedAndCandidate": true,
+    "total": 33,
+    "uniqueSourceCount": 33,
+    "changedMappings": [
+      {
+        "index": 8,
+        "before": 23,
+        "after": 24
+      },
+      {
+        "index": 10,
+        "before": 24,
+        "after": 23
+      },
+      {
+        "index": 20,
+        "before": 12,
+        "after": 13
+      },
+      {
+        "index": 21,
+        "before": 11,
+        "after": 12
+      },
+      {
+        "index": 22,
+        "before": 13,
+        "after": 11
+      }
+    ],
+    "unchangedMappingCount": 28,
+    "all33CardIdentitiesMatchReadImageRecords": true,
+    "all33SourceFileHashesMatchCandidateReceipt": true,
+    "candidateReceiptAll33RawVisibleRgbAndAlphaExact": true
+  },
+  "binary": {
+    "sha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+    "bytes": 2040596,
+    "matchesCandidateAndApplied": true,
+    "candidatePngHashMatches": true,
+    "candidateWebpHashMatches": true
+  },
+  "manifestChecks": [
+    {
+      "path": "public/assets/i18n/assets-manifest.json",
+      "deltaFromRoundBefore": [
+        {
+          "path": "/files/zh-CN/dicethrone/images/paladin/compressed/ability-cards/variants/webp/bytes",
+          "before": 2039890,
+          "after": 2040596
+        },
+        {
+          "path": "/files/zh-CN/dicethrone/images/paladin/compressed/ability-cards/variants/webp/sha256",
+          "before": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+          "after": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9"
+        }
+      ],
+      "onlyAbilityCardsChanged": true
+    },
+    {
+      "path": "public/assets/i18n/zh-CN/dicethrone/assets-manifest.json",
+      "deltaFromRoundBefore": [
+        {
+          "path": "/files/images/paladin/compressed/ability-cards/variants/webp/bytes",
+          "before": 2039890,
+          "after": 2040596
+        },
+        {
+          "path": "/files/images/paladin/compressed/ability-cards/variants/webp/sha256",
+          "before": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+          "after": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9"
+        }
+      ],
+      "onlyAbilityCardsChanged": true
+    }
+  ],
+  "compressionPreserved": {
+    "generator": "当前write_webp仍保留GaussianBlur+边缘/alpha保护及sharp quality75/text压缩路径；本轮图序改动在SOURCE_BY_FRAME。",
+    "boardAndTipUnchangedVsRoundBefore": true,
+    "playerBoardSha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+    "tipSha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5"
+  },
+  "localeChecks": [
+    {
+      "path": "public/locales/zh-CN/game-dicethrone.json",
+      "deltaFromHead": [
+        {
+          "path": "/cards/card-consecrate/name",
+          "before": "神圣祝圣！",
+          "after": "祝圣！"
+        },
+        {
+          "path": "/cards/card-gods-grace/name",
+          "before": "神佑！",
+          "after": "神的恩宠！"
+        },
+        {
+          "path": "/cards/card-tithes-2/description",
+          "before": "升级教皇税：抽牌消耗降为 2 CP，且在进攻阶段激活含 🙏 的技能时获得 1 CP。",
+          "after": "升级教会税：抽牌消耗降为 2 CP，且在进攻阶段激活含 🙏 的技能时获得 1 CP。"
+        },
+        {
+          "path": "/cards/card-absolution/description",
+          "before": "投掷 1 骰进行防御：剑→对攻击者造成 1 点不可防御伤害；头盔→防止 1 点伤害；心→防止 2 点伤害；祈祷→获得 1 CP。",
+          "after": "仅能在被攻击后打出。投掷 1 骰：剑→造成 3 点伤害；头盔→防止 3 点伤害；心→防止 5 点伤害；祈祷→防止 2 点伤害且获得 2 CP。"
+        },
+        {
+          "path": "/cards/card-might/name",
+          "before": "神力！",
+          "after": "威势！"
+        },
+        {
+          "path": "/cards/card-divine-favor/name",
+          "before": "神恩！",
+          "after": "神佑！"
+        }
+      ]
+    },
+    {
+      "path": "public/locales/en/game-dicethrone.json",
+      "deltaFromHead": [
+        {
+          "path": "/cards/card-absolution/description",
+          "before": "Roll 1 die: Sword → Deal 1 undefendable damage; Helm → Prevent 1 damage; Heart → Prevent 2 damage; Pray → Gain 1 CP.",
+          "after": "May only be played after being attacked. Roll 1 die: Sword → Deal 3 damage; Helm → Prevent 3 damage; Heart → Prevent 5 damage; Pray → Prevent 2 damage and gain 2 CP."
+        }
+      ]
+    }
+  ],
+  "localeVerdict": "中文恰好四个英雄卡名与图面一致（威势、祝圣、神佑、神的恩宠），赦免限制句及3/3/5/2防伤+2CP符合图面；教皇税改教会税符合图面。英文只同步赦免同样限制及数值。通用卡名未修改。",
+  "formalFiles": {
+    "paths": [
+      "src/games/dicethrone/heroes/paladin/cards.ts",
+      "src/games/dicethrone/domain/commonCards.ts",
+      "src/assets/atlas-configs/dicethrone/ability-cards-paladin.atlas.json"
+    ],
+    "diffFromHeadEmpty": true,
+    "atlasHashMatchesOriginalInventory": true,
+    "rulesSettlementChanged": false
+  },
+  "publishedReceipts": {
+    "publicVerificationRows": 4,
+    "allRecordedPublicRowsMatchCurrentBinary": true,
+    "androidChannels": [
+      "edge",
+      "stable"
+    ],
+    "allRecordedAndroidChecksMatch": true,
+    "boundary": "本次仅审查已有回查收据，没有新请求服务器；这些收据证明资源对象/索引一致，不证明前端locale代码已部署。"
+  },
+  "deferredRuleBoundary": "runtime-differences.json中既存目标范围、进攻阶段限制与时机分类疑点仍属后续范围；本次仅图序及文字修复，不宣称已修复这些玩法问题。状态移除/转移外层self误报已有独立静态澄清，不重列为新阻塞。",
+  "evidenceFiles": [
+    "locked-mapping.json",
+    "candidate-receipt.json",
+    "applied-receipt.json",
+    "before-receipt.json",
+    "inventory.json",
+    "audit-00-10.json",
+    "audit-11-21.json",
+    "audit-22-32.json",
+    "runtime-differences.json",
+    "public-verification.json",
+    "android-index-verification.json"
+  ]
+}

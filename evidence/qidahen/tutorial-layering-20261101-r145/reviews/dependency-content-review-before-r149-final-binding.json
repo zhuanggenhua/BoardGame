@@ -1,0 +1,325 @@
+{
+  "status": "PASS-CONTENT-SEMANTICS-AND-DEPENDENCY-ONLY",
+  "reviewer": "/root/layer_scope_review",
+  "reviewedAt": "2026-11-01T13:01:10.433599+00:00",
+  "reviewKind": "independent-r148-content-and-layer-dependency-static-review",
+  "codeModified": false,
+  "claimScope": "52条内容与正式动作语义不变、展示锚点变更及共享/地图owner职责静态审查。不是wholechain、图面最终通过、普通对局全分支或人工认可。",
+  "readyForFinalization": false,
+  "finalBinding": {
+    "status": "PENDING-FINAL-CHECKS-AND-CHAIN-SOURCE-IDENTITY",
+    "reason": "当前相机迭代后343/type runner及原生候选拖动证据尚待主线程通知；未把旧结果绑定为当前最终运行。",
+    "sourceHashesFinal": false,
+    "checksFinal": false
+  },
+  "sourceHashes": {},
+  "reviewedSourceHashes": {
+    "src/games/qidahen/annualTutorial.ts": "35aaa13915429ba3475e8933081cdf4a7078a04b44d87cb981fc0f1a2745e888",
+    "src/games/qidahen/Board.tsx": "b2ca3c8190d5ea62b554f16b0c6a8cf169cae3de4274cb246e2bab0e39fe8482",
+    "src/components/tutorial/TutorialOverlay.tsx": "3b0e7f195aaa095fe371fbc13bc4d738738d9a014c859337ccd25a8cb1365999",
+    "src/engine/types.ts": "a7828de7dfc4427815b5e7f7d35976c4357287a80bfd8a5f7bcea3b8724965c9",
+    "e2e/qidahen/qidahen-annual-tutorial.e2e.ts": "77eca95a02bf2c91c66ecb67c469763adcdc3dd4530af34d2ef6e147c691ae04",
+    "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts": "933ad5f51070163fc0efe1b97b66a01e8f0f915e4b8c7878011577d2cebbe189",
+    "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+    "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6",
+    "src/components/tutorial/__tests__/TutorialOverlay.layout.test.tsx": "54f3cc5f1e9ee15cdb26564c6944abd0d855d66fd0c702faa06e6332a631aa4d",
+    "src/games/qidahen/__tests__/Board.test.ts": "887445f25f4bcfecd6570795dc2111a75848efc1705d69f6438b3445e5e28170",
+    "src/games/qidahen/ui/QidahenTutorialRegionLabel.tsx": "e62418b86d44f4fcea8f1711b1a8a4952edf9813ce11aec39de5ed0fccd1edeb",
+    "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx": "6b103f92d75295c2caa15a1428d2dcb8dc8260177ad12437e250d0dd7a4ea8f3",
+    "src/games/qidahen/ui/mapGraph.ts": "8885745082a231d440558b0783241d2eee9d47ef389d7213d4236e065b7d1cbb",
+    "src/games/qidahen/ui/mapRegionFocus.ts": "bde0017bedb742534b547d29f24603a6c307d0d0e9ab41725f6e8e290c27f769",
+    "src/games/qidahen/ui/mapSelectionCandidates.ts": "7616a98051344b4055272b3d59dc603735b6100b5d129823ee9f3e1cf0d92ff8",
+    "src/games/qidahen/ui/runtimeRegionOwnership.ts": "8a550662d3b0c90eff3db09f18fd6e473dae2019bd021ea7467280a451c6f40e",
+    "src/games/qidahen/domain/mapTokens.ts": "d1a59a20eb99158468978933a78f54677703375828b4c7b3dd6f19263d7bbb0d",
+    "src/games/qidahen/__tests__/mapRegionFocus.test.ts": "37a7fe2dea73614f934b64a7c9ba88a3c3c71d3ac86b3cb8ecfbde30c2a48fac",
+    "src/games/qidahen/__tests__/mapSelectionCandidates.test.ts": "0745c76b8a924dcfbe75c6f06f7ee1aaef7a8869f2dd785cefbc9f522edc5ef9"
+  },
+  "sourceHashRole": "以上为本次静态审查快照；正式链前后源hash一致及最终checks确认后再填sourceHashes。",
+  "history": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/dependency-content-review-before-r148-static.json",
+    "sha256": "975afeecd2fe7d7a9e9e2c0862ae91f6677807f4a48273d6f2683a34dd262b82",
+    "r146ContentInput": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/content-input-r146.json",
+    "r146ContentInputSha256": "1f9ca93c1093eaad6045a342126e504123b6ba2b63f0dc47afe9cb7d030a3461"
+  },
+  "archivedContentInput": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/content-input.json",
+    "sha256": "16fe1e1db7cf911c0a5d944e1296914e2748d3759eb7b430c8c903eaa2f2f196",
+    "sourceHashesMatchReviewedSource": true,
+    "oldWholeInputMissing": true,
+    "directOriginalWholeInputByteEqualityClaimed": false
+  },
+  "contentPreservation": {
+    "revision": 23,
+    "visiblePrompts": 52,
+    "semanticFieldsCompared": [
+      "id",
+      "chinese",
+      "english",
+      "commands",
+      "allowedTargets",
+      "event",
+      "infoStep"
+    ],
+    "allSemanticObjectsDeepEqualToR146": true,
+    "original52TextAndFormalContractProjectionMatch": true,
+    "all52DisplayTargetsEqual": false,
+    "displayTargetChangesFromOriginal": [
+      {
+        "id": "opening-move",
+        "before": "qidahen-wheel-move-move-1-free",
+        "after": "qidahen-action-wheel"
+      },
+      {
+        "id": "battle-move",
+        "before": "qidahen-wheel-move-move-1-free",
+        "after": "qidahen-action-wheel"
+      },
+      {
+        "id": "defender-response",
+        "before": "qidahen-actions-zone",
+        "after": "qidahen-raid-intent"
+      },
+      {
+        "id": "battle-roll",
+        "before": "qidahen-actions-zone",
+        "after": "qidahen-raid-intent"
+      },
+      {
+        "id": "occupy",
+        "before": "qidahen-actions-zone",
+        "after": "qidahen-post-battle-selection"
+      },
+      {
+        "id": "diplomacy-move",
+        "before": "qidahen-wheel-move-move-1-free",
+        "after": "qidahen-action-wheel"
+      },
+      {
+        "id": "training-move",
+        "before": "qidahen-wheel-move-move-1-free",
+        "after": "qidahen-action-wheel"
+      }
+    ],
+    "explicitReadingAnchors": [
+      {
+        "id": "reclaim-target",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "recruit-source",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "dispatch-troops",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "dispatch-target",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "diplomacy-target",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "hire-target",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "upkeep-datong",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "upkeep-yehe",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "upkeep-xianxing",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "upkeep-liaobei",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      },
+      {
+        "id": "upkeep-pyongyang",
+        "tooltipAnchorTarget": "qidahen-map-region-focus-name"
+      }
+    ],
+    "hiddenAutomation": {
+      "count": 4,
+      "deepEqualToR146": true
+    },
+    "exactAnnualReconstruction": {
+      "method": "仅内存还原HUD/current-map保护selectors、mapChoice阅读锚点、三个战斗面板展示target及recruit-source的锚点/280px宽度；保留CRLF原字节。",
+      "reconstructedSha256": "f09420c0784c816d6f32195ed3fc2f02d8b6472465bbf3ecbdc09744c79b5d4f",
+      "equalsR146ReviewedAnnualSha256": true,
+      "proves": "所有其余原字节相同，包括正式合法目标、事件、步骤顺序、随机策略、AI动作、隐藏自动化及版本。"
+    },
+    "presentationMetadata": "tooltipAnchorTarget/tooltipMaxWidth及highlight展示锚点属于本轮可见布局变更；输入脚本新增这些输出字段不构成规则或文案改变。",
+    "verdict": "不变的中英文规则含义、必要性、因果链及正式命令合同沿用已审PASS-content-only；展示变化另验。"
+  },
+  "domainOwnerSourceChecks": [
+    {
+      "path": "src/games/qidahen/domain/chronologyResolution.ts",
+      "previousSha256": "d34643b274b9fcd52551a67e36d659558c8b1c9793cc185d99e5272523ef8f89",
+      "reviewedSha256": "d34643b274b9fcd52551a67e36d659558c8b1c9793cc185d99e5272523ef8f89",
+      "unchanged": true
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionProgress.ts",
+      "previousSha256": "32b75bcd2a532fb3233322d76133a2dd73c6a5651bd1d064b02076673c025ce0",
+      "reviewedSha256": "32b75bcd2a532fb3233322d76133a2dd73c6a5651bd1d064b02076673c025ce0",
+      "unchanged": true
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionFacts.ts",
+      "previousSha256": "ce6906c2d2fa57c7500a5a91f4a2d7b7f2445ef9a6cd93b4f22273867e742d33",
+      "reviewedSha256": "ce6906c2d2fa57c7500a5a91f4a2d7b7f2445ef9a6cd93b4f22273867e742d33",
+      "unchanged": true
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionTypes.ts",
+      "previousSha256": "4c4574f62b97206cc151b14b8f763ff30348651aa0d4f6d80b66d948bf5579a1",
+      "reviewedSha256": "4c4574f62b97206cc151b14b8f763ff30348651aa0d4f6d80b66d948bf5579a1",
+      "unchanged": true
+    },
+    {
+      "path": "src/games/qidahen/domain/turnResolutionSystem.ts",
+      "previousSha256": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc",
+      "reviewedSha256": "1381d0ee0d7105f9d5ecf5071d645f3afd93a58c032654dd6ad530facf4b44cc",
+      "unchanged": true
+    }
+  ],
+  "staticLayerReview": {
+    "status": "PASS-with-declared-impact-boundaries",
+    "sharedApi": {
+      "optIn": "tooltipAnchorTarget可选；省略则阅读rect沿用highlightRect。",
+      "highlight": "聚焦/遮罩/环继续使用highlightRect，阅读定位使用独立rect，不写对局状态或权限。",
+      "cache": "几何签名含两种rect、提示尺寸、隐藏正文高度和保护矩形；currentStep是effect依赖。",
+      "asyncAnchor": "缺失时回退highlightRect；100ms轮询重新查询DOM，挂载/移动/卸载导致几何变化后重新定位。现有单个布局行为用例覆盖这些情况。",
+      "arrow": "仅显式tooltipAnchorTarget步骤按定位锚点中心追踪及边界夹紧；无字段保留旧箭头合同。滑移/free候选仍隐藏箭头。",
+      "testsReviewed": "既有TutorialOverlay.layout用例覆盖默认定位、静止/尺寸/保护变化、独立阅读锚、挂载/卸载fallback、箭头clamp和近邻排序；未独立执行。",
+      "scope": "新API的opt-in定位可以影响接入它的compact布局；默认desktop近邻排序是前轮已审共享变化。不能用七大恨诊断代替所有共享消费者视觉回归。"
+    },
+    "mapReadingProtection": {
+      "owner": "MapToken data-protected-token及PopulationLayer data-protected-population仍各自唯一写点。",
+      "regions": "当前教学地区、交战双方及维护上下文内reading对象；候选region的control类型身份章额外保护，涵盖领土章及外交章，已明确不称唯一领土控制章。",
+      "selectableObjects": "pendingCommitted、grantPardon可选/已选、pincer、instigate、wuzhen仍按正式选择谓词逐对象保护；没有删候选、改mask/命中、改onClick或新增控件。",
+      "nonCurrentCandidates": "其它候选地区的军队/人口不再blanket保护；候选蒙版/身份章/实际输入仍保留，镜头外候选恢复行为另验。"
+    },
+    "regionLabel": {
+      "source": "优先该region现有control类型正式身份章屏幕矩形；无可见章则用mapGraph正式anchor点和map-content矩形投影。",
+      "separation": "省份蒙版bounds继续由取景owner消费，不再把省份左上角冒称地图身份点；不新增第二套坐标配置。",
+      "ui": "复用既有地区名portal，pointer-events-none，无新交互控件。"
+    },
+    "camera": {
+      "priority": "battle双方 > 教程明确单地区 > 无教程focus时全部候选/context",
+      "keyContract": "MapSceneLayer和Board fit侧采用一致focusKey；regionId/battle/candidate key进入memo/effect依赖，回传focusKey约束旧bounds错配。",
+      "preserved": "不改合法候选、蒙版、命中、正式pan/zoom权限。",
+      "directNormalGameImpact": "非battle空位保护从空actions-zone外框改为实际action-slot子承载，会影响普通对局取景空位；无教程时仍取全部候选，未宣称普通局全分支视觉回归。",
+      "preferredZoom": "保留原候选数量决定的1/1.82上限，未重构缩放上限策略；图面可读性由指定12节点独立图审判断。"
+    }
+  },
+  "dependencyReuse": [
+    {
+      "path": "evidence/qidahen/tutorial-full-causal-20261101/reviews/layout-performance-review.json",
+      "sha256": "63874e9472f806d289008dfb7b50974bd4b65224f781bd2e5851ab78fd70de39",
+      "sourceChecks": [
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "oldSha256": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+          "reviewedSha256": "3b0e7f195aaa095fe371fbc13bc4d738738d9a014c859337ccd25a8cb1365999",
+          "unchanged": false
+        },
+        {
+          "path": "src/components/tutorial/__tests__/TutorialOverlay.layout.test.tsx",
+          "oldSha256": "68e2095382530ee315a42609bece4d3ecb6ea1cda40257533e2f23a0ae0ef7fd",
+          "reviewedSha256": "54f3cc5f1e9ee15cdb26564c6944abd0d855d66fd0c702faa06e6332a631aa4d",
+          "unchanged": false
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "oldSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+          "reviewedSha256": "933ad5f51070163fc0efe1b97b66a01e8f0f915e4b8c7878011577d2cebbe189",
+          "unchanged": false
+        },
+        {
+          "path": "e2e/qidahen/tutorialPointer.ts",
+          "oldSha256": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295",
+          "reviewedSha256": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295",
+          "unchanged": true
+        }
+      ],
+      "reuseScope": "共享Overlay/API/缓存几何签名现已改，旧整文件与旧性能报告不能直接沿用为当前源码结论。仅沿用历史静止采样的限定事实；本轮双矩形签名含highlight/阅读anchor与尺寸/保护集合，重复几何复用机制静态仍成立，不声称新性能测量。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-full-causal-20261101/reviews/storage-review-final.json",
+      "sha256": "a5cf47d7acf43d31c5331727aabfa2f01b048f513ff9829d635c2953e6923d34",
+      "sourceChecks": [
+        {
+          "path": "src/engine/transport/localSessionCodec.ts",
+          "oldSha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+          "reviewedSha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/localSession.ts",
+          "oldSha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+          "reviewedSha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/__tests__/localSessionCodec.test.ts",
+          "oldSha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+          "reviewedSha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/useLocalProviderSession.ts",
+          "oldSha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+          "reviewedSha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/localProviderBootstrap.ts",
+          "oldSha256": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+          "reviewedSha256": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+          "unchanged": true
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "oldSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+          "reviewedSha256": "933ad5f51070163fc0efe1b97b66a01e8f0f915e4b8c7878011577d2cebbe189",
+          "unchanged": false
+        }
+      ],
+      "reuseScope": "存储生产owner/codec测试不变，保留原容量和同步压缩风险限制；旧diagnostic记录不代表当前整份执行。"
+    }
+  ],
+  "diagnosticReviewReference": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/map-layer-camera-diagnostic-r148.json",
+    "sha256": "2d416b580fb74a56c1485f5489d48a26129eecf1512b17c10fc0897d341af92b",
+    "reportedVerdict": "PASS",
+    "reportedSummary": {
+      "total": 12,
+      "revise": 0,
+      "passed": 12
+    },
+    "reviewerImageReadByThisAgent": false,
+    "scope": "仅引用独立图审报告：12合法保存点，6张本轮重读/6张同sha沿用；不扩成自然完整教程、数值正确、拖动恢复或最终整组通过。"
+  },
+  "pendingEvidence": [
+    "当前相机版之后的343/17和typecheck最终runner记录及hash",
+    "原生开垦拖图查看非推荐候选并拖回，候选集合/步骤/label跟随守恒",
+    "正式全链前后生产源码一致证据及本轮全部适用图审结果"
+  ],
+  "limitations": [
+    "旧原完整content input缺失，不声称旧新完整输入byteequal。",
+    "本代理本轮只读代码/JSON并写本报告；未读图片、未运行浏览器或测试。",
+    "R146/R147行为PASS不代替后续改写UI的完整视觉验收；既有REVISE历史保留。",
+    "存储同步编码停顿、origin配额、失败反馈及晚期刷新等旧报告限制继续成立。",
+    "几何/截图/单测或最终脚本status不能互相补位，不人为写PASS-wholechain。"
+  ],
+  "findings": []
+}

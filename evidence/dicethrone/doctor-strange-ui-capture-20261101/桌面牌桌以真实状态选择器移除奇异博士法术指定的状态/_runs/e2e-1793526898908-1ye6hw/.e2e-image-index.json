@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "法术移除状态-宇宙感知已选.png",
+      "chainId": "奇异博士选择宇宙感知技能",
+      "chainStep": "技能已选待结算",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-awareness-selected",
+      "behaviorStepId": "remove-status-select-awareness",
+      "description": "真实鼠标选择宇宙感知，确认技能尚未结算。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选择满足四本魔法书骰面的宇宙感知。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选择满足四本魔法书骰面的宇宙感知。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "瓦图姆之风-弃牌法术候选.png",
+      "chainId": "奇异博士从弃牌堆选择法术",
+      "chainStep": "法术候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-card-candidates",
+      "behaviorStepId": "remove-status-prepare-card-candidates",
+      "description": "宇宙感知的弃牌准备候选只显示瓦图姆之风。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "推进宇宙感知的法术准备选择。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "推进宇宙感知的法术准备选择。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "瓦图姆之风-法术卡已选待确认.png",
+      "chainId": "奇异博士从弃牌堆选择法术",
+      "chainStep": "法术已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-card-selected",
+      "behaviorStepId": "remove-status-prepare-card-selected",
+      "description": "选中瓦图姆之风后由确认按钮提交卡牌选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击弃牌区的瓦图姆之风。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击弃牌区的瓦图姆之风。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "瓦图姆之风-状态效果候选.png",
+      "chainId": "瓦图姆之风直接选择状态效果",
+      "chainStep": "状态候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-candidates",
+      "behaviorStepId": "remove-status-candidate-effects",
+      "description": "瓦图姆之风已准备后的状态候选；每个图标都可直接点击，玩家卡只标出持有人。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "选状态图标，玩家只作为状态持有人标识。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "选状态图标，玩家只作为状态持有人标识。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "瓦图姆之风-状态已选待确认.png",
+      "chainId": "瓦图姆之风直接选择状态效果",
+      "chainStep": "状态已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-selected",
+      "behaviorStepId": "remove-status-opponent-effect-selected",
+      "description": "直接选中二号玩家的眩目图标；状态仍未移除，等待确认。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "直接点击目标状态图标，一次确定持有人和效果。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "直接点击目标状态图标，一次确定持有人和效果。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "瓦图姆之风-横屏-状态效果候选.png",
+      "chainId": "瓦图姆之风直接选择状态效果-横屏",
+      "chainStep": "状态候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-mobile-candidates",
+      "behaviorStepId": "remove-status-mobile-candidate-effects",
+      "description": "横屏手机上直接从两个状态图标中选择；没有先选玩家的步骤。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "桌面候选态的同一交互切换到横屏手机视口。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "桌面候选态的同一交互切换到横屏手机视口。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    },
+    {
+      "path": "瓦图姆之风-横屏-状态已选待确认.png",
+      "chainId": "瓦图姆之风直接选择状态效果-横屏",
+      "chainStep": "状态已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-remove-status-mobile-selected",
+      "behaviorStepId": "remove-status-mobile-selected-effect",
+      "description": "横屏手机上直接选中眩目状态；确认可见，状态尚未移除。",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "点击眩目状态图标，一次锁定状态和持有人。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击眩目状态图标，一次锁定状态和持有人。",
+      "sourceRevision": "a077ac6fc4354f7cfea19b81395264c7128adebbab586274ad65db3362f3106c",
+      "e2eSourceRevision": "48a88a3d70be1191f3c81c803ef58c423a6bed32f6f538986a885bcd80f33643",
+      "requirements": [
+        "奇异博士复用法术卡池和状态选择器"
+      ],
+      "sourceRun": "1793526977098-122080-86e3ab5b-b154-402b-9925-5cdda2574a38",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌以真实状态选择器移除奇异博士法术指定的状态/_runs/e2e-1793526898908-1ye6hw"
+    }
+  ]
+}

@@ -1,0 +1,1557 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "changeType": "refactor",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-11-03",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "reason": "当前整屏与录屏均已由小批次独立子代理逐项私审；数值与规则另由正式测试验证。"
+  },
+  "humanAcceptance": {
+    "status": "pending",
+    "platform": "PC",
+    "mobileWork": "not-adapted-or-accepted"
+  },
+  "implementationRecord": "docs/games/qidahen/records/qidahen-action-menu-review-20261102.md",
+  "media": [
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/01-PC-公开纪年与年度扩张目标.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/02-PC-轮盘免费前进一步.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/03-PC-点击「军屯」.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/04-PC-点击「开垦」.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/05-PC-开垦地区选择.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/06-PC-直接选择征召军队.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/07-PC-征召弃牌支付.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/08-PC-共享放大镜检视征召手牌.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/09-PC-征召建军地区与辽北引导.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/10-PC-辽北建军方式.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/11-PC-年中税赋与漕运.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/12-PC-年中补牌后的手牌上限处理.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/13-PC-火炮技术研发.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/14-PC-先选出兵来源.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/15-PC-地图兵牌选择出兵.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/16-PC-已选部队与确认出兵.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/17-PC-出兵来源到叶赫部目标.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/18-PC-战术牌使用前.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/19-PC-选中鸳鸯阵并确认.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/20-PC-炮兵白骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/21-PC-炮兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/22-PC-骑兵红骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/23-PC-骑兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/24-PC-步兵绿骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/25-PC-步兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/27-PC-战后占领选择.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/28-PC-主动展开只读战报.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/29-PC-外交友好标记选择.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/30-PC-外交结果与落点继续.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/31-PC-点击「雇佣」.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/32-PC-在大同建立新守军.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/33-PC-保留手牌结束回合.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/34-PC-新年结算.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/35-PC-山海关维护选择.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/36-PC-城市破败与维护取舍.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/37-PC-内长城维护与墙线.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/38-PC-外长城维护与墙线.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/39-PC-大同撤旧兵保留新守军.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/40-PC-叶赫部队维持费用.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/41-PC-三张费用牌分别选中.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/42-PC-翻看末端仍可复核费用牌.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/43-PC-平壤雇佣军耗损选择.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/44-PC-选中平壤耗损部队.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/45-PC-在纪年牌旁决定领取.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/46-PC-新顺位与本次选择者.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/47-PC-为大明选择新年度人物.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/48-PC-检视当前人物牌.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/49-PC-选择训练或征兵.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/50-PC-在地图训练参战炮兵.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/51-PC-自由平移查看其它候选.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/52-PC-继续训练参战步兵.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/53-PC-在辽东地图征兵.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/54-PC-四次基础行动完成并保留手牌.png",
+    "evidence/qidahen/tutorial-gameui-20261103-r174/media/55-PC-首点威望与下一年度目标.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "轮盘本体与当前落点行动",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/02-PC-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/03-PC-点击「军屯」.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/04-PC-点击「开垦」.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/31-PC-点击「雇佣」.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "手牌对象与势力行动入口",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/06-PC-直接选择征召军队.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/07-PC-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/08-PC-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/13-PC-火炮技术研发.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "建军地区与出兵兵牌识别",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/09-PC-征召建军地区与辽北引导.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/10-PC-辽北建军方式.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "出兵来源目标与战术确认",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/14-PC-先选出兵来源.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/15-PC-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/16-PC-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/17-PC-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/18-PC-战术牌使用前.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/19-PC-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/28-PC-主动展开只读战报.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "年度支付与所选对象身份",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/40-PC-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/41-PC-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/42-PC-翻看末端仍可复核费用牌.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/43-PC-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/44-PC-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "征兵训练地图本体",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/49-PC-选择训练或征兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/50-PC-在地图训练参战炮兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/51-PC-自由平移查看其它候选.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/52-PC-继续训练参战步兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/53-PC-在辽东地图征兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/54-PC-四次基础行动完成并保留手牌.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "长城维护与真实墙线",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/37-PC-内长城维护与墙线.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/38-PC-外长城维护与墙线.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "年度地图决定与提示关联",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/05-PC-开垦地区选择.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/11-PC-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/12-PC-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/29-PC-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/30-PC-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/31-PC-点击「雇佣」.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/32-PC-在大同建立新守军.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/33-PC-保留手牌结束回合.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/34-PC-新年结算.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/35-PC-山海关维护选择.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/36-PC-城市破败与维护取舍.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/37-PC-内长城维护与墙线.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/38-PC-外长城维护与墙线.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/39-PC-大同撤旧兵保留新守军.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "教学视角与结束后续局",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/01-PC-公开纪年与年度扩张目标.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/45-PC-在纪年牌旁决定领取.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/46-PC-新顺位与本次选择者.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/47-PC-为大明选择新年度人物.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/48-PC-检视当前人物牌.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/55-PC-首点威望与下一年度目标.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    },
+    {
+      "requirement": "战斗掷骰过程与结果归属",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/26-PC-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "qidahen-annual-desktop",
+      "sourceRun": "annual-r174-gameui-pc-20261102",
+      "sourceRevision": "annual-revision-27",
+      "evidence": "evidence/qidahen/tutorial-gameui-20261103-r174/traces/desktop.json",
+      "requiredSteps": [
+        "frontier-goal",
+        "opening-move",
+        "farm-action",
+        "farm-alternative-checkpoint",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "opening-finish",
+        "midyear",
+        "hand-limit",
+        "battle-move",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand",
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall",
+        "upkeep-datong",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong",
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-second-kind",
+        "training-second-target",
+        "training-third-kind",
+        "training-third-target",
+        "training-recruit-kind",
+        "training-recruit-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/r174_a + /root/r174_a_resume + /root/r174_b_head + /root/r174_b_tail + /root/r174_c + /root/r174_d1 + /root/r174_d2 + /root/r174_e1 + /root/r174_e2 + /root/r174_f1 + /root/r174_f2 + /root/r174_g + /root/r174_h1 + /root/r174_e1 + /root/r174_video_a + /root/r174_video_b1 + /root/r174_video_b2 + /root/r174_video_c1 + /root/r174_video_c2"
+    },
+    "reviewFile": "../.visual-review.json",
+    "baselineReviewFile": "../.baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/handInteractionTray.test.tsx src/games/qidahen/__tests__/recruitTrainMapInput.test.ts src/games/qidahen/__tests__/tutorialTurnInput.test.tsx src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/seasonChoiceBranches.test.ts src/games/qidahen/__tests__/battleRollPlacement.test.tsx src/games/qidahen/__tests__/mapRegionFocus.test.ts src/games/qidahen/__tests__/battleRollProjection.test.tsx --configLoader native --maxWorkers 1"
+    ],
+    "evidence": [
+      "evidence/qidahen/tutorial-gameui-20261103-r174/checks/unit.log"
+    ]
+  },
+  "additionalChecks": {
+    "unit": {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/handInteractionTray.test.tsx src/games/qidahen/__tests__/recruitTrainMapInput.test.ts src/games/qidahen/__tests__/tutorialTurnInput.test.tsx src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/seasonChoiceBranches.test.ts src/games/qidahen/__tests__/battleRollPlacement.test.tsx src/games/qidahen/__tests__/mapRegionFocus.test.ts src/games/qidahen/__tests__/battleRollProjection.test.tsx --configLoader native --maxWorkers 1",
+      "exitCode": 0,
+      "evidence": "checks/unit.log",
+      "tests": 65,
+      "files": 12
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "evidence": "checks/typecheck.log"
+    },
+    "spec": {
+      "command": "npm run spec:lint",
+      "exitCode": 0,
+      "evidence": "checks/spec.log"
+    },
+    "i18n": {
+      "command": "npm run i18n:check",
+      "exitCode": 0,
+      "evidence": "checks/i18n.log",
+      "warnings": 7,
+      "warningsScope": "范围外动态键，详见原日志；未修改校验器或豁免。"
+    },
+    "openspec": {
+      "command": "openspec validate refactor-qidahen-continuous-annual-tutorial --strict",
+      "exitCode": 0,
+      "evidence": "checks/openspec.log"
+    },
+    "diff": {
+      "command": "git diff --check -- <本轮七大恨源码、语言包、E2E、专项记录、OpenSpec与safe-image-reading>",
+      "exitCode": 0,
+      "evidence": "checks/diff.log"
+    },
+    "mapRecoveryDiagnostic": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/map-candidate-recovery.tmp.e2e.ts --retries=0",
+      "exitCode": 0,
+      "evidence": "checks/mapRecoveryDiagnostic.log",
+      "scope": "从R170实际失败存档通过正式“从上次继续”恢复；只证明慢速真实平移，不代替完整主线；诊断源已移出自动收集目录。"
+    },
+    "main": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-annual-tutorial.e2e.ts --grep=desktop --retries=0",
+      "exitCode": 0,
+      "evidence": "checks/main.log",
+      "steps": 74,
+      "media": 55
+    },
+    "lifecycle": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts --retries=0",
+      "exitCode": 0,
+      "evidence": "checks/lifecycle.log"
+    },
+    "chronologyPlacementDiagnostic": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/chronology-placement-diagnostic.tmp.e2e.ts --retries=0",
+      "exitCode": 0,
+      "evidence": "checks/chronologyPlacementDiagnostic.log",
+      "scope": "正式纪年保存点恢复，真实点击邻近领取按钮进入支付；不代替完整主线。"
+    },
+    "videoFrameCoverage": {
+      "command": "python .tmp/prepare-qidahen-r174-video-review.py；五个短上下文子代理按连续区间私审，主线程核并集",
+      "exitCode": 0,
+      "evidence": "checks/video-frame-coverage.json",
+      "decodedFrames": 127,
+      "coveredFrames": 127
+    },
+    "viewerHealth": {
+      "command": "node .tmp/check-qidahen-r174-viewer.mjs <script-returned VIEWER_URL>",
+      "exitCode": 0,
+      "evidence": "checks/viewer-health.json"
+    },
+    "viewerBrowser": {
+      "command": "node .tmp/probe-qidahen-r174-viewer.mjs <script-returned VIEWER_URL>",
+      "exitCode": 0,
+      "evidence": "checks/viewer-browser-probe.json"
+    },
+    "sourceIdentity": {
+      "command": "node .tmp/check-qidahen-r174-source.mjs",
+      "exitCode": 0,
+      "evidence": "checks/source-identity.json"
+    }
+  },
+  "boundaries": [
+    "只覆盖当前PC课程与受影响交互，不代表用户人工认可或移动端通过。",
+    "主线采用合法一格轮盘路线；其它势力全部专属行动、两格三格完整落点组合、围城海运、所有人物与战斗分支未在本条课程逐一实操。",
+    "截图只验交互和可读性，规则数值依据领域测试及真实流程断言。",
+    "商业资料本轮实际检查文明六八张、特洛伊十一张原图，未冒称亲玩完整商业教程。",
+    "本轮未执行提交、推送、切分支或发布。"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\00-frontier-goal.png",
+      "sha256": "81313d0ed23165cad87318f8732dda3f666f487c07c3e6b3a7bda0e7507cabda",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\01-opening-move.png",
+      "sha256": "3226f31e660213a4fa97e2d29900749303e192bc859ef0017827c50d3a462f39",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\02-farm-action.png",
+      "sha256": "d1b28df2dcc16c386e1f9bb0e147cd14a91435c2ed3635d7ad6827f4b1e52541",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\03-reclaim-action.png",
+      "sha256": "7daa3b09ab6e061dbe9ee25ea5c27cedf3c62f42cee738bbe7f40904b0b297dd",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\04-reclaim-target.png",
+      "sha256": "24008a3873884af8f321d45b74cf1b6995509aa387c51decd7d7cdaa96cdc423",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\05-recruit-action.png",
+      "sha256": "375528cbe88932f48e263e0c7d5eb916139daa4d458d957640f83f3513d19313",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\06-recruit-payment.png",
+      "sha256": "fc2f07a1e2d4634b318274d624ec367086d7af3110bb907abbc8b7eef7af4b2e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\07-recruit-payment-inspect.png",
+      "sha256": "2b7a5319c1e8ff223b497764713c8d4b1558d130df2955c483dd3347202c8ccc",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\08-recruit-source.png",
+      "sha256": "d576b09a72dcb8d4088a82a4e10c0c527df7c9180bc13186448f72c458116960",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\09-recruit-troops.png",
+      "sha256": "1794db243de208cfd506c5336043961173cf9b8395f36de423ba9a3deac734b3",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\10-midyear.png",
+      "sha256": "4d989edd97be1a4738ab28464174b03d9741873ae42d77fde4602b4d61a27859",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\11-hand-limit.png",
+      "sha256": "1b864f1dc8275da7b3e4686c86c59831e16c0120c2504303da228d1fb2f7078e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\12-upgrade-card.png",
+      "sha256": "840591d319cf9900696e5e1da600884c69d28d146c28bd5fb1ab39bcd32f7f19",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\13-dispatch-source.png",
+      "sha256": "ff3ab18f428279ab2145f5ea028a3a23c8801ddada0b17e1869ae93ef65958cd",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\14-dispatch-troops.png",
+      "sha256": "3aeff4e92b0573d1814cf7d2ea36e8cf90aaa01a6d8d2dfcdcf4766dc1fd549f",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\15-dispatch-troops-selected.png",
+      "sha256": "12a60f464e47447f74547277cefb92f9c49f3c7dab3ba16abf6b5e96d5eb35a5",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\16-dispatch-target.png",
+      "sha256": "c6e9922e41baeef5d78347fd253d9d3200a449b0e782cbfec256bb5477b356c3",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\17-tactic-card.png",
+      "sha256": "eb7b94fe30d9007a493f28548b4f30218196b1ae7beb2a8c03b79109b62a57b2",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\18-tactic-card-selected.png",
+      "sha256": "9d7fe9599db1bcc3614fe8537ec259b6452ae2f6875b2635f1946be262020612",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\26-occupy.png",
+      "sha256": "776702b4c29fa9f240d25a830ebd7104d3333f9c1f29fb996f689a5bd81432fd",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\27-occupy-report.png",
+      "sha256": "25d2978ded0da037fb985af151ec6a65c81beafe2bdd6fd84f76b4dc0880521e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\28-diplomacy-target.png",
+      "sha256": "f6a1e2ac4c5687e1e2e90038ccb615713163f555c402e1e6227c762cc207fed9",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\29-diplomacy-finish.png",
+      "sha256": "edbc0d4d6a7742c0e41bf286ee67d45452231c721ee73ed1a30536485fe495c3",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\30-hire-action.png",
+      "sha256": "868f0a29669772b92b8f346f7f1951f23344f4b9c3fe4900a9ab73a4a6999d94",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\31-hire-target.png",
+      "sha256": "01fec0cdd8f82824e42b3ca0f4cd0bb1f57517483700db0de89d7da2a874df5c",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\32-save-hand.png",
+      "sha256": "0c774a24ad8748d7ca3f5123ea6925d1c93e9962aa660288429cb5600d305459",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\33-new-year.png",
+      "sha256": "a06ef60ca76a6e2c0e3fe6b34b97d71b57839777d66f03214a9b89d16839cf8c",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\34-maintain-shanhai.png",
+      "sha256": "667a088a96cdbd37407922e78fea4a0e6c59b64cff03d7b8dcdb85c084a443c9",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\35-abandon-jinzhou.png",
+      "sha256": "25cff198c33e78b9816ec99bde8337b1121e11559fc9ea8bf9269a1a4e97af5e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\36-abandon-inner-wall.png",
+      "sha256": "2152d9471f7f3d5810875dabb9fbbe0217a0c6bdaae48b3f54832c3caac6822a",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\37-abandon-outer-wall.png",
+      "sha256": "f77d2397d0fbab88b695365bc4e40874fd6254fc98f1bf93a3b18939e6d84c98",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\38-upkeep-datong.png",
+      "sha256": "13d080cdc045dd998f90c8a27f43d9605de01bc24bdeb01103e2386dec96cc40",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\39-upkeep-yehe.png",
+      "sha256": "df9c3583ce55bf2c811def6c26d0becee226bf401ee581eb3fefe4fa67814037",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\40-upkeep-yehe-selected.png",
+      "sha256": "a07d022b44bba37175d44a207b10fad7d3e0bde5e9c5a8c66ba63d4afe73f02c",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\41-hand-scroll-end.png",
+      "sha256": "2a8f650e3cd24ad79c54727bbaf2bc9bd18a6753d2adb98308b6cf1563e6bc9f",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\42-upkeep-pyongyang.png",
+      "sha256": "da5f1394bd61462a5711002a49249697ac66717d1237269b6dc71d73ac3c67d0",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\43-upkeep-pyongyang-selected.png",
+      "sha256": "45694bc5366784506a667e34cd6eeb628dd9f9017a46c1ba4d29782b5ba53bc1",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\44-claim-year.png",
+      "sha256": "df3e307a31de40dba7823806ca76dbbbd2686e0f876f19a2a23e477ff778f059",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\45-new-order.png",
+      "sha256": "2a6b27ecb2e914635b3e4fa5b5b8ecdea50156f3f20db02c9f1e3833c37aabda",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\46-year-character.png",
+      "sha256": "5abcd508d4ec37efb88e12bb33c6213e5c50be7cafbd7429fc21be11cee6d760",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\47-year-character-inspect.png",
+      "sha256": "8ac98ea0a24a84c5385796b266d6a1e3bb2118db19a5bd8fb2732229fd645e09",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\48-training-kind.png",
+      "sha256": "8aa4c5c25103d892b4f70ef5640f59b6a7862db5948cf117ee2dce579420e2e8",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\49-training-target.png",
+      "sha256": "e3b01a89f84d748cdd2741543c3a211d5095176648bf6c600a0047ffc7062ac9",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\50-training-pan.png",
+      "sha256": "cf83f40aec3622cdfd8802a9458913678c5b31b55a020165b72e5f363861e586",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\51-training-second-target.png",
+      "sha256": "4cb7839d7d6bc5a83af38296d1914b70062bb4c5c6116fa2e555443e751b83fc",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\52-training-recruit-target.png",
+      "sha256": "17278221d3245b49240dd1ae3956c57f2a5a0f21fbbfd94614bce7fef3eb4122",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\53-training-finish.png",
+      "sha256": "825994b4b2857b6f4a2e56321242894c1d048550990ab2855250f6e967234d04",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\54-finish.png",
+      "sha256": "b63dc75eabde207723fc560cb1417e0f96f3285f48028c1f23287dc37bc42c22",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "9f27dfc9187952230517787e07ee19495e68d760ce6b9cc1f2860f81c1646c3e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "067e80f3f37a27b635017d4e83e0272dce1e689681ae942eb1d6a9b40966246d",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00000.jpg",
+      "sha256": "10b5f8f0220df2a380793470d3a5c5ae22970bdba3cfc6977089c6040d572080",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00001.jpg",
+      "sha256": "10b5f8f0220df2a380793470d3a5c5ae22970bdba3cfc6977089c6040d572080",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00002.jpg",
+      "sha256": "10b5f8f0220df2a380793470d3a5c5ae22970bdba3cfc6977089c6040d572080",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00003.jpg",
+      "sha256": "f8125650b30cd4a5e8e038506e0a6f4887d227b5d6b2687b0c83f7b97463d5ab",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00004.jpg",
+      "sha256": "f33e25295ac3f9bd8b9524ee43e9b93b7081df40323e5de391b1863c58010c7a",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00005.jpg",
+      "sha256": "769425a5c391a7c7a0e4f5b66d224f9e1686b073592e9e76b72a441e7c4e3fc5",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00006.jpg",
+      "sha256": "f16017f25030808305d8f612f59d2cedc7a6d2901c389b7750016dab3f96e98f",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00007.jpg",
+      "sha256": "93361a4ce44d1540b37f1be0e5728348f08d1a804744ea893433a2875cdb32ce",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00008.jpg",
+      "sha256": "d90022540fef48556330a19244a85c3115a5e70352966fc677e33292a44e8c8b",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00009.jpg",
+      "sha256": "9bf2a455ec6bd0eaa8640814209efda142a9e9abfba6855228dcca46c3b55b24",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00010.jpg",
+      "sha256": "53408abdf631717ed90a9ba99d360e140bea2b9f9134f2871c50d6c053a31ab8",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00011.jpg",
+      "sha256": "9f27dfc9187952230517787e07ee19495e68d760ce6b9cc1f2860f81c1646c3e",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00012.jpg",
+      "sha256": "44be24212f8fc0d5e4aa269b430624c69c024a1803944e1834cd7f782e375337",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00013.jpg",
+      "sha256": "e258f2307c93c21a605082b080773894f723361b44f5302b20da907a3f2d95d0",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00014.jpg",
+      "sha256": "0e47e8881b3fe67c043e88cb70988af4c93e0fdceb88f6e588a6bca007a7be52",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00015.jpg",
+      "sha256": "83bdb3b715548c3eba04a12cf0ee6ede047c84430cfe031ae53e1f5eaa730374",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00016.jpg",
+      "sha256": "2887d272f3855cadf4098f265b5c5a659ccf6d21931f3649aa0901c1270d2823",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00017.jpg",
+      "sha256": "c0a112c85c4286843846bfa435c8310d027ce8414a8b5cf04628704f61bb8898",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00018.jpg",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00019.jpg",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00020.jpg",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00021.jpg",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00022.jpg",
+      "sha256": "9107879e48aad62ebfcbae0edaa9f78fae8b11349f2a290f2ac96d47a1d7a901",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00023.jpg",
+      "sha256": "8c3340519f6ef70d2baeab1e58330053f785765fa9ff2e2a5a5a3fee465f4cc5",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00024.jpg",
+      "sha256": "c18d47bc6240817e21fcb87e625e1894283151806023830b81be6b63caca4f7e",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00025.jpg",
+      "sha256": "213946891bf7ffab23242ed3548b59fdf058ed4c33472ff117dbabe4076c7a15",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00026.jpg",
+      "sha256": "c611c15341eab999f8fbdff1a5133113a1962f977fca1fa7e8358ed8651af7be",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00027.jpg",
+      "sha256": "872cf6e94c39ba33707d9d75dc68efe6ee5733e95ae2b7ac9cd14016039078dd",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00028.jpg",
+      "sha256": "989da3922ad031826c87d6167889aeea95f9d3489dd5bb4aadc333ad596bf53f",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00029.jpg",
+      "sha256": "664ced1f713f1ff768a9e0ea1eefdbad428dc05bac49004bd08f7736d0b580cf",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00030.jpg",
+      "sha256": "16a4504cb252ff901824b8dbfae242ab6107db62c4150bafe4207c2c74385ae4",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00031.jpg",
+      "sha256": "5614f72ed13a5c49fdc11dfe57fc9ca8f4a986d66c532439329d3a0f8cfaa344",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00032.jpg",
+      "sha256": "f205bf7ed1af9f0663cc3fe6ef32f5ed9f3dc8fafa179581353f7e1c8961268d",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00033.jpg",
+      "sha256": "cd192c398e47a9b06bccb3fc3b72c4d2d048b81e446ef42cb46c31a4a9caeee4",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00034.jpg",
+      "sha256": "067e80f3f37a27b635017d4e83e0272dce1e689681ae942eb1d6a9b40966246d",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00035.jpg",
+      "sha256": "3a96c5fd0645e79dbd789ad9e963add186c0b2a83f770f13e45fef1157b6882a",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00036.jpg",
+      "sha256": "d1a61fe9a444f5c4ceb1e8f1da71e6848db81cf462ebb0cd6a7715d86e845a36",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00037.jpg",
+      "sha256": "9a73be06134658ceaae63375fc289e50958c3e047115b1de19257b502226fd1b",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00038.jpg",
+      "sha256": "c317a1bd2fc5fe10686cdb591596f089868e714623c4e4a4e659609e52f0793e",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00039.jpg",
+      "sha256": "2989ce52fa55f6c60c825eba66f9c71954cc3c25836f76afb2e9f5846df1e84e",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00040.jpg",
+      "sha256": "59f4d4a8c440ee08b63b803a0ffbc069233326d96455588ab9affabd3fe5ad43",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00041.jpg",
+      "sha256": "f952ecf913f3698555957edc420be6196bb2eb50a62fb482b7b7c0b4f36eb0b8",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00042.jpg",
+      "sha256": "6d79eeb2a236cbd1e33819f323c24775b0c12cd9dfa1a1c6ecb66b8acd6fd6ac",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00043.jpg",
+      "sha256": "db8301ddf1a26a28304d1e3f51c5bd72a241a83d76b8d08a65c1833164d8a804",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00044.jpg",
+      "sha256": "69740b0d21d800e136ee74b838af353cb76e833c54413790e7afd8188c40ce88",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00045.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00046.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00047.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00048.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00049.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00050.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00051.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00052.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00053.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00054.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00055.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00056.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00057.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00058.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00059.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00060.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00061.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00062.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00063.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00064.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00065.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00066.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00067.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00068.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00069.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00070.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00071.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00072.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00073.jpg",
+      "sha256": "b4d322706d245399183807481f8d8a00005b654ea52b411f13eb8ccf85cc6ea9",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00074.jpg",
+      "sha256": "ea00d773899954e6fbc55825cac799358956635ae525cb83b939da84faeb1bf3",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00075.jpg",
+      "sha256": "8319b66a8fcb7fb1e698aa340377c1649b9bccd4697c14e0b830bc2fbb016b66",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00076.jpg",
+      "sha256": "3b685cbd79fe8e5cc324c1c61005001a39e5723e1c7ec3e3e329fc2ed8eb767d",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00077.jpg",
+      "sha256": "66497853a93dd9dda0b1fb6690ff4ee774cbbf8b40b9319bb789ab9f4d3f6543",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00078.jpg",
+      "sha256": "f380e563d4eeabd94381282881b873632c82739c6639b3aff6dce70d89f60676",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00079.jpg",
+      "sha256": "e5a6f5ca6360c7687cd1c9a4c6370289d9030d5491bae2913848b5369d511bcc",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00080.jpg",
+      "sha256": "93c050f1e4183dc3d6b6ec10a98f8cd668318bef2bd882152d539ffe292051b2",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00081.jpg",
+      "sha256": "885971e06751e01ca5b6e983312901ecf2b98c29a5234860d852a98bc1a8d8d2",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00082.jpg",
+      "sha256": "1652b03e15540f8f6ff9025de4715f63253cef331c53b8b8e1610032c34de7c3",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00083.jpg",
+      "sha256": "8c38c63a6c92893b515f0f76c1380e971ccc1d9955676a7e05cbbf9a408e82ee",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00084.jpg",
+      "sha256": "9553229cbea93e5dc28bb7fdec372f5a3670438e0e2d3bdd4fe75eb8da171548",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00085.jpg",
+      "sha256": "9d457bff7e4957475b294fae8b6d702dabadc41c50b6d0614c373e7f4e1c86ae",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00086.jpg",
+      "sha256": "0748af914e937b47eec5f75ca2bfd51ff659f5008a577e71ed366e7ffd2f38ca",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00087.jpg",
+      "sha256": "668630920559796ad19c941af6b7e85ce433190262731b5b93ea2df31e2bc490",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00088.jpg",
+      "sha256": "96ecd6e8b0e1dfa9503f2aadb5fc51f27a93bead95cb5cfb02ed50e9c228a21a",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00089.jpg",
+      "sha256": "b99e4cdb9809fb6e525e7dc56b54c0c1cf6554ab0cfa722d57f6a4d75c72ae24",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00090.jpg",
+      "sha256": "40a19cc0b9381897bc642bafe6648f592a2a4b4e566d28d88fc0f994ea334704",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00091.jpg",
+      "sha256": "4d0468cfbd9fc68321ea8bf42ea83abf794019c6ccf35e7e0b889532ee4970dd",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00092.jpg",
+      "sha256": "33f2989e119365bb1ea6eb53b5224b293765eb6ca7d43728867f1c9d46f71932",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00093.jpg",
+      "sha256": "f6cc14d6f65d8ee3fda40db955670f114d2f6c14546c2f35309a461f7637b162",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00094.jpg",
+      "sha256": "08c798369abb272cf95b03d0f03faba8b376bc3490e12a2f746dfdbd92c949f1",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00095.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00096.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00097.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00098.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00099.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00100.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00101.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00102.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00103.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00104.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00105.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00106.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00107.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00108.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00109.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00110.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00111.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00112.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00113.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00114.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00115.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00116.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00117.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00118.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00119.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00120.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00121.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00122.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00123.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00124.jpg",
+      "sha256": "9f74d4390d753ef3afc21dcae2e83c451a6d639cb691f933e6b26afaa7af0473",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00125.jpg",
+      "sha256": "3d0da39d662015882b5a0a8c2f5c97194e2fbb9fded2240cde650ca9ea94db7b",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-frames\\00126.jpg",
+      "sha256": "3d0da39d662015882b5a0a8c2f5c97194e2fbb9fded2240cde650ca9ea94db7b",
+      "contract": "internal-animation-audit",
+      "reason": "内部连续录制帧不混入用户查看器。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "047ad3793a70b84646d0291eef8ea2ca2a7d4ad8bc1e4634ebac5301bfb96303",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "9d457bff7e4957475b294fae8b6d702dabadc41c50b6d0614c373e7f4e1c86ae",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r174-gameui-pc-20261102\\desktop\\battle-real-time.webm",
+      "sha256": "5b8555287b29aba53e2144f9e8a1c1622cde53e3a86bbcfa81cc2fd1930e1e7f",
+      "contract": "source-original-byte-copy",
+      "reason": "同一原媒体只交付一次。"
+    }
+  ],
+  "resolvedVisualIssues": [
+    {
+      "issue": "骰子交战阵营及损伤承受方不明确",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/20-PC-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/21-PC-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/22-PC-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/23-PC-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/24-PC-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/25-PC-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/26-PC-炮骑步连续真实掷骰录屏.webm"
+      ]
+    },
+    {
+      "issue": "战后幸存结果重复",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/27-PC-战后占领选择.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/28-PC-主动展开只读战报.png"
+      ]
+    },
+    {
+      "issue": "纪年领取与牌面跨屏分离",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/45-PC-在纪年牌旁决定领取.png"
+      ]
+    },
+    {
+      "issue": "当前回合与人物选择所属阵营混淆",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/46-PC-新顺位与本次选择者.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/47-PC-为大明选择新年度人物.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/48-PC-检视当前人物牌.png"
+      ]
+    },
+    {
+      "issue": "征兵训练真实命令看似正文",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/49-PC-选择训练或征兵.png",
+        "evidence/qidahen/tutorial-gameui-20261103-r174/media/54-PC-四次基础行动完成并保留手牌.png"
+      ]
+    }
+  ],
+  "viewerVerification": {
+    "status": "PASS",
+    "viewerUrl": "http://127.0.0.1:4867/?key=e88f4b09f9a3",
+    "evidence": [
+      "checks/viewer-health.json",
+      "checks/viewer-browser-probe.json"
+    ],
+    "userOpenedByAgent": false
+  }
+}

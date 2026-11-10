@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\桌面单张-法术显示.png",
+      "sha256": "4c75b37f2a6a497936f6ed83b2230a33ccf630b59830717544cd2c27fda52f3e",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "红色法术可见，眼睛控制片紧贴槽位；未遮挡手动响应、牌堆或重要文字。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\桌面单张-恢复法术.png",
+      "sha256": "4c75b37f2a6a497936f6ed83b2230a33ccf630b59830717544cd2c27fda52f3e",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "红色法术可见，眼睛控制片紧贴槽位；未遮挡手动响应、牌堆或重要文字。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\桌面单张-露出被动.png",
+      "sha256": "437505b0e648653c9562901e5ce8eccf6cd64f9a9d63a42f7cd647229954cd72",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "法术隐藏，被动文字露出，眼睛控制片紧贴槽位；未遮挡手动响应、牌堆或重要文字。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\桌面多张-法术显示.png",
+      "sha256": "6cd1fc245eaa4d3dece7f6805ad0f88608a313d4ad8c74cc72a6c804ffb026b9",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "绿色法术、3/3 和切换箭头可见，眼睛控制片紧贴槽位；未遮挡手动响应、牌堆或重要文字。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\桌面多张-恢复法术.png",
+      "sha256": "ad84f37b9de57a906843cbd60f1c2750b33848da25e112a5584890b0c8c5cfdd",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "绿色法术、3/3 和切换箭头可见，眼睛控制片紧贴槽位；未遮挡手动响应、牌堆或重要文字。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-outside-current-20261104\\桌面多张-露出被动.png",
+      "sha256": "654b219dddc8eae9e05d3eac4127ddd8f0efc500a7f318c282118513c020ab1f",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "法术隐藏，被动文字露出，眼睛控制片紧贴槽位；未遮挡手动响应、牌堆或重要文字。"
+    }
+  ]
+}

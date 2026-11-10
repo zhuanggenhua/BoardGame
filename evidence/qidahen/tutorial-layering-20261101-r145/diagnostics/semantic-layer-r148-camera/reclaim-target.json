@@ -1,0 +1,506 @@
+{
+  "hint": {
+    "x": 1088,
+    "y": 136,
+    "width": 310,
+    "height": 209,
+    "top": 136,
+    "right": 1398,
+    "bottom": 345,
+    "left": 1088
+  },
+  "anchor": {
+    "id": "qidahen-map-region-focus-name",
+    "bounds": {
+      "x": 1032,
+      "y": 351.140625,
+      "width": 36,
+      "height": 20,
+      "top": 351.140625,
+      "right": 1068,
+      "bottom": 371.140625,
+      "left": 1032
+    }
+  },
+  "surfaces": [
+    {
+      "id": "qidahen-map-region-focus-name",
+      "bounds": {
+        "x": 1032,
+        "y": 351.140625,
+        "width": 36,
+        "height": 20,
+        "top": 351.140625,
+        "right": 1068,
+        "bottom": 371.140625,
+        "left": 1032
+      }
+    }
+  ],
+  "guards": [
+    {
+      "selector": "[data-testid=\"qidahen-turn-choice\"]",
+      "id": "qidahen-turn-choice",
+      "bounds": {
+        "x": 1490,
+        "y": 276,
+        "width": 350,
+        "height": 116,
+        "top": 276,
+        "right": 1840,
+        "bottom": 392,
+        "left": 1490
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-hand-1",
+      "bounds": {
+        "x": 505,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 687,
+        "bottom": 1205.5,
+        "left": 505
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-hand-2",
+      "bounds": {
+        "x": 687,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 869,
+        "bottom": 1205.5,
+        "left": 687
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-hand-3",
+      "bounds": {
+        "x": 869,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1051,
+        "bottom": 1205.5,
+        "left": 869
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-4",
+      "bounds": {
+        "x": 1051,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1233,
+        "bottom": 1205.5,
+        "left": 1051
+      }
+    },
+    {
+      "selector": "[data-testid^=\"qidahen-hand-card-shell-\"]",
+      "id": "qidahen-hand-card-shell-deck-ming-5",
+      "bounds": {
+        "x": 1233,
+        "y": 954.5,
+        "width": 182,
+        "height": 251,
+        "top": 954.5,
+        "right": 1415,
+        "bottom": 1205.5,
+        "left": 1233
+      }
+    },
+    {
+      "selector": "[data-fab-id=\"chat\"]",
+      "id": null,
+      "bounds": {
+        "x": 1792,
+        "y": 80,
+        "width": 48,
+        "height": 48,
+        "top": 80,
+        "right": 1840,
+        "bottom": 128,
+        "left": 1792
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-player-float\"]",
+      "id": "qidahen-player-float",
+      "bounds": {
+        "x": 740,
+        "y": 16,
+        "width": 720,
+        "height": 58,
+        "top": 16,
+        "right": 1460,
+        "bottom": 74,
+        "left": 740
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-action-wheel\"]",
+      "id": "qidahen-action-wheel",
+      "bounds": {
+        "x": 136,
+        "y": 8,
+        "width": 438,
+        "height": 438,
+        "top": 8,
+        "right": 574,
+        "bottom": 446,
+        "left": 136
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-chronology-zone\"]",
+      "id": "qidahen-chronology-zone",
+      "bounds": {
+        "x": 80,
+        "y": 542,
+        "width": 320,
+        "height": 214,
+        "top": 542,
+        "right": 400,
+        "bottom": 756,
+        "left": 80
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-korea-zone\"]",
+      "id": "qidahen-korea-zone",
+      "bounds": {
+        "x": 1714,
+        "y": 104,
+        "width": 156,
+        "height": 140,
+        "top": 104,
+        "right": 1870,
+        "bottom": 244,
+        "left": 1714
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-draw-anchor\"]",
+      "id": "qidahen-draw-anchor",
+      "bounds": {
+        "x": 44,
+        "y": 866,
+        "width": 154,
+        "height": 214,
+        "top": 866,
+        "right": 198,
+        "bottom": 1080,
+        "left": 44
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-discard-anchor\"]",
+      "id": "qidahen-discard-anchor",
+      "bounds": {
+        "x": 1722,
+        "y": 866,
+        "width": 154,
+        "height": 214,
+        "top": 866,
+        "right": 1876,
+        "bottom": 1080,
+        "left": 1722
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-1-control",
+      "bounds": {
+        "x": 118.30496215820312,
+        "y": 647.3094482421875,
+        "width": 44.01580810546875,
+        "height": 44.01580810546875,
+        "top": 647.3094482421875,
+        "right": 162.32077026367188,
+        "bottom": 691.3252563476562,
+        "left": 118.30496215820312
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-jinzhou-control",
+      "bounds": {
+        "x": 720.8662109375,
+        "y": 355.8944091796875,
+        "width": 44.0157470703125,
+        "height": 44.01580810546875,
+        "top": 355.8944091796875,
+        "right": 764.8819580078125,
+        "bottom": 399.91021728515625,
+        "left": 720.8662109375
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-22-control",
+      "bounds": {
+        "x": 913.6251220703125,
+        "y": 533.4754638671875,
+        "width": 44.0157470703125,
+        "height": 44.01580810546875,
+        "top": 533.4754638671875,
+        "right": 957.640869140625,
+        "bottom": 577.4912719726562,
+        "left": 913.6251220703125
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-songjin-control",
+      "bounds": {
+        "x": 883.269287109375,
+        "y": 483.38848876953125,
+        "width": 44.015869140625,
+        "height": 44.01580810546875,
+        "top": 483.38848876953125,
+        "right": 927.28515625,
+        "bottom": 527.404296875,
+        "left": 883.269287109375
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-24-control",
+      "bounds": {
+        "x": 625.2456665039062,
+        "y": 459.10394287109375,
+        "width": 44.01580810546875,
+        "height": 44.01580810546875,
+        "top": 459.10394287109375,
+        "right": 669.261474609375,
+        "bottom": 503.1197509765625,
+        "left": 625.2456665039062
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-25-control",
+      "bounds": {
+        "x": 538.7318115234375,
+        "y": 457.58612060546875,
+        "width": 44.01580810546875,
+        "height": 44.01580810546875,
+        "top": 457.58612060546875,
+        "right": 582.7476196289062,
+        "bottom": 501.6019287109375,
+        "left": 538.7318115234375
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-27-control",
+      "bounds": {
+        "x": 374.81085205078125,
+        "y": 859.799560546875,
+        "width": 44.01580810546875,
+        "height": 44.0157470703125,
+        "top": 859.799560546875,
+        "right": 418.82666015625,
+        "bottom": 903.8153076171875,
+        "left": 374.81085205078125
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-28-jizhen-control",
+      "bounds": {
+        "x": 508.3760986328125,
+        "y": 553.2066650390625,
+        "width": 44.01580810546875,
+        "height": 44.01580810546875,
+        "top": 553.2066650390625,
+        "right": 552.3919067382812,
+        "bottom": 597.2224731445312,
+        "left": 508.3760986328125
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-30-control",
+      "bounds": {
+        "x": 81.87808227539062,
+        "y": 882.56640625,
+        "width": 44.01580810546875,
+        "height": 44.0157470703125,
+        "top": 882.56640625,
+        "right": 125.89389038085938,
+        "bottom": 926.5821533203125,
+        "left": 81.87808227539062
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-31-control",
+      "bounds": {
+        "x": -160.9677734375,
+        "y": 888.637451171875,
+        "width": 44.01580810546875,
+        "height": 44.015869140625,
+        "top": 888.637451171875,
+        "right": -116.95196533203125,
+        "bottom": 932.6533203125,
+        "left": -160.9677734375
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-32-control",
+      "bounds": {
+        "x": 818.0045166015625,
+        "y": 846.1395263671875,
+        "width": 44.015869140625,
+        "height": 44.0157470703125,
+        "top": 846.1395263671875,
+        "right": 862.0203857421875,
+        "bottom": 890.1552734375,
+        "left": 818.0045166015625
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-33-control",
+      "bounds": {
+        "x": 590.3365478515625,
+        "y": 961.4912109375,
+        "width": 44.01580810546875,
+        "height": 44.015869140625,
+        "top": 961.4912109375,
+        "right": 634.3523559570312,
+        "bottom": 1005.507080078125,
+        "left": 590.3365478515625
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-15-liaodong-army-ming-post-sarhu-1619-liaodong-regular-artillery-lv1__compat__1",
+      "bounds": {
+        "x": 952.32861328125,
+        "y": 418.882568359375,
+        "width": 39.4625244140625,
+        "height": 39.46246337890625,
+        "top": 418.882568359375,
+        "right": 991.7911376953125,
+        "bottom": 458.34503173828125,
+        "left": 952.32861328125
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-15-liaodong-army-ming-post-sarhu-1619-liaodong-regular-infantry-lv1__compat__1",
+      "bounds": {
+        "x": 982.684326171875,
+        "y": 418.882568359375,
+        "width": 39.4625244140625,
+        "height": 39.46246337890625,
+        "top": 418.882568359375,
+        "right": 1022.1468505859375,
+        "bottom": 458.34503173828125,
+        "left": 982.684326171875
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-15-liaodong-army-ming-post-sarhu-1619-liaodong-regular-infantry-lv1__compat__2",
+      "bounds": {
+        "x": 1013.0400390625,
+        "y": 418.882568359375,
+        "width": 39.4625244140625,
+        "height": 39.46246337890625,
+        "top": 418.882568359375,
+        "right": 1052.5025634765625,
+        "bottom": 458.34503173828125,
+        "left": 1013.0400390625
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-15-liaodong-control",
+      "bounds": {
+        "x": 1032.012451171875,
+        "y": 377.1434326171875,
+        "width": 44.0157470703125,
+        "height": 44.01580810546875,
+        "top": 377.1434326171875,
+        "right": 1076.0281982421875,
+        "bottom": 421.15924072265625,
+        "left": 1032.012451171875
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-city-region-19-liaoxi-control",
+      "bounds": {
+        "x": 717.83056640625,
+        "y": 445.44384765625,
+        "width": 44.015869140625,
+        "height": 44.01580810546875,
+        "top": 445.44384765625,
+        "right": 761.846435546875,
+        "bottom": 489.45965576171875,
+        "left": 717.83056640625
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-token=\"true\"]",
+      "id": "qidahen-map-token-xuan-fu-control",
+      "bounds": {
+        "x": 264.012451171875,
+        "y": 545.6177368164062,
+        "width": 44.01580810546875,
+        "height": 44.01580810546875,
+        "top": 545.6177368164062,
+        "right": 308.02825927734375,
+        "bottom": 589.633544921875,
+        "left": 264.012451171875
+      }
+    },
+    {
+      "selector": "[data-qidahen-map-protected-population=\"true\"]",
+      "id": "qidahen-map-population-city-region-15-liaodong",
+      "bounds": {
+        "x": 1060.0914306640625,
+        "y": 438.61376953125,
+        "width": 39.4625244140625,
+        "height": 39.46246337890625,
+        "top": 438.61376953125,
+        "right": 1099.553955078125,
+        "bottom": 478.07623291015625,
+        "left": 1060.0914306640625
+      }
+    },
+    {
+      "selector": "[data-testid=\"qidahen-map-region-focus-name\"]",
+      "id": "qidahen-map-region-focus-name",
+      "bounds": {
+        "x": 1032,
+        "y": 351.140625,
+        "width": 36,
+        "height": 20,
+        "top": 351.140625,
+        "right": 1068,
+        "bottom": 371.140625,
+        "left": 1032
+      }
+    }
+  ],
+  "gap": 20.921454906163316,
+  "fullChainClaimed": false
+}

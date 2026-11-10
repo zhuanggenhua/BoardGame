@@ -1,0 +1,371 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "奇异博士真实联机选角隐藏门禁",
+  "sourceRun": "1792900004510-34440-b69ef9a6-2a05-4e1c-93e6-13e5a1ff2f9e",
+  "sourceRevision": "285736d66fbb47f7f5bf653174ea134c3e0447a0960f34728d729ed75e1db08b",
+  "e2eSourceRevision": "669c7258be89c7d0bf972863612d5df3fca24293e3dbc73b77ed898c25361f51",
+  "status": "PASS",
+  "outcome": "创建真实房间后桌面与手机选角目录均不提供奇异博士，角色配置状态仍为隐藏。",
+  "steps": [
+    {
+      "id": "online-room-create-confirmation",
+      "action": "从 Dice Throne 入口打开真实创建房间确认",
+      "before": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": null,
+          "phaseControlText": null,
+          "headingTexts": [],
+          "selectableHeroIds": [],
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "hidden"
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [
+            "创建房间",
+            "收藏",
+            "教程模式",
+            "配置表",
+            "电子化作者：佚名",
+            "在线大厅大厅",
+            "更新更新",
+            "评价评价",
+            "排行榜排行"
+          ],
+          "diceInteractionHintText": null,
+          "modalText": "王权骰铸这是一款快节奏且易上手的游戏。从众多英雄之中，挑选一位你最中意的角色。投掷你英雄专属的 5 颗骰子来攻击对手、激活能力。累积战斗点数，并用它们购买效果各异的卡牌，例如升级英雄、施展法术，或直接操控你、队友或对手的骰子。234推荐人数 2 / 3 / 4支持人数 2–4推荐人数 2 / 3 / 4创建房间收藏教程模式配置表电子化作者：佚名在线大厅大厅更新更新评价评价排行榜排行暂无活跃房间",
+          "phaseControlText": null,
+          "headingTexts": [
+            "菜单",
+            "发现",
+            "王权骰铸",
+            "创建房间"
+          ],
+          "selectableHeroIds": [],
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "hidden"
+        }
+      },
+      "assertions": [
+        {
+          "name": "创建房间标题可见",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "online-room-created-selection-visible",
+      "action": "确认创建房间并进入桌面选角界面",
+      "before": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [
+            "创建房间",
+            "收藏",
+            "教程模式",
+            "配置表",
+            "电子化作者：佚名",
+            "在线大厅大厅",
+            "更新更新",
+            "评价评价",
+            "排行榜排行"
+          ],
+          "diceInteractionHintText": null,
+          "modalText": "王权骰铸这是一款快节奏且易上手的游戏。从众多英雄之中，挑选一位你最中意的角色。投掷你英雄专属的 5 颗骰子来攻击对手、激活能力。累积战斗点数，并用它们购买效果各异的卡牌，例如升级英雄、施展法术，或直接操控你、队友或对手的骰子。234推荐人数 2 / 3 / 4支持人数 2–4推荐人数 2 / 3 / 4创建房间收藏教程模式配置表电子化作者：佚名在线大厅大厅更新更新评价评价排行榜排行暂无活跃房间",
+          "phaseControlText": null,
+          "headingTexts": [
+            "菜单",
+            "发现",
+            "王权骰铸",
+            "创建房间"
+          ],
+          "selectableHeroIds": [],
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "hidden"
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "thor",
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "hidden"
+        }
+      },
+      "assertions": [
+        {
+          "name": "真实选角目录隐藏奇异博士",
+          "actual": {
+            "doctorStrangeVisible": false,
+            "setupOptionStatus": "hidden"
+          },
+          "expected": {
+            "doctorStrangeVisible": false,
+            "setupOptionStatus": "hidden"
+          }
+        }
+      ]
+    },
+    {
+      "id": "online-selection-mobile-viewport",
+      "action": "将同一真实联机选角页切换到手机横屏尺寸",
+      "before": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "thor",
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "hidden"
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "thor",
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": null,
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": null,
+          "rollCount": null,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {},
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": "hidden"
+        }
+      },
+      "assertions": [
+        {
+          "name": "窄屏选角仍隐藏奇异博士",
+          "actual": {
+            "doctorStrangeVisible": false,
+            "setupOptionStatus": "hidden"
+          },
+          "expected": {
+            "doctorStrangeVisible": false,
+            "setupOptionStatus": "hidden"
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-online-room-confirmation",
+      "stepId": "online-room-create-confirmation",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "734cd82bf23a52300416bbb201c13159c717598c924b81cec18b570dfafbffe5"
+    },
+    {
+      "id": "doctor-strange-hidden-desktop-selection",
+      "stepId": "online-room-created-selection-visible",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "f7eff6cfafc4487da891386b3c82f18d58d58ca93dc5ec587c3cbb01372b8761"
+    },
+    {
+      "id": "doctor-strange-hidden-mobile-selection",
+      "stepId": "online-selection-mobile-viewport",
+      "change": "layout",
+      "viewport": "mobile",
+      "sha256": "977a5a20ca761b153ca8e5b330862d016b6f048c01d28011ccd6823b2627f53f"
+    }
+  ]
+}

@@ -1,0 +1,468 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "reviewedAt": "2026-10-25T04:19:18.848Z",
+  "media": [
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-mobile__手机横屏-公开法术起始态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "初始化特写关闭后，公开起始法术与可操作技能槽均已显示。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "76165099e8876ad1f17ad5ac7ac466228d1db45fab3d4b588853dc091c8440ca"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-mobile__手机横屏-宇宙感知已选待结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实鼠标选择宇宙感知；技能待结算，法术效果尚未触发。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "acbd7d9b1061391001e21b02c65fe10997bfe095d60d2ec63853d621e5595f11"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-mobile__手机横屏-弃牌准备选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化场景；真实鼠标命中技能槽后显示弃牌准备选择。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "7088fa42cf8777908ca51b516d72fcb14a1af4b422720f3ed1900987bafd71fc"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-mobile__手机横屏-法术准备目标选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备法瑞拉之牙后出现真实目标选择；对手初始拥有3点施法值。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "d4c6b9a53417d867d9a1b3232f63ad770ed14cff7869db157c002ec93d0afe84"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-mobile__手机横屏-法术准备结算态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化场景；确认法术进入公开准备区且资源与状态结算。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "113212d8d1cb009fbe1eceb86a4b4774749122e67d4b80d50c5c5eba25adca1d"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼攻击前-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化场景；五颗护身符满足全知之眼终极技能。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "bf0a3f3cd6912752fd76bd00caa158dc34267929e11d891ed01e6a7a07c42f2e"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼已选待结算-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实鼠标选择全知之眼后，等待玩家提交攻击结算。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "615483ff15e8272b57e557d8d3cb5435ef0acf630f3d067bce96b91c4a3ffeda"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实鼠标触发终极技能后，顶五中法术以卡图供选择准备。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "d9f368dfa48435eb7ad147d9976d7d2c53618a5c73413d3e59a81eb3701c68ae"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备法瑞拉之牙后，选择其效果影响的对手。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "860a7422b50933674749af0637352ab1f6b1a45ced164e448e5fea220985949e"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备两张不同法术后，玩家选择顶五中剩余三张的顺序。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "0d724da5e5160ef607a1ea2f7c355b9473eb8026e0770171489522b2fac63f71"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "终极攻击结算后显示至多两张不同法术的施放选择。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "075061554b5a93bec98e6c05dc4e7fabcce706b8117a031cc6a64c72fc921f2d"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/all-seeing-eye__全知之眼攻击结算-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "跳过施法后终极攻击造成10点伤害且准备区保留三张法术。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "15608170d1707c335ba80f0483a0a5a264736e01efb30b4bf8a83a8e22259b13"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/deja-vu__即视感使用前-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化场景；本回合投掷次数用尽，状态与即视感仍可见。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "43919caf74a48a27b28403cf1231ee866ee7c83d07aa2d1638b7abc48ec8eb87"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/deja-vu__即视感悬停说明态-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "鼠标悬停即视感标记后，标记高亮并显示操作说明。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "9cf56eb0e94182b188c63b80fcb689ccbe74b31aa99142f327f5c2a9d617e6f6"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/deja-vu__即视感重开后-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实鼠标点击即视感后，状态标记消耗、投掷计数归零且旧阶段效果清理。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "922220b477f73c5cba5ae03e58bff7dc3512a080c70e09d5f8cf584622413a21"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-desktop__桌面-公开法术起始态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "初始化特写关闭后，公开起始法术与可操作技能槽均已显示。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "c45500cc5b388dbdc0d369558f25d33e3df65abef897d21e8386e2ffcb16ccfb"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-desktop__桌面-宇宙感知已选待结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实鼠标选择宇宙感知；技能待结算，法术效果尚未触发。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "677d03fe2de9b6c5daaa8dd3fe2110ae919de47172e4ac617ff7c1a53ae3d8af"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-desktop__桌面-弃牌准备选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化场景；真实鼠标命中技能槽后显示弃牌准备选择。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "50ec840199a415fac37c4854aba8300c4c1b808d48bb8f7c5f8b30141ca14032"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-desktop__桌面-法术准备目标选择态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备法瑞拉之牙后出现真实目标选择；对手初始拥有3点施法值。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "0887e358d8c49c263faf2af1bb1433f4ce960810189424f68f96c6759633d9d7"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/awareness-desktop__桌面-法术准备结算态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化场景；确认法术进入公开准备区且资源与状态结算。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "1e7521dc30ebdaa64482541e207d2a47ea8cb77edeb53ebbb9f6f0c181023c60"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/astral-invasion__星际侵入前-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面牌桌展示星际侵入所需四种骰面与第五颗曼荼罗骰。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "9f2936ee2bb129ebc9060fdd2bc8a985d4c1b11cbca34b2a0a37889af026fdaf"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/astral-invasion__星际侵入已选-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实鼠标选择星际侵入后，等待玩家提交攻击结算。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "4253cda8c11617737dedb10b047500f5909a9b1f9cfeb7d4db2a0dcd08c43280"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/astral-invasion__星际侵入奖励骰待确认-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "星际侵入生成两颗右侧奖励骰，玩家可见骰面并等待普通确认。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "f73368a79f6fae5c0d4185224dc0ae23566dfeec77dc7bed3736a2fca48be97d"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/astral-invasion__星际侵入奖励骰确认-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认奖励骰后牌桌切到防守方，右侧显示攻击伤害由6增至9；该截图证明界面已进入防御阶段，可读且无错误提示。预感与加伤的权威数值由对应行为日志断言。",
+      "sha256": "76dd900dafdda4768b17083dd0ece09cf437531dbf09f749368328d18496c8ae"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/premonition-income__收入阶段替代选项-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实主要阶段推进到收入阶段后显示正常收入与预感替代选项。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "788e2d09dbb5320152077a0c03f36a2b436390ee75d177fe322f365bcb4e3317"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/premonition-income__本次抽牌返还选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择花费3层预感抽3张后，只显示本次抽到的卡牌供返还。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "b44f426a6b6334a88efcf85857553fd903626bbcb1fe856d542d9374f1d9324a"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/premonition-income__选择牌库底-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择本次抽到的牌后，显示返还牌库顶或牌库底选项。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "03747a54442ed98da423e828ae9036baf0106030951022a21f70e4e8a1e88e4c"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/premonition-income__预感收入结算后-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算后预感消耗3、其余两张留手牌且一张回到牌库底。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "c0680aae58d3b0fecbc959415d5311cd1253392b1af234f41e0d1ec4c31a48e7"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/crimson-bands__深红系带手牌-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主阶段手牌中显示可打出的深红系带法术。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "9ec642ed60b82d707d441b2d193d230a7e2c8c3635628a41fdae438c05bbd818"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/crimson-bands__深红系带目标选择-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实打出法术后显示深红系带的对手目标选择。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "6574fb1c3240539bcc7f50d485744af69d4547fdc868dc72db888a0ac831d1f1"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/crimson-bands__深红系带已施加-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手状态区显示深红系带；权威状态记录获得回合以延迟本回合激活。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "8046aa014fc5e72c5e431ac0c4b5c8fa177b85e32b31caa32b6a9950ba9e71e1"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/hidden-selection__真实创建房间-待确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家从王权骰铸入口打开创建房间确认界面。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "734cd82bf23a52300416bbb201c13159c717598c924b81cec18b570dfafbffe5"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/hidden-selection__真实选角入口-奇异博士隐藏-桌面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实联机选角页清晰可见。奇异博士是否在完整可选目录中由网页元素计数和行为日志断言确认，截图用于审查桌面入口布局。",
+      "sha256": "f7eff6cfafc4487da891386b3c82f18d58d58ca93dc5ec587c3cbb01372b8761"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/hidden-selection__真实选角入口-奇异博士隐藏-窄屏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "真实联机选角页在812×375横屏下清晰可见。奇异博士是否在完整可选目录中由网页元素计数和行为日志断言确认，截图用于审查窄屏布局。",
+      "sha256": "977a5a20ca761b153ca8e5b330862d016b6f048c01d28011ccd6823b2627f53f"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/worthy-teammate__值得拥有-四人队伍起始态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "内部初始化四人组队状态；奇异博士是当前投掷者的队友，持有值得拥有。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "6c40ef75b2ab2933d81e3114bb8c5aefe8bf8929ffccd0afaabd14ac2c48cf0d"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/worthy-teammate__值得拥有-队友骰区目标态.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷者的骰子所属玩家编号为0；交互说明文字明确写出“队友的骰子”。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "85909ef1d14a602d677738a0f9c6b433d90ee10f0a2cb4cd834157a24c2180c2"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/worthy-teammate__值得拥有-队友骰子已选.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "两颗骰子来自投掷者0，并在真实操作后显示选中反馈。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "348ce6ced47408b2c679d220dffaf4fe2679b7b3d8632232656f521d18c6e2e5"
+    },
+    {
+      "path": "evidence/dicethrone/doctor-strange-real-entry-20261024/images/worthy-teammate__值得拥有-队友骰区重掷结算.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "投掷者0的第1、2颗骰子分别变为6和5，交互关闭，牌进入奇异博士弃牌堆。 当前截图中目标和关键交互状态可见，排版清楚，未见遮挡或错误提示。",
+      "sha256": "70e504d2609880918dcca85f8b13ced4f5b3dcc5ef6a7196edb90d3a14a69be4"
+    }
+  ]
+}

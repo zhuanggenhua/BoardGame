@@ -1,0 +1,18 @@
+[
+  {
+    "asset": "player-board",
+    "quality": 82,
+    "maxEdge": 2048,
+    "bytes": 517692,
+    "sha256": "c5f16d1149a15f4fb7b0f8d6a7bf6b3a4c3e0e1d867dccc6e0a5bfb68267d1f5",
+    "matchesOldBinary": false
+  },
+  {
+    "asset": "tip",
+    "quality": 82,
+    "maxEdge": 2048,
+    "bytes": 317596,
+    "sha256": "d0a35f78001e97f0a31caafea436162072e68dc4dbf69eb2fe93051800ba7fd5",
+    "matchesOldBinary": false
+  }
+]

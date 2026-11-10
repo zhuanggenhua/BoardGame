@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-entry",
+  "sourceRun": "20261026-natural-opening-r31",
+  "sourceRevision": "sha256:77e37b75d3c16ea8486faa108359890e57f590590ae13336cd49b1ee0fc9cc2d",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 0 个行为检查点与 0 个独特界面状态。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

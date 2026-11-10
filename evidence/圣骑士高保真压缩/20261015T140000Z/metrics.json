@@ -1,0 +1,1329 @@
+[
+  {
+    "id": "near-100",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-100.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "100",
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 4202810,
+    "seconds": 25.57,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 0,
+      "opaqueRgbP99MaxChannelError": 0.0,
+      "opaqueRgbMae": 0.0,
+      "opaqueLumaSsim": 1.0,
+      "edgeLumaRmse": 0.0,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card12": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card32": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "board": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "tip": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        }
+      }
+    }
+  },
+  {
+    "id": "near-90",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-90.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "90",
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 4202810,
+    "seconds": 28.45,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 0,
+      "opaqueRgbP99MaxChannelError": 0.0,
+      "opaqueRgbMae": 0.0,
+      "opaqueLumaSsim": 1.0,
+      "edgeLumaRmse": 0.0,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card12": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card32": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "board": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "tip": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        }
+      }
+    }
+  },
+  {
+    "id": "near-80",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-80.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "80",
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 4202810,
+    "seconds": 24.9,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 0,
+      "opaqueRgbP99MaxChannelError": 0.0,
+      "opaqueRgbMae": 0.0,
+      "opaqueLumaSsim": 1.0,
+      "edgeLumaRmse": 0.0,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card12": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card32": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "board": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "tip": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        }
+      }
+    }
+  },
+  {
+    "id": "near-60",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-60.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "60",
+      "-q",
+      "100",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 4189634,
+    "seconds": 24.19,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 2,
+      "opaqueRgbMaxError": 2,
+      "opaqueRgbP99MaxChannelError": 2.0,
+      "opaqueRgbMae": 0.86,
+      "opaqueLumaSsim": 0.995821,
+      "edgeLumaRmse": 0.8951,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.8865,
+          "lumaSsim": 0.995919
+        },
+        "card12": {
+          "edgeLumaRmse": 0.9019,
+          "lumaSsim": 0.997701
+        },
+        "card32": {
+          "edgeLumaRmse": 0.9203,
+          "lumaSsim": 0.993542
+        },
+        "board": {
+          "edgeLumaRmse": 0.8797,
+          "lumaSsim": 0.997469
+        },
+        "tip": {
+          "edgeLumaRmse": 0.9176,
+          "lumaSsim": 0.993743
+        }
+      }
+    }
+  },
+  {
+    "id": "budget-default",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\budget-default.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-size",
+      "424000",
+      "-pass",
+      "6",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 421060,
+    "seconds": 6.33,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 59,
+      "opaqueRgbP99MaxChannelError": 21.0,
+      "opaqueRgbMae": 4.0566,
+      "opaqueLumaSsim": 0.899977,
+      "edgeLumaRmse": 6.9473,
+      "opaqueFractionMaxChannelOver8": 0.213044,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 5.1955,
+          "lumaSsim": 0.940002
+        },
+        "card12": {
+          "edgeLumaRmse": 7.1891,
+          "lumaSsim": 0.895639
+        },
+        "card32": {
+          "edgeLumaRmse": 6.5291,
+          "lumaSsim": 0.900366
+        },
+        "board": {
+          "edgeLumaRmse": 6.9815,
+          "lumaSsim": 0.884947
+        },
+        "tip": {
+          "edgeLumaRmse": 7.5179,
+          "lumaSsim": 0.856621
+        }
+      }
+    }
+  },
+  {
+    "id": "budget-text",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\budget-text.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-preset",
+      "text",
+      "-size",
+      "424000",
+      "-pass",
+      "6",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 421852,
+    "seconds": 6.94,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 59,
+      "opaqueRgbP99MaxChannelError": 19.0,
+      "opaqueRgbMae": 4.0946,
+      "opaqueLumaSsim": 0.895435,
+      "edgeLumaRmse": 6.1425,
+      "opaqueFractionMaxChannelOver8": 0.226834,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 5.2626,
+          "lumaSsim": 0.924951
+        },
+        "card12": {
+          "edgeLumaRmse": 6.3224,
+          "lumaSsim": 0.903279
+        },
+        "card32": {
+          "edgeLumaRmse": 6.0178,
+          "lumaSsim": 0.881189
+        },
+        "board": {
+          "edgeLumaRmse": 6.3052,
+          "lumaSsim": 0.885513
+        },
+        "tip": {
+          "edgeLumaRmse": 6.4307,
+          "lumaSsim": 0.848526
+        }
+      }
+    }
+  },
+  {
+    "id": "budget-sns0-filter0",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\budget-sns0-filter0.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-sns",
+      "0",
+      "-f",
+      "0",
+      "-size",
+      "424000",
+      "-pass",
+      "6",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 421852,
+    "seconds": 6.94,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 59,
+      "opaqueRgbP99MaxChannelError": 19.0,
+      "opaqueRgbMae": 4.0946,
+      "opaqueLumaSsim": 0.895435,
+      "edgeLumaRmse": 6.1425,
+      "opaqueFractionMaxChannelOver8": 0.226834,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 5.2626,
+          "lumaSsim": 0.924951
+        },
+        "card12": {
+          "edgeLumaRmse": 6.3224,
+          "lumaSsim": 0.903279
+        },
+        "card32": {
+          "edgeLumaRmse": 6.0178,
+          "lumaSsim": 0.881189
+        },
+        "board": {
+          "edgeLumaRmse": 6.3052,
+          "lumaSsim": 0.885513
+        },
+        "tip": {
+          "edgeLumaRmse": 6.4307,
+          "lumaSsim": 0.848526
+        }
+      }
+    }
+  },
+  {
+    "id": "budget-sns20-filter20",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\budget-sns20-filter20.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-sns",
+      "20",
+      "-f",
+      "20",
+      "-size",
+      "424000",
+      "-pass",
+      "6",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 419198,
+    "seconds": 6.98,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 59,
+      "opaqueRgbP99MaxChannelError": 20.0,
+      "opaqueRgbMae": 4.0544,
+      "opaqueLumaSsim": 0.894619,
+      "edgeLumaRmse": 6.5235,
+      "opaqueFractionMaxChannelOver8": 0.214306,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 5.216,
+          "lumaSsim": 0.931925
+        },
+        "card12": {
+          "edgeLumaRmse": 6.7325,
+          "lumaSsim": 0.89565
+        },
+        "card32": {
+          "edgeLumaRmse": 6.2749,
+          "lumaSsim": 0.88768
+        },
+        "board": {
+          "edgeLumaRmse": 6.661,
+          "lumaSsim": 0.879001
+        },
+        "tip": {
+          "edgeLumaRmse": 6.9211,
+          "lumaSsim": 0.848918
+        }
+      }
+    }
+  },
+  {
+    "id": "edge-0.4-q85",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\edge-0.4-q85.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\edge-0.4.png",
+    "args": [
+      "-preset",
+      "text",
+      "-q",
+      "85",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 846148,
+    "seconds": 4.29,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 49,
+      "opaqueRgbP99MaxChannelError": 12.0,
+      "opaqueRgbMae": 2.4705,
+      "opaqueLumaSsim": 0.958576,
+      "edgeLumaRmse": 2.9607,
+      "opaqueFractionMaxChannelOver8": 0.050516,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.7544,
+          "lumaSsim": 0.97151
+        },
+        "card12": {
+          "edgeLumaRmse": 2.9454,
+          "lumaSsim": 0.968923
+        },
+        "card32": {
+          "edgeLumaRmse": 2.966,
+          "lumaSsim": 0.954106
+        },
+        "board": {
+          "edgeLumaRmse": 2.9558,
+          "lumaSsim": 0.961867
+        },
+        "tip": {
+          "edgeLumaRmse": 3.1557,
+          "lumaSsim": 0.923732
+        }
+      }
+    }
+  },
+  {
+    "id": "edge-0.6-q85",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\edge-0.6-q85.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\edge-0.6.png",
+    "args": [
+      "-preset",
+      "text",
+      "-q",
+      "85",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 706112,
+    "seconds": 4.24,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 61,
+      "opaqueRgbP99MaxChannelError": 17.0,
+      "opaqueRgbMae": 3.1649,
+      "opaqueLumaSsim": 0.91247,
+      "edgeLumaRmse": 3.0246,
+      "opaqueFractionMaxChannelOver8": 0.109775,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.7991,
+          "lumaSsim": 0.959954
+        },
+        "card12": {
+          "edgeLumaRmse": 3.0025,
+          "lumaSsim": 0.90891
+        },
+        "card32": {
+          "edgeLumaRmse": 3.0204,
+          "lumaSsim": 0.922139
+        },
+        "board": {
+          "edgeLumaRmse": 3.0366,
+          "lumaSsim": 0.880828
+        },
+        "tip": {
+          "edgeLumaRmse": 3.1948,
+          "lumaSsim": 0.863103
+        }
+      }
+    }
+  },
+  {
+    "id": "chroma-q85",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\chroma-q85.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\chroma.png",
+    "args": [
+      "-preset",
+      "text",
+      "-q",
+      "85",
+      "-sharp_yuv",
+      "-m",
+      "6",
+      "-exact",
+      "-alpha_q",
+      "100"
+    ],
+    "bytes": 886008,
+    "seconds": 4.39,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 45,
+      "opaqueRgbP99MaxChannelError": 12.0,
+      "opaqueRgbMae": 2.3488,
+      "opaqueLumaSsim": 0.96574,
+      "edgeLumaRmse": 2.9482,
+      "opaqueFractionMaxChannelOver8": 0.041871,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.7474,
+          "lumaSsim": 0.972692
+        },
+        "card12": {
+          "edgeLumaRmse": 2.9289,
+          "lumaSsim": 0.976386
+        },
+        "card32": {
+          "edgeLumaRmse": 2.9746,
+          "lumaSsim": 0.959075
+        },
+        "board": {
+          "edgeLumaRmse": 2.9441,
+          "lumaSsim": 0.9722
+        },
+        "tip": {
+          "edgeLumaRmse": 3.1375,
+          "lumaSsim": 0.940018
+        }
+      }
+    }
+  },
+  {
+    "id": "near-80-noexact",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-80-noexact.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "80",
+      "-q",
+      "100",
+      "-m",
+      "6"
+    ],
+    "bytes": 3396710,
+    "seconds": 28.8,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 1,
+      "opaqueRgbMaxError": 1,
+      "opaqueRgbP99MaxChannelError": 1.0,
+      "opaqueRgbMae": 0.4371,
+      "opaqueLumaSsim": 0.997828,
+      "edgeLumaRmse": 0.6559,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.6604,
+          "lumaSsim": 0.997706
+        },
+        "card12": {
+          "edgeLumaRmse": 0.6684,
+          "lumaSsim": 0.998718
+        },
+        "card32": {
+          "edgeLumaRmse": 0.6572,
+          "lumaSsim": 0.997128
+        },
+        "board": {
+          "edgeLumaRmse": 0.6628,
+          "lumaSsim": 0.99849
+        },
+        "tip": {
+          "edgeLumaRmse": 0.6367,
+          "lumaSsim": 0.996939
+        }
+      }
+    }
+  },
+  {
+    "id": "near-60-noexact",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-60-noexact.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "60",
+      "-q",
+      "100",
+      "-m",
+      "6"
+    ],
+    "bytes": 2876624,
+    "seconds": 30.58,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 2,
+      "opaqueRgbMaxError": 2,
+      "opaqueRgbP99MaxChannelError": 2.0,
+      "opaqueRgbMae": 0.8242,
+      "opaqueLumaSsim": 0.995571,
+      "edgeLumaRmse": 0.9737,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.9817,
+          "lumaSsim": 0.995426
+        },
+        "card12": {
+          "edgeLumaRmse": 0.963,
+          "lumaSsim": 0.997374
+        },
+        "card32": {
+          "edgeLumaRmse": 0.987,
+          "lumaSsim": 0.993801
+        },
+        "board": {
+          "edgeLumaRmse": 0.9994,
+          "lumaSsim": 0.996593
+        },
+        "tip": {
+          "edgeLumaRmse": 0.9549,
+          "lumaSsim": 0.993678
+        }
+      }
+    }
+  },
+  {
+    "id": "near-60-q60-exact",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-60-q60-exact.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "60",
+      "-q",
+      "60",
+      "-m",
+      "6",
+      "-exact"
+    ],
+    "bytes": 4207932,
+    "seconds": 4.04,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 0,
+      "opaqueRgbP99MaxChannelError": 0.0,
+      "opaqueRgbMae": 0.0,
+      "opaqueLumaSsim": 1.0,
+      "edgeLumaRmse": 0.0,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card12": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "card32": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "board": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        },
+        "tip": {
+          "edgeLumaRmse": 0.0,
+          "lumaSsim": 1.0
+        }
+      }
+    }
+  },
+  {
+    "id": "near-40-noexact",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\near-40-noexact.webp",
+    "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\sample-source.png",
+    "args": [
+      "-near_lossless",
+      "40",
+      "-q",
+      "100",
+      "-m",
+      "6"
+    ],
+    "bytes": 2640956,
+    "seconds": 29.04,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 4,
+      "opaqueRgbMaxError": 4,
+      "opaqueRgbP99MaxChannelError": 4.0,
+      "opaqueRgbMae": 1.3984,
+      "opaqueLumaSsim": 0.990667,
+      "edgeLumaRmse": 1.7171,
+      "opaqueFractionMaxChannelOver8": 0.0,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 1.7046,
+          "lumaSsim": 0.992156
+        },
+        "card12": {
+          "edgeLumaRmse": 1.7302,
+          "lumaSsim": 0.991813
+        },
+        "card32": {
+          "edgeLumaRmse": 1.7041,
+          "lumaSsim": 0.98826
+        },
+        "board": {
+          "edgeLumaRmse": 1.7596,
+          "lumaSsim": 0.990166
+        },
+        "tip": {
+          "edgeLumaRmse": 1.6836,
+          "lumaSsim": 0.986596
+        }
+      }
+    }
+  },
+  {
+    "id": "jpeg-444-q80",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\jpeg-444-q80.jpg",
+    "bytes": 822440,
+    "alphaBytes": 12297,
+    "alphaFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\sample-alpha.png",
+    "standaloneAlpha": false,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 255,
+      "opaqueRgbMaxError": 63,
+      "opaqueRgbP99MaxChannelError": 19.0,
+      "opaqueRgbMae": 3.4579,
+      "opaqueLumaSsim": 0.921686,
+      "edgeLumaRmse": 7.3748,
+      "opaqueFractionMaxChannelOver8": 0.126364,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 4.3857,
+          "lumaSsim": 0.973808
+        },
+        "card12": {
+          "edgeLumaRmse": 7.8679,
+          "lumaSsim": 0.90282
+        },
+        "card32": {
+          "edgeLumaRmse": 6.1848,
+          "lumaSsim": 0.943632
+        },
+        "board": {
+          "edgeLumaRmse": 7.7705,
+          "lumaSsim": 0.887858
+        },
+        "tip": {
+          "edgeLumaRmse": 8.2858,
+          "lumaSsim": 0.877037
+        }
+      },
+      "note": "JPEG alpha 不存在；如外置原始 alpha PNG 可恢复 alpha，体积需加 alphaBytes，且需要改加载方案。"
+    }
+  },
+  {
+    "id": "jpeg-444-q90",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\jpeg-444-q90.jpg",
+    "bytes": 1289346,
+    "alphaBytes": 12297,
+    "alphaFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\sample-alpha.png",
+    "standaloneAlpha": false,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 255,
+      "opaqueRgbMaxError": 43,
+      "opaqueRgbP99MaxChannelError": 14.0,
+      "opaqueRgbMae": 2.4693,
+      "opaqueLumaSsim": 0.958014,
+      "edgeLumaRmse": 5.0738,
+      "opaqueFractionMaxChannelOver8": 0.055991,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.8111,
+          "lumaSsim": 0.986344
+        },
+        "card12": {
+          "edgeLumaRmse": 5.5214,
+          "lumaSsim": 0.952309
+        },
+        "card32": {
+          "edgeLumaRmse": 4.0877,
+          "lumaSsim": 0.970771
+        },
+        "board": {
+          "edgeLumaRmse": 5.2967,
+          "lumaSsim": 0.947718
+        },
+        "tip": {
+          "edgeLumaRmse": 5.7848,
+          "lumaSsim": 0.919088
+        }
+      },
+      "note": "JPEG alpha 不存在；如外置原始 alpha PNG 可恢复 alpha，体积需加 alphaBytes，且需要改加载方案。"
+    }
+  },
+  {
+    "id": "jpeg-420-q80",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\jpeg-420-q80.jpg",
+    "bytes": 675589,
+    "alphaBytes": 12297,
+    "alphaFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\sample-alpha.png",
+    "standaloneAlpha": false,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 255,
+      "opaqueRgbMaxError": 65,
+      "opaqueRgbP99MaxChannelError": 21.0,
+      "opaqueRgbMae": 3.5986,
+      "opaqueLumaSsim": 0.921577,
+      "edgeLumaRmse": 7.3749,
+      "opaqueFractionMaxChannelOver8": 0.155556,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 4.3856,
+          "lumaSsim": 0.973803
+        },
+        "card12": {
+          "edgeLumaRmse": 7.8685,
+          "lumaSsim": 0.902819
+        },
+        "card32": {
+          "edgeLumaRmse": 6.1851,
+          "lumaSsim": 0.943627
+        },
+        "board": {
+          "edgeLumaRmse": 7.7708,
+          "lumaSsim": 0.887842
+        },
+        "tip": {
+          "edgeLumaRmse": 8.2832,
+          "lumaSsim": 0.876991
+        }
+      },
+      "note": "JPEG alpha 不存在；如外置原始 alpha PNG 可恢复 alpha，体积需加 alphaBytes，且需要改加载方案。"
+    }
+  },
+  {
+    "id": "jpeg-420-q90",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\jpeg-420-q90.jpg",
+    "bytes": 1051761,
+    "alphaBytes": 12297,
+    "alphaFile": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\sample-alpha.png",
+    "standaloneAlpha": false,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 255,
+      "opaqueRgbMaxError": 59,
+      "opaqueRgbP99MaxChannelError": 16.0,
+      "opaqueRgbMae": 2.6196,
+      "opaqueLumaSsim": 0.957963,
+      "edgeLumaRmse": 5.0741,
+      "opaqueFractionMaxChannelOver8": 0.082836,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.811,
+          "lumaSsim": 0.986331
+        },
+        "card12": {
+          "edgeLumaRmse": 5.522,
+          "lumaSsim": 0.952288
+        },
+        "card32": {
+          "edgeLumaRmse": 4.0873,
+          "lumaSsim": 0.970773
+        },
+        "board": {
+          "edgeLumaRmse": 5.2967,
+          "lumaSsim": 0.947706
+        },
+        "tip": {
+          "edgeLumaRmse": 5.782,
+          "lumaSsim": 0.919062
+        }
+      },
+      "note": "JPEG alpha 不存在；如外置原始 alpha PNG 可恢复 alpha，体积需加 alphaBytes，且需要改加载方案。"
+    }
+  },
+  {
+    "id": "png256-dither0",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\png256-dither0.png",
+    "bytes": 2232864,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 87,
+      "opaqueRgbMaxError": 51,
+      "opaqueRgbP99MaxChannelError": 16.0,
+      "opaqueRgbMae": 2.3914,
+      "opaqueLumaSsim": 0.979988,
+      "edgeLumaRmse": 3.2864,
+      "opaqueFractionMaxChannelOver8": 0.094513,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.5773,
+          "lumaSsim": 0.984668
+        },
+        "card12": {
+          "edgeLumaRmse": 2.3053,
+          "lumaSsim": 0.992318
+        },
+        "card32": {
+          "edgeLumaRmse": 2.2953,
+          "lumaSsim": 0.993307
+        },
+        "board": {
+          "edgeLumaRmse": 3.0028,
+          "lumaSsim": 0.980337
+        },
+        "tip": {
+          "edgeLumaRmse": 3.4912,
+          "lumaSsim": 0.984994
+        }
+      }
+    }
+  },
+  {
+    "id": "png256-dither1",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士高保真压缩\\20261015T140000Z\\png256-dither1.png",
+    "bytes": 2270255,
+    "metrics": {
+      "alphaExact": false,
+      "alphaMaxError": 87,
+      "opaqueRgbMaxError": 58,
+      "opaqueRgbP99MaxChannelError": 16.0,
+      "opaqueRgbMae": 2.4022,
+      "opaqueLumaSsim": 0.979486,
+      "edgeLumaRmse": 3.2929,
+      "opaqueFractionMaxChannelOver8": 0.09592,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.5747,
+          "lumaSsim": 0.984086
+        },
+        "card12": {
+          "edgeLumaRmse": 2.3034,
+          "lumaSsim": 0.99234
+        },
+        "card32": {
+          "edgeLumaRmse": 2.2926,
+          "lumaSsim": 0.993292
+        },
+        "board": {
+          "edgeLumaRmse": 3.012,
+          "lumaSsim": 0.980207
+        },
+        "tip": {
+          "edgeLumaRmse": 3.4846,
+          "lumaSsim": 0.984935
+        }
+      }
+    }
+  },
+  {
+    "id": "default-q95",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--default-q95.webp",
+    "bytes": 1582772,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 53,
+      "opaqueRgbP99MaxChannelError": 9.0,
+      "opaqueRgbMae": 1.289,
+      "opaqueLumaSsim": 0.991662,
+      "edgeLumaRmse": 1.5196,
+      "opaqueFractionMaxChannelOver8": 0.013034,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 1.3961,
+          "lumaSsim": 0.99206
+        },
+        "card12": {
+          "edgeLumaRmse": 1.4806,
+          "lumaSsim": 0.994856
+        },
+        "card32": {
+          "edgeLumaRmse": 1.5017,
+          "lumaSsim": 0.990308
+        },
+        "board": {
+          "edgeLumaRmse": 1.4961,
+          "lumaSsim": 0.994142
+        },
+        "tip": {
+          "edgeLumaRmse": 1.6185,
+          "lumaSsim": 0.987378
+        }
+      }
+    }
+  },
+  {
+    "id": "default-q90",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--default-q90.webp",
+    "bytes": 1161422,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 53,
+      "opaqueRgbP99MaxChannelError": 11.0,
+      "opaqueRgbMae": 1.7858,
+      "opaqueLumaSsim": 0.983027,
+      "edgeLumaRmse": 2.3902,
+      "opaqueFractionMaxChannelOver8": 0.023114,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.0895,
+          "lumaSsim": 0.986255
+        },
+        "card12": {
+          "edgeLumaRmse": 2.3596,
+          "lumaSsim": 0.987287
+        },
+        "card32": {
+          "edgeLumaRmse": 2.398,
+          "lumaSsim": 0.981527
+        },
+        "board": {
+          "edgeLumaRmse": 2.3458,
+          "lumaSsim": 0.98627
+        },
+        "tip": {
+          "edgeLumaRmse": 2.5459,
+          "lumaSsim": 0.972073
+        }
+      }
+    }
+  },
+  {
+    "id": "default-q85",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--default-q85.webp",
+    "bytes": 880450,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 54,
+      "opaqueRgbP99MaxChannelError": 13.0,
+      "opaqueRgbMae": 2.3458,
+      "opaqueLumaSsim": 0.969606,
+      "edgeLumaRmse": 3.4152,
+      "opaqueFractionMaxChannelOver8": 0.055952,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.8029,
+          "lumaSsim": 0.979033
+        },
+        "card12": {
+          "edgeLumaRmse": 3.4082,
+          "lumaSsim": 0.974247
+        },
+        "card32": {
+          "edgeLumaRmse": 3.3635,
+          "lumaSsim": 0.968629
+        },
+        "board": {
+          "edgeLumaRmse": 3.371,
+          "lumaSsim": 0.972571
+        },
+        "tip": {
+          "edgeLumaRmse": 3.6842,
+          "lumaSsim": 0.947249
+        }
+      }
+    }
+  },
+  {
+    "id": "default-q80",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--default-q80.webp",
+    "bytes": 692716,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 53,
+      "opaqueRgbP99MaxChannelError": 15.0,
+      "opaqueRgbMae": 2.8942,
+      "opaqueLumaSsim": 0.95114,
+      "edgeLumaRmse": 4.3916,
+      "opaqueFractionMaxChannelOver8": 0.102228,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 3.5212,
+          "lumaSsim": 0.968943
+        },
+        "card12": {
+          "edgeLumaRmse": 4.4289,
+          "lumaSsim": 0.957022
+        },
+        "card32": {
+          "edgeLumaRmse": 4.2989,
+          "lumaSsim": 0.950086
+        },
+        "board": {
+          "edgeLumaRmse": 4.3791,
+          "lumaSsim": 0.952584
+        },
+        "tip": {
+          "edgeLumaRmse": 4.7293,
+          "lumaSsim": 0.915452
+        }
+      }
+    }
+  },
+  {
+    "id": "default-q75",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--default-q75.webp",
+    "bytes": 554310,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 67,
+      "opaqueRgbP99MaxChannelError": 18.0,
+      "opaqueRgbMae": 3.4092,
+      "opaqueLumaSsim": 0.932062,
+      "edgeLumaRmse": 5.488,
+      "opaqueFractionMaxChannelOver8": 0.153091,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 4.1885,
+          "lumaSsim": 0.958527
+        },
+        "card12": {
+          "edgeLumaRmse": 5.603,
+          "lumaSsim": 0.935093
+        },
+        "card32": {
+          "edgeLumaRmse": 5.2562,
+          "lumaSsim": 0.93245
+        },
+        "board": {
+          "edgeLumaRmse": 5.4791,
+          "lumaSsim": 0.927818
+        },
+        "tip": {
+          "edgeLumaRmse": 5.9019,
+          "lumaSsim": 0.892071
+        }
+      }
+    }
+  },
+  {
+    "id": "text-q85",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--text-q85.webp",
+    "bytes": 893082,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 47,
+      "opaqueRgbP99MaxChannelError": 11.0,
+      "opaqueRgbMae": 2.3304,
+      "opaqueLumaSsim": 0.965897,
+      "edgeLumaRmse": 2.9484,
+      "opaqueFractionMaxChannelOver8": 0.039928,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 2.7535,
+          "lumaSsim": 0.972805
+        },
+        "card12": {
+          "edgeLumaRmse": 2.9243,
+          "lumaSsim": 0.97658
+        },
+        "card32": {
+          "edgeLumaRmse": 2.9675,
+          "lumaSsim": 0.959229
+        },
+        "board": {
+          "edgeLumaRmse": 2.9392,
+          "lumaSsim": 0.97245
+        },
+        "tip": {
+          "edgeLumaRmse": 3.1443,
+          "lumaSsim": 0.940358
+        }
+      }
+    }
+  },
+  {
+    "id": "text-q80",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--text-q80.webp",
+    "bytes": 738674,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 53,
+      "opaqueRgbP99MaxChannelError": 13.0,
+      "opaqueRgbMae": 2.7879,
+      "opaqueLumaSsim": 0.95122,
+      "edgeLumaRmse": 3.6593,
+      "opaqueFractionMaxChannelOver8": 0.079184,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 3.3359,
+          "lumaSsim": 0.962099
+        },
+        "card12": {
+          "edgeLumaRmse": 3.6799,
+          "lumaSsim": 0.963928
+        },
+        "card32": {
+          "edgeLumaRmse": 3.6628,
+          "lumaSsim": 0.942427
+        },
+        "board": {
+          "edgeLumaRmse": 3.6645,
+          "lumaSsim": 0.957297
+        },
+        "tip": {
+          "edgeLumaRmse": 3.8782,
+          "lumaSsim": 0.91622
+        }
+      }
+    }
+  },
+  {
+    "id": "text-q75",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\pilot\\sample--text-q75.webp",
+    "bytes": 573596,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 53,
+      "opaqueRgbP99MaxChannelError": 16.0,
+      "opaqueRgbMae": 3.3645,
+      "opaqueLumaSsim": 0.927799,
+      "edgeLumaRmse": 4.7127,
+      "opaqueFractionMaxChannelOver8": 0.142574,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 4.1864,
+          "lumaSsim": 0.94691
+        },
+        "card12": {
+          "edgeLumaRmse": 4.7874,
+          "lumaSsim": 0.940735
+        },
+        "card32": {
+          "edgeLumaRmse": 4.6813,
+          "lumaSsim": 0.916125
+        },
+        "board": {
+          "edgeLumaRmse": 4.7882,
+          "lumaSsim": 0.92926
+        },
+        "tip": {
+          "edgeLumaRmse": 4.9819,
+          "lumaSsim": 0.883578
+        }
+      }
+    }
+  },
+  {
+    "id": "current-online-sample",
+    "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\preprocess-pilot\\edge-protected-09.webp",
+    "bytes": 423968,
+    "metrics": {
+      "alphaExact": true,
+      "alphaMaxError": 0,
+      "opaqueRgbMaxError": 86,
+      "opaqueRgbP99MaxChannelError": 22.0,
+      "opaqueRgbMae": 4.2989,
+      "opaqueLumaSsim": 0.847032,
+      "edgeLumaRmse": 4.929,
+      "opaqueFractionMaxChannelOver8": 0.22143,
+      "textRegions": {
+        "card0": {
+          "edgeLumaRmse": 4.3129,
+          "lumaSsim": 0.910931
+        },
+        "card12": {
+          "edgeLumaRmse": 5.0267,
+          "lumaSsim": 0.81181
+        },
+        "card32": {
+          "edgeLumaRmse": 4.8243,
+          "lumaSsim": 0.847616
+        },
+        "board": {
+          "edgeLumaRmse": 5.0832,
+          "lumaSsim": 0.758436
+        },
+        "tip": {
+          "edgeLumaRmse": 5.0947,
+          "lumaSsim": 0.830122
+        }
+      }
+    }
+  }
+]

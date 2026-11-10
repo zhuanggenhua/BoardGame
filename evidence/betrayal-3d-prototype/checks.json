@@ -1,0 +1,140 @@
+{
+  "url": "http://127.0.0.1:5188/betrayal-3d.html",
+  "generatedAt": "2026-09-05T17:38:09.365Z",
+  "errors": [],
+  "screenshots": [
+    {
+      "name": "01-overview-current-map",
+      "path": "evidence/betrayal-3d-prototype/01-overview-current-map.png",
+      "proves": "full scene: real room tiles, merged walls, furniture, explorers and monster",
+      "lit": 914,
+      "mean": 46.27278645833327,
+      "colors": 382,
+      "frames": 14,
+      "overflow": false
+    },
+    {
+      "name": "02-explorer-scale-closeup",
+      "path": "evidence/betrayal-3d-prototype/02-explorer-scale-closeup.png",
+      "proves": "explorer miniatures stand upright and remain board-scale",
+      "lit": 3725,
+      "mean": 113.77734375000031,
+      "colors": 1298,
+      "frames": 23,
+      "overflow": false
+    },
+    {
+      "name": "03-monster-graveyard-closeup",
+      "path": "evidence/betrayal-3d-prototype/03-monster-graveyard-closeup.png",
+      "proves": "CC0 Skeleton monster is placed in the graveyard as a board-scale enemy",
+      "lit": 2460,
+      "mean": 68.24991861979163,
+      "colors": 1022,
+      "frames": 32,
+      "overflow": false
+    },
+    {
+      "name": "04-moved-to-kitchen-via-doors",
+      "path": "evidence/betrayal-3d-prototype/04-moved-to-kitchen-via-doors.png",
+      "proves": "movement reaches kitchen through legal connected doorways without clipping furniture",
+      "lit": 877,
+      "mean": 46.047607421875234,
+      "colors": 387,
+      "frames": 91,
+      "overflow": false
+    },
+    {
+      "name": "05-moved-to-storage-via-kitchen-door",
+      "path": "evidence/betrayal-3d-prototype/05-moved-to-storage-via-kitchen-door.png",
+      "proves": "storage room remains reachable only through the kitchen matching doorway",
+      "lit": 902,
+      "mean": 46.15429687500011,
+      "colors": 396,
+      "frames": 132,
+      "overflow": false
+    },
+    {
+      "name": "06-sealed-wall-routes-around",
+      "path": "evidence/betrayal-3d-prototype/06-sealed-wall-routes-around.png",
+      "proves": "route to the study goes around sealed shared walls instead of cutting through them",
+      "lit": 880,
+      "mean": 46.16153971354179,
+      "colors": 384,
+      "frames": 191,
+      "overflow": false
+    },
+    {
+      "name": "07-adjacent-sealed-wall-not-crossed",
+      "path": "evidence/betrayal-3d-prototype/07-adjacent-sealed-wall-not-crossed.png",
+      "proves": "conservatory and study share a sealed wall, so the path uses legal doorways around it",
+      "lit": 896,
+      "mean": 46.28401692708324,
+      "colors": 391,
+      "frames": 239,
+      "overflow": false
+    },
+    {
+      "name": "08-top-view-door-and-wall-check",
+      "path": "evidence/betrayal-3d-prototype/08-top-view-door-and-wall-check.png",
+      "proves": "top view confirms doors, solid walls and room selection remain readable",
+      "lit": 1337,
+      "mean": 57.2407226562499,
+      "colors": 740,
+      "frames": 271,
+      "overflow": false
+    },
+    {
+      "name": "09-settings-and-camera-controls",
+      "path": "evidence/betrayal-3d-prototype/09-settings-and-camera-controls.png",
+      "proves": "pan, rotate, zoom, wall visibility, atmosphere and exposure controls are live",
+      "lit": 4067,
+      "mean": 70.1271972656254,
+      "colors": 519,
+      "frames": 437,
+      "overflow": false
+    },
+    {
+      "name": "10-mobile-landscape",
+      "path": "evidence/betrayal-3d-prototype/10-mobile-landscape.png",
+      "proves": "mobile landscape keeps the scene, HUD and room strip usable",
+      "lit": 647,
+      "mean": 44.52001953125,
+      "colors": 314,
+      "frames": 502,
+      "overflow": false
+    },
+    {
+      "name": "11-mobile-portrait",
+      "path": "evidence/betrayal-3d-prototype/11-mobile-portrait.png",
+      "proves": "mobile portrait keeps the scene visible and controls accessible",
+      "lit": 1435,
+      "mean": 58.103597005208286,
+      "colors": 778,
+      "frames": 515,
+      "overflow": false
+    }
+  ],
+  "geometryChecks": [
+    "shared room edges emitted once",
+    "room doors stay synchronized with each tile artwork orientation",
+    "shared walls connect only when both sides have matching doors",
+    "conservatory-study and gallery-graveyard sealed edges are not traversable",
+    "path points avoid furniture and other figures",
+    "explorer and monster model heights stay in board-miniature scale"
+  ],
+  "interactionChecks": [
+    "room selection",
+    "reachable move",
+    "sealed wall route avoidance",
+    "occupied room slot clearance",
+    "turn",
+    "pan",
+    "rotate",
+    "zoom",
+    "top view",
+    "reset",
+    "walls",
+    "atmosphere",
+    "exposure"
+  ]
+}

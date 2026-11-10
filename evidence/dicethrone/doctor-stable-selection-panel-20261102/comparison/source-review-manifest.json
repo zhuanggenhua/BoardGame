@@ -1,0 +1,182 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "把我说的东西和你新实现或者复用的效果截图对比；这里为什么不用固定容器大小，按钮位置变来变去不方便交互",
+  "productAcceptance": "not-claimed",
+  "referenceEffect": {
+    "name": "血色杀戮",
+    "actionId": "vampire-lord-bloody-slaughter-search-deck-card",
+    "renderer": "src/games/dicethrone/ui/InteractionOverlay.tsx"
+  },
+  "limitations": [
+    "修前组为本次稳定操作区补丁前的当前真实效果现场，不是原时历史截图，也不是最终合格图。",
+    "桌面前后同视口、同真实牌库、同搜索及选中目标。横屏采用同组件相同效果；不同视口不要求屏幕像素坐标相同。",
+    "此相册用于来源及差异核查，不把包含修前问题图的对照相册包装为整体产品通过。"
+  ],
+  "media": [
+    {
+      "file": "01-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "88d9088b58748cf5495f1d885af4c4a34f0c12413613f1723864872da4604223",
+      "description": "修复前桌面原选择器；操作区随候选收缩；完整牌库候选与确认区。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\capture.json"
+    },
+    {
+      "file": "01-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "7734570dc63a7521d474dd0859807c1d6ddace23c8cdef3e297382fc31e47501",
+      "description": "修复前桌面原选择器；操作区随候选收缩；搜索命中单张候选。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\capture.json"
+    },
+    {
+      "file": "01-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "075282d05cc572e126643e7394a9d9784cb893a8a3d15149aadae8019a35f47f",
+      "description": "修复前桌面原选择器；操作区随候选收缩；选中卡牌等待确认。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\capture.json"
+    },
+    {
+      "file": "02-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "b6069810f3d28bea861d7b21b26e720b2557433bfa1ed6337bac965cd3e58cf2",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；完整牌库候选与确认区。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "file": "02-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "6733b99051709fa6e1463abc7e1def1289c42d33f7c481b1bab402b25e57080d",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；搜索命中单张候选。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "file": "02-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "4e94d8114247f3c9dfa45de5dd8809b53f5fe827f3bec285047270e977a32244",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；选中卡牌等待确认。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "file": "02-4-04-血色杀戮-取消选中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\04-血色杀戮-取消选中.png",
+      "sha256": "935dba26a0c56a6ed817e1c33d5d5177fe4734b0a5f8e91d81c78ce06b12bd7c",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；取消选中保留搜索。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "file": "02-5-05-血色杀戮-无匹配.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\05-血色杀戮-无匹配.png",
+      "sha256": "3f5b97a2b52018ab4db4c80702bfeeec04844c911b4d17a7e1831abf066c070f",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；搜索无匹配候选。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "file": "02-6-06-血色杀戮-清空恢复.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\06-血色杀戮-清空恢复.png",
+      "sha256": "b23bd6656802871cd91a5c17106718ca5fc760f166c85c6a712e5e323c2b1575",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；清空搜索恢复全部候选。",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "file": "03-1-01-血色杀戮-真实抽牌堆候选.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "1ccdcecdcb7e38ae9715a3d71708abca977489378aaed4e3883b4712b411e2b0",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；完整牌库候选与确认区。",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    },
+    {
+      "file": "03-2-02-血色杀戮-搜索命中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\02-血色杀戮-搜索命中.png",
+      "sha256": "41738d0b6621ad14af988f03294d32162cb334edc09d997f69ad832495d3ca18",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；搜索命中单张候选。",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    },
+    {
+      "file": "03-3-03-血色杀戮-已选待确认.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\03-血色杀戮-已选待确认.png",
+      "sha256": "18dfceff55273b12384eaa171c5ec168d2ab2738e890080f5ff78323df9a3e50",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；选中卡牌等待确认。",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    },
+    {
+      "file": "03-4-04-血色杀戮-取消选中.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\04-血色杀戮-取消选中.png",
+      "sha256": "cd13eec93c273c521007d4685ca561714e04b20508aec5f938b5474e65ced700",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；取消选中保留搜索。",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    },
+    {
+      "file": "03-5-05-血色杀戮-无匹配.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\05-血色杀戮-无匹配.png",
+      "sha256": "00c57ddbb1ca24245ea4b29df737bde777131bcf3bcc238a6862365aec613161",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；搜索无匹配候选。",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    },
+    {
+      "file": "03-6-06-血色杀戮-清空恢复.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\06-血色杀戮-清空恢复.png",
+      "sha256": "85b15a9b64869269108606ebdf971b51e92f805d02d9b9b935b7cca3de621c9e",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；清空搜索恢复全部候选。",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    }
+  ]
+}

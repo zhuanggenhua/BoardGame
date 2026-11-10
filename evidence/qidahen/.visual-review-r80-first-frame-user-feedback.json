@@ -1,0 +1,50 @@
+{
+  "mode": "single-media-user-feedback",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r80_visual_review"
+  },
+  "objective": "按用户退回意见，仅复核R80第一张：普通合法候选反馈、教程推荐与普通候选的区分、辽东轮廓是否贴合实际印刷边界。",
+  "previousReview": "evidence/qidahen/.visual-review-r80-original.json",
+  "previousReviewDisposition": "旧PASS保留为历史；本次用户新增且明确指出的候选反馈和印刷边界要求使该第一帧不能沿用旧PASS。未覆盖其他15张，也未改写旧报告。",
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-tutorial-final-r80-final/media/00-辽东军屯地区选择.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\qidahen-acceptance-snapshot-20261028\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261028-tutorial-final-r80\\00-辽东军屯地区选择.png",
+      "sha256": "a0cc29a8944c9609ffeafec50b9e3c4d691704e4c8c6011c3214a86f8976657c",
+      "status": "REVISE",
+      "originalRead": "实际重新读取1920×1080完整原图，未读取其他图片、未裁图或转码。",
+      "observation": "只有辽东地区有明显绿色填充与白色轮廓，未见其他地图地区的普通可选反馈；普通合法候选与教程推荐的视觉层级无法由本图区分。辽东白色轮廓上沿近水平，穿过印刷地区名下部和地区内部，下沿也位于印刷外边界内侧，两者之间留有明显橙色地区带。",
+      "checks": [
+        {
+          "id": "ordinary-candidate-feedback",
+          "status": "证据不足",
+          "observation": "其他可见地区只有原有地图边线、阵营标记和部队，没有可识别为普通可选候选的统一轮廓或填充。",
+          "boundary": "截图不证明其他哪些地区规则上合法；真实合法候选集合由主线程独立核查。若集合不止辽东，本图没有显示这些普通合法候选的反馈。"
+        },
+        {
+          "id": "tutorial-focus-versus-candidates",
+          "status": "REVISE",
+          "observation": "地图上仅辽东承载一套绿色白边强调；没有独立可辨的普通候选表达可作对照，玩家无法从图面区分推荐目标与其他合法选择。",
+          "impact": "玩家会把教程推荐误读为唯一可以点击的地区。"
+        },
+        {
+          "id": "printed-border-alignment",
+          "status": "REVISE",
+          "observation": "辽东白色轮廓上沿约在画面y=512处近水平横跨，切入印刷地区名下部，实际印刷上方边线有更靠上的折线与转折；白色下沿约在y=650至720处收口，而下方黑色印刷地区边线仍在更外侧，二者间保留明显橙色区域。",
+          "impact": "高亮看起来是地区内部另画的多边形，不能准确告诉玩家整个辽东地区的实际边界。",
+          "boundary": "坐标仅用于定位肉眼可见差异，不是精确标定数据；没有用运行时mask或命中多边形证明其自身正确。"
+        }
+      ],
+      "minimumRemedy": "先由主线程核定真实合法地区集合；对全部合法候选提供同类普通反馈，教程用独立层级突出辽东；依据原始印刷地图边线重新标定辽东轮廓，再回同一入口和视口取整屏图复核。"
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "revise": 1,
+    "unchangedOtherMedia": 15
+  }
+}

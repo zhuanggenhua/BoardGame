@@ -1,0 +1,171 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r82_desktop_visual"
+  },
+  "sourceRevision": "sha256:d782dbf4c50294ee2af6b77e630fec81761f27544637774b29f144e83337b52d",
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/00-辽北军屯地区选择.png",
+      "status": "PASS",
+      "sha256": "5c8ac7763d2ea4a53356cadbad95446a0ea8ccefbf6bbfd3ee914a6549c605d1",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "本土地区以绿色填色与贴合轮廓的边界标明，辽北推荐白边可区分；教程说明与地区本体清楚可见。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/00-辽北军屯地区选择.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "PASS",
+      "sha256": "91a9297785d93fa8705b398fdf9e23d470a2434582fd220829dc05d38cbc3a97",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘军屯扇区白边与前进两格提示对应，辽北地区及部队可辨；手牌素材已加载。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/01-轮盘前进两格与军屯落点.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "sha256": "807578e98705a8a89b0d4c68a6923f31a354f511ae1e36bc2aba6a0fc59e5f55",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "选择对手弹框清楚列出蒙古、后金与辽北军屯地点，教程指定后金，按钮与说明无相互遮挡。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/02-指定后金抽牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/03-辽北军屯结果.png",
+      "status": "PASS",
+      "sha256": "e1285f8dc6f291664ccb77625697af952f12948cfe8c99bbf6069140411b2637",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北军屯结果正文可读，新增部队与五张手牌实际可见；下一步按钮承接结果说明。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/03-辽北军屯结果.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/04-叶赫部真实地图目标.png",
+      "status": "PASS",
+      "sha256": "913dc3a19400559ff724742af6090e98df7c6cebd5e203e9638ac5ea532fbc5b",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部目标采用贴合真实地图轮廓的绿色填色与白边，未用字牌或圆圈替代地区，目标与提示可对应。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/04-叶赫部真实地图目标.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "PASS",
+      "sha256": "d4c8f6e31b920807ac72c0e299cbeaac9758ab6d057af482c67817d7dee7e98d",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两与鸳鸯阵手牌本体已加载，支付托盘文字可读且位于手牌上方，目标叶赫部轮廓可辨。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05-银两支付与鸳鸯阵手牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "status": "PASS",
+      "sha256": "c870407fa0edde96e4503859e72bb3f213c2831d492eaac15b135d4cc7f2cb78",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "鸳鸯阵抬升并显示已选状态，确认条明确标出所选牌与打出按钮；牌面正文及其它手牌仍可见。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/05a-鸳鸯阵选中与确认出牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/06-野战选择实际出兵部队.png",
+      "status": "PASS",
+      "sha256": "198ecd6b9762b979b6a20c2d9bb48a42f8464f9cbee910d28c71599464a72c41",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北实际四支出兵部队绿色高亮清楚，侧板出兵说明与开始战斗按钮可读，教程浮层未挡部队本体。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/06-野战选择实际出兵部队.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/07-战后幸存部队与占领选择.png",
+      "status": "PASS",
+      "sha256": "3f2b3eae75a0b80ba0fd33c8755bd36efa1fbfdb24f9b773866c2306d214d016",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战后结果面板的掷骰、幸存部队与占领或撤回按钮可读，教程说明未遮住结果与操作入口。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/07-战后幸存部队与占领选择.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "sha256": "af856e2dd7154476524212d4191336a1a12b10540bb88b3f37d3094f5f9df5f9",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部占领后地图归属与当前蒙古席位可辨，教程完成说明和完成并返回按钮清楚，六张手牌素材已加载。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/08-叶赫部占领结果.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/09-教程退出后同局继续.png",
+      "status": "PASS",
+      "sha256": "646538d439906e9c109fb68a1d4addbb4c7fbcabdeb73443f5ad295f620d2107",
+      "issues": [],
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "退出教程后提示层消失，同局地图与蒙古手牌保留；征兵训练弃牌托盘及确认弃牌按钮可读。",
+      "source": "evidence/qidahen/tutorial-20261028-map-selection-r82-final/media/09-教程退出后同局继续.png"
+    }
+  ],
+  "summary": {
+    "total": 11,
+    "pass": 11,
+    "revise": 0
+  }
+}

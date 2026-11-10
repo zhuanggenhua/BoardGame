@@ -1,0 +1,66 @@
+{
+  "candidate": {
+    "library_file_id": "libfile_d824374a7b1081919a34977d6ed660c9",
+    "library_version": 1,
+    "file_id": "file_00000000aa1081f59dd3beef2315d70b",
+    "zip_sha256": "072ed6287d9cc72eea6dec459d9e1a9609bd7db2f5c6bf8d97e57c59f92b6afd",
+    "index_sha256": "7e9cf0277e240c0be4c6dbe6a54414cbd5342dfcd39711831f2544861aad0fb5",
+    "candidate_index_changed_during_test": false,
+    "contract": "6 passed, 0 failed"
+  },
+  "e2e": {
+    "status": "passed",
+    "viewport": "1024x600",
+    "single_scroll_container": ".steam-page",
+    "hero_height_px": 220,
+    "bottom_padding_px": 100,
+    "real_wheel_reached_scroll_top": 540,
+    "reached_bottom_scroll_top": 562,
+    "room_rows_reachable_without_clipping": 4,
+    "friend_rows_readable_without_floating_bar_overlap": 6,
+    "full_room_button": {
+      "text": "已满",
+      "disabled": true,
+      "fully_visible": true,
+      "element_from_point_hits_button": true,
+      "overlapping_floating_bar": false
+    },
+    "open_room_button": {
+      "text": "加入",
+      "element_from_point_hits_button": true,
+      "click_result": "重连进入房间"
+    },
+    "scroll_capture_friend_rows": [
+      "阿凯",
+      "小满",
+      "老周",
+      "林夏",
+      "北北",
+      "阿宁"
+    ]
+  },
+  "previous_9_screenshots_reused_without_recapture": true,
+  "previous_report_library_file_id": "libfile_5c87dd606904819193f2b18428e7f177",
+  "screenshots": [
+    {
+      "file": "C:\\Users\\zhuagenbao\\Documents\\Codex\\2026-10-16\\task-2\\_fusion-candidate-runtime-20261016\\evidence-v1-room\\game-top-1024x600-v1.png",
+      "viewport": "1024x600",
+      "bytes": 332616,
+      "modified_utc": "2026-10-16T14:55:18.828Z",
+      "sha256": "820459a9fb4dc62f0a34b51d2d6f65dfa68328a3736d7655ea2e075f64db8e78",
+      "file_id": "file_0000000081a881f89e600ec32f23d384",
+      "library_file_id": "libfile_884f5c08d5708191b988bbe5819a07d4",
+      "version": 0
+    },
+    {
+      "file": "C:\\Users\\zhuagenbao\\Documents\\Codex\\2026-10-16\\task-2\\_fusion-candidate-runtime-20261016\\evidence-v1-room\\game-rooms-friends-1024x600-v1.png",
+      "viewport": "1024x600",
+      "bytes": 93384,
+      "modified_utc": "2026-10-16T14:55:19.912Z",
+      "sha256": "5d168e9f2c80666809d372723f2772550616a9efdf3a4c11dda5122950625dad",
+      "file_id": "file_000000004b5081f58cd711c93edf061e",
+      "library_file_id": "libfile_c8878c5493508191831d9259bc6039d6",
+      "version": 0
+    }
+  ]
+}

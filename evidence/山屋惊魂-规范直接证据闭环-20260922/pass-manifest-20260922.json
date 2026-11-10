@@ -1,0 +1,107 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-22T15:24:06+08:00",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "section": "原始问题直接证据闭环",
+    "requirements": [
+      "同一问题对象、同一真实入口、同一玩家动作、玩家可见结果和收口态",
+      "多人确认同时覆盖中间状态与最终关闭条件",
+      "骰盘、骰面、总点数、动画运动中、最终落位均由可见证据直接覆盖"
+    ]
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "evidence/山屋惊魂-规范直接证据闭环-20260922"
+  },
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"事件、物品、预兆结算必须由每个玩家在自己的页面分别确认\" --reporter=line",
+      "result": "1 passed",
+      "scope": "三人真实页面确认、物品/预兆转移动画"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/event-choice-coverage.e2e.ts \"外星几何真实链路从探索翻牌到投掷事件结算关闭\" --reporter=line",
+      "result": "1 passed",
+      "scope": "事件牌翻出、投骰、骰盘停稳、结算、关闭"
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t \"翻牌结算必须由所有玩家确认|即时事件效果会在真实页面展示确认步骤\" --reporter=dot",
+      "result": "Test Files 1 passed; Tests 2 passed",
+      "scope": "多人确认收口与可见描述回归"
+    },
+    {
+      "command": "npm run spec:lint",
+      "result": "spec-lint: OK",
+      "scope": "项目规范结构"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "物品和预兆必须等三名玩家都确认后才关闭展示。",
+      "status": "PASS",
+      "evidence": [
+        "三人真实页面 E2E 记录 1/3 后仍保留、2/3 后仍保留、3/3 后关闭。",
+        "物品对应图片：06、07；预兆对应图片：10、11。"
+      ],
+      "images": [
+        "06-物品-首位确认后仍等待.jpg",
+        "07-物品-第二位确认后仍未关闭.jpg",
+        "10-预兆-首位确认后仍等待.jpg",
+        "11-预兆-第二位确认后仍未关闭.jpg",
+        "05-关闭后回牌桌.jpg"
+      ],
+      "uncovered": "无"
+    },
+    {
+      "requirement": "别人的物品和预兆要从牌面飞到实际获得者身上，动画结束后进入持有区。",
+      "status": "PASS",
+      "evidence": [
+        "物品图片 08 显示最后确认后的卡牌仍在牌桌中央运动中，图片 09 显示急救包最终进入持有区。",
+        "预兆图片 12 显示最后确认后的卡牌仍在牌桌中央运动中，图片 13 显示书本最终进入持有区。",
+        "E2E 同时断言过场类型为 possession-gain、目标为真实探索者 Token、动画期间持有区不提前显示。"
+      ],
+      "images": [
+        "08-物品-最后确认飞行动画中.jpg",
+        "09-物品-动画结束最终落位.jpg",
+        "12-预兆-最后确认飞行动画中.jpg",
+        "13-预兆-动画结束最终落位.jpg"
+      ],
+      "uncovered": "无"
+    },
+    {
+      "requirement": "描述不重复显示投掷目标和投掷结果；投骰类型、实体骰子和总点数仍可见。",
+      "status": "PASS",
+      "evidence": [
+        "图片 02 的投骰面板保留“知识检定”、三颗实体骰和“总点数 6”。",
+        "图片 02 不再显示“判定要求（总点数）”、分支阈值或结果摘要；事件卡牌本体仍保留完整规则描述。",
+        "E2E 直接断言可见投骰类型、骰子数量、骰面合计，并断言阈值/结果摘要节点不存在。"
+      ],
+      "images": [
+        "02-投掷后保留骰子描述.jpg",
+        "03-骰盘停稳总点数可见.jpg",
+        "04-结算结果可见.jpg"
+      ],
+      "uncovered": "无"
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\01-事件牌翻出投掷入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\02-投掷后保留骰子描述.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\03-骰盘停稳总点数可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\04-结算结果可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\05-关闭后回牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\06-物品-首位确认后仍等待.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\07-物品-第二位确认后仍未关闭.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\08-物品-最后确认飞行动画中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\09-物品-动画结束最终落位.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\10-预兆-首位确认后仍等待.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\11-预兆-第二位确认后仍未关闭.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\12-预兆-最后确认飞行动画中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-规范直接证据闭环-20260922\\13-预兆-动画结束最终落位.jpg"
+  ]
+}

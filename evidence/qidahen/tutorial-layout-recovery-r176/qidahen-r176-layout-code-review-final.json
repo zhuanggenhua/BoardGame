@@ -1,0 +1,24 @@
+{
+  "verdict": "SOURCE_DELTA_PASS",
+  "previous_report": ".tmp/qidahen-r176-layout-code-review.json",
+  "previous_finding_status": "原P1重复播放路径已在当前源码消除。旧报告保留原始事实。",
+  "delta": {
+    "file": "src/games/qidahen/ui/QidahenBattleRollOverlay.tsx",
+    "lines": [
+      38,
+      99
+    ],
+    "review": "spaceUnavailable加入测量effect依赖，变true时先清理旧observer/listener/rAF，随后effect早退。源码已删除恢复空间时setSpaceUnavailable(false)。同一Overlay身份内战报分支保持到玩家onComplete，恢复窗口无法重挂Sequence。",
+    "state_integrity": "继续调用原sequence.onComplete，本增量未写领域状态，仍使用原sequence.rolls。Board原key={battlePresentation.identity}维持新战斗身份独立挂载。",
+    "new_source_blockers": []
+  },
+  "test_gap": {
+    "file": "src/games/qidahen/__tests__/battleRollPlacement.test.tsx",
+    "description": "已补started=true挂载Sequence并计数，缩到320x180后waitFor战报，恢复1920x1080等待双rAF，再断言report保持、mount计数为1、无Sequence。原测试精度缺口已修，旧审查事实保留在previous_report。",
+    "requested_precision": "已满足原几何往返回归要求。另有玩家点击complete一次及权威rolls不变测试。",
+    "severity": "已解决",
+    "status": "RESOLVED"
+  },
+  "evidence_limits": "已只读核验测试源码增量及.tmp/qidahen-r176-regression-final.log，3文件224项通过。已只读三份result.json摘要，960x540物理播放、640x480和320x200战报分支均status PASS、errors空、postBattleInputAccepted true。未独立重跑浏览器或审查截图，不作视觉PASS结论。",
+  "overall": "本次源码审查和原重复播放回归精度均通过。三尺寸结果摘要支持战后输入接受事实，图片视觉验收仍独立。原REVISE报告保留。"
+}

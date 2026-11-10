@@ -1,0 +1,69 @@
+{
+  "verdict": "PASS",
+  "score": 90,
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "image_acceptance_audit",
+    "subagentId": "01a12fbc-cb23-7133-a4ff-e9e65a90a76e",
+    "parentConfirm": "父代理核对子代理三条观察后，与本轮棋子贴合描边、地区边界可读、点选山海关更醒目、悬浮皮岛仍可辨的合同一致"
+  },
+  "target_requirements": [
+    {
+      "requirement": "闲时棋子贴合描边、地区边界可读、无多余横幅和残留地区条",
+      "status": "PASS",
+      "evidence": "闲时方棋与圆棋均贴合本体描边，各地区深色边界可读，无多余操作横幅，无残留地区悬浮条。"
+    },
+    {
+      "requirement": "点选山海关后该地区比前态更醒目并可见山海关提示",
+      "status": "PASS",
+      "evidence": "点选后山海关比前态更醒目，关城一带有更亮色带与更清楚边界，并可见山海关地区提示。"
+    },
+    {
+      "requirement": "悬浮皮岛后提示可见且棋子仍可辨",
+      "status": "PASS",
+      "evidence": "悬浮后皮岛地区提示可见，附近方棋与圆棋仍有贴合描边，能从地图中辨认。"
+    }
+  ],
+  "media": [
+    {
+      "path": "media/前态-行动窗口棋子地区描边无多余横幅.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "闲时全图可见。方棋与圆棋均有贴合本体的墨色描边，未另套离体大方框。各地区有深色边界与浅势力填色，不单靠底图印刷线。未见多余操作横幅，也无残留地区悬浮条。无遮罩、无破图、无报错。"
+    },
+    {
+      "path": "media/中态-点选山海关地区描边与棋子描边.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "点选后山海关一带比前态更醒目，关城与岸线出现更亮色带和更清楚边界。可见山海关大明地区提示。该区棋子仍有贴合描边。与前态整屏差别明显，并非几乎无差别。无遮罩、无破图、无报错。"
+    },
+    {
+      "path": "media/后态-悬浮皮岛地区描边棋子仍可辨.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "悬浮后可见皮岛大明地区提示。皮岛一带边界与浅填色可辨。附近方棋与圆棋仍有墨色描边，能从黄褐地图中分开。无遮罩、无破图、无报错。"
+    }
+  ],
+  "hard_failures": [],
+  "negative_impact_checks": [
+    {
+      "slot": "棋子描边",
+      "status": "PASS",
+      "note": "方棋圆棋均为贴合本体的墨色描边，未见离体大方框。"
+    },
+    {
+      "slot": "地区边界",
+      "status": "PASS",
+      "note": "各地区有深色多边形边界与浅填色，未与底图糊成一片。"
+    },
+    {
+      "slot": "闲时悬浮",
+      "status": "PASS",
+      "note": "闲时无地区悬浮条，也无多余操作横幅。"
+    }
+  ],
+  "issues": []
+}

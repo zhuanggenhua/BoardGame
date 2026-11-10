@@ -1,0 +1,57 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "title": "仲裁派系真实入口：全流程效果原文红框版",
+  "requirements": [
+    {
+      "requirement": "每张规则驱动流程图都显示对应规则真相源的逐字效果原文，并用红色框线直接圈出原文区；原始截图像素未被覆盖。",
+      "status": "PASS",
+      "evidence": [
+        "标注脚本在原图上方扩展画布写入效果原文，并以红色框线圈出完整原文区。",
+        "效果文本来自 public/locales/zh-CN/game-summonerwars.json 与 src/games/summonerwars/config/factions/zhongcai.ts。"
+      ]
+    },
+    {
+      "requirement": "本组只包含仲裁真实入口的 19 个流程截图节点，不重复生成静态 00 索引表；流程索引由查看器左侧目录和说明承担。",
+      "status": "PASS",
+      "evidence": [
+        "正式图组包含 01-19 共 19 张图，目录内没有 00-sequence-index.png。",
+        "查看器 API 回查媒体数量为 19，且未混入其它媒体。"
+      ]
+    },
+    {
+      "requirement": "服从、圣言、抹消、鼓舞和圣戒律令的交互上下文可由玩家直接读懂。",
+      "status": "PASS",
+      "evidence": [
+        "每个相关流程节点均保留真实入口、候选高亮、结算状态，并在顶部红框显示对应效果原文。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/01-labeled-仲裁派系真实入口开局.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/02-labeled-仲裁服从触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/03-labeled-仲裁服从选择士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/04-labeled-仲裁服从选择相邻空格.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/05-labeled-仲裁服从结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/06-labeled-仲裁圣言触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/07-labeled-仲裁圣言选择移动目标.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/08-labeled-仲裁圣言选择友方士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/09-labeled-仲裁圣言选择推拉落点.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/10-labeled-仲裁圣言结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/11-labeled-仲裁抹消触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/12-labeled-仲裁抹消选择目标.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/13-labeled-仲裁抹消结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/14-labeled-仲裁鼓舞触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/15-labeled-仲裁鼓舞选择受伤士兵.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/16-labeled-仲裁鼓舞结算完成.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/17-labeled-仲裁律令触发前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/18-labeled-仲裁律令回合开始提示.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/_labeled-for-user-20260920-effect-text-circle-pass-v2/19-labeled-仲裁律令保留持续效果后.png"
+  ]
+}

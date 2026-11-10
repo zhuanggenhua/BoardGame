@@ -1,0 +1,55 @@
+{
+  "status": "blocked-or-failed-before-reproduction",
+  "error": {
+    "name": "TimeoutError",
+    "message": "page.waitForSelector: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"game-details-modal-root\"]:visible') to be visible\u001b[22m\n",
+    "stack": "page.waitForSelector: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=\"game-details-modal-root\"]:visible') to be visible\u001b[22m\n\n    at D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\repro-formal-open-room-click.mjs:412:18"
+  },
+  "currentHostUrl": "http://127.0.0.1:4273/?homeStyle=classic&game=mage-wars",
+  "currentGuestUrl": null,
+  "hostState": {
+    "href": "http://127.0.0.1:4273/?homeStyle=classic&game=mage-wars",
+    "phase": null,
+    "phaseActorId": null,
+    "currentPlayerId": null,
+    "turnNumber": null,
+    "planButton": null,
+    "turnEndButton": null,
+    "overlay": null,
+    "shelf": {
+      "planningEnabled": null,
+      "visibleCardCount": null
+    },
+    "cards": [],
+    "drafts": []
+  },
+  "guestState": null,
+  "diagnostics": {
+    "baseUrl": "http://127.0.0.1:4273",
+    "gameServerUrl": "http://127.0.0.1:18000",
+    "viewport": {
+      "width": 2560,
+      "height": 1304
+    },
+    "deviceScaleFactor": 1,
+    "targetCardIds": [
+      "2819",
+      "2906"
+    ],
+    "headless": true,
+    "hostErrors": [
+      "console:http://127.0.0.1:4273/node_modules/.vite/port-4273/deps/react-dom_client.js?v=01c02177:7000:%o\n\n%s\n\n%s\n SyntaxError: The requested module '/src/components/system/OperationGuidePanel.tsx' does not provide an export named 'OperationGuideButton' The above error occurred in one of your React components. React will try to recreate this component tree from scratch using the error boundary you provided, GlobalErrorBoundary.",
+      "console:http://127.0.0.1:4273/src/components/system/GlobalErrorBoundary.tsx:48:Uncaught error: SyntaxError: The requested module '/src/components/system/OperationGuidePanel.tsx' does not provide an export named 'OperationGuideButton' {componentStack: \n    at Lazy (<anonymous>)\n    at Suspense (<anony…ider.js?v=01c02177:20:3)\n    at App (<anonymous>)}"
+    ],
+    "guestErrors": []
+  },
+  "timeline": [
+    {
+      "step": "open-home",
+      "at": "2026-09-12T16:20:13.762Z"
+    }
+  ],
+  "artifacts": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-20-13-062Z-4273\\failure-host-current-screen.png"
+  ]
+}

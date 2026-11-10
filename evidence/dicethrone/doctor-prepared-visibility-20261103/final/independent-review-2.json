@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "media": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面多张-露出被动.png",
+      "status": "PASS",
+      "hardFailures": [],
+      "observation": "多张隐藏态下维山帝之书被动文字完整露出，眼睛按钮位于文字下方；相邻星际侵入槽完整可见。",
+      "sha256": "233844a4a6be08fc18d209669a0e352432ac52f0a78937ecf3024e62dce0e0da"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-prepared-visibility-capture-20261103\\桌面多张-恢复法术.png",
+      "sha256": "41041508326bf5863dafe16d461ff2f346d21637c15a0bee1cc8137b6dd85580",
+      "status": "PASS",
+      "observation": "恢复后上层法术卡重新显示，3/3 页码、翻页箭头及隐藏按钮可辨，相邻星际侵入槽完整可见。",
+      "hardFailures": []
+    }
+  ],
+  "reviewer": "/root/visibility_desktop_c"
+}

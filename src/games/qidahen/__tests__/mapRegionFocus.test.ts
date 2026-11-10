@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { focusQidahenMapRegion, clampQidahenMapViewport } from '../ui/mapRegionFocus';
+import { focusQidahenMapRegion, focusQidahenMapPolyline, clampQidahenMapViewport } from '../ui/mapRegionFocus';
 
 describe('整片地区在实际HUD空位中聚焦', () => {
+    it('按墙线而非外接矩形避让，并保持地图覆盖视口', () => {
+        const options = { points: [[100, 750], [750, 100]] as const,
+            visibleRect: { left: 0, top: 0, width: 1000, height: 1000 }, mapOrigin: { x: 0, y: 0 }, mapScale: 1,
+            mapSize: { width: 1000, height: 1000 }, protectedRects: [{ left: 100, top: 100, width: 150, height: 150 }],
+            padding: 8, preferredZoom: 1 };
+        const view = focusQidahenMapPolyline(options);
+        expect(view).not.toBeNull();
+        expect(view!.panX).toBeLessThanOrEqual(0);
+        expect(view!.panY).toBeLessThanOrEqual(0);
+        expect(view!.panX + 1000 * view!.zoom).toBeGreaterThanOrEqual(1000);
+        expect(view!.panY + 1000 * view!.zoom).toBeGreaterThanOrEqual(1000);
+        expect(focusQidahenMapPolyline({ ...options, protectedRects: [{ left: 0, top: 0, width: 1000, height: 1000 }] })).toBeNull();
+    });
     it.each([{ left: 0, top: 0 }, { left: 1145, top: 793 }])('边缘地区没有满足地图覆盖约束的镜头时明确返回无解 $left/$top', origin => {
         const region = { ...origin, width: 120, height: 100 };
         const original = { ...region };

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "reviewRunId": "e2e-1793384355862-i04ube",
+  "scope": "四套件真实入口当前源码全屏截图；逐图视觉检查目标可见、交互界面、布局可读、无错误；仅此run可用于当前结论",
+  "reviewedCount": 4,
+  "totalCount": 102,
+  "status": "in_progress",
+  "entries": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793384355862-i04ube\\01-不愧是我同骰两次-队友持有真实卡牌与掷骰归属可见.png",
+      "status": "PASS",
+      "observation": "队友手牌中的“不愧是我”卡牌可见；下边框/末端插画贴近视口底边，但规则正文四行完整可读。5颗索尔骰子、掷骰区与阶段控制可见。此帧为默认手牌露出态，符合 HandArea idle peek。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      },
+      "sidecar": {
+        "viewport": "1920x1080",
+        "handCardBottom": 1118.39
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793384355862-i04ube\\01-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+      "status": "PASS",
+      "observation": "真实2v2中队友出牌后的重掷选择态。提示显示0/2，同骰可重复选；索尔右侧五颗骰候选、取消与跳过重掷均清楚可见。完整卡牌放大预览覆盖角色板中部，但没有遮住骰候选/操作，卡牌标题与规则文字完整可读。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793384355862-i04ube\\01-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png",
+      "status": "PASS",
+      "observation": "重掷结算后骰盘显示新骰面，右侧仍保留索尔骰盘与其它队友栏；当前没有提示或弹窗，结算画面无遮挡，未见错误。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\thor-2v2-shared-dice-real-entry.e2e\\索尔与队友通过真实2v2手牌入口复用选骰及伤害防护交互\\_runs\\e2e-1793384355862-i04ube\\01-不愧是我同骰两次-提示说明重投次数与下一步确认.png",
+      "status": "PASS",
+      "observation": "提示明确显示2/2并说明尚未执行、需点骰盘确认；两个已选骰在原骰盘上有选中标识，取消与确认重掷入口可见。提示位于顶部居中，压到角色板上沿插画但未遮挡骰子/按钮。",
+      "checks": {
+        "targetVisible": true,
+        "interactionVisible": true,
+        "layoutReadable": true,
+        "noErrors": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r81_jin_korea_geometry"
+  },
+  "objective": "长白女真v3两处UI竖切的原图几何补证和最小闭合修正建议；不改候选、生产或规则。",
+  "source": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "size": [
+      1265,
+      893
+    ],
+    "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e"
+  },
+  "candidate": {
+    "path": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部地区按印刷边线校准候选三.png",
+    "sha256": "a9763baf70c45c3f5c62ed9a133d712ba366ed2f50ee2931b41683296bf2c85e"
+  },
+  "coordinates": "原图像素近似；下面山脊点来自原图放大和5像素网格目视，绝非逐像素分割。",
+  "sourceFacts": {
+    "opaqueOcclusion": "牌库左黑框及拐角真正挡住底图：最小相关包围范围约x1140至1146、y259至304（拐角处边缘有变化）；相邻外侧仍是可见土地，不能全叫不可见。",
+    "transparentArea": "x1147以东的半透明牌库内部仍能看到多组山峰；它们是彼此断开的山形笔画，不证明存在可连续描出的闭合国界。",
+    "gapA": "v3 x1139,y265至275为牌库外侧可见地表上的UI平行竖切；该处没有连续山脊能逐点替换。",
+    "gapB": "v3 x1139,y293至302也没有一条连续可描的印刷界线；下方约(1137,304)才重新碰到可见山脊。",
+    "upperVisibleRidgeAnchors": [
+      [
+        1149,
+        254
+      ],
+      [
+        1147,
+        256
+      ],
+      [
+        1145,
+        259
+      ]
+    ],
+    "lowerVisibleRidgeAnchors": [
+      [
+        1137,
+        304
+      ],
+      [
+        1134,
+        305
+      ],
+      [
+        1130,
+        306
+      ],
+      [
+        1126,
+        311
+      ]
+    ],
+    "trueDenseReplacementPointsAvailable": false
+  },
+  "proposedMinimalClosure": {
+    "status": "approximate",
+    "replaceRange": "局部从上方可见山脊端点约(1145,259)至下方可见山脊端点约(1137,304)，一次替换两条UI竖切以及中间借装饰山峰形成的小凹口。",
+    "points": [
+      [
+        1145,
+        259
+      ],
+      [
+        1143,
+        269
+      ],
+      [
+        1141,
+        279
+      ],
+      [
+        1139,
+        291
+      ],
+      [
+        1137,
+        304
+      ]
+    ],
+    "method": "上下已知山脊端点之间的一条窄斜桥。中间点仅为实施定位；连接根据端点和遮挡关系近似，不宣称原图画出了这条线。",
+    "envelope": [
+      1137,
+      259,
+      1145,
+      304
+    ],
+    "limitation": "黑框以外存在少量可见但无明确连续界线的地表；近似段不是纯粹不可见像素的还原。若验收要求全边逐点印刷依据，此段仍须保留未证明状态。",
+    "acceptance": "允许遮挡/断续地形的窄段近似时可使用；报告和几何元数据须保留approximate，不能升级为真实印刷边界PASS。"
+  },
+  "retain": [
+    {
+      "segment": "北侧辉发河岸，含东北图缘",
+      "verdict": "KEEP",
+      "reason": "v3贴可见河岸与图缘；不需因本局部问题重画。"
+    },
+    {
+      "segment": "西侧与建州之间棕色分界，至南端河岸交点",
+      "verdict": "KEEP",
+      "reason": "v3跟随可见棕线。"
+    },
+    {
+      "segment": "南端河岸及西南可见山脊，至约(1137,304)",
+      "verdict": "KEEP",
+      "reason": "本次局部放大没有发现需要扩大修正的偏线；连接到近似段下端即可。"
+    },
+    {
+      "segment": "东北可见山脊，从图缘/北河下方至约(1145,259)",
+      "verdict": "KEEP",
+      "reason": "上段山脊可见，v3有对应依据；连接到近似段上端即可。"
+    }
+  ],
+  "verdict": "仅建议局部approximate修正；其余长白可见边段保留。",
+  "noImagesReturned": true,
+  "changedFiles": [
+    "evidence/qidahen/r81-diagnostic/geography-source-correction-changbai.json"
+  ]
+}

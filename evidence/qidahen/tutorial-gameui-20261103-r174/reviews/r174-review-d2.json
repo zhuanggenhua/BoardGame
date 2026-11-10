@@ -1,0 +1,51 @@
+{
+  "reviewer": "/root/r174_d2",
+  "status": "PASS",
+  "score": 94,
+  "issues": [],
+  "actualReadCount": 3,
+  "media": [
+    {
+      "id": "diplomacy-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/28-diplomacy-target.png",
+      "sha256": "f6a1e2ac4c5687e1e2e90038ccb615713163f555c402e1e6227c762cc207fed9",
+      "status": "PASS",
+      "score": 94,
+      "observation": "外喀尔喀部名称、蒙古反面标记和白色目标边界均可辨认，说明框位于目标上方邻近处，清楚说明移除友好关系而非取得控制；外交结束按钮独立承载命令，目标本体未被遮住。",
+      "checks": [
+        "target-visible：外喀尔喀部名称、圆形标记和区域主边界可见。",
+        "interaction-ui：提示明确指向选择外喀尔喀部，结束外交为独立按钮。",
+        "layout-readable：目标与说明近邻，手牌和轮盘未覆盖当前目标。",
+        "no-error：当前范围未见破图、错误提示或占位替代。"
+      ]
+    },
+    {
+      "id": "diplomacy-finish",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/29-diplomacy-finish.png",
+      "sha256": "edbc0d4d6a7742c0e41bf286ee67d45452231c721ee73ed1a30536485fe495c3",
+      "status": "PASS",
+      "score": 95,
+      "observation": "结束外交位于外交请求面板内并具有清楚按钮外观与蓝色强调，教程说明紧邻按钮下方，说明本次处理完成后转去补强大同；无第二套外交导航，结束命令没有被浮层遮挡。",
+      "checks": [
+        "target-visible：当前外交请求及结束外交按钮完整可见。",
+        "interaction-ui：提示明确要求结束外交，主按钮蓝色边界清楚。",
+        "layout-readable：说明紧邻命令，按钮与正文分工清楚且无裁切。",
+        "no-error：当前外交命令未见错误文字、破图或占位替代。"
+      ]
+    },
+    {
+      "id": "hire-action",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/30-hire-action.png",
+      "sha256": "868f0a29669772b92b8f346f7f1951f23344f4b9c3fe4900a9ab73a4a6999d94",
+      "status": "PASS",
+      "score": 93,
+      "observation": "轮盘左上当前格以绿色边界表达可用范围，雇佣文字本体以蓝框强调并完整露出，教程框贴右侧解释首次与继续雇佣的差异，玩家可以直接点击轮盘雇佣；放弃命令位于轮盘下方，没有额外雇佣导航菜单，说明未覆盖当前雇佣入口。",
+      "checks": [
+        "target-visible：轮盘当前格和雇佣文字本体完整可辨。",
+        "interaction-ui：雇佣入口蓝框突出，提示贴着当前轮盘格，无需先打开导航菜单。",
+        "layout-readable：说明覆盖轮盘其它部分但未遮当前雇佣入口，正文与目标文字清楚。",
+        "no-error：当前目标素材和提示正常呈现，无破图或错误提示。"
+      ]
+    }
+  ]
+}

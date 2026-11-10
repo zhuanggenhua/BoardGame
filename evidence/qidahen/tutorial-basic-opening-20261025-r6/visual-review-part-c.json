@@ -1,0 +1,131 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r6_visual_audit_c_clean"
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07a-征召支付-点击看查看牌面.png",
+      "sha256": "3aacacd88fe974c842dcce4e5cba5c77ab9584f3d65cb365970601b87b4a9578",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "牌面检视弹层居中占据主视区，标题、正文区与关闭按钮完整可见；放大内容略有颗粒感，但检视目标清楚，未见错位控件。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07-支付1张手牌.png",
+      "sha256": "d5445be9988ccaef98398fc4cf0f948ec13f85b046799b259fdba2588a252b58",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "已选手牌有绿色选中标识，支付进度、确认与取消按钮和教程提示均可辨；提示未遮住底部候选牌，当前操作焦点明确，未见错误控件。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/08-选择宣府建军位置.png",
+      "sha256": "38fb9984bb8287a3293bbaabc64675cdfcfac8e89b311364a9fe715b6b13ce5a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "目标区域的“宣府”标记及圆形高亮可见，位置说明框与右侧操作提示同时露出；地图放大到 182% 后边缘内容被视口裁去，但当前定位目标和提示仍清楚，未见错误控件。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/09-选择建军方式.png",
+      "sha256": "b1dd461618ea3f159df8674e429620eef5cdbbd25b2878b4654c1301b0ae2292",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧建军方式候选面板完整显示三项，蓝色边框突出当前交互区；中央提示浮层覆盖部分地图但没有压住候选项，文字可读，未见错位控件。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/10-征召结果-轮盘行动待完成.png",
+      "sha256": "3cf677183f348027021f87fcc40e41a9d94ddef6bc99f9163427391a19cbb952",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结果说明、下一步按钮和右侧征召结果提示均清楚可见；遮罩压暗棋盘以突出说明，未遮住当前焦点或出现明显错误。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02a-轮盘三格费用与落点说明.png",
+      "sha256": "a168eb75efc21b51c8b7bc124ff08f034f2721076907b0893818ab3384498bb3",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘高亮区、左上功能说明和教程提示同时可见；轮盘顶缘贴近视口上边界，主体与当前高亮选区仍完整可辨，提示文字清楚，未见明显遮挡或错误。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03-轮盘选择-三种走法均可选择.png",
+      "sha256": "64a0c470ec21cb620a1ca4e540104897b6f2037717465a97f1911123dcc41476",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘当前高亮区域与教程说明并列可见，提示不遮住高亮操作区；轮盘顶缘贴近视口上边界但未裁掉当前焦点，未见明显错误控件。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03a-轮盘两格-选择对手抽牌.png",
+      "sha256": "6d39e4462d5edc704ae893ac3380c281dd87fea3c6d2b5cc558b3a929861c05a",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "目标选择框包含两名对手按钮，教程提示明确指向本步选择；提示浮层没有遮住按钮，高亮与选项清楚，未见错位控件。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03b-轮盘两格-进入军屯并结算.png",
+      "sha256": "9793a7e2b750a2a5380ff1d5426fecead5fd253d216b2f0aa4f492d9affd40c6",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘高亮区、结算说明框和右侧结果卡均可见，教程操作按钮清楚；底部手牌靠近视口下缘但主体完整，未见明显遮挡或错误。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/11-教程结束后同局下一位玩家可操作.png",
+      "sha256": "36da24fab9061f356e4307dadb86ca3302e15d34dec3e1803c46e4c00e99654b",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程遮罩已退场，顶部当前玩家标识、底部手牌和中部确认弃牌操作栏均可见；操作区域与可选手牌清楚，未见错误控件。"
+    }
+  ]
+}

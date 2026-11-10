@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk/战后恢复令咒等待本人确认.jpg.jpg",
+      "chainId": "fate-online-post-battle-10",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "战后恢复令咒等待本人确认",
+      "description": "战后恢复令咒等待本人确认",
+      "uiStateId": "fate-online-post-battle-10-open-choice",
+      "uiChange": "panel",
+      "uiChangeReason": "战后恢复令咒等待本人确认",
+      "behaviorStepId": "open-choice",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:b1250dba753ea9f7d5a20e68952c4ba3a5608de64a49199a972d45ecb6aa8d0d",
+      "requirements": [
+        "战后选择全部完成后才按中文规则淘汰并显示淘汰状态"
+      ],
+      "sourceRun": "1794186537241-141464-63ed4faa-d0b7-455d-92c9-ff78239fa243",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk/本人完成选择后仍等待第二席.jpg.jpg",
+      "chainId": "fate-online-post-battle-10",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "本人完成选择后仍等待第二席",
+      "description": "本人完成选择后仍等待第二席",
+      "uiStateId": "fate-online-post-battle-10-confirm-own-choice",
+      "uiChange": "panel",
+      "uiChangeReason": "本人完成选择后仍等待第二席",
+      "behaviorStepId": "confirm-own-choice",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:b1250dba753ea9f7d5a20e68952c4ba3a5608de64a49199a972d45ecb6aa8d0d",
+      "requirements": [
+        "战后选择全部完成后才按中文规则淘汰并显示淘汰状态"
+      ],
+      "sourceRun": "1794186537241-141464-63ed4faa-d0b7-455d-92c9-ff78239fa243",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk/全部战后选择后才显示淘汰状态.jpg.jpg",
+      "chainId": "fate-online-post-battle-10",
+      "chainStep": "03",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "全部战后选择后才显示淘汰状态",
+      "description": "全部战后选择后才显示淘汰状态",
+      "uiStateId": "fate-online-post-battle-10-complete-peer-choice",
+      "uiChange": "panel",
+      "uiChangeReason": "全部战后选择后才显示淘汰状态",
+      "behaviorStepId": "complete-peer-choice",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:b1250dba753ea9f7d5a20e68952c4ba3a5608de64a49199a972d45ecb6aa8d0d",
+      "requirements": [
+        "战后选择全部完成后才按中文规则淘汰并显示淘汰状态"
+      ],
+      "sourceRun": "1794186537241-141464-63ed4faa-d0b7-455d-92c9-ff78239fa243",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk/淘汰玩家详情明确显示已淘汰.jpg.jpg",
+      "chainId": "fate-online-post-battle-10",
+      "chainStep": "04",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "淘汰玩家详情明确显示已淘汰",
+      "description": "淘汰玩家详情明确显示已淘汰",
+      "uiStateId": "fate-online-post-battle-10-inspect-eliminated",
+      "uiChange": "panel",
+      "uiChangeReason": "淘汰玩家详情明确显示已淘汰",
+      "behaviorStepId": "inspect-eliminated",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:b1250dba753ea9f7d5a20e68952c4ba3a5608de64a49199a972d45ecb6aa8d0d",
+      "requirements": [
+        "战后选择全部完成后才按中文规则淘汰并显示淘汰状态"
+      ],
+      "sourceRun": "1794186537241-141464-63ed4faa-d0b7-455d-92c9-ff78239fa243",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk/淘汰本人进入观战且不能继续行动.jpg.jpg",
+      "chainId": "fate-online-post-battle-10",
+      "chainStep": "05",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "淘汰本人进入观战且不能继续行动",
+      "description": "淘汰本人进入观战且不能继续行动",
+      "uiStateId": "fate-online-post-battle-10-observe-eliminated",
+      "uiChange": "panel",
+      "uiChangeReason": "淘汰本人进入观战且不能继续行动",
+      "behaviorStepId": "observe-eliminated",
+      "sourceRevision": "6e83725d0f105322299872f99fe7b277a286a260+tree-sha256:b1250dba753ea9f7d5a20e68952c4ba3a5608de64a49199a972d45ecb6aa8d0d",
+      "requirements": [
+        "战后选择全部完成后才按中文规则淘汰并显示淘汰状态"
+      ],
+      "sourceRun": "1794186537241-141464-63ed4faa-d0b7-455d-92c9-ff78239fa243",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/online-post-battle.e2e/真实联网战后选择先收口再淘汰（合法pipeline代表态）/_runs/e2e-1794186470708-se9fqk"
+    }
+  ]
+}

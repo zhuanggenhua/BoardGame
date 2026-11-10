@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/final_payment_visual_review"
+  },
+  "limitations": [
+    "仅覆盖桌面1920乘1080和手机横屏932乘430的征召军队已选1/1代表态。",
+    "手机事件角标覆盖部分卡面原印标题，基线已存在，本次未修复；不宣称卡面原印标题完整或整套手牌界面通过。",
+    "不证明竖屏、其它支付态、轮盘、教程或整游戏验收。",
+    "静态截图只证明当前可见性；悬停后的间隔、真实点击、取消不扣牌及重开清空选择须由独立行为证据承担。"
+  ],
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+      "status": "PASS",
+      "score": 95,
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "确认执行为浅纸色实底，取消本次行动为深底上的浅色文字，主次可以直接区分。征召军队、支付进度已选1/1及已选牌东北大军完整可读。托盘位于手牌上方，三张手牌、类别标签、已选标记和各自看入口保留；当前托盘未压住牌头。对照基线，未见地图、顶部玩家条和牌堆因本轮托盘改动被移除。目标托盘未见破图、文字裁切或错误提示。",
+      "sha256": "0ebe1ca688f3f74691cb0eb87f4572335e2bdd88293c3b9533723c7d6093d5d7",
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/qidahen-势力行动弃牌选择/01-征召军队-弃牌选择交互.png",
+      "hardFailures": [],
+      "issues": [],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/final-review-original.json",
+      "sourceReviewEntry": "/media/0"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png",
+      "status": "PASS",
+      "score": 94,
+      "viewport": {
+        "width": 932,
+        "height": 430
+      },
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付托盘下沿约在纵坐标236，最高选中牌顶约在纵坐标260，两者存在清楚间隔；托盘没有盖住选中牌的事件标签和看入口。确认执行、取消本次行动、征召军队、已选1/1及托盘内东北大军名称均可读。三张手牌和各自看入口保留，已选标记完整。另有基线即存在的手牌自身问题：事件角标覆盖部分卡面原印标题，不能宣称卡面原印标题完整；该遮挡来自手牌角标，并非本轮支付托盘。本次通过仅针对托盘分离和既有操作入口保留，不以托盘牌名代替卡面原印标题完整性。",
+      "sha256": "5b065a9755f1790e78f5917f8728369f699efcc9db4de8d97be125d30213a23f",
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/qidahen-势力行动弃牌选择/02-征召军队-手机横屏弃牌选择交互.png",
+      "hardFailures": [],
+      "issues": [],
+      "outOfScopeObservations": [
+        "基线与当前图均有事件角标覆盖部分卡面原印标题；本轮未修复，不属于支付托盘的遮挡。"
+      ],
+      "independentReviewFile": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/final-review-original.json",
+      "sourceReviewEntry": "/media/1"
+    }
+  ]
+}

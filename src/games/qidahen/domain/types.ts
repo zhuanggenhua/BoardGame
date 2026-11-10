@@ -234,6 +234,23 @@ export interface QidahenBattleRolls {
     summary: string;
 }
 
+/** 战斗公开后的战报，不包含未公开手牌或交互快照。 */
+export interface QidahenPublicBattleReport {
+    battleId: string;
+    sourceRegionId: string | null;
+    sourceRegionName: string | null;
+    targetRegionId: string;
+    targetRuntimeRegionId: string;
+    targetRegionName: string;
+    attackerFactionId: QidahenFactionId;
+    defenderFactionId: QidahenFactionId | 'neutral';
+    defenderLabel: string;
+    selectedPieceIds: string[];
+    /** 战斗公开后，供断线恢复画面的参战兵牌；不包含手牌。 */
+    battlefield?: { pieces: QidahenPiece[]; mapTokens: QidahenMapToken[] };
+    rolls: QidahenBattleRolls;
+}
+
 export interface QidahenActionChoice {
     id: string;
     label: string;
@@ -401,6 +418,7 @@ export interface QidahenWheelRecruitTrainChoice {
 }
 
 export interface QidahenPendingTargetAction {
+    battleReport?: QidahenPublicBattleReport;
     battleStep?: 'defender-declaration' | 'tactics' | 'retreat';
     resolvedBattleRolls?: QidahenBattleRolls;
     retreatFactionId?: QidahenFactionId;
@@ -725,6 +743,7 @@ export interface QidahenPostBattleChoice {
 }
 
 export interface QidahenPostBattleSelection {
+    battleReport?: QidahenPublicBattleReport;
     actionId: 'raid' | 'wheel-dispatch' | 'drive-tiger';
     battleMode?: QidahenBattleMode;
     targetKind?: 'region' | 'siege-attacker' | 'siege-reinforce';
@@ -785,6 +804,7 @@ export interface QidahenSeasonSummary {
     id: string;
     title: string;
     lines: string[];
+    battleReport?: QidahenPublicBattleReport;
     mapResult?: {
         regionId: string;
         troopDelta: number;
@@ -1498,6 +1518,7 @@ export interface PendingActionResolvedEvent extends GameEvent<'PENDING_ACTION_RE
         attackerCasualtyPriority?: QidahenCasualtyPriority;
         defenderCasualtyPriority?: QidahenCasualtyPriority;
         battleRolls?: QidahenBattleRolls | null;
+        battleVisualReport?: QidahenPublicBattleReport;
         feignedRetreatResponseResolved?: boolean;
     };
 }

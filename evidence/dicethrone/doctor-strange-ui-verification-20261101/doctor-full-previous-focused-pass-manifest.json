@@ -1,0 +1,229 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "new",
+  "evidenceIndex": ".e2e-image-index.json",
+  "acceptanceReason": "本聊天全部UI修改逐项复查后，恢复旧提示外观、卡池统一尺寸和比较方式、旧取消跳过控件；保留用户明确要求或真实缺陷必要修复。只证明当前实际覆盖的独立交互界面，不宣称重跑全游戏。 候选正文过小的实际退回通过接入原CardInspectButton及原牌桌MagnifyOverlay解决；未新建阅读状态。仅单状态窗口保留必要compact参数，多人/玩家选择恢复原布局。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\01-弃牌法术候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\02-弃牌法术已选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\03-弃牌法术候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\04-弃牌法术已选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\05-深红系带玩家候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\06-深红系带玩家已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\07-状态候选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\08-状态已选-桌面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\09-状态候选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\10-状态已选-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\11-预感收入替代选项.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\11b-预感收入替代选项-横屏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\12-抽牌返还候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\13-抽牌返还已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\14-牌库位置选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\15-牌库顶五法术候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\16-牌库顶五第二张已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\17-剩余牌重排候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\18-剩余牌首张已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\19-准备区法术施放候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\20-准备区法术已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\21-星际侵入技能已选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\22-奖励骰待确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\23-值得拥有骰子候选.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\24-值得拥有骰子已选一次.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\25-值得拥有骰子已选两次.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\26-即视感悬停说明.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\27-角色排序-已完成角色前段.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\28-角色排序-实施中角色后段.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\doctor-strange-real-entry.e2e\\奇异博士新增交互验收-20261030-r1\\29-卡牌候选复用放大阅读.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "弃牌法术选择复用卡牌选择器并展示桌面与横屏候选及选中态",
+      "status": "PASS",
+      "evidence": [
+        "01-弃牌法术候选-桌面.png",
+        "02-弃牌法术已选-桌面.png",
+        "03-弃牌法术候选-横屏.png",
+        "04-弃牌法术已选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "横屏选中卡完整可见且无越界裁切",
+      "status": "PASS",
+      "evidence": [
+        "04-弃牌法术已选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "深红系带复用玩家选择器选择目标对手",
+      "status": "PASS",
+      "evidence": [
+        "05-深红系带玩家候选.png",
+        "06-深红系带玩家已选.png"
+      ]
+    },
+    {
+      "requirement": "玩家与状态选择复用现有完整交互背景，候选不被说明浮层遮挡",
+      "status": "PASS",
+      "evidence": [
+        "05-深红系带玩家候选.png",
+        "06-深红系带玩家已选.png",
+        "07-状态候选-桌面.png",
+        "08-状态已选-桌面.png",
+        "09-状态候选-横屏.png",
+        "10-状态已选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "瓦图姆之风直接选择状态图标并保留确认操作",
+      "status": "PASS",
+      "evidence": [
+        "07-状态候选-桌面.png",
+        "08-状态已选-桌面.png",
+        "09-状态候选-横屏.png",
+        "10-状态已选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "单持有人状态说明悬停不遮挡候选及确认动作，桌面与横屏均有直接证据",
+      "status": "PASS",
+      "evidence": [
+        "07-状态候选-桌面.png",
+        "09-状态候选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "横屏单对象状态弹窗紧凑并保留牌桌上下文",
+      "status": "PASS",
+      "evidence": [
+        "09-状态候选-横屏.png",
+        "10-状态已选-横屏.png"
+      ]
+    },
+    {
+      "requirement": "预感文字选项采用平面单列样式且桌面与横屏完整可读",
+      "status": "PASS",
+      "evidence": [
+        "11-预感收入替代选项.png",
+        "11b-预感收入替代选项-横屏.png",
+        "14-牌库位置选择.png"
+      ]
+    },
+    {
+      "requirement": "预感交互提供替代收入、抽牌返还和牌库位置选择",
+      "status": "PASS",
+      "evidence": [
+        "12-抽牌返还候选.png",
+        "13-抽牌返还已选.png"
+      ]
+    },
+    {
+      "requirement": "卡牌使用印刷边界，不套额外底框，候选与选中清楚可辨",
+      "status": "PASS",
+      "evidence": [
+        "12-抽牌返还候选.png",
+        "13-抽牌返还已选.png"
+      ]
+    },
+    {
+      "requirement": "全知之眼支持顶五选法术、余牌重排和施放法术选择",
+      "status": "PASS",
+      "evidence": [
+        "15-牌库顶五法术候选.png",
+        "16-牌库顶五第二张已选.png",
+        "17-剩余牌重排候选.png",
+        "18-剩余牌首张已选.png",
+        "19-准备区法术施放候选.png",
+        "20-准备区法术已选.png"
+      ]
+    },
+    {
+      "requirement": "星际侵入提供奖励骰并等待玩家确认",
+      "status": "PASS",
+      "evidence": [
+        "21-星际侵入技能已选.png",
+        "22-奖励骰待确认.png"
+      ]
+    },
+    {
+      "requirement": "值得拥有显示骰子候选、重复选择进度与左侧提示",
+      "status": "PASS",
+      "evidence": [
+        "23-值得拥有骰子候选.png",
+        "24-值得拥有骰子已选一次.png",
+        "25-值得拥有骰子已选两次.png"
+      ]
+    },
+    {
+      "requirement": "复用旧版琥珀色单行提示，左侧居中显示重投进度，并在原骰盘确认",
+      "status": "PASS",
+      "evidence": [
+        "23-值得拥有骰子候选.png",
+        "24-值得拥有骰子已选一次.png",
+        "25-值得拥有骰子已选两次.png"
+      ]
+    },
+    {
+      "requirement": "即视感状态标记提供清楚完整的操作说明",
+      "status": "PASS",
+      "evidence": [
+        "26-即视感悬停说明.png"
+      ]
+    },
+    {
+      "requirement": "已完成角色排列在前，实施中角色排列在后且保留实施中标记",
+      "status": "PASS",
+      "evidence": [
+        "27-角色排序-已完成角色前段.png",
+        "28-角色排序-实施中角色后段.png"
+      ]
+    },
+    {
+      "requirement": "卡牌及内部图案保持源图宽高比",
+      "status": "PASS",
+      "evidence": [
+        "01-弃牌法术候选-桌面.png",
+        "12-抽牌返还候选.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-ratio-20261101.json"
+      ]
+    },
+    {
+      "requirement": "候选缩略图与规则阅读复用既有控件，检视关闭不改变选择",
+      "status": "PASS",
+      "evidence": [
+        "12-抽牌返还候选.png",
+        "13-抽牌返还已选.png",
+        "29-卡牌候选复用放大阅读.png"
+      ]
+    }
+  ],
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx src/games/dicethrone/ui/__tests__/BoardOverlays.magnify.test.tsx src/games/dicethrone/ui/__tests__/GameHints.test.tsx src/games/dicethrone/ui/__tests__/compatSource.test.ts src/components/common/media/__tests__/CardPreview.i18n.test.tsx --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-reuse-complete-final-unit2.log"
+    ]
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_r46_final_visual"
+  },
+  "sourceRevision": "sha256:137ca82600ceec9115aa498ae1a1d05f96fdd6b6e05f42d884265c308411bb5a",
+  "method": "14张索引白名单整屏PNG逐张实际读取原图，未以联系表或抽查替代。只判UI、交互可见性、可读性、遮挡及错误/乱码，不裁定规则或数值正确性。",
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/00-辽东与叶赫部局面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽东目标圈、辽东名称、军屯提示和上一步入口完整；轮盘、当前玩家条、底部手牌与右侧行动入口可辨，未见错误或乱码。",
+      "sha256": "29c37ec23c2a7482385e6a1fb58bb1f13cba26f9b29d7362bb18bf1b1d944421",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/00-辽东与叶赫部局面.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘前进两格的高亮扇区及教程正文清楚，但教程白框覆盖顶部当前大明玩家条的大部分身份、VP和资源文字；保护槽位未满足。最小修法：轮盘提示定位必须避开整条玩家信息区。",
+      "sha256": "462abac2110504baa47251d0ad34366462870a5eb7f0146aaf9011395e4d3e78",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/01-轮盘前进两格与军屯落点.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "抽牌对象面板中的蒙古、后金两个真实按钮及军屯建军地点完整；提示位于右侧且未遮按钮、顶部玩家信息和底部手牌，中文无乱码。",
+      "sha256": "619f5de8e969e3667448fbf7877f9de9a80fb352397456b178fba8a294071c09",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/02-指定后金抽牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/03-辽东军屯结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "军屯结果说明、下一步和右侧军屯日志完整；辽东新增部队与底部新增手牌可见。后金玩家条文字仍可读，未见错误或乱码；本条仅验可见结果，不裁定数值。",
+      "sha256": "aa1ca74cb187114ae056bd13d5bb714c8a6ef8d541cac384294c5f3631067f4e",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/03-辽东军屯结果.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/04-叶赫部真实地图目标.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部目标圈、名称、相邻提示完整；教程白框未挡目标圈，支付托盘及确认/取消入口与底部手牌分层可辨，未见错误或乱码。",
+      "sha256": "0d4c7d3a0bc28ddcb3e6df9ef366d5a8217653592d986f554124354e0dffa397",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/04-叶赫部真实地图目标.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两与鸳鸯阵等真实手牌完整、看牌入口可辨；教程说明在右侧，支付进度和确认/取消入口可读，未遮当前玩家信息与支付手牌。",
+      "sha256": "577b3c00aab0e68c03652151cc8e28b083a0e476185fb1b29d68ba69773e63d1",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/05-银两支付与鸳鸯阵手牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/06-野战出兵与战术牌.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧本次出兵、开始战斗入口与教程正文可读，但教程白框覆盖地图辽东的出兵来源部队区域；正文要求在地图选择辽东部队时，来源部队本体及选择状态无法同屏审计。最小修法：选兵教程提示同时避开辽东来源部队和开始战斗面板。",
+      "sha256": "04a9728b38e235f1a998fed527d8b3b6db4a4e3b837a6269dca67f544a85d0c9",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/06-野战出兵与战术牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/07-战后幸存部队与占领选择.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "战后面板、攻守战果、幸存/占领与撤回入口完整；但顶部叶赫部部队战损浮字与后金玩家条重叠，玩家资源区出现叠字。最小修法：该瞬时战损浮字避开玩家条，或等待浮字完全退场再取稳定战后图；正常战报面板遮挡背景地图不记失败。",
+      "sha256": "cc822718073e56a7c827d8877a96b7debeecc390ea19ff311463d2231c91d2a9",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/07-战后幸存部队与占领选择.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "叶赫部当前控制方标记可见，教程结束说明及完成并返回入口完整；顶部当前方信息、轮盘候选与底部手牌各自可读，未见错误或乱码。",
+      "sha256": "5a141d37c79647a4d6176824ca4da26a3529fd28924ac287ca4f87cb04828593",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/08-叶赫部占领结果.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/09-教程退出后同局继续.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程白框已退场，正式征兵训练弃牌托盘和确认弃牌按钮完整；当前蒙古玩家条与可选手牌同时可见，可辨识同局后续真实操作入口，未见错误或乱码。",
+      "sha256": "cf3c5dec760fc6e69fafcbf2248a99eadf7f869c26b3ba8592a522bf1983905a",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/09-教程退出后同局继续.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机叶赫部目标圈完整，圈右叶赫部名称无遮挡；顶部三方玩家条与支付托盘均未覆盖圈或名称。当前目标为地图选址，底部教程说明未挡目标本体，未见错误或乱码。",
+      "sha256": "115e35b71e68fdf39e341cbba6d3e604cc70c77c4d0f9f751161fad3fc69e911",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-00-叶赫部地图目标避开支付托盘.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-01-突袭支付与手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机支付说明为横向窄条，处于顶部玩家条下方且支付托盘上方；玩家身份/资源、银两和鸳鸯阵等手牌、支付确认及取消入口均完整，未见错误或乱码。",
+      "sha256": "4fb01d4fe4845f25e884d67bcdd27d84533d7cce3bfea78abab3e07ac964c446",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-01-突袭支付与手牌.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-02-长按银两检视卡面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机长按银两后整张银两大卡在视口内完整呈现，卡名与主体可见，右上圆形关闭入口完整；阅读模态遮挡背景属于本状态允许的行为，未见错误或乱码。",
+      "sha256": "2d9e54e083e39f1d3eff04e5796ff0f2debc24d8083476e0205213ca6290fd13",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-02-长按银两检视卡面.png"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-03-检视返回后轻点银两选择支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机确认支付提示位于玩家条下与托盘上，未盖顶部玩家身份/资源；被选银两本体及绿色已选标记完整，确认执行高亮入口和取消入口清晰，手牌未被提示条覆盖，未见错误或乱码。",
+      "sha256": "d320613cbd9a2c75e767fb7780e60cf92c47f9b671db3e945a28acd8574d542c",
+      "source": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261027-natural-opening-r46-final/media/移动-03-检视返回后轻点银两选择支付.png"
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "passed": 11,
+    "revise": 3,
+    "desktop": {
+      "total": 10,
+      "passed": 7,
+      "revise": 3
+    },
+    "mobile": {
+      "total": 4,
+      "passed": 4,
+      "revise": 0
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "smashup",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-11T16:15:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "选中派系沿用同一个卡框：边框变绿，卡片轻微放大并上抬。",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 断言同一个 .smashup-card-frame 的 border-top-width=4px、border-top-style=solid、border-top-color=rgb(34, 197, 94)，并保留 scale-105 与 -translate-y-2。",
+        "中态图用红框标出了中列动作英雄目标卡。"
+      ]
+    },
+    {
+      "requirement": "不新增卡面内部的第二层选中描边、outline 或 ring。",
+      "status": "PASS",
+      "evidence": [
+        "源代码已移除 faction-selection-border 绝对定位层和随机卡 outline。",
+        "真实 E2E 断言 faction-selection-border 数量为 0，smashup-card-inner 没有 border 类。",
+        "子代理逐图复核 02、03，未观察到第二层独立选中框。"
+      ]
+    },
+    {
+      "requirement": "随机落地后以及滚动后，动作英雄目标卡仍位于当前可见视口。",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 断言随机落地后的目标卡与滚动后的目标卡均完整位于 viewport 内。",
+        "01/02/03 三张同一轮真实 E2E 原图覆盖前态、中态、后态。"
+      ]
+    },
+    {
+      "requirement": "独立子代理完成逐图玩家视角审计并返回 PASS。",
+      "status": "PASS",
+      "evidence": [
+        "visual-review.json 记录 visual-audit-agent 的 all-media / interaction-ui 审计，score=94，hard_failures=[]。"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewFile": "visual-review.json",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "visual-audit-agent"
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/FactionSelection.compatSource.test.ts --configLoader native"
+    ],
+    "evidence": [
+      "FactionSelection.compatSource.test.ts：3 tests passed"
+    ]
+  },
+  "e2eVerification": {
+    "command": "node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-faction-random-selection.e2e.ts \"第一张随机派系卡点击后会落地为真实派系并占用该派系\" --reporter=line",
+    "result": "1 passed (24.0s)"
+  },
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3/01-random-faction-before.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3/02-action-heroes-selected-green.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3/03-after-scroll.png"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/01-labeled-01-random-faction-before.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/02-labeled-02-action-heroes-selected-green.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/03-labeled-03-after-scroll.png"
+  ],
+  "labeledImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/01-labeled-01-random-faction-before.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/02-labeled-02-action-heroes-selected-green.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/smashup-faction-selection-green-20261011-r3-cn/03-labeled-03-after-scroll.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

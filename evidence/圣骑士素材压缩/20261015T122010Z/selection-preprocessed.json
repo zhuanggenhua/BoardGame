@@ -1,0 +1,58 @@
+{
+  "selection": [
+    {
+      "name": "ability-cards",
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\selected-preprocessed\\compressed\\ability-cards.webp",
+      "bytes": 2039890,
+      "sha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+      "baselineBytes": 8452896,
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "preset": "text",
+        "smartSubsample": true,
+        "alphaQuality": 100
+      },
+      "preprocess": "edge-protected-gaussian-sigma09",
+      "width": 7380,
+      "height": 4720
+    },
+    {
+      "name": "player-board",
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\selected-preprocessed\\compressed\\player-board.webp",
+      "bytes": 859280,
+      "sha256": "cc31558aedd068365752f4eea9f52fa2f8ec6b47d63b55dcc2bd206758cdaf46",
+      "baselineBytes": 3095888,
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "preset": "text",
+        "smartSubsample": true,
+        "alphaQuality": 100
+      },
+      "preprocess": "edge-protected-gaussian-sigma09",
+      "width": 4005,
+      "height": 2476
+    },
+    {
+      "name": "tip",
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士素材压缩\\20261015T122010Z\\selected-preprocessed\\compressed\\tip.webp",
+      "bytes": 186676,
+      "sha256": "5299d4eed69abcffe51b026bbcad98cc42018491a8b4ffc14a3ce955f3c362f5",
+      "baselineBytes": 743326,
+      "options": {
+        "quality": 75,
+        "effort": 6,
+        "preset": "text",
+        "smartSubsample": true,
+        "alphaQuality": 100
+      },
+      "preprocess": "edge-protected-gaussian-sigma09",
+      "width": 967,
+      "height": 1804
+    }
+  ],
+  "baselineBytes": 12292110,
+  "selectedBytes": 3085846,
+  "savedPercent": 74.89571765953933
+}

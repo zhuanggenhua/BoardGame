@@ -1,0 +1,15 @@
+{
+  "index": 105,
+  "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0105.png",
+  "timeSeconds": 26.038,
+  "sha256": "dd2f0077216711767152568de479ec73444410eccd780fdd8defdc6ef7c4dd67",
+  "actuallyRead": true,
+  "status": "PASS",
+  "observation": "完整原帧已实际读取：骰体、掷骰阶段及战斗结果层已退场；右侧战后选择及“占领”“撤回”入口可见可读；地图双方棋子、底部手牌及顶部HUD保留，未见战斗残影、范围内裁切或报错。仅判定该末帧可见表现，不由截图核定数值规则。",
+  "reviewer": "/root/r134_battle_last_frame",
+  "readMode": "full-original",
+  "readPath": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-video-private-review\\frame-0105.png",
+  "sourceVideo": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r134-open-battle-pc-20261101\\desktop\\battle-real-time.webm",
+  "sourceSha256": "558feaf903d055f327a33997b15df2d597e8a056f011431111053101c28cc033",
+  "issues": []
+}

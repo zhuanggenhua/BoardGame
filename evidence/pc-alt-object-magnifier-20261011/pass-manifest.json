@@ -1,0 +1,91 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "title": "PC Alt 对象放大与滚轮缩放",
+  "generatedAt": "2026-10-12T01:34:23.014Z",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "tests": [
+    {
+      "command": "npm run typecheck",
+      "result": "通过",
+      "scope": "当前工作树 TypeScript 类型检查"
+    },
+    {
+      "command": "npx vitest run src/components/system/__tests__/PcAltObjectMagnifier.test.tsx",
+      "result": "5 tests passed",
+      "scope": "Alt 显示、滚轮缩放、通用对象识别、忽略合同"
+    },
+    {
+      "command": "真实 Playwright：Betrayal + DiceThrone",
+      "result": "2 个入口均通过",
+      "scope": "Alt 按下显示、2.60x→2.80x、松开关闭"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "公共 /play/* 入口提供 PC Alt 对象放大",
+      "status": "PASS",
+      "evidence": [
+        "App.tsx 在 /play/* 统一挂载 PcAltObjectMagnifier；Betrayal 与 DiceThrone 真实入口均显示放大层。"
+      ]
+    },
+    {
+      "requirement": "滚轮可以调节放大倍率",
+      "status": "PASS",
+      "evidence": [
+        "两入口均从 2.60x 调整到 2.80x；截图分别保留默认态与滚轮后状态。"
+      ]
+    },
+    {
+      "requirement": "松开 Alt 后关闭",
+      "status": "PASS",
+      "evidence": [
+        "两入口真实浏览器均在 Alt 松开后关闭放大层。"
+      ]
+    },
+    {
+      "requirement": "放大层不新增黄色边框或额外外描边，且放大对象本体而非外层容器",
+      "status": "PASS",
+      "evidence": [
+        "子代理逐图审计 6/6 PASS：无黄色边框、无额外外描边；Betrayal 与 DiceThrone 均放大对象本体。"
+      ]
+    }
+  ],
+  "images": [
+    "01-betrayal-01-before-alt.png",
+    "01-betrayal-02-alt-2.60.png",
+    "01-betrayal-03-alt-2.80.png",
+    "02-dicethrone-01-before-alt.png",
+    "02-dicethrone-02-alt-2.60.png",
+    "02-dicethrone-03-alt-2.80.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "subagent-image-acceptance-20261012-final-no-border-v2"
+    },
+    "reviewFile": "visual-audit.json",
+    "mediaCount": 6,
+    "passCount": 6,
+    "reviseCount": 0
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "npx vitest run src/components/system/__tests__/PcAltObjectMagnifier.test.tsx"
+    ],
+    "evidence": [
+      "5 tests passed"
+    ]
+  }
+}

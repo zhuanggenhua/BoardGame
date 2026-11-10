@@ -1,0 +1,479 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/fixed_content_visual_audit"
+  },
+  "score": 94,
+  "summary": {
+    "mediaCount": 20,
+    "beforeCarriedForward": 6,
+    "afterIndependentlyRead": 14,
+    "latestChangedReread": 4
+  },
+  "verdictScope": "当前本地同源网页的整屏对象、历史阶段排版、浏览器安全区及触控常显放大镜；不是安卓设备/发布/菜单完整性。资源与状态需滚回，不是一直同屏。修前四张手机仍是失败产品，只作为真实比较参考。",
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-桌面-常态.png",
+      "sha256": "5D8F72F6906D60B2A4F66F54ED7FC052D636FAAE323BD5D4E63A1589973BFC0F",
+      "status": "PASS",
+      "comparisonOnly": true,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "before-reference",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。",
+      "reviewMethod": "carried-forward-same-sha256-independent-before-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/02-修复前-手机横屏-常态.png",
+      "sha256": "FC78F54629A1871693395B96559EB140AAED30BB73A856B9F30026A0C63E1CDE",
+      "status": "PASS",
+      "comparisonOnly": true,
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "role": "before-reference",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。",
+      "reviewMethod": "carried-forward-same-sha256-independent-before-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/03-修复前-较窄手机横屏-常态.png",
+      "sha256": "FAC381A2F4CFC4B9B7BB8D845CDBF20203F10EF4AF9D126CEFB9F8587264EDF9",
+      "status": "PASS",
+      "comparisonOnly": true,
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "role": "before-reference",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。",
+      "reviewMethod": "carried-forward-same-sha256-independent-before-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/04-修复前-桌面-状态齐全.png",
+      "sha256": "863C3A609104144C16D61028FB4464637AB4EDB01D82E76C6DF2EF807F4BB9F7",
+      "status": "PASS",
+      "comparisonOnly": true,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "before-reference",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。",
+      "reviewMethod": "carried-forward-same-sha256-independent-before-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/05-修复前-手机横屏-状态齐全.png",
+      "sha256": "E9E7C7B7242B74BEBAA2860430A968BDA2F2310F57376A8383C285E8CFE390FB",
+      "status": "PASS",
+      "comparisonOnly": true,
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "role": "before-reference",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。",
+      "reviewMethod": "carried-forward-same-sha256-independent-before-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/06-修复前-较窄手机横屏-状态齐全.png",
+      "sha256": "6DB97CF2EF1B0FE03DCCC4894BE6A3405B38D356FACE496A7B3B2302472050B8",
+      "status": "PASS",
+      "comparisonOnly": true,
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "role": "before-reference",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "REVISE",
+        "no-error": "PASS"
+      },
+      "observation": "比较前态；哈希与已独立审查记录不变，按父线程交接沿用，本轮未重读。",
+      "reviewMethod": "carried-forward-same-sha256-independent-before-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/07-修复后-桌面-常态.png",
+      "sha256": "FABB9FF0D0B32A252DD8FD3B3EE361585B69E9126577B98FC517F372254474E4",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面常态：七阶段、生命50/战斗点3、完整牌堆29、中央板、提示板、手牌与五骰/主动作保持原构图与素材比例。开发扳手不在图中，没有重做风格或结构。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/08-修复后-手机横屏936-常态.png",
+      "sha256": "FC7F966D3C4BED845116F3DE17483CF29103414564D7104FB94A48F08B97B571",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "936常态：阶段字与行内留白清楚，生命/战斗点可读，中央板与提示板、手牌、五骰和主动作分区明确；本帧牌堆下端出内区，须结合09滚后查看。未悬停的鼠标环境不证明放大镜可见。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/09-修复后-手机横屏936-常态-滚后完整牌堆.png",
+      "sha256": "2FB61A5B901E1046247C96846CCB2CE6E8890250377C8CE41C2F8C19C2771A8F",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "936常态滚后：完整牌堆与29可读，七阶段仍完整；生命/战斗点/手动响应滚出当前内区，必须滚回08查看。中央板/手牌/提示板/骰盘未随左栏缩小。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/10-修复后-较窄手机横屏812-常态.png",
+      "sha256": "8A04F06D5BFFF5D3A6BC0DFB198EC95766B585AA074F2B11334E91BFA02F940B",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "812常态：七阶段与生命/战斗点可读，留白未把阶段字压成蚂蚁字；中央板、提示板、手牌、骰盘和主动作均在原分区。牌堆须结合11滚后图，非本帧完整同屏。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/11-修复后-较窄手机横屏812-常态-滚后完整牌堆.png",
+      "sha256": "15D6E765D429D12F823FCEB8C06910483725D83EC2A143A60765199229C9C10A",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "812常态滚后：完整牌堆29与七阶段可见，资源需滚回10查看；中央/右侧对象未被左栏滚动挤压。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/12-修复后-桌面-状态齐全.png",
+      "sha256": "69CC5927FF65ADA5275FB3F07A4D06F9A0D87D77CD6F87E38832B4F5AD9A1B33",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "桌面压力态：十个状态图标与数量、生命50/战斗点3、完整牌堆29、七阶段均可见；意外阶段说明浮层已退出，没有浮层盖住主板；原构图和正式素材保持。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/13-修复后-手机横屏936-状态齐全.png",
+      "sha256": "DF1B506AF5D5CB5E6BD5770FBD48AD1316BA81C6AA7F2001C23766F9C2DD30E6",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "936压力态：十个状态图标、数量、生命50/战斗点3与七阶段清楚；上轮遮挡资源数值的状态说明浮层已消失。牌堆需结合14滚后查看，未将状态/资源缩小挤入。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/14-修复后-手机横屏936-状态齐全-滚后完整牌堆.png",
+      "sha256": "CC88CB6E9BB01D32F5FA977DCB097D5D1F54F8F9E0DEA9B29E7301F5DE0A4DD7",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "936压力滚后：完整牌堆29、七阶段可见，中央/右侧不受影响；状态/生命/战斗点需滚回13恢复查看，不宣称持续同屏。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/15-修复后-较窄手机横屏812-状态齐全.png",
+      "sha256": "E9D4CF9CCFC8535216F7A31EFA27B48A2306124270F421E7193DED8A9BDDBB84",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "812压力态：十个状态图标、数量、生命50/战斗点3和七阶段可见；中央板、提示板、手牌、骰盘与主动作位置分明。牌堆通过16滚动后恢复完整查看。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/16-修复后-较窄手机横屏812-状态齐全-滚后完整牌堆.png",
+      "sha256": "083E5DEA50891C7126860C93268B22C4C5CAC79D0A4E15AC07144FE5675EE5B9",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "812压力滚后：完整牌堆29和七阶段可见，状态/资源须滚回15查看；没有新浮层侵占中央板/提示板或骰盘。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/17-修复后-较窄手机横屏812-顶部16底部0安全区-滚动后.png",
+      "sha256": "3A9968EC0CC32405E92FE177A73F2EA24A3C0E707EE61836FDB52416866D75CF",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "顶部16/底部0安全区真实滚后：七阶段与完整牌堆29可见，回合顺序标题部分滚出上缘；四张手牌均已稳定正面展开，无近侧面薄片/牌背。开发扳手已消失，提示板正文/图例、中央板/骰盘/主动作无新增遮挡；资源/状态需滚回查看。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/18-修复后-较窄手机横屏812-顶部16底部20安全区-滚动后.png",
+      "sha256": "CF2120788566B188310F9456CA8C371583CE180E72F99564E695DFCFF3FAEE79",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "顶部16/底部20安全区真实滚后：七阶段与完整牌堆29可见，回合顺序标题已滚出上缘；四张手牌均为稳定正面。工具方块不再覆盖提示板，中央板/提示板/五骰/主动作保持原分区与尺寸；资源/状态需滚回查看。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/19-修复后-触控横屏DPR2.5-常态.jpg",
+      "sha256": "AE4A14059F2B7FEDF07EEB4BF38BB0FE21D946B64165DE8AC5FBC643431AC2C6",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "936×432 样式、设备像素比2.5触控常态：两个真实放大镜分别位于中央玩家板右上和提示板右上，白色图形居中，圆边留白清楚，未顶满圆面或遮住正文。四张手牌已稳定为正面，不再出现两张窄竖牌背；七阶段、生命50/战斗点3、中央板、提示板和五骰/下一阶段清楚。牌堆下部须滚动查看。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/20-修复后-触控横屏DPR2.5-状态齐全.jpg",
+      "sha256": "067F74F4B708E70E474007D8FE442C5ED2BBBAB98329FC3A0AE2B813EFCCF10C",
+      "status": "PASS",
+      "comparisonOnly": false,
+      "productVerdict": "PASS",
+      "comparisonVerdict": "PASS",
+      "role": "repaired-product",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkResults": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "936×432 样式、设备像素比2.5触控压力态：两个真实放大镜常显，图形居中且留白一致；四张手牌稳定正面。七阶段、十个状态图标与数量、生命50/战斗点3可读，中央板、提示板和五骰/下一阶段保留；牌堆仍需原纵列滚动查看。",
+      "reviewMethod": "independent-current-fullscreen-review"
+    }
+  ]
+}

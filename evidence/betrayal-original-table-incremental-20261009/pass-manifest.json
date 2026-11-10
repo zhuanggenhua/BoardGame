@@ -1,0 +1,72 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-09T12:30:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "左侧属性条等格对齐，当前格金色；五边形下方当前位置芯片去掉。",
+      "status": "PASS",
+      "evidence": [
+        "01-桌面-属性条与完整能力.jpg 可见力量速度知识神志名称与轨道对齐，当前格金色填充。",
+        "02-手机横屏-未点击能力全名.jpg 五边形下方没有当前位置芯片，队友房间名仍在右侧名单。"
+      ]
+    },
+    {
+      "requirement": "手机未点击能力必须完整显示特性全名加有用短信息，不得把省略号当主界面；点击后正文可读且不挡住物品栏。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mobile-ability-and-scenario-book-acceptance.e2e.ts 2 passed。",
+        "几何：能力宽约二百像素、高五十六像素，与急救包重叠面积为零。",
+        "全名单行滚动宽度不超过可视宽度。",
+        "02 原图可见特性：无特殊能力整行，摘要第二行给出基础版角色背景短句。",
+        "03 原图可见完整说明与十六像素正文，急救包仍露出。"
+      ]
+    },
+    {
+      "requirement": "剧本书不增加额外标题；关闭与翻页保持小方钮，过程文案继续按钮可读且不膨胀成两倍正文。",
+      "status": "PASS",
+      "evidence": [
+        "04 与 05 原图书页只有原有章节标题，没有额外剧本名浮层。",
+        "关闭与翻页为四十四像素方钮。",
+        "09 原图继续按钮可读，高度不超过七十二像素，字号不少于十六像素。"
+      ]
+    },
+    {
+      "requirement": "剧本选择阅读、确认、关闭三个按钮同一排，尺寸匹配十六像素文字。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts 剧本选择三项主操作通过。",
+        "07 桌面三按钮同排。",
+        "08 与 06 手机横屏三按钮同排。"
+      ]
+    },
+    {
+      "requirement": "卡牌检视完整显示并可点击关闭；当前回合保持右上角，楼层切换保持原位置。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/inventory-density.e2e.ts 手机横屏地图卡放大完整显示并可点击关闭 1 passed。",
+        "01 与 02 原图当前回合在右上角，一层楼层切换在原位置。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-original-table-incremental-20261009/01-桌面-属性条与完整能力.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/02-手机横屏-未点击能力全名.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/03-手机横屏-点击后能力详情.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/04-桌面-剧本书无额外标题.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/05-手机横屏-剧本书无额外标题.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/06-手机横屏-关闭剧本书返回选择页.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/07-桌面-剧本选择三按钮同排.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/08-手机横屏-剧本选择三按钮同排.jpg",
+    "evidence/betrayal-original-table-incremental-20261009/09-手机横屏-过程文案继续按钮.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

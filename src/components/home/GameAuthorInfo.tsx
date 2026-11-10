@@ -12,20 +12,23 @@ import './creator-center.css';
 interface GameAuthorInfoProps {
     authorName: string;
     actions?: ReactNode | ((close: () => void) => ReactNode);
+    triggerContent?: ReactNode;
+    triggerClassName?: string;
+    triggerTestId?: string;
 }
 
 const actionClassName = 'platform-author-action';
 
 /** 详情作者入口：与原生游戏同一套点击作者 → 作者信息弹层。 */
-export function GameAuthorInfo({ authorName, actions }: GameAuthorInfoProps) {
+export function GameAuthorInfo({ authorName, actions, triggerContent, triggerClassName, triggerTestId = 'game-details-author-button-mobile' }: GameAuthorInfoProps) {
     const { t } = useTranslation('lobby');
     const [open, setOpen] = useState(false);
     const close = () => setOpen(false);
     const actionNodes = typeof actions === 'function' ? actions(close) : actions;
     return <>
-        <button type="button" data-testid="game-details-author-button-mobile" onClick={() => setOpen(true)}
+        <button type="button" data-testid={triggerTestId} className={triggerClassName} onClick={() => setOpen(true)}
             aria-label={t('authorInfo.buttonHint')} title={t('authorInfo.buttonHint')}>
-            {authorName}
+            {triggerContent ?? authorName}
         </button>
         {open && createPortal(
             <ModalBase onClose={close} closeOnBackdrop containerClassName="p-4 sm:p-8">

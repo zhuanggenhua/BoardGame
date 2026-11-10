@@ -1,0 +1,167 @@
+{
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r144_visual_early"
+  },
+  "claimScope": "interaction-ui",
+  "scope": "当前R144桌面教程00-frontier-goal至12-upgrade-card的原始整屏UI可见性；数值和规则正确性不由本报告证明",
+  "media": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\00-frontier-goal.png",
+      "sha256": "1796ac269beb9115801846bf692a1cfd445c8fd36709dcfc59769eebc3640b62",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜利目标与夺取叶赫部的年度方向完整显示；下一步按钮位于同一教程框底部。轮盘、三方玩家板、前线军队与大明标记可辨，教程框在轮盘右侧空隙，未压住单位。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\01-opening-move.png",
+      "sha256": "6ba594c95e1cf36dcc24c3f1eea0ca13149db7a74f730b99a71a794b9102ffc0",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程说明轮盘前进代价，三个可前进扇区有同源边界高亮，开垦军屯扇区最明确；轮盘时标、手牌三张标题与放大镜仍可见。右下教程框未压前线部队或当前轮盘候选。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\02-farm-action.png",
+      "sha256": "67edfa417ca145e66a8fce6a829238cdf8c443659f01030cfdfb3a645dc67804",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "轮盘行动面板完整列出先执行手牌行动、开垦、军屯、结束轮盘行动与确认；军屯行有清楚焦点框。教程解释补充部队与手牌，位于地图空隙，轮盘候选和已有军队未被教程覆盖。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\03-reclaim-action.png",
+      "sha256": "a2fb43b5b879d8f36744a8c2968f48114f4e16b8f3951cbbc4b0738d37ee989c",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "缩放至60%的地图与左侧独立轮盘分开；开垦行动有明确焦点框，右侧行动项和确认可读。教程位于棋盘下方空地，五张手牌标题及检视入口仍可找回，未侵占军队标记。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\04-reclaim-target.png",
+      "sha256": "79e4765cc204290e01e5ca87e1dc716422f380f117aed3035d78753f4f460161",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开垦选择态在地图区域本体显示绿色主边界及填色，辽东悬停区域边界清楚；已方可开垦区域形成可比较候选集，确认按钮在右侧独立面板。教程在右下空地，与候选区域、部队、明标记及底部手牌均分开。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\05-prepare-hand.png",
+      "sha256": "aa7a631f183fc76e3159c913536d0c271221975cc63be3b3ca929bfa25311757",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开垦结果后地图辽东人口读数可见，右侧仅剩先执行手牌行动和结束轮盘行动；前者有焦点框。教程引导用新增手牌征召，位于棋盘下方，五张手牌和检视入口、双方牌堆均可定位。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\06-recruit-payment.png",
+      "sha256": "088332db03c63bd3aa0a91ac3a006ac8a30bab5db2fe3df0ec8f561cee2b31da",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "征召支付横条明确显示已选0/1、确认执行与取消；五张当前手牌仍显示各自标题，银两有绿色对象边界和放大镜。教程讲弃牌支付并明确检视路径，位于右下空白，不遮手牌、支付条或地图军队。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\07-recruit-payment-inspect.png",
+      "sha256": "b1c679554a02c533141c4b8a1e3825ce79ed56623a64a239edba8ceaffb22dc1",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "银两检视显示完整等比牌面，名称、银锭与四边均在屏内；右上黑底关闭按钮清楚。遮罩表明进入阅读层，支付条和教程保留在下层，未把其他牌面误呈为当前银两。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\08-recruit-source.png",
+      "sha256": "d36eff8a58a3d9afd1740dec3511b3b855fbae5e9d2c1b48fe4d1a9ab0e029b5",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "支付后地图显示征召区域候选的绿色边界，辽北当前悬停本体、明标记和当地部队清楚；右侧提示先点地图建军地区，再选方式。教程位于地图下方空地，剩余四张手牌与弃牌数量入口仍在。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\09-recruit-troops.png",
+      "sha256": "734bec6052ed88bdb687ed2dfff4d8e879b6b7c54fb4050eb22151ea793ea814",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "辽北选中区域有贴合区域的边界及填色，右侧同时展示两种建军方式，标题与结果说明完整且不互压；首项焦点框清楚。教程在右下解释等级与补给，避让候选选项、辽北部队及大明标记。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\10-midyear.png",
+      "sha256": "ff7d6f9c6eea13e287be52a6e709abe4ddebe86e145983bf4ce4307949d22bb5",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "年中教程正文与下一步按钮完整，轮盘时标停年中；辽北新增部队堆与地图人口读数可见。手牌上限条和确认弃牌为独立横条，底部手牌横向列表、两端翻页入口及放大镜可见，教程未压部队。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\11-hand-limit.png",
+      "sha256": "90f157ecca99b64f64a7cb602ba402bb5b25fe181b9ceb5d40103e3be1c52564",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌上限教程要求选择六张高亮手牌，底部可见牌面有贴合本体的绿色边界，牌名和放大镜可辨；左右翻页入口可继续查看其余手牌。中部弃牌进度与确认按钮可读，教程在地图空隙未覆盖军队或明标记。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r144-causal-pc-20261101\\desktop\\12-upgrade-card.png",
+      "sha256": "e0914c72404cd39a496a887ea7c23326628220bce23f613339ba284e37b3c1d8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌后进入军备使用提示，火炮技研首张以绿色本体边界突出，名称与当前牌列可读，轮盘合法扇区仍有边界高亮；右侧其他行动入口独立排列。教程清楚说明军备及额外弃牌，避让前线单位和明标记。"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "正式 Betrayal 页面先显示小机器人事件牌，再由玩家点击开始投掷",
+      "status": "PASS",
+      "evidence": [
+        "同一次真实浏览器录屏：小机器人事件牌可见，随后点击开始投掷"
+      ]
+    },
+    {
+      "requirement": "点击后显示知识检定 8、四颗骰子停稳，并等待玩家确认 0/1",
+      "status": "PASS",
+      "evidence": [
+        "同一次真实浏览器录屏：骰盘结果与确认 0/1 同屏可见"
+      ]
+    },
+    {
+      "requirement": "玩家确认后才抽取砍刀并回到牌桌，事件不再被自动跳过",
+      "status": "PASS",
+      "evidence": [
+        "同一次真实浏览器录屏：确认后物品落入持有区，事件层关闭并回到牌桌"
+      ]
+    },
+    {
+      "requirement": "事件确认后，在同一真实页面验证已发现且门联通的代表态从大阶梯移动到实验室",
+      "status": "PASS",
+      "evidence": [
+        "同一次真实浏览器运行：事件链确认后，仅为移动验证注入已发现实验室与双向门代表态，玩家点击移动→实验室并成功进入"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\feedback-closeout\\小机器人事件-真实浏览器录屏-20260925.webm"
+  ]
+}

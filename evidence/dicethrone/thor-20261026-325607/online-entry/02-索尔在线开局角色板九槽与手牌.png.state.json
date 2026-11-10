@@ -1,0 +1,34 @@
+{
+  "sourceRevision": "32560733cbceff378a46e0f1cd3fd4b7ed590c06a899d1b317dfca3647a52c98",
+  "visible": {
+    "text": "🛠️\nGuest-1792956230262\n武僧\n50\n2\n4\n回合顺序\n1. 维持阶段\n2. 收入阶段\n3. 主要阶段（1）\n4. 掷骰攻击阶段\n5. 掷骰防御阶段\n6. 主要阶段（2）\n7. 弃牌阶段\n生命\n50\nCP\n2\n手动响应\n牌堆\n29\n<\n投掷\n确认\n下一阶段\n弃牌飞掷\n弃牌召回\n花4驭电抽1牌\n弃牌堆\n1\n2\n2\n0"
+  },
+  "authoritative": {
+    "phase": "main1",
+    "selectedCharacters": {
+      "0": "thor",
+      "1": "monk"
+    },
+    "hostStarted": true,
+    "players": {
+      "0": {
+        "characterId": "thor",
+        "hand": [
+          "card-flick",
+          "upgrade-thor-bottled-lightning-2",
+          "upgrade-thor-chain-lightning-2",
+          "upgrade-thor-hammer-2"
+        ]
+      },
+      "1": {
+        "characterId": "monk",
+        "hand": [
+          "hidden-card-0",
+          "hidden-card-1",
+          "hidden-card-2",
+          "hidden-card-3"
+        ]
+      }
+    }
+  }
+}

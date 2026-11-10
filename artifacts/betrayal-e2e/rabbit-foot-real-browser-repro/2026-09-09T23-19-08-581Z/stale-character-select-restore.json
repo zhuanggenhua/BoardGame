@@ -1,0 +1,774 @@
+{
+  "label": "stale-character-select-restore",
+  "snapshot": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": true,
+    "hasCharacterSelect": false,
+    "hasTutorialOverlayCard": true,
+    "hasLoadingScreen": false,
+    "hasResumePrompt": false,
+    "activeStepDom": "objective-and-turn",
+    "overlayText": "现在是你的回合。先从“移动”开始，移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索。下一步",
+    "contextDiagnostics": {
+      "isBoardMounted": true,
+      "isControllerReady": true,
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": true,
+      "manifestId": "basic-setup-and-turn",
+      "manifestRevision": null,
+      "stepIndex": 1,
+      "stepId": "objective-and-turn",
+      "stepAllowedCommands": null,
+      "stepInfoStep": true,
+      "stepRequireAction": null
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "activePlayerId": null,
+      "selectedPlayerId": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": null,
+      "usedCardIdsThisTurn": [],
+      "pendingDamageAllocation": null
+    },
+    "continueButton": null,
+    "bodyText": "#game-cursor-scope { cursor: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22ft-mg%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%234a5568%22%2F%3E%3Cstop%20offset%3D%2255%25%22%20stop-color%3D%22%232d3748%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%231a202c%22%2F%3E%3C%2FlinearGradient%3E%3Cfilter%20id%3D%22ft-g%22%20x%3D%22-40%25%22%20y%3D%22-40%25%22%20width%3D%22180%25%22%20height%3D%22180%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%221.4%22%20result%3D%22b%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22b%22%2F%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M6%203%20L6%2026%20L12%2020%20L18%2028%20L22%2026%20L16%2018%20L24%2018%20Z%22%20fill%3D%22url(%23ft-mg)%22%20stroke%3D%22%",
+    "storage": [
+      {
+        "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+        "valueStart": "{\"version\":1,\"gameId\":\"betrayal\",\"seed\":\"tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"numPlayers\":3,\"randomCursor\":228,\"savedAt\":1788996021466,\"state\":{\"sys\":{\"schemaVersion\":1,\"decisionEpoch\":0,\"undo\":{\"snapshots\":[],\"maxSnapshots\":1},\"interaction\":{\"queue\":[]},\"log\":{\"entries\":[],\"maxEntries\":0},\"eventStream\":{\"entries\":[{\"id\":1,\"event\":{\"type\":\"SYS_TUTORIAL_STARTED\",\"payload\":{\"manifestId\":\"basic-setup-and-turn\",\"stepId\":\"setup-runtime\",\"stepIndex\":0},\"timestamp\":1788996020893}},{\"id\""
+      }
+    ]
+  },
+  "screenshot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-09T23-19-08-581Z\\stale-character-select-restore.png",
+  "logs": [
+    {
+      "at": "2026-09-09T23:19:33.650Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T23:19:33.662Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T23:19:33.712Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T23:19:33.739Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T23:19:36.917Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T23:19:37.175Z",
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…"
+    },
+    {
+      "at": "2026-09-09T23:19:37.178Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)"
+    },
+    {
+      "at": "2026-09-09T23:19:37.181Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已停止"
+    },
+    {
+      "at": "2026-09-09T23:19:37.182Z",
+      "type": "warning",
+      "text": "WebSocket connection to 'ws://127.0.0.1:4274/lobby-socket/?EIO=4&transport=websocket' failed: WebSocket is closed before the connection is established."
+    },
+    {
+      "at": "2026-09-09T23:19:37.188Z",
+      "type": "log",
+      "text": "[LobbySocket] 正在连接到大厅服务器…"
+    },
+    {
+      "at": "2026-09-09T23:19:37.189Z",
+      "type": "log",
+      "text": "[SocketHealthCheck] LobbySocket 健康检查已启动 (间隔: 30000ms)"
+    },
+    {
+      "at": "2026-09-09T23:19:37.274Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/admin-api/stats net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:37.315Z",
+      "type": "log",
+      "text": "[LobbySocket] ✅ 连接成功"
+    },
+    {
+      "at": "2026-09-09T23:19:38.197Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.198Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.198Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/admin-api/stats net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/splendor/compressed/picture.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-400-italic-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.199Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-400-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/summonerwars/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/smashup/thumbnails/compressed/smashup.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/thumbnails/compressed/the-gang-vault-heist-thumbnail.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/fonts/crimson-text-700-latin.woff2 net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/fantasyrealms/thumbnails/compressed/cover.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:19:38.200Z",
+      "type": "warning",
+      "text": "[Lobby] 加载游戏热度失败，回退固定排序 TypeError: Failed to fetch\n    at fetchAdminStats (http://127.0.0.1:4274/src/api/admin-stats.ts:25:26)\n    at http://127.0.0.1:4274/src/hooks/useGamePopularityRanking.ts:49:10\n    at Object.react_stack_bottom_frame (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:18567:20)\n    at runWithFiberInDEV (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:997:72)\n    at commitHookEffectListMount (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:9411:163)\n    at commitHookPassiveMountEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:9465:60)\n    at reconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11273:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11240:11)\n    at reconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11265:13)\n    at recursivelyTraverseReconnectPassiveEffects (http://127.0.0.1:4274/node_modules/.vite/port-4274/deps/react-dom_client.js?v=01c02177:11240:11)"
+    },
+    {
+      "at": "2026-09-09T23:19:38.228Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T23:19:38.230Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T23:19:38.240Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T23:19:38.262Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T23:19:38.499Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T23:19:39.058Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:19:39.059Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:19:39.059Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:19:39.060Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T23:19:39.062Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:19:39.062Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T23:19:39.092Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:19:39.093Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:19:39.092Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:19:39.093Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T23:19:39.518Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:19:39.519Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":460}"
+    },
+    {
+      "at": "2026-09-09T23:19:39.518Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:19:39.519Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":426}"
+    },
+    {
+      "at": "2026-09-09T23:19:42.967Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:19:42.968Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":3875}"
+    },
+    {
+      "at": "2026-09-09T23:19:42.997Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T23:19:43.010Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:19:43.010Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:19:43.010Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:19:43.011Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T23:19:43.297Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:19:43.297Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:19:43.478Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 45.0 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T23:19:58.582Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T23:19:58.582Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T23:19:58.582Z",
+      "type": "warning",
+      "text": "[AssetLoader] 关键图片等待超时（15s），放行音频预加载"
+    },
+    {
+      "at": "2026-09-09T23:20:14.304Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:14.994Z",
+      "type": "warning",
+      "text": "🟡 [性能] 平均 39.6 FPS | P95 帧时 66.6ms — 低于 60fps"
+    },
+    {
+      "at": "2026-09-09T23:20:17.986Z",
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 34663ms（11 张）"
+    },
+    {
+      "at": "2026-09-09T23:20:19.216Z",
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/ui/general/Khron%20Studio%20-%20RPG%20Interface%20Essentials%20-%20Inventory%20&%20Dialog%20(UCS%20System%20192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab%20Switching%20Button%2001_KRST_NONE.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "at": "2026-09-09T23:20:19.216Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/ui/general/Khron%20Studio%20-%20RPG%20Interface%20Essentials%20-%20Inventory%20&%20Dialog%20(UCS%20System%20192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab%20Switching%20Button%2001_KRST_NONE.ogg net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.216Z",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.224Z",
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Handling/compressed/Wooden%20Component%20Handle%20B.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "at": "2026-09-09T23:20:19.224Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Handling/compressed/Wooden%20Component%20Handle%20B.ogg net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.224Z",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.224Z",
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Handling/compressed/Wooden%20Component%20Handle%20D.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "at": "2026-09-09T23:20:19.225Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Handling/compressed/Wooden%20Component%20Handle%20D.ogg net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.225Z",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.236Z",
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Fiddle%20A.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "at": "2026-09-09T23:20:19.237Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Fiddle%20A.ogg net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.237Z",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.237Z",
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Latch%20C.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "at": "2026-09-09T23:20:19.237Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Latch%20C.ogg net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.237Z",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.249Z",
+      "type": "error",
+      "text": "Access to XMLHttpRequest at 'http://8.148.71.102/official/common/audio/sfx/system/Computers%20&%20Machinery%20Sound%20FX%20Pack%20Vol.%202/Foley%20and%20Impacts/Rattling/compressed/Wood%20Rattling%20003.ogg' from origin 'http://127.0.0.1:4274' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "at": "2026-09-09T23:20:19.250Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/system/Computers%20&%20Machinery%20Sound%20FX%20Pack%20Vol.%202/Foley%20and%20Impacts/Rattling/compressed/Wood%20Rattling%20003.ogg net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.250Z",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.894Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Handling/compressed/Wooden%20Component%20Handle%20B.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Fiddle%20A.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/system/Computers%20&%20Machinery%20Sound%20FX%20Pack%20Vol.%202/Foley%20and%20Impacts/Rattling/compressed/Wood%20Rattling%20003.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Misc%20Items/compressed/Rattle%20Latch%20C.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/ui/general/Khron%20Studio%20-%20RPG%20Interface%20Essentials%20-%20Inventory%20&%20Dialog%20(UCS%20System%20192Khz)/Buttons/Tab_Switching_Button/compressed/UIClick_Tab%20Switching%20Button%2001_KRST_NONE.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/sfx/foley/Analogue%20Gear%20Sound%20FX%20Pack%20Vol.%201/Handling/compressed/Wooden%20Component%20Handle%20D.ogg net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/persephone-puleri.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/monsters/compressed/jacks-spirit.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.895Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/rooms/compressed/trophy-oubliette-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/monsters/compressed/ghost.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-back.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/monsters/compressed/werewolf.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/jaden-jones.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/explorers/compressed/dan-nguyen-md.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/omen-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/cards/compressed/item-front-atlas.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/explorers/compressed/beat-box-bowen.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://127.0.0.1:4274/assets/i18n/zh-CN/betrayal/tokens/explorers/compressed/sammy-angler.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/explorers/compressed/josef-hooper.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.896Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/explorers/compressed/oliver-swift.webp net::ERR_ABORTED"
+    },
+    {
+      "at": "2026-09-09T23:20:19.922Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T23:20:19.930Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T23:20:19.936Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T23:20:19.957Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T23:20:20.170Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T23:20:20.449Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:20:20.448Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.450Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:20:20.449Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.453Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:20:20.453Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.485Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:20:20.482Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.485Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:20:20.483Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.533Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T23:20:20.532Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":50}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.772Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:20:20.770Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":321}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.772Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T23:20:20.770Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":287}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.896Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.912Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:20:20.913Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:20:20.913Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:20:20.913Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T23:20:21.172Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||2|0|||||||0|\",\"markerAfter\":\"0||2|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T23:20:21.172Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T23:20:21.861Z",
+      "type": "requestfailed",
+      "text": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg net::ERR_ABORTED"
+    }
+  ]
+}

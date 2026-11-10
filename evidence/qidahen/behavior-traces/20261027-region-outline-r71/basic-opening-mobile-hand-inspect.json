@@ -1,0 +1,12 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "20261027-region-outline-r71",
+  "sourceRevision": "sha256:d2adb88b71920f44fe64ce8b4b88e18ab817299811b24908adccbf08f15e91fe",
+  "status": "RUNNING",
+  "outcome": "教程行为链执行中。",
+  "steps": [],
+  "uiStates": [],
+  "skippedDuplicateScreenshots": []
+}

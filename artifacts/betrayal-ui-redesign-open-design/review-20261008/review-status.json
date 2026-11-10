@@ -1,0 +1,31 @@
+{
+  "verdict": "REVISE",
+  "blockers": [
+    "剧本选择与确认缺正式剧本卡正面",
+    "终局重赛与返回大厅的真实交互尚未接入",
+    "BoardGame 运行时和移动后 token 聚焦未实现或验收"
+  ],
+  "images": [
+    "01-PC-主界面.png",
+    "02-手机-主界面-DPR3.png",
+    "03-PC-属性轨.png",
+    "04-手机-属性轨-DPR3.png",
+    "05-PC-物品列表.png",
+    "06-手机-物品列表-DPR3.png",
+    "07-手机-点击物品后阅读-DPR3.png",
+    "08-PC-能力详情.png",
+    "09-手机-能力详情-DPR3.png",
+    "10-PC-剧本书.png",
+    "11-手机-剧本书-DPR3.png",
+    "12-PC-移动目标.png",
+    "13-手机-移动目标-DPR3.png",
+    "14-手机-剧本选择-待补卡面.png",
+    "15-PC-终局.png",
+    "16-手机-终局-DPR3.png"
+  ],
+  "viewport": {
+    "mobile": "796x360 CSS px; DPR 3",
+    "pc": "1920x1080 CSS px"
+  },
+  "stage": "OpenDesign candidate"
+}

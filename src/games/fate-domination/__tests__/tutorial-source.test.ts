@@ -41,7 +41,14 @@ it('追加的普通攻击能力在移动选择前呈现实际卡文与目的地�
     expect(step?.fateCopy?.passages).not.toContain('effectMovementEngagement');
     expect(step?.content).toContain(FATE_ATTACK_BY_ID.cardSurveil.desc);
     expect(step?.fateCopy?.input?.text).toContain('新都');
+    expect(step?.fateCopy?.input?.text).toContain('点击已打出');
     expect(step?.hideOverlay).toBe(false);
+});
+
+it('首次骑乘教学说明如何发动已打出的牌',()=>{
+    const step=buildFateTutorialPlan().steps.find(item=>item.fateCopy?.lessonId==='riding');
+    expect(step?.fateCommand?.type).toBe('PLAY_SKILL');
+    expect(step?.content).toContain('点击已打出的“骑乘”，发动坐骑召唤。');
 });
 
 it('每张可见课程来自登记摘句与必要功能说明，首课不要求选角，读卡只服务实际能力',()=>{

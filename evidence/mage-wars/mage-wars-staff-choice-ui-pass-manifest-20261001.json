@@ -1,0 +1,92 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "title": "Mage Wars 法师魔杖与元素魔杖选择 UI 最终验收",
+  "generatedAt": "2026-10-01T14:00:00+08:00",
+  "viewerUrl": null,
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "requirements": [
+    {
+      "requirement": "法师魔杖与元素魔杖都必须由真实页面端到端入口覆盖施放、绑定选择和快速重绑选择。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/mage-wars/online-runtime.e2e.ts：法师魔杖真实入口 1 passed",
+        "e2e/mage-wars/online-runtime.e2e.ts：元素魔杖真实入口 1 passed",
+        "最终媒体目录包含两个对象各 6 张有序原始截图"
+      ]
+    },
+    {
+      "requirement": "两个对象的绑定选择态和快速重绑选择态都必须显示正式候选法术牌本体，不得只显示文字行。",
+      "status": "PASS",
+      "evidence": [
+        "法师魔杖第 2、5 张逐图 PASS：三列正式候选牌面可见",
+        "元素魔杖第 2、5 张逐图 PASS：三列正式候选牌面可见",
+        "逐图账本已记录每张选择态的候选本体可读性"
+      ]
+    },
+    {
+      "requirement": "选择弹层必须保护竞技场、底部法术书牌列、己方 HUD 和取消入口，不得遮挡持续决策对象。",
+      "status": "PASS",
+      "evidence": [
+        "4 张选择态原图逐张检查通过",
+        "逐图账本逐项记录竞技场、法术书列、HUD 和取消入口保护槽位"
+      ]
+    },
+    {
+      "requirement": "玩家可见 UI 不得泄漏内部 mageId、测试标签或调试 ID。",
+      "status": "PASS",
+      "evidence": [
+        "4 张选择态原图未发现内部 ID 泄漏",
+        "E2E 断言候选牌面可见且不得出现内部 mageId"
+      ]
+    },
+    {
+      "requirement": "施放和快速重绑结算态必须显示新绑定法术与法力消耗结果。",
+      "status": "PASS",
+      "evidence": [
+        "法师魔杖第 3、6 张逐图 PASS",
+        "元素魔杖第 3、6 张逐图 PASS",
+        "逐图账本记录附着卡、正式法术名称和法力消耗均可见"
+      ]
+    },
+    {
+      "requirement": "本轮最终媒体必须全部逐图审计通过后才能交付查看器。",
+      "status": "PASS",
+      "evidence": [
+        "evidence/mage-wars/mage-wars-staff-choice-ui-visual-audit-20261001.md：12 / 12 PASS",
+        "最终目录仅包含 12 张当前工作树修复后原始截图"
+      ]
+    }
+  ],
+  "media": [
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/01-法师魔杖-施放前-准备区卡牌与己方法师合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/02-法师魔杖-绑定选择-法师魔杖选择兽性觉醒.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/03-法师魔杖-施放结算-附着卡显示绑定法术.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/04-法师魔杖-快速重绑入口-来源卡下方能力按钮.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/05-法师魔杖-快速重绑选择-候选法术牌可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/06-法师魔杖-快速重绑结算-新绑定和法力消耗可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/01-元素魔杖-施放前-准备区卡牌与己方法师合法目标.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/02-元素魔杖-绑定选择-元素魔杖选择闪电箭矢.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/03-元素魔杖-施放结算-附着卡显示绑定法术.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/04-元素魔杖-快速重绑入口-来源卡下方能力按钮.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/05-元素魔杖-快速重绑选择-候选法术牌可见.jpg",
+    "test-results/evidence-screenshots/mage-wars/staff-choice-ui-final-20261001/06-元素魔杖-快速重绑结算-新绑定和法力消耗可见.jpg"
+  ],
+  "visualAudit": {
+    "document": "evidence/mage-wars/mage-wars-staff-choice-ui-visual-audit-20261001.md",
+    "mediaCount": 12,
+    "passCount": 12,
+    "reviseCount": 0
+  },
+  "notes": [
+    "本清单已因用户指出卡外重复牌名而降级为 REVISE，不复用旧 viewer。",
+    "新一轮重构后证据必须使用独立目录和新 PASS manifest。",
+    "本清单只覆盖法师魔杖与元素魔杖的真实施放、绑定选择、快速重绑和结算 UI。",
+    "E2E、DOM、素材存在和截图生成均不替代逐图图面验收。"
+  ]
+}

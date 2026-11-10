@@ -1,0 +1,56 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "兔脚重投必须可见，不是原地闪现或原地打转。",
+      "status": "PASS",
+      "evidence": [
+        "真实浏览器 4274 入口 PASS。",
+        "过程帧显示被选骰离开原位且仍在骰盘内；数据断言为重投中且未稳定。"
+      ]
+    },
+    {
+      "requirement": "重投后确认骰面必须保留，不能没看清就推进。",
+      "status": "PASS",
+      "evidence": [
+        "稳定图显示骰面可读，确认 0/1 可用。",
+        "确认前教程步骤允许 FINALIZE_EVENT_ROLL。"
+      ]
+    },
+    {
+      "requirement": "伤害分配后点击结束回合不能被教程拦截。",
+      "status": "PASS",
+      "evidence": [
+        "伤害分配后教程文案和高亮指向结束回合，当前步骤允许 END_TURN。",
+        "点击结束回合后没有 tutorial_command_blocked，currentPlayer=1，进入队友提示。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\rabbit-after-end-turn.png"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\01-labeled-rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\02-labeled-rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\03-labeled-rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\04-labeled-rabbit-after-end-turn.png"
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\01-labeled-rabbit-reroll-motion.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\02-labeled-rabbit-after-reroll-settled.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\03-labeled-rabbit-after-damage-allocation.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\2026-09-11T12-27-29-078Z\\_labeled-rabbit-foot-end-turn\\04-labeled-rabbit-after-end-turn.png"
+  ]
+}

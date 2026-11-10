@@ -41,6 +41,79 @@ const createTestState = (): MatchState<TestCore> => ({
 describe('TutorialSystem', () => {
     const system = createTutorialSystem<TestCore>();
 
+    it('真实动画等待期间拦截玩家命令和交互响应，保留教程控制且不影响非教程对局', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const state = createTestState();
+        state.sys.tutorial = { ...DEFAULT_TUTORIAL_STATE, active: true, manifestId: 'animation', pendingAnimationAdvance: true,
+            stepIndex: 0, step: { id: 'roll', content: '', requireAction: true }, steps: [{ id: 'roll', content: '', requireAction: true }, { id: 'next', content: '' }] };
+        const invoke = (type: string, value = state) => sys.beforeCommand!({ state: value, command: { type, playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0'] });
+        expect(invoke('SYS_INTERACTION_RESPOND')?.error).toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+        expect(invoke('PLAY_CARD')?.error).toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+        expect(invoke(TUTORIAL_COMMANDS.PREVIOUS)?.error).not.toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+        expect(invoke(TUTORIAL_COMMANDS.CLOSE)?.state?.sys.tutorial.active).toBe(false);
+        expect(invoke(TUTORIAL_COMMANDS.ANIMATION_COMPLETE)?.state?.sys.tutorial.step?.id).toBe('next');
+        const normal = createTestState();
+        expect(invoke('SYS_INTERACTION_RESPOND', normal)?.error).not.toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+    });
+
+    it('动态步骤从真实状态解析开始、事件推进与恢复，检查点重启保持原始状态', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = {
+            id: 'dynamic-course',
+            resolveStep: (state, step) => ({ ...step, content: `value:${(state.core as TestCore).value}` }),
+            steps: [
+                { id: 'one', content: '', requireAction: true, allowedCommands: ['TAKE'], advanceOnEvents: [{ type: 'TAKEN' }] },
+                { id: 'two', content: '', requireAction: true },
+            ],
+        };
+        const state = createTestState(); state.core.value = 1;
+        const start = sys.beforeCommand!({ state, command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } }, events: [], random: mockRandom, playerIds: ['0'] })!;
+        expect(start.state!.sys.tutorial.step?.content).toBe('value:1');
+        const changed = { ...start.state!, core: { value: 3 } };
+        const advanced = sys.afterEvents!({ state: changed, command: { type: 'TAKE', playerId: '0', payload: {} }, events: [{ type: 'TAKEN', payload: {}, timestamp: 1 }], random: mockRandom, playerIds: ['0'] })!;
+        expect(advanced.state!.sys.tutorial.step).toMatchObject({ id: 'two', content: 'value:3' });
+        const reboundState = { ...advanced.state!, core: { value: 7 } };
+        const bound = sys.beforeCommand!({ state: reboundState, command: { type: TUTORIAL_COMMANDS.BIND_MANIFEST, playerId: '0', payload: { manifest } }, events: [], random: mockRandom, playerIds: ['0'] })!;
+        expect(bound.state!.sys.tutorial.step?.content).toBe('value:7');
+        const restarted = sys.beforeCommand!({ state: bound.state!, command: { type: TUTORIAL_COMMANDS.RESTART_STEP, playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0'] })!;
+        expect(restarted.state!.core.value).toBe(3);
+        expect(restarted.state!.sys.tutorial.step).toMatchObject({ id: 'two', content: 'value:3' });
+    });
+
+    it('同一动态步骤分次支付时根据事件后的状态刷新，完成后才推进', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = {
+            id: 'dynamic-partial',
+            stepValidator: (state, step) => step.id !== 'pay' || (state.core as TestCore).value > 0,
+            resolveStep: (state, step) => ({ ...step, content: `remaining:${(state.core as TestCore).value}` }),
+            steps: [{ id: 'pay', content: '', requireAction: true, allowedCommands: ['PAY'] }, { id: 'done', content: '', requireAction: true }],
+        };
+        const initial = createTestState(); initial.core.value = 2;
+        const started = sys.beforeCommand!({ state: initial, command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } }, events: [], random: mockRandom, playerIds: ['0'] })!.state!;
+        const event = { type: 'PAID', payload: {}, timestamp: 1 };
+        const partial = sys.afterEvents!({ state: { ...started, core: { value: 1 } }, command: { type: 'PAY', playerId: '0', payload: {} }, events: [event], random: mockRandom, playerIds: ['0'] })!.state!;
+        expect(partial.sys.tutorial.step).toMatchObject({ id: 'pay', content: 'remaining:1' });
+        const completed = sys.afterEvents!({ state: { ...partial, core: { value: 0 } }, command: { type: 'PAY', playerId: '0', payload: {} }, events: [event], random: mockRandom, playerIds: ['0'] })!.state!;
+        expect(completed.sys.tutorial.step).toMatchObject({ id: 'done', content: 'remaining:0' });
+    });
+
+    it('未归约领域事件时不按暂态跳过动态步骤，明确匹配事件仍可推进', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = {
+            id: 'dynamic-pending',
+            stepValidator: (state, step) => step.id !== 'pay' || (state.core as TestCore).value > 0,
+            resolveStep: (state, step) => ({ ...step, content: String((state.core as TestCore).value) }),
+            steps: [{ id: 'pay', content: '', allowedCommands: ['PAY'], advanceOnEvents: [{ type: 'PAID' }] }, { id: 'done', content: '' }],
+        };
+        const initial = createTestState(); initial.core.value = 1;
+        const started = sys.beforeCommand!({ state: initial, command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } }, events: [], random: mockRandom, playerIds: ['0'] })!.state!;
+        const temporary = { ...started, core: { value: 0 } };
+        const pending = sys.afterEvents!({ state: temporary, command: { type: 'PAY', playerId: '0', payload: {} }, events: [{ type: 'QUEUED', payload: {}, timestamp: 1 }], random: mockRandom, playerIds: ['0'], pendingAfterEventsToReduceCount: 1 });
+        expect(pending?.state?.sys.tutorial.step?.id ?? temporary.sys.tutorial.step?.id).toBe('pay');
+        const matched = sys.afterEvents!({ state: temporary, command: { type: 'PAY', playerId: '0', payload: {} }, events: [{ type: 'PAID', payload: {}, timestamp: 1 }], random: mockRandom, playerIds: ['0'], pendingAfterEventsToReduceCount: 1 })!;
+        expect(matched.state!.sys.tutorial.step?.id).toBe('done');
+    });
+
     it('RESTART_STEP: 合法偏离练习后恢复当前完整检查点及随机游标，不跳到其它节点', () => {
         const sys = createTutorialSystem<TestCore>();
         const state = createTestState();

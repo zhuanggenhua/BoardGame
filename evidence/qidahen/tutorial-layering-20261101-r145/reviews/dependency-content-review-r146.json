@@ -1,0 +1,740 @@
+{
+  "status": "PASS-CONTENT-SEMANTICS-AND-DEPENDENCY-ONLY",
+  "reviewer": "/root/layer_scope_review",
+  "reviewedAt": "2026-11-01T11:48:30.138990+00:00",
+  "reviewKind": "readonly-layer-scope-and-content-dependency-review",
+  "codeModified": false,
+  "claimScope": "本轮选择器收窄及对应断言边界；52条不变内容、正式身份与既有内容审查依赖；源码不变的存储/共享缓存依赖。不是完整主链、全图视觉或用户认可。",
+  "sourceHashes": {
+    "src/games/qidahen/annualTutorial.ts": "f09420c0784c816d6f32195ed3fc2f02d8b6472465bbf3ecbdc09744c79b5d4f",
+    "src/games/qidahen/Board.tsx": "2073e8c480a75128d7389bde5a404784ae591f39b82c6eaa26b4084ac9d6df39",
+    "src/components/tutorial/TutorialOverlay.tsx": "fab8dc920393f4fb506c8aa2174b1f79c7ebd5688c7567c372f611f43dca8e32",
+    "src/engine/types.ts": "eaf214b066828fe8362467a9c3f428fc465c8056ba541195364c3bdfabde4197",
+    "e2e/qidahen/qidahen-annual-tutorial.e2e.ts": "8fa123764ef34e10cdd40ab8675274192d2774a65acb5bf236c69098862a79a9",
+    "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts": "9e170b2f7d7fc7af2abce78ffa8fbaf9f3bf01c39e1bbb1a6b42159a2a023906",
+    "public/locales/zh-CN/game-qidahen.json": "caca848f43bb692e24bcdc4d1e0707061b42256a8027516839280b05ca702d16",
+    "public/locales/en/game-qidahen.json": "92a42b3d9dbcf5657fadc04ff7b8643948f27cadf0168151df19c73ee03b17d6",
+    "src/components/tutorial/__tests__/TutorialOverlay.layout.test.tsx": "9756942c4ba57c1ba93530c616996c4d432915ee0d1b7aa2d9c850bc44d1fb17",
+    "src/games/qidahen/__tests__/Board.test.ts": "887445f25f4bcfecd6570795dc2111a75848efc1705d69f6438b3445e5e28170"
+  },
+  "archivedContentInput": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/content-input.json",
+    "sha256": "1f9ca93c1093eaad6045a342126e504123b6ba2b63f0dc47afe9cb7d030a3461",
+    "exactCopyOf": "test-results/qidahen-layering-content-input.json",
+    "sourceHashesMatchCurrent": true
+  },
+  "priorContentReport": {
+    "path": "evidence/qidahen/tutorial-full-causal-20261101/reviews/content-review-final.json",
+    "sha256": "345c2e994a30344b6172d59eb84c645f9c14a314206d97c4748db964da44a886",
+    "originalInputMissing": true,
+    "missingPath": "test-results/qidahen-full-rebuild-content-input.json",
+    "directOldNewInputObjectOrByteComparisonCompleted": false
+  },
+  "contentPreservation": {
+    "revision": 23,
+    "visiblePrompts": 52,
+    "comparedFields": [
+      "id",
+      "chinese",
+      "english",
+      "commands",
+      "allowedTargets",
+      "event",
+      "infoStep"
+    ],
+    "languageFilesByteHashesUnchanged": true,
+    "promptOrderUnchanged": true,
+    "exactSourceReconstruction": {
+      "method": "前版已对保护声明块作内存精确还原匹配旧ba344哈希；本版先仅还原moveStep的父展示锚点精确匹配前版a127哈希。两次逐字节证明串联，未写造旧input。",
+      "reconstructedAnnualSha256": "ba344b12b7b6133fb74202c0070a71127dee0a79274d697d055895fde6d099c1",
+      "matchesPriorReviewedAnnualSource": true,
+      "proves": "除保护声明块及四个moveStep的展示锚点外，annual其余字节相同；步骤、版本、隐藏自动化、命令、合法目标、事件及随机策略不变。",
+      "doesNotProve": "旧新完整input对象/字节相等；布局或新真实主链通过。"
+    },
+    "hiddenAutomation": {
+      "count": 4,
+      "ids": [
+        "opening-opponents",
+        "opponent-round",
+        "other-upkeep",
+        "year-ready"
+      ],
+      "unchangedByExactAnnualReconstruction": true
+    },
+    "carriedContentVerdict": "中英文内容、规则含义、必要性、因果链及正式动作合同可沿用旧PASS-content-only。4个移动提示的展示锚点已从内部走法扇区改为完整轮盘，布局须重新验收，不能称52个target全部相等。",
+    "all52PromptObjectsEqualToPriorReviewProjection": false,
+    "all52TextsCommandsLegalTargetsEventsAndOrderUnchanged": true,
+    "displayTargetChanges": [
+      {
+        "id": "opening-move",
+        "changes": {
+          "target": {
+            "before": "qidahen-wheel-move-move-1-free",
+            "after": "qidahen-action-wheel"
+          }
+        }
+      },
+      {
+        "id": "battle-move",
+        "changes": {
+          "target": {
+            "before": "qidahen-wheel-move-move-1-free",
+            "after": "qidahen-action-wheel"
+          }
+        }
+      },
+      {
+        "id": "diplomacy-move",
+        "changes": {
+          "target": {
+            "before": "qidahen-wheel-move-move-1-free",
+            "after": "qidahen-action-wheel"
+          }
+        }
+      },
+      {
+        "id": "training-move",
+        "changes": {
+          "target": {
+            "before": "qidahen-wheel-move-move-1-free",
+            "after": "qidahen-action-wheel"
+          }
+        }
+      }
+    ],
+    "displayTargetsEqualCount": 48,
+    "displayTargetsChangedCount": 4,
+    "parentAnchorDeltaReconstruction": {
+      "annualCurrentSha256": "f09420c0784c816d6f32195ed3fc2f02d8b6472465bbf3ecbdc09744c79b5d4f",
+      "restoreOnlyMoveStepDisplayAnchorSha256": "a1273bfd9087a5075d3ffbf276bd0888e6b48c3c71aa4441e2e3407ed0edacc7",
+      "matchesPreviousArchivedAnnual": true,
+      "boardCurrentSha256": "2073e8c480a75128d7389bde5a404784ae591f39b82c6eaa26b4084ac9d6df39",
+      "restoreOnlyRecommendationDerivationSha256": "1f91345cebb89d7475b5853c8b0b20d6fff64551c8a452a4ebdcd07553aeb25d",
+      "matchesPreviousArchivedBoard": true,
+      "proves": "这次父锚点修正仅改moveStep展示锚点及Board推荐读取块；其余完整原始字节相同。"
+    }
+  },
+  "archivedTraceCrosscheck": {
+    "path": "evidence/qidahen/tutorial-full-causal-20261101/traces/desktop-raw.json",
+    "sha256": "01842e503d724deeaf7a1e580d27971d5b9573fed3d1a85c0e6fc5b1deb40220",
+    "statusInArchive": "PASS",
+    "currentPromptsMatchArchivedActualNodeOrder": true,
+    "actualIdentityChecks": [
+      {
+        "id": "frontier-goal",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "opening-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "farm-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "reclaim-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "reclaim-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "prepare-hand",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "recruit-action",
+        "action": "CONFIRM_PREVIEW_ACTION",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "recruit-payment",
+        "action": "SELECT_PAYMENT_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "recruit-source",
+        "action": "SELECT_REGION",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "recruit-troops",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "midyear",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "hand-limit",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "battle-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upgrade-first",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upgrade-card",
+        "action": "CONFIRM_PREVIEW_ACTION",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upgrade-payment",
+        "action": "SELECT_PAYMENT_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "dispatch-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "dispatch-payment",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "dispatch-troops",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "dispatch-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "defender-response",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "tactic-card",
+        "action": "PLAY_TACTIC_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "battle-roll",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "occupy",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "diplomacy-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "diplomacy-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "diplomacy-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "diplomacy-finish",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "hire-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "hire-target",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "save-hand",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "new-year",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "maintain-shanhai",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "abandon-jinzhou",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "abandon-inner-wall",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upkeep-datong",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upkeep-yehe",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upkeep-xianxing",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upkeep-liaobei",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "upkeep-pyongyang",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "claim-year",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "new-order",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "year-character",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-move",
+        "action": "EXECUTE_WHEEL_MOVE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-action",
+        "action": "SYS_INTERACTION_RESPOND",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-payment",
+        "action": "SELECT_PAYMENT_CARD",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-target",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-second-target",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-recruit-kind",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-recruit-target",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "training-finish",
+        "action": "RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      },
+      {
+        "id": "finish",
+        "action": "manual-next",
+        "commandMatches": true,
+        "recordedTargetIdsMatch": true,
+        "targetComparisonScope": "仅trace实际记录targetIds的正式目标；当前展示DOM锚点4项改变，不从旧trace继承其视觉结论。"
+      }
+    ],
+    "scope": "归档链用于核对不变正式命令、实际targetIds与节点顺序；4个展示锚点已改变，旧链不证明父锚点布局。"
+  },
+  "layerScopeReview": {
+    "status": "PASS-static-scope",
+    "removed": "教程所有army、明控制标记、明人口的全局禁覆盖选择器；战术面板全地图token扫描收窄为当前protected对象。",
+    "preserved": [
+      "同层HUD与手牌/牌堆/轮盘/正式操作面板",
+      "Board正式派生的当前来源、目标、地图候选、战斗与维修上下文token及人口",
+      "当前可提交部队和全部招募候选，包括非推荐选项"
+    ],
+    "sharedBoundary": "游戏完整轮盘展示锚点、正式事件推荐读取沿用前版；共享Overlay默认非compact/非center/有target分支新增候选贴附距离比较与近邻短路条件。API、输入/权限、缓存签名和缓存复用未改。",
+    "sourceIdentityChecks": {
+      "boardMatchesArchivedActualBrowserSource": false,
+      "overlayMatchesArchivedActualBrowserSource": false,
+      "boardMatchesArchivedAfterRestoringOnlyRecommendationBlock": true,
+      "overlayMatchesArchivedAfterRestoringOnlyAdjacencyRankingDelta": true
+    },
+    "finding": "本轮四个展示target改变；没有新增正式命令、权限、领域规则、文案、步骤、版本、随机策略或allowedTargets限制。",
+    "recommendationContractReview": {
+      "lines": "Board.tsx:6170-6178,3123-3128,7147",
+      "owner": "正式教程advanceOnEvents动作合同",
+      "behavior": "有字符串moveId优先作为primaryMoveId；缺省继续旧DOM锚点和旧教程fallback；推荐在既有activatableMoveChoices中查找，不生成或筛掉合法候选。",
+      "inputAndPermissionChange": false,
+      "uiAcceptance": "等待当前双PC真实结果和R146全媒体审查，不据源码放行。"
+    }
+  },
+  "targetedRegressionEvidence": {
+    "test": "真实教程入口1362x780，轮盘说明邻接与正式地图pan不移动HUD/hint",
+    "red": {
+      "gap": 533.8972811341571,
+      "expectedMaxGap": 64,
+      "log": "test-results/qidahen-layering-red.log",
+      "sha256": "db4370dc78c70ae2b0d716d40d5a9975e8a3efe4175931f13fb925cec001b8c9"
+    },
+    "green": {
+      "gap": 10.2874755859375,
+      "log": "test-results/qidahen-layering-green-owner.log",
+      "sha256": "eb8687fb649574db6d168aca5e5612181633da3a125bb9eae56e83f4f1c61d23",
+      "formalPanChanged": true,
+      "wheelUnchanged": true,
+      "hintUnchanged": true,
+      "receipt": "test-results/qidahen-layering/after-formal-pan/receipt.json",
+      "receiptSha256": "b455e2a83d13502bbd5460b4e49913e2b2df8ae766216e35b8575049303e8355"
+    },
+    "executionByReviewer": false,
+    "scope": "这是父锚点修正前1362单视口窄证据，不代表当前双PC通过；R145主链1920的新失败已使其不足以支持整体结论。",
+    "historicalBeforeParentAnchor": true
+  },
+  "unchangedDependencyReviews": [
+    {
+      "report": "evidence/qidahen/tutorial-full-causal-20261101/reviews/layout-performance-review.json",
+      "sha256": "63874e9472f806d289008dfb7b50974bd4b65224f781bd2e5851ab78fd70de39",
+      "sourceChecks": [
+        {
+          "path": "src/components/tutorial/TutorialOverlay.tsx",
+          "previousSha256": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+          "currentSha256": "fab8dc920393f4fb506c8aa2174b1f79c7ebd5688c7567c372f611f43dca8e32",
+          "unchanged": false
+        },
+        {
+          "path": "src/components/tutorial/__tests__/TutorialOverlay.layout.test.tsx",
+          "previousSha256": "68e2095382530ee315a42609bece4d3ecb6ea1cda40257533e2f23a0ae0ef7fd",
+          "currentSha256": "9756942c4ba57c1ba93530c616996c4d432915ee0d1b7aa2d9c850bc44d1fb17",
+          "unchanged": false
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "previousSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+          "currentSha256": "9e170b2f7d7fc7af2abce78ffa8fbaf9f3bf01c39e1bbb1a6b42159a2a023906",
+          "unchanged": false
+        },
+        {
+          "path": "e2e/qidahen/tutorialPointer.ts",
+          "previousSha256": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295",
+          "currentSha256": "9ca2fd71168f055a638efcec2841f3a53de202aa23a89d1ee8892318a105a295",
+          "unchanged": true
+        }
+      ],
+      "reuseScope": "Overlay整文件及布局单测已改，旧报告不可作为当前源码不变证明。仅通过精确还原证明缓存机制未改；旧指定静止采样数字保留历史意义，不证明新排序首次/动态性能或新布局。",
+      "newTestExecutionClaimed": false,
+      "newCurrentPerformanceMeasurementClaimed": false
+    },
+    {
+      "report": "evidence/qidahen/tutorial-full-causal-20261101/reviews/storage-review-final.json",
+      "sha256": "a5cf47d7acf43d31c5331727aabfa2f01b048f513ff9829d635c2953e6923d34",
+      "sourceChecks": [
+        {
+          "path": "src/engine/transport/localSessionCodec.ts",
+          "previousSha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+          "currentSha256": "365dcf84cd5226aab32aee74f8162362df574dcf3fdeeba7cd9341b6a2b49132",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/localSession.ts",
+          "previousSha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+          "currentSha256": "e957341a624b744bb682b1c69ef774fa984c5d42356e1f0a7c96e6f13b1a26d8",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/__tests__/localSessionCodec.test.ts",
+          "previousSha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+          "currentSha256": "07b258d957ff0b6cd16eb19412d7719ba2c1cc8aff3328fa0b25202fdd26285d",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/useLocalProviderSession.ts",
+          "previousSha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+          "currentSha256": "306018e7c1f92ca895bbb318e13ee4ff339fead3f8cf4696a9eb00b7b1336cf7",
+          "unchanged": true
+        },
+        {
+          "path": "src/engine/transport/localProviderBootstrap.ts",
+          "previousSha256": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+          "currentSha256": "1777b3239090a96784999315a0281afa6fb979f6d13a3927b0aa276fc0526088",
+          "unchanged": true
+        },
+        {
+          "path": "e2e/qidahen/qidahen-tutorial-layout-diagnostic.spec.ts",
+          "previousSha256": "d0316b5aff45642601f485ff2201d49956bb6e238092ab37106b0b05401d6f01",
+          "currentSha256": "9e170b2f7d7fc7af2abce78ffa8fbaf9f3bf01c39e1bbb1a6b42159a2a023906",
+          "unchanged": false
+        }
+      ],
+      "reuseScope": "存储生产源码及codec单测hash仍与旧报告相同，沿用其限定静态/历史测量结论和全部限制；diagnostic spec已改，不能把旧4项记为当前整份执行。",
+      "newTestExecutionClaimed": false
+    }
+  ],
+  "limitations": [
+    "旧完整content input不存在，未声称两个input文件直接深比较或字节相等。",
+    "本轮改变保护集合会改变多步布局，必须重跑当前主链和全部受改布局媒体视觉验收；旧布局PASS不沿用。",
+    "存储旧报告的同步编码停顿、origin容量、失败反馈及真实晚期刷新限制保留；本审查不替其补PASS。",
+    "未运行测试、未看图、未判视觉PASS；本报告仅写入新evidence reviews及归档input。",
+    "四个移动节点展示target发生变化；只有文本、正式命令、合法目标/事件及教学因果不变。",
+    "共享Overlay整体源码及布局单测本轮已变，不能称旧Overlay整文件不变；只经精确还原证明缓存、compact/center/targetless等非改动区域未变。",
+    "双PC开场真实诊断通过，不代替R146完整主链、新布局全部图审、移动端和跨游戏共享消费者视觉验收。",
+    "旧1362 gap116.195及R145完整PC gap262等失败保留历史；本轮近邻排序修复后的窄通过不抹去失败记录。"
+  ],
+  "findings": [],
+  "historicalReview": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/dependency-content-review-before-parent-anchor.json",
+    "sha256": "94b243510323e9a3ef1e5f327cd2a20550cda9b73f0f7b8fbb595414d819a15c",
+    "input": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/content-input-before-parent-anchor.json",
+    "inputSha256": "6f174ceb3c9cc7ac44088c0692fca92a29f93817b40d43a075969b64282c286f",
+    "scope": "保留父锚点调整前的审查事实，不作为当前52个展示target完全相等声明。"
+  },
+  "parentAnchorValidation": {
+    "status": "PASS-targeted-dual-PC-only",
+    "reviewerExecutedTests": false,
+    "log": "evidence/qidahen/tutorial-layering-20261101-r145/checks/dual-pc-attached.log",
+    "logSha256": "a132a45886091454f51534f2804d03d55725a97f211524739bb6ff83e3c49491",
+    "observed": "2 passed，1362与1920真实教程入口opening-move，当前spec含data-wheel-primary=true及真实pan后HUD/hint不变断言。",
+    "receiptObservations": [
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/attached/1362/receipt.json",
+        "sha256": "34766b3ecbc598de83c9d805bb7e9395bc60ff46d6d6f1095874326ac831bf5e",
+        "width": 1362,
+        "gap": 19.9906005859375,
+        "formalPanChanged": true,
+        "hintAndHudUnchanged": true
+      },
+      {
+        "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/attached/1920/receipt.json",
+        "sha256": "e76a9c3d17d2aa8b9f9244e9608095b789862494325faa7c4182dd261b067061",
+        "width": 1920,
+        "gap": 20,
+        "formalPanChanged": true,
+        "hintAndHudUnchanged": true
+      }
+    ],
+    "wholeCurrentUiPass": false,
+    "scope": "只证明指定开场对象、视口和动作；未审原图，不是全流程、所有媒体、移动端或其它共享消费者通过。"
+  },
+  "previousParentAnchorReview": {
+    "path": "evidence/qidahen/tutorial-layering-20261101-r145/reviews/dependency-content-review-before-shared-adjacency.json",
+    "sha256": "6baf8d37aec741f62e5eb8d55c0952069b7502e9a047e107ad1b2c74fd3363ea",
+    "scope": "保留仅游戏父锚点版本的失败与当时结论；共享算法修复前历史。"
+  },
+  "sharedAdjacencyReview": {
+    "status": "PASS-static-and-targeted-records-only",
+    "restoredPriorOverlaySha256": "9b0a09a67d725619973471641e3c820272e53595a68c4c9f5a0e00619be20c4c",
+    "exactRawByteReconstruction": true,
+    "delta": {
+      "lines": "TutorialOverlay.tsx:746-756,783,801",
+      "distance": "max(0, hypot(两个矩形水平及竖直间隔)-padding-protectedGap)",
+      "ranking": [
+        "保护区交叠面积",
+        "当前target交叠面积",
+        "超出正常贴附间距的距离",
+        "旧side index"
+      ],
+      "earlyExit": "仅存在保护交叠0、target交叠0、贴附距离0的真正近邻时跳过free组合；远端同侧零交叠候选不再提前阻断近邻自由位置。",
+      "normalAdjacency": "正常padding+gap内候选距离罚分0，保留原side顺序。"
+    },
+    "unchangedByExactReconstruction": [
+      "API与TutorialStep接口",
+      "玩家输入及教程权限",
+      "几何签名缓存和轮询复用",
+      "compact布局分支（在575提前return）",
+      "无target及center分支（在630提前return）",
+      "保护区与target交叠优先序"
+    ],
+    "impactScope": "共享组件全部默认桌面有target步骤都可能改变位置；本轮真实浏览器仅覆盖七大恨opening-move两个PC视口，不能推断其它游戏/其它步骤视觉通过。",
+    "performanceBoundary": "更严格的hasPerfectAdjacent会让部分原先跳过的几何求解执行freeLefts×freeTops组合；最坏O(P³)未改变，但首次或真实几何变化的工作量可能增加。缓存输入未变时仍复用，旧静态采样只能保留为历史收益，不是新排序当前性能测量。",
+    "findings": []
+  },
+  "publicLayoutBehaviorRegression": {
+    "red": {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/checks/adjacent-layout-red.log",
+      "sha256": "a963a05a415f718ce676d84b09b9cbd2ea71e0aff2d4d25a2574b0542e14509b",
+      "observed": "现有公开布局行为用例失败，期望{x:422,y:65}但旧算法为{x:422,y:431}。"
+    },
+    "green": {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/checks/adjacent-layout-green.log",
+      "sha256": "ec8b06cd464a17c011559859645bd03c1255bf02385b48ea67e33a63c7a21b79",
+      "observed": "同一现有用例1 passed；保留原静止、保护变化、目标变化、正文高度、配置变化断言，增加先枚举手牌/同层header近邻及受保护父对象内操作子对象附近free位置。"
+    },
+    "reviewerReranTest": false,
+    "newIndependentSuiteAdded": false
+  },
+  "broaderValidationRecords": {
+    "resultsPath": "evidence/qidahen/tutorial-layering-20261101-r145/checks/results.json",
+    "resultsSha256": "2d7019811731a52c78552a9bf4ad803635d8c4ea94b96ddf60d9684129d09565",
+    "observedResults": {
+      "unit": {
+        "exitCode": 0,
+        "evidence": "evidence/qidahen/tutorial-layering-20261101-r145/checks/unit.log",
+        "passed": 343,
+        "files": 17
+      },
+      "typecheck": {
+        "exitCode": 0,
+        "evidence": "evidence/qidahen/tutorial-layering-20261101-r145/checks/typecheck.log"
+      }
+    },
+    "unitLogPath": "evidence/qidahen/tutorial-layering-20261101-r145/checks/unit.log",
+    "unitLogSha256": "54f370eee13be4ffda7c5f407bd10fc05487ffe05439d8bfe88a78062ccf4fc1",
+    "unitLogTailObserved": "17 files / 343 tests passed，与最终results.json的unit.exitCode0、passed343、files17一致。",
+    "claim": "本轮runner最终unit与typecheck均exitCode0；343条/17文件通过记录与最终结果一致。审查者只读核对，没有独立重跑。",
+    "history": {
+      "previousObservation": "17 files / 343 tests passed；当前results.json记unit.exitCode=1、passed/files=null。",
+      "previousResultsSha256": "2d7019811731a52c78552a9bf4ad803635d8c4ea94b96ddf60d9684129d09565",
+      "explanation": "观察时runner尚在执行typecheck，results.json仍是上轮exit1结果；本轮runner最终写出exit0。先前观察不代表当前343条执行失败。",
+      "resolved": true
+    },
+    "typecheckLogPath": "evidence/qidahen/tutorial-layering-20261101-r145/checks/typecheck.log",
+    "typecheckLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "PASS-recorded-final-runner-results"
+  },
+  "broaderValidationRefresh": {
+    "sourceChange": false,
+    "scope": "仅刷新最终checks结果及哈希，保留执行中旧文件观察解释；不扩大全流程/视觉结论。"
+  }
+}

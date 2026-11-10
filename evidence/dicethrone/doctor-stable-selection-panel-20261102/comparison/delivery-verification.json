@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "scope": "source-delivery-only",
+  "productAcceptance": "not-claimed",
+  "viewerUrl": "http://127.0.0.1:4867/?key=2d76d03b46e4",
+  "pageStatus": 200,
+  "healthStatus": 200,
+  "mediaCount": 15,
+  "allSameBytes": true,
+  "media": [
+    {
+      "file": "01-1-01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "88d9088b58748cf5495f1d885af4c4a34f0c12413613f1723864872da4604223",
+      "status": 200
+    },
+    {
+      "file": "01-2-02-血色杀戮-搜索命中.png",
+      "sha256": "7734570dc63a7521d474dd0859807c1d6ddace23c8cdef3e297382fc31e47501",
+      "status": 200
+    },
+    {
+      "file": "01-3-03-血色杀戮-已选待确认.png",
+      "sha256": "075282d05cc572e126643e7394a9d9784cb893a8a3d15149aadae8019a35f47f",
+      "status": 200
+    },
+    {
+      "file": "02-1-01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "b6069810f3d28bea861d7b21b26e720b2557433bfa1ed6337bac965cd3e58cf2",
+      "status": 200
+    },
+    {
+      "file": "02-2-02-血色杀戮-搜索命中.png",
+      "sha256": "6733b99051709fa6e1463abc7e1def1289c42d33f7c481b1bab402b25e57080d",
+      "status": 200
+    },
+    {
+      "file": "02-3-03-血色杀戮-已选待确认.png",
+      "sha256": "4e94d8114247f3c9dfa45de5dd8809b53f5fe827f3bec285047270e977a32244",
+      "status": 200
+    },
+    {
+      "file": "02-4-04-血色杀戮-取消选中.png",
+      "sha256": "935dba26a0c56a6ed817e1c33d5d5177fe4734b0a5f8e91d81c78ce06b12bd7c",
+      "status": 200
+    },
+    {
+      "file": "02-5-05-血色杀戮-无匹配.png",
+      "sha256": "3f5b97a2b52018ab4db4c80702bfeeec04844c911b4d17a7e1831abf066c070f",
+      "status": 200
+    },
+    {
+      "file": "02-6-06-血色杀戮-清空恢复.png",
+      "sha256": "b23bd6656802871cd91a5c17106718ca5fc760f166c85c6a712e5e323c2b1575",
+      "status": 200
+    },
+    {
+      "file": "03-1-01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "1ccdcecdcb7e38ae9715a3d71708abca977489378aaed4e3883b4712b411e2b0",
+      "status": 200
+    },
+    {
+      "file": "03-2-02-血色杀戮-搜索命中.png",
+      "sha256": "41738d0b6621ad14af988f03294d32162cb334edc09d997f69ad832495d3ca18",
+      "status": 200
+    },
+    {
+      "file": "03-3-03-血色杀戮-已选待确认.png",
+      "sha256": "18dfceff55273b12384eaa171c5ec168d2ab2738e890080f5ff78323df9a3e50",
+      "status": 200
+    },
+    {
+      "file": "03-4-04-血色杀戮-取消选中.png",
+      "sha256": "cd13eec93c273c521007d4685ca561714e04b20508aec5f938b5474e65ced700",
+      "status": 200
+    },
+    {
+      "file": "03-5-05-血色杀戮-无匹配.png",
+      "sha256": "00c57ddbb1ca24245ea4b29df737bde777131bcf3bcc238a6862365aec613161",
+      "status": 200
+    },
+    {
+      "file": "03-6-06-血色杀戮-清空恢复.png",
+      "sha256": "85b15a9b64869269108606ebdf971b51e92f805d02d9b9b935b7cca3de621c9e",
+      "status": 200
+    }
+  ]
+}

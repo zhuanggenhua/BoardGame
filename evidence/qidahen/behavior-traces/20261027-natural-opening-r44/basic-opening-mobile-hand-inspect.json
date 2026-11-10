@@ -1,0 +1,1584 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-mobile-hand-inspect",
+  "sourceRun": "20261027-natural-opening-r44",
+  "sourceRevision": "sha256:c9c3501f6f9738b0fec17792261a4edffc41302cce60d22ecbbd0c9e1437e8ad",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 22 个行为检查点与 4 个独特界面状态。",
+  "steps": [
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-001",
+      "action": "触摸抬起：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "frontier",
+          "tutorialText": "辽东驻有3支明军，邻近的叶赫部由蒙古控制。这回合从辽东进攻叶赫部，争取区域控制权；轮盘和手牌行动都尚未使用。下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "frontier",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "select-farm-region",
+          "expected": "select-farm-region"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-001-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-002",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-visible-tutorial-step-matches-authoritative-step",
+          "actual": "select-farm-region",
+          "expected": "select-farm-region"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-002-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-003",
+      "action": "触摸抬起：qidahen-map-hitmap-canvas",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "select-farm-region",
+          "tutorialText": "正规军必须在本土（深色）区域才能建立。选择辽东，作为这次军屯的建军地点。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "select-farm-region",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-003-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-003-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-003-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-move",
+          "expected": "wheel-move"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-003-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-map-hitmap-canvas"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-004",
+      "action": "点击：qidahen-map-hitmap-canvas",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-move",
+          "expected": "wheel-move"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-004-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-map-hitmap-canvas"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-005",
+      "action": "触摸抬起：qidahen-wheel-move-target-move-2-one-opponent",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-opponent",
+          "tutorialText": "叶赫部由蒙古控制。本次指定后金抽2张牌，随后轮盘进入军屯。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-opponent",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-005-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-005-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-005-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-opponent",
+          "expected": "wheel-opponent"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-005-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-wheel-move-target-move-2-one-opponent"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-006",
+      "action": "点击：qidahen-wheel-move-target-move-2-one-opponent",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-opponent",
+          "tutorialText": "叶赫部由蒙古控制。本次指定后金抽2张牌，随后轮盘进入军屯。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-opponent",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-opponent",
+          "tutorialText": "叶赫部由蒙古控制。本次指定后金抽2张牌，随后轮盘进入军屯。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-opponent",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-opponent",
+          "expected": "wheel-opponent"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-006-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-wheel-move-target-move-2-one-opponent"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-007",
+      "action": "触摸抬起：qidahen-wheel-opponent-jin",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-opponent",
+          "tutorialText": "叶赫部由蒙古控制。本次指定后金抽2张牌，随后轮盘进入军屯。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-opponent",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "军屯已在辽东建立1支等级2的正规军，大明也抽了2张牌。辽东现在有4支明军，可以从这里进攻叶赫部。上一步下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-007-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-007-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-007-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-result",
+          "expected": "wheel-result"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-007-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-wheel-opponent-jin"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-008",
+      "action": "点击：qidahen-wheel-opponent-jin",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "军屯已在辽东建立1支等级2的正规军，大明也抽了2张牌。辽东现在有4支明军，可以从这里进攻叶赫部。上一步下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "军屯已在辽东建立1支等级2的正规军，大明也抽了2张牌。辽东现在有4支明军，可以从这里进攻叶赫部。上一步下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-008-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-008-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-008-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-result",
+          "expected": "wheel-result"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-008-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-wheel-opponent-jin"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-009",
+      "action": "触摸抬起：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "军屯已在辽东建立1支等级2的正规军，大明也抽了2张牌。辽东现在有4支明军，可以从这里进攻叶赫部。上一步下一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-raid",
+          "tutorialText": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-raid",
+          "expected": "choose-raid"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-009-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-010",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-raid",
+          "tutorialText": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-raid",
+          "tutorialText": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-010-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-010-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-010-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-raid",
+          "expected": "choose-raid"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-010-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-011",
+      "action": "触摸抬起：qidahen-action-raid",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-raid",
+          "tutorialText": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-target",
+          "tutorialText": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-target",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-011-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-011-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-011-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-target",
+          "expected": "choose-target"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-011-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-action-raid"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-012",
+      "action": "点击：qidahen-action-raid",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-target",
+          "tutorialText": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-target",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-target",
+          "tutorialText": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-target",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-012-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-012-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-012-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-target",
+          "expected": "choose-target"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-012-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-action-raid"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-013",
+      "action": "记录实际输入后的稳定界面：移动-00-叶赫部地图目标避开支付托盘",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-target",
+          "tutorialText": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-target",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-target",
+          "tutorialText": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-target",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-013-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-013-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-013-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-target",
+          "expected": "choose-target"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-014",
+      "action": "触摸抬起：qidahen-map-hitmap-canvas",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-target",
+          "tutorialText": "叶赫部与辽东相邻，且有蒙古驻军。点击地图上的叶赫部，作为这次突袭的目标。上一步完成当前操作继续",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-target",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-014-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-014-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-014-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-raid",
+          "expected": "pay-raid"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-014-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-map-hitmap-canvas"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-015",
+      "action": "点击：qidahen-map-hitmap-canvas",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-015-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-015-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-015-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-raid",
+          "expected": "pay-raid"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-015-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-map-hitmap-canvas"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-016",
+      "action": "记录实际输入后的稳定界面：移动-01-突袭支付与手牌",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-016-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-016-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-016-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-raid",
+          "expected": "pay-raid"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-017",
+      "action": "触摸抬起：qidahen-hand-card-hand-3",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-017-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-017-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-017-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-raid",
+          "expected": "pay-raid"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-017-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-hand-card-hand-3"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-018",
+      "action": "记录实际输入后的稳定界面：移动-02-长按银两检视卡面",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-018-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-018-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-018-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-raid",
+          "expected": "pay-raid"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-check-019",
+      "action": "关闭卡面检视后回到原突袭支付，未消耗手牌",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-card-magnify-overlay-close"
+        }
+      ],
+      "assertions": [
+        {
+          "name": "当前教程步骤",
+          "actual": "pay-raid",
+          "expected": "pay-raid"
+        },
+        {
+          "name": "棋盘可见状态",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-020",
+      "action": "触摸抬起：qidahen-hand-card-hand-3",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-raid",
+          "tutorialText": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。需要查看卡面时，桌面点「看」，触屏长按。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-raid",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialText": "确认弃掉选中的银两。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-020-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-020-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-020-visible-tutorial-step-matches-authoritative-step",
+          "actual": "confirm-raid-payment",
+          "expected": "confirm-raid-payment"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-020-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "触摸抬起",
+          "target": "qidahen-hand-card-hand-3"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-input-021",
+      "action": "点击：qidahen-hand-card-hand-3",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialText": "确认弃掉选中的银两。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialText": "确认弃掉选中的银两。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-021-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-021-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-021-visible-tutorial-step-matches-authoritative-step",
+          "actual": "confirm-raid-payment",
+          "expected": "confirm-raid-payment"
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-input-021-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-hand-card-hand-3"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-capture-022",
+      "action": "记录实际输入后的稳定界面：移动-03-检视返回后轻点银两选择支付",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialText": "确认弃掉选中的银两。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialText": "确认弃掉选中的银两。上一步",
+          "viewport": "mobile"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "confirm-raid-payment",
+          "tutorialHiddenAutomation": false,
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "raid",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 5
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-022-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-022-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-mobile-hand-inspect-capture-022-visible-tutorial-step-matches-authoritative-step",
+          "actual": "confirm-raid-payment",
+          "expected": "confirm-raid-payment"
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-01",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-013",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "265fcde64771371b7feb5400f30290cf1a04a72644c3a6d982f5f914bf2424aa",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r44-mobile\\移动-00-叶赫部地图目标避开支付托盘.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，00，叶赫部地图目标避开支付托盘状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-02",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-016",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "4c17e828705130d8711341db7a59dfba019168e557203082e073640b44609668",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r44-mobile\\移动-01-突袭支付与手牌.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，01，突袭支付与手牌状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-03",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-018",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "ee8c58dda708a11f8b74cdab0db60d6b4c31632a840981529e6e20f6b92a9b69",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r44-mobile\\移动-02-长按银两检视卡面.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，02，长按银两检视卡面状态。"
+    },
+    {
+      "id": "basic-opening-mobile-hand-inspect-ui-04",
+      "stepId": "basic-opening-mobile-hand-inspect-capture-022",
+      "change": "interaction-mode",
+      "viewport": "mobile",
+      "sha256": "8153086c1493e889bacd38ea4e8d843ab06ec0c04f8e5cffe659d6e4fb3b0b15",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261027-natural-opening-r44-mobile\\移动-03-检视返回后轻点银两选择支付.png",
+      "reason": "玩家完成当前输入后，教程界面呈现移动，03，检视返回后轻点银两选择支付状态。"
+    }
+  ],
+  "skippedDuplicateScreenshots": []
+}

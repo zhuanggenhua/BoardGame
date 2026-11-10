@@ -1,0 +1,13 @@
+{
+  "check": "assets",
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "scripts/assets/generate_asset_manifests.js",
+    "--validate"
+  ],
+  "startedSourceRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "finishedSourceRevision": "2a7d7b50a2cb1fffd2cc566adfae9a351d12356688fda9729d96dbe3d1332aa6",
+  "sourceUnchanged": true,
+  "exitCode": 1,
+  "finishedAt": "2026-10-26T13:29:32.475Z"
+}

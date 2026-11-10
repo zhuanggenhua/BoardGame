@@ -1,0 +1,330 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/行动手牌与原位出牌区.png.jpg",
+      "chainId": "fate-inline-play-area-restoration",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "行动阶段基础布局：空出牌区和固定威力读数同屏呈现，地图独立铺满视口。",
+      "description": "行动手牌与原位出牌区",
+      "uiStateId": "empty-play-area",
+      "uiChange": "layout",
+      "uiChangeReason": "行动阶段基础布局：空出牌区和固定威力读数同屏呈现，地图独立铺满视口。",
+      "behaviorStepId": "stage-real-card",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "Fate攻击手牌与已打出实例位于同一直接牌区",
+        "地图相机不随HUD及出牌数量变化"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/攻击牌本体暂选于牌区.png.jpg",
+      "chainId": "fate-inline-play-area-restoration",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "同一张真实手牌被暂选后移动到手牌上方的攻击牌区，卡牌本体仍是撤回入口。",
+      "description": "攻击牌本体暂选于牌区",
+      "uiStateId": "staged-card-in-place",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "同一张真实手牌被暂选后移动到手牌上方的攻击牌区，卡牌本体仍是撤回入口。",
+      "behaviorStepId": "stage-real-card",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "Fate攻击手牌与已打出实例位于同一直接牌区",
+        "地图相机不随HUD及出牌数量变化"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/发动骑乘后进入的手牌选择态.png.jpg",
+      "chainId": "fate-inline-play-area-restoration",
+      "chainStep": "03",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "普通攻击批次激活伊斯坎达尔的骑乘技能后，玩家在原手牌区看到多选、费用和确认/取消操作。",
+      "description": "发动骑乘后进入的手牌选择态",
+      "uiStateId": "riding-choice-controls",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "普通攻击批次激活伊斯坎达尔的骑乘技能后，玩家在原手牌区看到多选、费用和确认/取消操作。",
+      "behaviorStepId": "open-riding-choice",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "Fate攻击手牌与已打出实例位于同一直接牌区",
+        "地图相机不随HUD及出牌数量变化"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/二十张真实实例仍留在原出牌区.png.jpg",
+      "chainId": "fate-inline-play-area-restoration",
+      "chainStep": "04",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "20张已打出实例使用同一牌区横向浏览，卡面保持正常尺寸；数量只是压力样例。",
+      "description": "二十张真实实例仍留在原出牌区",
+      "uiStateId": "twenty-inline-played-cards",
+      "uiChange": "layout",
+      "uiChangeReason": "20张已打出实例使用同一牌区横向浏览，卡面保持正常尺寸；数量只是压力样例。",
+      "behaviorStepId": "dense-direct-card-zone",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "Fate攻击手牌与已打出实例位于同一直接牌区",
+        "地图相机不随HUD及出牌数量变化"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/空攻击手牌仍留在独立攻击区.png.jpg",
+      "chainId": "fate-inline-play-area-restoration",
+      "chainStep": "05",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "布局代表态：空攻击手牌时攻击区宽度仍被HUD两侧轨道约束，不扩到本人HUD或操作区。",
+      "description": "空攻击手牌仍留在独立攻击区",
+      "uiStateId": "empty-attack-hand",
+      "uiChange": "layout",
+      "uiChangeReason": "布局代表态：空攻击手牌时攻击区宽度仍被HUD两侧轨道约束，不扩到本人HUD或操作区。",
+      "behaviorStepId": "empty-attack-hand",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "Fate攻击手牌与已打出实例位于同一直接牌区",
+        "地图相机不随HUD及出牌数量变化"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄横屏手牌与出牌分区.png.jpg",
+      "chainId": "fate-inline-play-area-restoration",
+      "chainStep": "06",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "936×432窄横屏使用真实视口CSS尺寸呈现；卡牌在各自横向滚动区保持可读点击尺寸。",
+      "description": "窄横屏手牌与出牌分区",
+      "uiStateId": "narrow-landscape-density",
+      "uiChange": "layout",
+      "uiChangeReason": "936×432窄横屏使用真实视口CSS尺寸呈现；卡牌在各自横向滚动区保持可读点击尺寸。",
+      "behaviorStepId": "narrow-viewport",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "Fate攻击手牌与已打出实例位于同一直接牌区",
+        "地图相机不随HUD及出牌数量变化"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄桌面关闭检视后的正常牌桌.png.jpg",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "1366×768桌面窄窗口中指针离开卡牌、检视关闭，三个席位和行动手牌各自可达。",
+      "description": "窄桌面关闭检视后的正常牌桌",
+      "uiStateId": "desktop-narrow-normal",
+      "uiChange": "layout",
+      "uiChangeReason": "1366×768桌面窄窗口中指针离开卡牌、检视关闭，三个席位和行动手牌各自可达。",
+      "behaviorStepId": "desktop-narrow-resting-state",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "1366×768桌面指针离开卡牌后没有残留检视层",
+        "本人HUD、全部对手席位、两类手牌和主动作各自可见可达"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/头像悬浮单排公开牌与暗置牌背.png.jpg",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "真实头像悬浮展开一排已打出牌，无外框；移开一秒再移入，超过收起时间仍可点牌。",
+      "description": "头像悬浮单排公开牌与暗置牌背",
+      "uiStateId": "desktop-opponent-cards-open",
+      "uiChange": "layout",
+      "uiChangeReason": "真实头像悬浮展开一排已打出牌，无外框；移开一秒再移入，超过收起时间仍可点牌。",
+      "behaviorStepId": "desktop-opponent-cards-open",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "1366×768桌面指针离开卡牌后没有残留检视层",
+        "本人HUD、全部对手席位、两类手牌和主动作各自可见可达"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/从对方悬浮牌排点击放大卡图.png.jpg",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "chainStep": "03",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家将指针移入头像旁的牌排后，点击公开牌本体打开正式完整卡面。",
+      "description": "从对方悬浮牌排点击放大卡图",
+      "uiStateId": "desktop-opponent-card-inspection",
+      "uiChange": "layout",
+      "uiChangeReason": "玩家将指针移入头像旁的牌排后，点击公开牌本体打开正式完整卡面。",
+      "behaviorStepId": "desktop-opponent-card-inspection",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "1366×768桌面指针离开卡牌后没有残留检视层",
+        "本人HUD、全部对手席位、两类手牌和主动作各自可见可达"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/窄桌面对手身份详情打开.png.jpg",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "chainStep": "04",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "对手详情打开时已揭示身份素材、公开资源与关闭入口均可辨。",
+      "description": "窄桌面对手身份详情打开",
+      "uiStateId": "desktop-player-detail-open",
+      "uiChange": "panel",
+      "uiChangeReason": "对手详情打开时已揭示身份素材、公开资源与关闭入口均可辨。",
+      "behaviorStepId": "desktop-player-detail-open",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "1366×768桌面指针离开卡牌后没有残留检视层",
+        "本人HUD、全部对手席位、两类手牌和主动作各自可见可达"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/玩家详情两排紧凑牌距.png.jpg",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "chainStep": "05",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从详情内切换到本人，身份与技能保持两排；相邻技能牌实际间距约12像素，右侧保留能力说明。",
+      "description": "玩家详情两排紧凑牌距",
+      "uiStateId": "desktop-self-detail-compact",
+      "uiChange": "layout",
+      "uiChangeReason": "从详情内切换到本人，身份与技能保持两排；相邻技能牌实际间距约12像素，右侧保留能力说明。",
+      "behaviorStepId": "desktop-self-detail-compact",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "1366×768桌面指针离开卡牌后没有残留检视层",
+        "本人HUD、全部对手席位、两类手牌和主动作各自可见可达"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/淘汰玩家详情红色状态.png.jpg",
+      "chainId": "fate-desktop-narrow-resting-state",
+      "chainStep": "06",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "详情布局代表态：玩家详情的已淘汰文字使用红色状态标记，不再显示未部署。",
+      "description": "淘汰玩家详情红色状态",
+      "uiStateId": "desktop-eliminated-detail",
+      "uiChange": "layout",
+      "uiChangeReason": "详情布局代表态：玩家详情的已淘汰文字使用红色状态标记，不再显示未部署。",
+      "behaviorStepId": "desktop-eliminated-detail",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "1366×768桌面指针离开卡牌后没有残留检视层",
+        "本人HUD、全部对手席位、两类手牌和主动作各自可见可达"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏点牌打开完整检视.png.jpg",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "真实触屏场景中点已打出牌本体打开完整卡面检视。",
+      "description": "触屏点牌打开完整检视",
+      "uiStateId": "touch-inspection-open",
+      "uiChange": "panel",
+      "uiChangeReason": "真实触屏场景中点已打出牌本体打开完整卡面检视。",
+      "behaviorStepId": "touch-inspection-open",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "hasTouch/isMobile场景没有遗留桌面卡牌悬停层",
+        "本人令咒与身份HUD未被裁切",
+        "两名对手席位同时可见且可点",
+        "关闭检视后可继续结束行动"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏关闭检视后的正常牌桌.png.jpg",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "真实触屏关闭完整卡面后，悬停层消失，本人HUD、两名对手、两类手牌和行动按钮可见可点。",
+      "description": "触屏关闭检视后的正常牌桌",
+      "uiStateId": "touch-normal-after-inspection",
+      "uiChange": "layout",
+      "uiChangeReason": "真实触屏关闭完整卡面后，悬停层消失，本人HUD、两名对手、两类手牌和行动按钮可见可点。",
+      "behaviorStepId": "touch-inspection-close-normal",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "hasTouch/isMobile场景没有遗留桌面卡牌悬停层",
+        "本人令咒与身份HUD未被裁切",
+        "两名对手席位同时可见且可点",
+        "关闭检视后可继续结束行动"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    },
+    {
+      "path": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga/触屏检视关闭后继续结束行动.png.jpg",
+      "chainId": "fate-touch-inspection-close-and-continue",
+      "chainStep": "03",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "viewport": "mobile",
+      "transition": "同一触屏链关闭检视后继续点击结束行动，真实行动权移交给下一席。",
+      "description": "触屏检视关闭后继续结束行动",
+      "uiStateId": "touch-continued-action",
+      "uiChange": "layout",
+      "uiChangeReason": "同一触屏链关闭检视后继续点击结束行动，真实行动权移交给下一席。",
+      "behaviorStepId": "touch-continue-action-after-close",
+      "sourceRevision": "fd2effbdf39278d9307f8f73cecf612d3ae8e1c9+tree-sha256:c71847e689d2890a4a083d509959e8f946958e02f4b8f7510ced9629c1521a5f",
+      "requirements": [
+        "hasTouch/isMobile场景没有遗留桌面卡牌悬停层",
+        "本人令咒与身份HUD未被裁切",
+        "两名对手席位同时可见且可点",
+        "关闭检视后可继续结束行动"
+      ],
+      "sourceRun": "1793528800108-136844-b1375d7f-41e4-46fa-83e5-28bd7fd1adbf",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/hand-layout-real-board.e2e/Fate-攻击牌在原位打出与撤回，出牌区密集时相机仍独立/_runs/e2e-1793528788513-7nk7ga"
+    }
+  ]
+}

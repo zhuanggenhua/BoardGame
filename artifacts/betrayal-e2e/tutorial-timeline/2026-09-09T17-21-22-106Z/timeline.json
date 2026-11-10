@@ -1,0 +1,317 @@
+{
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-timeline\\2026-09-09T17-21-22-106Z",
+  "shot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-timeline\\2026-09-09T17-21-22-106Z\\timeline-final.png",
+  "state": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "hasBoard": false,
+    "hasCharacterSelect": false,
+    "activeStepDom": null,
+    "contextDiagnostics": {
+      "isBoardMounted": false,
+      "isControllerReady": true,
+      "active": false,
+      "manifestId": null,
+      "stepIndex": 0,
+      "stepId": null,
+      "stepAiActionCount": 0,
+      "aiActionCount": 0
+    },
+    "tutorial": {
+      "active": false,
+      "stepIndex": 0,
+      "stepId": null,
+      "aiActions": null,
+      "stepAiActions": null,
+      "allowManualSkip": null
+    },
+    "core": {
+      "phase": "preHaunt",
+      "currentPlayer": "0",
+      "latestDiscovery": null,
+      "recentRoll": null
+    },
+    "timeline": [
+      {
+        "at": 1750.199999988079,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 1,
+        "events": [],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0",
+        "latestDiscovery": null,
+        "recentRoll": null
+      },
+      {
+        "at": 1759.699999988079,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 1,
+        "events": [],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0",
+        "latestDiscovery": null,
+        "recentRoll": null
+      },
+      {
+        "at": 1869.0999999940395,
+        "active": true,
+        "stepIndex": 0,
+        "stepId": "setup-runtime",
+        "aiActions": 1,
+        "stepAiActions": 1,
+        "eventNextId": 2,
+        "events": [
+          "SYS_TUTORIAL_STARTED"
+        ],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0",
+        "latestDiscovery": null,
+        "recentRoll": null
+      },
+      {
+        "at": 1889.2999999821186,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 1,
+        "events": [],
+        "corePhase": "characterSelect",
+        "currentPlayer": "0",
+        "latestDiscovery": null,
+        "recentRoll": null
+      },
+      {
+        "at": 1943.699999988079,
+        "active": false,
+        "stepIndex": 0,
+        "stepId": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "eventNextId": 2,
+        "events": [
+          "SYS_TUTORIAL_AI_CONSUMED"
+        ],
+        "corePhase": "preHaunt",
+        "currentPlayer": "0",
+        "latestDiscovery": null,
+        "recentRoll": null
+      }
+    ]
+  },
+  "logs": [
+    {
+      "at": "2026-09-09T17:21:22.985Z",
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "at": "2026-09-09T17:21:22.994Z",
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "at": "2026-09-09T17:21:23.032Z",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "at": "2026-09-09T17:21:23.053Z",
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "at": "2026-09-09T17:21:23.407Z",
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "at": "2026-09-09T17:21:23.653Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T17:21:23.652Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T17:21:23.654Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:21:23.653Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "at": "2026-09-09T17:21:23.657Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:21:23.657Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.162Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T17:21:24.162Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.162Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:21:24.162Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.186Z",
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T17:21:24.186Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":24}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.480Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:21:24.480Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":827}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.480Z",
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T17:21:24.480Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":318}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.591Z",
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.606Z",
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:21:24.606Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.607Z",
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:21:24.607Z",
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "at": "2026-09-09T17:21:24.769Z",
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||1|0|||||||0|\",\"markerAfter\":\"0||1|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "at": "2026-09-09T17:21:24.769Z",
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "at": "2026-09-09T17:21:29.601Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:29.602Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/ui/compressed/title-banner.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:29.602Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:29.602Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:29.611Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:29.611Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:29.611Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:29.611Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/ui/compressed/trait-track-0-9.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:29.612Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-front.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:29.623Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/cards/compressed/traitor-reference-zh.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:29.623Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/cards/compressed/player-reference-zh-back.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:29.624Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/cards/compressed/monster-reference-zh.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:34.602Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:34.602Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:34.603Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/explorers/compressed/xia.webp"
+    },
+    {
+      "at": "2026-09-09T17:21:34.603Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:34.606Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:34.606Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:34.607Z",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+    },
+    {
+      "at": "2026-09-09T17:21:34.607Z",
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/explorers/compressed/anita-hernandez.webp"
+    }
+  ]
+}

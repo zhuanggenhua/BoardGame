@@ -1,0 +1,12 @@
+{
+  "scope": "isolated-single-pw-1793070188813-gco2k6",
+  "sessionId": "e2e-1793070188813-r78wm6",
+  "frontendSourceHash": "964002730f13432858764643e4bd2ac9e376541b5628f228dd063c1473e3ff97",
+  "frontendMatches": true,
+  "backendMatches": true,
+  "ports": {
+    "frontend": 6273,
+    "gameServer": 20100,
+    "apiServer": 21100
+  }
+}

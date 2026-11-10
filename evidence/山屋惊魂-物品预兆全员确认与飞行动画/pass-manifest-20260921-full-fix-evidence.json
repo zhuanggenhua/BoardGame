@@ -1,0 +1,50 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-21T23:17:30+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "物品和预兆必须等三名玩家都确认后才关闭展示。",
+      "status": "PASS",
+      "evidence": [
+        "正式三人页面 E2E 通过：requiredPlayerIds 为 0、1、2；首位确认后仅记录 0，第二位确认后仍保留结算队列，最后一位确认后才清空队列。",
+        "物品截图覆盖首位确认后仍等待、第二位确认后仍未关闭。",
+        "预兆截图覆盖首位确认后仍等待、第二位确认后仍未关闭。"
+      ]
+    },
+    {
+      "requirement": "别人的物品和预兆都要飞向实际获得者的探索者 Token，动画期间持有区不提前显示，动画结束后正常落位。",
+      "status": "PASS",
+      "evidence": [
+        "正式三人页面 E2E 断言过场类型为 possession-gain，目标为 betrayal-explorer-figure-token-0。",
+        "物品和预兆在动画期间对应持有区卡牌数量均为 0，过场结束后卡牌重新可见。",
+        "物品和预兆各自都有最后确认飞行帧与动画结束落位帧。"
+      ]
+    },
+    {
+      "requirement": "发现描述不重复显示投掷目标、投掷过程和投掷结果；骰盘和正式结算记录仍保留这些结果。",
+      "status": "PASS",
+      "evidence": [
+        "Board.foundation.test.tsx 的普通投骰事件牌测试断言展示描述不包含检定数值、投骰数量、总点数，同时保留分支结果文字。",
+        "latestDiscoverySurface.tsx 的显示描述清理逻辑移除检定前缀、投骰前缀和作祟总点数；recent-roll 面板继续单独承载骰盘与结果。",
+        "描述相关 Vitest 目标测试通过 2/2。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-物品-01-首位确认后仍等待全员确认.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-物品-02-第二位确认后仍未关闭.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-物品-03-最后确认飞入对应玩家.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-物品-04-动画结束最终落位.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-预兆-01-首位确认后仍等待全员确认.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-预兆-02-第二位确认后仍未关闭.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-预兆-03-最后确认飞入对应玩家.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\山屋惊魂-物品预兆全员确认与飞行动画\\全员确认与飞行-预兆-04-动画结束最终落位.jpg"
+  ]
+}

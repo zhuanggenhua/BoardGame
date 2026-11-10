@@ -1,0 +1,921 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-one-grid",
+  "sourceRun": "20261025-qidahen-tutorial-revision9-r6",
+  "sourceRevision": "sha256:813ba990b33555f0472a193ed85b12c332866f9475a2af42fd9ce1f1fff27daa",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 13 个行为检查点与 3 个独特界面状态。",
+  "steps": [
+    {
+      "id": "basic-opening-one-grid-input-001",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "执行一次手牌行动及轮盘行动，执行顺序由玩家自行决定。现在先选一项：右侧“征召军队”，或轮盘走法。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-opening-action",
+          "expected": "choose-opening-action"
+        },
+        {
+          "name": "basic-opening-one-grid-input-001-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-002",
+      "action": "点击：qidahen-action-recruit",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "执行一次手牌行动及轮盘行动，执行顺序由玩家自行决定。现在先选一项：右侧“征召军队”，或轮盘走法。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队需弃 1 张手牌。选牌前可点“看”查看牌面，移动端长按；选 1 张并确认支付。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-002-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-002-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-002-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        },
+        {
+          "name": "basic-opening-one-grid-input-002-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-action-recruit"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-003",
+      "action": "点击：qidahen-hand-card-hand-1",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队需弃 1 张手牌。选牌前可点“看”查看牌面，移动端长按；选 1 张并确认支付。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队需弃 1 张手牌。选牌前可点“看”查看牌面，移动端长按；选 1 张并确认支付。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-003-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-003-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-003-visible-tutorial-step-matches-authoritative-step",
+          "actual": "pay-recruit",
+          "expected": "pay-recruit"
+        },
+        {
+          "name": "basic-opening-one-grid-input-003-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-hand-card-hand-1"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-004",
+      "action": "点击：qidahen-action-payment-confirm",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "pay-recruit",
+          "tutorialText": "征召军队需弃 1 张手牌。选牌前可点“看”查看牌面，移动端长按；选 1 张并确认支付。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "pay-recruit",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-target",
+          "tutorialText": "点击高亮的宣府。正规军必须在本土（深色）区域建立。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-target",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-004-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-004-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-004-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-recruit-target",
+          "expected": "choose-recruit-target"
+        },
+        {
+          "name": "basic-opening-one-grid-input-004-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-action-payment-confirm"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-005",
+      "action": "点击：qidahen-map-guide-hit-target-city-region-24",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-target",
+          "tutorialText": "点击高亮的宣府。正规军必须在本土（深色）区域建立。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-target",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-formation",
+          "tutorialText": "右侧列出这次可选的建军方式。选择 6 支等级 2 正规军，建立在宣府。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-formation",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-005-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-005-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-005-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-recruit-formation",
+          "expected": "choose-recruit-formation"
+        },
+        {
+          "name": "basic-opening-one-grid-input-005-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-map-guide-hit-target-city-region-24"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-006",
+      "action": "点击：qidahen-recruit-choice-level-2-troops",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "choose-recruit-formation",
+          "tutorialText": "右侧列出这次可选的建军方式。选择 6 支等级 2 正规军，建立在宣府。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-recruit-formation",
+          "turnPhase": "recruit-choice",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "action-result",
+          "tutorialText": "征召军队已结算，右侧显示实际建军结果。轮盘行动还未执行；接下来选择一种走法。上一步下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "action-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-006-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-006-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-006-visible-tutorial-step-matches-authoritative-step",
+          "actual": "action-result",
+          "expected": "action-result"
+        },
+        {
+          "name": "basic-opening-one-grid-input-006-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-recruit-choice-level-2-troops"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-007",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "action-result",
+          "tutorialText": "征召军队已结算，右侧显示实际建军结果。轮盘行动还未执行；接下来选择一种走法。上一步下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "action-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "轮盘标记由所有玩家共用。本回合每位玩家只选一种走法；费用和落点效果见各格提示。选择 1、2、3 格之一。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-007-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-007-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-007-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-move",
+          "expected": "wheel-move"
+        },
+        {
+          "name": "basic-opening-one-grid-input-007-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-capture-008",
+      "action": "记录实际输入后的稳定界面：03c-一格开垦前-选择轮盘走法",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "轮盘标记由所有玩家共用。本回合每位玩家只选一种走法；费用和落点效果见各格提示。选择 1、2、3 格之一。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "轮盘标记由所有玩家共用。本回合每位玩家只选一种走法；费用和落点效果见各格提示。选择 1、2、3 格之一。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-capture-008-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-capture-008-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-capture-008-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-move",
+          "expected": "wheel-move"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-one-grid-input-009",
+      "action": "点击：qidahen-wheel-move-target-move-1-free",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-move",
+          "tutorialText": "轮盘标记由所有玩家共用。本回合每位玩家只选一种走法；费用和落点效果见各格提示。选择 1、2、3 格之一。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-move",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "recruit",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": true,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "右侧结果显示刚才行动的实际变化。本回合的两种行动都已完成。上一步完成并返回",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-reclaim",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-009-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-009-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-009-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-result",
+          "expected": "wheel-result"
+        },
+        {
+          "name": "basic-opening-one-grid-input-009-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-wheel-move-target-move-1-free"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-capture-010",
+      "action": "记录实际输入后的稳定界面：03c-轮盘一格-进入开垦并结算",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "右侧结果显示刚才行动的实际变化。本回合的两种行动都已完成。上一步完成并返回",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-reclaim",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "右侧结果显示刚才行动的实际变化。本回合的两种行动都已完成。上一步完成并返回",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-reclaim",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-capture-010-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-capture-010-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-capture-010-visible-tutorial-step-matches-authoritative-step",
+          "actual": "wheel-result",
+          "expected": "wheel-result"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-one-grid-input-011",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": "wheel-result",
+          "tutorialText": "右侧结果显示刚才行动的实际变化。本回合的两种行动都已完成。上一步完成并返回",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "wheel-result",
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-reclaim",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": null,
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-reclaim",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-011-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-011-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-011-visible-tutorial-step-matches-authoritative-step",
+          "actual": null,
+          "expected": null
+        },
+        {
+          "name": "basic-opening-one-grid-input-011-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-input-012",
+      "action": "点击：qidahen-wheel-move-target-move-1-free",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": null,
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-reclaim",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": null,
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-input-012-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-012-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-input-012-visible-tutorial-step-matches-authoritative-step",
+          "actual": null,
+          "expected": null
+        },
+        {
+          "name": "basic-opening-one-grid-input-012-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "qidahen-wheel-move-target-move-1-free"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-one-grid-capture-013",
+      "action": "记录实际输入后的稳定界面：03d-一格开垦后退出教程并完成下一次轮盘行动",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": null,
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial/basic-opening",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": null,
+          "turnPhase": "action-window",
+          "currentPlayer": "1",
+          "selectedActionId": "khan-edict",
+          "actionWheelPosition": "wheel-military-farm",
+          "factionActionUsed": false,
+          "mingHandCount": 2
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-one-grid-capture-013-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-capture-013-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-one-grid-capture-013-visible-tutorial-step-matches-authoritative-step",
+          "actual": null,
+          "expected": null
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "basic-opening-one-grid-ui-01",
+      "stepId": "basic-opening-one-grid-capture-008",
+      "change": "target-highlight",
+      "viewport": "desktop",
+      "sha256": "ca1102b96a304f3b90425193ea7b1d2806659195e2413e867bf9cb6066156e7b",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261025-qidahen-tutorial-revision9-r6\\03c-一格开垦前-选择轮盘走法.png",
+      "reason": "玩家完成当前输入后，教程界面呈现03c，一格开垦前，选择轮盘走法状态。"
+    },
+    {
+      "id": "basic-opening-one-grid-ui-02",
+      "stepId": "basic-opening-one-grid-capture-010",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "2894c7293fd008021e2ed93dd7f35823ff02cc7fb65a2086424e298761c069d3",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261025-qidahen-tutorial-revision9-r6\\03c-轮盘一格-进入开垦并结算.png",
+      "reason": "玩家完成当前输入后，教程界面呈现03c，轮盘一格，进入开垦并结算状态。"
+    },
+    {
+      "id": "basic-opening-one-grid-ui-03",
+      "stepId": "basic-opening-one-grid-capture-013",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "0e81c90b066563a3b61a6c5ccb44ba939e8be74819905fe7b592fd6ba8468b4a",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261025-qidahen-tutorial-revision9-r6\\03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+      "reason": "玩家完成当前输入后，教程界面呈现03d，一格开垦后退出教程并完成下一次轮盘行动状态。"
+    }
+  ],
+  "skippedDuplicateScreenshots": []
+}

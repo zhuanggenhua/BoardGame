@@ -1,0 +1,225 @@
+{
+  "objective": "完整单卡图面核对圣骑士正式atlas帧22–32",
+  "agentId": "/root/audit_frames_22_32",
+  "method": "逐张view_image完整sourceCrop，分批不超过3张；对照inventory.expected与runtime-cards.json；未联网、未改实现、未跑测试",
+  "coverageBoundary": "semanticsMatchExpected覆盖图面正文、费用、时机与expected声明；custom handler的实际目标选择不在本次只读图面审计范围",
+  "summary": {
+    "total": 11,
+    "passed": 9,
+    "failed": 2,
+    "partial": 0,
+    "blocked": 0,
+    "atlasIndexMismatchFrames": [
+      22
+    ],
+    "sameCardTextOrTimingDifferenceFrames": [
+      23
+    ],
+    "runtimeTargetReviewFrames": [
+      23,
+      26,
+      31,
+      32
+    ]
+  },
+  "items": [
+    {
+      "frame": 22,
+      "actualTitle": "惊不惊喜？！",
+      "actualCpCost": 2,
+      "actualTimingColor": "橙色／投掷阶段行动／骰子图标",
+      "bodyText": "改变任意1颗骰子的数值。",
+      "identifiedRuntimeCardId": "card-surprise",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "atlas-index-mismatch",
+          "detail": "实际为card-surprise：2CP、改变任意1骰；expected card-unexpected为3CP、改变任意2骰。"
+        }
+      ],
+      "status": "failed",
+      "sourceNumber": 13,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-22-source.png",
+      "sourceCropSha256": "5ea1e50e68a30d9c4c6d72037eaf3342b25f413ea8219870968d66553a0d8803"
+    },
+    {
+      "frame": 23,
+      "actualTitle": "下次一定！",
+      "actualCpCost": 1,
+      "actualTimingColor": "橙色／投掷阶段行动／骰子图标",
+      "bodyText": "一名玩家防止[盾牌6：6点]即将受到的伤害。",
+      "identifiedRuntimeCardId": "card-next-time",
+      "titleMatchesExpected": false,
+      "semanticsMatchExpected": false,
+      "discrepancies": [
+        {
+          "kind": "same-card-title-difference",
+          "detail": "图面标题为下次一定！，expected本地化名称为这次不算！；费用1CP与防止一名玩家6伤害的身份一致，不归类为索引错配。"
+        },
+        {
+          "kind": "same-card-timing-difference",
+          "detail": "图面左侧明确写投掷阶段行动且橙框／骰子图标；expected timing=instant。"
+        },
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面目标是一名玩家；expected.description一致，expected.effects.action.target=self。是否由结算交互扩展目标尚未核对，不凭声明认定实际规则错误。"
+        }
+      ],
+      "status": "failed",
+      "sourceNumber": 10,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-23-source.png",
+      "sourceCropSha256": "735dd21bd1b722aa1407899104fc5b0ddbc84ed9c8b14e97bf46c201f5930f10"
+    },
+    {
+      "frame": 24,
+      "actualTitle": "老板大气！",
+      "actualCpCost": 0,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "获得[2CP]。",
+      "identifiedRuntimeCardId": "card-boss-generous",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "sourceNumber": 9,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-24-source.png",
+      "sourceCropSha256": "f2b9f14dacc6b19b47aac4f5a207d67bfbf09a7f822c3ddeabf634d624941fcd"
+    },
+    {
+      "frame": 25,
+      "actualTitle": "弹一手！",
+      "actualCpCost": 1,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "增加或减少任意1颗骰子的数值1点（数值1无法再减少，数值6无法再增加）。",
+      "identifiedRuntimeCardId": "card-flick",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "sourceNumber": 8,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-25-source.png",
+      "sourceCropSha256": "486b40a16eca0f761c6fbf953e30e36313a2765774054a8689970d2d40280a8f"
+    },
+    {
+      "frame": 26,
+      "actualTitle": "拜拜了您内！",
+      "actualCpCost": 2,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "从1名玩家身上移除1个状态效果。",
+      "identifiedRuntimeCardId": "card-bye-bye",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面和expected.description均是一名玩家；expected custom remove-status-1的action.target=self，真实目标选择消费未核对，不认定为图序差异。"
+        }
+      ],
+      "status": "passed",
+      "sourceNumber": 7,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-26-source.png",
+      "sourceCropSha256": "be9bb12c82da74cb5a23b0e14727d6802afba0e765ba82c59f0abbbb5d1ea4e4"
+    },
+    {
+      "frame": 27,
+      "actualTitle": "加倍！",
+      "actualCpCost": 1,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "抽取[牌张图标2：2张牌]。",
+      "identifiedRuntimeCardId": "card-double",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "sourceNumber": 6,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-27-source.png",
+      "sourceCropSha256": "4c6477260d6ab00c9541c90f37721578187da5d69399d0a0788858660a19ac10"
+    },
+    {
+      "frame": 28,
+      "actualTitle": "超级加倍！",
+      "actualCpCost": 2,
+      "actualTimingColor": "红色／瞬时行动／感叹号图标",
+      "bodyText": "抽取[牌张图标3：3张牌]。",
+      "identifiedRuntimeCardId": "card-super-double",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "sourceNumber": 5,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-28-source.png",
+      "sourceCropSha256": "81ca2aa54608cf9c7cac8a4863024f09bdcde4d55e9133d33b898cfebb4afe8d"
+    },
+    {
+      "frame": 29,
+      "actualTitle": "起开！",
+      "actualCpCost": 1,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "从1名玩家身上移除1个状态效果。",
+      "identifiedRuntimeCardId": "card-get-away",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "sourceNumber": 4,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-29-source.png",
+      "sourceCropSha256": "fd879a03dcc9d6a51ed9c8d695056fc34e20c00b55e2b1a3f1b07b334238b2b9"
+    },
+    {
+      "frame": 30,
+      "actualTitle": "一掷千金！",
+      "actualCpCost": 0,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "投掷1[骰子图标]：获得½数值的[CP]（向上取整）。",
+      "identifiedRuntimeCardId": "card-one-throw-fortune",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [],
+      "status": "passed",
+      "sourceNumber": 3,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-30-source.png",
+      "sourceCropSha256": "9d4c19cfbf24eb5de8cc2a361eefa54ed0376a2f13ece0a1a92af13a5b37ae60"
+    },
+    {
+      "frame": 31,
+      "actualTitle": "状什么态？",
+      "actualCpCost": 2,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "移除1名玩家的所有状态效果。",
+      "identifiedRuntimeCardId": "card-what-status",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面和expected.description均是一名玩家的所有状态；expected custom remove-all-status的action.target=self，真实目标选择消费未核对，不认定为图序差异。"
+        }
+      ],
+      "status": "passed",
+      "sourceNumber": 2,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-31-source.png",
+      "sourceCropSha256": "f9d1d775a34e1c9ce1a43b9a2460baf83fd83120a98b9becbe9937be71e95dd5"
+    },
+    {
+      "frame": 32,
+      "actualTitle": "乾坤大挪移！",
+      "actualCpCost": 2,
+      "actualTimingColor": "蓝色／主要阶段行动／M图标",
+      "bodyText": "将1名玩家身上的1个状态效果转移至另1名玩家。",
+      "identifiedRuntimeCardId": "card-transfer-status",
+      "titleMatchesExpected": true,
+      "semanticsMatchExpected": true,
+      "discrepancies": [
+        {
+          "kind": "runtime-target-review",
+          "detail": "图面为从一名玩家转移一个状态至另一名玩家；expected.description一致，custom transfer-status的action.target=self，真实来源／目标选择未核对，不认定为图序差异。"
+        }
+      ],
+      "status": "passed",
+      "sourceNumber": 1,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-32-source.png",
+      "sourceCropSha256": "d83d296a202303a11ba53fc05da8ce6a524d9a0238bf9a68fdadec6904d68493"
+    }
+  ]
+}

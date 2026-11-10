@@ -1,0 +1,436 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "primary-agent",
+    "id": "/root"
+  },
+  "media": [
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-01-索尔正式角色板与卡牌.png",
+      "sha256": "e4f340f22713f49490442ae8f1fcc94e07ce37b5c826766da525de23fb616dbf",
+      "status": "REVISE",
+      "target": "索尔角色板与四张正式手牌",
+      "beforeAfter": "记录索尔主阶段的角色板与手牌初态",
+      "observation": "索尔角色板与四张正式手牌；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/01-索尔正式角色板与卡牌.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-02-弃牌飞掷选择成本.png",
+      "sha256": "aa9a3d12114351bd9bacc01185b541b91513cd97b9f194055caa081ccf0c2db1",
+      "status": "REVISE",
+      "target": "手牌区显示弃置提示与取消操作",
+      "beforeAfter": "点击弃牌飞掷并进入手牌区成本选择",
+      "observation": "手牌区显示弃置提示与取消操作；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/02-弃牌飞掷选择成本.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-03-取消弃牌支付且资源未扣.png",
+      "sha256": "ed9c5417ae480c389213d6de667e0875070d7df5f32c9db94902f089804b4e75",
+      "status": "REVISE",
+      "target": "取消弃牌后恢复常态手牌区",
+      "beforeAfter": "点击取消并核对资源与手牌保持不变",
+      "observation": "取消弃牌后恢复常态手牌区；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/03-取消弃牌支付且资源未扣.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-04-手牌区弃置成本后飞掷结算.png",
+      "sha256": "b04ca8e28390c4204520987bce31f1d3d579beb21ec6cf79f394cdbe392a6619",
+      "status": "REVISE",
+      "target": "弃牌后锤子转交并完成飞掷",
+      "beforeAfter": "点击一张手牌支付成本并完成飞掷",
+      "observation": "弃牌后锤子转交并完成飞掷；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/04-手牌区弃置成本后飞掷结算.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-05-奥丁之力二级升级完成.png",
+      "sha256": "2bee459b1a2b278276d2442d13ee38fb9c041e8b99983afd59f974ef35206803",
+      "status": "REVISE",
+      "target": "奥丁之力升级后角色板状态",
+      "beforeAfter": "打出奥丁之力二级升级卡",
+      "observation": "奥丁之力升级后角色板状态；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/05-奥丁之力二级升级完成.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-06-奥丁效果骰等待任选重掷.png",
+      "sha256": "79ebe58eb4376e80edd5fc40c540d0ff0cfe20f8b2d132ea9504b2bf5451d392",
+      "status": "REVISE",
+      "target": "五颗效果骰等待玩家选择",
+      "beforeAfter": "完成攻击骰后进入五颗效果骰重掷",
+      "observation": "五颗效果骰等待玩家选择；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/06-奥丁效果骰等待任选重掷.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-07-选择两颗骰子一起重掷.png",
+      "sha256": "fd9bf6f1fad3d4f0933bae6721271173e28431b9a028345e707a7b1810d1467e",
+      "status": "REVISE",
+      "target": "两颗待重掷骰子独立高亮",
+      "beforeAfter": "选择两颗效果骰并等待整组重掷",
+      "observation": "两颗待重掷骰子独立高亮；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/07-选择两颗骰子一起重掷.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-08-整组重掷一次完成.png",
+      "sha256": "c2b8342321fee628af31205cac70dfe6789960296b7d4d632422ccb3009abdf7",
+      "status": "REVISE",
+      "target": "效果骰整组重掷完成状态",
+      "beforeAfter": "执行一次整组重掷",
+      "observation": "效果骰整组重掷完成状态；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/08-整组重掷一次完成.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/01-09-效果骰收口后进入主攻击防御.png",
+      "sha256": "5788ce1acce92d9b2c8e3573041ec138da3e7ea3036092567b2e9a4ddaa07dbc",
+      "status": "REVISE",
+      "target": "效果骰结束后进入防御阶段",
+      "beforeAfter": "确认效果骰后推进到防御阶段",
+      "observation": "效果骰结束后进入防御阶段；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792855153425-7g0t6n/09-效果骰收口后进入主攻击防御.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/02-01-手牌放大完整阅读挥锤时刻.png",
+      "sha256": "b084217c9bb1bb2fa3786ba28eae77e9d78cbdf1ee1f280d89de9f3e05d0801d",
+      "status": "REVISE",
+      "target": "手牌放大后完整阅读挥锤时刻",
+      "beforeAfter": "点击手牌并放大查看完整卡面",
+      "observation": "手牌放大后完整阅读挥锤时刻；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792855153425-7g0t6n/01-手牌放大完整阅读挥锤时刻.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/02-02-改骰前自己的五颗骰子.png",
+      "sha256": "3c4743a099367dad48ccf8281eef3f59aea7bb376f4dac5bc9e52a5398ed79ba",
+      "status": "REVISE",
+      "target": "骰子修改前展示自己的五颗骰子",
+      "beforeAfter": "掷出并显示本人五颗攻击骰",
+      "observation": "骰子修改前展示自己的五颗骰子；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792855153425-7g0t6n/02-改骰前自己的五颗骰子.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/02-03-当之无愧选择四或五.png",
+      "sha256": "242079bdf0c9a5d8517b7b8440fa063577c72884db5caa46987e9e16b2220f4f",
+      "status": "REVISE",
+      "target": "当之无愧显示四或五的可选点数",
+      "beforeAfter": "打出当之无愧并选择目标点数",
+      "observation": "当之无愧显示四或五的可选点数；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792855153425-7g0t6n/03-当之无愧选择四或五.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/02-04-选择自己的一颗骰子.png",
+      "sha256": "a2ff86c4386a0709e095863d1e5ef990b6929c13eed43edec310ed1bab77c124",
+      "status": "REVISE",
+      "target": "选择本人骰子的实际按钮状态",
+      "beforeAfter": "选择一颗自己的骰子",
+      "observation": "选择本人骰子的实际按钮状态；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792855153425-7g0t6n/04-选择自己的一颗骰子.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/02-05-改为四且其余骰子保持.png",
+      "sha256": "0dfb02b17b58f0dd134b6a2124e0f16f19a570efcad2568b066fb9d258531573",
+      "status": "REVISE",
+      "target": "修改一颗骰子后其余骰子保留",
+      "beforeAfter": "确认后核对骰子结果",
+      "observation": "修改一颗骰子后其余骰子保留；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔手牌可完整放大并通过当之无愧选择自己的骰子/_runs/e2e-1792855153425-7g0t6n/05-改为四且其余骰子保持.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/03-01-连锁闪电触发前.png",
+      "sha256": "71f12f8bf4d60d95b20993e7f784d6ce5b3938396b3b240ad30c7b831efd317e",
+      "status": "REVISE",
+      "target": "连锁闪电触发前的攻击骰组合",
+      "beforeAfter": "掷出连锁闪电所需攻击骰",
+      "observation": "连锁闪电触发前的攻击骰组合；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1792855153425-7g0t6n/01-连锁闪电触发前.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/03-02-三颗效果骰等待确认.png",
+      "sha256": "4edca07706fcc51b2768246bda07d92f252dd4b3361a304c7335ac6372e85018",
+      "status": "REVISE",
+      "target": "三颗效果骰进入确认界面",
+      "beforeAfter": "确认后显示三颗效果骰",
+      "observation": "三颗效果骰进入确认界面；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1792855153425-7g0t6n/02-三颗效果骰等待确认.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/03-03-选择两颗效果骰组合.png",
+      "sha256": "6b89239b072e2a9aeef1d54dcf36b9b78d72bc22bd124f7ba0b21f5a8da326fd",
+      "status": "REVISE",
+      "target": "两颗效果骰组合选择入口",
+      "beforeAfter": "打开并选择两骰点数和组合",
+      "observation": "两颗效果骰组合选择入口；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1792855153425-7g0t6n/03-选择两颗效果骰组合.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/03-04-附属伤害自动命中唯一对手并保留主攻击.png",
+      "sha256": "8fc719303433da3db698b28391e867b584f024499aa733d4e776d2865e011702",
+      "status": "REVISE",
+      "target": "唯一对手受附属伤害且主攻击保留",
+      "beforeAfter": "确认后自动命中唯一对手并收口",
+      "observation": "唯一对手受附属伤害且主攻击保留；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔连锁闪电选择效果骰并自动结算唯一附属目标/_runs/e2e-1792855153425-7g0t6n/04-附属伤害自动命中唯一对手并保留主攻击.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/04-01-破防正式图标与消费入口.png",
+      "sha256": "1f6e71c9d371d6ed053723e852e127a036bf94f22972007c8f0b740bbfe472d8",
+      "status": "REVISE",
+      "target": "破防正式图标和消费入口清楚可见",
+      "beforeAfter": "显示破防指示物与消费按钮",
+      "observation": "破防正式图标和消费入口清楚可见；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792855153425-7g0t6n/01-破防正式图标与消费入口.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/04-02-第一枚破防效果骰失败.png",
+      "sha256": "3b2b5a5a9224ab70e240ab199fbef3f5f8f8bb279fc44993c348cd328431f70e",
+      "status": "REVISE",
+      "target": "第一枚破防效果骰未达到要求",
+      "beforeAfter": "消费第一枚效果骰并产生失败结果",
+      "observation": "第一枚破防效果骰未达到要求；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792855153425-7g0t6n/02-第一枚破防效果骰失败.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/04-03-失败后仍可使用第二枚破防.png",
+      "sha256": "3cb257a39d34afc8732f618dcd8ee2b5a7872df4a10570419c95ad273bf58b17",
+      "status": "REVISE",
+      "target": "失败后仍保留第二枚破防入口",
+      "beforeAfter": "确认失败后检查第二枚入口仍可用",
+      "observation": "失败后仍保留第二枚破防入口；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792855153425-7g0t6n/03-失败后仍可使用第二枚破防.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/04-04-第二枚破防效果骰成功.png",
+      "sha256": "420b3a914ffbafd35f201bd50ec326222479949675098295f38879e4f071f1a5",
+      "status": "REVISE",
+      "target": "第二枚破防效果骰达到要求",
+      "beforeAfter": "再次消费第二枚效果骰",
+      "observation": "第二枚破防效果骰达到要求；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792855153425-7g0t6n/04-第二枚破防效果骰成功.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/04-05-不可防御主攻击结算后收口.png",
+      "sha256": "d9a70a5dddbe4bf81800249eea10fdad823d227e3ec13f29c6814c937e78e488",
+      "status": "REVISE",
+      "target": "不可防御主攻击结算后进入主阶段二",
+      "beforeAfter": "确认主攻击结算并检查阶段收口",
+      "observation": "不可防御主攻击结算后进入主阶段二；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔破防连续消费失败后仍可再次使用/_runs/e2e-1792855153425-7g0t6n/05-不可防御主攻击结算后收口.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/05-01-索尔真实双人选角与实施中标记.png",
+      "sha256": "ed5935b9b19650cf634a3eb929130e4edce7d22bb4d8f65121fb2f71a41b23b4",
+      "status": "REVISE",
+      "target": "双人选角界面显示索尔实施中标记",
+      "beforeAfter": "真实创建双人房间并由主机选择索尔",
+      "observation": "双人选角界面显示索尔实施中标记；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1792861790020-21xayk/01-索尔真实双人选角与实施中标记.png"
+    },
+    {
+      "path": "evidence/dicethrone/thor-20261025/full-rereview/05-02-索尔在线开局角色板九槽与手牌.png",
+      "sha256": "c9a0a22273f8dbc0e836d80f62d7b3b1f326e833c7782f9d282ed0c2aeb50491",
+      "status": "REVISE",
+      "target": "双人开局后显示九槽角色板与四张手牌",
+      "beforeAfter": "双方准备并开局后确认索尔角色板",
+      "observation": "双人开局后显示九槽角色板与四张手牌；目标和交互状态清楚，完整桌面布局可读，未见错误或遮挡。 截图源码摘要已过期，本轮待刷新。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": [],
+      "source": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-online-entry.e2e/索尔可在真实双人房间选择并以实施中状态开局/_runs/e2e-1792861790020-21xayk/02-索尔在线开局角色板九槽与手牌.png"
+    }
+  ]
+}

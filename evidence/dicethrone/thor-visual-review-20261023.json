@@ -1,0 +1,311 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "verdict": "PASS",
+  "score": 94,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/thor_board_intake"
+  },
+  "runId": "e2e-1792757343532-13ucob",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/01-索尔正式角色板与卡牌.png",
+      "sha256": "6f6872e4456d996111079952615a5149930d6e4effa8d08ae68c8f4915a8d1ee",
+      "status": "PASS",
+      "score": 93,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 8
+      },
+      "target": "索尔正式角色板、四张正面手牌与同伴素材",
+      "beforeAfter": "进入主要阶段并等待翻面动画结束",
+      "observation": "索尔九槽板、提示板、四张手牌正面与自己持有的锤子精灵均已显示。",
+      "protectionSlots": "阶段、生命、战斗点数、牌库、弃牌槽、手牌、骰盘与同伴按钮各守原位。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/02-弃牌飞掷选择成本.png",
+      "sha256": "e8a1e5cc0311eeced1e4b813abe12266b284e21033cf70b7d0171b1c7ae16199",
+      "status": "PASS",
+      "score": 95,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 10
+      },
+      "target": "弃置手牌成本候选",
+      "beforeAfter": "点击弃牌飞掷后进入成本选择",
+      "observation": "四张候选以完整正式卡面呈现且无相互覆盖，跳过按钮位于候选下方。",
+      "protectionSlots": "弹窗拥有当前决策焦点；可支付候选全部转移到弹窗内，背景牌桌仅暂时变暗。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/03-手动选择飞掷目标.png",
+      "sha256": "f88e4865d73abc806d909bddeb1c931715cadeba20b007e999359d52795d8037",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "飞掷目标候选",
+      "beforeAfter": "选定弃置成本后进入目标选择",
+      "observation": "飞掷按钮同时呈现武僧头像、英雄名称和玩家名称，候选对象清楚可识别。",
+      "protectionSlots": "单一目标候选完整位于弹窗内，未发生卡片或按钮裁切。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/04-飞掷后独立伤害与锤子位置.png",
+      "sha256": "e62d3f969a8f9724f334f85e4cd4e7280815c47c13941b7c6e738867dc2b587b",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "飞掷后的同伴位置与伤害表现",
+      "beforeAfter": "完成目标选择后观察落点",
+      "observation": "对手头像下出现正式锤子精灵，伤害飘字锚定对手栏且不遮挡同伴位置。",
+      "protectionSlots": "阶段、资源、手牌、牌库、弃牌、骰盘和召回按钮均保留。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/05-奥丁之力二级升级完成.png",
+      "sha256": "9144771d08fc20ca2963cd9888d46d4ff0a9401c7b02dbefa9c1b842a692f9a9",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "奥丁之力升级槽位",
+      "beforeAfter": "打出升级卡并等待落槽完成",
+      "observation": "奥丁之力二级完整落于左下对应槽位，与底图边框和邻近连锁闪电槽相互分离。",
+      "protectionSlots": "升级层没有覆盖相邻槽，提示板、资源、骰盘、手牌与主操作按钮仍在原位。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/06-奥丁效果骰等待任选重掷.png",
+      "sha256": "39fc5f7adab88fea0eb5971b7d1f1be41bd15e978ba9ddac34b649f337844934",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "奥丁效果骰与重掷入口",
+      "beforeAfter": "发动奥丁之力后等待效果骰静止",
+      "observation": "五颗正式效果骰静止排列，重掷入口和确认按钮靠近骰盘并清楚分工。",
+      "protectionSlots": "右侧重掷控件未侵占提示板、手牌、资源、阶段和同伴按钮。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/07-选择两颗骰子一起重掷.png",
+      "sha256": "1b476e073fa437f543bdc9f55928b985459d4c60bb1cf629b11ad9de2fb52a7f",
+      "status": "PASS",
+      "score": 95,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 10
+      },
+      "target": "两颗效果骰选择态与整组重掷按钮",
+      "beforeAfter": "点选第一颗与第三颗效果骰",
+      "observation": "两颗所选骰子都有金色勾和贴合边界的高亮，重掷所选按钮明确显示选择数量为二。",
+      "protectionSlots": "选中反馈未遮住骰面；重掷和确认按钮紧邻骰盘且未挤出手牌、阶段、资源或同伴入口。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/08-整组重掷一次完成.png",
+      "sha256": "9417a97a82c1e88875d1ad65a0cafcff7b82ae92c88adc99a1222ff0904d6ddd",
+      "status": "PASS",
+      "score": 94,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 9
+      },
+      "target": "重掷完成后的确认入口",
+      "beforeAfter": "点击整组重掷并等待骰面静止",
+      "observation": "骰面已静止，整组重掷按钮退场而确认按钮仍保留，下一步动作明确。",
+      "protectionSlots": "骰盘与确认入口清楚，提示板、手牌、资源、阶段、同伴入口均未被新控件遮挡。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/thor-interactions.e2e/索尔正式素材、弃牌飞掷与奥丁整组重掷/_runs/e2e-1792757343532-13ucob/09-效果骰收口后进入主攻击防御.png",
+      "sha256": "173be0d770621d67ce272566b6ce769a69f47900411ac7c4f0b71526b521bc62",
+      "status": "PASS",
+      "score": 93,
+      "dimensions": {
+        "taskClarity": 19,
+        "visualHierarchy": 14,
+        "objectRecognition": 14,
+        "stateActionCarrier": 14,
+        "layoutIntegrity": 14,
+        "assetIntegrity": 10,
+        "ergonomics": 8
+      },
+      "target": "主攻击防御阶段与持续持有对象",
+      "beforeAfter": "确认效果骰后进入对手防御阶段",
+      "observation": "武僧玩家板与防御槽高亮已经出现，防御阶段高亮及当前等待状态清楚。",
+      "protectionSlots": "索尔剩余手牌、驭电图标、资源和锤子位置仍可见，防御骰盘没有挤走这些对象。",
+      "occlusionAndClipping": "本轮新增对象、候选、按钮及高亮未见遮挡或裁切；常态扇形手牌保留成熟基线的底部展示方式。",
+      "internalIdCheck": "未见内部规则标识或测试解释标签泄漏。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "hardFailures": [],
+      "fixes": []
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "PASS": 9,
+    "REVISE": 0
+  },
+  "reviewMethod": "九张当前运行的原始整屏图均由子代理逐张实际读取，没有用联系表、文件存在或测试通过替代视觉检查。",
+  "elementResponsibilityAudit": {
+    "ledger": "src/games/dicethrone/rule/雷神真相源表.md 的成熟参考与独立验收表",
+    "uncoveredElements": [],
+    "decisions": [
+      "九槽玩家板和提示板分别承担能力与规则参考。",
+      "成本弹窗以完整卡面承担候选比较，文字名称只标识对应对象。",
+      "目标弹窗以头像及英雄名承担目标识别。",
+      "骰盘承担效果结果和多选反馈，整组重掷按钮承担提交所选骰子的动作。",
+      "同伴锤子精灵承担位置，旁侧按钮承担可用操作。"
+    ]
+  },
+  "negativeImpactChecks": [
+    "整组重掷按钮位于骰盘下方，未移动或遮住生命、战斗点数、阶段、提示板和手牌。",
+    "成本选择时原手牌背景暂时模糊，但全部可支付卡在弹窗内以完整正式卡面重新承载。",
+    "目标选择时当前候选在弹窗内以头像、英雄名和玩家名重新承载。",
+    "常态底部扇形手牌与已读成熟圣骑士基线同类，不将既有展示方式误判为本轮新增回归。",
+    "终极槽与手牌下缘关系沿用成熟基线；新重掷控件位于右侧骰盘下方，没有新增覆盖终极槽。"
+  ],
+  "scopeLimits": [
+    "只证明本组桌面端交互可见性与图面布局，不证明伤害数值、规则时序、随机结果或联机同步正确。",
+    "不覆盖移动端、其他技能和其他截图组。",
+    "常态扇形手牌截图不是完整阅读每张卡牌规则的证据，完整卡图在本组成本选择弹窗内可见。"
+  ],
+  "hardFailures": [],
+  "issues": [],
+  "uncompletedItems": []
+}

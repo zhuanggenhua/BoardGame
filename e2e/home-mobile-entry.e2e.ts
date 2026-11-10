@@ -20,12 +20,15 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 360, height: 800 }
             const library = navigation.getByRole('button', { name: '收藏库', exact: true });
             await expect(discover).toHaveAttribute('aria-current', 'page');
             expect(await discover.evaluate(node => getComputedStyle(node, '::after').top)).toBe('0px');
+            await expect.poll(() => discover.evaluate(node => getComputedStyle(node, '::after').opacity)).toBe('1');
+            await expect.poll(() => library.evaluate(node => getComputedStyle(node, '::after').opacity)).toBe('0');
             await capture(page, `手机${viewport.width}-竖屏发现选中态`);
             await library.tap();
             await expect(library).toHaveAttribute('aria-current', 'page');
             await expect(discover).not.toHaveAttribute('aria-current', 'page');
             expect(await library.evaluate(node => getComputedStyle(node, '::after').top)).toBe('0px');
-            expect(await discover.evaluate(node => getComputedStyle(node, '::after').content)).toBe('none');
+            await expect.poll(() => library.evaluate(node => getComputedStyle(node, '::after').opacity)).toBe('1');
+            await expect.poll(() => discover.evaluate(node => getComputedStyle(node, '::after').opacity)).toBe('0');
             await capture(page, `手机${viewport.width}-竖屏收藏库选中态`);
             await record(`手机${viewport.width}-首屏可读`, { viewport, firstTwoCardsFullyVisible: true, titlesFullyVisible: true, settingsInitiallyClosed: true, homeOrientationHintAbsent: true });
         } finally { await context.close(); }

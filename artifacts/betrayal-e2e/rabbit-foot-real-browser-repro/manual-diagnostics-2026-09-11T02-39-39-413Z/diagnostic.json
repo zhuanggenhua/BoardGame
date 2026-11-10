@@ -1,0 +1,36 @@
+{
+  "out": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\manual-diagnostics-2026-09-11T02-39-39-413Z",
+  "shot": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\rabbit-foot-real-browser-repro\\manual-diagnostics-2026-09-11T02-39-39-413Z\\current-page.png",
+  "snap": {
+    "href": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "title": "易桌游 - 桌游教学与在线联机平台 | 王权骰铸、大杀四方、召唤师战争",
+    "readyState": "complete",
+    "bodyText": "正在准备对局…\n\n加载游戏模块…",
+    "board": false,
+    "select": false,
+    "loading": true,
+    "rootHtml": "<div data-testid=\"loading-screen\" data-loading-anchor=\"viewport\" class=\"bg-black overflow-hidden fixed inset-0 h-[var(--runtime-viewport-height,100vh)] w-[var(--runtime-viewport-width,100vw)]\" style=\"z-index: 1500; opacity: 1;\"><div class=\"absolute inset-0 flex items-center justify-center\"><div class=\"relative transform scale-75 md:scale-100\"><div class=\"relative w-64 h-64 flex items-center justify-center\"><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(37.6282px) scale(0.829247);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-55.5366px) translateY(-30.9812px) scale(1.05644);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(35.4014px) translateY(57.3424px) scale(1.08966);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-2.78893px) translateY(-62.9968px) scale(1.05176);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-1.6988px) translateY(3.38945px) scale(0.533174);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(1.64334px) translateY(-1.11786px) scale(0.517391);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-33.8811px) translateY(3.00579px) scale(0.797624);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(28.7344px) translateY(12.8446px) scale(0.775403);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(-23.7455px) translateY(-31.7879px) scale(0.84718);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur-[0.5px]\" style=\"transform: translateX(10.5306px) translateY(78.8745px) scale(1.19628);\"></div><div class=\"absolute w-1 h-1 bg-amber-300 rounded-full blur"
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    }
+  ]
+}

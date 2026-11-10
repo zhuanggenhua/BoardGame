@@ -1,0 +1,446 @@
+{
+  "status": "REVISE",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r81_jin_korea_geometry"
+  },
+  "sourceRevision": "sha256:be716629f6ebd992b3dad79018f60d7d095377432e6a8576ffc49b2b660435bc",
+  "objective": "逐图审查11桌面+5手机当前整屏；不沿用R80或旧dev4273图，不判游戏规则或数值。",
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/00-辽北军屯地区选择.png",
+      "status": "PASS",
+      "sha256": "5c8ac7763d2ea4a53356cadbad95446a0ea8ccefbf6bbfd3ee914a6549c605d1",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [],
+      "observations": [
+        "全部军屯候选的完整分布进入地图可视区，普通候选绿填充/青边、辽北独立白边明显；没有旧菜单说明遮挡；三手牌和两纪年卡加载。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "REVISE",
+      "sha256": "353b00d05e98172faa5980a982cee1ff20979111d4a0aa6dba74cd732c995241",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            1218,
+            332,
+            1470,
+            458
+          ],
+          "evidence": "当前详情、操作状态或结果说明的正文仍为密集小字；这不是教程正文问题，也不需要把所有HUD整体放大。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "当前前进两格扇区、教程和辽北落点关系明确；右侧辽北详情正文仍小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "sha256": "5edcb60e5b45ca8f62cf9b624f9441226c8339448f16691ef858c9703fb03543",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [],
+      "observations": [
+        "指定后金弹框、蒙古/后金按钮与教程指令一致，桌面原生尺寸可读；未遮选项。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/03-辽北军屯结果.png",
+      "status": "REVISE",
+      "sha256": "0c12ba1105130f015b9ea30720dde2318f3c2e6589b4e13a908867d023bd8726",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            1570,
+            276,
+            1837,
+            361
+          ],
+          "evidence": "轮盘军屯结果正文在原生裁图仍约十余像素、细且拥挤，明显小于教程正文。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "辽北部队变化可见、卡面加载、新手牌出现；轮盘军屯结果框正文仍很小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/04-叶赫部真实地图目标.png",
+      "status": "REVISE",
+      "sha256": "0a3e210d37730fe64338d96acc1e2ccec937e43c7a8f76d31debe5b21bf18742",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            530,
+            664,
+            1390,
+            751
+          ],
+          "evidence": "当前详情、操作状态或结果说明的正文仍为密集小字；这不是教程正文问题，也不需要把所有HUD整体放大。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "叶赫真实地理轮廓白边可见，城名字牌位于地区内部；支付托盘在目标下方，未挡当前目标；托盘状态小字偏小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "REVISE",
+      "sha256": "68678526dfe1b56dc3c97d7933bb94828da36fe171a38c049d6f2637abf97310",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            530,
+            664,
+            1390,
+            751
+          ],
+          "evidence": "当前详情、操作状态或结果说明的正文仍为密集小字；这不是教程正文问题，也不需要把所有HUD整体放大。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "银两及鸳鸯阵卡面真实加载，教程、地图目标和支付状态关联明确；托盘明细小字偏小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/05a-鸳鸯阵选中与确认出牌.png",
+      "status": "REVISE",
+      "sha256": "f44dc608c920cc06410a053f91f443d60a6ed379dac48520d76dfff8a078354b",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            [
+              1490,
+              288,
+              1848,
+              556
+            ],
+            [
+              650,
+              707,
+              1270,
+              773
+            ]
+          ],
+          "evidence": "当前详情、操作状态或结果说明的正文仍为密集小字；这不是教程正文问题，也不需要把所有HUD整体放大。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "鸳鸯阵抬升、已选状态、已选战术牌名称和打出战术牌按钮可见；当前战斗面板/选中说明小字偏小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/06-野战选择实际出兵部队.png",
+      "status": "REVISE",
+      "sha256": "eb8498b1cfcd950413f05e1e85f2b3738858a4d49fc9cc4200184804a87cbed2",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            1490,
+            288,
+            1848,
+            556
+          ],
+          "evidence": "当前详情、操作状态或结果说明的正文仍为密集小字；这不是教程正文问题，也不需要把所有HUD整体放大。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "辽北四个实际部队和绿色选中反馈可见，开始战斗按钮可辨；战斗配置明细仍是小字。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/07-战后幸存部队与占领选择.png",
+      "status": "REVISE",
+      "sha256": "9feb8549e330b78ea8569e2a03fea9a72a90736476ce741728157a0cc8a5d1ee",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            1490,
+            93,
+            1848,
+            779
+          ],
+          "evidence": "战后结果各阶段说明、合计与结论是密集小字，阅读负担仍明显。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "战后结果、阶段比较、占领/撤回入口和教程同时存在且相互不遮主控件；结果密集细字偏小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "sha256": "af856e2dd7154476524212d4191336a1a12b10540bb88b3f37d3094f5f9df5f9",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [],
+      "observations": [
+        "叶赫控制标记变化和教程结束/继续同局入口清楚；新当前阵营手牌与纪年卡加载，未缺对象。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/09-教程退出后同局继续.png",
+      "status": "REVISE",
+      "sha256": "193de33c0db81cd8c2cba088018389ca2bd8c11fe6623a847da47a0899d1e976",
+      "viewport": [
+        1920,
+        1080
+      ],
+      "issues": [
+        {
+          "id": "desktop-operation-result-small-text",
+          "severity": "hard-failure",
+          "rect": [
+            530,
+            681,
+            1390,
+            751
+          ],
+          "evidence": "当前详情、操作状态或结果说明的正文仍为密集小字；这不是教程正文问题，也不需要把所有HUD整体放大。",
+          "impact": "本轮已被字号问题退回，当前操作/结果文字仍未达到舒适阅读要求。",
+          "fix": "在正式owner提高操作与结果正文的字号、行高及对应容器空间，避免只放大教程文字；再按同入口原生图复核。"
+        }
+      ],
+      "observations": [
+        "退出后教程消失，当前征兵训练弃牌与手牌、确认弃牌入口可见；弃牌说明正文小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/移动-00-轮盘军屯与指定对手.png",
+      "status": "REVISE",
+      "sha256": "d4076ed264ef82386d56e37ceffa7555ca666f5a055762b7fc80922a2a20e82c",
+      "viewport": [
+        844,
+        390
+      ],
+      "issues": [
+        {
+          "id": "mobile-decision-ui-scaled-down",
+          "severity": "hard-failure",
+          "rect": [
+            169,
+            64,
+            239,
+            100
+          ],
+          "evidence": "指定对手弹框可见面仅约70×36px，内部提示和蒙古/后金按钮缩至数像素字高。",
+          "impact": "手机当前决策对象没有维持可读视觉尺寸；截图不能测透明热区，不能据此断言真实hitbox，但可见控件过小已直接成立。",
+          "fix": "保持同构结构，把当前决策弹框/托盘/按钮及必要HUD放到屏幕尺寸布局，避免跟随地图场景整体缩小；原生截图复核文字与可见操作面，再用真实触摸验证热区。"
+        }
+      ],
+      "observations": [
+        "移动端保留PC轮盘/地图/阵营/手牌结构，教程清楚；对手弹框及按钮随全局场景缩得过小。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/移动-01-叶赫部地图目标避开支付托盘.png",
+      "status": "REVISE",
+      "sha256": "485b8cdaf205a3d0a68db7f86ba719c30c5ec6fcbf027a0d33885ef2e599f8a5",
+      "viewport": [
+        844,
+        390
+      ],
+      "issues": [
+        {
+          "id": "mobile-decision-ui-scaled-down",
+          "severity": "hard-failure",
+          "rect": [
+            267,
+            240,
+            576,
+            272
+          ],
+          "evidence": "当前支付托盘和按钮随整个桌面场景缩小；进度、目标信息及操作字缩成微字。",
+          "impact": "手机当前决策对象没有维持可读视觉尺寸；截图不能测透明热区，不能据此断言真实hitbox，但可见控件过小已直接成立。",
+          "fix": "保持同构结构，把当前决策弹框/托盘/按钮及必要HUD放到屏幕尺寸布局，避免跟随地图场景整体缩小；原生截图复核文字与可见操作面，再用真实触摸验证热区。"
+        }
+      ],
+      "observations": [
+        "叶赫白色真实轮廓可见，支付托盘确在目标下方；教程未遮该地区；托盘/状态控制仍微缩。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/移动-02-突袭支付与手牌.png",
+      "status": "REVISE",
+      "sha256": "b02e2b2c11d3fa05a8f094dfd234825f4d7783f987d31ba05b74523ab0bd07fa",
+      "viewport": [
+        844,
+        390
+      ],
+      "issues": [
+        {
+          "id": "mobile-decision-ui-scaled-down",
+          "severity": "hard-failure",
+          "rect": [
+            267,
+            240,
+            576,
+            272
+          ],
+          "evidence": "当前支付托盘和按钮随整个桌面场景缩小；进度、目标信息及操作字缩成微字。",
+          "impact": "手机当前决策对象没有维持可读视觉尺寸；截图不能测透明热区，不能据此断言真实hitbox，但可见控件过小已直接成立。",
+          "fix": "保持同构结构，把当前决策弹框/托盘/按钮及必要HUD放到屏幕尺寸布局，避免跟随地图场景整体缩小；原生截图复核文字与可见操作面，再用真实触摸验证热区。"
+        }
+      ],
+      "observations": [
+        "手机手牌全部加载，银两图案可认、教程明确长按，支付托盘与确认按钮微缩。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/移动-03-长按银两检视卡面.png",
+      "status": "PASS",
+      "sha256": "cbb83ddb5b2367448c7fbcb7d50defe373916ee778138542705319542b80d724",
+      "viewport": [
+        844,
+        390
+      ],
+      "issues": [],
+      "observations": [
+        "银两检视卡面完整、标题与银两图案清楚，右上关闭按钮约44×44px可辨；检视层的目标本体未被教程遮住。"
+      ],
+      "readMode": "full-original-image"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261028-map-selection-r81-final/media/移动-04-检视返回后轻点银两选择支付.png",
+      "status": "REVISE",
+      "sha256": "41882fb9cebbf6da4d7369a1e712ea52a78ba6ec4b52748f4ab300d8d0d32273",
+      "viewport": [
+        844,
+        390
+      ],
+      "issues": [
+        {
+          "id": "mobile-decision-ui-scaled-down",
+          "severity": "hard-failure",
+          "rect": [
+            459,
+            244,
+            514,
+            260
+          ],
+          "evidence": "当前可执行确认支付按钮可见面约55×16px，按钮文字随场景缩为微字；玩家读完正常字号教程后，实际确认控件仍难辨。",
+          "impact": "手机当前决策对象没有维持可读视觉尺寸；截图不能测透明热区，不能据此断言真实hitbox，但可见控件过小已直接成立。",
+          "fix": "保持同构结构，把当前决策弹框/托盘/按钮及必要HUD放到屏幕尺寸布局，避免跟随地图场景整体缩小；原生截图复核文字与可见操作面，再用真实触摸验证热区。"
+        }
+      ],
+      "observations": [
+        "检视层已退出，银两抬升/已选反馈可见；教程要求确认弃掉所选银两，实际确认支付按钮明显微缩。"
+      ],
+      "readMode": "full-original-image"
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "read": 16,
+    "PASS": 4,
+    "REVISE": 12,
+    "desktop": 11,
+    "mobile": 5,
+    "hardFailureFamilies": [
+      "desktop-operation-result-small-text",
+      "mobile-decision-ui-scaled-down"
+    ],
+    "verdict": "需返工字号与手机决策控件缩放；整组禁止最终PASS/展示。"
+  },
+  "preserved": [
+    "当前桌面普通候选绿填充/青边及辽北独立白边可辨，轮廓是地理形状，未把城名字牌另当省区。",
+    "当前目标、教程、卡牌和确认在桌面流程中总体一致；未发现新的关键对象缺失或候选被支付托盘遮住。",
+    "当前桌面轮盘白色可选扇区文字在原生局部可直接读，不作为新的硬退回项。",
+    "所有手牌卡面实际加载，纪年卡保留。",
+    "手机银两检视卡面及关闭入口清楚，返回后银两选择状态可见；不以静态图替代长按/轻点行为测试。"
+  ],
+  "negativeImpactChecks": [
+    "未要求删除事件/战术/银两或纪年卡；这些是真实可支配/规则对象，需保留并支持检视。",
+    "未要求删除地图其他候选；建议仅修决策UI屏幕尺寸，保持PC与手机同构。",
+    "检视态允许覆盖背景当前对象，主检视卡面完整；移动03不因背景缩小而判失败。"
+  ],
+  "scopeLimits": [
+    "静态图片证明可见状态；合法候选全集、数值、规则、长按手势和完成操作由正式E2E/Vitest另证。",
+    "已逐读全部原始整屏，局部辅助仅用于03结果、00轮盘、手机04确认尺寸。没有向主线程返回图片。",
+    "该报告仅对应所列sha256；后续同入口全重跑后，以哈希变化确定需要重新读取的媒体，不覆盖尚未修复的军屯无合法地规则错误。"
+  ],
+  "changedFiles": [
+    "evidence/qidahen/.visual-review-r81-working-original.json"
+  ]
+}

@@ -1,0 +1,527 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_r50_visual"
+  },
+  "reviewedAt": "2026-10-26T18:22:38.631Z",
+  "index": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/.e2e-image-index.json",
+  "objective": "独立逐张审查R50教程10张桌面及4张手机完整原图的UI、当前操作目标、入口、可读性与遮挡；不沿用历史裁决。",
+  "reviewMethod": "逐张调用view_image(detail=original)实际读取索引全部14张完整PNG；未使用联系表、缩略图、OCR、元数据或历史报告替代原图。",
+  "scopeLimitations": [
+    "只判截图直接覆盖的交互UI可见性；不由图裁定手牌数量、伤害、费用、战斗规则或其他数值正确性。",
+    "长按确实触发、点击命中、检视停留及状态迁移的动态行为由同轮真实E2E证明，本报告不把静态图作为这些行为的独立证明。",
+    "视口覆盖为1920×1080桌面及844×390手机横屏；未覆盖手机竖屏、平板或其他未入索引状态。"
+  ],
+  "summary": {
+    "total": 14,
+    "reviewed": 14,
+    "coverage": "14/14",
+    "PASS": 14,
+    "REVISE": 0,
+    "desktop": {
+      "total": 10,
+      "PASS": 10,
+      "REVISE": 0
+    },
+    "mobile": {
+      "total": 4,
+      "PASS": 4,
+      "REVISE": 0
+    }
+  },
+  "score": 95,
+  "targetRequirements": [
+    {
+      "requirement": "当前全部14张原图逐张完整读取并留逐媒体裁决与hash",
+      "status": "PASS"
+    },
+    {
+      "requirement": "03真实手牌行、卡名、看入口与聊天入口不被军屯结果提示侵占",
+      "status": "PASS"
+    },
+    {
+      "requirement": "08/09蒙古玩家条资源、加成、败战和当前标记分槽可读",
+      "status": "PASS"
+    },
+    {
+      "requirement": "01玩家条、06辽东选兵及开始战斗、07战损浮字保持可用层级",
+      "status": "PASS"
+    },
+    {
+      "requirement": "四张手机图分别覆盖地图目标、支付手牌、整牌检视及关闭、已选银两与确认",
+      "status": "PASS"
+    }
+  ],
+  "elementResponsibilityAudit": {
+    "ledger": "本报告逐媒体checks及以下decisions（本轮截图事实账本）",
+    "uncoveredElements": [],
+    "decisions": [
+      {
+        "element": "地图与当前目标",
+        "decision": "保留真实地图及实体高亮；辽东与叶赫部名称直接承载目标身份，教程只说明下一步。"
+      },
+      {
+        "element": "轮盘",
+        "decision": "保留真实行动盘；前进军屯扇区高亮承担落点选择，指定抽牌按钮承载后金选择。"
+      },
+      {
+        "element": "玩家条",
+        "decision": "保留姓名/VP、手牌资源与加成；败战及当前标记使用右侧独立纵向槽位。"
+      },
+      {
+        "element": "教程",
+        "decision": "承载教学正文与上一步/下一步/完成入口；结果图避开真实手牌，手机支付节点横向占独立行。"
+      },
+      {
+        "element": "手牌与检视",
+        "decision": "所有当前手牌均保留卡名与看入口；检视层显示完整银两并提供明确关闭按钮。"
+      },
+      {
+        "element": "支付、出兵及战后操作",
+        "decision": "支付条、地图选兵与战后结果分别承载其阶段输入，确认/开始战斗/占领与撤回均可辨。"
+      },
+      {
+        "element": "牌库、弃牌、计年卡、聊天",
+        "decision": "作为持续读取或辅助入口保留；未发现其遮挡本轮当前目标、资源或手牌入口。"
+      }
+    ]
+  },
+  "negativeImpactChecks": [
+    {
+      "object": "03军屯结果教程移位",
+      "participatesInDecision": true,
+      "newCarrier": "右侧独立教程框，真实五张手牌留底部横排",
+      "recovery": "无需恢复，五个卡名和看入口直接可见；右上聊天直接可见",
+      "status": "PASS"
+    },
+    {
+      "object": "08/09蒙古玩家信息拆槽",
+      "participatesInDecision": true,
+      "newCarrier": "顶部蒙古玩家条左侧姓名资源加成，右侧败战/当前纵排",
+      "recovery": "无需展开，所有文字直接可读",
+      "status": "PASS"
+    },
+    {
+      "object": "手机地图目标节点教程",
+      "participatesInDecision": true,
+      "newCarrier": "叶赫部目标及名字在支付条上方；右下教程覆盖非当前输入牌片下部",
+      "recovery": "卡名与看入口仍在教程上方；随后独立支付节点显示全部五张候选",
+      "status": "PASS"
+    },
+    {
+      "object": "手机支付教程横向布局",
+      "participatesInDecision": true,
+      "newCarrier": "顶部玩家条下方独立提示行，托盘在其下、五张手牌在底部",
+      "recovery": "银两与鸳鸯阵直接可比较，各牌看入口可见",
+      "status": "PASS"
+    },
+    {
+      "object": "手机整牌检视覆盖背景",
+      "participatesInDecision": true,
+      "newCarrier": "居中完整银两模态及右上关闭按钮",
+      "recovery": "移动03原图显示关闭后返回五张手牌并选中银两；背景只在检视期间受模态遮挡",
+      "status": "PASS"
+    },
+    {
+      "object": "桌面战损浮字",
+      "participatesInDecision": true,
+      "newCarrier": "叶赫部地图区域上方、玩家条下方",
+      "recovery": "玩家资源与败战标记仍可直接读取",
+      "status": "PASS"
+    }
+  ],
+  "hardFailures": [],
+  "issues": [],
+  "entries": [
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/00-辽东与叶赫部局面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "辽东地图输入本体及名称可识别",
+        "教程正文与辽东选择对应",
+        "玩家资源和当前标记可读",
+        "三张手牌卡名及看入口保留",
+        "聊天及公共牌堆入口可见"
+      ],
+      "observation": "军屯教学直接指向中央辽东圆形地图点，辽东名牌与浅绿边界可识别；正文解释在本土建军并要求选择辽东。上方三方资源条、右上聊天、朝鲜牌库、左右计年卡及底部三张手牌卡名和看入口可见。地图放大属于当前辽东选择焦点，没有提示框挡住辽东。",
+      "sha256": "f09e0fac2583b4a7f28299af43b98b972cc5cfc71d2798b126b606c8a679dac1",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/00-辽东与叶赫部局面.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/01-轮盘前进两格与军屯落点.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "前进两格军屯候选高亮可见",
+        "教程没有压轮盘候选",
+        "顶部三方玩家条未与教程竞争",
+        "手牌及看入口保留"
+      ],
+      "observation": "轮盘右上前进两格军屯扇区完整亮起，提示框在轮盘右侧要求选择前进两格；提示框顶部低于玩家条，三方姓名、积分读数、资源和大明当前标记均独立可读。底部三张牌及看入口保留，轮盘候选没有被提示框压住。",
+      "sha256": "64a32568b39b4b0fa25c6dab94b5df0b5369d1bea9d83f50c4c063160327120c",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/01-轮盘前进两格与军屯落点.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/02-指定后金抽牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "后金按钮与指定抽牌指令对应",
+        "蒙古及后金两个候选同时可见",
+        "建军地辽东可读",
+        "当前玩家资源及手牌入口保留"
+      ],
+      "observation": "轮盘中央的指定抽牌面板同时显示蒙古、后金按钮及军屯建军地辽东；左上教程明确要求本次指定后金。两按钮均可读，教程框不盖面板；顶部三方资源条、底部三张手牌与看入口完整，玩家能把当前指令对应到后金按钮。",
+      "sha256": "bae903828f2165ca33d272306ce3259ebef756d4887540637dc3ea9f83b15486",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/02-指定后金抽牌.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/03-辽东军屯结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "五张真实手牌完整横排",
+        "五个卡名和看入口未被结果提示压住",
+        "军屯结果正文和下一步可读",
+        "右上聊天入口未被教程遮挡",
+        "资源与地图部队保留"
+      ],
+      "observation": "军屯结果提示位于右侧中下部，五张真实手牌在底部横排，五个卡名与看入口均可见，军屯结果正文、下一步按钮没有侵占手牌行。右上聊天圆形入口清楚，顶部大明与后金手牌数量可读，地图辽东部队仍可识别；右上独立军屯摘要不覆盖当前手牌或下一步。",
+      "sha256": "b15dc7727be8ffd347578f0969a01b5d5c72a6b5e173d98ef6b70cfc8473f5af",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/03-辽东军屯结果.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/04-叶赫部真实地图目标.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "叶赫部本体名称和主边界清楚",
+        "教程与真实地图目标相邻对应",
+        "支付条与目标没有遮挡竞争",
+        "五张手牌及看入口保留"
+      ],
+      "observation": "叶赫部名字牌、地图圆点及对应高亮直接位于教程框左侧，玩家能看到要点击的目标本体。教程框没有覆盖高亮中心；支付条位于目标下方、五张手牌位于更下方，目标、支付、手牌形成分层。地图缩放聚焦目标后没有把目标藏到托盘后方。",
+      "sha256": "e83432b0a8cb46177589a8df2dc40fff27e54a218c4166298d16ef69aa1738e2",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/04-叶赫部真实地图目标.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "银两与鸳鸯阵可同时发现比较",
+        "五个看入口可见",
+        "支付0/1和确认入口可读",
+        "教程正文未被聊天入口压字",
+        "手牌和支付托盘分槽"
+      ],
+      "observation": "教程位于右上，明确要求以银两支付并保留鸳鸯阵，桌面看与触屏长按说明可读。底部五张卡的类型、卡名、看入口均保留，银两与鸳鸯阵可区别；突袭支付条在手牌上方，已选0/1及确认执行入口可识别。右上聊天虽在教程框空白内，但未压任何教程文字。",
+      "sha256": "31df53195283bfdad2c885ce5314ead8550ea294eb2b1e240f1e5f6e26d99674",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/05-银两支付与鸳鸯阵手牌.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/06-野战出兵与战术牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "辽东已选三兵本体高亮清楚",
+        "留守对象仍可识别",
+        "开始战斗入口未被教程遮挡",
+        "资源条及手牌入口保留"
+      ],
+      "observation": "辽东的三支出兵棋子本体带绿色选中边界，旁侧仍可见未选留守棋子，地图上的出兵选择不被教程框盖住。开始战斗按钮承接在右侧突袭面板内，教程说明留一支、选三支、再点开始战斗，与当前可见对象一致；底部剩余三张手牌、顶部资源条和右上聊天保留。",
+      "sha256": "8cdce9598e606566bb216570956382959367b4984774e149d39bc3d60afb44ce",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/06-野战出兵与战术牌.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/07-战后幸存部队与占领选择.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "战后面板掷骰及幸存信息可读",
+        "占领和撤回两个入口可见",
+        "战损浮字避开玩家条",
+        "教程与战后面板分区",
+        "手牌及看入口保留"
+      ],
+      "observation": "战后结果在右侧面板展示分兵种掷骰、伤害及幸存部队，底部占领与撤回两个选择均可读。中央教程正文说明比较幸存部队后处理占领，下一步入口清楚。顶部玩家条仍可读，叶赫部战损浮字在玩家条下方而未压姓名、资源或败战标记；底部三张手牌与看入口保留。",
+      "sha256": "25ea24944ccdbdfe34660b6fb2c51f30ab7190cb95de068c7ba5051158868b45",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/07-战后幸存部队与占领选择.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/08-叶赫部占领结果.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "完成并返回入口与教程结束对应",
+        "叶赫部归属变化可见",
+        "蒙古资源加成与两个徽标分槽",
+        "六张手牌卡名及看入口未被教程挡住",
+        "聊天入口可见"
+      ],
+      "observation": "教程右侧明确显示叶赫部归大明及结束教程继续同局，完成并返回按钮清楚；叶赫部地图归属标记可见。上方蒙古姓名/积分读数、6/10及林丹加成文字分别可读，右侧败×1与当前上下纵排，没有压资源行；底部六张蒙古手牌完整横排，每张卡名和看入口可见，教程框与手牌分槽。",
+      "sha256": "e6c7059b32a9a8e750f63d2aec3d39b786e224e4e2e942e279557937f03b5d3d",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/08-叶赫部占领结果.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/09-教程退出后同局继续.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "教程退出后当前行动入口可见",
+        "六张手牌完整且看入口可见",
+        "蒙古资源加成和败战当前标记分槽",
+        "弃牌条不侵占手牌",
+        "地图与牌堆保留"
+      ],
+      "observation": "教程框与引导高亮已经退出，地图、六张蒙古手牌和征兵训练弃牌条仍在同一画面；确认弃牌入口位于手牌上方，玩家能继续当前行动。蒙古玩家条的姓名/积分读数、6/10、林丹加成、败×1和当前仍各自清楚，六个卡名与看入口未被弃牌条或标记挤压。",
+      "sha256": "684a26cbab6022570acf162695f773bcb4516b2a71522ecef7193544f6c8defd",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/09-教程退出后同局继续.png",
+      "sourceType": "full-original-png",
+      "viewport": "desktop",
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "叶赫部名称与地图目标完整可辨",
+        "支付托盘未挡目标本体",
+        "非当前输入卡片下部遮挡边界已记录",
+        "五个看入口仍可见",
+        "顶部资源及聊天可读"
+      ],
+      "observation": "手机横屏上方三方玩家条可读；叶赫部地图圆点和叶赫部名称位于支付托盘上方，目标高亮边界与标签清楚，教程直接要求点地图叶赫部。底部五张手牌的卡名、类型和看入口可见；右下教程盖住第四、第五张牌下部，但当前输入是地图目标，未盖目标本体、名称或看入口，此状态不替代后续支付牌面验收。",
+      "sha256": "696cae8b2d12e9bb172906f14be8f132e40fc09e856dd89b4685296c1fbd0bc2",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+      "sourceType": "full-original-png",
+      "viewport": "mobile",
+      "dimensions": {
+        "width": 844,
+        "height": 390
+      },
+      "score": 93,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-01-突袭支付与手牌.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "当前支付节点五张候选可见",
+        "银两及鸳鸯阵名称可读",
+        "五个看入口可见",
+        "教程与支付托盘手牌无重叠",
+        "支付进度和确认入口可见"
+      ],
+      "observation": "手机支付节点把教程收在玩家条下的一条横向提示中，提示不盖支付托盘或手牌。五张手牌从左到右可辨事件、战术、银两、军备、银两，鸳鸯阵与银两卡名及五个看入口可读；托盘显示已选0/1，确认执行与取消本次行动入口均可见。当前银两支付候选没有被底部教程框挡住。",
+      "sha256": "a05b54deaaca62de230a82511051a6f3ea2671bf26c6d575f5b86d7cd81d484d",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-01-突袭支付与手牌.png",
+      "sourceType": "full-original-png",
+      "viewport": "mobile",
+      "dimensions": {
+        "width": 844,
+        "height": 390
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-02-长按银两检视卡面.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "完整银两卡框标题图形可见",
+        "关闭入口可辨且不压关键卡面",
+        "模态遮挡背景符合检视层级",
+        "未把静态图越权当长按事件或停留时长证明"
+      ],
+      "observation": "中央完整银两检视卡从顶部边缘内显示到底部边缘内，银两标题、元宝图形及完整卡框均可见，卡面没有被裁切。右上黑色圆形关闭按钮位于卡面内空白处，不盖标题或图形。背景支付托盘、教程及手牌被模态合理遮挡和压暗，前景唯一主焦点是检视卡；静态图仅证明检视显示与关闭入口可见。",
+      "sha256": "d22c8f3c6ecdbca7c48c7f78eedf6695b80c3495b67dd9a2fe28cdde682cc6a4",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-02-长按银两检视卡面.png",
+      "sourceType": "full-original-png",
+      "viewport": "mobile",
+      "dimensions": {
+        "width": 844,
+        "height": 390
+      },
+      "score": 95,
+      "issues": []
+    },
+    {
+      "path": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-03-检视返回后轻点银两选择支付.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "checkDetails": [
+        "检视退场后恢复五张手牌",
+        "银两已选标记清楚",
+        "支付进度1/1及已选牌名称可读",
+        "确认执行入口高亮且对应当前教程",
+        "卡名与看入口保留"
+      ],
+      "observation": "检视已关闭，五张支付手牌重新完整可见；第三张银两高亮抬升，左下已选绿色标记清楚，不压卡名或看入口。托盘显示已选1/1与已选牌银两，确认执行按钮带明确边界，位置紧邻支付信息；上方教程要求确认弃掉选中的银两，指令、已选对象和确认入口相互对应。",
+      "sha256": "278d9fab2c74d756400e948f20ca690fc613954b940766fb7acb2b2404e651e3",
+      "source": "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-03-检视返回后轻点银两选择支付.png",
+      "sourceType": "full-original-png",
+      "viewport": "mobile",
+      "dimensions": {
+        "width": 844,
+        "height": 390
+      },
+      "score": 95,
+      "issues": []
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "status": "SOURCE_REVIEW_PASS",
+  "verdict": "通过",
+  "reviewLayer": "source-only",
+  "reviewedAt": "2026-10-28T11:50:20.5487061Z",
+  "reviewer": "/root/r81_source_closeout_review",
+  "scope": "R82工作源码复核：R81军屯退回项、地图合同迁移、已有屏幕浮层owner扩展及两个消费者；不是最终视觉、真实E2E、全游戏或全仓PASS。",
+  "previousReview": "evidence/qidahen/.baseline-review-r81-working-source.json",
+  "sourceFiles": [
+    {
+      "path": "src/games/qidahen/domain/wheelImmediateEffect.ts",
+      "sha256": "12db7c931b3b458ae701ad9729e8810efbb9ba91c5042abf6401d75a140ba027"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapSelectionCandidates.ts",
+      "sha256": "febd74acc96e82aced143e2811d61b3a387706f9940c4279b7e9410bbd048ee1"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/mapSelectionCandidates.test.ts",
+      "sha256": "247036383cd5f2c7a8c16e918a2f9fd594b8208a7a6f9723e7ff71e94714db64"
+    },
+    {
+      "path": "src/games/qidahen/__tests__/mapGraph.test.ts",
+      "sha256": "9e42b9a0509ff884ba8a429205cefb091a8784bccb759e2ecd736553e30878fd"
+    },
+    {
+      "path": "src/games/qidahen/ui/mapGraph.ts",
+      "sha256": "903595803cc3748a245753eb9824f937ee23b7f142e3027387dd1f26e5b22495"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHoverTip.tsx",
+      "sha256": "8542b55870135923ace664070bde55d89c5d031dc426fb7369fb724de617472a"
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenHandInteractionTray.tsx",
+      "sha256": "d28d8452e5475dad08f47299cb72dd0200df7fc18be05479ef53f730004cf26f"
+    },
+    {
+      "path": "src/games/qidahen/QidahenBoardShell.tsx",
+      "sha256": "651d8675033f2f8b4414265a97b1dcc2dd427988e6901d17b1b520bbdf58a5ee"
+    },
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "sha256": "d1a5a3ef83b256ef99729d3b8f0747c510fd3775aea331567604dd50ec081055"
+    },
+    {
+      "path": "e2e/qidahen/qidahen-closeout.e2e.ts",
+      "sha256": "5b8ab03d682077c061d7b8d85557b5c7cb691ddd410b94bb58a3838236ebbdfc"
+    }
+  ],
+  "findings": [],
+  "resolvedFindings": [
+    {
+      "previousPriority": "P2",
+      "previousTitle": "没有合法本土建军地时，军屯仍在所选非本土区建立正规军",
+      "status": "resolved",
+      "evidence": "结算targetRegion在正规军路径只读取regularTroopTarget，无合法目标时保持地区原样；factions.troops增量也以targetRegion存在为条件。新增直接回归断言候选为空、全部地区部队数不变、汇总部队数不变、抽2牌、不造mapResult及提示未建立部队。",
+      "source": "src/games/qidahen/domain/wheelImmediateEffect.ts"
+    }
+  ],
+  "verification": {
+    "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/mapSelectionCandidates.test.ts src/games/qidahen/__tests__/mapGraph.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+    "result": "2 files passed / 20 tests passed；mapSelectionCandidates 5/5，mapGraph 15/15",
+    "duration": "6.44s",
+    "mapContractReview": "旧共享印刷映射已迁移为35个独立地理对象及4个城市子对象，城市像素数为0；测试保留独立映射与辽北至叶赫river宽2、辽东无直达通路等语义。未恢复错误共享边界。",
+    "notClaimed": "主线程16文件单测和4个正式E2E尚在执行，结果不由本报告代填。"
+  },
+  "uiSourceReview": {
+    "owner": "QidahenHoverTip扩展above/below及panel，两个消费者复用屏幕坐标portal",
+    "coordinates": "通过anchor.getBoundingClientRect取得实际屏幕位置，浮层createPortal至document.body并使用fixed像素坐标；宽度受100vw-16px限制，left/top按viewport钳制。",
+    "responsibilities": "HandInteractionTray继续只呈现只读interaction并调用原动作；确认disabled仍使用interaction.canConfirm；wheel-opponent-picker保留selectedMoveId及disabled门禁，按钮仍调用onExecuteMove。",
+    "sameStructure": "PC/手机复用同一组件树；BoardShell仍是同构比例布局，未启用旧mobile布局或加入浮层专用规则状态。",
+    "visibility": "新增panel pointer-events-auto；按钮min-height44px；组件自身固定--spacing为4px，脱离舞台缩放。卡面检视2450及模态2100仍高于浮层900。",
+    "findings": "未发现可确定的新增P1/P2。"
+  },
+  "remainingRisks": [
+    "真实浏览器中按钮尺寸、点击、浮层遮挡、手机原生触控、宿主容器尺寸改变后的anchor贴合尚以主线程当前走测/最终整屏图验为准。本报告未读取图像。",
+    "16文件全量单测及4个正式E2E结果待主线程完成；不将待产出的证据认定为源码缺陷。",
+    "SourceRevision与5requirements最终格式/映射待主线程提供真实走测后的mapping，本报告不伪造最终PASS。",
+    "仍不覆盖全游戏城市聚合控制、税赋、维护或跨年规则；R81既有runtime合同21失败的冻结基线说明不因本次20项通过而失效。"
+  ],
+  "allowedClaim": "当前指定源码复核通过，R81唯一确定P2已修复；最终产品验收仍未由本报告证明。"
+}

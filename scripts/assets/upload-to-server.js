@@ -309,7 +309,10 @@ function shouldUpload(filePath, relativePath, packageManagedGames) {
   if (DIRECT_ASSET_EXTS.has(ext)) {
     return true;
   }
-  if (PACKAGE_RUNTIME_CONFIG_EXTS.has(ext) && resolvePackageManagedGameId(relativePath, packageManagedGames)) {
+  if (PACKAGE_RUNTIME_CONFIG_EXTS.has(ext) && (
+    resolvePackageManagedGameId(relativePath, packageManagedGames)
+    || relativePath.replace(/\\/g, '/').startsWith('fate-domination/fgo/')
+  )) {
     return true;
   }
   const parts = filePath.split(sep);

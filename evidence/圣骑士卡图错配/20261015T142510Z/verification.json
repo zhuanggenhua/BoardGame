@@ -1,0 +1,27 @@
+{
+  "vitest": {
+    "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/paladin-abilities.test.ts --configLoader native",
+    "passed": 19,
+    "failed": 0
+  },
+  "e2e": {
+    "command": "node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/paladin-card-art-review.e2e.ts --workers=1",
+    "passed": 1,
+    "failed": 0
+  },
+  "visual": {
+    "media": 7,
+    "subagent": "/root/audit_frames_11_21",
+    "verdict": "PASS"
+  },
+  "resourcePublish": {
+    "jobId": "f09e900d-7c5d-4525-af00-a0deab4b4741",
+    "release": "20261015144311320",
+    "objects": 1,
+    "uploaderExitCode": 0
+  },
+  "runtimeWebpBytes": 2040596,
+  "totalThreeAssetsBytes": 3086552,
+  "localeDelivery": "本地修改，尚未提交/部署前端版本",
+  "ruleChanges": "无，用户选择先修图序和明确文案"
+}

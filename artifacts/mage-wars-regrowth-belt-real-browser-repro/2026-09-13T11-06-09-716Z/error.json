@@ -1,0 +1,4 @@
+{
+  "message": "page.evaluate: ReferenceError: summarizeElement is not defined\n    at pointAudit (eval at evaluate (:290:30), <anonymous>:28:18)\n    at eval (eval at evaluate (:290:30), <anonymous>:50:13)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+  "stack": "page.evaluate: ReferenceError: summarizeElement is not defined\n    at pointAudit (eval at evaluate (:290:30), <anonymous>:28:18)\n    at eval (eval at evaluate (:290:30), <anonymous>:50:13)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at readSnapshot (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\mage-wars-regrowth-belt-real-browser-repro.mjs:65:15)\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\mage-wars-regrowth-belt-real-browser-repro.mjs:232:31)"
+}

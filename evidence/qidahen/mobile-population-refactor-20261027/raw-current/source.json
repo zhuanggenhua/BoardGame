@@ -1,0 +1,16 @@
+{
+  "sourceRevision": "9ee82167d57efea727cab98bcdac2a77b91b249ad7892723d5d25375201b48c7",
+  "files": {
+    "src/games/qidahen/Board.tsx": "b406d1d5c63c49cf8f89d40ee3f63bc60757a3f87147ec3e7162bfec6e2c6aaf",
+    "src/games/qidahen/QidahenBoardShell.tsx": "48243dd69c9a99e3ba88ae75f33716731688d8c4620731b8bdbd83b69126a78e",
+    "src/games/qidahen/qidahen-board.css": "7d95517e14afde9fa7809cea4e0f1fb09cf6d3409441d9a45e858f6a0e69fb4e",
+    "src/games/qidahen/ui/hudLayout.ts": "3c8a8ed372bca8c9cfc4f5b7d8f0acd061892576281457c47081bd6a1b4da10f",
+    "src/games/qidahen/ui/MapViewportControls.tsx": "2c791eae67fed974538e1ac6325864a74d89526dc6d01aaff345011968bb0eec",
+    "src/games/qidahen/ui/populationLayout.ts": "af00084cdeda27ecbe9e43f5497049e3dd59e787abab2269a66a476a74d1ed82",
+    "src/games/qidahen/ui/QidahenMapPopulationLayer.tsx": "b563738c799cf9db56b0b747ba9e4881ce6628d47889a5eedff0d78e6f89d1ce",
+    "src/games/qidahen/ui/runtimeRegionOwnership.ts": "8243d7dd9d43b1d66e209501ffc69ce179757a22ddf8cae2d6173bb619faf838",
+    "src/games/qidahen/data/runtime-region-graph.json": "0f994d60cf192c7771aa88fe74d9c67c0b9c6fc341e50bdd1424545cd252cb45",
+    "src/games/qidahen/data/region-mask.png": "ddb87f2832a240d4811bc9257382b941d6be92c9ecfd24b841c8e7fed4dd37ad"
+  },
+  "startedAt": "2026-10-27T03:03:32.324Z"
+}

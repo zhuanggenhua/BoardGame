@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-10-25T17:53:13.260Z",
+  "sourceRevision": "cd6a41a85de8fc6e0e198009ea3c505608678d5c04ac57588e5674aae5197c68",
+  "typecheck": {
+    "log": "verification/doctor-strange-typecheck-current-20261026-run3.log",
+    "exit": 1,
+    "rawDiagnostics": 4872,
+    "uniqueDiagnostics": 2653,
+    "files": 328,
+    "diceThroneUniqueDiagnostics": 320,
+    "diceThroneFiles": 62,
+    "doctorStrangeNamedPathDiagnostics": 0
+  },
+  "changedHunkCoordinateIntersections": [
+    {
+      "file": "src/games/dicethrone/heroes/tianshi/abilities.ts",
+      "line": 146,
+      "column": 294,
+      "code": "TS2345"
+    },
+    {
+      "file": "src/games/dicethrone/heroes/tianshi/abilities.ts",
+      "line": 266,
+      "column": 285,
+      "code": "TS2345"
+    }
+  ],
+  "interpretationLimit": "Changed-hunk coordinate comparison is attribution evidence only; it does not prove causality for diagnostics caused by changed shared types."
+}

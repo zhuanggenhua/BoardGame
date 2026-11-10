@@ -1,0 +1,368 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-10-25",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "visualReview": "子代理对31张主链画面逐图验收：31/31有效 PASS（25张当前逐图审查，6张同哈希旧PASS沿用）；仅检查 UI、交互、可读性、裁切和遮挡；规则数值由 Vitest/E2E 覆盖。"
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "problemChain": {
+    "problemOriginal": "旧教学流程把无关手牌上限和局部规则提前讲解，教程卡的焦点、玩家当前决策和所见对象错位，并将专项练习暴露成多余章节。",
+    "understanding": "从正式开局组织一条连续教学主线；每个节点只解释当前决策需要的信息，并让玩家实际操作后看到结果；1、2、3格轮盘走法按选择作为互斥分支。",
+    "currentSolution": "玩家目录仅呈现 basic-opening 连续入门课。开局先讲胜利目标，首次行动选择时给出行动顺序与征召效果，支付时只指导选牌/检视，目标窗口出现时再解释本土规则；玩家真实选择轮盘走法后进入对应分支，三格征兵训练随当前操作逐步教学，完成后留在同局继续。",
+    "remainingBlockers": "无。当前主线未覆盖手牌上限及未触发的特殊规则，边界已记录在覆盖矩阵。"
+  },
+  "requirements": [
+    {
+      "requirement": "入口与胜利条件",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-entry.json",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/00-唯一入门入口-直接进入胜利条件.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/00a-继续后-选择首个行动.png"
+      ]
+    },
+    {
+      "requirement": "移动端长按检视手牌",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-mobile-hand-inspect.json",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-00-开场-胜利条件说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-01-首个行动选择-轮盘或征召.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-02-征召支付-手牌检视前.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-03-征召支付-长按手牌打开检视.png"
+      ]
+    },
+    {
+      "requirement": "一格开垦分支",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-one-grid.json",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-一格开垦前-选择轮盘走法.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-轮盘一格-进入开垦并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png"
+      ]
+    },
+    {
+      "requirement": "手牌征召与轮盘两格行动",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-recruit-wheel.json",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07a-征召支付-点击看查看牌面.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07-支付1张手牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/08-选择宣府建军位置.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/09-选择建军方式.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/10-征召结果-轮盘行动待完成.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02a-轮盘三格费用与落点说明.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03-轮盘选择-三种走法均可选择.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03a-轮盘两格-选择对手抽牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03b-轮盘两格-进入军屯并结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/11-教程结束后同局下一位玩家可操作.png"
+      ]
+    },
+    {
+      "requirement": "三格征兵训练分支",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-three-grid.json",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03e-征兵训练选择行动前规则译文.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03f-训练目标选择与等级提示.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03g-征兵训练结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03h-征兵目标本土限制与候选区域.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03i-额外训练规则与弃牌.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03j-额外训练目标与结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03k-征兵训练结果与轮盘结算.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03l-教程退场后同局继续.png"
+      ]
+    },
+    {
+      "requirement": "轮盘先行顺序分支",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-wheel-first.json",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02b-先轮盘后手牌-轮盘结算结果.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02d-轮盘后选择手牌行动.png",
+        "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02e-两种行动完成-征召结果.png"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "basic-opening-entry",
+      "sourceRun": "20261025-qidahen-refactor-r6",
+      "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+      "evidence": "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-entry.json",
+      "requiredSteps": [
+        "basic-opening-entry-capture-001",
+        "basic-opening-entry-input-002",
+        "basic-opening-entry-capture-003"
+      ]
+    },
+    {
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "sourceRun": "20261025-qidahen-refactor-r6",
+      "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+      "evidence": "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-mobile-hand-inspect.json",
+      "requiredSteps": [
+        "basic-opening-mobile-hand-inspect-capture-001",
+        "basic-opening-mobile-hand-inspect-input-002",
+        "basic-opening-mobile-hand-inspect-capture-003",
+        "basic-opening-mobile-hand-inspect-input-004",
+        "basic-opening-mobile-hand-inspect-capture-005",
+        "basic-opening-mobile-hand-inspect-input-006",
+        "basic-opening-mobile-hand-inspect-capture-007",
+        "basic-opening-mobile-hand-inspect-capture-008"
+      ]
+    },
+    {
+      "chainId": "basic-opening-one-grid",
+      "sourceRun": "20261025-qidahen-refactor-r6",
+      "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+      "evidence": "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-one-grid.json",
+      "requiredSteps": [
+        "basic-opening-one-grid-input-001",
+        "basic-opening-one-grid-input-002",
+        "basic-opening-one-grid-input-003",
+        "basic-opening-one-grid-input-004",
+        "basic-opening-one-grid-input-005",
+        "basic-opening-one-grid-input-006",
+        "basic-opening-one-grid-input-007",
+        "basic-opening-one-grid-capture-008",
+        "basic-opening-one-grid-input-009",
+        "basic-opening-one-grid-capture-010",
+        "basic-opening-one-grid-input-011",
+        "basic-opening-one-grid-input-012",
+        "basic-opening-one-grid-capture-013"
+      ]
+    },
+    {
+      "chainId": "basic-opening-recruit-wheel",
+      "sourceRun": "20261025-qidahen-refactor-r6",
+      "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+      "evidence": "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-recruit-wheel.json",
+      "requiredSteps": [
+        "basic-opening-recruit-wheel-capture-001",
+        "basic-opening-recruit-wheel-input-002",
+        "basic-opening-recruit-wheel-capture-003",
+        "basic-opening-recruit-wheel-input-004",
+        "basic-opening-recruit-wheel-input-005",
+        "basic-opening-recruit-wheel-capture-006",
+        "basic-opening-recruit-wheel-input-007",
+        "basic-opening-recruit-wheel-capture-008",
+        "basic-opening-recruit-wheel-input-009",
+        "basic-opening-recruit-wheel-capture-010",
+        "basic-opening-recruit-wheel-input-011",
+        "basic-opening-recruit-wheel-capture-012",
+        "basic-opening-recruit-wheel-input-013",
+        "basic-opening-recruit-wheel-capture-014",
+        "basic-opening-recruit-wheel-input-015",
+        "basic-opening-recruit-wheel-capture-016",
+        "basic-opening-recruit-wheel-capture-017",
+        "basic-opening-recruit-wheel-input-018",
+        "basic-opening-recruit-wheel-capture-019",
+        "basic-opening-recruit-wheel-input-020",
+        "basic-opening-recruit-wheel-capture-021",
+        "basic-opening-recruit-wheel-input-022",
+        "basic-opening-recruit-wheel-input-023",
+        "basic-opening-recruit-wheel-capture-024"
+      ]
+    },
+    {
+      "chainId": "basic-opening-three-grid",
+      "sourceRun": "20261025-qidahen-refactor-r6",
+      "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+      "evidence": "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-three-grid.json",
+      "requiredSteps": [
+        "basic-opening-three-grid-input-001",
+        "basic-opening-three-grid-input-002",
+        "basic-opening-three-grid-input-003",
+        "basic-opening-three-grid-input-004",
+        "basic-opening-three-grid-input-005",
+        "basic-opening-three-grid-input-006",
+        "basic-opening-three-grid-input-007",
+        "basic-opening-three-grid-capture-008",
+        "basic-opening-three-grid-input-009",
+        "basic-opening-three-grid-capture-010",
+        "basic-opening-three-grid-input-011",
+        "basic-opening-three-grid-input-012",
+        "basic-opening-three-grid-capture-013",
+        "basic-opening-three-grid-input-014",
+        "basic-opening-three-grid-capture-015",
+        "basic-opening-three-grid-input-016",
+        "basic-opening-three-grid-capture-017",
+        "basic-opening-three-grid-input-018",
+        "basic-opening-three-grid-capture-019",
+        "basic-opening-three-grid-input-020",
+        "basic-opening-three-grid-input-021",
+        "basic-opening-three-grid-capture-022",
+        "basic-opening-three-grid-input-023",
+        "basic-opening-three-grid-input-024",
+        "basic-opening-three-grid-capture-025",
+        "basic-opening-three-grid-input-026",
+        "basic-opening-three-grid-input-027",
+        "basic-opening-three-grid-capture-028",
+        "basic-opening-three-grid-input-029",
+        "basic-opening-three-grid-input-030",
+        "basic-opening-three-grid-capture-031"
+      ]
+    },
+    {
+      "chainId": "basic-opening-wheel-first",
+      "sourceRun": "20261025-qidahen-refactor-r6",
+      "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4",
+      "evidence": "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavior-traces/basic-opening-wheel-first.json",
+      "requiredSteps": [
+        "basic-opening-wheel-first-input-001",
+        "basic-opening-wheel-first-capture-002",
+        "basic-opening-wheel-first-input-003",
+        "basic-opening-wheel-first-capture-004",
+        "basic-opening-wheel-first-input-005",
+        "basic-opening-wheel-first-capture-006",
+        "basic-opening-wheel-first-input-007",
+        "basic-opening-wheel-first-input-008",
+        "basic-opening-wheel-first-input-009",
+        "basic-opening-wheel-first-input-010",
+        "basic-opening-wheel-first-input-011",
+        "basic-opening-wheel-first-capture-012"
+      ]
+    }
+  ],
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "规则、数值、资源变化与结算由领域断言覆盖",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialFlow.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "evidence/qidahen/tutorial-basic-opening-20261025-r6/behavioral-verification.json",
+      "七大恨教程流程 Vitest 29/29 passed。"
+    ]
+  },
+  "endToEndVerification": {
+    "fullRun": {
+      "command": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+      "status": "PASS",
+      "result": "21/21 Chromium tests passed。"
+    },
+    "tracedRun": {
+      "command": "$env:QIDAHEN_CAPTURE_BEHAVIOR_TRACE=1; $env:QIDAHEN_TUTORIAL_SCREENSHOT_RUN_ID=20261025-qidahen-refactor-r6; node scripts/infra/run-e2e-batch.mjs default --files e2e/qidahen/qidahen-closeout.e2e.ts -- --grep \"唯一入门入口|教程模式会带玩家走完真实回合主路|基础教程的 1 格走法|玩家可先做轮盘行动|基础教程的 3 格走法|移动横屏真实教程\"",
+      "status": "PASS",
+      "result": "6/6 traced E2E passed；六条同跑行为链覆盖91个动作步骤与31个独特 UI 状态，另有5张重复截图按合同排除。"
+    },
+    "screenshotRunId": "20261025-qidahen-refactor-r6",
+    "sourceRevision": "sha256:33ec0d0170ab6d1073a40ee707f8dd62e00eed1bc37c55ffc6f2f85a6341b5e4"
+  },
+  "staticVerification": {
+    "typecheck": "PASS",
+    "specLint": "PASS",
+    "eslint": "PASS_WITH_EXISTING_WARNING: 0 errors, 1 existing react-hooks/refs warning",
+    "i18nCheck": "FAIL_UNRELATED_WORKTREE_KEYS: lobby.homeAppearance (zh-CN/en) and unrelated DiceThrone locale keys; no Qidahen tutorial key missing",
+    "diffCheck": "PASS"
+  },
+  "verification": {
+    "screenshotRunId": "20261025-qidahen-refactor-r6",
+    "desktopPngCount": 27,
+    "mobilePngCount": 4,
+    "totalPngCount": 31,
+    "badPngCount": 0,
+    "visualReviewCount": 31,
+    "visualReviewStatus": "PASS"
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/r6_visual_audit_a_clean + /root/r6_visual_audit_b_clean + /root/r6_visual_review_last_two + /root/r6_visual_audit_c_clean"
+    },
+    "reviewFile": "visual-review.json",
+    "summary": {
+      "fullCoverage": true,
+      "desktopCount": 27,
+      "mobileCount": 4,
+      "totalMediaCount": 31,
+      "decodableCount": 31,
+      "passCount": 31,
+      "carriedForwardCount": 6,
+      "reviseCount": 0,
+      "failedPaths": [],
+      "missingMedia": [],
+      "extraMedia": [],
+      "badPngMetadata": [],
+      "duplicatePaths": [],
+      "numericOrRuleValidation": "excluded; covered by Vitest/E2E",
+      "auxiliaryDetailPaths": []
+    }
+  },
+  "media": [
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/00-唯一入门入口-直接进入胜利条件.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/00a-继续后-选择首个行动.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-00-开场-胜利条件说明.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-01-首个行动选择-轮盘或征召.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-02-征召支付-手牌检视前.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/移动-03-征召支付-长按手牌打开检视.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-一格开垦前-选择轮盘走法.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-轮盘一格-进入开垦并结算.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03d-一格开垦后退出教程并完成下一次轮盘行动.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07a-征召支付-点击看查看牌面.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/07-支付1张手牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/08-选择宣府建军位置.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/09-选择建军方式.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/10-征召结果-轮盘行动待完成.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02a-轮盘三格费用与落点说明.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03-轮盘选择-三种走法均可选择.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03a-轮盘两格-选择对手抽牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03b-轮盘两格-进入军屯并结算.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/11-教程结束后同局下一位玩家可操作.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03c-轮盘三格-进入征兵训练弃牌窗口.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03e-征兵训练选择行动前规则译文.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03f-训练目标选择与等级提示.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03g-征兵训练结算结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03h-征兵目标本土限制与候选区域.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03i-额外训练规则与弃牌.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03j-额外训练目标与结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03k-征兵训练结果与轮盘结算.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03l-教程退场后同局继续.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02b-先轮盘后手牌-轮盘结算结果.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02d-轮盘后选择手牌行动.png",
+    "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/02e-两种行动完成-征召结果.png"
+  ],
+  "outOfScopeMedia": [
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261025-qidahen-refactor-r6-mobile/移动-04-关闭检视-回到征召支付.png",
+      "contract": "七大恨入门主链 distinct-ui-state",
+      "reason": "该截图与已登记主链图片的 SHA-256 相同，是重复界面状态；对应实际行为步骤仍由同跑行为轨迹覆盖。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261025-qidahen-refactor-r6/01-开场-阅读三种胜利条件.png",
+      "contract": "七大恨入门主链 distinct-ui-state",
+      "reason": "该截图与已登记主链图片的 SHA-256 相同，是重复界面状态；对应实际行为步骤仍由同跑行为轨迹覆盖。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261025-qidahen-refactor-r6/02-选择首个行动-轮盘或征召.png",
+      "contract": "七大恨入门主链 distinct-ui-state",
+      "reason": "该截图与已登记主链图片的 SHA-256 相同，是重复界面状态；对应实际行为步骤仍由同跑行为轨迹覆盖。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261025-qidahen-refactor-r6/03c-三格征兵训练前-选择轮盘走法.png",
+      "contract": "七大恨入门主链 distinct-ui-state",
+      "reason": "该截图与已登记主链图片的 SHA-256 相同，是重复界面状态；对应实际行为步骤仍由同跑行为轨迹覆盖。"
+    },
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261025-qidahen-refactor-r6/02c-先轮盘后手牌-行动顺序选择.png",
+      "contract": "七大恨入门主链 distinct-ui-state",
+      "reason": "该截图与已登记主链图片的 SHA-256 相同，是重复界面状态；对应实际行为步骤仍由同跑行为轨迹覆盖。"
+    }
+  ]
+}

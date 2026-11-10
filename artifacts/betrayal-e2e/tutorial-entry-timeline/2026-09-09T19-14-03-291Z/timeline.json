@@ -1,0 +1,3549 @@
+{
+  "url": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+  "outDir": "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\betrayal-e2e\\tutorial-entry-timeline\\2026-09-09T19-14-03-291Z",
+  "samples": [
+    {
+      "ms": 86,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": null,
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 188,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": null,
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 324,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": null,
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 427,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 542,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 1033,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 1136,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 1248,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 1354,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": false,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": null,
+      "core": null,
+      "eventsTail": []
+    },
+    {
+      "ms": 1609,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "characterSelect",
+        "currentPlayer": "0"
+      },
+      "eventsTail": []
+    },
+    {
+      "ms": 1713,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 1814,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 1918,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2021,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2128,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2231,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2343,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2456,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2564,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2666,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2780,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2883,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 2995,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3104,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3210,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3320,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3431,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3540,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3643,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3748,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3862,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 3964,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4066,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4173,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4281,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4386,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4497,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4601,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4712,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4820,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 4921,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5025,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5130,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5233,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5340,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5442,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5549,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5657,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5762,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5871,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 5975,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6081,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6182,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6293,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6396,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6504,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6608,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6719,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6824,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 6928,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7030,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7131,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7238,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7340,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7443,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7547,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7660,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7762,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7865,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 7971,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8076,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8177,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8283,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8386,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8489,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8592,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8695,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": false,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 8903,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": false,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9021,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9164,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9271,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9387,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9490,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9596,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9705,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9814,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 9922,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 10032,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 10140,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    },
+    {
+      "ms": 10248,
+      "domStep": null,
+      "hasOverlayCard": false,
+      "hasBoard": true,
+      "hasCharacterSelect": false,
+      "context": {
+        "isBoardMounted": true,
+        "isControllerReady": true,
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepAiActionCount": 0,
+        "aiActionCount": 0
+      },
+      "tutorial": {
+        "active": false,
+        "manifestId": null,
+        "stepIndex": 0,
+        "stepId": null,
+        "stepIdsLen": 0,
+        "allowed": null,
+        "aiActions": null,
+        "stepAiActions": null,
+        "allowManualSkip": null
+      },
+      "core": {
+        "phase": "preHaunt",
+        "currentPlayer": "0"
+      },
+      "eventsTail": [
+        {
+          "type": "SYS_TUTORIAL_AI_CONSUMED",
+          "payload": {
+            "stepId": "setup-runtime"
+          }
+        }
+      ]
+    }
+  ],
+  "logs": [
+    {
+      "t": 1788981244015,
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "t": 1788981244022,
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "t": 1788981244054,
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "t": 1788981244074,
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "t": 1788981244123,
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "t": 1788981244129,
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "t": 1788981244134,
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "t": 1788981244151,
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "t": 1788981244445,
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "t": 1788981244702,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:14:04.702Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "t": 1788981244703,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:14:04.703Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "t": 1788981244705,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "t": 1788981244705,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "t": 1788981245110,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:14:05.110Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "t": 1788981245110,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:14:05.111Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "t": 1788981245139,
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T19:14:05.140Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":30}"
+    },
+    {
+      "t": 1788981245433,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:14:05.432Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":729}"
+    },
+    {
+      "t": 1788981245433,
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T19:14:05.433Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":322}"
+    },
+    {
+      "t": 1788981245527,
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "t": 1788981245538,
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "t": 1788981245538,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "t": 1788981245538,
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "t": 1788981245538,
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "t": 1788981245695,
+      "type": "log",
+      "text": "%c✓ [LOCAL_AI_PERF] {\"stage\":\"command-applied\",\"gameId\":\"betrayal\",\"matchId\":\"local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn\",\"commandType\":\"SYS_CHEAT_MERGE_STATE\",\"playerId\":\"0\",\"progressed\":false,\"hasStateDelta\":false,\"rejected\":false,\"failureReason\":null,\"phaseBefore\":\"\",\"phaseAfter\":\"\",\"handCountBefore\":null,\"handCountAfter\":null,\"cpBefore\":null,\"cpAfter\":null,\"markerBefore\":\"0||1|0|||||||0|\",\"markerAfter\":\"0||1|0|||||||0|\"} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "t": 1788981245695,
+      "type": "log",
+      "text": "[LOCAL_AI_PERF] {stage: command-applied, gameId: betrayal, matchId: local:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn, commandType: SYS_CHEAT_MERGE_STATE, playerId: 0}"
+    },
+    {
+      "t": 1788981250303,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg"
+    },
+    {
+      "t": 1788981250321,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg"
+    },
+    {
+      "t": 1788981251351,
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg"
+    },
+    {
+      "t": 1788981253574,
+      "type": "warning",
+      "text": "🟡 [性能] 平均 46.8 FPS | P95 帧时 66.7ms — 低于 60fps"
+    },
+    {
+      "t": 1788981253682,
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 8153ms（83 张）"
+    },
+    {
+      "t": 1788981253682,
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 7964ms（83 张）"
+    }
+  ]
+}

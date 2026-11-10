@@ -1,0 +1,53 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "betrayal",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-09T20:30:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "楼层切换贴在地图真正右下角，不把继续悬浮球当占位，不给它留空。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/roomFloorSwitcherSurface.tsx 底边改为 bottom-3，右侧仍 right-[228px] 避开牌堆/队友，不再使用 bottom-[80px]。",
+        "e2e/betrayal/floor-switcher-visual.e2e.ts 2 passed：overlayBottom-switcherBottom 在 4 到 36 像素之间，不再编码悬浮球高度。",
+        "01、02 开局图切层钮贴地图底边，与继续按钮同一高度带。",
+        "03 切到一层后切层钮仍贴底，金色高亮也不抬高。"
+      ]
+    },
+    {
+      "requirement": "开局静帧不得出现属性飘字；上一张 03 上的品红字来自整仓注入，不是属性轨证明。",
+      "status": "PASS",
+      "evidence": [
+        "shouldPresentExplorerTraitChangeFeedback 在全体探索者同一拍变化时跳过飘字。",
+        "e2e 开局截图前等待 [data-feedback-style=floating-text] 消失。",
+        "01、02、04 门厅棋子上方没有品红属性字。",
+        "src/games/betrayal/__tests__/activityPresentation.test.ts 3 passed。"
+      ]
+    },
+    {
+      "requirement": "真实单人属性变化时，飘字相对该探索者棋子水平居中。",
+      "status": "PASS",
+      "evidence": [
+        "src/index.css .betrayal-trait-change-floating 补上 position:absolute; left:50%，与 translate3d(-50%) 动画同轴。",
+        "e2e/betrayal/trait-track-ui.e2e.ts 1 passed：只改玩家 0 力量后飘字出现，中心与棋子中心差不超过 8 像素。",
+        "04 变化前无飘字；05 减一力量贴在当前棋子上方；06 消退后无残留。"
+      ]
+    }
+  ],
+  "images": [
+    "evidence/betrayal-floor-float-center-20261009/01-PC-1920x1080-开局无飘字切层贴底.jpg",
+    "evidence/betrayal-floor-float-center-20261009/02-Vivo-796x360-开局无飘字切层贴底.jpg",
+    "evidence/betrayal-floor-float-center-20261009/03-PC-1920x1080-一层切换后切层仍贴底.jpg",
+    "evidence/betrayal-floor-float-center-20261009/04-PC-1920x1080-属性飘字出现前.jpg",
+    "evidence/betrayal-floor-float-center-20261009/05-PC-1920x1080-属性飘字贴棋子居中.jpg",
+    "evidence/betrayal-floor-float-center-20261009/06-PC-1920x1080-属性飘字消退后.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

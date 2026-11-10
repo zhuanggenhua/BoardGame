@@ -1,0 +1,1012 @@
+{
+  "reviewer": "/root/doctor_visual_c_current",
+  "run": "R7-public-and-R8-character",
+  "runs": [
+    "e2e-1793528190018-czrdk8",
+    "e2e-1793528401529-ew7yqp"
+  ],
+  "status": "PASS",
+  "claimScope": "interaction-ui",
+  "assignmentComplete": true,
+  "objective": "逐张核对八张当前正式整屏原图：选角排序、桌面与横屏公开准备区、原卡阅读、四人候选及队友已选。",
+  "readMethod": "八次独立私有读取，各次只含一个原始整屏图及精确路径与校验值；不使用拼图、测试或相邻图替代。",
+  "limitations": [
+    "范围仅当前桌面及浏览器横屏代表态，不证明数值规则、资源消耗、生产、重连或实体手机触摸。",
+    "公开准备区小卡只承接身份、数量与找回，完整正文由原阅读层承接；不按阻塞卡池默认比较口径要求全部正文同屏。",
+    "静图只证明当前可见状态，真实滚动、点击、关闭的动作顺序由对应执行记录另证。",
+    "角色排序结论覆盖当前前段及实施中后段可见图，角色完成身份仍以正式目录为源。"
+  ],
+  "media": [
+    {
+      "label": "27-角色排序-已完成角色前段.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png",
+      "sha256": "e3c4cd3036ccacda8694c954776419906ca22c588951c9de857c1aa0e65fcf3d",
+      "sourceRun": "e2e-1793528401529-ew7yqp",
+      "status": "PASS",
+      "observation": "左栏前段两列显示武僧、狂战士等角色，当前可见角色卡未挂实施中斜条；中央武僧玩家板、右侧提示板和底部双方未选择席位完整，浏览与选择入口清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照 22790d2c7^ 与 90b7dba67^ 的 DiceThroneHeroSelection，保持原两列滚动栏、中央玩家板、右侧提示板及底部席位。完成优先由当前目录排序承担，图面前段没有实施中条幅；未新增第二个选角入口。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "左栏供挑选角色，中央和右侧展示当前预览角色，底部席位显示尚未选择。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "两列角色卡外缘齐整，中央玩家板不侵入右侧提示板，底部席位均在屏内。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "原卡片边界分隔角色，预览外缘标出当前阅读区域，没有额外同质状态横幅。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 94
+      },
+      "protectedSlots": [
+        {
+          "slot": "前段角色名称与头像可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "slot": "中央武僧玩家板及提示板完整",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "slot": "底部双方席位与等待状态无遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见已完成角色误挂实施中标记",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "observation": "未见预览与角色名称错配",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+        },
+        {
+          "observation": "列表底端露出的下行属于原滚动边界，不遮住本次前段目标",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\真实选角入口-奇异博士可选-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "原卡片边界分隔角色，预览外缘标出当前阅读区域，没有额外同质状态横幅。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "28-角色排序-实施中角色后段.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png",
+      "sha256": "2929873f4d306a3e96b0dfbbd5d37a551cd5e5137f0c44da5d5f1bf310fe73a4",
+      "sourceRun": "e2e-1793528401529-ew7yqp",
+      "status": "PASS",
+      "observation": "奇异博士位于角色栏后段，实施中斜条、彩色头像、本方席位角标和角色名称同时可见；中央对应奇异博士玩家板及右侧提示板，底部本方已选角色名清楚。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的 DiceThroneHeroSelection 原角色卡、本方选中反馈、CharacterSelectionBadge 与底部席位。排序仍完成优先，奇异博士保持实施中，没有用移除进度标记冒充角色完成。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "左侧已选奇异博士关联中央大玩家板，底部席位以相同名字承接选择结果。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "角色栏两列边缘保持一致，实施中条幅在各自卡内，玩家板与右侧提示板各占原位置。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "琥珀框和彩色头像表示本方选择，斜条说明实施状态，未增加重复的独立提示。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 96
+      },
+      "protectedSlots": [
+        {
+          "slot": "奇异博士头像、名字、实施中条幅和本方角标可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+        },
+        {
+          "slot": "玩家板和提示板对应同一角色",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+        },
+        {
+          "slot": "底部本方选择与对方未选择状态均可读",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见角色实施中身份被隐藏",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+        },
+        {
+          "observation": "未见选中边界遮住名字",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+        },
+        {
+          "observation": "未见右侧提示板被中央玩家板裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793528401529-ew7yqp\\房主真实选择奇异博士.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "琥珀框和彩色头像表示本方选择，斜条说明实施状态，未增加重复的独立提示。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "30-公开准备区三张法术-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png",
+      "sha256": "28db837a81ec3a07d16f4198e04a599d85ecc8099760265c7f20298afc4ef8a1",
+      "sourceRun": "e2e-1793528190018-czrdk8",
+      "status": "PASS",
+      "observation": "桌面原玩家板左下的维山帝之书标题显示三张数量，当前窗口可见红色与蓝色两张正式法术缩略卡；第三张由原横向浏览找回，缩略卡承担身份入口而非完整正文阅读。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的 CenterBoard 原准备区物理槽位、CardPreview 与原横向滚动容器。当前保留窄槽缩略卡和三张计数，完整正文由原卡点击进入 MagnifyOverlay 承接；不是阻塞卡池的默认并排比较。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "准备区贴原玩家板左下槽位，计数在小卡上方，中央技能板与右侧骰盘仍是各自原承接区。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "准备区标题与下方小卡在同一槽内，红蓝两卡并排，未越过相邻星际侵入技能槽边缘。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "正式法术卡图承担身份，不另包文字替身卡；准备区原底板只说明物理槽位边界。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 19,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 94
+      },
+      "protectedSlots": [
+        {
+          "slot": "维山帝之书三张计数可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+        },
+        {
+          "slot": "红蓝小卡主体位于原准备槽内",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+        },
+        {
+          "slot": "相邻技能槽、右侧骰盘与阶段保留原位置",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未将当前只见两卡误称三张同屏",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+        },
+        {
+          "observation": "未要求缩略卡独自承担完整规则正文",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+        },
+        {
+          "observation": "未见新增准备区遮挡相邻技能槽",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区三张法术-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "正式法术卡图承担身份，不另包文字替身卡；准备区原底板只说明物理槽位边界。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "31-公开准备区原卡阅读-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png",
+      "sha256": "3e4ef779d11a93e3a9c968b6d3536966bfdc26d5e95b81fa3c6100725f179bde",
+      "sourceRun": "e2e-1793528190018-czrdk8",
+      "status": "PASS",
+      "observation": "桌面中央原阅读层完整显示瓦尔托尔之汽，牌名、准备效果、施放效果及末行弃置说明均可读；右上关闭按钮明显，背景准备区仍显示三张计数与滚至后段的蓝绿小卡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的 CenterBoard 原卡点击到 BoardOverlays 内 MagnifyOverlay 的完整阅读链，继续使用正式 CardPreview 与原关闭按钮。必要变化仅为按源图比例和可用高度展示完整卡面，没有第二套阅读状态。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "大卡阅读成为单一主焦点，背景牌桌压暗，关闭入口贴阅读对象右上方。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "大卡上下四边完整落在屏内，关闭按钮位于卡角且不盖牌名，背景槽位未挤动。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "牌面自身边界已完成分离，仅保留原阅读层背景，不叠加额外金框或规则说明壳。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 97
+      },
+      "protectedSlots": [
+        {
+          "slot": "瓦尔托尔之汽牌名和两段完整正文可读",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+        },
+        {
+          "slot": "原阅读关闭按钮完整可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+        },
+        {
+          "slot": "背景准备区数量及后段小卡仍可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见卡底末行被截断",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+        },
+        {
+          "observation": "未见关闭按钮占用正文位置",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+        },
+        {
+          "observation": "未把阅读图当成实际施放或规则正确证明",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "牌面自身边界已完成分离，仅保留原阅读层背景，不叠加额外金框或规则说明壳。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "32-公开准备区横向找到第三张-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png",
+      "sha256": "460934643d188fb06e0d85255e2ea8f8e3c475c6392127aaf3cc865bb99b1173",
+      "sourceRun": "e2e-1793528190018-czrdk8",
+      "status": "PASS",
+      "observation": "横屏原牌桌的准备区显示三张计数，横向浏览后蓝色与绿色法术缩略卡同处左下原槽，绿色第三张可识别为桌面阅读中同类卡图；当前没有阅读浮层遮住其点击入口。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的 CenterBoard 原横向浏览容器及 CardPreview，横屏仍保留原物理技能槽内的小卡入口，没有另建手机卡池。小卡只承接身份与找回，完整正文交由紧接的原阅读层。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "横屏仍以中央玩家板为主体，准备小卡在原左下槽，骰盘在右侧独立承接动作。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "蓝绿两卡按横向顺序位于准备标题下，槽外缘未压入旁侧星际侵入技能，当前全屏未被新弹层占据。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "准备槽只保留数量标题和正式卡图，未新增顶部提示或第二个卡牌列表。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 93
+      },
+      "protectedSlots": [
+        {
+          "slot": "准备区三张数量及绿色第三张本体可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+        },
+        {
+          "slot": "相邻技能槽边界仍可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+        },
+        {
+          "slot": "右侧骰盘与左侧阶段保持原横屏结构",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未把小卡缩略图的正文大小当完整阅读能力",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+        },
+        {
+          "observation": "未见第三张被手牌或悬停卡覆盖",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+        },
+        {
+          "observation": "静图不单独证明滚轮动作，动作来源另有本次执行记录",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区横向找到第三张-横屏.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "准备槽只保留数量标题和正式卡图，未新增顶部提示或第二个卡牌列表。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "33-公开准备区原卡阅读-横屏.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png",
+      "sha256": "8862205bc8aa2e4b38550281d4270e480e939a99c6cc88cbdc76cddf56dd3779",
+      "sourceRun": "e2e-1793528190018-czrdk8",
+      "status": "PASS",
+      "observation": "横屏中央原阅读层展示瓦尔托尔之汽整张牌，标题、准备效果、施放效果和末行均在屏内可读；关闭按钮紧贴卡片右上角，顶部和底部留白足以保留整卡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的原 MagnifyOverlay 阅读承接与关闭入口，卡面仍来自正式 CardPreview。横屏在真实准备区点击后显示同一绿色法术，按可用高度保持原比例，未新造独立阅读分支。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "中央大卡是唯一阅读主对象，背景牌桌整体压暗，关闭按钮就近承接退出。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "整卡上下缘都在横屏视口内，牌名与正文没有碰边，关闭按钮未遮住标题。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "保留正式印刷卡面及旧阅读底层，没有把正文另抄成新面板或叠加装饰外框。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 97
+      },
+      "protectedSlots": [
+        {
+          "slot": "同一法术牌名和完整上下正文可读",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+        },
+        {
+          "slot": "右上原关闭按钮可见且靠近当前卡面",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+        },
+        {
+          "slot": "阅读四边均未被横屏视口裁切",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见底部正文或顶部牌名丢失",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+        },
+        {
+          "observation": "未见关闭按钮跑到远离阅读对象的位置",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+        },
+        {
+          "observation": "横屏截图不证明实体手机触摸体验",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\公开准备区原卡阅读-横屏.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "保留正式印刷卡面及旧阅读底层，没有把正文另抄成新面板或叠加装饰外框。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "34-所有玩家目标候选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png",
+      "sha256": "d962515a61b09a0f67ea88c5e3e980f2cabe93053ad7ac128669bf0b8dc229b7",
+      "sourceRun": "e2e-1793528190018-czrdk8",
+      "status": "PASS",
+      "observation": "中央标题要求选择获得即视感的玩家，自己、队友与两名敌方四张玩家卡全部可见；上排三张下排一张，关系文字与席位标记清楚，未选时底部确认灰色。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的 InteractionOverlay 玩家选择分支、PlayerCardShell、GameModal 正常布局及 GameButton。四名玩家仍是原玩家卡，确认仍位于候选下方，没有改成文字列表或骰盘内选择。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "弹窗标题、四名候选、底部确认按阅读顺序展开，牌桌背景暗化退到次层。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "上排三张玩家卡顶边一致，下排单卡与确认按钮共用中轴，弹窗四边完整在屏内。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "玩家卡底板区分四个真实目标，关系颜色负责身份，未选时不添加多层高亮框。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 97
+      },
+      "protectedSlots": [
+        {
+          "slot": "自己、队友与两名敌方候选本体同屏可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+        },
+        {
+          "slot": "标题与四张关系文字均可辨",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+        },
+        {
+          "slot": "底部确认与候选保持同一弹窗承接",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见来源特写遮住玩家候选",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+        },
+        {
+          "observation": "未见四人候选因布局变成需要猜测的省略项",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+        },
+        {
+          "observation": "未见内部标识或错误文案泄漏",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家目标候选-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "玩家卡底板区分四个真实目标，关系颜色负责身份，未选时不添加多层高亮框。"
+      },
+      "hardFailures": []
+    },
+    {
+      "label": "35-所有玩家队友已选-桌面.png",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png",
+      "sha256": "aa568b67ebe8420432fb4bab94283fb6983b80c07eacbd387eeeedd8a59635d7",
+      "sourceRun": "e2e-1793528190018-czrdk8",
+      "status": "PASS",
+      "observation": "队友玩家卡出现贴合本体的琥珀选中边界，队友文字与席位标记仍可见；自己和两名敌方卡没有消失，底部确认变亮，玩家可继续比较或提交当前队友选择。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "oldUiComparison": {
+        "baselines": [
+          "22790d2c7^",
+          "90b7dba67^"
+        ],
+        "evidenceType": "旧源码完整组件及已锁对照；不冒称历史整屏像素对比",
+        "observation": "对照两份旧基线的 InteractionOverlay、PlayerCardShell 选中态与原 GameModal、GameButton。选择直接表达在队友玩家卡上，原下方确认承接提交，未用重复横幅替代对象反馈。"
+      },
+      "layoutAudit": {
+        "checks": [
+          {
+            "criterion": "空间主次",
+            "status": "PASS",
+            "observation": "队友卡的选中边界与底部亮色确认构成操作链，其余候选保留比较位置。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+          },
+          {
+            "criterion": "实际边缘对齐",
+            "status": "PASS",
+            "observation": "队友边界贴合右上玩家卡外缘，卡内文字未偏移，下排卡与确认仍居中对齐。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+          },
+          {
+            "criterion": "装饰必要性",
+            "status": "PASS",
+            "observation": "单层琥珀边界只标当前队友，不叠离体双框，亮色确认只表达下一步可提交。",
+            "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+          }
+        ]
+      },
+      "scores": {
+        "dimensions": [
+          {
+            "dimension": "任务",
+            "score": 20,
+            "max": 20
+          },
+          {
+            "dimension": "视觉层级",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "识别",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "状态动作",
+            "score": 14,
+            "max": 15
+          },
+          {
+            "dimension": "布局",
+            "score": 15,
+            "max": 15
+          },
+          {
+            "dimension": "素材",
+            "score": 10,
+            "max": 10
+          },
+          {
+            "dimension": "人体",
+            "score": 9,
+            "max": 10
+          }
+        ],
+        "total": 98
+      },
+      "protectedSlots": [
+        {
+          "slot": "队友卡名称、关系和选中边界完整可见",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+        },
+        {
+          "slot": "其余三个玩家候选继续同屏",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+        },
+        {
+          "slot": "亮色确认位于候选下方且无遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+        }
+      ],
+      "negativeImpactChecks": [
+        {
+          "observation": "未见选中高亮压住玩家文字",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+        },
+        {
+          "observation": "未见非选中玩家被隐藏或遮挡",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+        },
+        {
+          "observation": "未将队友已选静图当成即视感已经结算",
+          "status": "PASS",
+          "evidence": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-ui-capture-20261101\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793528190018-czrdk8\\所有玩家队友已选-桌面.png"
+        }
+      ],
+      "elementResponsibilityAudit": {
+        "uncoveredElements": [],
+        "decisions": "单层琥珀边界只标当前队友，不叠离体双框，亮色确认只表达下一步可提交。"
+      },
+      "hardFailures": []
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "pass": 8,
+    "revise": 0,
+    "uniquePaths": 8,
+    "minScore": 93
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "text": "从弃牌堆选择1个法术并准备",
+  "rows": [
+    {
+      "testId": "dt-card-pool-title",
+      "tag": "H2",
+      "top": 93,
+      "bottom": 121,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "18px",
+      "lineHeight": "28px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-surface",
+      "tag": "DIV",
+      "top": 81,
+      "bottom": 617,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-panel",
+      "tag": "DIV",
+      "top": 81,
+      "bottom": 617,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-overlay",
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 0,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 900,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "auto",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "BODY",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "hidden",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "HTML",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "source": "real-continuous-PC-chain",
+  "before": {
+    "storedStep": "training-recruit-target",
+    "encodedChars": 3320466,
+    "sourceBytes": 23851804,
+    "savedCoreHash": "eab024d52737c080395ca783d95e8e8fc27adcad7d2c9c9d52778e18ec6aa629",
+    "liveCoreHash": "eab024d52737c080395ca783d95e8e8fc27adcad7d2c9c9d52778e18ec6aa629",
+    "savedHistoryHash": "0d82731d8d1510cfd8f746ed4f6af6e4b93fca6820c2c7c2ce543746452a54f9",
+    "liveHistoryHash": "0d82731d8d1510cfd8f746ed4f6af6e4b93fca6820c2c7c2ce543746452a54f9",
+    "checkpoints": 71,
+    "randomCursor": 106,
+    "randomPolicy": "{\"mode\":\"sequence\",\"values\":[1,1,10,10],\"cursor\":4}"
+  },
+  "after": {
+    "storedStep": "training-recruit-target",
+    "encodedChars": 3320466,
+    "sourceBytes": 23851804,
+    "savedCoreHash": "eab024d52737c080395ca783d95e8e8fc27adcad7d2c9c9d52778e18ec6aa629",
+    "liveCoreHash": "eab024d52737c080395ca783d95e8e8fc27adcad7d2c9c9d52778e18ec6aa629",
+    "savedHistoryHash": "0d82731d8d1510cfd8f746ed4f6af6e4b93fca6820c2c7c2ce543746452a54f9",
+    "liveHistoryHash": "0d82731d8d1510cfd8f746ed4f6af6e4b93fca6820c2c7c2ce543746452a54f9",
+    "checkpoints": 71,
+    "randomCursor": 106,
+    "randomPolicy": "{\"mode\":\"sequence\",\"values\":[1,1,10,10],\"cursor\":4}"
+  }
+}

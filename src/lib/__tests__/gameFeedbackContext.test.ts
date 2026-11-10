@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
     getCurrentGameFeedbackDiagnosticContext,
+    getCurrentGameFeedbackReplayTriggerReference,
     recordGameFeedbackCommand,
     setCurrentGameFeedbackContext,
 } from '../feedback/gameFeedbackContext';
@@ -20,7 +21,7 @@ describe('GameFeedbackContext', () => {
             stateRevision: 1,
             randomCursor: 6,
         });
-        recordGameFeedbackCommand({ commandType: 'ROLL_DICE', payload: { faces: [1, 2] }, stateId: 10, randomCursor: 6 });
+        recordGameFeedbackCommand({ commandType: 'ROLL_DICE', payload: { faces: [1, 2] }, playerId: '0', stateId: 10, randomCursor: 6 });
         setCurrentGameFeedbackContext({
             state: commandResult,
             scopeId: 'match-1',
@@ -45,5 +46,11 @@ describe('GameFeedbackContext', () => {
         expect(diagnostic.before).toBe(before);
         expect(diagnostic.after).toBe(commandResult);
         expect(diagnostic.lastCommand).toMatchObject({ stateId: 10, afterStateId: 11, afterRandomCursor: 7 });
+        expect(getCurrentGameFeedbackReplayTriggerReference()).toEqual({
+            commandType: 'ROLL_DICE',
+            playerId: '0',
+            stateIdBefore: 10,
+            randomCursorBefore: 6,
+        });
     });
 });

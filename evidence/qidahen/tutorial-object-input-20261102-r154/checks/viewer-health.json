@@ -1,0 +1,328 @@
+{
+  "status": "PASS",
+  "viewerUrl": "http://127.0.0.1:4867/?key=7b9135792e3f",
+  "pageStatus": 200,
+  "mediaCount": 53,
+  "indexMatchedCount": 53,
+  "listMs": 38.937200000000004,
+  "media": [
+    {
+      "file": "01-PC-公开纪年与年度扩张目标.png",
+      "status": 200,
+      "sha256": "49936ff833c9ea928a42bd21b89ccc4b3bf45dbf01ec4687d6273b69a99bddc6",
+      "mime": "image/png"
+    },
+    {
+      "file": "02-PC-轮盘免费前进一步.png",
+      "status": 200,
+      "sha256": "0e58012ddc529c98765eccda3e3b0c1df91bff9d77f6573e9add326c9b30397e",
+      "mime": "image/png"
+    },
+    {
+      "file": "03-PC-点击轮盘军屯.png",
+      "status": 200,
+      "sha256": "ba6a57692c840bb4879197e3f9668268dc696f7dece20d4fdc690b32fe1b8415",
+      "mime": "image/png"
+    },
+    {
+      "file": "04-PC-点击轮盘开垦.png",
+      "status": 200,
+      "sha256": "f90b8281a771853b4938a37bc1fda9e4a992613642caa453ba03fa4d8e3fcc0a",
+      "mime": "image/png"
+    },
+    {
+      "file": "05-PC-开垦地区选择.png",
+      "status": 200,
+      "sha256": "7d41908209c856fc887b09900b60fa4020285a8b675b85037eea8d27c91088e1",
+      "mime": "image/png"
+    },
+    {
+      "file": "06-PC-从手牌进入征召.png",
+      "status": 200,
+      "sha256": "65ac50c5ed49696a25d5b9b2cac557f4f0c75c2a6a8c4e8874e138a353d707fd",
+      "mime": "image/png"
+    },
+    {
+      "file": "07-PC-征召弃牌支付.png",
+      "status": 200,
+      "sha256": "7e2ef2bcc9c65a76559ffa40ab39d8b94cd95ce0b61456b812937303e14489cf",
+      "mime": "image/png"
+    },
+    {
+      "file": "08-PC-共享放大镜检视征召手牌.png",
+      "status": 200,
+      "sha256": "40165558b0951a6d8974f86529ec41e9f0745f800ed7cb8a2949d38cf0735c67",
+      "mime": "image/png"
+    },
+    {
+      "file": "09-PC-征召建军地区与辽北引导.png",
+      "status": 200,
+      "sha256": "920822057bf47039a715af1fffc729b93852c87890091b8e072b2b835b800306",
+      "mime": "image/png"
+    },
+    {
+      "file": "10-PC-辽北建军方式与完整候选.png",
+      "status": 200,
+      "sha256": "409016030073b3f4075839df1b7884f8e4e3f33c50205dde785facce48a98a87",
+      "mime": "image/png"
+    },
+    {
+      "file": "11-PC-年中税赋与漕运.png",
+      "status": 200,
+      "sha256": "b84914f4b109bf4146cf3134584dd02267df5d80354d0950117340e65fe901b4",
+      "mime": "image/png"
+    },
+    {
+      "file": "12-PC-年中补牌后的手牌上限处理.png",
+      "status": 200,
+      "sha256": "e9f088efc3a19e159704d733f87c9550a818d620f350db63ce446270dee524f6",
+      "mime": "image/png"
+    },
+    {
+      "file": "13-PC-火炮技术研发.png",
+      "status": 200,
+      "sha256": "96ba9f8c79197cdcf5ce017047834de7931884a14972ba6fc870bdafd7cd8274",
+      "mime": "image/png"
+    },
+    {
+      "file": "14-PC-先选出兵来源.png",
+      "status": 200,
+      "sha256": "3020a13d15cbf6d323d3cc96bed039c3e63135cdc14b146f205398c4f2bbcc9e",
+      "mime": "image/png"
+    },
+    {
+      "file": "15-PC-地图兵牌选择出兵.png",
+      "status": 200,
+      "sha256": "6e91cd9d2685656c485be55af8a36c0685e42f885eb1794fb0b3654bfb8866ca",
+      "mime": "image/png"
+    },
+    {
+      "file": "16-PC-已选部队与确认出兵.png",
+      "status": 200,
+      "sha256": "002266527da739a2e8bb43833d5052ce704dcf04c28d8ee09851b47fe96a62db",
+      "mime": "image/png"
+    },
+    {
+      "file": "17-PC-出兵来源到叶赫部目标.png",
+      "status": 200,
+      "sha256": "f0e24050871ef1db19128a402687a0ba9bd32a461779c4b8ab73cd20ae6d35f9",
+      "mime": "image/png"
+    },
+    {
+      "file": "18-PC-战术牌使用前.png",
+      "status": 200,
+      "sha256": "6945a052427426843840841ef82b4188459869eea6b1d2c708063776b5218f04",
+      "mime": "image/png"
+    },
+    {
+      "file": "19-PC-选中鸳鸯阵并确认.png",
+      "status": 200,
+      "sha256": "025bc1235ba511621594a225bcd17b44bcde277cd542da41d23b25692dcca7e7",
+      "mime": "image/png"
+    },
+    {
+      "file": "20-PC-炮兵白骰真实投掷.jpg",
+      "status": 200,
+      "sha256": "23fc2963e73ae04ae5dfdd5655e01c6c4a3641968e9f9d66e4eff85e001cf4e6",
+      "mime": "image/jpeg"
+    },
+    {
+      "file": "21-PC-炮兵停稳与结果.jpg",
+      "status": 200,
+      "sha256": "6cd73b2de6b9b12217ec2adde0c2d9da8de75d343bb90b0a31baba16975728c2",
+      "mime": "image/jpeg"
+    },
+    {
+      "file": "22-PC-骑兵红骰真实投掷.jpg",
+      "status": 200,
+      "sha256": "7271571da0cda8c8f7e4b25de6fd293ad8b8643a91407438fc1bef8ad9ac4d77",
+      "mime": "image/jpeg"
+    },
+    {
+      "file": "23-PC-骑兵停稳与结果.jpg",
+      "status": 200,
+      "sha256": "5325298a44f11ae8e012e22dd981064cc90e04227f20a33b741cb02ee9cefe0b",
+      "mime": "image/jpeg"
+    },
+    {
+      "file": "24-PC-步兵绿骰真实投掷.jpg",
+      "status": 200,
+      "sha256": "78f552f26b5be19b9e371e11b95dbb6bd8a262a3161dff98a065febd6aec6f41",
+      "mime": "image/jpeg"
+    },
+    {
+      "file": "25-PC-步兵停稳与结果.jpg",
+      "status": 200,
+      "sha256": "525043bd47e8f86f014ac664201e7cb49e05a13df7474dd2cbe50ccc6cf72a9a",
+      "mime": "image/jpeg"
+    },
+    {
+      "file": "26-PC-炮骑步连续真实掷骰录屏.webm",
+      "status": 200,
+      "sha256": "90148f3d047b199e9af410ce60c6f94b8126e36e4bfa0757bed27c1524188a3e",
+      "mime": "video/webm"
+    },
+    {
+      "file": "27-PC-战后占领选择.png",
+      "status": 200,
+      "sha256": "599043597ec707a1f28659c3f9cc0838caf9663dd9a52a25aae6db4eb6b66d92",
+      "mime": "image/png"
+    },
+    {
+      "file": "28-PC-主动展开只读战报.png",
+      "status": 200,
+      "sha256": "cdaf6598dbfcafbfea37b23e61ffad6a54c52c2ed0751328da9fa0b91e116e0e",
+      "mime": "image/png"
+    },
+    {
+      "file": "29-PC-外交友好标记选择.png",
+      "status": 200,
+      "sha256": "b25fd1db05cf1bfb4cab23fca1460e30b236c35fcb5bd43691f135f3db23f851",
+      "mime": "image/png"
+    },
+    {
+      "file": "30-PC-外交结果与落点继续.png",
+      "status": 200,
+      "sha256": "939efee01088df983c72bc23277b085b336f745f7c7a24ba579aed377daa5d8c",
+      "mime": "image/png"
+    },
+    {
+      "file": "31-PC-点击轮盘雇佣.png",
+      "status": 200,
+      "sha256": "aca8e8c3859c47508a322cd905af15e55e2314ebd348a41766f732b36aaf5caf",
+      "mime": "image/png"
+    },
+    {
+      "file": "32-PC-在大同建立新守军.png",
+      "status": 200,
+      "sha256": "6eea70a32bcd434d4571020cd69b0d0f844cfc9029a1565709d7de0ba2e6cebc",
+      "mime": "image/png"
+    },
+    {
+      "file": "33-PC-保留手牌结束回合.png",
+      "status": 200,
+      "sha256": "4727ebab70f0a218623c96e08b56fb83d0de2c1aa979e6be5f2e46665aff0165",
+      "mime": "image/png"
+    },
+    {
+      "file": "34-PC-新年结算.png",
+      "status": 200,
+      "sha256": "8e8062fdd134e8334e8bcb0cd79a3ddc2e5735dadc4a30ea70d0ad46e184ec06",
+      "mime": "image/png"
+    },
+    {
+      "file": "35-PC-山海关维护选择.png",
+      "status": 200,
+      "sha256": "4a84bb58b211775b1854c9c0cc19c16caee28ba0aeb78a36ceb724347c5b617a",
+      "mime": "image/png"
+    },
+    {
+      "file": "36-PC-城市破败与维护取舍.png",
+      "status": 200,
+      "sha256": "672ebfa8ecb6d17290dd31b57336fcc0e9f13d54aa3d4619266d2adc07b042bb",
+      "mime": "image/png"
+    },
+    {
+      "file": "37-PC-长城破败与边界宽度.png",
+      "status": 200,
+      "sha256": "3e6564fb779fdb8330a7c9cbab8add6a9c4f043022a66672b51196ebb54bde81",
+      "mime": "image/png"
+    },
+    {
+      "file": "38-PC-大同撤旧兵保留新守军.png",
+      "status": 200,
+      "sha256": "020d9eaa676958135a89c119426e721c8185736f32455e6df9f0ea5631139f89",
+      "mime": "image/png"
+    },
+    {
+      "file": "39-PC-叶赫部队维持费用.png",
+      "status": 200,
+      "sha256": "c2630d73698ca85290e8ac56c774c0efe1fb834dc2b2668bea7da566924ebd81",
+      "mime": "image/png"
+    },
+    {
+      "file": "40-PC-三张费用牌分别选中.png",
+      "status": 200,
+      "sha256": "bab503a9aaddbf0d4dd70418929bbf666ae8d979628c8486a522179722c156f4",
+      "mime": "image/png"
+    },
+    {
+      "file": "41-PC-手牌末端与翻看入口.png",
+      "status": 200,
+      "sha256": "71d63d5714e8353d1c2ba83f167f23fa60e347a5b42ab5546ab268888c9adf48",
+      "mime": "image/png"
+    },
+    {
+      "file": "42-PC-平壤雇佣军耗损选择.png",
+      "status": 200,
+      "sha256": "a4d47c25ad5958f16dcdc24943d3ad8dfac75b8bd17180f90754cce8f9c527fd",
+      "mime": "image/png"
+    },
+    {
+      "file": "43-PC-选中平壤耗损部队.png",
+      "status": 200,
+      "sha256": "6a3d347517c15034427cf5584cfd168866c4ea3bd971d384b25a931bb395d52a",
+      "mime": "image/png"
+    },
+    {
+      "file": "44-PC-领取纪年卡的费用.png",
+      "status": 200,
+      "sha256": "ded3770a495e1d0aa9c164a5bb7e9d216c887e437b3c6f3b9e262015c4b0a63c",
+      "mime": "image/png"
+    },
+    {
+      "file": "45-PC-新纪年顺位与人物出场.png",
+      "status": 200,
+      "sha256": "bac3da8062d29826b4f964520b2a0ce30344e4493ccff585b29f707290c3dc09",
+      "mime": "image/png"
+    },
+    {
+      "file": "46-PC-按当前纪年选择人物.png",
+      "status": 200,
+      "sha256": "06fdc6e41f4a5451c407e6ed297e511315001720a24ce15546a4cf5e344089f1",
+      "mime": "image/png"
+    },
+    {
+      "file": "47-PC-共享放大镜检视杨镐.png",
+      "status": 200,
+      "sha256": "597d772d1beb13b5cccccb0b632264bb1e82820f7833b7cad8d3051733aa4509",
+      "mime": "image/png"
+    },
+    {
+      "file": "48-PC-同次付费的征兵与训练选项.png",
+      "status": 200,
+      "sha256": "53dcce88900eb4c2be56bbde0bff770bea6b8359bb0b9245b785354979de53f2",
+      "mime": "image/png"
+    },
+    {
+      "file": "49-PC-征兵训练选择原炮兵.png",
+      "status": 200,
+      "sha256": "0066eeba737fa1d4e5f069cae551e46fb80e5a941b9991bc19851a4c5b95bf96",
+      "mime": "image/png"
+    },
+    {
+      "file": "50-PC-继续训练原参战步兵.png",
+      "status": 200,
+      "sha256": "3076af82d8c9cf27717e81adf0a52c7b2fd6917c9e4ee678dbe694459620aded",
+      "mime": "image/png"
+    },
+    {
+      "file": "51-PC-辽东征兵与新年度目标.png",
+      "status": 200,
+      "sha256": "294da460750f38e727dd9a626fe968d3b2b9cb248974661b99c9c3c5ee108d06",
+      "mime": "image/png"
+    },
+    {
+      "file": "52-PC-四次基础行动完成并保留手牌.png",
+      "status": 200,
+      "sha256": "c2304e8593e58cbdc8d8104678a9b3352f8c4736eb82418a2abf84b5b452c24a",
+      "mime": "image/png"
+    },
+    {
+      "file": "53-PC-首点威望与下一年度目标.png",
+      "status": 200,
+      "sha256": "f4334034b1adb882b4da115ee1f3655fc5bb064a2716377b24c757d86a6e8718",
+      "mime": "image/png"
+    }
+  ]
+}

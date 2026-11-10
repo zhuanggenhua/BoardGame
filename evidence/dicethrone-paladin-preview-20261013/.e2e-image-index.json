@@ -1,0 +1,45 @@
+{
+  "title": "圣骑士新素材本地替换端到端截图",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "generatedAt": "2026-10-13T14:13:04.783Z",
+  "scope": "本地创建房间、选中圣骑士并进入对局后的界面流程",
+  "media": [
+    {
+      "path": "01-选角前.png",
+      "chainId": "paladin-preview-flow",
+      "chainStep": "1",
+      "sourceRun": "LCKOdb3RXe9-20261013",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-preview-20261013",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "从首页创建本地房间并进入选角",
+      "description": "玩家尚未选择角色，双方席位与选角列表可见。"
+    },
+    {
+      "path": "02-圣骑士选中.png",
+      "chainId": "paladin-preview-flow",
+      "chainStep": "2",
+      "sourceRun": "LCKOdb3RXe9-20261013",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-preview-20261013",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家选择圣骑士角色",
+      "description": "玩家选中圣骑士，新玩家板和提示板完整出现。"
+    },
+    {
+      "path": "03-对局.png",
+      "chainId": "paladin-preview-flow",
+      "chainStep": "3",
+      "sourceRun": "LCKOdb3RXe9-20261013",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone-paladin-preview-20261013",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "玩家开始对局并显示初始手牌",
+      "description": "圣骑士进入对局，玩家板提示板与四张手牌同屏可见。"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "status": "blocked-or-failed-before-reproduction",
+  "error": {
+    "name": "Error",
+    "message": "locator.evaluate: ReferenceError: label is not defined\n    at eval (eval at evaluate (:290:30), <anonymous>:26:7)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+    "stack": "locator.evaluate: ReferenceError: label is not defined\n    at eval (eval at evaluate (:290:30), <anonymous>:26:7)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at clickCenter (D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\repro-formal-open-room-click.mjs:97:31)\n    at async file:///D:/gongzuo/webgame/BoardGame/artifacts/mage-wars-formal-click-repro-20260913/repro-formal-open-room-click.mjs:416:3"
+  },
+  "currentHostUrl": "http://127.0.0.1:4275/?homeStyle=classic&game=mage-wars",
+  "currentGuestUrl": null,
+  "hostState": {
+    "href": "http://127.0.0.1:4275/?homeStyle=classic&game=mage-wars",
+    "phase": null,
+    "phaseActorId": null,
+    "currentPlayerId": null,
+    "turnNumber": null,
+    "planButton": null,
+    "turnEndButton": null,
+    "overlay": null,
+    "shelf": {
+      "planningEnabled": null,
+      "visibleCardCount": null
+    },
+    "cards": [],
+    "drafts": []
+  },
+  "guestState": null,
+  "diagnostics": {
+    "baseUrl": "http://127.0.0.1:4275",
+    "gameServerUrl": "http://127.0.0.1:18000",
+    "viewport": {
+      "width": 2560,
+      "height": 1304
+    },
+    "deviceScaleFactor": 1,
+    "targetCardIds": [
+      "2819",
+      "2906"
+    ],
+    "headless": true,
+    "hostErrors": [
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: qidahen/thumbnails/cover, currentSrc: /assets/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:blob:http://127.0.0.1:4275/4c377b57-3ec2-4bdf-8aa1-f8e1af3aa19d:0:Failed to load resource: net::ERR_FILE_NOT_FOUND",
+      "console:blob:http://127.0.0.1:4275/53d90495-4290-4740-8cae-7d4bda2e3a38:0:Failed to load resource: net::ERR_FILE_NOT_FOUND",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: dicethrone/thumbnails/fengm, currentSrc: /assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: cardia/thumbnails/title, currentSrc: /assets/i18n/zh-CN/cardia/thumbnails/compressed/title.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}",
+      "console:http://127.0.0.1:4275/src/components/common/media/OptimizedImage.tsx:253:[OptimizedImage] ❌ 图片加载失败: {src: splendor/picture, currentSrc: /assets/i18n/zh-CN/splendor/compressed/picture.webp, fallbackLevel: 0, isCdn: false, autoRetryCount: 0}"
+    ],
+    "guestErrors": []
+  },
+  "timeline": [
+    {
+      "step": "open-home",
+      "at": "2026-09-12T16:25:44.830Z"
+    }
+  ],
+  "artifacts": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-25-44-126Z-4275\\01-formal-home-game-details.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\mage-wars-formal-click-repro-20260913\\2026-09-12T16-25-44-126Z-4275\\failure-host-current-screen.png"
+  ]
+}

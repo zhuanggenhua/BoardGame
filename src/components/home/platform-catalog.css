@@ -27,6 +27,8 @@
 .platform-game-art { display: block; aspect-ratio: 3 / 4; overflow: hidden; }
 .platform-game-art > * { width: 100%; height: 100%; }
 .platform-game-art img { width: 100%; height: 100%; object-fit: cover; }
+/* 横版原图在竖卡中聚焦建筑，游戏名由卡片标题保留。 */
+body .platform-game-art .betrayal-game-thumbnail img { object-fit: cover; object-position: 8% center; }
 .platform-external-art { position: relative; display: block; padding: 12px; background: #d5ff00; color: #111; }
 .platform-external-monogram { display: grid; place-items: center; width: 100%; height: 100%; font-size: clamp(48px, 8vw, 112px); font-weight: 900; line-height: 1; }
 .platform-external-art small { position: absolute; top: 8px; left: 8px; z-index: 2; width: fit-content; padding: 2px 6px; background:#000; color: #d5ff00; font-weight: 800; letter-spacing: .08em; }

@@ -1,0 +1,370 @@
+{
+  "objective": "只读追踪卡图审计中同牌目标、数值文案及出牌时机疑点，不修改正式代码",
+  "agentId": "/root/audit_frames_00_10",
+  "snapshotHead": "d654f5a504133f075c691fe0fde8b804ff6ba6b0",
+  "evidenceBoundary": "静态读取正式validator、执行器、共享效果系统、handler与已有测试源码。未运行测试或浏览器、未联网；结论仅覆盖直接代码链。卡面引用已实际读图的audit-00-10/11-21/22-32.json。",
+  "originConclusion": "本报告目标、时机和中文文案差异均不由本轮图集顺序产生。读取时git diff针对paladin/cards.ts、domain/commonCards.ts、zh-CN/game-dicethrone.json为空；这些定义已存在于snapshotHead。previewRef只定位展示图，执行链按card.effects/playCondition/timing消费。",
+  "summary": {
+    "confirmedDefinitionOrBehaviorGaps": [
+      "card-might没有1名玩家的任意目标选择",
+      "card-absolution中文描述使用旧数值",
+      "card-just-this仅骰主能出，不能给他人额外投掷",
+      "card-i-can-again仅骰主能出，且缺进攻阶段限定",
+      "card-next-time仅伤害目标本人可出并获得护盾，与图面一名玩家范围不全对应"
+    ],
+    "classificationDifferencesRequiringNoInstantAnytimeInference": [
+      "card-absolution图橙色/代码instant，但硬限defensiveRoll且requireIsRoller",
+      "card-next-time图橙色/代码instant，但硬限即将受伤的目标本人或其防御阶段"
+    ],
+    "clearedTargetSelfFalseAlarms": [
+      "card-bye-bye",
+      "card-what-status",
+      "card-transfer-status"
+    ],
+    "notNewAtlasOrderingErrors": true
+  },
+  "items": [
+    {
+      "cardId": "card-might",
+      "frame": 1,
+      "classification": "existing-runtime-target-gap",
+      "sourceRule": "1名玩家获得暴击。",
+      "conclusion": "self在此是实际受益人限定：正常出牌上下文attackerId为出牌者，resolveEffectAction把self映成attackerId，grantToken直接向该人发送TOKEN_GRANTED。共享选对手推断不为该自体grantToken创建选人。图面1名玩家语义未完整实现。",
+      "codeEvidence": [
+        {
+          "file": "src/games/dicethrone/heroes/paladin/cards.ts",
+          "line": 44,
+          "fact": "grantToken辅助函数默认target:self"
+        },
+        {
+          "file": "src/games/dicethrone/heroes/paladin/cards.ts",
+          "line": 58,
+          "fact": "card-might使用默认grantToken(CRIT,1)"
+        },
+        {
+          "file": "src/games/dicethrone/domain/executeCards.ts",
+          "line": 312,
+          "fact": "正常卡牌EffectContext attackerId=actingPlayerId"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1546,
+          "fact": "actionNeedsSelectedDefender仅opponent或custom指定元数据触发；self grantToken返回false"
+        },
+        {
+          "file": "src/games/dicethrone/domain/effects.ts",
+          "line": 523,
+          "fact": "targetId=action.target==='self'?attackerId:defenderId"
+        },
+        {
+          "file": "src/games/dicethrone/domain/effects.ts",
+          "line": 758,
+          "fact": "grantToken直接生成targetId对应TOKEN_GRANTED，未创建选人交互"
+        }
+      ],
+      "minimumFixRecommendation": {
+        "scope": "只在圣骑士cards.ts及customActions/paladin.ts接现有交互，不修改共享架构",
+        "approach": "为card-might接入一个薄的圣骑士custom handler，按已有handleVengeanceSelectPlayer/handleConsecrate模式生成type:selectPlayer、selectCount:1、targetPlayerIds:Object.keys(state.players)、tokenGrantConfig:{tokenId:CRIT,amount:1}，登记requiresInteraction:true。复用既有RESOLVE_INTERACTION、选择器及标记授予路径。",
+        "notSufficient": "不能只把grantToken.target改为select：当前effects.ts:523把所有非self值当defender，grantToken分支本身没有select入口。",
+        "existingFormalTargetSelectEntry": "正式可复用入口是PendingInteraction.selectPlayer加tokenGrantConfig；不是grantToken.action.target:'select'自动弹窗。",
+        "reuseEvidence": [
+          {
+            "file": "src/games/dicethrone/domain/customActions/paladin.ts",
+            "line": 133,
+            "fact": "现有单标记任意选人handler，仅将其RETRIBUTION换成CRIT即可复用模式"
+          },
+          {
+            "file": "src/games/dicethrone/domain/customActions/paladin.ts",
+            "line": 151,
+            "fact": "已有同英雄祝圣四标记选人handler"
+          },
+          {
+            "file": "src/games/dicethrone/domain/commandValidation.ts",
+            "line": 1277,
+            "fact": "RESOLVE_INTERACTION校验交互选人范围及最少数量"
+          },
+          {
+            "file": "src/games/dicethrone/domain/execute.ts",
+            "line": 1042,
+            "fact": "正式消费选人payload，随后1052提取tokenGrantConfig、1094起向所选玩家生成TOKEN_GRANTED"
+          }
+        ],
+        "existingTestsReadNotRun": [
+          {
+            "file": "src/games/dicethrone/__tests__/paladin-vengeance-2-cp.test.ts",
+            "line": 89,
+            "coverage": "GameTestRunner真实能力→选人→RESOLVE_INTERACTION→标记/CP结算链，可改成PLAY_CARD card-might并选非本人目标建立回归"
+          },
+          {
+            "file": "src/games/dicethrone/__tests__/rule-consistency.test.ts",
+            "line": 647,
+            "coverage": "4人单tokenGrantConfig允许合法队友目标的validator覆盖；这是校验测试，不是整卡运行证明"
+          },
+          {
+            "file": "src/games/dicethrone/__tests__/basic-commands-coverage.test.ts",
+            "line": 1400,
+            "coverage": "现有增益选人交互AI优先给队友；测试通过交互注入，不能替代整张card-might出牌覆盖"
+          }
+        ]
+      }
+    },
+    {
+      "cardId": "card-absolution",
+      "frame": 4,
+      "classification": "existing-localization-error-and-timing-classification",
+      "sourceRule": "橙色投掷阶段行动，仅能在被攻击后打出；剑3伤害、盔防3、心防5、祈祷防2且获得2CP。",
+      "conclusion": "正式conditionalEffects的3/3/5/2+2CP吻合图面，旧值1/1/2/1CP来自中文描述，不能说数值effects也错。instant不表示可任意时刻使用：playCondition硬限defensiveRoll+requireIsRoller，rules正式消费这两项。橙色/instant是既存分类不一致；尚无本轮动态行为证据将其扩大为任意时机可打bug。",
+      "codeEvidence": [
+        {
+          "file": "public/locales/zh-CN/game-dicethrone.json",
+          "line": 5575,
+          "fact": "旧数值description：剑1不可防御/盔防1/心防2/祈祷1CP"
+        },
+        {
+          "file": "src/games/dicethrone/heroes/paladin/cards.ts",
+          "line": 101,
+          "fact": "timing:instant"
+        },
+        {
+          "file": "src/games/dicethrone/heroes/paladin/cards.ts",
+          "line": 105,
+          "fact": "playCondition:{phase:defensiveRoll,requireIsRoller:true}"
+        },
+        {
+          "file": "src/games/dicethrone/heroes/paladin/cards.ts",
+          "line": 111,
+          "fact": "四分支数值依次为3、3、5、2防伤+2CP"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1135,
+          "fact": "cond.phase不匹配被拒绝"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1147,
+          "fact": "cond.requireIsRoller且出牌者非骰主被拒绝"
+        },
+        {
+          "file": "src/games/dicethrone/domain/effects.ts",
+          "line": 821,
+          "fact": "rollDie按骰面匹配conditionalEffects"
+        },
+        {
+          "file": "src/games/dicethrone/domain/effects.ts",
+          "line": 867,
+          "fact": "正式rollDieResolution保留conditionalEffects供结算，非读取description执行"
+        }
+      ],
+      "boundary": "本报告未完整执行赦免伤害链，不声称全部伤害结算正确；仅证明定义数字匹配、文字旧值、出牌阶段有硬门槛。"
+    },
+    {
+      "cardId": "card-next-time",
+      "frame": 23,
+      "classification": "existing-name-and-timing-classification-with-target-gap",
+      "sourceRule": "图题下次一定！，橙色投掷阶段行动，一名玩家防止6点即将受到的伤害。",
+      "conclusion": "runtime名这次不算！为既存中文命名不同。instant分类虽和橙色不同，但playCondition.pendingDamage要求beforeDamageReceived且role:target；无pendingDamage时仅防御阶段当前防御者可打。因此不能称任意时刻可打。另有实际范围缺口：role:target加grantDamageShield.self使出牌者只能为本人减伤，不能选择其它即将受伤玩家。",
+      "codeEvidence": [
+        {
+          "file": "public/locales/zh-CN/game-dicethrone.json",
+          "line": 5229,
+          "fact": "现有中文名这次不算！"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 216,
+          "fact": "timing:instant"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 218,
+          "fact": "pendingDamage role:target，responseType:beforeDamageReceived"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 224,
+          "fact": "grantDamageShield target:self value:6"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 939,
+          "fact": "无pendingDamage的替代入口仅defensiveRoll且pendingAttack.defenderId=出牌者"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 959,
+          "fact": "pendingDamage role:target正式检查targetPlayerId===playerId"
+        },
+        {
+          "file": "src/games/dicethrone/domain/effects.ts",
+          "line": 1018,
+          "fact": "grantDamageShield以已解析targetId生成6点护盾事件"
+        }
+      ],
+      "boundary": "橙色与instant如何统一须回规则合同裁决，不能仅机械改timing；本报告没有验证完整响应窗覆盖。"
+    },
+    {
+      "cardId": "card-just-this",
+      "frame": 16,
+      "classification": "existing-runtime-target-gap",
+      "sourceRule": "1名玩家可以在其防御投掷阶段，对至多5颗骰子进行1次额外投掷尝试。",
+      "conclusion": "这里self确实限制了谁能出牌及修改谁的骰子；没有任意选人。requireIsRoller和共享getDiceEffectTarget将非骰主出牌拒绝；handler让出牌者选当前骰主的至多5骰，validator又限制骰子所属与交互操作者。防御阶段限制存在且正确，但无法由持牌者帮助另一玩家是图面范围缺口。",
+      "codeEvidence": [
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 143,
+          "fact": "phase:defensiveRoll及requireIsRoller，效果为custom reroll-die-5 self"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1092,
+          "fact": "roll骰牌若getDiceEffectTarget=self且非骰主则拒绝"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1698,
+          "fact": "共享骰子目标推断直接消费custom.action.target"
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/common.ts",
+          "line": 289,
+          "fact": "handleRerollDie5建立selectDie，playerId=attackerId，selectCount=5"
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/common.ts",
+          "line": 112,
+          "fact": "resolveDiceOwnerId使用getRollerId(state)"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commandValidation.ts",
+          "line": 269,
+          "fact": "非targetOpponentDice时要求interaction.diceOwnerId===playerId"
+        }
+      ]
+    },
+    {
+      "cardId": "card-i-can-again",
+      "frame": 18,
+      "classification": "existing-runtime-target-and-phase-gap",
+      "sourceRule": "1名玩家可以在其进攻投掷阶段，对至多5颗骰子进行1次额外投掷尝试。",
+      "conclusion": "与card-just-this共享的self/requireIsRoller链限制为骰主自用，无法帮助其它玩家。并且本卡playCondition没有phase:offensiveRoll，共享timing:roll接受offensiveRoll/targetingRoll/defensiveRoll；在骰主已经投骰、有骰、CP足够且无其它全局阻断的防御阶段，所读validator没有该卡的进攻阶段排除条件。属于独立于图序的实际定义缺口。",
+      "codeEvidence": [
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 168,
+          "fact": "仅requireIsRoller/requireDiceExists/requireHasRolled，没有phase"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 169,
+          "fact": "custom reroll-die-5 self"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1049,
+          "fact": "timing:roll通用允许三种投掷阶段"
+        },
+        {
+          "file": "src/games/dicethrone/domain/rules.ts",
+          "line": 1135,
+          "fact": "仅cond.phase存在时才作特定阶段限制"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commandValidation.ts",
+          "line": 1013,
+          "fact": "PLAY_CARD正式校验复用checkPlayCard，没有card-i-can-again专属阶段校验"
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/common.ts",
+          "line": 289,
+          "fact": "handleRerollDie5不区分进攻/防御阶段，自用选择当前骰池"
+        }
+      ],
+      "boundary": "阶段结论来自当前配置和完整所读PLAY_CARD校验分支的静态路径；未动态构造或运行此场景。"
+    },
+    {
+      "cardId": "card-bye-bye",
+      "frame": 26,
+      "classification": "target-self-false-alarm-cleared",
+      "conclusion": "custom action外层self不代表只能移除自己的状态。handleRemoveStatus1不消费targetId，自己建立selectStatus且targetPlayerIds=全部玩家；REMOVE_STATUS validator检查所选玩家属于交互候选；执行器消费命令targetPlayerId。",
+      "codeEvidence": [
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 253,
+          "fact": "outer action target:self customActionId:remove-status-1"
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/common.ts",
+          "line": 310,
+          "fact": "handler建立selectStatus，并于319设置Object.keys(state.players)"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commandValidation.ts",
+          "line": 1192,
+          "fact": "REMOVE_STATUS校验payload.targetPlayerId在交互候选内"
+        },
+        {
+          "file": "src/games/dicethrone/domain/execute.ts",
+          "line": 772,
+          "fact": "按命令选定targetPlayerId移除其状态或token"
+        }
+      ]
+    },
+    {
+      "cardId": "card-what-status",
+      "frame": 31,
+      "classification": "target-self-false-alarm-cleared",
+      "conclusion": "handleRemoveAllStatus建立selectPlayer、候选全部玩家且requiresTargetWithStatus:true，外层self没有限制为本人。正式REMOVE_STATUS payload不传statusId时移除目标可移除的全部状态/标记。",
+      "codeEvidence": [
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 300,
+          "fact": "outer action target:self customActionId:remove-all-status"
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/common.ts",
+          "line": 325,
+          "fact": "selectPlayer候选Object.keys(state.players)，requiresTargetWithStatus:true"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commandValidation.ts",
+          "line": 1202,
+          "fact": "校验选定目标具有状态/token"
+        },
+        {
+          "file": "src/games/dicethrone/domain/execute.ts",
+          "line": 805,
+          "fact": "空statusId分支移除所选targetPlayerId全部可移除状态/token"
+        }
+      ]
+    },
+    {
+      "cardId": "card-transfer-status",
+      "frame": 32,
+      "classification": "target-self-false-alarm-cleared",
+      "conclusion": "handleTransferStatus建立全玩家候选selectStatus并设置transferConfig:{}；validator分别检查fromPlayerId/toPlayerId均在候选且不能相同；执行器按这两个人转移一层状态或标记。因此没有只能转移自身状态的self问题。",
+      "codeEvidence": [
+        {
+          "file": "src/games/dicethrone/domain/commonCards.ts",
+          "line": 310,
+          "fact": "outer action target:self customActionId:transfer-status"
+        },
+        {
+          "file": "src/games/dicethrone/domain/customActions/common.ts",
+          "line": 341,
+          "fact": "全玩家候选selectStatus及transferConfig:{}"
+        },
+        {
+          "file": "src/games/dicethrone/domain/commandValidation.ts",
+          "line": 1225,
+          "fact": "依次校验来源/目标在候选中，并于1231排除相同玩家"
+        },
+        {
+          "file": "src/games/dicethrone/domain/execute.ts",
+          "line": 842,
+          "fact": "正式TRANSFER_STATUS按命令fromPlayerId/toPlayerId转移；858/880固定数量1"
+        }
+      ]
+    }
+  ]
+}

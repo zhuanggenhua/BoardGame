@@ -1,0 +1,34 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-23T18:25:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "手机横屏选角沿用 PC 同一张选角画布，角色候选、左侧详情、座位栏和底部操作栏同时可见。",
+      "status": "PASS",
+      "evidence": [
+        "移动横屏真实入口 E2E 通过：移动端横屏角色选择保持 PC 同构画布、选中态和能力提示。",
+        "移动截图未出现移动专用角色网格，角色候选仍来自同一选择网格。",
+        "PC 与移动截图均显示同一选角层级：顶部标题、左侧详情、中间候选、底部座位与操作栏。"
+      ]
+    },
+    {
+      "requirement": "手机更宽时恢复 PC 区域占比，不把固定列宽按 1920 基准直接缩进 2340 设计画布。",
+      "status": "PASS",
+      "evidence": [
+        "移动端选角固定列宽按 2340/1920 参考比例补偿，角色卡本体不做横向拉伸。",
+        "移动截图中左侧详情栏和底部操作区不再退化为窄条，且主体仍保持等比壳层缩放。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-basic-flow\\01-山屋惊魂-基本流程-角色确认前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-basic-flow\\08-山屋惊魂-移动端横屏-角色竖向滚动选中与能力提示.jpg"
+  ]
+}

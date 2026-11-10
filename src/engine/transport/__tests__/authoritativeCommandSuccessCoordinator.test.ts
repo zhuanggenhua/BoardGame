@@ -126,6 +126,7 @@ function createHarness(options?: {
         persistMetadata: vi.fn(async (match) => {
             persistedMetadata.push(match.matchID);
         }),
+        recordFeedbackReplayCommand: vi.fn(),
     };
     const onCommandSucceeded = vi.fn();
     const onGameOver = vi.fn();
@@ -164,6 +165,7 @@ describe('AuthoritativeCommandSuccessCoordinator', () => {
             execution: createExecution(nextState),
             seatControllerType: 'human',
             stateIdBefore: 4,
+            preCommandState: createState(0) as MatchState<unknown>,
             progressMarkerBeforeCommand: 'marker-before',
             preCommandSeatView: createState(0) as MatchState<unknown>,
         });
@@ -183,6 +185,15 @@ describe('AuthoritativeCommandSuccessCoordinator', () => {
         expect(harness.recordDecisionSample).toHaveBeenCalledTimes(1);
         expect(harness.reportedFeedback).toEqual([feedback]);
         expect(harness.broadcasts).toEqual(['match-success']);
+        expect(harness.hooks.recordFeedbackReplayCommand).toHaveBeenCalledWith(expect.objectContaining({
+            match,
+            playerId: '0',
+            commandType: 'MOVE',
+            commandPayload: { step: 1 },
+            stateIdBefore: 4,
+            stateIdAfter: 5,
+            stateAfter: nextState,
+        }));
     });
 
     it('对局已卸载时只让 commit 更新内存态并返回 false，不继续执行后续副作用', async () => {
@@ -198,6 +209,7 @@ describe('AuthoritativeCommandSuccessCoordinator', () => {
             execution: createExecution(createState(2) as MatchState<unknown>),
             seatControllerType: 'human',
             stateIdBefore: 4,
+            preCommandState: createState(0) as MatchState<unknown>,
             progressMarkerBeforeCommand: 'marker-before',
             preCommandSeatView: createState(0) as MatchState<unknown>,
         });
@@ -223,6 +235,7 @@ describe('AuthoritativeCommandSuccessCoordinator', () => {
             execution: createExecution(nextState),
             seatControllerType: 'human',
             stateIdBefore: 4,
+            preCommandState: createState(0) as MatchState<unknown>,
             progressMarkerBeforeCommand: 'marker-before',
             preCommandSeatView: createState(0) as MatchState<unknown>,
         });

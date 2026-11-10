@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "事件检定复核时移动端不再只剩单个按钮",
+      "status": "PASS",
+      "evidence": [
+        "移动端 936x432 截图同时显示阶段卡、左侧玩家状态、地图、右侧牌堆/状态栏、事件检定结果和返回牌桌按钮",
+        "E2E：移动端事件检定复核不能隐藏整套牌桌 UI"
+      ]
+    },
+    {
+      "requirement": "移动端与 PC 使用同一桌面构图并保持等比缩放",
+      "status": "PASS",
+      "evidence": [
+        "PC 1920x1080 与移动 936x432 同状态对照截图",
+        "E2E：手机 shell scale=0.400000，房间尺寸为 PC 对应尺寸的 0.4 倍，无页面溢出"
+      ]
+    },
+    {
+      "requirement": "事件复核状态下牌桌 chrome 不被第二套可见性判断隐藏",
+      "status": "PASS",
+      "evidence": [
+        "latestDiscoveryPresentation 回归测试 10/10 通过",
+        "移动端 E2E 同时断言阶段卡、行动栏、状态栏和最近掷骰面板可见"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/移动端横屏-事件检定复核保留牌桌-01-事件检定复核.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/山屋惊魂-事件牌页面承接E2E/移动端横屏-事件检定复核保留牌桌-02-PC对照.jpg"
+  ]
+}

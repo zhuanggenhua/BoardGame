@@ -1,0 +1,173 @@
+{
+  "title": "奇异博士新增交互与界面：桌面和手机截图",
+  "media": [
+    {
+      "path": "online-selection-and-start__真实创建房间-待确认.png",
+      "description": "图片表达：从游戏入口创建房间时，显示双人房间确认界面。"
+    },
+    {
+      "path": "online-selection-and-start__真实选角入口-奇异博士可选-桌面.png",
+      "description": "图片表达：创建房间后，桌面选角页显示奇异博士及其玩家板。"
+    },
+    {
+      "path": "online-selection-and-start__真实选角入口-奇异博士可选-窄屏.png",
+      "description": "图片表达：切换手机横屏后，角色列表与奇异博士预览仍可见。"
+    },
+    {
+      "path": "online-selection-and-start__房主真实选择奇异博士.png",
+      "description": "图片表达：房主选择奇异博士后，角色卡和席位显示选中结果。"
+    },
+    {
+      "path": "online-selection-and-start__双方选角并由客人准备.png",
+      "description": "图片表达：客人选武僧并准备后，双方角色与准备标记显示。"
+    },
+    {
+      "path": "online-selection-and-start__房主视角进入双人牌桌.png",
+      "description": "图片表达：房主开始对局后，奇异博士牌桌出现，四张手牌正在翻转。"
+    },
+    {
+      "path": "online-selection-and-start__客人视角进入双人牌桌.png",
+      "description": "图片表达：客人同步进入武僧牌桌，手牌正面和顶部奇异博士对手可见。"
+    },
+    {
+      "path": "awareness-desktop__桌面-公开法术起始态.png",
+      "description": "图片表达：桌面进入进攻投掷阶段后，宇宙感知技能槽和公开法术准备区同时可见。"
+    },
+    {
+      "path": "awareness-desktop__桌面-宇宙感知已选待结算.png",
+      "description": "图片表达：玩家选择宇宙感知后，技能槽显示红色选中边框。"
+    },
+    {
+      "path": "awareness-desktop__桌面-弃牌准备选择态.png",
+      "description": "图片表达：玩家推进宇宙感知后，弹窗清楚显示可准备的法瑞拉之牙。"
+    },
+    {
+      "path": "awareness-desktop__桌面-法术准备目标选择态.png",
+      "description": "图片表达：玩家选择法术后，弹窗显示武僧头像与选择按钮。"
+    },
+    {
+      "path": "awareness-desktop__桌面-法术准备结算态.png",
+      "description": "图片表达：玩家完成目标选择后，两张法术显示在公开准备区。"
+    },
+    {
+      "path": "awareness-mobile__手机横屏-公开法术起始态.png",
+      "description": "图片表达：手机横屏进入进攻投掷阶段后，宇宙感知技能槽与公开法术准备区同时显示。"
+    },
+    {
+      "path": "awareness-mobile__手机横屏-宇宙感知已选待结算.png",
+      "description": "图片表达：玩家选择宇宙感知后，技能槽显示红色选中边框。"
+    },
+    {
+      "path": "awareness-mobile__手机横屏-弃牌准备选择态.png",
+      "description": "图片表达：玩家推进宇宙感知后，弹窗清楚显示可准备的法瑞拉之牙。"
+    },
+    {
+      "path": "awareness-mobile__手机横屏-法术准备目标选择态.png",
+      "description": "图片表达：玩家选取法术后，弹窗显示可选择的武僧玩家。"
+    },
+    {
+      "path": "awareness-mobile__手机横屏-法术准备结算态.png",
+      "description": "图片表达：玩家完成法术目标选择后，公开准备区显示两张法术。"
+    },
+    {
+      "path": "premonition-income__收入阶段替代选项-桌面.png",
+      "description": "图片表达：进入收入阶段后，弹窗显示正常抽牌及两种预感选项。"
+    },
+    {
+      "path": "premonition-income__本次抽牌返还选择-桌面.png",
+      "description": "图片表达：选择预感替代后，三张返还候选卡并排出现。"
+    },
+    {
+      "path": "premonition-income__选择牌库底-桌面.png",
+      "description": "图片表达：选择返还牌后，弹窗提供牌库顶与牌库底两个去向。"
+    },
+    {
+      "path": "premonition-income__预感收入结算后-桌面.png",
+      "description": "图片表达：选择返还位置后，弹窗关闭并恢复牌桌显示。"
+    },
+    {
+      "path": "deja-vu__即视感使用前-桌面.png",
+      "description": "图片表达：进入已投掷的进攻阶段后，即视感标记仍显示在生命读数上方。"
+    },
+    {
+      "path": "deja-vu__即视感悬停说明态-桌面.png",
+      "description": "图片表达：玩家悬停即视感后，说明出现，三枚状态图标仍同时可见。"
+    },
+    {
+      "path": "deja-vu__即视感重开后-桌面.png",
+      "description": "图片表达：玩家使用即视感后，骰区重新显示可投掷入口。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼攻击前-桌面.png",
+      "description": "图片表达：起始牌桌显示全知之眼技能、五颗护身符骰面和公开准备区。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼已选待结算-桌面.png",
+      "description": "图片表达：玩家选择全知之眼后，技能槽出现粉色边框。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼顶五法术选择-桌面.png",
+      "description": "图片表达：提交全知之眼后，弹窗显示两张可准备法术和跳过入口。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼法术准备目标选择-桌面.png",
+      "description": "图片表达：准备法术后，弹窗显示武僧头像供玩家选择目标。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼重排剩余三张-桌面.png",
+      "description": "图片表达：选完准备法术后，弹窗显示三张待排序卡牌。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼攻击后施法选择-桌面.png",
+      "description": "图片表达：完成排序后，弹窗显示三张法术供玩家选择施放或跳过。"
+    },
+    {
+      "path": "all-seeing-eye__全知之眼攻击结算-桌面.png",
+      "description": "图片表达：玩家跳过施法后，弹窗关闭并回到主要阶段二。"
+    },
+    {
+      "path": "astral-invasion__星际侵入前-桌面.png",
+      "description": "图片表达：起始牌桌显示星际侵入技能与锁定的骰面。"
+    },
+    {
+      "path": "astral-invasion__星际侵入已选-桌面.png",
+      "description": "图片表达：玩家选择星际侵入后，技能槽出现粉色边框。"
+    },
+    {
+      "path": "astral-invasion__星际侵入奖励骰待确认-桌面.png",
+      "description": "图片表达：提交星际侵入后，右侧显示两颗奖励骰和确认入口。"
+    },
+    {
+      "path": "astral-invasion__星际侵入奖励骰确认-桌面.png",
+      "description": "图片表达：玩家确认奖励骰后，牌桌切换到防御视角。"
+    },
+    {
+      "path": "crimson-bands__深红系带手牌-桌面.png",
+      "description": "图片表达：主阶段手牌显示可操作的深红系带法术。"
+    },
+    {
+      "path": "crimson-bands__深红系带目标选择-桌面.png",
+      "description": "图片表达：玩家打出深红系带后，弹窗显示对手目标。"
+    },
+    {
+      "path": "crimson-bands__深红系带已施加-桌面.png",
+      "description": "图片表达：玩家选择对手后，其状态区出现深红系带图标。"
+    },
+    {
+      "path": "worthy-teammate__值得拥有-四人队伍起始态.png",
+      "description": "图片表达：四人组队起始牌桌显示奇异博士手牌和队友骰区。"
+    },
+    {
+      "path": "worthy-teammate__值得拥有-队友骰区目标态.png",
+      "description": "图片表达：打出队友牌后，骰盘上方显示选骰提示及五颗候选骰。"
+    },
+    {
+      "path": "worthy-teammate__值得拥有-队友骰子已选.png",
+      "description": "图片表达：选择两颗队友骰子后，勾选反馈和确认按钮可见。"
+    },
+    {
+      "path": "worthy-teammate__值得拥有-队友骰区重掷结算.png",
+      "description": "图片表达：确认选择后，队友骰子开始重掷且选骰提示关闭。"
+    }
+  ]
+}

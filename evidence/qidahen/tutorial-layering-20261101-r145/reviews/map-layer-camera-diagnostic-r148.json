@@ -1,0 +1,227 @@
+{
+  "objective": "镜头对齐后的七大恨教程地图语义贴附及层级诊断",
+  "scope": "仅12个合法保存点PC图面诊断；不冒充自然完整教程，不证明数值结算或地图拖动功能",
+  "reviewer": "/root/r148_map_private",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "verdict": "PASS",
+  "summary": {
+    "total": 12,
+    "revise": 0,
+    "passed": 12
+  },
+  "criteria": [
+    "说明必须与真实地图对象自然相连，名称自身贴正式章而非省份外接矩形",
+    "当前来源、目标、相关兵牌人口和正式输入可辨",
+    "提示层按实际层级避让；不要求避让所有无关低层地图实体",
+    "镜头内候选绿色高亮与正式身份可辨，镜头外候选可恢复性由pan/zoom行为证据单列"
+  ],
+  "items": [
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/reclaim-target.png",
+      "sha256": "4587314c14e8ce61cbbad2f27c1ba48e965cfbdf0d75f29501cb68e95a50c1cc",
+      "status": "PASS",
+      "observation": "镜头将辽东正式地图主体放到中央偏右；辽东名称贴明控制章上方，三支驻军及人口3完整。白提示位于名称右上，箭头朝名称附近，阅读后可以直接找到辽东，而非朝鲜或右侧确认面板。当前开垦面板完整，原缩放/复位入口可见。",
+      "reviewMethod": "私有重新逐张读取camera版原始整屏",
+      "sameAsOriginalImage": false,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/recruit-source.png",
+      "sha256": "021be2a3ce18cee3877ac115eab8cab1bced86d3957bc11c4ad4d3deaf585717",
+      "status": "PASS",
+      "observation": "镜头内辽北白边主体、明章、辽北注释、人口3和驻军清楚；白提示贴章右侧，正式征召面板在右上独立可辨。当前焦点没有被放到相邻辽东，地图内其它已显示候选的绿色边界保留。",
+      "reviewMethod": "私有重新逐张读取camera版原始整屏",
+      "sameAsOriginalImage": false,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/dispatch-troops.png",
+      "sha256": "e4e8ba420e154639f36037dfc07591966063e8d3f8673c1f86d642b378256a5d",
+      "status": "PASS",
+      "observation": "辽北注释贴在明章上方，说明位于其上侧；绿色可选步兵、骑兵、炮兵逐枚可辨，人口3与右侧出动确认清楚，没有把文字挪到远处地图空位。",
+      "reviewMethod": "与本代理此前逐张私读原始整屏sha256完全相同，沿用同源图面观察",
+      "sameAsOriginalImage": true,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/dispatch-target.png",
+      "sha256": "883c1737aa986f1d3ca68accb62955dc28bf89608317741e21fa708395003784",
+      "status": "PASS",
+      "observation": "当前叶赫部地图主体和正式蒙古章放在视野中央，名称贴章上方；说明在其右侧，骑兵与人口2可辨。辽北来源兵堆仍在其下方清楚可见，已选来源与目标归属不混淆，重新选择部队与确认入口完整。",
+      "reviewMethod": "私有重新逐张读取camera版原始整屏",
+      "sameAsOriginalImage": false,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/diplomacy-target.png",
+      "sha256": "cbd51f3095422538213f915d27b4c0af3036b804193b9d8f43cdf84bb51aa985",
+      "status": "PASS",
+      "observation": "外喀尔喀部白边主体、正式反面蒙古外交章、名称及人口2清楚；白提示在其右上相邻，仍能直接对应取消友好关系的目标。科尔沁部正式蒙古章、印刷地名、人口和绿色边界同时可辨，没有复现首批科尔沁身份被盖问题。",
+      "reviewMethod": "私有重新逐张读取camera版原始整屏",
+      "sameAsOriginalImage": false,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/hire-target.png",
+      "sha256": "4604ecf755d54922a6bc7b36d321ee130de34a6e16a66176a9b2b40bce6c5678",
+      "status": "PASS",
+      "observation": "镜头将大同白边地图主体放在中央；大同名称贴正式明章，一枚原驻军与人口2可辨。白提示位于大同左上，底边贴近名称，建立两支新守军的文字归属清楚；正式建立区域确认入口完整，镜头内多处其它绿色候选身份章可辨。",
+      "reviewMethod": "私有重新逐张读取camera版原始整屏",
+      "sameAsOriginalImage": false,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/upkeep-datong.png",
+      "sha256": "fe5a25536da516adac2ccd9362827d966f9d395f8aafed1741c56bf679f6dc45",
+      "status": "PASS",
+      "observation": "重新读取原始整屏：大同名称贴正式明章上方，提示在其右上；三枚绿色可选兵牌、人口2、维护支持差额输入和手牌可辨，没有回到R147名称飘在省份外接矩形左上的状态。",
+      "reviewMethod": "私有重新逐张读取camera版原始整屏",
+      "sameAsOriginalImage": false,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/upkeep-yehe.png",
+      "sha256": "6462fc9aa84bc67aff0cf4fbf7b3ed3345131e012ef9aafad6baebb967b7e5b9",
+      "status": "PASS",
+      "observation": "与R147旧整屏对照，名称从远离驻军的左上方移到叶赫正式明章上方；说明贴章右侧，三支绿色驻军、人口2、维护面板和手牌完整。",
+      "reviewMethod": "与本代理此前逐张私读原始整屏sha256完全相同，沿用同源图面观察",
+      "sameAsOriginalImage": true,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/upkeep-xianxing.png",
+      "sha256": "0502df9457e36f7e42263e225c902d1b18a0c930c96ffe86d33612a30393d8be",
+      "status": "PASS",
+      "observation": "咸兴注释贴正式明章，提示位于章右上；咸兴印刷城市名、一支绿色驻军与维护输入清楚，没有要求避开非当前辽东实体而远离教学对象。",
+      "reviewMethod": "与本代理此前逐张私读原始整屏sha256完全相同，沿用同源图面观察",
+      "sameAsOriginalImage": true,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/upkeep-liaobei.png",
+      "sha256": "67367dcc80e1a9abb82769b38f52ec0681b681597c70f17770e53224b973d01e",
+      "status": "PASS",
+      "observation": "辽北名称贴正式明控制章，提示在章右上；当前七支兵牌逐枚可辨，人口3、绿色兵牌选择和右侧支持4支部队输入清楚。",
+      "reviewMethod": "与本代理此前逐张私读原始整屏sha256完全相同，沿用同源图面观察",
+      "sameAsOriginalImage": true,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/upkeep-pyongyang.png",
+      "sha256": "e1dae1ccceb2cfe42bbca62d1074ccb87ad66ce11d3e0b7e7d990e4265e1ca2b",
+      "status": "PASS",
+      "observation": "平壤名称贴正式明章，提示在其右上；当前平壤绿色雇佣兵、印刷城市名、随后汉城驻军和手牌均可辨，移除当前部队的操作归属清楚。",
+      "reviewMethod": "与本代理此前逐张私读原始整屏sha256完全相同，沿用同源图面观察",
+      "sameAsOriginalImage": true,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-layering-20261101-r145/diagnostics/semantic-layer-r148-camera/occupy.png",
+      "sha256": "80548f8a15f12b52f1e39751fc908a4d2a868a063a8aae42b1a002b83d2983f8",
+      "status": "PASS",
+      "observation": "战后说明紧邻右侧战后选择面板，保留辽北到叶赫部语义；叶赫部红色地图主体、正式蒙古章、人口2及来源辽北部队可辨，占领和撤回按钮完整。",
+      "reviewMethod": "与本代理此前逐张私读原始整屏sha256完全相同，沿用同源图面观察",
+      "sameAsOriginalImage": true,
+      "protectedSurfaces": [
+        "当前焦点正式身份/名称",
+        "当前相关兵牌与人口",
+        "正式操作输入",
+        "手牌及缩放/复位入口"
+      ],
+      "scopeBoundary": "只判当前截图可见空间语义与输入；镜头外或被正式操作面板覆盖的非当前候选，需结合原pan/zoom行为证据证明可恢复。"
+    }
+  ],
+  "resolvedFailures": [
+    {
+      "priorReport": "reviews/map-layer-diagnostic-r148.json",
+      "current": "camera版辽东主体入镜，提示重新贴辽东名称与明章",
+      "prior": "候选保护版提示被挤至右下朝鲜侧，远离辽东",
+      "object": "reclaim-target"
+    },
+    {
+      "priorReport": "reviews/map-layer-diagnostic-r148.json",
+      "current": "camera版外喀焦点和科尔沁身份章均可辨",
+      "prior": "首批科尔沁正式候选身份章和地名被提示盖住",
+      "object": "diplomacy-target"
+    }
+  ],
+  "negativeImpactChecks": [
+    "主要当前对象、兵牌、人口和正式输入没有因镜头对齐离屏或被提示盖住",
+    "出击目标图同时保留辽北来源和叶赫目标，未用邻近地区替代",
+    "镜头外非当前候选没有从截图中判为删除；原缩放/复位控件可见，完整候选命中和恢复需独立功能证据",
+    "非当前地图实体允许被高层教程提示或正式操作面板遮挡，不把全图所有实体升级为避让物"
+  ],
+  "limitations": [
+    "单张静态图不能证明原pan/zoom功能、候选重新入镜后仍可命中；主线程需保留其独立行为验证",
+    "未覆盖移动端、其它教程步骤或自然完整操作链",
+    "PASS仅用于这些保存点诊断，不生成用户可见最终PASS清单或发布媒体"
+  ],
+  "userVisibleMediaPublished": false
+}

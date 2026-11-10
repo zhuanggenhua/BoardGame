@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "title": "仲裁抹消：原始流程截图",
+  "requirements": [
+    {
+      "requirement": "打开抹消真实入口的原始 JPG，不使用标注副本或索引图。",
+      "status": "PASS",
+      "evidence": [
+        "三张媒体均来自仲裁抹消真实入口截图目录，文件格式为原始 JPG。",
+        "媒体覆盖触发前、目标选择和结算完成三个节点。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁抹消触发前.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁抹消选择目标.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁抹消结算完成.jpg"
+  ]
+}

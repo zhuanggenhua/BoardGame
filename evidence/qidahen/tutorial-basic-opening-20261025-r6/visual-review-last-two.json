@@ -1,0 +1,35 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r6_visual_review_last_two"
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03h-征兵目标本土限制与候选区域.png",
+      "sha256": "9896db5e48d8ad785493f8540aa4fbe9ed4b98027ccbb22ee8792f9c2a98c21e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧征兵面板及区域候选按钮完整可见；中央提示框清晰且未遮住候选项，蓝色面板外沿区分了当前交互区，未见文字裁切、错位或明显报错。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r6/media/03j-额外训练目标与结果.png",
+      "sha256": "75b5e58bb5ffe881542fc0d7a42b18cb08c59a7ce6c76bee431adb83d37b2aa8",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "右侧训练候选项及等级文字清楚可读；中央提示框未遮挡列表，末行在面板下沿内完整露出，未见影响当前焦点的遮挡、裁切或明显报错。"
+    }
+  ]
+}

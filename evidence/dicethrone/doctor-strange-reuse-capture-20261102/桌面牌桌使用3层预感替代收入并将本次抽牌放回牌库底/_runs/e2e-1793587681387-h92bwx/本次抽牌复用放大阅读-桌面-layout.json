@@ -1,0 +1,119 @@
+{
+  "text": "选择放回牌库的牌",
+  "rows": [
+    {
+      "testId": "dt-card-pool-title",
+      "tag": "H2",
+      "top": 20,
+      "bottom": 48,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "18px",
+      "lineHeight": "28px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-surface",
+      "tag": "DIV",
+      "top": 8,
+      "bottom": 768.265625,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-panel",
+      "tag": "DIV",
+      "top": 8,
+      "bottom": 892,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "testId": "dt-card-pool-overlay",
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 0,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "DIV",
+      "top": 900,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "auto",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "BODY",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "hidden",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    },
+    {
+      "tag": "HTML",
+      "top": 0,
+      "bottom": 900,
+      "scrollTop": 0,
+      "overflowY": "visible",
+      "fontSize": "16px",
+      "lineHeight": "24px",
+      "transform": "none",
+      "translate": "none"
+    }
+  ]
+}

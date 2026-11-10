@@ -1,0 +1,317 @@
+[
+  {
+    "name": "外喀尔喀部",
+    "point": [
+      491,
+      100
+    ],
+    "expected": "city-region-2",
+    "matched": true
+  },
+  {
+    "name": "科尔沁部",
+    "point": [
+      745,
+      105
+    ],
+    "expected": "city-region-3",
+    "matched": true
+  },
+  {
+    "name": "巴林部",
+    "point": [
+      478,
+      201
+    ],
+    "expected": "city-region-8",
+    "matched": true
+  },
+  {
+    "name": "扎鲁特部",
+    "point": [
+      645,
+      205
+    ],
+    "expected": "city-region-6",
+    "matched": true
+  },
+  {
+    "name": "内喀尔喀部",
+    "point": [
+      780,
+      258
+    ],
+    "expected": "city-region-10",
+    "matched": true
+  },
+  {
+    "name": "克什克腾部",
+    "point": [
+      409,
+      356
+    ],
+    "expected": "city-region-16",
+    "matched": true
+  },
+  {
+    "name": "察哈尔部",
+    "point": [
+      579,
+      353
+    ],
+    "expected": "city-region-14",
+    "matched": true
+  },
+  {
+    "name": "奈曼部",
+    "point": [
+      760,
+      339
+    ],
+    "expected": "city-region-17",
+    "matched": true
+  },
+  {
+    "name": "敖汉部",
+    "point": [
+      716,
+      400
+    ],
+    "expected": "city-region-19",
+    "matched": true
+  },
+  {
+    "name": "土默特部",
+    "point": [
+      170,
+      450
+    ],
+    "expected": "city-region-20",
+    "matched": true
+  },
+  {
+    "name": "喀喇沁部",
+    "point": [
+      306,
+      455
+    ],
+    "expected": "city-region-21",
+    "matched": true
+  },
+  {
+    "name": "朵颜部",
+    "point": [
+      602,
+      476
+    ],
+    "expected": "duoyan",
+    "matched": true
+  },
+  {
+    "name": "鄂尔多斯部",
+    "point": [
+      119,
+      604
+    ],
+    "expected": "city-region-26",
+    "matched": true
+  },
+  {
+    "name": "乌喇部",
+    "point": [
+      1009,
+      53
+    ],
+    "expected": "city-region-4",
+    "matched": true
+  },
+  {
+    "name": "叶赫部",
+    "point": [
+      894,
+      186
+    ],
+    "expected": "city-region-7",
+    "matched": true
+  },
+  {
+    "name": "哈达部",
+    "point": [
+      1012,
+      181
+    ],
+    "expected": "city-region-9",
+    "matched": true
+  },
+  {
+    "name": "辉发部",
+    "point": [
+      1184,
+      125
+    ],
+    "expected": "city-region-5",
+    "matched": true
+  },
+  {
+    "name": "建州女真",
+    "point": [
+      1009,
+      296
+    ],
+    "expected": "city-region-13",
+    "matched": true
+  },
+  {
+    "name": "长白女真",
+    "point": [
+      1110,
+      250
+    ],
+    "expected": "city-region-11",
+    "matched": true
+  },
+  {
+    "name": "辽北",
+    "point": [
+      882,
+      369
+    ],
+    "expected": "city-region-15",
+    "matched": true
+  },
+  {
+    "name": "辽东",
+    "point": [
+      880,
+      455
+    ],
+    "expected": "city-region-15-liaodong",
+    "matched": true
+  },
+  {
+    "name": "辽西",
+    "point": [
+      724,
+      447
+    ],
+    "expected": "city-region-19-liaoxi",
+    "matched": true
+  },
+  {
+    "name": "东江",
+    "point": [
+      830,
+      550
+    ],
+    "expected": "city-region-22",
+    "matched": true
+  },
+  {
+    "name": "宣府",
+    "point": [
+      395,
+      548
+    ],
+    "expected": "xuan-fu",
+    "matched": true
+  },
+  {
+    "name": "大同",
+    "point": [
+      301,
+      615
+    ],
+    "expected": "city-region-1",
+    "matched": true
+  },
+  {
+    "name": "蓟镇",
+    "point": [
+      566,
+      563
+    ],
+    "expected": "city-region-28-jizhen",
+    "matched": true
+  },
+  {
+    "name": "顺天",
+    "point": [
+      485,
+      640
+    ],
+    "expected": "city-region-28",
+    "matched": true
+  },
+  {
+    "name": "保定",
+    "point": [
+      424,
+      718
+    ],
+    "expected": "city-region-27",
+    "matched": true
+  },
+  {
+    "name": "山西",
+    "point": [
+      269,
+      776
+    ],
+    "expected": "city-region-30",
+    "matched": true
+  },
+  {
+    "name": "延绥",
+    "point": [
+      86,
+      809
+    ],
+    "expected": "city-region-31",
+    "matched": true
+  },
+  {
+    "name": "登莱",
+    "point": [
+      756,
+      746
+    ],
+    "expected": "city-region-32",
+    "matched": true
+  },
+  {
+    "name": "山东",
+    "point": [
+      596,
+      830
+    ],
+    "expected": "city-region-33",
+    "matched": true
+  },
+  {
+    "name": "咸兴",
+    "point": [
+      1064,
+      426
+    ],
+    "expected": "xian-xing",
+    "matched": true
+  },
+  {
+    "name": "平壤",
+    "point": [
+      1030,
+      578
+    ],
+    "expected": "city-region-18",
+    "matched": true
+  },
+  {
+    "name": "汉城",
+    "point": [
+      1141,
+      629
+    ],
+    "expected": "city-region-29",
+    "matched": true
+  }
+]

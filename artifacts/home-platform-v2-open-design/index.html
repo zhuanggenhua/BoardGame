@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, initial-scale=1" />
+  <title>易桌游 · 平台首页 v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0b0d11;
+      --ink-2: #12161d;
+      --ink-3: #1a212c;
+      --line: rgba(243, 234, 216, 0.1);
+      --cream: #f3ead8;
+      --cream-dim: rgba(243, 234, 216, 0.62);
+      --muted: #8d97a6;
+      --ember: #e0a15a;
+      --copper: #c4843a;
+      --danger: #d4654a;
+      --font: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      --display: "Syne", "Noto Sans SC", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #07080b;
+      color: var(--cream);
+      font-family: var(--font);
+    }
+    html, body, .stage, .main, .hero, .featured, .continue, .continue-art, .library, .grid, .tile, .art {
+      min-height: 0;
+    }
+    button { font-family: inherit; }
+    .stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 56px 40px minmax(0, 1fr) 48px;
+      background:
+        radial-gradient(1100px 520px at 28% 18%, rgba(224, 161, 90, 0.16), transparent 58%),
+        radial-gradient(900px 420px at 92% 88%, rgba(92, 48, 24, 0.28), transparent 52%),
+        linear-gradient(180deg, #10141b 0%, var(--ink) 42%, #090b0e 100%);
+    }
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.055;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+    }
+
+    .chrome {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 28px;
+      padding: 0 36px;
+      min-height: 56px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(8, 10, 14, 0.55);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 420px;
+    }
+    .brand img { width: 28px; height: 28px; }
+    .wordmark {
+      font-family: var(--display);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      line-height: 1;
+    }
+    .subtitle {
+      margin-left: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      font-weight: 500;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--cream-dim);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .nav-btn.is-active {
+      color: var(--ink);
+      background: var(--cream);
+    }
+    .chrome-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .ghost {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--cream);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      padding: 6px 2px;
+    }
+    .lang {
+      color: var(--cream-dim);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    .bell {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--cream);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+    .bell i {
+      position: absolute;
+      top: 6px;
+      right: 7px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #e24b4b;
+    }
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px 4px 4px;
+      border-radius: 999px;
+      background: rgba(243, 234, 216, 0.06);
+      border: 1px solid var(--line);
+      cursor: pointer;
+    }
+    .points {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--ember);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(160deg, #c4843a, #6b3b1e);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .uname { font-size: 13px; font-weight: 600; }
+
+    .resume {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+      background: linear-gradient(90deg, rgba(224, 161, 90, 0.16), rgba(224, 161, 90, 0.04) 46%, transparent);
+      border-bottom: 1px solid rgba(224, 161, 90, 0.18);
+    }
+    .resume-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+    .kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      color: var(--ember);
+    }
+    .resume-title { font-size: 15px; font-weight: 700; }
+    .dot { opacity: 0.35; }
+    .resume-meta { color: var(--cream-dim); font-size: 13px; }
+    .resume-actions { display: flex; gap: 10px; }
+    .btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      height: 30px;
+      padding: 0 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(212, 101, 74, 0.45);
+    }
+    .btn-ember {
+      background: var(--ember);
+      color: #1a1208;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: 392px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px 36px 6px;
+      overflow: hidden;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 400px;
+      gap: 16px;
+      min-height: 0;
+    }
+    .featured {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      background: #0a0c10;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+    .featured img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 58% 46%;
+    }
+    .featured-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 58%, rgba(8, 10, 14, 0.92) 100%);
+    }
+    .featured-copy {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px 16px;
+    }
+    .featured-copy p {
+      flex: 1;
+      margin: 0;
+      color: var(--cream-dim);
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chips { display: flex; gap: 8px; align-items: center; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 4px;
+      background: rgba(243, 234, 216, 0.1);
+      color: var(--cream);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+    .chip-ember { background: rgba(224, 161, 90, 0.18); color: var(--ember); }
+
+    .continue {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      background: var(--ink-2);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+    .continue-art {
+      position: relative;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(224, 161, 90, 0.16), transparent 60%),
+        #10141b;
+    }
+    .continue-art img {
+      position: absolute;
+      inset: 18px 22px 8px;
+      width: calc(100% - 44px);
+      height: calc(100% - 26px);
+      object-fit: contain;
+      filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.45));
+    }
+    .continue-copy {
+      padding: 10px 18px 16px;
+    }
+    .continue-copy h2 {
+      margin: 4px 0 2px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .continue-copy span { color: var(--muted); font-size: 12px; }
+
+    .library {
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 32px minmax(0, 1fr);
+      gap: 8px;
+    }
+    .library-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .library-head h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+    .cats { display: flex; gap: 6px; }
+    .cat {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cat.is-active {
+      color: var(--ink);
+      background: var(--cream);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px 14px;
+      overflow: hidden;
+    }
+    .tile {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 24px;
+      gap: 4px;
+      min-width: 0;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+    .tile[hidden] { display: none !important; }
+    .tile.is-selected .art {
+      outline: 2px solid var(--ember);
+      outline-offset: 2px;
+    }
+    .art {
+      position: relative;
+      min-height: 0;
+      height: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--ink-3);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+    }
+    .art img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .art.portrait img {
+      object-fit: cover;
+      object-position: center 18%;
+      transform: scale(1.22);
+    }
+    .art.contain {
+      background:
+        radial-gradient(circle at 50% 40%, rgba(243, 234, 216, 0.06), transparent 64%),
+        #141922;
+    }
+    .art.contain img {
+      object-fit: contain;
+      padding: 6px;
+    }
+    .fallback {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      align-content: center;
+      justify-items: start;
+      padding: 16px 18px;
+      background:
+        linear-gradient(160deg, rgba(224, 161, 90, 0.12), transparent 42%),
+        repeating-linear-gradient(135deg, rgba(243,234,216,0.03) 0 8px, transparent 8px 16px),
+        #171d27;
+    }
+    .fallback b {
+      font-size: 22px;
+      letter-spacing: 0.04em;
+    }
+    .fallback em {
+      margin-top: 6px;
+      font-style: normal;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .ribbon, .hot {
+      position: absolute;
+      z-index: 1;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .ribbon {
+      top: 8px;
+      left: 8px;
+      height: 20px;
+      padding: 0 7px;
+      border-radius: 4px;
+      background: rgba(12, 14, 18, 0.78);
+      color: var(--ember);
+      border: 1px solid rgba(224, 161, 90, 0.4);
+      display: inline-flex;
+      align-items: center;
+    }
+    .hot {
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #c2412d;
+      color: #fff;
+      display: grid;
+      place-items: center;
+    }
+    .meta {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+    .meta strong {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .meta span {
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .dock {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+      border-top: 1px solid var(--line);
+      background: rgba(8, 10, 14, 0.72);
+      min-height: 48px;
+    }
+    .tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tools-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      margin-right: 8px;
+    }
+    .tool {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(243, 234, 216, 0.04);
+      color: var(--cream);
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ver {
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+    }
+
+    svg.icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" data-testid="home-platform-v2">
+    <header class="chrome">
+      <div class="brand">
+        <img src="assets/logo.svg" alt="易桌游标志" />
+        <div>
+          <div class="wordmark">易桌游</div>
+        </div>
+        <div class="subtitle">桌游教程、联机与原型制作平台</div>
+      </div>
+      <nav class="nav" aria-label="平台分区">
+        <button class="nav-btn is-active" type="button">发现</button>
+        <button class="nav-btn" type="button">收藏库</button>
+        <button class="nav-btn" type="button">上传</button>
+      </nav>
+      <div class="chrome-actions">
+        <button class="ghost" type="button">操作指南</button>
+        <button class="ghost lang" type="button">中文</button>
+        <button class="bell" type="button" aria-label="通知">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+          <i></i>
+        </button>
+        <button class="user" type="button" aria-haspopup="menu">
+          <span class="points">
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;stroke:none;fill:currentColor"><path d="M12 2.4l2.1 6.7H21l-5.4 4 2.1 6.7L12 16.9 6.3 19.8l2.1-6.7L3 9.1h6.9z"/></svg>
+            86
+          </span>
+          <span class="avatar">衡</span>
+          <span class="uname">衡</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="resume" data-testid="home-active-match-card">
+      <div class="resume-left">
+        <span class="kicker">当前进行中</span>
+        <strong class="resume-title">大杀四方</strong>
+        <span class="dot">·</span>
+        <span class="resume-meta">房间 #A3F2</span>
+        <span class="dot">·</span>
+        <span class="resume-meta">2 人在席</span>
+      </div>
+      <div class="resume-actions">
+        <button class="btn btn-ghost" type="button">销毁</button>
+        <button class="btn btn-ember" type="button">重连进入</button>
+      </div>
+    </div>
+
+    <main class="main">
+      <section class="hero">
+        <article class="featured" aria-label="精选 幻想国度">
+          <img src="assets/covers/fantasyrealms.webp" alt="幻想国度" />
+          <div class="featured-shade"></div>
+          <div class="featured-copy">
+            <div class="chips">
+              <span class="chip chip-ember">精选</span>
+              <span class="chip">卡牌</span>
+              <span class="chip">2-6 人</span>
+            </div>
+            <p>2-6 人奇幻卡牌组合游戏。围绕 7 张手牌与公开弃牌堆做取舍，通过套牌联动冲高终局分数。</p>
+            <button class="btn btn-ember" type="button" style="height:34px;padding:0 16px;font-size:13px;flex:0 0 auto">进入游戏</button>
+          </div>
+        </article>
+        <article class="continue" aria-label="继续游戏 大杀四方">
+          <div class="continue-art">
+            <img src="assets/covers/smashup.webp" alt="大杀四方" />
+          </div>
+          <div class="continue-copy">
+            <span class="kicker">继续游戏</span>
+            <h2>大杀四方</h2>
+            <span>2-4 人 · 卡牌 · 上次房间 #A3F2</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="library">
+        <div class="library-head">
+          <h2>游戏库</h2>
+          <div class="cats" aria-label="分类">
+            <button class="cat is-active" type="button">全部游戏</button>
+            <button class="cat" type="button">卡牌</button>
+            <button class="cat" type="button">骰子</button>
+            <button class="cat" type="button">抽象</button>
+            <button class="cat" type="button">战棋</button>
+            <button class="cat" type="button">休闲</button>
+            <button class="cat" type="button">工具</button>
+          </div>
+        </div>
+        <div class="grid">
+          <button class="tile" type="button" data-cat="骰子">
+            <div class="art contain"><img src="assets/covers/dicethrone.webp" alt="王权骰铸" /></div>
+            <div class="meta"><strong>王权骰铸</strong><span>骰子 · 2 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="卡牌">
+            <div class="art contain">
+              <span class="hot" title="热门">
+                <svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px;stroke:none;fill:#fff"><path d="M12 2s3 4 3 7a3 3 0 1 1-6 0c0-3 3-7 3-7zm-5 12c0 3.3 2.5 6 5.5 6s5.5-2.7 5.5-6c0-1.5-.6-2.8-1.5-3.8C15.8 16 12 16 12 16s-2.6-.4-4.2-3.2C7.4 13.8 7 14.8 7 16z"/></svg>
+              </span>
+              <img src="assets/covers/smashup.webp" alt="大杀四方" />
+            </div>
+            <div class="meta"><strong>大杀四方</strong><span>卡牌 · 2-4 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="卡牌">
+            <div class="art">
+              <span class="ribbon">实施中</span>
+              <img src="assets/covers/betrayal.webp" alt="山屋惊魂" style="object-position: center 20%" />
+            </div>
+            <div class="meta"><strong>山屋惊魂</strong><span>卡牌 · 3-6 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="战棋">
+            <div class="art contain">
+              <span class="ribbon">实施中</span>
+              <img src="assets/covers/qidahen.webp" alt="七大恨" />
+            </div>
+            <div class="meta"><strong>七大恨</strong><span>战棋 · 3 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="战棋">
+            <div class="art">
+              <span class="ribbon">实施中</span>
+              <img src="assets/covers/mage-wars.webp" alt="法师战争" />
+            </div>
+            <div class="meta"><strong>法师战争</strong><span>战棋 · 2 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="战棋">
+            <div class="art contain"><img src="assets/covers/summonerwars.webp" alt="召唤师战争" /></div>
+            <div class="meta"><strong>召唤师战争</strong><span>战棋 · 2 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="卡牌">
+            <div class="art">
+              <div class="fallback"><span class="kicker">封面待接入</span><b>璀璨宝石</b><em>卡牌 · 2-4 人</em></div>
+            </div>
+            <div class="meta"><strong>璀璨宝石</strong><span>卡牌 · 2-4 人</span></div>
+          </button>
+          <button class="tile is-selected" type="button" data-cat="卡牌">
+            <div class="art"><img src="assets/covers/fantasyrealms.webp" alt="幻想国度" /></div>
+            <div class="meta"><strong>幻想国度</strong><span>卡牌 · 2-6 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="卡牌">
+            <div class="art portrait"><img src="assets/covers/cardia.webp" alt="卡迪亚" /></div>
+            <div class="meta"><strong>卡迪亚</strong><span>卡牌 · 2 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="卡牌">
+            <div class="art"><img src="assets/covers/the-gang.webp" alt="纸牌帮" /></div>
+            <div class="meta"><strong>纸牌帮</strong><span>卡牌 · 3-6 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="卡牌">
+            <div class="art">
+              <span class="ribbon">实施中</span>
+              <div class="fallback"><span class="kicker">封面待接入</span><b>命运支配</b><em>卡牌 · 3-7 人</em></div>
+            </div>
+            <div class="meta"><strong>命运支配</strong><span>卡牌 · 3-7 人</span></div>
+          </button>
+          <button class="tile" type="button" data-cat="抽象">
+            <div class="art">
+              <div class="fallback"><span class="kicker">封面待接入</span><b>井字棋</b><em>抽象 · 2 人</em></div>
+            </div>
+            <div class="meta"><strong>井字棋</strong><span>抽象 · 2 人</span></div>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="dock">
+      <div class="tools">
+        <span class="tools-label">工具</span>
+        <button class="tool" type="button">素材切片机</button>
+        <button class="tool" type="button">特效预览</button>
+        <button class="tool" type="button">音效浏览器</button>
+        <button class="tool" type="button">架构可视化</button>
+      </div>
+      <div class="ver">0.6.47</div>
+    </footer>
+  </div>
+  <script>
+    const cats = document.querySelectorAll('.cat');
+    const tiles = document.querySelectorAll('.tile');
+    cats.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.textContent.trim();
+        cats.forEach((item) => item.classList.toggle('is-active', item === btn));
+        tiles.forEach((tile) => {
+          tile.hidden = key !== '全部游戏' && tile.dataset.cat !== key;
+        });
+      });
+    });
+  </script>
+</body>
+</html>

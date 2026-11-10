@@ -1,0 +1,434 @@
+{
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/strange_ui_delivery_a"
+  },
+  "reviewedAt": "2026-10-27T02:00:30.815Z",
+  "status": "REVISE",
+  "media": [
+    {
+      "path": "images/awareness-mobile__手机横屏-公开法术起始态.png",
+      "sha256": "b2f44433758dcf3c26d2b4022d1e95351079910a393e3a1156b029d9dc8d089f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机横屏牌桌中宇宙感知槽、公开起始法术、生命和CP及右侧骰区同时可见；单张手牌延伸至底缘，但没有覆盖技能入口。",
+      "userDescription": "手机横屏进入进攻投掷阶段后，宇宙感知技能槽与公开法术准备区同时显示。",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-prepared-spells-before",
+        "before": [
+          "images/awareness-mobile__手机横屏-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-公开法术起始态.png"
+        ],
+        "visibleConsequence": "手机横屏牌桌中宇宙感知槽、公开起始法术、生命和CP及右侧骰区同时可见；单张手牌延伸至底缘，但没有覆盖技能入口。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png",
+      "sha256": "acbd7d9b1061391001e21b02c65fe10997bfe095d60d2ec63853d621e5595f11",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "宇宙感知技能槽出现红色选中边框；右侧结束攻击按钮和锁定骰仍在视口内，公开准备区未被选中框挤动。",
+      "userDescription": "玩家选择宇宙感知后，技能槽显示红色选中边框。",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-awareness-selected",
+        "before": [
+          "images/awareness-mobile__手机横屏-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png"
+        ],
+        "visibleConsequence": "宇宙感知技能槽出现红色选中边框；右侧结束攻击按钮和锁定骰仍在视口内，公开准备区未被选中框挤动。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-弃牌准备选择态.png",
+      "sha256": "37ad0ccdf219b0aea9a43346be1de4e43b3441c66879bb3d82dd0d59cd07b307",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "准备法术选择弹窗与候选卡处于半透明入场阶段，后方玩家板透过卡牌和标题，候选正文与背景叠加；不是清晰稳定的选择态。",
+      "userDescription": "玩家推进宇宙感知后，准备法术候选弹窗正在淡入。",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-spell-choice",
+        "before": [
+          "images/awareness-mobile__手机横屏-宇宙感知已选待结算.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-弃牌准备选择态.png"
+        ],
+        "visibleConsequence": "准备法术选择弹窗与候选卡处于半透明入场阶段，后方玩家板透过卡牌和标题，候选正文与背景叠加；不是清晰稳定的选择态。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "选择弹窗入场尚未稳定，半透明候选与背景叠加。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-法术准备目标选择态.png",
+      "sha256": "67dd2e92381c6cec3ed0544691aefba7fd26f388e41eef02015b74a38764e7f4",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手机横屏目标选择弹窗完整置于视口中央，武僧头像、选择这名玩家和P2标签清楚可见，候选没有被手牌或骰区遮住。",
+      "userDescription": "玩家选取法术后，弹窗显示可选择的武僧玩家。",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-spell-prepare-target-choice",
+        "before": [
+          "images/awareness-mobile__手机横屏-弃牌准备选择态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-法术准备目标选择态.png"
+        ],
+        "visibleConsequence": "手机横屏目标选择弹窗完整置于视口中央，武僧头像、选择这名玩家和P2标签清楚可见，候选没有被手牌或骰区遮住。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-mobile__手机横屏-法术准备结算态.png",
+      "sha256": "5f7d5df36f0698bcb47fddfbc60594c33db3ddda3d24548137f90f8bef778b24",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弹窗关闭，维山帝之书准备区显示并排两张法术；阶段高亮转为主要阶段二，生命和CP以及骰区仍可见。",
+      "userDescription": "玩家完成法术目标选择后，公开准备区显示两张法术。",
+      "uiAudit": {
+        "target": "doctor-strange-mobile-spell-prepared",
+        "before": [
+          "images/awareness-mobile__手机横屏-法术准备目标选择态.png"
+        ],
+        "after": [
+          "images/awareness-mobile__手机横屏-法术准备结算态.png"
+        ],
+        "visibleConsequence": "弹窗关闭，维山帝之书准备区显示并排两张法术；阶段高亮转为主要阶段二，生命和CP以及骰区仍可见。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/deja-vu__即视感使用前-桌面.png",
+      "sha256": "db7b169f735f6b856392c6bb1267d0b33ce7bbea334759690dba9575dd52028f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面进攻投掷阶段中即视感黄色法阵标记与其上排两个状态图标可见，右侧锁定骰和结束攻击按钮可定位。",
+      "userDescription": "进入已投掷的进攻阶段后，即视感标记仍显示在生命读数上方。",
+      "uiAudit": {
+        "target": "doctor-strange-deja-vu-ready",
+        "before": [
+          "images/deja-vu__即视感使用前-桌面.png"
+        ],
+        "after": [
+          "images/deja-vu__即视感使用前-桌面.png"
+        ],
+        "visibleConsequence": "桌面进攻投掷阶段中即视感黄色法阵标记与其上排两个状态图标可见，右侧锁定骰和结束攻击按钮可定位。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/deja-vu__即视感悬停说明态-桌面.png",
+      "sha256": "8c38002b8aa6170f739be5fa48989def73edff6e991726aa4346bf8005e5f7f8",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感说明浮层位于所悬停标记上方，标题正文可读，生命和CP未遮挡；但说明浮层覆盖上排两个现有状态图标，状态区上下文不完整。",
+      "userDescription": "玩家悬停即视感后，说明浮层出现，但遮住上排两个状态图标。",
+      "uiAudit": {
+        "target": "doctor-strange-deja-vu-token-hover",
+        "before": [
+          "images/deja-vu__即视感使用前-桌面.png"
+        ],
+        "after": [
+          "images/deja-vu__即视感悬停说明态-桌面.png"
+        ],
+        "visibleConsequence": "即视感说明浮层位于所悬停标记上方，标题正文可读，生命和CP未遮挡；但说明浮层覆盖上排两个现有状态图标，状态区上下文不完整。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "说明浮层覆盖上排两个现有状态图标；生命、CP和即视感本体未被遮挡。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/deja-vu__即视感重开后-桌面.png",
+      "sha256": "e47bffd75a49f8d8f949672e554d1bd8658cf6ce788730e79cea500e48c90e8f",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "即视感与旧状态图标不再显示，骰区取消锁定文字，橙色投掷按钮出现；生命、CP和准备区均可见。",
+      "userDescription": "玩家使用即视感后，骰区重新显示可投掷入口。",
+      "uiAudit": {
+        "target": "doctor-strange-deja-vu-restarted",
+        "before": [
+          "images/deja-vu__即视感悬停说明态-桌面.png"
+        ],
+        "after": [
+          "images/deja-vu__即视感重开后-桌面.png"
+        ],
+        "visibleConsequence": "即视感与旧状态图标不再显示，骰区取消锁定文字，橙色投掷按钮出现；生命、CP和准备区均可见。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-公开法术起始态.png",
+      "sha256": "327c66b2aec3dcc44d12bbadd824e703aa8047faf706f10c4c84f3ef3075d86e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面宇宙感知技能槽呈青色可用高亮，维山帝之书准备区显示一张法术；生命、CP、骰区和结束攻击入口均未遮挡。",
+      "userDescription": "桌面进入进攻投掷阶段后，宇宙感知技能槽和公开法术准备区同时可见。",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-prepared-spells-before",
+        "before": [
+          "images/awareness-desktop__桌面-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-公开法术起始态.png"
+        ],
+        "visibleConsequence": "桌面宇宙感知技能槽呈青色可用高亮，维山帝之书准备区显示一张法术；生命、CP、骰区和结束攻击入口均未遮挡。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-宇宙感知已选待结算.png",
+      "sha256": "4b1734123f5e30e5f236b23e74f8b491c1178c2da94a096dd4c0c3ff43a6fba3",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面宇宙感知技能槽转为红色选中描边；结束攻击按钮保留在骰区下方，准备区和资源读数保持原位。",
+      "userDescription": "玩家选择宇宙感知后，技能槽显示红色选中边框。",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-awareness-selected",
+        "before": [
+          "images/awareness-desktop__桌面-公开法术起始态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-宇宙感知已选待结算.png"
+        ],
+        "visibleConsequence": "桌面宇宙感知技能槽转为红色选中描边；结束攻击按钮保留在骰区下方，准备区和资源读数保持原位。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-弃牌准备选择态.png",
+      "sha256": "442e9860f8a07036f6e1f55a9ed1dbb7aef9e278c535e739289dcb4d1c884783",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面准备法术弹窗与卡牌呈明显半透明入场状态，玩家板图案透过候选卡和提示文字；候选没有形成清楚独立的稳定阅读层。",
+      "userDescription": "玩家推进宇宙感知后，准备法术弹窗正在淡入。",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-spell-choice",
+        "before": [
+          "images/awareness-desktop__桌面-宇宙感知已选待结算.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-弃牌准备选择态.png"
+        ],
+        "visibleConsequence": "桌面准备法术弹窗与卡牌呈明显半透明入场状态，玩家板图案透过候选卡和提示文字；候选没有形成清楚独立的稳定阅读层。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "选择弹窗入场尚未稳定，半透明候选与背景叠加。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-法术准备目标选择态.png",
+      "sha256": "361e265f5e5fd6f8a4fa21eb9cde73cc8171965f6d77cf1450eebc33ce76ff0e",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面目标选择弹窗居中显示武僧头像和选择这名玩家按钮，候选及提示完整可读，没有被牌桌控件遮挡。",
+      "userDescription": "玩家选择法术后，弹窗显示武僧头像与选择按钮。",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-spell-prepare-target-choice",
+        "before": [
+          "images/awareness-desktop__桌面-弃牌准备选择态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-法术准备目标选择态.png"
+        ],
+        "visibleConsequence": "桌面目标选择弹窗居中显示武僧头像和选择这名玩家按钮，候选及提示完整可读，没有被牌桌控件遮挡。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    },
+    {
+      "path": "images/awareness-desktop__桌面-法术准备结算态.png",
+      "sha256": "5a0354fd60d5f8fc89c875c2a3aadeffcc2956c8a87a67d66cc5cc05a7cc0f32",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "桌面法术选择弹窗关闭，公开准备区显示两张法术并保持在维山帝之书槽内；主要阶段二高亮，HP、CP、骰区和下一阶段入口可见。",
+      "userDescription": "玩家完成目标选择后，两张法术显示在公开准备区。",
+      "uiAudit": {
+        "target": "doctor-strange-desktop-spell-prepared",
+        "before": [
+          "images/awareness-desktop__桌面-法术准备目标选择态.png"
+        ],
+        "after": [
+          "images/awareness-desktop__桌面-法术准备结算态.png"
+        ],
+        "visibleConsequence": "桌面法术选择弹窗关闭，公开准备区显示两张法术并保持在维山帝之书槽内；主要阶段二高亮，HP、CP、骰区和下一阶段入口可见。",
+        "protectedSlots": [
+          "生命和CP",
+          "技能及准备区",
+          "当前候选与确认",
+          "状态图标"
+        ],
+        "cropAndOcclusion": "当前目标、候选或结果完整入镜；常规手牌底缘延伸未遮挡本链操作目标。",
+        "internalIdCheck": "未发现规则内部ID泄漏；P2为玩家标识，非规则内部键。"
+      }
+    }
+  ],
+  "issues": [
+    {
+      "paths": [
+        "images/awareness-mobile__手机横屏-弃牌准备选择态.png",
+        "images/awareness-desktop__桌面-弃牌准备选择态.png"
+      ],
+      "kind": "unstable-modal-entrance",
+      "severity": "capture-revise",
+      "observation": "准备法术选择弹窗与候选明显半透明，后方玩家板透过卡面；需在同一选择态入场动画稳定后补拍。",
+      "minimalRemedy": "等待候选容器opacity与transform完成入场，保持当前选择不提交，再截完整原图。"
+    },
+    {
+      "paths": [
+        "images/deja-vu__即视感悬停说明态-桌面.png"
+      ],
+      "kind": "status-icons-occluded",
+      "severity": "ui-revise",
+      "observation": "即视感悬停说明遮住位于其上排的两个现有状态图标；生命/CP及即视感目标本体未遮挡。",
+      "minimalRemedy": "说明浮层整体避开状态图标组，重拍同一即视感悬停状态。"
+    }
+  ]
+}

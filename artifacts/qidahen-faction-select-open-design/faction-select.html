@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>七大恨 · 选择你的阵营</title>
+  <style>
+    :root {
+      --ink: #2a1f15;
+      --muted: #66503a;
+      --map-ink: #20150d;
+      --ivory: #ead7a7;
+      --cinnabar: #9f3426;
+      --paper: #efe3c4;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #120c08; }
+    body { font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif; color: var(--ink); }
+    .stage {
+      width: 1920px; height: 1080px; overflow: hidden; padding: 24px 36px; position: relative;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(159,52,38,.2), transparent 28%),
+        linear-gradient(135deg, #2e1f12 0%, #9f8048 48%, #231810 100%);
+    }
+    .sheet {
+      height: 100%; display: grid; grid-template-rows: auto 1fr auto;
+      border: 4px solid var(--map-ink); border-radius: 8px; padding: 18px 22px 16px;
+      background: linear-gradient(180deg, rgba(255,248,224,.98), rgba(232,210,160,.96));
+    }
+    .top { display: flex; justify-content: space-between; align-items: flex-end; }
+    h1 { margin: 0; font-size: 30px; font-weight: 900; }
+    .top-right { display: flex; gap: 8px; }
+    .chip, .scenario-btn {
+      border: 2px solid var(--map-ink); padding: 8px 14px; font-size: 14px; font-weight: 900;
+    }
+    .chip { background: #e6d3a8; }
+    .scenario-btn { background: #5f472d; color: var(--ivory); cursor: pointer; }
+    .factions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; min-height: 0; padding: 18px 8px 8px; }
+    .faction {
+      border: 3px solid var(--map-ink); border-radius: 8px; padding: 22px 22px 16px;
+      background: rgba(255,249,225,.78); cursor: pointer; text-align: left;
+      display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 0 8px 16px rgba(44,27,13,.16);
+    }
+    .faction.selected {
+      border-color: var(--cinnabar);
+      box-shadow: 0 0 0 3px rgba(159,52,38,.4), 0 12px 22px rgba(44,27,13,.2);
+      background: rgba(245,201,142,.52);
+    }
+    .faction.blocked { cursor: not-allowed; opacity: .42; filter: grayscale(.25); }
+    .who { display: flex; align-items: center; gap: 16px; }
+    .who img { width: 92px; height: 92px; object-fit: contain; filter: drop-shadow(0 8px 10px rgba(20,12,6,.35)); }
+    .who h2 { margin: 0; font-size: 34px; font-weight: 900; }
+    .intro { margin: 0; font-size: 16px; line-height: 1.55; font-weight: 700; color: var(--ink); }
+    .facts { font-size: 14px; font-weight: 800; color: var(--muted); }
+    .acts-label { font-size: 13px; font-weight: 900; color: var(--cinnabar); letter-spacing: .12em; }
+    .acts { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+    .act {
+      position: relative; border: 0; padding: 6px 10px; background: transparent;
+      font: inherit; font-size: 16px; font-weight: 900; color: var(--ink);
+      text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
+      cursor: help;
+    }
+    .tip {
+      display: none; position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 8;
+      width: 360px; padding: 12px 14px; text-align: left;
+      background: #2a1f15; color: var(--ivory); font-size: 14px; font-weight: 700; line-height: 1.5;
+      box-shadow: 0 12px 24px rgba(0,0,0,.35);
+    }
+    .act:hover .tip, .act:focus .tip { display: block; }
+    .occ { margin-top: auto; font-size: 15px; font-weight: 900; color: var(--muted); }
+    .faction.selected .occ { color: var(--cinnabar); }
+    .dock {
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 2px solid rgba(95,71,45,.34); padding-top: 12px;
+    }
+    .status { font-size: 15px; font-weight: 900; color: var(--muted); }
+    .confirm {
+      min-height: 48px; min-width: 168px; border: 2px solid var(--map-ink);
+      font-size: 16px; font-weight: 900; cursor: pointer; background: var(--cinnabar); color: var(--ivory);
+    }
+    .confirm:disabled { opacity: .4; cursor: not-allowed; }
+    .overlay {
+      display: none; position: absolute; inset: 0; background: rgba(18,12,8,.72);
+      align-items: center; justify-content: center; padding: 36px;
+    }
+    .overlay.open { display: flex; }
+    .menu {
+      width: 1680px; background: linear-gradient(180deg, #fff8e0, #e8d2a0);
+      padding: 18px 20px 16px;
+    }
+    .menu h3 { margin: 0 0 12px; font-size: 22px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; justify-items: center; }
+    .scen { border: 0; padding: 0; background: transparent; cursor: pointer; }
+    .scen img {
+      width: 420px; height: 582px; object-fit: contain; display: block;
+      background: transparent; filter: drop-shadow(0 14px 18px rgba(20,12,6,.32));
+      transition: transform .15s ease, filter .15s ease;
+    }
+    .scen.picked img {
+      transform: translateY(-8px);
+      filter: drop-shadow(0 0 10px rgba(159,52,38,.55)) drop-shadow(0 16px 22px rgba(20,12,6,.36));
+    }
+    .scen.bad { cursor: not-allowed; }
+    .scen.bad img { filter: grayscale(.4) brightness(.72); }
+    .menu-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+    .ghost {
+      min-height: 44px; border: 2px solid var(--map-ink); padding: 0 16px;
+      font-size: 15px; font-weight: 900; background: #e6d3a8; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="sheet">
+      <div class="top">
+        <h1>选择你的阵营</h1>
+        <div class="top-right">
+          <button type="button" class="scenario-btn" id="open-scenario">剧本 · 萨尔浒战后</button>
+          <div class="chip" id="count">已确认 0 / 3</div>
+          <div class="chip">3 人</div>
+        </div>
+      </div>
+      <div class="factions" id="factions"></div>
+      <div class="dock">
+        <div class="status" id="status">请选择一个未被占用的阵营</div>
+        <button type="button" class="confirm" id="confirm" disabled>确认阵营</button>
+      </div>
+    </div>
+    <div class="overlay" id="overlay">
+      <div class="menu">
+        <h3>起始剧本设置卡</h3>
+        <div class="cards">
+          <button type="button" class="scen" data-scenario="post-sarhu-1619">
+            <img src="assets/scenarios/post-sarhu-1619.webp" alt="萨尔浒战后（1619）" />
+          </button>
+          <button type="button" class="scen" data-scenario="shanhaiguan-1622">
+            <img src="assets/scenarios/shanhaiguan-1622.webp" alt="山海关之议（1622）" />
+          </button>
+          <button type="button" class="scen bad" data-scenario="dingmao-rebellion-1627">
+            <img src="assets/scenarios/dingmao-rebellion-1627.webp" alt="丁卯胡乱（1627）" />
+          </button>
+        </div>
+        <div class="menu-actions">
+          <button type="button" class="ghost" id="close-scenario">关闭</button>
+          <button type="button" class="confirm" id="adopt-scenario">确认采用</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const SCENARIOS = {
+      'post-sarhu-1619': { name: '萨尔浒战后', players: [3], factions: ['ming','mongol','jin'], startHand: { ming: 3, mongol: 6, jin: 10 } },
+      'shanhaiguan-1622': { name: '山海关之议', players: [3], factions: ['ming','mongol','jin'], startHand: { ming: 2, mongol: 6, jin: 6 } },
+      'dingmao-rebellion-1627': { name: '丁卯胡乱', players: [2], factions: ['ming','jin'], startHand: { ming: 5, jin: 6 } },
+    };
+    const FACTIONS = {
+      ming: {
+        name: '大明', token: 'assets/markers/ming.webp',
+        intro: '屹立百年的火药帝国。萨尔浒之役后对东北掌握力大不如前，领土岌岌可危。',
+        facts: '手牌上限 15 · 牌库 40 · 仅大明可无条件使用水路',
+        actions: [
+          { name: '突袭作战', effect: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+          { name: '征召军队', effect: '弃 1 张手牌，建立 6 个等级 2 部队，或 2 个等级 4 的川兵部队。' },
+          { name: '赐印招安', effect: '弃 3 张手牌，指定 1 个对手；由被指定的玩家选择一支与大明控制区相邻的部队，移入相邻大明控制区并转换为大明部队。' },
+          { name: '驱虎吞狼', effect: '弃 3 张手牌，指定 1 个对手抽 6 张手牌；大明指挥该玩家最多 6 个部队调度进攻。需该玩家同意才可执行。' },
+        ],
+      },
+      mongol: {
+        name: '蒙古', token: 'assets/markers/mongol.webp',
+        intro: '向来纷争的蒙古诸部，重新统一在察哈尔部林丹汗帐下，摆出争霸态势。',
+        facts: '手牌上限 10 · 牌库 20',
+        actions: [
+          { name: '突袭作战', effect: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+          { name: '马市贸易', effect: '弃 1 张手牌，大明玩家选择建立 1-3 个部队，蒙古玩家抽 2 倍张数的手牌。' },
+          { name: '大汗令箭', effect: '弃 1 张手牌，执行「征兵训练」或「外交雇佣」行动，不需再支付花费。' },
+        ],
+      },
+      jin: {
+        name: '后金', token: 'assets/markers/jin.webp',
+        intro: '建州女真首领努尔哈赤起兵复仇，建立后金国。',
+        facts: '手牌上限 10 · 牌库 18',
+        actions: [
+          { name: '突袭作战', effect: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+          { name: '联姻诱降', effect: '弃 2 张手牌，指定邻近自己控制区的对手控制区；该玩家须支付等同该区部队数量 2 倍的手牌，否则该区成为后金控制。不能对首都、长城以南使用。' },
+        ],
+      },
+    };
+    let scenarioId = 'post-sarhu-1619';
+    let menuDraft = 'post-sarhu-1619';
+    let draft = 'ming';
+    let confirmed = null;
+
+    function playable() { return SCENARIOS[scenarioId].factions; }
+
+    function renderFactions() {
+      const start = SCENARIOS[scenarioId].startHand;
+      document.getElementById('factions').innerHTML = ['ming','mongol','jin'].map((id) => {
+        const f = FACTIONS[id];
+        const blocked = !playable().includes(id);
+        const selected = draft === id && !blocked;
+        const occ = blocked ? '本剧本无此势力' : confirmed === id ? '你已确认' : '可选择';
+        const startHand = start[id] == null ? '' : ` · 起始手牌 ${start[id]}`;
+        const acts = f.actions.map((a) => `<li><button type="button" class="act" data-stop="1">${a.name}<span class="tip">${a.effect}</span></button></li>`).join('');
+        return `<div role="button" tabindex="0" class="faction${selected ? ' selected' : ''}${blocked ? ' blocked' : ''}" data-faction="${id}">
+          <div class="who"><img src="${f.token}" alt=""><h2>${f.name}</h2></div>
+          <p class="intro">${f.intro}</p>
+          <div class="facts">${f.facts}${startHand}</div>
+          <div class="acts-label">势力行动</div>
+          <ul class="acts">${acts}</ul>
+          <div class="occ">${occ}</div>
+        </div>`;
+      }).join('');
+      document.querySelectorAll('.faction').forEach((el) => {
+        el.addEventListener('click', (ev) => {
+          if (ev.target.closest('[data-stop]')) return;
+          const id = el.dataset.faction;
+          if (!playable().includes(id)) return;
+          draft = id;
+          render();
+        });
+      });
+    }
+
+    function render() {
+      document.getElementById('open-scenario').textContent = '剧本 · ' + SCENARIOS[scenarioId].name;
+      document.getElementById('count').textContent = '已确认 ' + (confirmed ? 1 : 0) + ' / 3';
+      document.getElementById('confirm').disabled = !draft || confirmed === draft;
+      document.getElementById('status').textContent = draft
+        ? (confirmed === draft ? '已确认 ' + FACTIONS[draft].name : FACTIONS[draft].name)
+        : '请选择一个未被占用的阵营';
+      document.querySelectorAll('.scen').forEach((el) => {
+        const id = el.dataset.scenario;
+        el.classList.toggle('picked', id === menuDraft);
+        el.classList.toggle('bad', !SCENARIOS[id].players.includes(3));
+      });
+      renderFactions();
+    }
+
+    document.getElementById('open-scenario').onclick = () => {
+      menuDraft = scenarioId;
+      document.getElementById('overlay').classList.add('open');
+      render();
+    };
+    document.getElementById('close-scenario').onclick = () => document.getElementById('overlay').classList.remove('open');
+    document.querySelectorAll('.scen').forEach((el) => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.scenario;
+        if (!SCENARIOS[id].players.includes(3)) return;
+        menuDraft = id;
+        render();
+      });
+    });
+    document.getElementById('adopt-scenario').onclick = () => {
+      scenarioId = menuDraft;
+      if (draft && !playable().includes(draft)) { draft = null; confirmed = null; }
+      document.getElementById('overlay').classList.remove('open');
+      render();
+    };
+    document.getElementById('confirm').onclick = () => { confirmed = draft; render(); };
+    render();
+  </script>
+</body>
+</html>

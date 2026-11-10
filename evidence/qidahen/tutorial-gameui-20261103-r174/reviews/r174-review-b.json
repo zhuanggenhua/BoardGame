@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "score": 93,
+  "reviewer": {
+    "kind": "subagents",
+    "id": "/root/r174_b_head + /root/r174_b_tail"
+  },
+  "aggregation": "主线程只合并独立逐图PASS与验证当前路径/哈希/覆盖，不代替读图或评分。",
+  "sourceParts": [
+    {
+      "file": "reviews/r174-review-b-head.json",
+      "sha256": "6b967e57c96716c1a1a1ad4bf593050fa0cb2da6cc8aef85231ad3a7f5662f84",
+      "reviewer": "/root/r174_b_head"
+    },
+    {
+      "file": "reviews/r174-review-b-tail.json",
+      "sha256": "df166ae3668beae2666f7d30bf0588e712269cdb1f9bafdd9763ef0c4abdd973",
+      "reviewer": "/root/r174_b_tail"
+    }
+  ],
+  "media": [
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/06-recruit-payment.png",
+      "sha256": "fc2f07a1e2d4634b318274d624ec367086d7af3110bb907abbc8b7eef7af4b2e",
+      "status": "PASS",
+      "score": 92,
+      "observation": "银两说明清楚交代弃牌支付和保留其他牌，说明卡位于支付栏上方，支付进度与确认和取消入口清楚；下方银两牌以绿色边界区别于其余灰化手牌，放大镜可发现，当前没有选中勾记；黄色人口引线未被当作教程指向，未见目标遮挡或错误。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-payment",
+      "actualReviewer": "/root/r174_b_head",
+      "sourcePartFile": "reviews/r174-review-b-head.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/07-recruit-payment-inspect.png",
+      "sha256": "2b7a5319c1e8ff223b497764713c8d4b1558d130df2955c483dd3347202c8ccc",
+      "status": "PASS",
+      "score": 96,
+      "observation": "银两整张牌面居中完整展示，标题和银锭图案可识别，未见卡面裁切或变形；右上角关闭叉号贴在阅读层内且清楚，不占正文行，底层支付栏降为背景，没有重复银两说明争抢阅读焦点。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-payment-inspect",
+      "actualReviewer": "/root/r174_b_head",
+      "sourcePartFile": "reviews/r174-review-b-head.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/08-recruit-source.png",
+      "sha256": "d576b09a72dcb8d4088a82a4e10c0c527df7c9180bc13186448f72c458116960",
+      "status": "PASS",
+      "score": 94,
+      "observation": "建军说明紧邻辽北地区，说明卡左侧缺口朝向该地区，辽北名称及军队本体可见，白色推荐边界与其余绿色合法地区可分辨；右侧当前任务为选择建军地区，玩家能据此直接点击辽北，未见选中勾记冒充已提交结果，也未把黄色人口引线当作教程指向。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-source",
+      "actualReviewer": "/root/r174_b_head",
+      "sourcePartFile": "reviews/r174-review-b-head.json",
+      "sourcePartEntry": 2
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/09-recruit-troops.png",
+      "sha256": "1794db243de208cfd506c5336043961173cf9b8395f36de423ba9a3deac734b3",
+      "status": "PASS",
+      "score": 94,
+      "observation": "辽北地区以贴合地界的白边和城名承接当前建军地点，区内大明兵牌正面与数量标记可辨；右侧两种建军方式具有完整按钮底面，教学说明紧邻选择区，没有遮住当前地区及兵牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "recruit-troops",
+      "actualReviewer": "/root/r174_b_tail",
+      "sourcePartFile": "reviews/r174-review-b-tail.json",
+      "sourcePartEntry": 0
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/10-midyear.png",
+      "sha256": "4d989edd97be1a4738ab28464174b03d9741873ae42d77fde4602b4d61a27859",
+      "status": "PASS",
+      "score": 93,
+      "observation": "左上轮盘的年中格与时标仍可见，教学浮层贴轮盘并保留明确的下一步按钮；中央偏下的手牌上限请求标明大明及确认弃牌，和顶部当前回合身份一致，未遮住下方可选手牌。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "midyear",
+      "actualReviewer": "/root/r174_b_tail",
+      "sourcePartFile": "reviews/r174-review-b-tail.json",
+      "sourcePartEntry": 1
+    },
+    {
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/11-hand-limit.png",
+      "sha256": "1b864f1dc8275da7b3e4686c86c59831e16c0120c2504303da228d1fb2f7078e",
+      "status": "PASS",
+      "score": 94,
+      "observation": "弃牌请求以大明和手牌上限为明确标题，已择进度与确认弃牌按钮归于同一横条；右侧教学明确保留与弃牌任务，下方手牌的绿色推荐边界、牌面和检视入口可辨，未与教学浮层互相遮挡。",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "id": "hand-limit",
+      "actualReviewer": "/root/r174_b_tail",
+      "sourcePartFile": "reviews/r174-review-b-tail.json",
+      "sourcePartEntry": 2
+    }
+  ]
+}

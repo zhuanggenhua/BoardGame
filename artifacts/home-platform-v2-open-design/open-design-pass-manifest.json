@@ -1,0 +1,58 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "lobby",
+  "evidenceCategory": "independent",
+  "title": "易桌游平台首页 v2 风格确认稿",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "用 Open Design 出核心首页风格稿，功能像游戏平台",
+      "status": "PASS",
+      "evidence": [
+        "01-全部游戏.png：1920x1080。顶栏发现/收藏库/上传，幻想国度精选封面，右侧继续大杀四方，下方十二格游戏库。"
+      ]
+    },
+    {
+      "requirement": "现代墨铜主题，不照抄 Switch/Steam/羊皮纸",
+      "status": "PASS",
+      "evidence": [
+        "01-全部游戏.png：墨黑底、铜焰按钮与选中描边，封面是主体。"
+      ]
+    },
+    {
+      "requirement": "当前首页信息不丢失，收藏和上传只保留入口",
+      "status": "PASS",
+      "evidence": [
+        "01-全部游戏.png：易桌游与副标题、操作指南、中文、通知、积分与用户、分类、实施中、热门火焰、进行中房间、销毁/重连、四件工具、版本 0.6.47。收藏库和上传在顶栏，未打开弹窗。"
+      ]
+    },
+    {
+      "requirement": "正式封面进入画面，缺封面诚实降级",
+      "status": "PASS",
+      "evidence": [
+        "01-全部游戏.png：王权骰铸、大杀四方、山屋惊魂、七大恨、法师战争、召唤师战争、幻想国度、卡迪亚、纸牌帮用正式封面；璀璨宝石、命运支配、井字棋为封面待接入文字底板。"
+      ]
+    },
+    {
+      "requirement": "分类筛选真实改变游戏库，形成浏览前中后",
+      "status": "PASS",
+      "evidence": [
+        "01-全部游戏.png：全部游戏选中，十二格铺满。",
+        "02-卡牌分类.png：卡牌选中，游戏库七张卡牌。",
+        "03-战棋分类.png：战棋选中，只剩七大恨、法师战争、召唤师战争。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v2-open-design\\exports\\01-全部游戏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v2-open-design\\exports\\02-卡牌分类.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v2-open-design\\exports\\03-战棋分类.png"
+  ]
+}

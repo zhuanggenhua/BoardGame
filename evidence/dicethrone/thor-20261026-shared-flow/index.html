@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>thor · 20261026 · shared · flow</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>thor · 20261026 · shared · flow</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-索尔正式角色板与卡牌.png","displayTitle":"01 · 索尔正式角色板与卡牌","description":"索尔正式角色板与卡牌","kind":"image"},{"relativePath":"02-弃牌飞掷选择成本.png","displayTitle":"02 · 弃牌飞掷选择成本","description":"弃牌飞掷选择成本","kind":"image"},{"relativePath":"03-手牌区弃置成本后飞掷结算.png","displayTitle":"03 · 手牌区弃置成本后飞掷结算","description":"手牌区弃置成本后飞掷结算","kind":"image"},{"relativePath":"04-奥丁之力二级升级完成.png","displayTitle":"04 · 奥丁之力二级升级完成","description":"奥丁之力二级升级完成","kind":"image"},{"relativePath":"05-奥丁效果骰等待选择重掷骰子.png","displayTitle":"05 · 奥丁效果骰等待选择重掷骰子","description":"奥丁效果骰等待选择重掷骰子","kind":"image"},{"relativePath":"06-使用原掷骰操作提交两颗所选骰子.png","displayTitle":"06 · 使用原掷骰操作提交两颗所选骰子","description":"使用原掷骰操作提交两颗所选骰子","kind":"image"},{"relativePath":"07-整组重掷一次完成.png","displayTitle":"07 · 整组重掷一次完成","description":"整组重掷一次完成","kind":"image"},{"relativePath":"08-效果骰收口后进入主攻击防御.png","displayTitle":"08 · 效果骰收口后进入主攻击防御","description":"效果骰收口后进入主攻击防御","kind":"image"},{"relativePath":"09-手牌放大完整阅读挥锤时刻.png","displayTitle":"09 · 手牌放大完整阅读挥锤时刻","description":"手牌放大完整阅读挥锤时刻","kind":"image"},{"relativePath":"10-改骰前自己的五颗骰子.png","displayTitle":"10 · 改骰前自己的五颗骰子","description":"改骰前自己的五颗骰子","kind":"image"},{"relativePath":"11-当之无愧复用骰盘原有加减改面交互.png","displayTitle":"11 · 当之无愧复用骰盘原有加减改面交互","description":"当之无愧复用骰盘原有加减改面交互","kind":"image"},{"relativePath":"12-骰盘预览到允许的四点后可确认.png","displayTitle":"12 · 骰盘预览到允许的四点后可确认","description":"骰盘预览到允许的四点后可确认","kind":"image"},{"relativePath":"13-改为四且其余骰子保持.png","displayTitle":"13 · 改为四且其余骰子保持","description":"改为四且其余骰子保持","kind":"image"},{"relativePath":"14-当之无愧取消前的四点预览.png","displayTitle":"14 · 当之无愧取消前的四点预览","description":"当之无愧取消前的四点预览","kind":"image"},{"relativePath":"15-取消改骰后骰面保持且卡牌资源退回.png","displayTitle":"15 · 取消改骰后骰面保持且卡牌资源退回","description":"取消改骰后骰面保持且卡牌资源退回","kind":"image"},{"relativePath":"16-连锁闪电触发前.png","displayTitle":"16 · 连锁闪电触发前","description":"连锁闪电触发前","kind":"image"},{"relativePath":"17-三颗效果骰等待确认.png","displayTitle":"17 · 三颗效果骰等待确认","description":"三颗效果骰等待确认","kind":"image"},{"relativePath":"18-选择两颗效果骰组合.png","displayTitle":"18 · 选择两颗效果骰组合","description":"选择两颗效果骰组合","kind":"image"},{"relativePath":"19-附属伤害自动命中唯一对手并保留主攻击.png","displayTitle":"19 · 附属伤害自动命中唯一对手并保留主攻击","description":"附属伤害自动命中唯一对手并保留主攻击","kind":"image"},{"relativePath":"20-破防正式图标与消费入口.png","displayTitle":"20 · 破防正式图标与消费入口","description":"破防正式图标与消费入口","kind":"image"},{"relativePath":"21-第一枚破防效果骰失败.png","displayTitle":"21 · 第一枚破防效果骰失败","description":"第一枚破防效果骰失败","kind":"image"},{"relativePath":"22-失败后仍可使用第二枚破防.png","displayTitle":"22 · 失败后仍可使用第二枚破防","description":"失败后仍可使用第二枚破防","kind":"image"},{"relativePath":"23-第二枚破防效果骰成功.png","displayTitle":"23 · 第二枚破防效果骰成功","description":"第二枚破防效果骰成功","kind":"image"},{"relativePath":"24-不可防御主攻击结算后收口.png","displayTitle":"24 · 不可防御主攻击结算后收口","description":"不可防御主攻击结算后收口","kind":"image"},{"relativePath":"25-索尔真实双人选角与实施中标记.png","displayTitle":"25 · 索尔真实双人选角与实施中标记","description":"索尔真实双人选角与实施中标记","kind":"image"},{"relativePath":"26-索尔在线开局角色板九槽与手牌.png","displayTitle":"26 · 索尔在线开局角色板九槽与手牌","description":"索尔在线开局角色板九槽与手牌","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

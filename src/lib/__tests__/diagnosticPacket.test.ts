@@ -54,7 +54,7 @@ describe('FeedbackDiagnosticPacket', () => {
     it('缺少原始关联和前后状态时明确降级为 partial 并列出缺失字段', () => {
         const packet = buildFeedbackDiagnosticPacket({
             state,
-            source: 'user',
+            source: 'user' as const,
             clientContext: { matchId: 'match-1', appCommitSha: 'abc123' },
         });
 
@@ -99,6 +99,38 @@ describe('FeedbackDiagnosticPacket', () => {
             stateRevision: 3,
             decisionEpoch: 9,
         });
+    });
+
+    it('在线权威私有现场尚未绑定前必须显式标记缺失与附件状态', () => {
+        const args = {
+            state,
+            before: state,
+            after: state,
+            source: 'user',
+            roomId: 'room-1',
+            requestId: 'request-1',
+            stateId: 12,
+            stateRevision: 3,
+            randomCursor: 17,
+            clientContext: { matchId: 'match-1' },
+            privateReplayRequired: true,
+            collectionErrors: ['private_replay_pending_attachment'],
+        };
+        const packet = buildFeedbackDiagnosticPacket(args);
+
+        expect(packet.collectionStatus).toBe('partial');
+        expect(packet.replayability).toBe('partial');
+        expect(packet.missingFields).toContain('privateReplay');
+        expect(packet.missingFields).toContain('privateReplay.trigger');
+        expect(packet.collectionErrors).toContain('private_replay_pending_attachment');
+        const serialized = JSON.parse(serializeFeedbackDiagnosticPacket(packet)!);
+        expect(serialized.missingFields).toContain('privateReplay');
+        expect(serialized.missingFields).toContain('privateReplay.trigger');
+        expect(serialized.collectionErrors).toContain('private_replay_pending_attachment');
+
+        const prepared = buildFeedbackDiagnosticPacket({ ...args, privateReplayTriggerCaptured: true });
+        expect(prepared.missingFields).toContain('privateReplay');
+        expect(prepared.missingFields).not.toContain('privateReplay.trigger');
     });
 
     it('没有独立 revision 字段时保留 decisionEpoch 并明确报告 stateRevision 缺失', () => {

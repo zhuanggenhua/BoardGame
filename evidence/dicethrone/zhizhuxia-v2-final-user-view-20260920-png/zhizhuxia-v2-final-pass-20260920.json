@@ -1,0 +1,89 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "真实入口、选角、牌桌、正式卡图和升级卡截图齐全",
+      "status": "PASS",
+      "evidence": [
+        "录入-01-蜘蛛侠选角-实施中状态.png",
+        "录入-02-蜘蛛侠牌桌-玩家板与手牌.png",
+        "录入-03-蜘蛛侠正式专属卡图槽位.png",
+        "录入-04-蜘蛛侠重拳二级升级后.png"
+      ]
+    },
+    {
+      "requirement": "真实拖拽打出蜘蛛发射器后，落网施加立即造成一次 2 点状态直接不可防御伤害",
+      "status": "PASS",
+      "evidence": [
+        "交互-03-蜘蛛发射器-施加落网前.png",
+        "交互-04-蜘蛛发射器-落网与2点状态伤害已结算.png"
+      ]
+    },
+    {
+      "requirement": "落网只在技能区普通攻击进入防御前消费",
+      "status": "PASS",
+      "evidence": [
+        "交互-01-落网-普通攻击前.png",
+        "交互-02-落网-普通攻击前被消费.png"
+      ]
+    },
+    {
+      "requirement": "手牌和 Token 直接伤害不消费落网",
+      "status": "PASS",
+      "evidence": [
+        "交互-03-手牌来源伤害-落网保留.png",
+        "交互-04-手牌来源伤害-不消费落网.png",
+        "交互-05-Token来源伤害-落网保留.png",
+        "交互-06-Token来源伤害-不消费落网.png"
+      ]
+    },
+    {
+      "requirement": "蜘蛛感应、飞荡脱身、隐形和额外防御投骰的真实交互截图齐全",
+      "status": "PASS",
+      "evidence": [
+        "交互-07-蜘蛛感应-投出蜘蛛前.png",
+        "交互-08-蜘蛛感应-伤害减半结算.png",
+        "交互-09-飞荡脱身-蛛网骰面.png",
+        "交互-10-飞荡脱身-蛛网视为成功面并减伤.png",
+        "交互-11-隐形-不可防御伤害响应窗口.png",
+        "交互-12-隐形-伤害完全失效.png",
+        "交互-13-隐形-防御投骰中可用.png",
+        "交互-14-隐形-增加一次防御投骰.png"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/录入-01-蜘蛛侠选角-实施中状态.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/录入-02-蜘蛛侠牌桌-玩家板与手牌.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/录入-03-蜘蛛侠正式专属卡图槽位.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/录入-04-蜘蛛侠重拳二级升级后.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-01-落网-普通攻击前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-02-落网-普通攻击前被消费.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-03-蜘蛛发射器-施加落网前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-04-蜘蛛发射器-落网与2点状态伤害已结算.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-03-手牌来源伤害-落网保留.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-04-手牌来源伤害-不消费落网.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-05-Token来源伤害-落网保留.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-06-Token来源伤害-不消费落网.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-07-蜘蛛感应-投出蜘蛛前.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-08-蜘蛛感应-伤害减半结算.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-09-飞荡脱身-蛛网骰面.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-10-飞荡脱身-蛛网视为成功面并减伤.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-11-隐形-不可防御伤害响应窗口.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-12-隐形-伤害完全失效.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-13-隐形-防御投骰中可用.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/dicethrone/zhizhuxia-v2-final-user-view-20260920-png/交互-14-隐形-增加一次防御投骰.png"
+  ],
+  "notes": [
+    "本轮新增的施加落网 E2E 来自真实手牌拖拽入口；断言对手生命 50 -> 48、落网为 1、状态伤害事件唯一且不可防御。",
+    "本目录媒体全部为当前工作树重跑生成的 PNG；放大层直接读取这些文件，不再沿用旧 JPG 截图。",
+    "角色继续保留 implementation_in_progress；本清单不代表用户已经批准移除实施中状态。"
+  ]
+}

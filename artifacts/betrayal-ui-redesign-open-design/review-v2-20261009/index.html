@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>山屋惊魂界面：原版基线、否定候选、第二版新候选</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>山屋惊魂界面：原版基线、否定候选、第二版新候选</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-原版基线-PC-主牌桌.jpg","displayTitle":"01 · 原版基线 · PC · 主牌桌","description":"原版电脑牌桌：五角角色板、四条属性轨、十字房间、右上回合、底部图标动作。","kind":"image"},{"relativePath":"02-原版基线-手机-主牌桌.jpg","displayTitle":"02 · 原版基线 · 手机 · 主牌桌","description":"原版手机同构牌桌，能力入口被收成省略，这是要修的可读缺口。","kind":"image"},{"relativePath":"03-原版基线-PC-能力与物品.jpg","displayTitle":"03 · 原版基线 · PC · 能力与物品","description":"原版电脑侧栏同时给出完整能力说明和急救包。","kind":"image"},{"relativePath":"04-原版基线-手机-能力入口.jpg","displayTitle":"04 · 原版基线 · 手机 · 能力入口","description":"原版手机未点击时只露出特性无省略，物品栏仍在左下。","kind":"image"},{"relativePath":"05-原版基线-手机-能力详情.jpg","displayTitle":"05 · 原版基线 · 手机 · 能力详情","description":"原版手机点开后用暗层给出完整能力正文和关闭键。","kind":"image"},{"relativePath":"06-原版基线-PC-剧本书.jpg","displayTitle":"06 · 原版基线 · PC · 剧本书","description":"原版电脑剧本书是旧纸双页，没有额外标题。","kind":"image"},{"relativePath":"07-原版基线-手机-剧本书.jpg","displayTitle":"07 · 原版基线 · 手机 · 剧本书","description":"原版手机剧本书双页可读，翻页和关闭保持小控件。","kind":"image"},{"relativePath":"08-原版基线-PC-剧本三按钮.jpg","displayTitle":"08 · 原版基线 · PC · 剧本三按钮","description":"原版电脑剧本档案底部阅读、确认、关闭同一排。","kind":"image"},{"relativePath":"09-原版基线-手机-剧本三按钮.jpg","displayTitle":"09 · 原版基线 · 手机 · 剧本三按钮","description":"原版手机剧本三按钮同排，按钮大小贴合文字。","kind":"image"},{"relativePath":"10-原版基线-手机-过场.jpg","displayTitle":"10 · 原版基线 · 手机 · 过场","description":"原版手机过场正文叠在牌桌上，继续与正文同级。","kind":"image"},{"relativePath":"11-否定候选-PC-主界面.png","displayTitle":"11 · 否定候选 · PC · 主界面","description":"否定候选把牌桌改成仪表盘，底栏变成五枚宽矩形按钮。","kind":"image"},{"relativePath":"12-否定候选-手机-主界面.png","displayTitle":"12 · 否定候选 · 手机 · 主界面","description":"否定候选手机用角色物品抽屉和队友更多，条纹墙纸抢过地图。","kind":"image"},{"relativePath":"13-否定候选-手机-能力详情.png","displayTitle":"13 · 否定候选 · 手机 · 能力详情","description":"否定候选能力详情是米色对话框，不像原版暗玻璃层。","kind":"image"},{"relativePath":"14-否定候选-手机-属性轨.png","displayTitle":"14 · 否定候选 · 手机 · 属性轨","description":"否定候选把四条属性轨收进米色表单，离开左侧常驻。","kind":"image"},{"relativePath":"20-新候选-PC-主态.png","displayTitle":"20 · 新候选 · PC · 主态","description":"新候选电脑收回原版牌桌：五角板、四轨对齐、十字房间、图标动作。","kind":"image"},{"relativePath":"21-新候选-手机-主态.png","displayTitle":"21 · 新候选 · 手机 · 主态","description":"新候选手机未点击就显示无特殊能力和按属性轨行动，持有区不再压住能力名。","kind":"image"},{"relativePath":"22-新候选-PC-能力详情.png","displayTitle":"22 · 新候选 · PC · 能力详情","description":"新候选电脑用暗玻璃层展示完整能力正文。","kind":"image"},{"relativePath":"23-新候选-手机-能力详情.png","displayTitle":"23 · 新候选 · 手机 · 能力详情","description":"新候选手机能力详情正文可读，关闭键可见，不被物品栏挡住。","kind":"image"},{"relativePath":"24-新候选-PC-物品阅读.png","displayTitle":"24 · 新候选 · PC · 物品阅读","description":"新候选电脑放大正式物品卡面。","kind":"image"},{"relativePath":"25-新候选-手机-物品阅读.png","displayTitle":"25 · 新候选 · 手机 · 物品阅读","description":"新候选手机正式卡面可滚动阅读。","kind":"image"},{"relativePath":"26-新候选-PC-剧本书.png","displayTitle":"26 · 新候选 · PC · 剧本书","description":"新候选电脑剧本书双页，没有额外标题。","kind":"image"},{"relativePath":"27-新候选-手机-剧本书.png","displayTitle":"27 · 新候选 · 手机 · 剧本书","description":"新候选手机书页正文可读，翻页关闭没有跟着继续一起变大。","kind":"image"},{"relativePath":"28-新候选-PC-过场.png","displayTitle":"28 · 新候选 · PC · 过场","description":"新候选电脑过场正文与继续同级字阶。","kind":"image"},{"relativePath":"29-新候选-手机-过场.png","displayTitle":"29 · 新候选 · 手机 · 过场","description":"新候选手机过场正文可读，继续不比正文大两倍。","kind":"image"},{"relativePath":"30-新候选-PC-剧本选择-REVISE.png","displayTitle":"30 · 新候选 · PC · 剧本选择 · REVISE","description":"新候选电脑剧本三按钮同排，正式剧本卡正面仍缺，本态维持修订。","kind":"image"},{"relativePath":"31-新候选-手机-剧本选择-REVISE.png","displayTitle":"31 · 新候选 · 手机 · 剧本选择 · REVISE","description":"新候选手机剧本三按钮同排，正式卡正面仍缺。","kind":"image"},{"relativePath":"32-新候选-PC-移动.png","displayTitle":"32 · 新候选 · PC · 移动","description":"新候选电脑移动目标叠在原版牌桌上，不能代替镜头居中验收。","kind":"image"},{"relativePath":"33-新候选-手机-移动.png","displayTitle":"33 · 新候选 · 手机 · 移动","description":"新候选手机移动选择叠在十字房间上。","kind":"image"},{"relativePath":"34-新候选-PC-骰盘.png","displayTitle":"34 · 新候选 · PC · 骰盘","description":"新候选电脑正式骰面叠在地图上并给出合计。","kind":"image"},{"relativePath":"35-新候选-手机-骰盘.png","displayTitle":"35 · 新候选 · 手机 · 骰盘","description":"新候选手机骰盘与合计可读。","kind":"image"},{"relativePath":"36-新候选-PC-终局.png","displayTitle":"36 · 新候选 · PC · 终局","description":"新候选电脑终局只列英雄胜方，重赛和返回大厅仍是禁用示意。","kind":"image"},{"relativePath":"37-新候选-手机-终局.png","displayTitle":"37 · 新候选 · 手机 · 终局","description":"新候选手机终局可见禁用的重赛与返回大厅。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

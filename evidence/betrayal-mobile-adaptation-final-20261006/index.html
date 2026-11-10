@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>betrayal · mobile · adaptation · final · 20261006</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>betrayal · mobile · adaptation · final · 20261006</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-pc-character-select.jpg","displayTitle":"01 · pc · character · select","description":"电脑端角色选择页文字和滚动框保持可读","kind":"image"},{"relativePath":"02-mobile-character-select.jpg","displayTitle":"02 · mobile · character · select","description":"移动端角色选择页文字和滚动框保持可读","kind":"image"},{"relativePath":"03-pc-scenario-actions.jpg","displayTitle":"03 · pc · scenario · actions","description":"电脑端剧本候选页三个按钮保持同排","kind":"image"},{"relativePath":"04-mobile-scenario-actions.jpg","displayTitle":"04 · mobile · scenario · actions","description":"移动端剧本候选页三个按钮保持同排","kind":"image"},{"relativePath":"05-pc-script-home.jpg","displayTitle":"05 · pc · script · home","description":"电脑端剧本书首页正文和关闭按钮可见","kind":"image"},{"relativePath":"06-pc-script-page.jpg","displayTitle":"06 · pc · script · page","description":"电脑端剧本书翻页状态正文保持可读","kind":"image"},{"relativePath":"07-pc-script-last.jpg","displayTitle":"07 · pc · script · last","description":"电脑端剧本书末页正文和按钮不互相遮挡","kind":"image"},{"relativePath":"08-mobile-script-home.jpg","displayTitle":"08 · mobile · script · home","description":"移动端剧本书首页正文和关闭按钮可见","kind":"image"},{"relativePath":"09-mobile-script-page.jpg","displayTitle":"09 · mobile · script · page","description":"移动端剧本书翻页状态正文保持可读","kind":"image"},{"relativePath":"10-mobile-script-last.jpg","displayTitle":"10 · mobile · script · last","description":"移动端剧本书末页正文和按钮不互相遮挡","kind":"image"},{"relativePath":"11-mobile-script-return.jpg","displayTitle":"11 · mobile · script · return","description":"移动端关闭剧本后返回选择页状态正确","kind":"image"},{"relativePath":"12-mobile-transition-continue.jpg","displayTitle":"12 · mobile · transition · continue","description":"移动端过程文案下方继续按钮保持可读可点","kind":"image"},{"relativePath":"13-mobile-main-board.jpg","displayTitle":"13 · mobile · main · board","description":"移动端主桌面回归后当前回合和悬浮球锚点稳定","kind":"image"},{"relativePath":"14-focus-before.jpg","displayTitle":"14 · focus · before","description":"缩放平移前玩家角色和地图状态清晰可见","kind":"image"},{"relativePath":"15-focus-after-zoom-pan.jpg","displayTitle":"15 · focus · after · zoom · pan","description":"缩放平移后地图状态保持稳定等待移动","kind":"image"},{"relativePath":"16-focus-after-move.jpg","displayTitle":"16 · focus · after · move","description":"移动完成后玩家角色回到可视地图中心附近","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1907 @@
+{
+  "original": "D:\\gongzuo\\webgame\\gameasset\\王权骰铸（全26中文角色）\\圣骑士预览备份\\20261013T133935Z\\generated\\ability-cards.png",
+  "originalSha256": "7c32cd79eaec4cf1e856dfd84c066ced6e049159fbbe0e80a90251943dd722cf",
+  "runtime": "D:\\gongzuo\\webgame\\BoardGame\\public\\assets\\i18n\\zh-CN\\dicethrone\\images\\paladin\\compressed\\ability-cards.webp",
+  "runtimeSha256": "df14a9fddd759c4fce3ab365fd7609fec75545a0ff512f81af5d6138de32a815",
+  "atlasConfig": "D:\\gongzuo\\webgame\\BoardGame\\src\\assets\\atlas-configs\\dicethrone\\ability-cards-paladin.atlas.json",
+  "atlasConfigSha256": "45f589c6e02041d06eced5d9d8f82ff3d371a902fd236faec5c1049bf67620d3",
+  "sourceByFrame": [
+    28,
+    29,
+    30,
+    31,
+    32,
+    27,
+    19,
+    26,
+    23,
+    25,
+    24,
+    33,
+    20,
+    21,
+    22,
+    18,
+    17,
+    16,
+    15,
+    14,
+    12,
+    11,
+    13,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1
+  ],
+  "frames": [
+    {
+      "frame": 0,
+      "sourceNumber": 28,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-00-source.png",
+      "sourceCropSha256": "66e7c404557cef7f2cb67a3276f711bd00fd4f485184c477291daea1f898862f",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-00-runtime.png",
+      "runtimeCropSha256": "e3f29897726ff0838ba19eb4e4ce19762f08171c7ea916b37d8516766bf4c297",
+      "expected": {
+        "id": "card-holy-defense-3",
+        "index": 0,
+        "name": "神圣防御 III",
+        "description": "升级神圣防御至 III 级。",
+        "cpCost": 4,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级神圣防御至 III 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "holy-defense",
+              "newAbilityDef": {
+                "id": "holy-defense",
+                "name": "abilities.holy-defense-3.name",
+                "type": "defensive",
+                "description": "abilities.holy-defense-3.description",
+                "trigger": {
+                  "type": "phase",
+                  "phaseId": "defensiveRoll",
+                  "diceCount": 4
+                },
+                "effects": [
+                  {
+                    "description": "abilities.holy-defense-3.effects.effect",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "paladin-holy-defense-3"
+                    },
+                    "timing": "withDamage"
+                  }
+                ]
+              },
+              "newAbilityLevel": 3
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 0
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 1,
+      "sourceNumber": 29,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-01-source.png",
+      "sourceCropSha256": "f3e4d018089f7f664ead139aa052b279b5d0b7c2b8aef8b4702811d420688863",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-01-runtime.png",
+      "runtimeCropSha256": "f96994ab0b876918fa6d6c831559d3b88424add433c09642a791376d83d1bb6f",
+      "expected": {
+        "id": "card-might",
+        "index": 1,
+        "name": "神力！",
+        "description": "获得 1 个暴击标记。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "1名玩家获得暴击",
+            "action": {
+              "type": "grantToken",
+              "target": "self",
+              "tokenId": "crit",
+              "value": 1
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 1
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 2,
+      "sourceNumber": 30,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-02-source.png",
+      "sourceCropSha256": "d2f3c03738ef32bb3f85e82a1aebec2a906a782e812e43b81f391bae9763691e",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-02-runtime.png",
+      "runtimeCropSha256": "41ea6e1c9595c44d0dc085dc1ffce8e441854c5f1f441cac4463d867ef224451",
+      "expected": {
+        "id": "card-consecrate",
+        "index": 2,
+        "name": "神圣祝圣！",
+        "description": "获得守护、神罚、暴击和精准各 1 个。",
+        "cpCost": 4,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-consecrate.description",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "paladin-consecrate"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 2
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 3,
+      "sourceNumber": 31,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-03-source.png",
+      "sourceCropSha256": "d460eea435fccf248af46355e8130ee9acb0f930f9b3b96e3af62677c95e9cdd",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-03-runtime.png",
+      "runtimeCropSha256": "eb88307976932a45e945ef1fe7232ac3cdfaf59a713e29b163858ca7f3313949",
+      "expected": {
+        "id": "card-divine-favor",
+        "index": 3,
+        "name": "神恩！",
+        "description": "投掷 1 骰：剑→抽 2 张牌；头盔→治疗 3；心→治疗 4；祈祷→获得 3 CP。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-divine-favor.description",
+            "action": {
+              "type": "rollDie",
+              "target": "self",
+              "diceCount": 1,
+              "conditionalEffects": [
+                {
+                  "face": "sword",
+                  "drawCard": 2,
+                  "effectKey": "bonusDie.effect.divineFavor.sword"
+                },
+                {
+                  "face": "helm",
+                  "heal": 3,
+                  "effectKey": "bonusDie.effect.divineFavor.helm"
+                },
+                {
+                  "face": "heart",
+                  "heal": 4,
+                  "effectKey": "bonusDie.effect.divineFavor.heart"
+                },
+                {
+                  "face": "pray",
+                  "cp": 3,
+                  "effectKey": "bonusDie.effect.divineFavor.pray"
+                }
+              ]
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 3
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 4,
+      "sourceNumber": 32,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-04-source.png",
+      "sourceCropSha256": "ddb31040bfa33d3865b0390ae3510a107a0692652297c02b507ac68e27488bf6",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-04-runtime.png",
+      "runtimeCropSha256": "688bb31fb3ae9cfa0fe48448f2c0bd8b83fd9a5a649f9416eb6d247b335d10d9",
+      "expected": {
+        "id": "card-absolution",
+        "index": 4,
+        "name": "赦免！",
+        "description": "投掷 1 骰进行防御：剑→对攻击者造成 1 点不可防御伤害；头盔→防止 1 点伤害；心→防止 2 点伤害；祈祷→获得 1 CP。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-absolution.description",
+            "action": {
+              "type": "rollDie",
+              "target": "self",
+              "diceCount": 1,
+              "conditionalEffects": [
+                {
+                  "face": "sword",
+                  "bonusDamage": 3,
+                  "effectKey": "bonusDie.effect.absolution.sword"
+                },
+                {
+                  "face": "helm",
+                  "grantDamageShield": {
+                    "value": 3
+                  },
+                  "effectKey": "bonusDie.effect.absolution.helm"
+                },
+                {
+                  "face": "heart",
+                  "grantDamageShield": {
+                    "value": 5
+                  },
+                  "effectKey": "bonusDie.effect.absolution.heart"
+                },
+                {
+                  "face": "pray",
+                  "grantDamageShield": {
+                    "value": 2
+                  },
+                  "cp": 2,
+                  "effectKey": "bonusDie.effect.absolution.pray"
+                }
+              ]
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 4
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 5,
+      "sourceNumber": 27,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-05-source.png",
+      "sourceCropSha256": "7477b910b6e7ef8d43d611ebf9a56834f23cf41b0439699ca5558ffe5055881d",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-05-runtime.png",
+      "runtimeCropSha256": "7cb958ac63dbde7f38d4a511fde63a3d8f9a81a138cea93ea68648558af201f0",
+      "expected": {
+        "id": "card-holy-defense-2",
+        "index": 5,
+        "name": "神圣防御 II",
+        "description": "升级神圣防御至 II 级。",
+        "cpCost": 3,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级神圣防御至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "holy-defense",
+              "newAbilityDef": {
+                "id": "holy-defense",
+                "name": "abilities.holy-defense-2.name",
+                "type": "defensive",
+                "description": "abilities.holy-defense-2.description",
+                "trigger": {
+                  "type": "phase",
+                  "phaseId": "defensiveRoll",
+                  "diceCount": 4
+                },
+                "effects": [
+                  {
+                    "description": "abilities.holy-defense-2.effects.effect",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "paladin-holy-defense-2"
+                    },
+                    "timing": "withDamage"
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 5
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 6,
+      "sourceNumber": 19,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-06-source.png",
+      "sourceCropSha256": "71bd038b8e92262f8943f4087fbdeb6c63efd92a434ded39456f35ee3a802c43",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-06-runtime.png",
+      "runtimeCropSha256": "a74e2229e35a16ee2b079539300045a736e6b3bbeb6f8093a0034ea1ca922ecf",
+      "expected": {
+        "id": "card-tithes-2",
+        "index": 6,
+        "name": "教会税 II",
+        "description": "升级教皇税：抽牌消耗降为 2 CP，且在进攻阶段激活含 🙏 的技能时获得 1 CP。",
+        "cpCost": 3,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级教会税至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "tithes",
+              "newAbilityDef": {
+                "id": "tithes",
+                "nameKey": "passive.tithes-2.name",
+                "actions": [
+                  {
+                    "type": "rerollDie",
+                    "cpCost": 1,
+                    "timing": "anytime",
+                    "descriptionKey": "passive.tithes-2.reroll"
+                  },
+                  {
+                    "type": "drawCard",
+                    "cpCost": 2,
+                    "timing": "anytime",
+                    "descriptionKey": "passive.tithes-2.draw"
+                  }
+                ],
+                "trigger": {
+                  "on": "abilityActivatedWithFace",
+                  "requiredFace": "pray",
+                  "grantCp": 1,
+                  "ownOffensiveOnly": true
+                }
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 6
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 7,
+      "sourceNumber": 26,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-07-source.png",
+      "sourceCropSha256": "8eb19f6b5f42eab266f67c5dc98a24c945eb75611d36b050da869f62811e7428",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-07-runtime.png",
+      "runtimeCropSha256": "4bfa859201612af008cbe679bab717fd1e664c4b9250e1763cdc40bfaa75226d",
+      "expected": {
+        "id": "card-holy-light-2",
+        "index": 7,
+        "name": "圣光术 II",
+        "description": "升级圣光术至 II 级。",
+        "cpCost": 2,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级圣光术至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "holy-light",
+              "newAbilityDef": {
+                "id": "holy-light",
+                "name": "abilities.holy-light-2.name",
+                "type": "offensive",
+                "description": "abilities.holy-light-2.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_grace_whisper_001",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "heart": 2
+                  }
+                },
+                "effects": [
+                  {
+                    "description": "abilities.holy-light-2.effects.healByHearts",
+                    "action": {
+                      "type": "custom",
+                      "target": "self",
+                      "customActionId": "paladin-holy-light-heal"
+                    }
+                  },
+                  {
+                    "description": "abilities.holy-light-2.effects.roll3",
+                    "action": {
+                      "type": "rollDie",
+                      "target": "self",
+                      "diceCount": 3,
+                      "conditionalEffects": [
+                        {
+                          "face": "sword",
+                          "grantToken": {
+                            "tokenId": "crit",
+                            "value": 1
+                          },
+                          "effectKey": "bonusDie.effect.holyLight2.sword"
+                        },
+                        {
+                          "face": "helm",
+                          "grantToken": {
+                            "tokenId": "protect",
+                            "value": 1
+                          },
+                          "effectKey": "bonusDie.effect.holyLight2.helm"
+                        },
+                        {
+                          "face": "heart",
+                          "drawCard": 1,
+                          "effectKey": "bonusDie.effect.holyLight2.heart"
+                        },
+                        {
+                          "face": "pray",
+                          "cp": 2,
+                          "effectKey": "bonusDie.effect.holyLight2.pray"
+                        }
+                      ]
+                    },
+                    "timing": "withDamage"
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 7
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 8,
+      "sourceNumber": 23,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-08-source.png",
+      "sourceCropSha256": "0ed7c3c61fb59578149cf727af849df35e4568c15012a14d36b84aecd61cd663",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-08-runtime.png",
+      "runtimeCropSha256": "eba4734306251ce742539ef95177dd3c33bd6dd5ba5172d40336648958772e96",
+      "expected": {
+        "id": "card-righteous-combat-3",
+        "index": 8,
+        "name": "正义战法 III",
+        "description": "升级正义战法至 III 级。",
+        "cpCost": 4,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级正义战法至 III 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "righteous-combat",
+              "newAbilityDef": {
+                "id": "righteous-combat",
+                "name": "abilities.righteous-combat-3.name",
+                "type": "offensive",
+                "description": "abilities.righteous-combat-3.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+                "variants": [
+                  {
+                    "id": "righteous-combat-3-tenacity",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "sword": 2,
+                        "helm": 1
+                      }
+                    },
+                    "tags": [
+                      "unblockable"
+                    ],
+                    "effects": [
+                      {
+                        "description": "abilities.righteous-combat-3.effects.heal2",
+                        "action": {
+                          "type": "heal",
+                          "target": "self",
+                          "value": 2
+                        }
+                      },
+                      {
+                        "description": "abilities.righteous-combat-3.effects.damage2Unblockable",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 2,
+                          "tags": [
+                            "unblockable"
+                          ]
+                        }
+                      }
+                    ],
+                    "priority": 0
+                  },
+                  {
+                    "id": "righteous-combat-3-main",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "sword": 3,
+                        "helm": 2
+                      }
+                    },
+                    "effects": [
+                      {
+                        "description": "abilities.righteous-combat-3.effects.damage6",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 6
+                        }
+                      },
+                      {
+                        "description": "abilities.righteous-combat-3.effects.roll3",
+                        "action": {
+                          "type": "rollDie",
+                          "target": "self",
+                          "diceCount": 3,
+                          "resolutionMode": "attackBonus",
+                          "conditionalEffects": [
+                            {
+                              "face": "helm",
+                              "bonusDamage": 1
+                            },
+                            {
+                              "face": "sword",
+                              "bonusDamage": 2
+                            },
+                            {
+                              "face": "heart",
+                              "heal": 2
+                            },
+                            {
+                              "face": "pray",
+                              "cp": 1
+                            }
+                          ]
+                        },
+                        "timing": "preDefense"
+                      }
+                    ],
+                    "priority": 1
+                  }
+                ]
+              },
+              "newAbilityLevel": 3
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 8
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 9,
+      "sourceNumber": 25,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-09-source.png",
+      "sourceCropSha256": "113e0a5b7bc75d712a213cd104a9f11c8c77a3708ca7c7a726d00873f9c6db70",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-09-runtime.png",
+      "runtimeCropSha256": "d63728c7e442d51246430eb773a4a2682458a321bd0c5f34c9a0034c8685c63a",
+      "expected": {
+        "id": "card-blessing-of-might-2",
+        "index": 9,
+        "name": "神力信徒 II",
+        "description": "升级神力信徒至 II 级。",
+        "cpCost": 2,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级神力信徒至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "blessing-of-might",
+              "newAbilityDef": {
+                "id": "blessing-of-might",
+                "name": "abilities.blessing-of-might-2.name",
+                "type": "offensive",
+                "description": "abilities.blessing-of-might-2.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+                "variants": [
+                  {
+                    "id": "blessing-of-might-2-stance",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "sword": 2,
+                        "pray": 1
+                      }
+                    },
+                    "tags": [
+                      "unblockable"
+                    ],
+                    "effects": [
+                      {
+                        "description": "abilities.blessing-of-might-2.effects.damage2Unblockable",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 2,
+                          "tags": [
+                            "unblockable"
+                          ]
+                        }
+                      },
+                      {
+                        "description": "abilities.blessing-of-might-2.effects.choice",
+                        "action": {
+                          "type": "choice",
+                          "target": "self",
+                          "choiceTitleKey": "choices.critOrAccuracy",
+                          "choiceOptions": [
+                            {
+                              "tokenId": "crit",
+                              "value": 1
+                            },
+                            {
+                              "tokenId": "accuracy",
+                              "value": 1
+                            }
+                          ]
+                        },
+                        "timing": "preDefense"
+                      }
+                    ],
+                    "priority": 0
+                  },
+                  {
+                    "id": "blessing-of-might-2-main",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "sword": 3,
+                        "pray": 1
+                      }
+                    },
+                    "tags": [
+                      "unblockable"
+                    ],
+                    "effects": [
+                      {
+                        "description": "abilities.blessing-of-might-2.effects.damage4Unblockable",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 4,
+                          "tags": [
+                            "unblockable"
+                          ]
+                        }
+                      },
+                      {
+                        "description": "abilities.blessing-of-might-2.effects.gainCrit",
+                        "action": {
+                          "type": "grantToken",
+                          "target": "self",
+                          "tokenId": "crit",
+                          "value": 1
+                        }
+                      },
+                      {
+                        "description": "abilities.blessing-of-might-2.effects.gainAccuracy",
+                        "action": {
+                          "type": "grantToken",
+                          "target": "self",
+                          "tokenId": "accuracy",
+                          "value": 1
+                        }
+                      }
+                    ],
+                    "priority": 1
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 9
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 10,
+      "sourceNumber": 24,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-10-source.png",
+      "sourceCropSha256": "1f6041f07bf69620cf40a441fb406c07b58c2dd129a50e7f8f9032e90bed9def",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-10-runtime.png",
+      "runtimeCropSha256": "0613cdd72bf35a62de5b34b3c2ccfff305b070fd644ab8e91cb8be9a0b811226",
+      "expected": {
+        "id": "card-righteous-combat-2",
+        "index": 10,
+        "name": "正义战法 II",
+        "description": "升级正义战法至 II 级。",
+        "cpCost": 2,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级正义战法至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "righteous-combat",
+              "newAbilityDef": {
+                "id": "righteous-combat",
+                "name": "abilities.righteous-combat-2.name",
+                "type": "offensive",
+                "description": "abilities.righteous-combat-2.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+                "trigger": {
+                  "type": "diceSet",
+                  "faces": {
+                    "sword": 3,
+                    "helm": 2
+                  }
+                },
+                "effects": [
+                  {
+                    "description": "abilities.righteous-combat-2.effects.damage5",
+                    "action": {
+                      "type": "damage",
+                      "target": "opponent",
+                      "value": 5
+                    }
+                  },
+                  {
+                    "description": "abilities.righteous-combat-2.effects.roll3",
+                    "action": {
+                      "type": "rollDie",
+                      "target": "self",
+                      "diceCount": 3,
+                      "resolutionMode": "attackBonus",
+                      "conditionalEffects": [
+                        {
+                          "face": "helm",
+                          "bonusDamage": 1
+                        },
+                        {
+                          "face": "sword",
+                          "bonusDamage": 2
+                        },
+                        {
+                          "face": "heart",
+                          "heal": 2
+                        },
+                        {
+                          "face": "pray",
+                          "cp": 1
+                        }
+                      ]
+                    },
+                    "timing": "preDefense"
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 10
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 11,
+      "sourceNumber": 33,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-11-source.png",
+      "sourceCropSha256": "1669fc4e7bfd5f06cf45cb43e456781e7d13e6d0355120900e318ba1b4991a95",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-11-runtime.png",
+      "runtimeCropSha256": "dd824712b9a6b27268246829d39df153b37c2d9c839d20f95d81e241055910a3",
+      "expected": {
+        "id": "card-gods-grace",
+        "index": 11,
+        "name": "神佑！",
+        "description": "投掷 1 骰：若为祈祷，则获得 4 CP；否则抽 1 张牌。",
+        "cpCost": 0,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-gods-grace.description",
+            "action": {
+              "type": "rollDie",
+              "target": "self",
+              "diceCount": 1,
+              "conditionalEffects": [
+                {
+                  "face": "pray",
+                  "cp": 4,
+                  "effectKey": "bonusDie.effect.godsGrace.pray"
+                }
+              ],
+              "defaultEffect": {
+                "drawCard": 1,
+                "effectKey": "bonusDie.effect.godsGrace.other"
+              }
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 11
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 12,
+      "sourceNumber": 20,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-12-source.png",
+      "sourceCropSha256": "8dac82375003bb77a77273ec474feaeb02188aa043cc39142f2a3f2277ea2609",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-12-runtime.png",
+      "runtimeCropSha256": "e198017df04f0d8d6523f90d9885af59389df50e1443f1efcb9d7042e48dcbe7",
+      "expected": {
+        "id": "card-vengeance-2",
+        "index": 12,
+        "name": "反击 II",
+        "description": "升级反击至 II 级。",
+        "cpCost": 1,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级反击至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "vengeance",
+              "newAbilityDef": {
+                "id": "vengeance",
+                "name": "abilities.vengeance-2.name",
+                "type": "offensive",
+                "description": "abilities.vengeance-2.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+                "variants": [
+                  {
+                    "id": "vengeance-2-mix",
+                    "trigger": {
+                      "type": "allSymbolsPresent",
+                      "symbols": [
+                        "sword",
+                        "helm",
+                        "heart",
+                        "pray"
+                      ]
+                    },
+                    "tags": [
+                      "unblockable"
+                    ],
+                    "effects": [
+                      {
+                        "description": "abilities.vengeance-2.effects.gainRetribution",
+                        "action": {
+                          "type": "grantToken",
+                          "target": "self",
+                          "tokenId": "retribution",
+                          "value": 1
+                        }
+                      },
+                      {
+                        "description": "abilities.vengeance-2.effects.heal1",
+                        "action": {
+                          "type": "heal",
+                          "target": "self",
+                          "value": 1
+                        }
+                      },
+                      {
+                        "description": "abilities.vengeance-2.effects.damage3Unblockable",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 3,
+                          "tags": [
+                            "unblockable"
+                          ]
+                        }
+                      }
+                    ],
+                    "priority": 0
+                  },
+                  {
+                    "id": "vengeance-2-main",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "helm": 3,
+                        "pray": 1
+                      }
+                    },
+                    "effects": [
+                      {
+                        "description": "abilities.vengeance-2.effects.gainRetributionToAny",
+                        "action": {
+                          "type": "custom",
+                          "target": "self",
+                          "customActionId": "paladin-vengeance-select-player"
+                        },
+                        "timing": "preDefense"
+                      },
+                      {
+                        "description": "abilities.vengeance-2.effects.gain4CP",
+                        "action": {
+                          "type": "custom",
+                          "target": "self",
+                          "customActionId": "gain-cp",
+                          "params": {
+                            "amount": 4
+                          }
+                        },
+                        "timing": "postDamage"
+                      }
+                    ],
+                    "priority": 1
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 12
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 13,
+      "sourceNumber": 21,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-13-source.png",
+      "sourceCropSha256": "75c374f22379a0fcb66b36189fdfde0e4a6b75708392be39dbe26fe6937543b7",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-13-runtime.png",
+      "runtimeCropSha256": "59c603d2c8aaa1d7f202ef4f7572f1f645281932c8d05ba58bd67ae1b23d2cb4",
+      "expected": {
+        "id": "card-holy-strike-2",
+        "index": 13,
+        "name": "神圣攻击 II",
+        "description": "升级神圣攻击至 II 级。",
+        "cpCost": 2,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级神圣攻击至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "holy-strike",
+              "newAbilityDef": {
+                "id": "holy-strike",
+                "name": "abilities.holy-strike-2.name",
+                "type": "offensive",
+                "description": "abilities.holy-strike-2.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+                "variants": [
+                  {
+                    "id": "holy-strike-2-small",
+                    "trigger": {
+                      "type": "smallStraight"
+                    },
+                    "effects": [
+                      {
+                        "description": "abilities.holy-strike-2.effects.heal1",
+                        "action": {
+                          "type": "heal",
+                          "target": "self",
+                          "value": 1
+                        }
+                      },
+                      {
+                        "description": "abilities.holy-strike-2.effects.damage7",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 7
+                        }
+                      }
+                    ],
+                    "priority": 0
+                  },
+                  {
+                    "id": "holy-strike-2-large",
+                    "trigger": {
+                      "type": "largeStraight"
+                    },
+                    "effects": [
+                      {
+                        "description": "abilities.holy-strike-2.effects.heal2",
+                        "action": {
+                          "type": "heal",
+                          "target": "self",
+                          "value": 2
+                        }
+                      },
+                      {
+                        "description": "abilities.holy-strike-2.effects.damage9",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 9
+                        }
+                      }
+                    ],
+                    "priority": 1
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 13
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 14,
+      "sourceNumber": 22,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-14-source.png",
+      "sourceCropSha256": "41344a21d9cc355d9d8fd9501741c7b280418b0809b94bbfe7049f691eff47df",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-14-runtime.png",
+      "runtimeCropSha256": "c9707b83db6af0d7c6b342a4823c865055f64c59f37029378ff6252c7adaccdf",
+      "expected": {
+        "id": "card-righteous-prayer-2",
+        "index": 14,
+        "name": "正义祷告 II",
+        "description": "升级正义祷告至 II 级。",
+        "cpCost": 2,
+        "type": "upgrade",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "升级正义祷告至 II 级",
+            "action": {
+              "type": "replaceAbility",
+              "target": "self",
+              "targetAbilityId": "righteous-prayer",
+              "newAbilityDef": {
+                "id": "righteous-prayer",
+                "name": "abilities.righteous-prayer-2.name",
+                "type": "offensive",
+                "description": "abilities.righteous-prayer-2.description",
+                "sfxKey": "magic.general.modern_magic_sound_fx_pack_vol.divine_magic.divine_magic_hallowed_beam_001",
+                "variants": [
+                  {
+                    "id": "righteous-prayer-2-prosperity",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "pray": 3
+                      }
+                    },
+                    "effects": [
+                      {
+                        "description": "abilities.righteous-prayer-2.effects.gain4CP",
+                        "action": {
+                          "type": "custom",
+                          "target": "self",
+                          "customActionId": "gain-cp",
+                          "params": {
+                            "amount": 4
+                          }
+                        }
+                      }
+                    ],
+                    "priority": 0
+                  },
+                  {
+                    "id": "righteous-prayer-2-main",
+                    "trigger": {
+                      "type": "diceSet",
+                      "faces": {
+                        "pray": 4
+                      }
+                    },
+                    "tags": [
+                      "unblockable"
+                    ],
+                    "effects": [
+                      {
+                        "description": "abilities.righteous-prayer-2.effects.damage8Unblockable",
+                        "action": {
+                          "type": "damage",
+                          "target": "opponent",
+                          "value": 8,
+                          "tags": [
+                            "unblockable"
+                          ]
+                        }
+                      },
+                      {
+                        "description": "abilities.righteous-prayer-2.effects.gainCrit",
+                        "action": {
+                          "type": "grantToken",
+                          "target": "self",
+                          "tokenId": "crit",
+                          "value": 1
+                        },
+                        "timing": "postDamage"
+                      },
+                      {
+                        "description": "abilities.righteous-prayer-2.effects.gain2CP",
+                        "action": {
+                          "type": "custom",
+                          "target": "self",
+                          "customActionId": "gain-cp",
+                          "params": {
+                            "amount": 2
+                          }
+                        },
+                        "timing": "postDamage"
+                      }
+                    ],
+                    "priority": 1
+                  }
+                ]
+              },
+              "newAbilityLevel": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 14
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 15,
+      "sourceNumber": 18,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-15-source.png",
+      "sourceCropSha256": "3df13bf1c81362220a7215ff76aaebc6e128a0dd65f0a457e97c082686f51f23",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-15-runtime.png",
+      "runtimeCropSha256": "c47842bde01dc351561b73a08123f282979250b35d88ffe6243666c26cb98f7d",
+      "expected": {
+        "id": "card-play-six",
+        "index": 15,
+        "name": "来个六！",
+        "description": "将你 1 颗骰子的数值改至 6。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-play-six.effects.modifyDieTo6",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "modify-die-to-6"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 15
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 16,
+      "sourceNumber": 17,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-16-source.png",
+      "sourceCropSha256": "2fe9a257461ea31a6ed9f4e450a2ab904e462eadb3af98375c033736b02e8c2a",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-16-runtime.png",
+      "runtimeCropSha256": "cba7093b3712f65781afd14a76a2d56ad1b63ab4dd1fdd98e14d299f12971329",
+      "expected": {
+        "id": "card-just-this",
+        "index": 16,
+        "name": "就这？",
+        "description": "1 名玩家可以在其防御投掷阶段，对至多 5 颗骰子进行 1 次额外的投掷尝试。",
+        "cpCost": 0,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-just-this.effects.rerollUpTo5Dice",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "reroll-die-5"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 16
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 17,
+      "sourceNumber": 16,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-17-source.png",
+      "sourceCropSha256": "eae6def517e0b23a6c482dc9184d1b0b2964bde640eff13dc2fd9a9c6d4b9f3f",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-17-runtime.png",
+      "runtimeCropSha256": "aba49834e96036133194f6bffe522ec54db9f9ea9ed438a04afa8f15e5e846c4",
+      "expected": {
+        "id": "card-give-hand",
+        "index": 17,
+        "name": "抬一手！",
+        "description": "选择对手的 1 颗骰子，强制其重掷该骰子。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-give-hand.effects.forceOpponentReroll1Die",
+            "action": {
+              "type": "custom",
+              "target": "opponent",
+              "customActionId": "reroll-opponent-die-1"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 17
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 18,
+      "sourceNumber": 15,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-18-source.png",
+      "sourceCropSha256": "6d8cd47fc96cdbff9d35b200ba618c6946187034414205eb2e71fd9b0e8cf472",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-18-runtime.png",
+      "runtimeCropSha256": "1fce79d2107f30700d60a4eb643b3af9ee6d90850e331cbd0fe974652f87efbf",
+      "expected": {
+        "id": "card-i-can-again",
+        "index": 18,
+        "name": "我又行了！",
+        "description": "1 名玩家可以在其进攻投掷阶段，对至多 5 颗骰子进行 1 次额外的投掷尝试。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-i-can-again.effects.rerollUpTo5Dice",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "reroll-die-5"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 18
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 19,
+      "sourceNumber": 14,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-19-source.png",
+      "sourceCropSha256": "41b5a8fb787c7e8aff274078f83016bd5b9423a4e01fa400d1b1625567c73d96",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-19-runtime.png",
+      "runtimeCropSha256": "1d9f6c9b33e0b29a36c16a1bde244d6d9219235ecb4c1a1f4ddf36bbd0b558cc",
+      "expected": {
+        "id": "card-me-too",
+        "index": 19,
+        "name": "俺也一样！",
+        "description": "将你 1 颗骰子的数值变为和另一颗骰子的数值一样（同一阶段使用且目的相同）。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-me-too.effects.copyOneDieValue",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "modify-die-copy"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 19
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 20,
+      "sourceNumber": 12,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-20-source.png",
+      "sourceCropSha256": "7c7dad5a4a7382d2779d21bdf933574d9cf6b64635b3e3fa4e85f3ddae5abf1d",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-20-runtime.png",
+      "runtimeCropSha256": "daefa250f9824e4f9b4c15fa1d2779a615e968aeb6698d15faa7fa853a821ce3",
+      "expected": {
+        "id": "card-surprise",
+        "index": 20,
+        "name": "惊不惊喜？！",
+        "description": "改变任意 1 颗骰子的数值。",
+        "cpCost": 2,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-surprise.effects.modifyAny1Die",
+            "action": {
+              "type": "custom",
+              "target": "select",
+              "customActionId": "modify-die-any-1"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 20
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 21,
+      "sourceNumber": 11,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-21-source.png",
+      "sourceCropSha256": "1378e9adc07d34b915944694e698bf1ff30ca5d4b87908964d60867aebfc02a9",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-21-runtime.png",
+      "runtimeCropSha256": "f9ece9313c4ff147a29b6768235d7179fa88af5f621650e0e93013b0886531ce",
+      "expected": {
+        "id": "card-worthy-of-me",
+        "index": 21,
+        "name": "不愧是我！",
+        "description": "你或 1 名队友可以重掷至多 2 颗骰子（可以是同一颗骰子重掷 2 次，或两颗骰子各重掷 1 次）。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-worthy-of-me.effects.rerollUpTo2Dice",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "reroll-die-2"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 21
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 22,
+      "sourceNumber": 13,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-22-source.png",
+      "sourceCropSha256": "5ea1e50e68a30d9c4c6d72037eaf3342b25f413ea8219870968d66553a0d8803",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-22-runtime.png",
+      "runtimeCropSha256": "248f3b5c6969a253f1a55fca3223686aa3e9077071eabb7e27c7cd63fcdab3c1",
+      "expected": {
+        "id": "card-unexpected",
+        "index": 22,
+        "name": "意不意外？！",
+        "description": "改变任意 2 颗骰子的数值。",
+        "cpCost": 3,
+        "type": "action",
+        "timing": "roll",
+        "effects": [
+          {
+            "description": "cards.card-unexpected.effects.modifyAny2Dice",
+            "action": {
+              "type": "custom",
+              "target": "select",
+              "customActionId": "modify-die-any-2"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 22
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 23,
+      "sourceNumber": 10,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-23-source.png",
+      "sourceCropSha256": "735dd21bd1b722aa1407899104fc5b0ddbc84ed9c8b14e97bf46c201f5930f10",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-23-runtime.png",
+      "runtimeCropSha256": "930411c6166ec48536b15c0647042b3f610ff24c3e3a88c113e4a83952baab72",
+      "expected": {
+        "id": "card-next-time",
+        "index": 23,
+        "name": "这次不算！",
+        "description": "一名玩家防止即将受到的 6 点伤害。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-next-time.effects.prevent6Damage",
+            "action": {
+              "type": "grantDamageShield",
+              "target": "self",
+              "value": 6
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 23
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 24,
+      "sourceNumber": 9,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-24-source.png",
+      "sourceCropSha256": "f2b9f14dacc6b19b47aac4f5a207d67bfbf09a7f822c3ddeabf634d624941fcd",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-24-runtime.png",
+      "runtimeCropSha256": "93085ba2195842188affbe3cae78779f74a98a9e71b1583a4690bf5105e54f4f",
+      "expected": {
+        "id": "card-boss-generous",
+        "index": 24,
+        "name": "老板大气！",
+        "description": "获得 2 CP。",
+        "cpCost": 0,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-boss-generous.effects.gain2CP",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "grant-cp-2"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 24
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 25,
+      "sourceNumber": 8,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-25-source.png",
+      "sourceCropSha256": "486b40a16eca0f761c6fbf953e30e36313a2765774054a8689970d2d40280a8f",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-25-runtime.png",
+      "runtimeCropSha256": "0f21d29c966ece0cf13ea31389c3afc6a9a54a017d4cbcd4cfec3a13ba60e584",
+      "expected": {
+        "id": "card-flick",
+        "index": 25,
+        "name": "弹一手！",
+        "description": "增加或减少任意 1 颗骰子的数值 1 点（数值 1 无法再减少，数值 6 无法再增加）。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-flick.effects.adjust1DieBy1",
+            "action": {
+              "type": "custom",
+              "target": "select",
+              "customActionId": "modify-die-adjust-1"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 25
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 26,
+      "sourceNumber": 7,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-26-source.png",
+      "sourceCropSha256": "be9bb12c82da74cb5a23b0e14727d6802afba0e765ba82c59f0abbbb5d1ea4e4",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-26-runtime.png",
+      "runtimeCropSha256": "69ee543ab90eecd11411895637f8d1ecbbd448bdce83dd8a83cb1224da8ddadd",
+      "expected": {
+        "id": "card-bye-bye",
+        "index": 26,
+        "name": "拜拜了您内！",
+        "description": "从 1 名玩家身上移除 1 个状态效果。",
+        "cpCost": 2,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-bye-bye.effects.remove1Status",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "remove-status-1"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 26
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 27,
+      "sourceNumber": 6,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-27-source.png",
+      "sourceCropSha256": "4c6477260d6ab00c9541c90f37721578187da5d69399d0a0788858660a19ac10",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-27-runtime.png",
+      "runtimeCropSha256": "66f52308ec1c04d29e3915e5eb5254d69a1d12c8de4ba2723207e8ea40d98ef4",
+      "expected": {
+        "id": "card-double",
+        "index": 27,
+        "name": "加倍！",
+        "description": "抽 2 张牌。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-double.effects.draw2Cards",
+            "action": {
+              "type": "drawCard",
+              "target": "self",
+              "drawCount": 2
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 27
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 28,
+      "sourceNumber": 5,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-28-source.png",
+      "sourceCropSha256": "81ca2aa54608cf9c7cac8a4863024f09bdcde4d55e9133d33b898cfebb4afe8d",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-28-runtime.png",
+      "runtimeCropSha256": "c6a766c1209ca9599bf46fbb83f712151462fbd7ab7c60bbf20ab5620e350336",
+      "expected": {
+        "id": "card-super-double",
+        "index": 28,
+        "name": "超级加倍！",
+        "description": "抽 3 张牌。",
+        "cpCost": 2,
+        "type": "action",
+        "timing": "instant",
+        "effects": [
+          {
+            "description": "cards.card-super-double.effects.draw3Cards",
+            "action": {
+              "type": "drawCard",
+              "target": "self",
+              "drawCount": 3
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 28
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 29,
+      "sourceNumber": 4,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-29-source.png",
+      "sourceCropSha256": "fd879a03dcc9d6a51ed9c8d695056fc34e20c00b55e2b1a3f1b07b334238b2b9",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-29-runtime.png",
+      "runtimeCropSha256": "911e217bae77b640ddb39c05b92fbf5bb5326afa420d088f50b9d57571dc50c1",
+      "expected": {
+        "id": "card-get-away",
+        "index": 29,
+        "name": "起开！",
+        "description": "从 1 名玩家身上移除 1 个状态效果。",
+        "cpCost": 1,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-get-away.effects.remove1StatusFromAPlayer",
+            "action": {
+              "type": "custom",
+              "target": "select",
+              "customActionId": "remove-status-1"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 29
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 30,
+      "sourceNumber": 3,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-30-source.png",
+      "sourceCropSha256": "9d4c19cfbf24eb5de8cc2a361eefa54ed0376a2f13ece0a1a92af13a5b37ae60",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-30-runtime.png",
+      "runtimeCropSha256": "796f876c11796745547729ee0c520dfc327abf8cfea421c6f720aab97d4572a8",
+      "expected": {
+        "id": "card-one-throw-fortune",
+        "index": 30,
+        "name": "一掷千金！",
+        "description": "投掷 1 骰：获得等同于投掷数值 1/2 的 CP（向上取整）。",
+        "cpCost": 0,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-one-throw-fortune.effects.roll1DieGainCP",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "one-throw-fortune-cp"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 30
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 31,
+      "sourceNumber": 2,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-31-source.png",
+      "sourceCropSha256": "f9d1d775a34e1c9ce1a43b9a2460baf83fd83120a98b9becbe9937be71e95dd5",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-31-runtime.png",
+      "runtimeCropSha256": "6e0da6a302734861314f74224329729ee3afee3037d83e28ff0f7b0cf236dd4b",
+      "expected": {
+        "id": "card-what-status",
+        "index": 31,
+        "name": "状什么态？",
+        "description": "移除 1 名玩家的所有状态效果。",
+        "cpCost": 2,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-what-status.effects.removeAllStatusesFrom1Player",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "remove-all-status"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 31
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    },
+    {
+      "frame": 32,
+      "sourceNumber": 1,
+      "sourceCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-32-source.png",
+      "sourceCropSha256": "d83d296a202303a11ba53fc05da8ce6a524d9a0238bf9a68fdadec6904d68493",
+      "runtimeCrop": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\crops\\frame-32-runtime.png",
+      "runtimeCropSha256": "efdc4fe0e1e0b75154efec851bfcc3d16b9c4a2ce7dca8216afa6424ba8af961",
+      "expected": {
+        "id": "card-transfer-status",
+        "index": 32,
+        "name": "乾坤大挪移！",
+        "description": "将 1 名玩家身上的 1 个状态效果转移至另一名玩家。",
+        "cpCost": 2,
+        "type": "action",
+        "timing": "main",
+        "effects": [
+          {
+            "description": "cards.card-transfer-status.effects.transferStatuses",
+            "action": {
+              "type": "custom",
+              "target": "self",
+              "customActionId": "transfer-status"
+            },
+            "timing": "immediate"
+          }
+        ],
+        "previewRef": {
+          "type": "atlas",
+          "atlasId": "dicethrone:paladin-cards",
+          "index": 32
+        }
+      },
+      "status": "pending",
+      "disposition": "reference",
+      "usage": "卡图语义与当前previewRef/效果逐卡比对"
+    }
+  ]
+}

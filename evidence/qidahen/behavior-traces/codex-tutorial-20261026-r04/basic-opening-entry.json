@@ -1,0 +1,222 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "chainId": "basic-opening-entry",
+  "sourceRun": "codex-tutorial-20261026-r04",
+  "sourceRevision": "sha256:035cd4a29463f3f1fab267b74b1598673d81cbec161361bd387164d37d82e93f",
+  "status": "PASS",
+  "outcome": "真实教程操作通过，记录 3 个行为检查点与 2 个独特界面状态。",
+  "steps": [
+    {
+      "id": "basic-opening-entry-capture-001",
+      "action": "打开教程入口并确认棋盘与当前教程状态：00-唯一入门入口-直接进入胜利条件",
+      "before": {
+        "visible": {
+          "boardVisible": false,
+          "path": "blank",
+          "tutorialStepId": null,
+          "tutorialText": "",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": false,
+          "tutorialStepId": null,
+          "turnPhase": null,
+          "currentPlayer": null,
+          "selectedActionId": null,
+          "actionWheelPosition": null,
+          "factionActionUsed": null,
+          "mingHandCount": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-entry-capture-001-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-entry-capture-001-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-entry-capture-001-visible-tutorial-step-matches-authoritative-step",
+          "actual": "welcome",
+          "expected": "welcome"
+        }
+      ],
+      "inputEvents": []
+    },
+    {
+      "id": "basic-opening-entry-input-002",
+      "action": "点击：tutorial-next-button",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "welcome",
+          "tutorialText": "七大恨有三种胜利条件：新年控制 16 个区域、攻下对手首都、或先取得 3 点威望。下一步",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "welcome",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "执行一次手牌行动及一次轮盘行动，执行顺序由玩家自行决定。 所有人都共享行动标记的移动，并依标记所在位置执行轮盘上的行动。轮到玩家时可选择移动行动标记：免费向前走 1 格、指定一个对手抽 2 张牌并向前走 2 格、所有对手抽 2 张牌并向前走 3 格。 先做手牌行动，点右侧“征召军队”；先做轮盘行动，点一种走法。落点行动见轮盘提示。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-entry-input-002-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-entry-input-002-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-entry-input-002-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-opening-action",
+          "expected": "choose-opening-action"
+        },
+        {
+          "name": "basic-opening-entry-input-002-real-input-target-recorded",
+          "actual": true,
+          "expected": true
+        }
+      ],
+      "inputEvents": [
+        {
+          "type": "点击",
+          "target": "tutorial-next-button"
+        }
+      ]
+    },
+    {
+      "id": "basic-opening-entry-capture-003",
+      "action": "记录实际输入后的稳定界面：00a-继续后-选择首个行动",
+      "before": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "执行一次手牌行动及一次轮盘行动，执行顺序由玩家自行决定。 所有人都共享行动标记的移动，并依标记所在位置执行轮盘上的行动。轮到玩家时可选择移动行动标记：免费向前走 1 格、指定一个对手抽 2 张牌并向前走 2 格、所有对手抽 2 张牌并向前走 3 格。 先做手牌行动，点右侧“征召军队”；先做轮盘行动，点一种走法。落点行动见轮盘提示。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "after": {
+        "visible": {
+          "boardVisible": true,
+          "path": "/play/qidahen/tutorial",
+          "tutorialStepId": "choose-opening-action",
+          "tutorialText": "执行一次手牌行动及一次轮盘行动，执行顺序由玩家自行决定。 所有人都共享行动标记的移动，并依标记所在位置执行轮盘上的行动。轮到玩家时可选择移动行动标记：免费向前走 1 格、指定一个对手抽 2 张牌并向前走 2 格、所有对手抽 2 张牌并向前走 3 格。 先做手牌行动，点右侧“征召军队”；先做轮盘行动，点一种走法。落点行动见轮盘提示。上一步完成当前操作继续",
+          "viewport": "desktop"
+        },
+        "authoritative": {
+          "harnessRegistered": true,
+          "tutorialStepId": "choose-opening-action",
+          "turnPhase": "action-window",
+          "currentPlayer": "0",
+          "selectedActionId": "",
+          "actionWheelPosition": "wheel-new-year",
+          "factionActionUsed": false,
+          "mingHandCount": 3
+        }
+      },
+      "assertions": [
+        {
+          "name": "basic-opening-entry-capture-003-qidahen-board-visible",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-entry-capture-003-test-harness-state-available",
+          "actual": true,
+          "expected": true
+        },
+        {
+          "name": "basic-opening-entry-capture-003-visible-tutorial-step-matches-authoritative-step",
+          "actual": "choose-opening-action",
+          "expected": "choose-opening-action"
+        }
+      ],
+      "inputEvents": []
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "basic-opening-entry-ui-01",
+      "stepId": "basic-opening-entry-capture-001",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "0e91c223ecdffd1902c44d09eabd32c476c18df80f1355db5f8bcd573fb2b4a9",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r04\\00-唯一入门入口-直接进入胜利条件.png",
+      "reason": "玩家完成当前输入后，教程界面呈现00，唯一入门入口，直接进入胜利条件状态。"
+    },
+    {
+      "id": "basic-opening-entry-ui-02",
+      "stepId": "basic-opening-entry-capture-003",
+      "change": "panel",
+      "viewport": "desktop",
+      "sha256": "f30531e4b442e74f2216c4e5701c938f2b2647c00f4bc2d29ed7322ea3c4eb74",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\codex-tutorial-20261026-r04\\00a-继续后-选择首个行动.png",
+      "reason": "玩家完成当前输入后，教程界面呈现00a，继续后，选择首个行动状态。"
+    }
+  ],
+  "skippedDuplicateScreenshots": []
+}

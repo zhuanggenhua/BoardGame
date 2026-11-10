@@ -1,0 +1,71 @@
+{
+  "purpose": "user-requested-source-comparison",
+  "productAcceptance": "not-claimed",
+  "label": "historical-component-replay",
+  "baseURL": "http://127.0.0.1:5173",
+  "effectId": "vampire-lord-bloody-slaughter-search-deck-card",
+  "interaction": {
+    "id": "dt-interaction-bloody-slaughter-search-deck-1793598978708",
+    "kind": "dt:card-interaction",
+    "playerId": "0",
+    "resolutionFrameId": "dt-pre-defense-dt-interaction-bloody-slaughter-search-deck-1793598978708",
+    "cancelPolicy": "forbidden",
+    "data": {
+      "id": "bloody-slaughter-search-deck-1793598978708",
+      "playerId": "0",
+      "sourceCardId": "bloody-slaughter",
+      "type": "selectDeckCard",
+      "titleKey": "interaction.selectDeckCardToAddToHand",
+      "selectCount": 1,
+      "selected": [],
+      "resumeAttackSettlementOnComplete": {
+        "stage": "preDamage"
+      },
+      "sourceId": "bloody-slaughter"
+    }
+  },
+  "media": [
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\historical-component-replay\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "ba7fd9fa92ab10ab795ee5e5dc2acdca6140efa108317b6aebdad73478cfbf45",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "firstCard": {
+        "x": 195.90625,
+        "y": 122.5,
+        "width": 103.671875,
+        "height": 169.640625
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\historical-component-replay\\02-血色杀戮-搜索命中.png",
+      "sha256": "2ca66295a5702ca3b8826c59c5978544bfdf12252490c02402b4768b4153836c",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "firstCard": {
+        "x": 668.15625,
+        "y": 122.5,
+        "width": 103.671875,
+        "height": 169.640625
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\historical-component-replay\\03-血色杀戮-已选待确认.png",
+      "sha256": "d4667b21269fa54529a884917e682440f7c6c0f178654d0b5eff298e5b414ae9",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "firstCard": {
+        "x": 668.15625,
+        "y": 122.5,
+        "width": 103.671875,
+        "height": 169.640625
+      }
+    }
+  ]
+}

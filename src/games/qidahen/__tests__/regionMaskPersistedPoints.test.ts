@@ -41,7 +41,7 @@ const hexToRgb = (value: string): readonly [number, number, number] => [
 ];
 
 describe('qidahen persisted region mask points', () => {
-    it('formal region seed 与 graph 节点必须都落在各自区域像素内', async () => {
+    it('地区 seed 位于真实区域；不在区域中的 graph 质心必须与像素计算一致', async () => {
         const config = readRegionConfig();
         const graph = readRegionGraph();
         const regions = config.regions ?? [];
@@ -109,7 +109,19 @@ describe('qidahen persisted region mask points', () => {
                     sampled: sampledSeed,
                 });
             }
-            if (!matchesRegionColor(sampledGraphPoint)) {
+            // 凹形区域或带印刷遮挡的区域，算术质心可以落在空洞中；它不是命中锚点。
+            let isTrueCentroid = false;
+            if (!matchesRegionColor(sampledGraphPoint) && graphNode?.center && graphNode.pixelCount) {
+                let count = 0, sumX = 0, sumY = 0;
+                for (let y = 0; y < info.height; y++) for (let x = 0; x < info.width; x++) {
+                    if (!matchesRegionColor(sample(x, y))) continue;
+                    count++; sumX += x; sumY += y;
+                }
+                isTrueCentroid = count === graphNode.pixelCount
+                    && graphNode.center.x === Math.round(sumX / count)
+                    && graphNode.center.y === Math.round(sumY / count);
+            }
+            if (!matchesRegionColor(sampledGraphPoint) && !isTrueCentroid) {
                 invalidGraphPoints.push({
                     regionId: region.id,
                     name: region.name,

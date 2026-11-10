@@ -1,0 +1,662 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "role": "historical-partial-audit",
+  "expectedMediaCount": 64,
+  "reviewedMediaCount": 54,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/tutorial_mobile_visual"
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/01-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "胜负及操作者说明可读，下一步按钮完整，棋盘素材真实。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/02-stats.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "资源条高亮贴合左侧生命和战斗力，说明文字清楚。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/03-phases.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回合顺序高亮贴合左上阶段栏，阶段说明完整可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/04-player-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "玩家板外框高亮准确，正式技能槽图像可辨。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/05-tip-board.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "正式提示板及高亮可见，教程说明可展开阅读效果。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/06-card-types.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "卡牌颜色与时机说明分条可读，目标手牌标题可辨。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/07-hand.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手牌区域高亮与正式卡图吻合，费用和出牌条件说明可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/08-discard.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌区域边界清楚，出售拖动说明可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/09-response-control.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "手动响应绿色开关被高亮，手动与自动的区别说明可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/10-main-actions-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "主要阶段行动说明完整可读，手牌目标区可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/11-sell-card-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "沉思标题与目标蓝框可见，拖到弃牌堆的动作说明清楚。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/12-sell-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "出售结果说明与资源条高亮同屏，弃牌本体可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/13-undo-sell-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回出售说明与弃牌堆高亮一致，正式弃牌可辨。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/14-undo-sell.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程要求点击的弃牌堆可见且有贴合高亮。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/15-undo-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "撤回结果说明可读，返回手牌的正式卡图可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/16-advance.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮清楚高亮，阶段推进说明完整。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/17-dice-tray.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：左侧讲解框覆盖生命、战斗力与手动响应读数。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/18-roll-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：左侧掷骰规则框覆盖生命、战斗力与响应开关。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/19-dice-roll.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：投掷说明框盖住生命条，虽投掷按钮可见但资源被遮。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/20-dice-lock.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：锁骰讲解框覆盖生命、战斗力与响应开关。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/21-dice-reroll.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：重掷说明框盖住生命条，资源无法同屏读取。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/22-dice-symbols.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：骰面讲解框覆盖生命、战斗力与响应开关。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/23-play-six-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "修改骰面规则与玩得六啊正式卡图同时可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/24-play-six.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程点名玩得六啊，目标卡标题和高亮可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/25-play-six-modify.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：改骰说明框覆盖生命和战斗力，右侧骰子目标可见。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/26-dice-confirm.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：确认骰面说明框盖住左侧生命条。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/27-ability-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "技能启动与顺子规则可读，目标冲拳技能本体可见；提示暂盖手牌不证明手牌检视。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/28-abilities.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "冲拳技能本体与高亮可见，发动冲拳的指令可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/29-attack-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "一般伤害讲解可读，玩家板可见；右上框盖住已确认骰面，需结合当前任务确认必要性。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/30-resolve-attack.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结算攻击按钮高亮准确，按钮和说明名称一致。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/31-opponent-defense.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手清修和冲拳结果说明可读，双方生命可见；下方手牌暂被提示框盖住。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/32-main2-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "第二主要阶段说明可读，手牌标题和高亮可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/33-enlightenment-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "顿悟掷骰规则可读，顿悟卡图和标题可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/34-enlightenment-play.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "打出顿悟的说明与目标卡牌高亮一致。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/35-enlightenment-confirm.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：顿悟确认说明框盖住生命条；右侧莲花骰和确认入口可见。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/36-enlightenment-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "左侧新增状态图标和数量可见，结果说明指向状态行。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/37-status-tokens.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "状态正式图标及数量被高亮，消耗与击倒移除说明可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/38-inner-peace-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "静心正式卡图和标题可见，规则说明可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/39-inner-peace.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "教程点名静心，手牌目标蓝框贴合本体。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/40-ai-turn-intro.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "回合交接说明与太极数量同屏；结语式提示暂盖下方手牌。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/41-discard-rule.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "弃牌规则在己方主要阶段二展示，沉思手牌目标可见，双星号已去除。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/42-end-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "下一阶段按钮可见且高亮，文案说明未超手牌上限会交回合。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/43-ai-turn.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "对手冲拳正式特写与卡名清楚，掌击施加击倒的来源说明可读。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/44-defense-start.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "开始防御按钮及正式技能特写完整可见。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/45-defense-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：防御规则框盖住左侧生命、战斗力与响应开关。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/46-defense-roll.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：防御投掷说明框盖住左侧生命和战斗力。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/47-defense-confirm.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：确认防御骰的说明框盖住左侧生命条。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/48-defense-resolve.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结束防御按钮与教程动作名称一致，高亮贴合。",
+      "score": 92
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/49-token-response-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：太极规则框盖住右侧当前伤害总数，太极本体及跳过入口仍可见。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/50-token-response-use.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：太极操作说明盖住右侧当前伤害总数，玩家难以同时比较可减伤数。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/51-evasive-rule.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：闪避规则说明盖住右侧当前伤害摘要，左侧目标图标可见。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/52-evasive-use.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：闪避操作说明盖住右侧当前伤害摘要，目标与跳过入口可见。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/53-evasive-confirm.png",
+      "status": "REVISE",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "REVISE：闪避确认说明框覆盖左侧生命和战斗力，右侧判定骰与确认可见。",
+      "score": 74
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/tutorial-rebuild-20261016-r12/手机横屏：亲手完成教学主线/54-damage-result.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "no-error"
+      ],
+      "observation": "结果说明已保持己方视角，左侧生命和战斗力可见，未误指对手资源。",
+      "score": 92
+    }
+  ]
+}

@@ -1,0 +1,523 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "score": 94,
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/mobile_visual_review"
+  },
+  "scope": "仅本轮响应式与交互承载，既有演示数据和素材占位不作全平台内容验收",
+  "method": "逐张私有读取当前38张原始PNG，未用旧PASS替代当前图面审查。actionBefore/actionAfter为已锁定截图状态链说明；图面PASS只证明可见布局与交互承载，不替代E2E动作、规则数值或真机验收。",
+  "target_requirements": [
+    {
+      "requirement": "移动底栏导航、列表抽屉、两列发现、点按通栏展开与全屏详情",
+      "status": "PASS",
+      "evidence": "m01,m02b,m05,m05b,m06"
+    },
+    {
+      "requirement": "恢复房间好友自然高度、消除展开卡网格空洞",
+      "status": "PASS",
+      "evidence": "m02,m02c,m02d,m05b"
+    },
+    {
+      "requirement": "对局条保留叠底，重要末项与提交可滚动到其上方",
+      "status": "PASS",
+      "evidence": "m01c,m05c,m07b,m08c"
+    },
+    {
+      "requirement": "创建AI配置可读且主按钮滚动可达",
+      "status": "PASS",
+      "evidence": "m06d,m06f,m06g"
+    },
+    {
+      "requirement": "个人页纵向布局与顶图比例",
+      "status": "PASS",
+      "evidence": "m08,m08c"
+    },
+    {
+      "requirement": "桌面三导航、常驻列表、六列发现、个人页左右留背景未被移动样式破坏",
+      "status": "PASS",
+      "evidence": "01,02,05,08及全部16张PC对照"
+    }
+  ],
+  "hard_failures": [],
+  "limitations": [
+    "375×540短视口m07c仅为缩短浏览器视口的压力态，不是真机软键盘、输入法或浏览器地址栏实测。",
+    "当前未覆盖其它手机宽度、平板横竖屏、真机触摸或安全区。",
+    "PC及移动发现页既有待接入封面和重复标题属未改写演示数据限制，不在本轮移动响应式修复范围；无手机新增裁切。",
+    "图面未验证规则原文事实、游戏运行规则、提交后服务器效果或真实联机。"
+  ],
+  "negative_impact_checks": [
+    {
+      "object": "收藏侧栏",
+      "decision": "移动端折叠",
+      "replacement": "可见游戏列表入口与m02b完整8项抽屉",
+      "status": "PASS"
+    },
+    {
+      "object": "收藏详情辅助操作",
+      "decision": "依据用户本轮批准改紧凑两列",
+      "replacement": "m02主重连按钮整行，教程收藏配置明确可见",
+      "status": "PASS"
+    },
+    {
+      "object": "房间与好友侧栏",
+      "decision": "移动端改自然高度进入页面滚动",
+      "replacement": "m02c四间房与m02d六好友完整可读",
+      "status": "PASS"
+    },
+    {
+      "object": "发现介绍",
+      "decision": "半宽叠字改通栏展开",
+      "replacement": "m05b正文可读，dense网格消除空洞",
+      "status": "PASS"
+    },
+    {
+      "object": "对局条",
+      "decision": "保留叠底并缩短高度",
+      "replacement": "m01c,m05c,m07b,m08c证明末项与主提交可恢复至其上方",
+      "status": "PASS"
+    },
+    {
+      "object": "全屏详情",
+      "decision": "窄列内容改通栏简介和分层操作",
+      "replacement": "m06封面摘要、正文、主按钮、辅助组、大厅可读",
+      "status": "PASS"
+    },
+    {
+      "object": "个人页",
+      "decision": "左右结构改纵向",
+      "replacement": "顶图保比例、统计横排、动态末项可读",
+      "status": "PASS"
+    }
+  ],
+  "media": [
+    {
+      "path": "01-收藏库主页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "左侧8款列表、上方情报、六列收藏封面完整",
+      "targetObject": "收藏库桌面主页",
+      "actionBefore": "打开收藏库",
+      "actionAfter": "主页显示",
+      "playerVisibleResult": "左侧8款列表、上方情报、六列收藏封面完整",
+      "protectedSlots": [
+        "顶栏三导航",
+        "左侧列表",
+        "对局条"
+      ],
+      "overlap": "对局条按合同叠底，主收藏标题不受遮挡",
+      "clipping": "无响应式引入裁切",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "01b-收藏库悬停.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "游戏名称、上次游玩、时长与正文可读",
+      "targetObject": "桌面收藏卡悬停",
+      "actionBefore": "悬停大杀四方封面",
+      "actionAfter": "卡片抬起显示介绍",
+      "playerVisibleResult": "游戏名称、上次游玩、时长与正文可读",
+      "protectedSlots": [
+        "左侧列表",
+        "情报",
+        "相邻封面",
+        "对局条"
+      ],
+      "overlap": "抬起卡片局部覆盖情报属既有交互，未压左侧列表",
+      "clipping": "介绍正文在卡片内可读",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "02-收藏库游戏页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "横幅四键同排，更新区及右侧房间好友保持桌面结构",
+      "targetObject": "桌面收藏游戏详情",
+      "actionBefore": "选择大杀四方",
+      "actionAfter": "显示当前游戏页",
+      "playerVisibleResult": "横幅四键同排，更新区及右侧房间好友保持桌面结构",
+      "protectedSlots": [
+        "顶栏",
+        "左侧列表",
+        "横幅操作",
+        "房间好友",
+        "对局条"
+      ],
+      "overlap": "对局条按合同叠底，不遮四键",
+      "clipping": "未见移动样式泄漏",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "02b-收藏库排行榜.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "7条排行及本人高亮可读，右侧房间好友保留",
+      "targetObject": "桌面收藏排行榜",
+      "actionBefore": "点击排行榜",
+      "actionAfter": "显示排行名单",
+      "playerVisibleResult": "7条排行及本人高亮可读，右侧房间好友保留",
+      "protectedSlots": [
+        "横幅操作",
+        "标签",
+        "排行",
+        "房间好友"
+      ],
+      "overlap": "无新增竞争遮挡",
+      "clipping": "名单完整可读",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "02c-收藏库规则概览.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "标题、初始设置与回合流程保持桌面宽栏",
+      "targetObject": "桌面收藏规则概览",
+      "actionBefore": "点击规则概览",
+      "actionAfter": "规则原文呈现",
+      "playerVisibleResult": "标题、初始设置与回合流程保持桌面宽栏",
+      "protectedSlots": [
+        "横幅操作",
+        "标签",
+        "规则",
+        "右侧房间好友"
+      ],
+      "overlap": "对局条依合同覆盖文档局部，不阻止上方正文识别",
+      "clipping": "文档在视口下继续，未见横向溢出",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "03-切发现再回收藏库.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "当前游戏和左栏选中项一致，更新区恢复",
+      "targetObject": "桌面导航返回收藏游戏",
+      "actionBefore": "切发现后返回收藏库",
+      "actionAfter": "恢复收藏游戏详情",
+      "playerVisibleResult": "当前游戏和左栏选中项一致，更新区恢复",
+      "protectedSlots": [
+        "顶栏导航",
+        "左栏选中项",
+        "主游戏",
+        "房间好友"
+      ],
+      "overlap": "无错误浮层遮挡",
+      "clipping": "未见断栏",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "04-点主页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "收藏列表、情报与六列封面恢复",
+      "targetObject": "桌面收藏库主页返回",
+      "actionBefore": "点击左栏主页",
+      "actionAfter": "恢复收藏主页",
+      "playerVisibleResult": "收藏列表、情报与六列封面恢复",
+      "protectedSlots": [
+        "顶栏",
+        "左栏",
+        "情报",
+        "收藏",
+        "对局条"
+      ],
+      "overlap": "对局条依合同叠底",
+      "clipping": "末行封面完整",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "05-发现网格.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "六列两行、分类与收藏星保持原桌面结构",
+      "targetObject": "桌面发现游戏库",
+      "actionBefore": "点击发现",
+      "actionAfter": "六列游戏网格显示",
+      "playerVisibleResult": "六列两行、分类与收藏星保持原桌面结构",
+      "protectedSlots": [
+        "顶栏导航",
+        "分类",
+        "游戏网格",
+        "对局条"
+      ],
+      "overlap": "无响应式新增遮挡",
+      "clipping": "既有素材待接入卡与重复标题为范围外演示内容限制",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "05b-发现悬停.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "正文可读，相邻卡及分类保持",
+      "targetObject": "桌面发现悬停介绍",
+      "actionBefore": "悬停大杀四方",
+      "actionAfter": "卡片抬起并显示介绍",
+      "playerVisibleResult": "正文可读，相邻卡及分类保持",
+      "protectedSlots": [
+        "分类",
+        "相邻卡",
+        "收藏星",
+        "对局条"
+      ],
+      "overlap": "悬停抬起为既有交互",
+      "clipping": "未见文本裁切",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "06-游戏详情.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "封面、简介、人数、操作和4条大厅房间可读",
+      "targetObject": "桌面游戏详情弹窗",
+      "actionBefore": "点击发现游戏",
+      "actionAfter": "详情弹窗打开",
+      "playerVisibleResult": "封面、简介、人数、操作和4条大厅房间可读",
+      "protectedSlots": [
+        "关闭",
+        "主操作",
+        "辅助操作",
+        "作者",
+        "大厅"
+      ],
+      "overlap": "背景被遮罩，弹窗内容未相互覆盖",
+      "clipping": "弹窗完整位于视口",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "06d-创建房间.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "名称、密码、人数、保存、电脑难度时长席位及创建按钮完整",
+      "targetObject": "桌面创建房间AI展开",
+      "actionBefore": "进入创建房间并展开AI",
+      "actionAfter": "创建配置完整显示",
+      "playerVisibleResult": "名称、密码、人数、保存、AI难度时长席位及创建按钮完整",
+      "protectedSlots": [
+        "关闭",
+        "全部表单",
+        "创建"
+      ],
+      "overlap": "弹窗内控件无交叠",
+      "clipping": "创建按钮在弹窗底部可见",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "06b-作者弹窗.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "作者名、作品与关闭按钮可读",
+      "targetObject": "桌面作者信息",
+      "actionBefore": "点击电子化作者",
+      "actionAfter": "作者弹窗打开",
+      "playerVisibleResult": "作者名、作品与关闭按钮可读",
+      "protectedSlots": [
+        "作者正文",
+        "关闭",
+        "背景详情"
+      ],
+      "overlap": "前景作者框与背景遮罩层级明确",
+      "clipping": "作者框完整",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "06c-销毁确认.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "销毁后果与唯一确认动作清楚",
+      "targetObject": "桌面房间销毁确认",
+      "actionBefore": "点击大厅销毁",
+      "actionAfter": "确认框显示",
+      "playerVisibleResult": "销毁后果与唯一确认动作清楚",
+      "protectedSlots": [
+        "确认正文",
+        "销毁按钮",
+        "关闭"
+      ],
+      "overlap": "前景确认覆盖背景详情为预期模态",
+      "clipping": "确认框完整",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "07-上传页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "左右表单及保存和发布按钮保持桌面结构",
+      "targetObject": "桌面已发布工坊项目",
+      "actionBefore": "选择已发布项目",
+      "actionAfter": "编辑资料与更新栏显示",
+      "playerVisibleResult": "左右表单及保存和发布按钮保持桌面结构",
+      "protectedSlots": [
+        "工坊列表",
+        "资料",
+        "更新",
+        "保存",
+        "发布",
+        "对局条"
+      ],
+      "overlap": "对局条依合同叠底",
+      "clipping": "未见两列塌陷或字段横向裁切",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "07b-上传新游戏.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "主资料左栏、规则和封面右栏，提交可见",
+      "targetObject": "桌面上传新游戏",
+      "actionBefore": "点击上传新游戏",
+      "actionAfter": "新游戏表单呈现",
+      "playerVisibleResult": "主资料左栏、规则和封面右栏，提交可见",
+      "protectedSlots": [
+        "工坊列表",
+        "资料",
+        "规则",
+        "封面",
+        "提交"
+      ],
+      "overlap": "对局条依合同叠底，未遮提交",
+      "clipping": "表单边界完整",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    },
+    {
+      "path": "08-个人主页.png",
+      "status": "PASS",
+      "checks": [
+        "target-visible",
+        "interaction-ui",
+        "layout-readable",
+        "scope-no-hard-failure",
+        "no-internal-id-leak",
+        "no-error"
+      ],
+      "observation": "左右背景保留，动态左列与统计右列保持",
+      "targetObject": "桌面个人主页",
+      "actionBefore": "点击头像",
+      "actionAfter": "个人页显示",
+      "playerVisibleResult": "左右背景保留，动态左列与统计右列保持",
+      "protectedSlots": [
+        "头像",
+        "资料编辑",
+        "统计",
+        "5条动态",
+        "对局条"
+      ],
+      "overlap": "对局条位于面板下方",
+      "clipping": "面板完整，无移动纵排误用",
+      "internalIdLeak": "未见本轮新增内部选择器或测试标签；房间A3F2为玩家房间码，版本号与排名为产品信息。"
+    }
+  ],
+  "sourceSnapshot": {
+    "index.html": "e896ce3c75167487f3e7d2c567270e2d7d080e0bf8a5b92f03fffabec90139e3",
+    "mobile.css": "a17837fd9610782f3a4398a404c504e69471207b8161f8bcbca3e20f92477b17",
+    "capture.mjs": "1203e736acb1852718b3990a4ef73a90d3771fe77f36804b25c182f4f64314f8",
+    "mobile-capture.mjs": "064b04dcf819d9d0410d9cb1bf2172ec695b5ab6646f277b2f399f9bb5782230"
+  },
+  "derivedFrom": ".visual-review.json"
+}

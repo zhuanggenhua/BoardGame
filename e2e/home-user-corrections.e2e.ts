@@ -91,6 +91,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 360, height: 702 }
             await capture(page, `纠正-${viewport.width}-手机支持作者`);
             await page.getByRole('button', { name: '关闭赞助说明', exact: true }).tap();
             await page.getByRole('button', { name: '关闭菜单', exact: true }).tap();
+            await expect(page.getByRole('dialog', { name: '菜单' })).toBeHidden();
             await openHomeUpload(page, true);
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeInViewport();

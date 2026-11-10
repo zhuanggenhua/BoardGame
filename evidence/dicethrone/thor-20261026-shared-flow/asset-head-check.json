@@ -1,0 +1,44 @@
+[
+  {
+    "name": "player-board.webp",
+    "status": 200,
+    "localBytes": 2210036,
+    "remoteBytes": 2210036,
+    "pass": true
+  },
+  {
+    "name": "tip.webp",
+    "status": 200,
+    "localBytes": 1026300,
+    "remoteBytes": 1026300,
+    "pass": true
+  },
+  {
+    "name": "ability-cards.webp",
+    "status": 200,
+    "localBytes": 5697612,
+    "remoteBytes": 5697612,
+    "pass": true
+  },
+  {
+    "name": "dice.webp",
+    "status": 200,
+    "localBytes": 52514,
+    "remoteBytes": 52514,
+    "pass": true
+  },
+  {
+    "name": "status-icons-atlas.webp",
+    "status": 200,
+    "localBytes": 233066,
+    "remoteBytes": 233066,
+    "pass": true
+  },
+  {
+    "name": "portrait.webp",
+    "status": 200,
+    "localBytes": 194472,
+    "remoteBytes": 194472,
+    "pass": true
+  }
+]

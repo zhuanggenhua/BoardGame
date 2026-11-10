@@ -1,0 +1,312 @@
+{
+  "sourceByFrame": [
+    28,
+    29,
+    30,
+    31,
+    32,
+    27,
+    19,
+    26,
+    24,
+    25,
+    23,
+    33,
+    20,
+    21,
+    22,
+    18,
+    17,
+    16,
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1
+  ],
+  "configUnchanged": true,
+  "checks": [
+    {
+      "index": 0,
+      "cardId": "card-holy-defense-3",
+      "sourceNumber": 28,
+      "sourceSha256": "81ba4d95391ef89856b24da1a32493bd8b64a993ca003f45c0b05ad691924dc9",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 1,
+      "cardId": "card-might",
+      "sourceNumber": 29,
+      "sourceSha256": "886a25172a50c0b8946caeb26bfa0a3377c24555a692a06d57b14bc2fab100d4",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 2,
+      "cardId": "card-consecrate",
+      "sourceNumber": 30,
+      "sourceSha256": "8a4f7f461862f5daf385d0fa13fe77d188e27405b65697bc5a4bff0155c228dd",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 3,
+      "cardId": "card-divine-favor",
+      "sourceNumber": 31,
+      "sourceSha256": "3d279f25d422a5c2bb80e28f05242a7489e469bd4a45757ab15200edf066d136",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 4,
+      "cardId": "card-absolution",
+      "sourceNumber": 32,
+      "sourceSha256": "bf7c2e7faa149bd806dd5bef1f908a53af027e14aded4c48e790289c01ded5a4",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 5,
+      "cardId": "card-holy-defense-2",
+      "sourceNumber": 27,
+      "sourceSha256": "3a0962f1f9e291395e151ace754befabcd2040d3777bf28e9e478f1139d77f14",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 6,
+      "cardId": "card-tithes-2",
+      "sourceNumber": 19,
+      "sourceSha256": "30ab67a92417e22a917829c2dafba93bf43e27abd226b03c422ab33bbd15a684",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 7,
+      "cardId": "card-holy-light-2",
+      "sourceNumber": 26,
+      "sourceSha256": "99cd255cd7d4c2a94c8fcc2a33e9c3a474c1ff42b7322dd37c89e2becbcefecd",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 8,
+      "cardId": "card-righteous-combat-3",
+      "sourceNumber": 24,
+      "sourceSha256": "eed40d205eca083977ef1ce032fd40eeac6d9db96d775d95df5e0beca38984e7",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 9,
+      "cardId": "card-blessing-of-might-2",
+      "sourceNumber": 25,
+      "sourceSha256": "feed5c473e987e49a84f6f02062d84548bbe6833930a684aa67e4073118e1cbc",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 10,
+      "cardId": "card-righteous-combat-2",
+      "sourceNumber": 23,
+      "sourceSha256": "06ee23dc4ca4261d0a5d81fa6c1e8cabcf703b968ddc5b470a7c41031c2d6640",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 11,
+      "cardId": "card-gods-grace",
+      "sourceNumber": 33,
+      "sourceSha256": "6c6ab6bf0100ba2de2be4d8c0e8de753b784f9e3b3c61056b51e6ba33dc7b972",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 12,
+      "cardId": "card-vengeance-2",
+      "sourceNumber": 20,
+      "sourceSha256": "86e33fd9f19b7d11bc08c53274bbb8135aa1a1239a3ff5fdeb85bab08d3aa242",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 13,
+      "cardId": "card-holy-strike-2",
+      "sourceNumber": 21,
+      "sourceSha256": "dd3bd56b13bdd46c72409d3848aae904e29e2a7a01038ab9f2a275d5aeec095a",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 14,
+      "cardId": "card-righteous-prayer-2",
+      "sourceNumber": 22,
+      "sourceSha256": "bf07293a08cbb0b891c0cf80ad715c8020f3699fc74e9ca62cbe3a87d175d2fb",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 15,
+      "cardId": "card-play-six",
+      "sourceNumber": 18,
+      "sourceSha256": "9456766fd0595c0f4da04f704f90a1151040dcb2a9ad0209e26630d0523b778b",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 16,
+      "cardId": "card-just-this",
+      "sourceNumber": 17,
+      "sourceSha256": "e6d0b999c4d36be4d5b245c81b74e0c254db5b93127432ec1339368a1ceeb491",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 17,
+      "cardId": "card-give-hand",
+      "sourceNumber": 16,
+      "sourceSha256": "7c1421eb1d7c9edf04b154e6cdec8858f1e7577a67e774adbacac5d0fc2614bc",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 18,
+      "cardId": "card-i-can-again",
+      "sourceNumber": 15,
+      "sourceSha256": "e878230da6accbd6edbfed97572285559e02a211f48445a03e0d78fbc94a5859",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 19,
+      "cardId": "card-me-too",
+      "sourceNumber": 14,
+      "sourceSha256": "ba9ee3deb4cda1d825dd0d94eeaa2904a026c7f3e3e16826a68c4b189d3cc394",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 20,
+      "cardId": "card-surprise",
+      "sourceNumber": 13,
+      "sourceSha256": "de123d4688269a65ef1b471d422b9405e2fb12410a1c54a6e089accfb53558d1",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 21,
+      "cardId": "card-worthy-of-me",
+      "sourceNumber": 12,
+      "sourceSha256": "f9f7f5bab0fba2cd659da60a969516862fb72e22a646a1ee17572627c678859d",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 22,
+      "cardId": "card-unexpected",
+      "sourceNumber": 11,
+      "sourceSha256": "b3a3934bed983617001437360dfaff0e2d290101dddb165bf8a1cd0b60509956",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 23,
+      "cardId": "card-next-time",
+      "sourceNumber": 10,
+      "sourceSha256": "adbe23fd83e5681788ad8e835cadd5ed0cff76ddb02ea0bb8ccb8f146201a4ee",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 24,
+      "cardId": "card-boss-generous",
+      "sourceNumber": 9,
+      "sourceSha256": "2f094b50263c513afeb2059adda71ac9c907fa13da67e54ea89276154a04d037",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 25,
+      "cardId": "card-flick",
+      "sourceNumber": 8,
+      "sourceSha256": "c0ed009d9280800760cec1dd6396e07895e71a898524f1ebd31ac272539a3608",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 26,
+      "cardId": "card-bye-bye",
+      "sourceNumber": 7,
+      "sourceSha256": "862fda47ad3d4bd85673566295cd32f179eb34028fc433a9ed6c642eb0fd654a",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 27,
+      "cardId": "card-double",
+      "sourceNumber": 6,
+      "sourceSha256": "503aaa667fca45295231d39a24287ce67e066feeb6b65d671a9d8ed36889f095",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 28,
+      "cardId": "card-super-double",
+      "sourceNumber": 5,
+      "sourceSha256": "c2746ff9177eff1c0bc7ddcc6555f46fc6249675dd63c3621d458e0f1105fa20",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 29,
+      "cardId": "card-get-away",
+      "sourceNumber": 4,
+      "sourceSha256": "dcd048a0b62aaefbb118987850f191400e6c508f70bac58ef2f79481043c5bb1",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 30,
+      "cardId": "card-one-throw-fortune",
+      "sourceNumber": 3,
+      "sourceSha256": "beccc2683461ff10cc45b2fb4cf7a45db43e5d64245bc8e6de2170931153245d",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 31,
+      "cardId": "card-what-status",
+      "sourceNumber": 2,
+      "sourceSha256": "830ee9ad9802ca1785e887003b628b910dc104044a9762db285279afc98cfa50",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    },
+    {
+      "index": 32,
+      "cardId": "card-transfer-status",
+      "sourceNumber": 1,
+      "sourceSha256": "922992a0c497d1c193dff753cecabfe7c7e0cce7bd5b534a060a622830e23199",
+      "rawVisibleRgbExact": true,
+      "rawAlphaExact": true
+    }
+  ],
+  "pngSha256": "81c37279e4aa5bb01946acee1b6e7bd1434220cd484bea2aa9c4960a5e4aec1a",
+  "webp": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\圣骑士卡图错配\\20261015T142510Z\\candidate\\ability-cards.webp",
+  "webpSha256": "1c1b45a4cfecfd186886256782d0deda17ca9dedc3a8e55412ee29b14862b5a9",
+  "bytes": 2040596,
+  "dimensions": [
+    7380,
+    4720
+  ]
+}

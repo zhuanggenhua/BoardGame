@@ -1,0 +1,82 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "evidenceIndex": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\chat-channels.e2e\\玩家与观战席统一数字未读角标并切换频道\\.e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "玩家与观战席统一用同一种数字角标显示未读。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/04-玩家频道-观战席未读数字角标.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/07-观战席-玩家频道未读数字角标.jpg"
+      ]
+    },
+    {
+      "requirement": "切入对应频道后清除数字角标，并显示该频道消息。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/08-玩家频道-切入后清除未读数字角标.jpg",
+        "e2e/dicethrone/chat-channels.e2e.ts",
+        "evidence/match-chat-unread-count-20261016-verification.md"
+      ]
+    },
+    {
+      "requirement": "频道命名及紧凑比例保留，桌面和横屏消息与输入完整。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/01-玩家频道-双方交流与仅玩家可见提示.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/02-观战席-玩家与观众公开交流.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/03-观众视角-默认可发言且无玩家频道.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/04-玩家频道-观战席未读数字角标.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/05-宽屏玩家频道-保留当前窗口设计.jpg",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/06-手机横屏观众频道-输入与发送可见.jpg"
+      ]
+    }
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/01-玩家频道-双方交流与仅玩家可见提示.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/02-观战席-玩家与观众公开交流.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/03-观众视角-默认可发言且无玩家频道.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/04-玩家频道-观战席未读数字角标.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/05-宽屏玩家频道-保留当前窗口设计.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/06-手机横屏观众频道-输入与发送可见.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/07-观战席-玩家频道未读数字角标.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/chat-channels.e2e/玩家与观战席统一数字未读角标并切换频道/08-玩家频道-切入后清除未读数字角标.jpg"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/chat_review_current"
+    },
+    "reviewFile": "match-chat-unread-count-20261016-visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "npx vitest run src/server/__tests__/matchChat.test.ts src/components/game/framework/widgets/__tests__/useMatchChat.test.tsx src/components/__tests__/GameHUDChatPreview.test.ts src/hooks/__tests__/useLobbyMatchPresence.test.ts"
+    ],
+    "evidence": [
+      ".tmp/match-chat-unit.log",
+      "42项通过；真实Socket.IO验证私有广播、历史和离座凭证隔离。"
+    ],
+    "note": "未读状态逻辑本轮未改，原有Vitest记录沿用；本轮两个方向数字出现与清除由最新真实联机端到端验证，一项24.1秒通过，视觉独立逐图验证。"
+  },
+  "outOfScopeMedia": [],
+  "limitations": [
+    "本地验证，未提交、推送或部署。",
+    "未验证竖屏、软键盘和长消息压力态。",
+    "全项目类型检查有其他模块错误，本轮相关文件无类型诊断。"
+  ]
+}

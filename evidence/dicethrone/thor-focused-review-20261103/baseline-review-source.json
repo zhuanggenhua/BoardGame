@@ -1,0 +1,95 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "弃牌飞掷沿原手牌区选择和取消",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用已有手牌区或骰盘及其取消、确认和重掷入口。",
+      "changes": "提示位置按用户指定恢复骰盘左侧，其他交互沿用原组件。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\02-弃牌飞掷手牌区成本.png"
+      ],
+      "after": [
+        "media/01-01-原手牌区选择弃牌成本.png",
+        "media/02-02-取消后手牌与神锤保持.png",
+        "media/03-03-支付后飞掷神锤造成一点伤害.png"
+      ]
+    },
+    {
+      "requirement": "奥丁效果骰沿原骰盘组选重掷",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用已有手牌区或骰盘及其取消、确认和重掷入口。",
+      "changes": "提示位置按用户指定恢复骰盘左侧，其他交互沿用原组件。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\03-奥丁II效果骰选择.png"
+      ],
+      "after": [
+        "media/04-06-奥丁效果骰等待选择重掷骰子.png",
+        "media/05-07-使用原整组重掷动作提交两颗所选骰子.png",
+        "media/06-08-整组重掷一次完成并保留原确认收口.png"
+      ]
+    },
+    {
+      "requirement": "队友出牌后索尔同骰选择两次",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用已有手牌区或骰盘及其取消、确认和重掷入口。",
+      "changes": "提示位置按用户指定恢复骰盘左侧，其他交互沿用原组件。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\15-队友不愧是我同骰两次.png"
+      ],
+      "after": [
+        "media/07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "media/08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png",
+        "media/09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ]
+    },
+    {
+      "requirement": "当之无愧固定改为四或五",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用已有手牌区或骰盘及其取消、确认和重掷入口。",
+      "changes": "提示位置按用户指定恢复骰盘左侧，其他交互沿用原组件。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\06-当之无愧选择固定四或五.png"
+      ],
+      "after": [
+        "media/10-03-当之无愧直接选择固定目标四或五.png",
+        "media/11-04-选择四后沿原固定值流程点选骰子.png",
+        "media/12-05-改为四且其余骰子保持.png"
+      ]
+    },
+    {
+      "requirement": "任意改骰保留加减预览和确认",
+      "status": "PASS",
+      "baselineSource": "已查看此前索尔整屏图，并对照旧版骰盘提示源码及用户指定基线。",
+      "preservedInformation": "保留当前操作的候选、提示、选择和结果。",
+      "preservedActions": "复用已有手牌区或骰盘及其取消、确认和重掷入口。",
+      "changes": "提示位置按用户指定恢复骰盘左侧，其他交互沿用原组件。",
+      "duplicateDecision": "不新增独立骰盘或弃牌弹窗。",
+      "changeAuthority": "用户要求复用旧流程并只验收索尔新交互。",
+      "before": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\22-原任意改值选择骰和加减控件.png"
+      ],
+      "after": [
+        "media/13-01-旧固定值和任意编辑各自提示与控件.png",
+        "media/14-02-任意编辑保留原加减预览和手动确认.png",
+        "media/15-03-旧流程提交后只修改一颗骰子.png"
+      ]
+    }
+  ]
+}

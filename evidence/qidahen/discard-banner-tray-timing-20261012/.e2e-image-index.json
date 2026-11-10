@@ -1,0 +1,43 @@
+{
+  "title": "七大恨弃牌横幅与托盘时机",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "media": [
+    {
+      "path": "media/前态-轮盘进攻调度托盘弃牌无横幅.png",
+      "chainId": "qidahen-discard-banner-tray-timing",
+      "chainStep": "1",
+      "sourceRun": "e2e/qidahen/discard-banner-tray-timing.e2e.ts:有托盘不叠横幅，无托盘才显示选择弃置的手牌",
+      "sourceDir": "evidence/qidahen/discard-banner-tray-timing-20261012/media",
+      "stage": "前态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点轮盘进攻调度进入弃牌",
+      "description": "玩家点轮盘进攻调度后底部出现弃牌托盘，顶部没有操作横幅。"
+    },
+    {
+      "path": "media/中态-势力行动托盘弃牌无横幅.png",
+      "chainId": "qidahen-discard-banner-tray-timing",
+      "chainStep": "2",
+      "sourceRun": "e2e/qidahen/discard-banner-tray-timing.e2e.ts:有托盘不叠横幅，无托盘才显示选择弃置的手牌",
+      "sourceDir": "evidence/qidahen/discard-banner-tray-timing-20261012/media",
+      "stage": "中态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "另开一局点赐印招安进入支付",
+      "description": "玩家点赐印招安后底部出现支付托盘，顶部没有操作横幅也没有操作说明。"
+    },
+    {
+      "path": "media/后态-高第无托盘显示选择弃置的手牌横幅.png",
+      "chainId": "qidahen-discard-banner-tray-timing",
+      "chainStep": "3",
+      "sourceRun": "e2e/qidahen/discard-banner-tray-timing.e2e.ts:有托盘不叠横幅，无托盘才显示选择弃置的手牌",
+      "sourceDir": "evidence/qidahen/discard-banner-tray-timing-20261012/media",
+      "stage": "后态",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "另开一局进入高第调度弃牌",
+      "description": "高第调度没有底部托盘，顶部出现选择弃置的手牌横幅。"
+    }
+  ]
+}

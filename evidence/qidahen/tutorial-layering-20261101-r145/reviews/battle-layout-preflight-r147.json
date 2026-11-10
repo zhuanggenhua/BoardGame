@@ -1,0 +1,156 @@
+{
+  "targetStatus": "historical",
+  "currentObjective": "仅诊断历史失败组战斗六张关键态的静态布局，供最终新整链取证前排查",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "type": "private-layout-preflight",
+  "reviewer": "/root/battle_layout_preflight",
+  "reviewDate": "2026-11-01",
+  "scope": "仅历史 R147 失败组战斗六关键态诊断；不能进入最终用户媒体，不能替代 R148 最终整链媒体验收",
+  "sourceTrace": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/behavior-trace.json",
+  "truthSource": "uiStates 中全部六张 JPG 原始整屏，已逐张实际读取；SHA256 已与磁盘及 trace 核对",
+  "targetEnvironment": "R147 历史桌面关键态，1920x1080；非 R148 当前运行证据",
+  "verdict": "REVISE",
+  "userMediaEligible": false,
+  "videoReviewed": false,
+  "summary": {
+    "total": 6,
+    "passPreflight": 0,
+    "revise": 6,
+    "blocked": 0,
+    "observation": "六图骰子、阶段及结果本体可见，未见白色教程提示遮挡；但双方战场归属缺少清楚的可见锚点，骰子和结果落在行动盘及蒙古地图一侧，结果又接近并侵占无关地图 token。仅凭这些帧，玩家无法第一眼把攻方／守方、开放骰子和具体双方对象唯一对应。"
+  },
+  "criteria": [
+    "教程白提示不遮骰、不遮战斗对象，并有正确锚点",
+    "开放骰子、当前兵种、攻守归属及双方对象第一眼可关联",
+    "结果与其战斗对象的空间关系清楚，不侵占无关正式对象",
+    "当前帧中出现的正式控件和对象无裁切遮挡"
+  ],
+  "layoutAudit": {
+    "scopeSource": "父任务明确限定为 R147 六张历史战斗 JPG 预检",
+    "checks": [
+      {
+        "criterion": "空间主次",
+        "status": "REVISE",
+        "observation": "掷骰舞台在画面中左侧，而画面铺陈大量地图对象与大行动盘；没有清楚双方战场高亮或双方摘要来收束本次战斗。"
+      },
+      {
+        "criterion": "对齐栅格",
+        "status": "REVISE",
+        "observation": "阶段／攻守文字位于约 x670,y480，结果位于约 x670,y790；骰子横跨行动盘和蒙古区域，其与具体参战对象的锚点关系未在图中成立。"
+      },
+      {
+        "criterion": "分组与装饰",
+        "status": "REVISE",
+        "observation": "骰子、攻守标签能组成掷骰小组，但这个小组没有与唯一参战区域组成可读的战斗分组；损伤标签与无关蒙古 token 形成视觉混淆。"
+      }
+    ]
+  },
+  "whiteTutorialPromptCheck": {
+    "status": "未覆盖当前实现",
+    "observation": "六张 R147 JPG 均无白色教程提示、raid-intent 面板及其可见高亮，故可以确认这些旧帧里没有白提示遮骰；不能据此证明 R148 的 qidahen-raid-intent 在动画期仍存在、提示没有失锚或没有漂移。",
+    "nextAction": "最终 R148 同一真实入口取证时，直接覆盖掷骰前、动画开始及面板隐藏期的教程提示；检查提示是否明确退场或锚在仍可见的本次战斗对象。"
+  },
+  "controlCheck": {
+    "status": "未覆盖",
+    "observation": "这六帧全部为自动掷骰／损伤动画关键态，未显示开始掷骰按钮、占领选择或战斗结果决策控件；没有据此判定这些控件裁切，也不声明它们通过。",
+    "nextAction": "在最终新整链的掷骰前、动画收口后及占领决策整屏中逐项复核。"
+  },
+  "protectedSlots": [
+    {
+      "object": "骰子与阶段／攻守文字",
+      "status": "可见",
+      "observation": "六图均可看见骰子及炮兵／骑兵／步兵阶段，未被白提示遮住。"
+    },
+    {
+      "object": "战斗双方、来源与目标",
+      "status": "REVISE",
+      "observation": "多个地图国家 token、军队与地区同时出现，缺少清楚唯一的本次双方标识及与骰子的空间联系；不能依赖 trace 或预先知道剧情来补足。"
+    },
+    {
+      "object": "蒙古地图 token 与数字读数",
+      "status": "REVISE",
+      "observation": "损伤帧的合计与损伤标签靠近并覆盖蒙古地区 token／数字槽，容易被误解成该地区的结果。"
+    },
+    {
+      "object": "顶部玩家信息、牌堆计数、底部手牌",
+      "status": "仅上下文",
+      "observation": "顶部三方信息与两侧牌堆计数可见，手牌沿底部展开；本次未审这些既有槽位的完整交互、牌面可读性或收纳能力，不用其存在抵消战场锚点失败。"
+    }
+  ],
+  "negativeImpactChecks": [
+    {
+      "object": "动画期收起的战斗／行动面板及教程提示",
+      "status": "未证明等价承载",
+      "observation": "六图没有这些面板；攻守标签保留了抽象角色，但未提供具体双方和战场归属的等价承载。不能从静态图判断收起时机、生命周期或当前合法操作是否仍可恢复。"
+    }
+  ],
+  "items": [
+    {
+      "id": "battle-artillery-rolling",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/battle-artillery-rolling.jpg",
+      "sha256": "b2c637b265fcc166463f6e7f66569e6d373121864985a9920bd08b408f0d59ef",
+      "hashVerified": true,
+      "actuallyReadFullScreen": true,
+      "status": "REVISE",
+      "observation": "白色点数骰可见于约 x700,y625，炮兵阶段／攻方文字在其上方；没有白色教程提示，未见遮骰。骰子靠近行动盘及无关蒙古地图，图中缺少可唯一定位的参战双方和骰子归属联系；开始掷骰／占领控件不在此帧。"
+    },
+    {
+      "id": "battle-artillery-damage",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/battle-artillery-damage.jpg",
+      "sha256": "3929ff67795229e21f01a985fca4cb6f5e955b2d133d80afd951c4f93423fa28",
+      "hashVerified": true,
+      "actuallyReadFullScreen": true,
+      "status": "REVISE",
+      "observation": "炮兵攻方、白骰和合计 3／造成 0 损伤可见。结果约 x670-770,y785-840，接近并侵占下方蒙古数字 token；与本次受击对象缺乏可见锚点，玩家容易把结果当成附近地图地区的信息。无白提示，不能验证 R148 提示锚点。"
+    },
+    {
+      "id": "battle-cavalry-rolling",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/battle-cavalry-rolling.jpg",
+      "sha256": "9bbd0ca02b334bd2e9ab9add5d7a1c40b2432d57b3632decd9f0cf323093ac09",
+      "hashVerified": true,
+      "actuallyReadFullScreen": true,
+      "status": "REVISE",
+      "observation": "红色骑兵骰在约 x725,y670，骑兵阶段／守方标签可读，骰子无遮挡；但守方具体国家、部队和所在战场没有在骰盘附近形成唯一关联，骰子落在蒙古地图一侧。无白提示及正式决策控件。"
+    },
+    {
+      "id": "battle-cavalry-damage",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/battle-cavalry-damage.jpg",
+      "sha256": "e775f5dedb03f391a2f555cc7102c3a6d0156965719c4819808d2a40b7a8f1f9",
+      "hashVerified": true,
+      "actuallyReadFullScreen": true,
+      "status": "REVISE",
+      "observation": "骑兵守方与红骰、合计 1／造成 0 损伤可见；结果仍落在约 x670-770,y785-840，遮占蒙古 token／数字槽附近，与真实受击对象未建立清楚空间联系。白提示未出现，无法证明新增高亮目标在隐藏面板期间仍可锚定。"
+    },
+    {
+      "id": "battle-infantry-rolling",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/battle-infantry-rolling.jpg",
+      "sha256": "7a5424be7865f8045fd3c4132d3a81b7c1b39eae58a3786c98f74daf9613d474",
+      "hashVerified": true,
+      "actuallyReadFullScreen": true,
+      "status": "REVISE",
+      "observation": "两枚绿色步兵骰在约 x620,y645 与 x845,y650，步兵阶段／攻方标签可读，无白提示遮挡。左骰压在行动盘本体，右骰压在蒙古地图上；双骰虽开放可见，但没有与唯一参战双方或目标地区组成清楚战斗构图。"
+    },
+    {
+      "id": "battle-infantry-damage",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r147-layering-pc-20261101/desktop/battle-infantry-damage.jpg",
+      "sha256": "357ca189784ab7eb1e5d59675a79b076143d9efdf6e6a7ae8c851e91092682a4",
+      "hashVerified": true,
+      "actuallyReadFullScreen": true,
+      "status": "REVISE",
+      "observation": "两枚绿色骰与合计 20／造成 2 损伤可见，无白提示。左骰位于行动盘内、右骰位于蒙古地图；结果文字仍压在蒙古 token／数字槽附近，受击双方及战斗目标无清楚对应；该静态帧不能证明伤害动画连续性或后续占领决策。"
+    }
+  ],
+  "requiredNextEvidence": [
+    "R148 真实入口的新战斗整屏：掷骰前、面板隐藏的动画期、结果收口、占领决策。",
+    "明确证明具体来源、目标、双方与骰子／结果共享可理解的战斗锚点；不可仅靠攻方／守方文字或内部 trace。",
+    "动画期若 qidahen-raid-intent 不再存在，直接核查白提示的实际退场／重新锚定结果，不沿用本次旧图结论。",
+    "最终整链逐媒体重新审计；本报告和六张历史图不得加入最终 PASS 或用户查看器。"
+  ],
+  "limitations": [
+    "仅实际读取六张 JPG 静态关键态，未读整段视频，未审完整录屏。",
+    "未运行 R148、未读取其浏览器现场，不将历史现象判定为 R148 已复现或已修复。",
+    "不作规则数值正确性结论，不改代码，不创建用户媒体链接。",
+    "R147 整组原有开垦／年末注释漂移失败状态不被本报告改变。"
+  ]
+}

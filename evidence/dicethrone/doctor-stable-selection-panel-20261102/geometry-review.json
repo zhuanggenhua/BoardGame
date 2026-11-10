@@ -1,0 +1,54 @@
+{
+  "verdict": "PASS",
+  "scope": "geometry-only",
+  "beforeConfirmVerticalDelta": 166.34375,
+  "cardDimensionsPreserved": true,
+  "items": [
+    {
+      "label": "stable-after-desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "states": 6,
+      "verdict": "PASS",
+      "maxGeometryDelta": 0,
+      "confirm": {
+        "x": 695.390625,
+        "y": 573,
+        "width": 49.203125,
+        "height": 32
+      },
+      "surface": {
+        "x": 160,
+        "y": 81,
+        "width": 1120,
+        "height": 536
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\capture.json"
+    },
+    {
+      "label": "stable-after-landscape",
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "states": 6,
+      "verdict": "PASS",
+      "maxGeometryDelta": 0,
+      "confirm": {
+        "x": 381.390625,
+        "y": 315,
+        "width": 49.203125,
+        "height": 32
+      },
+      "surface": {
+        "x": 16,
+        "y": 33.75,
+        "width": 780,
+        "height": 325.25
+      },
+      "capture": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\capture.json"
+    }
+  ]
+}

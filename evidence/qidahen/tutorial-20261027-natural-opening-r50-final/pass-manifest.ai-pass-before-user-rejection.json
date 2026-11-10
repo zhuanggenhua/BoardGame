@@ -1,0 +1,207 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "changeType": "refactor",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-10-27",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "visualReview": "本轮桌面10张、手机4张整屏原图由子代理逐张核查；只证明界面、交互入口、布局与可读性。"
+  },
+  "media": [
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/00-辽东与叶赫部局面.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/01-轮盘前进两格与军屯落点.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/02-指定后金抽牌.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/03-辽东军屯结果.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/04-叶赫部真实地图目标.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/05-银两支付与鸳鸯阵手牌.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/06-野战出兵与战术牌.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/07-战后幸存部队与占领选择.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/08-叶赫部占领结果.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/09-教程退出后同局继续.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-01-突袭支付与手牌.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-02-长按银两检视卡面.png",
+    "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-03-检视返回后轻点银两选择支付.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "连续正式开局与轮盘军屯",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/00-辽东与叶赫部局面.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/01-轮盘前进两格与军屯落点.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/02-指定后金抽牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/03-辽东军屯结果.png",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-natural-raid.json"
+      ]
+    },
+    {
+      "requirement": "突袭支付、战术与战后占领",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/04-叶赫部真实地图目标.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/05-银两支付与鸳鸯阵手牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/06-野战出兵与战术牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/07-战后幸存部队与占领选择.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/08-叶赫部占领结果.png",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-natural-raid.json"
+      ]
+    },
+    {
+      "requirement": "手机长按检视",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-00-叶赫部地图目标避开支付托盘.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-01-突袭支付与手牌.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-02-长按银两检视卡面.png",
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/移动-03-检视返回后轻点银两选择支付.png",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-mobile-hand-inspect.json"
+      ]
+    },
+    {
+      "requirement": "生命周期与同局继续",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261027-natural-opening-r50-final/media/09-教程退出后同局继续.png",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-entry.json",
+        "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-natural-raid.json"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "basic-opening-entry",
+      "sourceRun": "20261027-natural-opening-r50",
+      "sourceRevision": "sha256:991a1c31bc27b83442dfe930a990d7e2f3c636f84d04178808b9c84124ce8e56",
+      "evidence": "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-entry.json",
+      "requiredSteps": [
+        "basic-opening-entry-check-001",
+        "basic-opening-entry-check-002",
+        "basic-opening-entry-check-003",
+        "basic-opening-entry-check-004"
+      ]
+    },
+    {
+      "chainId": "basic-opening-natural-raid",
+      "sourceRun": "20261027-natural-opening-r50",
+      "sourceRevision": "sha256:991a1c31bc27b83442dfe930a990d7e2f3c636f84d04178808b9c84124ce8e56",
+      "evidence": "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-natural-raid.json",
+      "requiredSteps": [
+        "basic-opening-natural-raid-input-001",
+        "basic-opening-natural-raid-capture-002",
+        "basic-opening-natural-raid-input-003",
+        "basic-opening-natural-raid-capture-004",
+        "basic-opening-natural-raid-input-005",
+        "basic-opening-natural-raid-capture-006",
+        "basic-opening-natural-raid-input-007",
+        "basic-opening-natural-raid-capture-008",
+        "basic-opening-natural-raid-input-009",
+        "basic-opening-natural-raid-input-010",
+        "basic-opening-natural-raid-input-011",
+        "basic-opening-natural-raid-capture-012",
+        "basic-opening-natural-raid-input-013",
+        "basic-opening-natural-raid-capture-014",
+        "basic-opening-natural-raid-input-015",
+        "basic-opening-natural-raid-input-016",
+        "basic-opening-natural-raid-input-017",
+        "basic-opening-natural-raid-input-018",
+        "basic-opening-natural-raid-input-019",
+        "basic-opening-natural-raid-input-020",
+        "basic-opening-natural-raid-input-021",
+        "basic-opening-natural-raid-capture-022",
+        "basic-opening-natural-raid-input-023",
+        "basic-opening-natural-raid-capture-024",
+        "basic-opening-natural-raid-input-025",
+        "basic-opening-natural-raid-input-026",
+        "basic-opening-natural-raid-input-027",
+        "basic-opening-natural-raid-input-028",
+        "basic-opening-natural-raid-input-029",
+        "basic-opening-natural-raid-input-030",
+        "basic-opening-natural-raid-input-031",
+        "basic-opening-natural-raid-capture-032",
+        "basic-opening-natural-raid-input-033",
+        "basic-opening-natural-raid-input-034",
+        "basic-opening-natural-raid-capture-035"
+      ]
+    },
+    {
+      "chainId": "basic-opening-mobile-hand-inspect",
+      "sourceRun": "20261027-natural-opening-r50",
+      "sourceRevision": "sha256:991a1c31bc27b83442dfe930a990d7e2f3c636f84d04178808b9c84124ce8e56",
+      "evidence": "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-mobile-hand-inspect.json",
+      "requiredSteps": [
+        "basic-opening-mobile-hand-inspect-input-001",
+        "basic-opening-mobile-hand-inspect-input-002",
+        "basic-opening-mobile-hand-inspect-input-003",
+        "basic-opening-mobile-hand-inspect-input-004",
+        "basic-opening-mobile-hand-inspect-input-005",
+        "basic-opening-mobile-hand-inspect-input-006",
+        "basic-opening-mobile-hand-inspect-input-007",
+        "basic-opening-mobile-hand-inspect-input-008",
+        "basic-opening-mobile-hand-inspect-input-009",
+        "basic-opening-mobile-hand-inspect-input-010",
+        "basic-opening-mobile-hand-inspect-input-011",
+        "basic-opening-mobile-hand-inspect-input-012",
+        "basic-opening-mobile-hand-inspect-capture-013",
+        "basic-opening-mobile-hand-inspect-input-014",
+        "basic-opening-mobile-hand-inspect-input-015",
+        "basic-opening-mobile-hand-inspect-capture-016",
+        "basic-opening-mobile-hand-inspect-input-017",
+        "basic-opening-mobile-hand-inspect-capture-018",
+        "basic-opening-mobile-hand-inspect-check-019",
+        "basic-opening-mobile-hand-inspect-input-020",
+        "basic-opening-mobile-hand-inspect-input-021",
+        "basic-opening-mobile-hand-inspect-capture-022"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/qidahen_r50_visual"
+    },
+    "reviewFile": ".visual-review.json",
+    "baselineReviewFile": ".baseline-review.json",
+    "summary": {
+      "total": 14,
+      "pass": 14,
+      "revise": 0,
+      "failedPaths": []
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "课程及受影响的规则数值由定向Vitest断言，真实玩家输入与续局由本轮Chromium走测证明；不声称全游戏审计或全仓类型检查通过。",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/battleMorale.test.ts src/games/qidahen/__tests__/qidahen-battle-resolution-and-offense-tactics.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/engine/systems/__tests__/TutorialSystem.test.ts src/components/tutorial/__tests__/TutorialOverlay.aiActions.test.tsx --configLoader native",
+      "node scripts/infra/run-e2e-command.mjs default e2e/qidahen/qidahen-closeout.e2e.ts --grep '唯一入门|正式入门连续对局|移动横屏真实教程'"
+    ],
+    "evidence": [
+      "test-results/qidahen-r50-unit.log",
+      "test-results/qidahen-r50-e2e.log",
+      "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-entry.json",
+      "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-natural-raid.json",
+      "evidence/qidahen/behavior-traces/20261027-natural-opening-r50/basic-opening-mobile-hand-inspect.json"
+    ],
+    "result": "Vitest 98/98；真实Chromium E2E 3/3；同源行为链断言一致。"
+  },
+  "outOfScopeMedia": [],
+  "scopeSummary": "正式大明开局，在辽东军屯后突袭相邻叶赫部，支付银两、打鸳鸯阵、真实选择参战与占领，完成后保留同局；另验手机地图避让、长按检视及返回后选牌、刷新继续、重开与退出清理。",
+  "limitations": [
+    "主线不承诺跨年补给、攻城、其它轮盘落点及其它势力的完整教学。",
+    "正式战斗同级不同兵种承伤对象选择仍为已登记范围外缺口。",
+    "全仓typecheck与i18n检查尚有失败，详见本轮覆盖记录；未将其记为通过。"
+  ]
+}

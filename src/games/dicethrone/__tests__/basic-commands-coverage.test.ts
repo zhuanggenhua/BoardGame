@@ -402,7 +402,8 @@ describe('AI legal actions', () => {
 
         expect(rawCharacterIds).toContain('lieren');
         expect(rawCharacterIds).toContain('vampire_lord');
-        expect(contextCharacterIds).toContain('doctor_strange');
+        expect(rawCharacterIds).toContain('doctor_strange');
+        expect(contextCharacterIds).not.toContain('doctor_strange');
         expect(contextCharacterIds).not.toContain('lieren');
         expect(contextCharacterIds).not.toContain('vampire_lord');
     });

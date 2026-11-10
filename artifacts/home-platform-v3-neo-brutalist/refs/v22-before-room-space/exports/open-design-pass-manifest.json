@@ -1,0 +1,190 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "lobby",
+  "evidenceCategory": "independent",
+  "title": "首页第二十二版：详情操作区重构",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/steam_library_reference"
+    },
+    "reviewFile": ".visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run --config artifacts/home-platform-v3-neo-brutalist/vitest.config.ts --configLoader native",
+      "node artifacts/home-platform-v3-neo-brutalist/capture.mjs --only=06,06b,06c,06d,m06,m06b,m06c,m06d,m06e,m06f,m06g"
+    ],
+    "evidence": [
+      "behavioral-verification.json",
+      "details-actions-vitest-final.log",
+      "details-actions-capture.log",
+      "两端真实浏览器行为测试与截图链路共用操作区断言；静态合同不替代像素审查"
+    ]
+  },
+  "evidenceIndex": ".e2e-image-index.json",
+  "sourceSnapshot": {
+    "index.html": "6f5d37e3be2f499262a58d0d14516e3936c8fbdcc4de5a89528f58896363071b",
+    "mobile.css": "ede1ce490f7e5a136a8e98dd5828dc6c437de52703993808f4d73ac1a8ae2d29",
+    "capture.mjs": "c6e068979e701a85703972e716533249db7109eb8242135b59da3a5fb35e9242",
+    "mobile-capture.mjs": "d3012542e114fd921617be2ab409587d5bf976036732c34dd8e9571cb7cdfec4",
+    "details-layout.mjs": "b9e4a9999e45edf580366a8b70ebf18a684d968ab0c86fff3677264f5df2ec64",
+    "details-actions.behavior.test.ts": "853af74784c4d3a1901f753213c56b91046b3a922374ca217541d2990a0fd9bf",
+    "library-tasks.mjs": "e8f3c111e90795bc81bfc85e9cbfa3a265803711a495c6b03be685a2c519a8b0",
+    "library-task.behavior.test.ts": "d3b1635532679ecec567237f937fb962a18d370598b080def475a347c7367e1a",
+    "vitest.config.ts": "9a2ae93ae87da3514bf4972ae42d17a2ea14e7b8700a5356c9438cebf3beffde"
+  },
+  "requirements": [
+    {
+      "requirement": "桌面和手机主辅操作分区，辅助按钮同排有间隔，取消悬停上移",
+      "status": "PASS",
+      "evidence": [
+        "06-游戏详情.png",
+        "m06-游戏详情.png"
+      ]
+    },
+    {
+      "requirement": "作者作为署名入口，人数时长为只读资料，配置表不再单占半行",
+      "status": "PASS",
+      "evidence": [
+        "06-游戏详情.png",
+        "m06-游戏详情.png",
+        "06b-作者弹窗.png",
+        "m06b-作者弹窗.png"
+      ]
+    },
+    {
+      "requirement": "收藏、教程、配置和作者入口仍可触发原有设计稿行为，关闭能返回原详情",
+      "status": "PASS",
+      "evidence": [
+        "06-游戏详情.png",
+        "06b-作者弹窗.png",
+        "m06-游戏详情.png",
+        "m06b-作者弹窗.png"
+      ]
+    },
+    {
+      "requirement": "销毁与创建确认仍独立清晰，创建人数选择和展开电脑设置保持可用",
+      "status": "PASS",
+      "evidence": [
+        "06c-销毁确认.png",
+        "06d-创建房间.png",
+        "m06c-销毁确认.png",
+        "m06d-创建房间.png",
+        "m06f-创建AI展开.png",
+        "m06g-AI创建按钮可达.png"
+      ]
+    },
+    {
+      "requirement": "规则页签与原文保留，满房显示不可加入状态",
+      "status": "PASS",
+      "evidence": [
+        "m06e-规则原文.png",
+        "06-游戏详情.png"
+      ]
+    },
+    {
+      "requirement": "其它页面原图未改写且摘要一致，不扩大为本轮新验收",
+      "status": "PASS",
+      "evidence": [
+        "01-收藏库主页.png",
+        "01b-收藏库悬停.png",
+        "02-收藏库游戏页.png",
+        "02b-收藏库排行榜.png",
+        "02c-收藏库规则概览.png",
+        "03-切发现再回收藏库.png",
+        "04-点主页.png",
+        "05-发现网格.png",
+        "05b-发现悬停.png",
+        "07-上传页.png",
+        "07b-上传新游戏.png",
+        "08-个人主页.png",
+        "m01-收藏库主页.png",
+        "m01d-收藏搜索.png",
+        "m01e-收藏搜索空态.png",
+        "m01f-收藏排序.png",
+        "m01c-收藏库末项.png",
+        "m02b-返回全部游戏.png",
+        "m01g-返回保留位置.png",
+        "m01h-展开次要情报.png",
+        "m02-收藏库游戏页.png",
+        "m02c-完整房间列表.png",
+        "m02d-完整好友列表.png",
+        "m05-发现两列.png",
+        "m05b-发现点开展开.png",
+        "m05c-发现末项.png",
+        "m07-上传页.png",
+        "m07b-上传提交区.png",
+        "m07c-短视口填写.png",
+        "m08-个人主页.png",
+        "m08c-个人动态末项.png",
+        "m08b-顶栏抽屉.png"
+      ]
+    }
+  ],
+  "approval": {
+    "status": "not-approved",
+    "note": "当前为AI审查通过的设计稿候选，待用户验收；未实现或发布生产前端"
+  },
+  "limitations": [
+    "三百七十五乘五百四十仅为缩短可视高度的压力替身，未覆盖真机软键盘",
+    "命运支配与井字棋保留既有演示素材占位，未新增游戏素材接入"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\01-收藏库主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\01b-收藏库悬停.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\02-收藏库游戏页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\02b-收藏库排行榜.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\02c-收藏库规则概览.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\03-切发现再回收藏库.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\04-点主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\05-发现网格.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\05b-发现悬停.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06-游戏详情.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06d-创建房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06b-作者弹窗.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\06c-销毁确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\07-上传页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\07b-上传新游戏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\08-个人主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01-收藏库主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01d-收藏搜索.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01e-收藏搜索空态.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01f-收藏排序.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01c-收藏库末项.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m02b-返回全部游戏.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01g-返回保留位置.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m01h-展开次要情报.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m02-收藏库游戏页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m02c-完整房间列表.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m02d-完整好友列表.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m05-发现两列.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m05b-发现点开展开.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06-游戏详情.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06b-作者弹窗.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06e-规则原文.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06c-销毁确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06d-创建房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06f-创建AI展开.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m06g-AI创建按钮可达.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m05c-发现末项.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m07-上传页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m07b-上传提交区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m07c-短视口填写.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m08-个人主页.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m08c-个人动态末项.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\artifacts\\home-platform-v3-neo-brutalist\\exports\\m08b-顶栏抽屉.png"
+  ]
+}

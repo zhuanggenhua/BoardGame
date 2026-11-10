@@ -1,0 +1,70 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "refactor",
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "requirements": [
+    {
+      "requirement": "增加可逆按钮隐藏准备法术上层，以查看下方被动能力。",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\01-桌面单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\02-桌面单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\04-桌面多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\05-桌面多张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\06-桌面多张-恢复法术.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\07-横屏单张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\08-横屏单张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\10-横屏多张-法术显示.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\11-横屏多张-露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\12-横屏多张-恢复法术.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\13-横屏触控三张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\14-横屏触控末张.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\15-横屏触控露出被动.png",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\16-横屏触控恢复法术.png"
+      ]
+    }
+  ],
+  "acceptanceReason": "用户要求增加按钮关闭上层法术牌显示，从而查看底下被动；本组只审显示、收起与恢复状态。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\01-桌面单张-法术显示.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\02-桌面单张-露出被动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\04-桌面多张-法术显示.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\05-桌面多张-露出被动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\06-桌面多张-恢复法术.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\07-横屏单张-法术显示.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\08-横屏单张-露出被动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\10-横屏多张-法术显示.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\11-横屏多张-露出被动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\12-横屏多张-恢复法术.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\13-横屏触控三张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\14-横屏触控末张.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\15-横屏触控露出被动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-prepared-visibility-20261103\\final\\16-横屏触控恢复法术.png"
+  ],
+  "behavioralVerification": {
+    "status": "not-claimed",
+    "reason": "本清单只声明画面；真实鼠标和触屏收起、恢复、牌组状态和原阅读另有行为日志。"
+  },
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "sourceSnapshot": {
+    "index.html": "e896ce3c75167487f3e7d2c567270e2d7d080e0bf8a5b92f03fffabec90139e3",
+    "mobile.css": "a17837fd9610782f3a4398a404c504e69471207b8161f8bcbca3e20f92477b17",
+    "capture.mjs": "1203e736acb1852718b3990a4ef73a90d3771fe77f36804b25c182f4f64314f8",
+    "mobile-capture.mjs": "064b04dcf819d9d0410d9cb1bf2172ec695b5ab6646f277b2f399f9bb5782230"
+  },
+  "vitest": {
+    "tests": 1,
+    "scope": "artifact-source-contract",
+    "log": "vitest.log"
+  },
+  "browser": {
+    "status": "PASS",
+    "logs": [
+      "capture-full.log",
+      "capture-ai-bottom.log",
+      "capture-final-check.log"
+    ],
+    "viewports": [
+      "1920×1080",
+      "375×812",
+      "375×540"
+    ],
+    "checks": [
+      "PC三导航/左列表/六列/个人页两侧背景",
+      "手机无水平溢出且图片加载成功",
+      "封面宽高比0.75",
+      "主按钮整行、辅助紧凑布局、主触控区44像素",
+      "房间好友内容不被内部flex裁切",
+      "完整展开介绍与通栏详情",
+      "收藏/发现/房间/好友/上传/个人末项中心可命中",
+      "作者与销毁关闭恢复",
+      "电脑席位选择后创建按钮可达"
+    ],
+    "matchHeight375": 66
+  },
+  "notCovered": [
+    "生产页面",
+    "真实游戏联机",
+    "原生软键盘"
+  ]
+}

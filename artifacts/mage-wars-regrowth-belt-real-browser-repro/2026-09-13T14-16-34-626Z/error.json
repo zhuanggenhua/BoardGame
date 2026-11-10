@@ -1,0 +1,4 @@
+{
+  "message": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:4273/play/mage-wars?playerID=0\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:4273/play/mage-wars?playerID=0\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "stack": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:4273/play/mage-wars?playerID=0\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:4273/play/mage-wars?playerID=0\", waiting until \"domcontentloaded\"\u001b[22m\n\n    at run (D:\\gongzuo\\webgame\\BoardGame\\scripts\\verify\\mage-wars-regrowth-belt-real-browser-repro.mjs:238:16)"
+}

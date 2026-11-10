@@ -1,0 +1,51 @@
+{
+  "reviewer": {
+    "agent_id": "/root/r81_boundary_candidate",
+    "role": "独立源图视觉复核子代理",
+    "method": "原图完整图已读；本轮读取两张完整候选图，再单独放大原图和同坐标候选；未读取其它代理意见或报告"
+  },
+  "sources": [
+    {
+      "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+      "sha256": "C50C1D3CFDF8F2B09FFB403C22E31F90523F7A20C7F051C8432B93490B90FF0E"
+    },
+    {
+      "path": "evidence/qidahen/r81-diagnostic/原图朵颜辽西分界-西支接长城.png",
+      "sha256": "E8F9C68C8614EA9EBFD04632C2DE421BCEAF5043BBA8E9067675DD2E41ABC2B3"
+    },
+    {
+      "path": "evidence/qidahen/r81-diagnostic/原图朵颜辽西分界-东支接海岸.png",
+      "sha256": "84345CF1EF93C41B8C8D3D5E4349AEFDA961E8709BF84E4E2E77E6D31980B50B"
+    }
+  ],
+  "objective": "仅按山形实际笔画、山脊方向、底色及地名相对位置，判别朵颜/辽西分界的西支和东支",
+  "focus_bbox": [
+    625,
+    474,
+    711,
+    501
+  ],
+  "verdict": "WEST_BRANCH_SUPPORTED",
+  "status": "passed",
+  "decision": {
+    "regional_boundary": "西支朝山海关/长城方向",
+    "internal_ridge": "东支朝宁远北侧/海岸方向",
+    "confidence": "图面方向判定较明确；字牌遮挡末端的精确接点不锁定"
+  },
+  "observations": [
+    {
+      "coordinates": "约(654,466)向(633,485)的西南支，以及两侧背景",
+      "observation": "浅黄朵颜底色沿山链西北侧伸至西支；橙色辽西底色在其东南侧。该支承接北侧近南北走向山链并朝山海关/长城方向收束，符合图面色域分隔。"
+    },
+    {
+      "coordinates": "约(654,468)经(675,480)至(700,491)的东支",
+      "observation": "东支实际笔画是一组横向峰形与斜坡；其上方辽西红字一侧与下方宁远字牌一侧均为橙色底，没有出现朵颜浅黄/辽西橙色的成对分隔。故不能与西支视为等价边界。"
+    },
+    {
+      "coordinates": "山海关字牌上缘及西北角，约(626,490)附近",
+      "observation": "西支末端被山海关白色字牌和邻近长城细节遮挡，原图不足以逐像素锁定最后一段接点；本结论只裁定分支方向，不认可候选青线每个折点。"
+    }
+  ],
+  "scope": "只核朵颜/辽西这一处分支；候选用于定位而非最终图验收；未修改源码、正式数据或图像。",
+  "required_followup": "正式轮廓选择西支方向；字牌遮挡末端应保留证据边界，不可声称原图逐像素完全可见。"
+}

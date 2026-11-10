@@ -1,0 +1,99 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "refactor",
+  "subject": "thor-focused-interactions",
+  "sourceBaseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "baselinePixelsAvailable": true,
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "acceptanceReason": "仅覆盖弃牌、组选重掷、多人同骰重掷、固定值与任意改骰五条代表流程，不代表全部索尔对象或移动端通过。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\01-01-原手牌区选择弃牌成本.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\02-02-取消后手牌与神锤保持.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\03-03-支付后飞掷神锤造成一点伤害.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\04-06-奥丁效果骰等待选择重掷骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\05-07-使用原整组重掷动作提交两颗所选骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\06-08-整组重掷一次完成并保留原确认收口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\10-03-当之无愧直接选择固定目标四或五.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\11-04-选择四后沿原固定值流程点选骰子.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\12-05-改为四且其余骰子保持.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\13-01-旧固定值和任意编辑各自提示与控件.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\14-02-任意编辑保留原加减预览和手动确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-focused-review-20261103\\media\\15-03-旧流程提交后只修改一颗骰子.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "弃牌飞掷沿原手牌区选择和取消",
+      "evidence": [
+        "media/01-01-原手牌区选择弃牌成本.png",
+        "media/02-02-取消后手牌与神锤保持.png",
+        "media/03-03-支付后飞掷神锤造成一点伤害.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "奥丁效果骰沿原骰盘组选重掷",
+      "evidence": [
+        "media/04-06-奥丁效果骰等待选择重掷骰子.png",
+        "media/05-07-使用原整组重掷动作提交两颗所选骰子.png",
+        "media/06-08-整组重掷一次完成并保留原确认收口.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "队友出牌后索尔同骰选择两次",
+      "evidence": [
+        "media/07-03-合法代表态-不愧是我同骰两次-队友出牌后索尔本人操作旧骰盘选骰.png",
+        "media/08-04-合法代表态-不愧是我同骰两次-原有提示和双按钮确认.png",
+        "media/09-05-合法代表态-不愧是我同骰两次-服务端记录对应骰子重掷并关闭选骰交互.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "当之无愧固定改为四或五",
+      "evidence": [
+        "media/10-03-当之无愧直接选择固定目标四或五.png",
+        "media/11-04-选择四后沿原固定值流程点选骰子.png",
+        "media/12-05-改为四且其余骰子保持.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "任意改骰保留加减预览和确认",
+      "evidence": [
+        "media/13-01-旧固定值和任意编辑各自提示与控件.png",
+        "media/14-02-任意编辑保留原加减预览和手动确认.png",
+        "media/15-03-旧流程提交后只修改一颗骰子.png"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "behavioralVerification": {
+    "status": "not-claimed",
+    "reason": "图包只声明逐图视觉结果，同轮真实浏览器行为测试另行记录。"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

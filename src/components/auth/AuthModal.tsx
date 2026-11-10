@@ -820,6 +820,7 @@ export const AuthModal = ({
             className={clsx(
                 'pointer-events-auto relative flex flex-col overflow-hidden border',
                 isPlatformStyle && 'platform-auth',
+                isClassicStandalone && 'classic-auth',
                 embedded
                     ? 'mx-auto h-full w-full max-h-full max-w-[560px] rounded-none border-transparent bg-transparent shadow-none'
                     : 'mx-4 w-[calc(100vw-2rem)] max-w-[400px] max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] rounded-sm border-[#e5e0d0] bg-[#fcfbf9] shadow-[0_10px_40px_rgba(67,52,34,0.1)]',

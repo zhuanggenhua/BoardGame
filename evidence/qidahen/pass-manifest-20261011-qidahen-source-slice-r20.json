@@ -1,0 +1,210 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "date": "2026-10-11",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "viewerUrl": "http://127.0.0.1:4867/?key=6a7a50251c7c",
+    "mobileViewerUrl": "http://127.0.0.1:4867/?key=be82ddd99cb2",
+    "finalPassBeforeOpen": true,
+    "visualReview": "子代理已逐图审计当前清单全部 76 张媒体，只检查 UI、交互承接、可读性、主焦点、高亮、裁切、遮挡和明显报错；数值与规则由 Vitest 及真实 E2E 状态断言负责。"
+  },
+  "evidenceIndex": ".e2e-image-index-20261011-qidahen-source-slice-r20.json",
+  "problemChain": {
+    "problemOriginal": "教程在多个教学节点把相邻父层、子项、未触发限制或作者说明混入当前动作；征兵训练节点尤其没有按当前教学原子裁剪规则源片段。",
+    "understanding": "每个教学节点只显示当前动作、对象或结果直接对应的连续规则原文；父层总览、其它合法分支、后续限制和实现说明不得提前进入当前卡；动作卡只保留当前一个真实操作，结果卡只保留刚发生的可见变化。",
+    "relationAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "基础教程的轮盘征兵节点只呈现征兵行动原文，训练规则留到确实教学训练结果的专题规则卡。",
+        "独立轮盘征兵训练专题的规则卡只保留征兵、训练及当前结果直接需要的连续原文，不含作者标签、当前点击句或路径解释。",
+        "赐印招安规则卡删除接收区映射、自动锁定和其它实现说明；这些内容只在后续真实操作步骤承接。"
+      ]
+    },
+    "currentSolution": "已重构基础教程、轮盘征兵训练专题及相关规则卡：规则参考卡裁剪到当前教学原子，动作卡只写真实点击/选择/支付句，结果卡只写实际发生的状态变化；中英文、测试、E2E、规范和记录同步更新。",
+    "solutionAcceptance": {
+      "status": "PASS",
+      "evidence": [
+        "真实 Chromium E2E：18 passed。",
+        "七大恨定向 Vitest：4 个测试文件、254 tests passed。",
+        "spec:lint、i18n:check、TypeScript 检查和 git diff --check 均通过。",
+        "本轮 r20 生成桌面 73 张、移动端 3 张，共 76 张有效 PNG；坏图 0。",
+        "子代理逐图完成 76/76 张媒体的 UI/交互审计，PASS 76，REVISE 0。"
+      ]
+    },
+    "remainingBlockers": "无；r20 清单与视觉报告均覆盖当前全部 76 张媒体，规则/数值由真实 E2E 与 Vitest 覆盖。",
+    "specBackfill": "唯一规范源为 .spec/knowledge/standards/tutorial-design.md；已补充“规则参考卡按当前教学原子裁剪”条款，并要求规则参考卡不得添加作者解释、当前点击句或实现说明。"
+  },
+  "requirements": [
+    {
+      "requirement": "每个规则参考卡只保留当前教学原子的连续原文",
+      "status": "PASS",
+      "evidence": [
+        "基础教程 wheelRecruitTrainRule 仅保留征兵行动原文。",
+        "轮盘征兵训练专题 ruleReference 仅保留征兵/训练结果直接需要的原文片段。",
+        "赐印招安规则卡不再混入接收区映射或自动锁定等实现说明。"
+      ]
+    },
+    {
+      "requirement": "规则参考、当前动作、结果反馈三类职责分层",
+      "status": "PASS",
+      "evidence": [
+        "规则参考卡不含当前点击句；动作卡只要求一个真实动作；结果卡只陈述已发生的可见结果。"
+      ]
+    },
+    {
+      "requirement": "不同规则路径的同名行动不混写",
+      "status": "PASS",
+      "evidence": [
+        "轮盘征兵行动与手牌行动征兵训练按独立路径展示，费用与路径说明不拼入同一张规则卡。"
+      ]
+    },
+    {
+      "requirement": "真实端到端证据与移动端覆盖",
+      "status": "PASS",
+      "evidence": [
+        "18 条真实浏览器用例全部通过；桌面 73 张、移动端 3 张截图纳入 r20 清单。",
+        "子代理完成 76/76 张截图的 UI/交互全量审计，未发现需返工媒体。"
+      ]
+    }
+  ],
+  "verification": {
+    "e2e": "npm run test:e2e:file -- e2e/qidahen/qidahen-closeout.e2e.ts",
+    "unit": "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/mapTroopResult.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-newyear-resolution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+    "typecheck": "npm run typecheck",
+    "specLint": "npm run spec:lint",
+    "i18n": "npm run i18n:check",
+    "diffCheck": "git diff --check -- .spec/knowledge/standards/tutorial-design.md docs/games/qidahen/records/qidahen-tutorial-implementation-map.md docs/games/qidahen/records/qidahen-tutorial-coverage-matrix.md docs/games/qidahen/records/qidahen-tutorial-script-draft.md e2e/qidahen/qidahen-closeout.e2e.ts public/locales/zh-CN/game-qidahen.json public/locales/en/game-qidahen.json src/games/qidahen/tutorial.ts src/games/qidahen/__tests__/tutorialFlow.test.ts",
+    "screenshotRunId": "20261011-qidahen-source-slice-r20",
+    "desktopPngCount": 73,
+    "mobilePngCount": 3,
+    "totalPngCount": 76,
+    "badPngCount": 0
+  },
+  "media": [
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/00-教程目录-先选择章节.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/01-开场-阅读三种胜利条件.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/01a-玩家行动流程-轮盘与手牌行动无固定先后.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/02-开局检查-3张手牌未超过15张不弃牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/02a-轮盘规则-1格2格3格对应不同轮盘结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/02b-轮盘征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/03a-轮盘合法分支自动恢复到选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/03-轮盘选择-点击高亮征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/04-轮盘结算-宣府部队1到3.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/04a-手牌行动规则-四个同层行动.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/05-赐印招安规则原文.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/06-手牌行动-现在选择赐印招安.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/07-赐印招安-支付3张手牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/07a-赐印招安-首张手牌抬升并标记已选.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/07b-赐印招安-3张手牌已选待确认.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/08-赐印招安-选择山海关接收区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/09-赐印招安-接收区自动锁定后金并选择锦州部队.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/10-赐印招安-部队位置与阵营变化.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/11-首回合-规则链完成.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/13-轮盘第1步-先看走3会让两家对手摸牌.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/14-轮盘第2步-看蒙古后金手牌同时增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/14a-轮盘第2a步-先选择参与进攻的部队.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15-轮盘第3步-进入进攻调度落点.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15a-开垦第1步-点击高亮开垦.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15b-开垦第2步-看己方控制区人口增加.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15c-军屯第1步-点击高亮军屯.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15d-军屯第2步-看补牌并建立正规军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15e0-征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15e-征兵训练第1步-点击高亮征兵训练.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15f-征兵训练第2步-宣府炮兵与新增部队特写.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15f-征兵训练第2步-宣府总兵力2到4并训练炮兵.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/16-军备第0步-四个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/16-军备第1步-先点升级军备.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/17-军备第2步-点击底部手牌支付2张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/18-军备第3步-看火炮技术升到2级.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/18a-事件第0步-蒙古三个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/19-事件第1步-先点大汗令箭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/20-事件第2步-点击底部手牌支付1张.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/21-事件第3步-选择征兵训练效果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/22-事件第4步-看蒙古兵力增加到4.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/22a-进攻第0步-大明四个势力行动总览.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/23-进攻第1步-点击突袭作战入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/24-进攻第2步-弃1张手牌支付突袭.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/25-进攻第3步-支付后进入察哈尔野战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/25b-进攻第3b步-战术牌选中后显示打出确认.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/26-进攻第4步-打出战术牌后决定承伤顺序.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/26a-进攻第4a步-看断后后的战后处理.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/27-进攻第5步-看战败标记与战后选择.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/27a-进攻第6步-看占领结果摘要.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/28-撤退第1步-先看断后和溃退入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/29-撤退第2步-看溃退后的残部清空与战败标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/30-攻城第1步-真实守城宣告入口.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/30a-攻城第1a步-右侧断后结算城战.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/31-攻城第2步-选择围城该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/31a-攻城第3步-同章选择占领该区.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/32-外交第1步-点击高亮外交雇佣.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/33-外交第2步-先放置友好标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/33a-外交第2a步-翻为附庸.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/33b-外交第2b步-移除他方控制标记.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/34-外交第3步-结束并结算雇佣军.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/35-外交第4步-看完外交与雇佣的合并收益.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/36-跨年第1步-推进到年中并查看税赋与人物.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/37-跨年第2步-先看新年朝鲜朝贡.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/38-跨年第3步-进入新年防线维护.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/39-跨年第4步-看纪年卡与争分结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/40-跨年第5步-看新顺位与人物刷新.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/41-跨年第6步-看到新年结算与新年份.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/42-朝鲜第1步-先看朝鲜朝贡后的牌库与弃牌堆.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/43-朝鲜第2步-看汉城威望已进入玩家条.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/44-朝鲜第3步-看海路与船锚区域关系.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/45-朝鲜第4步-点击新年维护进入耗损结算.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/46-朝鲜第5步-看朝鲜耗损与山海关结果.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20-mobile/移动-01-移动教程-手牌检视前.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20-mobile/移动-02-移动教程-长按手牌打开检视.png",
+    "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20-mobile/移动-03-移动教程-关闭检视回到牌桌.png"
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "image_acceptance_audit"
+    },
+    "reviewFile": ".visual-review-20261011-qidahen-source-slice-r20.json",
+    "summary": {
+      "fullCoverage": true,
+      "desktopCount": 73,
+      "mobileCount": 3,
+      "totalMediaCount": 76,
+      "passCount": 76,
+      "reviseCount": 0,
+      "failedPaths": [],
+      "missingMedia": [],
+      "extraMedia": [],
+      "badPngMetadata": [],
+      "duplicatePaths": [],
+      "numericOrRuleValidation": "excluded; covered by E2E/Vitest",
+      "auxiliaryDetailPaths": [
+        "test-results/evidence-screenshots/_shared/qidahen-教程完成/20261011-qidahen-source-slice-r20/15f-征兵训练第2步-宣府炮兵与新增部队特写.png"
+      ]
+    }
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "scope": "规则与数值真相",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/mapTroopResult.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/games/qidahen/__tests__/qidahen-newyear-resolution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "本次复跑 4 个七大恨 Vitest 测试文件，共 254 tests passed。",
+      "截图只负责交互/UI 可见性，不承担数值正确性。"
+    ]
+  },
+  "outOfScopeMedia": [
+    {
+      "path": "test-results/evidence-screenshots/_shared/qidahen-新游戏收口/02-终局遮罩-注入胜利后显示.png",
+      "contract": "qidahen-新游戏收口",
+      "reason": "该终局遮罩属于独立的新游戏收口证据合同，不属于教程完成 r20 的主清单；已由本次 E2E 生成并单独登记。"
+    }
+  ]
+}

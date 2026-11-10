@@ -293,6 +293,45 @@ const normalizeDiagnosticPacket = (
     } as FeedbackDiagnosticPacket;
 };
 
+const PRIVATE_REPLAY_STATUS_ERRORS = new Set([
+    'private_replay_prepare_failed',
+    'private_replay_pending_attachment',
+    'private_replay_attachment_failed',
+    'private_replay_not_captured',
+    'private_replay_capture_failed',
+    'private_replay_missing_fields',
+]);
+
+const updatePrivateReplayDiagnosticPacket = (
+    packet: FeedbackDiagnosticPacket | undefined,
+    captured: boolean,
+    triggerCaptured = false,
+): FeedbackDiagnosticPacket | undefined => {
+    if (!packet) return undefined;
+    const missingFields = new Set(packet.missingFields ?? []);
+    const collectionErrors = (packet.collectionErrors ?? [])
+        .filter((error) => !PRIVATE_REPLAY_STATUS_ERRORS.has(error));
+    if (captured) {
+        missingFields.delete('privateReplay');
+        missingFields.delete('snapshots.privateStateRedacted');
+        if (triggerCaptured) missingFields.delete('privateReplay.trigger');
+    } else {
+        missingFields.add('privateReplay');
+        collectionErrors.push('private_replay_attachment_failed');
+    }
+    const normalizedMissingFields = [...missingFields];
+    const hasCollectionErrors = collectionErrors.length > 0;
+    return {
+        ...packet,
+        missingFields: normalizedMissingFields,
+        collectionErrors,
+        collectionStatus: normalizedMissingFields.length > 0 || hasCollectionErrors ? 'partial' : 'complete',
+        replayability: normalizedMissingFields.includes('snapshots.at')
+            ? 'unreplayable'
+            : normalizedMissingFields.length > 0 || hasCollectionErrors ? 'partial' : 'full',
+    };
+};
+
 const FEEDBACK_SEVERITY_RANK: Record<string, number> = {
     low: 1,
     medium: 2,
@@ -595,12 +634,35 @@ export class FeedbackService {
     async attachPrivateReplay(id: string, dto: AttachPrivateReplayDto): Promise<boolean> {
         if (!Types.ObjectId.isValid(id)) return false;
         const filter = { _id: id, 'clientContext.matchId': dto.matchId, 'clientContext.playerId': dto.playerId };
-        const existing = await this.feedbackModel.findOne(filter).select('+privateReplay').lean<{ privateReplay?: string } | null>().exec();
+        const existing = await this.feedbackModel.findOne(filter).select('+privateReplay').lean<{
+            privateReplay?: string;
+            diagnosticPacket?: FeedbackDiagnosticPacket;
+        } | null>().exec();
         if (!existing) return false;
         if (typeof existing.privateReplay === 'string') return true;
-        const updated = await this.feedbackModel.updateOne({ ...filter, privateReplay: { $exists: false } }, { $set: { privateReplay: dto.privateReplay } }).exec();
-        if (updated.matchedCount > 0) return true;
-        return Boolean(await this.feedbackModel.exists({ ...filter, privateReplay: { $exists: true } }));
+        const updateFilter = { ...filter, privateReplay: { $exists: false } };
+        if (typeof dto.privateReplay === 'string' && dto.privateReplay.length > 0) {
+            const diagnosticPacket = updatePrivateReplayDiagnosticPacket(
+                existing.diagnosticPacket,
+                true,
+                dto.privateReplayTriggerCaptured === true,
+            );
+            const updated = await this.feedbackModel.updateOne(updateFilter, {
+                $set: {
+                    privateReplay: dto.privateReplay,
+                    ...(diagnosticPacket ? { diagnosticPacket } : {}),
+                },
+            }).exec();
+            if (updated.matchedCount > 0) return true;
+            return Boolean(await this.feedbackModel.exists({ ...filter, privateReplay: { $exists: true } }));
+        }
+        if (dto.captureError === 'private_replay_attachment_failed') {
+            const diagnosticPacket = updatePrivateReplayDiagnosticPacket(existing.diagnosticPacket, false);
+            if (!diagnosticPacket) return true;
+            const updated = await this.feedbackModel.updateOne(updateFilter, { $set: { diagnosticPacket } }).exec();
+            return updated.matchedCount > 0 || Boolean(await this.feedbackModel.exists({ ...filter, privateReplay: { $exists: true } }));
+        }
+        return false;
     }
 
     async updateStatus(actorUserId: string, id: string, dto: UpdateFeedbackStatusDto): Promise<Feedback | null> {
@@ -1653,6 +1715,7 @@ export class FeedbackService {
         includeContent: boolean,
     ): Feedback {
         const raw = this.toFeedbackObject(item);
+        const diagnosticReplayability = raw.diagnosticReplayability ?? raw.diagnosticPacket?.replayability;
         const projectConfigProposal = (value: unknown): Record<string, unknown> | undefined => {
             const proposal = asRecord(value);
             if (Object.keys(proposal).length === 0) return undefined;
@@ -1707,8 +1770,8 @@ export class FeedbackService {
             ...(typeof raw.hasClientContext === 'boolean' ? { hasClientContext: raw.hasClientContext } : {}),
             ...(typeof raw.hasErrorContext === 'boolean' ? { hasErrorContext: raw.hasErrorContext } : {}),
             ...(!anonymousSystem
-                && (raw.diagnosticReplayability === 'full' || raw.diagnosticReplayability === 'partial' || raw.diagnosticReplayability === 'unreplayable')
-                ? { diagnosticReplayability: raw.diagnosticReplayability }
+                && (diagnosticReplayability === 'full' || diagnosticReplayability === 'partial' || diagnosticReplayability === 'unreplayable')
+                ? { diagnosticReplayability }
                 : {}),
             actionLog: anonymousSystem
                 ? removeAnonymousDiagnosticTextIdentifiers(projectFeedbackActionLogText(raw.actionLog))

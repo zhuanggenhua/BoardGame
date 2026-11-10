@@ -1,0 +1,44 @@
+[
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\34-外交第3步-结束并结算雇佣军.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\35-外交第4步-看完外交与雇佣的合并收益.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "74127ec657e23cb9def54db167998e5c035f5009d3e9fba525d86a2d6d8a5886"
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\01-开场-阅读三种胜利条件.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\00-唯一入门入口-直接进入胜利条件.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "81d70b31347c1d7f2f8cf799abe9b7d401d34e00c9582e08b8cac858eeb0ca6f"
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final-mobile\\移动-02-征召支付-手牌检视前.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final-mobile\\移动-04-关闭检视-回到征召支付.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "987f49ebd90dfd0b59f8ca45741788d0dd79112e3ab5e01b08166c81543a6e70"
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\31c-01-攻城战后处理-选择前.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\31a-01-攻下城市后-选择占领或围城.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "e811af066759b9ca9cfcb8ee000f3f926000db12bcdf5ed53db9ff18ef6bc72f"
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\00a-继续后-固定先完成征召.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\02-固定先完成手牌行动.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "c37a0a313cd86607cf7ad9e7e40aec9d504a5f68d1b3b000085a0a6db074d2ef"
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\03c-三格征兵训练前-选择轮盘走法.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\03-轮盘选择-三种走法均可选择.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "34f794790cb494039cf498fd88d0b0f56b89e9bea9130cd7303ab093c94bce57"
+  },
+  {
+    "path": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\03c-一格开垦前-选择轮盘走法.png",
+    "duplicateOf": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\_shared\\qidahen-教程完成\\20261026-r27-fixed-hand-action-final\\03-轮盘选择-三种走法均可选择.png",
+    "reason": "同轮 E2E 中与保留整屏图像素完全相同，去重；行为结果由对应 E2E 断言证明。",
+    "sha256": "34f794790cb494039cf498fd88d0b0f56b89e9bea9130cd7303ab093c94bce57"
+  }
+]

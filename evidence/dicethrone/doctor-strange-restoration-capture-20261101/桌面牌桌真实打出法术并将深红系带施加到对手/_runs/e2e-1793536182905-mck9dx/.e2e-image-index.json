@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "深红系带目标选择-桌面.png",
+      "chainId": "深红系带选择目标玩家",
+      "chainStep": "对手目标候选",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-crimson-bands-target",
+      "behaviorStepId": "crimson-bands-select-opponent",
+      "description": "真实打出法术后显示深红系带的对手目标选择。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "点击手牌中的深红系带法术。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "点击手牌中的深红系带法术。",
+      "sourceRevision": "530cae894be2ea23a091603ba53bcf6358537528c676a74748bdcb8c3a1d512e",
+      "e2eSourceRevision": "78da06532274d6ff7d96c38ed2703f293637d872c6f845398fed3d0e4debee16",
+      "requirements": [
+        "深红系带法术玩家选择交互"
+      ],
+      "sourceRun": "1793536220367-159840-630c27ab-cb66-4fd5-81a2-297765417cd1",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1793536182905-mck9dx"
+    },
+    {
+      "path": "深红系带对手已选待确认-桌面.png",
+      "chainId": "深红系带选择目标玩家",
+      "chainStep": "对手已选待确认",
+      "stage": "中态",
+      "uiStateId": "doctor-strange-crimson-bands-target-selected",
+      "behaviorStepId": "crimson-bands-opponent-selected",
+      "description": "对手卡片已选中，状态仍未施加，等待确认。",
+      "role": "main-flow",
+      "viewport": "desktop",
+      "transition": "在现有玩家选择面点击对手卡片。",
+      "uiChange": "interaction-mode",
+      "uiChangeReason": "在现有玩家选择面点击对手卡片。",
+      "sourceRevision": "530cae894be2ea23a091603ba53bcf6358537528c676a74748bdcb8c3a1d512e",
+      "e2eSourceRevision": "78da06532274d6ff7d96c38ed2703f293637d872c6f845398fed3d0e4debee16",
+      "requirements": [
+        "深红系带法术玩家选择交互"
+      ],
+      "sourceRun": "1793536220367-159840-630c27ab-cb66-4fd5-81a2-297765417cd1",
+      "sourceDir": "test-results/evidence-screenshots/dicethrone/doctor-strange-real-entry.e2e/桌面牌桌真实打出法术并将深红系带施加到对手/_runs/e2e-1793536182905-mck9dx"
+    }
+  ]
+}

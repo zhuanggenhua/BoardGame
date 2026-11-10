@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "title": "牌堆选择：修复前后与六种连续状态对照",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceStatus": "not-claimed",
+  "productAcceptance": "not-claimed",
+  "media": [
+    {
+      "path": "01-1-01-血色杀戮-真实抽牌堆候选.png",
+      "description": "修复前桌面原选择器；操作区随候选收缩；完整牌库候选与确认区。",
+      "chainId": "01",
+      "chainStep": "1",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "88d9088b58748cf5495f1d885af4c4a34f0c12413613f1723864872da4604223"
+    },
+    {
+      "path": "01-2-02-血色杀戮-搜索命中.png",
+      "description": "修复前桌面原选择器；操作区随候选收缩；搜索命中单张候选。",
+      "chainId": "01",
+      "chainStep": "2",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "7734570dc63a7521d474dd0859807c1d6ddace23c8cdef3e297382fc31e47501"
+    },
+    {
+      "path": "01-3-03-血色杀戮-已选待确认.png",
+      "description": "修复前桌面原选择器；操作区随候选收缩；选中卡牌等待确认。",
+      "chainId": "01",
+      "chainStep": "3",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "075282d05cc572e126643e7394a9d9784cb893a8a3d15149aadae8019a35f47f"
+    },
+    {
+      "path": "02-1-01-血色杀戮-真实抽牌堆候选.png",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；完整牌库候选与确认区。",
+      "chainId": "02",
+      "chainStep": "4",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "b6069810f3d28bea861d7b21b26e720b2557433bfa1ed6337bac965cd3e58cf2"
+    },
+    {
+      "path": "02-2-02-血色杀戮-搜索命中.png",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；搜索命中单张候选。",
+      "chainId": "02",
+      "chainStep": "5",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "6733b99051709fa6e1463abc7e1def1289c42d33f7c481b1bab402b25e57080d"
+    },
+    {
+      "path": "02-3-03-血色杀戮-已选待确认.png",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；选中卡牌等待确认。",
+      "chainId": "02",
+      "chainStep": "6",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "4e94d8114247f3c9dfa45de5dd8809b53f5fe827f3bec285047270e977a32244"
+    },
+    {
+      "path": "02-4-04-血色杀戮-取消选中.png",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；取消选中保留搜索。",
+      "chainId": "02",
+      "chainStep": "7",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\04-血色杀戮-取消选中.png",
+      "sha256": "935dba26a0c56a6ed817e1c33d5d5177fe4734b0a5f8e91d81c78ce06b12bd7c"
+    },
+    {
+      "path": "02-5-05-血色杀戮-无匹配.png",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；搜索无匹配候选。",
+      "chainId": "02",
+      "chainStep": "8",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\05-血色杀戮-无匹配.png",
+      "sha256": "3f5b97a2b52018ab4db4c80702bfeeec04844c911b4d17a7e1831abf066c070f"
+    },
+    {
+      "path": "02-6-06-血色杀戮-清空恢复.png",
+      "description": "修复后桌面原选择器；候选内部滚动且操作区固定；清空搜索恢复全部候选。",
+      "chainId": "02",
+      "chainStep": "9",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\06-血色杀戮-清空恢复.png",
+      "sha256": "b23bd6656802871cd91a5c17106718ca5fc760f166c85c6a712e5e323c2b1575"
+    },
+    {
+      "path": "03-1-01-血色杀戮-真实抽牌堆候选.png",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；完整牌库候选与确认区。",
+      "chainId": "03",
+      "chainStep": "10",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "1ccdcecdcb7e38ae9715a3d71708abca977489378aaed4e3883b4712b411e2b0"
+    },
+    {
+      "path": "03-2-02-血色杀戮-搜索命中.png",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；搜索命中单张候选。",
+      "chainId": "03",
+      "chainStep": "11",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\02-血色杀戮-搜索命中.png",
+      "sha256": "41738d0b6621ad14af988f03294d32162cb334edc09d997f69ad832495d3ca18"
+    },
+    {
+      "path": "03-3-03-血色杀戮-已选待确认.png",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；选中卡牌等待确认。",
+      "chainId": "03",
+      "chainStep": "12",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\03-血色杀戮-已选待确认.png",
+      "sha256": "18dfceff55273b12384eaa171c5ec168d2ab2738e890080f5ff78323df9a3e50"
+    },
+    {
+      "path": "03-4-04-血色杀戮-取消选中.png",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；取消选中保留搜索。",
+      "chainId": "03",
+      "chainStep": "13",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\04-血色杀戮-取消选中.png",
+      "sha256": "cd13eec93c273c521007d4685ca561714e04b20508aec5f938b5474e65ced700"
+    },
+    {
+      "path": "03-5-05-血色杀戮-无匹配.png",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；搜索无匹配候选。",
+      "chainId": "03",
+      "chainStep": "14",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\05-血色杀戮-无匹配.png",
+      "sha256": "00c57ddbb1ca24245ea4b29df737bde777131bcf3bcc238a6862365aec613161"
+    },
+    {
+      "path": "03-6-06-血色杀戮-清空恢复.png",
+      "description": "修复后横屏原选择器；同视口操作位置保持稳定；清空搜索恢复全部候选。",
+      "chainId": "03",
+      "chainStep": "15",
+      "stage": "来源核查",
+      "sourceRun": "stable-selection-panel-20261102",
+      "sourceDir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-stable-selection-panel-20261102\\comparison",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\06-血色杀戮-清空恢复.png",
+      "sha256": "85b15a9b64869269108606ebdf971b51e92f805d02d9b9b935b7cca3de621c9e"
+    }
+  ]
+}

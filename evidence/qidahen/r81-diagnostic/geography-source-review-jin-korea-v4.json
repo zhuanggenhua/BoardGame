@@ -1,0 +1,151 @@
+{
+  "objective": "核对v4长白局部替换接缝，并以实际像素一致性核查其余8项能否沿用v3源图几何PASS；不涉及游戏规则或运行时UI。",
+  "criteria": [
+    "候选白细线必须贴合原图可见印刷分界、河岸、山脊或图缘，不在地区内部另切。",
+    "朝鲜三个对象只按白色椭圆本体核对，不扩张成半岛土地，不以内点命中替代轮廓核对。",
+    "牌库UI边缘不能作为地理边界；遮挡不能证明隐藏闭合。",
+    "完整读取原图和完整候选后，局部放大仅作辅助。",
+    "本轮明确允许原图遮挡/断续导致无法逐像素确认的小段使用明确标记的窄段approximate连接；该段不宣称精确印刷界线。"
+  ],
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/r81_jin_korea_geometry"
+  },
+  "source": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "width": 1265,
+    "height": 893,
+    "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e"
+  },
+  "candidate": {
+    "path": "evidence/qidahen/r81-diagnostic/geography-candidate/原图全部地区按印刷边线校准候选四.png",
+    "width": 1265,
+    "height": 893,
+    "sha256": "ddf4c9b21a292d3354cab9b800ccb65d8800b2b600eeccd8aec8cbc9482bfc9a2"
+  },
+  "method": {
+    "completeImagesRead": true,
+    "independentGeometryJudgment": true,
+    "identityLedgerUsedOnlyForNames": true,
+    "localCrops": "本轮重新完整读取原图和v4，并放大读取长白替换段及上下接缝。",
+    "coordinateSystem": "原图像素，左上角为(0,0)，坐标为可见线条位置近似，指定竖段另经候选像素位置核对。"
+  },
+  "items": [
+    {
+      "name": "乌喇",
+      "verdict": "PASS",
+      "observation": "完整北部土地轮廓沿图上缘、与科尔沁接壤西线，以及南侧与叶赫/哈达、东南侧与辉发之间河岸；未见内部假切或吞相邻土地。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "辉发",
+      "verdict": "PASS",
+      "observation": "北西沿弯曲河岸与乌喇、哈达分开，南侧沿河与长白分开，东接图缘；轮廓对应其完整可见土地。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "哈达",
+      "verdict": "PASS",
+      "observation": "北东南河岸与西侧叶赫棕线均有原图依据；西边折弯跟随印刷线，未用字牌或直线代替。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "叶赫",
+      "verdict": "PASS",
+      "observation": "北侧乌喇河岸、西侧内喀尔喀河岸、东侧哈达棕线及南侧河岸对应；叶赫山城字牌保留为内部对象，没有变成独立土地边。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "建州女真",
+      "verdict": "PASS",
+      "observation": "北侧河岸、西侧与辽北/辽东接壤棕线、东侧长白棕线和南侧河岸均对应。赫图阿拉西南处建州自身白边跟随弯曲印刷界；邻接另一掩膜的斜线不作为建州自身边缘的通过依据。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "长白女真",
+      "verdict": "PASS",
+      "geometryPrecision": "approximate-local-segment",
+      "observation": "替换为约(1145,259)至(1137,304)的窄斜桥；上下接缝连续，没有残留v3沿牌库左缘的两条独立竖切和中间装饰山峰凹口。其余长白可见边界未变，可保留。",
+      "approximateSegment": {
+        "points": [
+          [
+            1145,
+            259
+          ],
+          [
+            1143,
+            269
+          ],
+          [
+            1141,
+            279
+          ],
+          [
+            1139,
+            291
+          ],
+          [
+            1137,
+            304
+          ]
+        ],
+        "reason": "牌库黑框确有遮挡；旁侧地表部分可见但缺少一条连续印刷界线，牌库内可见山峰也彼此断续。此段仅为邻近真实可见上下山脊端点的窄连接。",
+        "notPixelExact": true,
+        "occlusionLimit": "并非整段每个像素都不可见，不能把整段称为真实印刷山脊或逐像素精确国界。"
+      },
+      "failureCoordinates": []
+    },
+    {
+      "name": "咸兴",
+      "verdict": "PASS",
+      "observation": "闭合轮廓只围白色椭圆及印刷边圈，中心约(1064,429)；外侧白标线与深色印刷圈存在约1至2像素的可视描边间隙，未扩张到半岛或红箭头路线。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "平壤",
+      "verdict": "PASS",
+      "observation": "闭合轮廓跟随竖向白椭圆及深色印刷边圈，中心约(1029,578)；未吞左侧海岸、周边土地、牌叠或道路。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    },
+    {
+      "name": "汉城",
+      "verdict": "PASS",
+      "observation": "闭合轮廓跟随白椭圆及橙色印刷边圈，中心约(1139,628)；未包含VP图标、牌叠或半岛土地。",
+      "failureCoordinates": [],
+      "reuseBasis": "与已实际核过的v3对应对象同像素；本轮完整图复核未发现新增问题。"
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "PASS": 9,
+    "REVISE": 0,
+    "approximateLocalItems": 1,
+    "samePixelPassReused": 8
+  },
+  "verdict": "PASS",
+  "scopeLimit": "仅证明指定v4的9项源图几何在允许长白窄段approximate的本轮口径下通过；长白该段不属于逐像素精确印刷边界。不证明游戏规则、命中操作或运行时UI。",
+  "changedFiles": [
+    "evidence/qidahen/r81-diagnostic/geography-source-review-jin-korea-v4.json"
+  ],
+  "pixelComparison": {
+    "reference": "原图全部地区按印刷边线校准候选三.png",
+    "referenceSha256": "a9763baf70c45c3f5c62ed9a133d712ba366ed2f50ee2931b41683296bf2c85e",
+    "mode": "Pillow RGB ImageChops.difference",
+    "diffBboxExclusiveRightBottom": [
+      1135,
+      258,
+      1149,
+      305
+    ],
+    "differentPixels": 165,
+    "outsideDiffBboxIdentical": true,
+    "conclusion": "全部变化局限于长白局部；其余8个审查对象的图面像素与v3相同，可沿用同像素PASS。"
+  }
+}

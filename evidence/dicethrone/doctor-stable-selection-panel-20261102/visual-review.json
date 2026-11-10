@@ -1,0 +1,724 @@
+{
+  "verdict": "PASS",
+  "reviewer": "/root/stable_panel_visual_review",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "score": 94,
+  "scope": "仅审吸血鬼血色杀戮真实牌库选择器在所给桌面和横屏六状态下的固定容器、操作稳定、卡面保留及直接影响；不代替行为、全游戏或发布验收",
+  "criteria": [
+    "12 张修后原始整屏逐图实读；修前桌面 01/02/03 原始整屏成对对照",
+    "沿用指定原牌库选择层及正式卡面，不新增卡牌底框，不改变桌面卡宽、卡面皮肤或骰盘",
+    "搜索、选中、取消选中、无匹配、清空恢复时外壳及操作带稳定，确认居中固定列",
+    "候选和已选本体可见、选中边界贴合；空态与搜索清除入口可理解",
+    "横屏首张完整、候选视窗容纳完整首行，操作不出屏；固定留白承担候选容量和稳定操作职责"
+  ],
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "revised": 0,
+    "beforeReadCount": 3
+  },
+  "items": [
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "b6069810f3d28bea861d7b21b26e720b2557433bfa1ed6337bac965cd3e58cf2",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "33/33 候选在既有红黑选择层内按原九列排列，首行完整，第二行在内部视窗底部终止。正式卡面无新增底框、无拉伸；与 before 01 的卡宽和画面尺度一致。取消与确认保持底部固定操作带，右侧骰盘与原画面一致。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "dt-card-pool-selection": {
+          "x": 172,
+          "y": 191.5,
+          "width": 1096,
+          "height": 373.5
+        },
+        "dt-card-pool-actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 695.390625,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 634.1875,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 195.90625,
+        "y": 203.5,
+        "width": 103.671875,
+        "height": 169.703125
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "6733b99051709fa6e1463abc7e1def1289c42d33f7c481b1bab402b25e57080d",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\02-血色杀戮-搜索命中.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "搜索血流如注后仅保留中央一张完整原卡，标题、搜索、计数和确认共享中轴。确认未选态置灰，取消保留左列。候选窗保留多候选容量以稳定操作位置，空余区域未挤小卡牌。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "dt-card-pool-selection": {
+          "x": 172,
+          "y": 191.5,
+          "width": 1096,
+          "height": 373.5
+        },
+        "dt-card-pool-actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 695.390625,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 634.1875,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 668.15625,
+        "y": 203.5,
+        "width": 103.671875,
+        "height": 169.703125
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "4e94d8114247f3c9dfa45de5dd8809b53f5fe827f3bec285047270e977a32244",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\03-血色杀戮-已选待确认.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "已选血流如注本体完整可见，贴边金色选择轮廓与原 before 03 一致，未盖住卡面。确认亮起，按钮仍在与候选态同一操作带。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "dt-card-pool-selection": {
+          "x": 172,
+          "y": 191.5,
+          "width": 1096,
+          "height": 373.5
+        },
+        "dt-card-pool-actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 695.390625,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 634.1875,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 668.15625,
+        "y": 203.5,
+        "width": 103.671875,
+        "height": 169.703125
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\04-血色杀戮-取消选中.png",
+      "sha256": "935dba26a0c56a6ed817e1c33d5d5177fe4734b0a5f8e91d81c78ce06b12bd7c",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\04-血色杀戮-取消选中.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "取消选中后卡本体仍在，强金色选择态退去，确认恢复置灰；候选与操作带均没有上移或横移。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "dt-card-pool-selection": {
+          "x": 172,
+          "y": 191.5,
+          "width": 1096,
+          "height": 373.5
+        },
+        "dt-card-pool-actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 695.390625,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 634.1875,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 668.15625,
+        "y": 203.5,
+        "width": 103.671875,
+        "height": 169.703125
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\05-血色杀戮-无匹配.png",
+      "sha256": "3f5b97a2b52018ab4db4c80702bfeeec04844c911b4d17a7e1831abf066c070f",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\05-血色杀戮-无匹配.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "0/33 与没有匹配的牌明确表达搜索空态，未伪造牌背或候选。搜索清除叉号可见，取消与灰确认仍固定；空白承担候选容量与操作稳定职责。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "dt-card-pool-selection": {
+          "x": 172,
+          "y": 191.5,
+          "width": 1096,
+          "height": 373.5
+        },
+        "dt-card-pool-actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 695.390625,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 634.1875,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": null
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\06-血色杀戮-清空恢复.png",
+      "sha256": "b23bd6656802871cd91a5c17106718ca5fc760f166c85c6a712e5e323c2b1575",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-desktop\\06-血色杀戮-清空恢复.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "清空搜索恢复 33/33 与原九列正式卡面，首行完整、第二行在内部窗内，卡面尺度未变。操作带仍与其它五态一致，无新框层。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 160,
+          "y": 81,
+          "width": 1120,
+          "height": 536
+        },
+        "dt-card-pool-selection": {
+          "x": 172,
+          "y": 191.5,
+          "width": 1096,
+          "height": 373.5
+        },
+        "dt-card-pool-actions": {
+          "x": 172,
+          "y": 573,
+          "width": 1096,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 695.390625,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 634.1875,
+          "y": 573,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 195.90625,
+        "y": 203.5,
+        "width": 103.671875,
+        "height": 169.703125
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "1ccdcecdcb7e38ae9715a3d71708abca977489378aaed4e3883b4712b411e2b0",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\01-血色杀戮-真实抽牌堆候选.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "812×375 横屏中标题、搜索、计数、七张首行正式卡均完整进入选择层；第一张从标题到下边缘完整，没有纵向压扁。卡宽 88 的行距和候选窗匹配，操作带位于卡行下方且完整在屏内。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "dt-card-pool-selection": {
+          "x": 28,
+          "y": 144.25,
+          "width": 756,
+          "height": 162.75
+        },
+        "dt-card-pool-actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 381.390625,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 320.1875,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 66.828125,
+        "y": 156.25,
+        "width": 88,
+        "height": 144.046875
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\02-血色杀戮-搜索命中.png",
+      "sha256": "41738d0b6621ad14af988f03294d32162cb334edc09d997f69ad832495d3ca18",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\02-血色杀戮-搜索命中.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "横屏搜索仅一张血流如注居中完整显示，确认位于卡牌下方同中轴，取消保留左列；标题、搜索、候选和按钮未互相挤压。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "dt-card-pool-selection": {
+          "x": 28,
+          "y": 144.25,
+          "width": 756,
+          "height": 162.75
+        },
+        "dt-card-pool-actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 381.390625,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 320.1875,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 362,
+        "y": 156.25,
+        "width": 88,
+        "height": 144.046875
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\03-血色杀戮-已选待确认.png",
+      "sha256": "18dfceff55273b12384eaa171c5ec168d2ab2738e890080f5ff78323df9a3e50",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\03-血色杀戮-已选待确认.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "横屏已选原卡完整，金色主边界贴合且没有覆盖图文；确认亮起。操作带仍固定在候选窗下方，不因单张选中上移。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "dt-card-pool-selection": {
+          "x": 28,
+          "y": 144.25,
+          "width": 756,
+          "height": 162.75
+        },
+        "dt-card-pool-actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 381.390625,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 320.1875,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 362,
+        "y": 156.25,
+        "width": 88,
+        "height": 144.046875
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\04-血色杀戮-取消选中.png",
+      "sha256": "cd13eec93c273c521007d4685ca561714e04b20508aec5f938b5474e65ced700",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\04-血色杀戮-取消选中.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "横屏取消选中后卡仍完整显示、确认置灰；按钮位置、候选窗与选中态一致，没有跳动到卡旁或屏外。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "dt-card-pool-selection": {
+          "x": 28,
+          "y": 144.25,
+          "width": 756,
+          "height": 162.75
+        },
+        "dt-card-pool-actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 381.390625,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 320.1875,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 362,
+        "y": 156.25,
+        "width": 88,
+        "height": 144.046875
+      }
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\05-血色杀戮-无匹配.png",
+      "sha256": "00c57ddbb1ca24245ea4b29df737bde777131bcf3bcc238a6862365aec613161",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\05-血色杀戮-无匹配.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "横屏没有匹配的牌在候选窗内完整显示，0/33、搜索清除入口和固定操作带均可见。空态没有挤掉标题或按钮，也没有产生屏外操作。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "dt-card-pool-selection": {
+          "x": 28,
+          "y": 144.25,
+          "width": 756,
+          "height": 162.75
+        },
+        "dt-card-pool-actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 381.390625,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 320.1875,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": null
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\06-血色杀戮-清空恢复.png",
+      "sha256": "85b15a9b64869269108606ebdf971b51e92f805d02d9b9b935b7cca3de621c9e",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-after-landscape\\06-血色杀戮-清空恢复.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original；未使用联系表替代",
+      "verdict": "PASS",
+      "observation": "横屏清空搜索恢复 33/33 和七张完整首行正式卡，卡面比例、皮肤、行距与 01 一致；卡池视窗和操作带保持稳定，没有伸长到屏外。",
+      "hardFailures": [],
+      "viewport": {
+        "width": 812,
+        "height": 375
+      },
+      "geometry": {
+        "dt-card-pool-surface": {
+          "x": 16,
+          "y": 33.75,
+          "width": 780,
+          "height": 325.25
+        },
+        "dt-card-pool-selection": {
+          "x": 28,
+          "y": 144.25,
+          "width": 756,
+          "height": 162.75
+        },
+        "dt-card-pool-actions": {
+          "x": 28,
+          "y": 315,
+          "width": 756,
+          "height": 32
+        },
+        "dt-interaction-confirm": {
+          "x": 381.390625,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        },
+        "dt-interaction-clear": {
+          "x": 320.1875,
+          "y": 315,
+          "width": 49.203125,
+          "height": 32
+        }
+      },
+      "firstCard": {
+        "x": 66.828125,
+        "y": 156.25,
+        "width": 88,
+        "height": 144.046875
+      }
+    }
+  ],
+  "beforeReads": [
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "sha256": "88d9088b58748cf5495f1d885af4c4a34f0c12413613f1723864872da4604223",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\01-血色杀戮-真实抽牌堆候选.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original",
+      "observation": "旧多候选态外壳高 522.5，操作带 y=559.5；九列原始卡面、尺度与修后相同。",
+      "role": "修前同视口原界面对照；非当前产品通过图"
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+      "sha256": "7734570dc63a7521d474dd0859807c1d6ddace23c8cdef3e297382fc31e47501",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\02-血色杀戮-搜索命中.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original",
+      "observation": "旧搜索单候选态外壳收至 356.203125，操作带上移至 y=393.203125；卡本体与修后同宽同高，直接显示旧跳动。",
+      "role": "修前同视口原界面对照；非当前产品通过图"
+    },
+    {
+      "file": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+      "sha256": "075282d05cc572e126643e7394a9d9784cb893a8a3d15149aadae8019a35f47f",
+      "actualReadPath": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-deck-effect-source-capture-20261102\\stable-before-desktop\\03-血色杀戮-已选待确认.png",
+      "actualReadMethod": "子代理私有原始整屏逐图读取，detail=original",
+      "observation": "旧选中态金色轮廓、原卡皮肤与修后一致，确认亮起；操作带仍在 y=393.203125。",
+      "role": "修前同视口原界面对照；非当前产品通过图"
+    }
+  ],
+  "geometrySummary": {
+    "desktop": {
+      "surfaceHeightAllStates": 536,
+      "selectionHeightAllStates": 373.5,
+      "actionsYAllStates": 573,
+      "confirmCenterXAllStates": 719.9921875,
+      "cardWidthBeforeAndAfter": 103.671875,
+      "cardHeightBeforeAndAfter": 169.703125
+    },
+    "landscape": {
+      "surfaceHeightAllStates": 325.25,
+      "selectionHeightAllStates": 162.75,
+      "actionsYAllStates": 315,
+      "actionsBottomAllStates": 347,
+      "viewportHeight": 375,
+      "cardWidth": 88,
+      "cardHeight": 144.046875
+    },
+    "beforeDesktopActionJumpY": 166.296875,
+    "interpretation": "几何仅辅助已实读的图面事实；不作为卡面可读或布局通过的替代。"
+  },
+  "layoutAudit": [
+    {
+      "criterion": "空间主次",
+      "status": "PASS",
+      "observation": "标题指令、正式候选牌和底部操作带形成单一选择任务；单牌/空态所留容量稳定按钮，未靠缩小原卡换空间。"
+    },
+    {
+      "criterion": "对齐栅格",
+      "status": "PASS",
+      "observation": "搜索、计数、单候选与确认共享中轴；取消居左固定列。两视口六态操作带肉眼保持同一位置，几何复核一致。"
+    },
+    {
+      "criterion": "分组与装饰",
+      "status": "PASS",
+      "observation": "仍使用既有红黑选择层和正式牌面，未新增卡牌底框或重复说明；选中只强化原卡主边界。"
+    }
+  ],
+  "elementResponsibilityAudit": {
+    "ledger": "本报告 criteria 与 items；局部复用审计，未新增产品元素",
+    "decisions": [
+      "标题承载当前选牌任务；搜索与计数承载候选筛选。",
+      "正式卡本体承载比较和选择；未用文字或壳层替代。",
+      "固定候选窗承载多候选容量与内滚动边界；操作带承载取消选中及确认。"
+    ],
+    "uncoveredElements": []
+  },
+  "negativeImpactChecks": [
+    {
+      "object": "牌库候选",
+      "result": "PASS",
+      "observation": "候选保留在同一选择层，桌面原尺寸不变；窄高横屏保留完整首行，后续候选需原内部滚动路径。"
+    },
+    {
+      "object": "确认与取消选中",
+      "result": "PASS",
+      "observation": "操作带仅固定位置，六态均留在屏内，确认亮/灰可辨；截图不验证命令语义。"
+    },
+    {
+      "object": "骰盘、阶段、资源、牌堆、手牌及玩家板",
+      "result": "PASS",
+      "observation": "仍为既有选择弹层后的牌桌上下文，修前后桌面骰盘和周边对象位置/皮肤无可见重排；本轮没有将其迁移或新建替代承载。"
+    }
+  ],
+  "hardFailures": [],
+  "limitations": [
+    "此裁决只针对所给原始整屏的静态图面与跨状态位置；没有执行浏览器或改变产品。",
+    "内部滚动的实际手势、尾部候选可达性与滚动时按钮稳定，需由对应浏览器行为证据证明；当前图只证明完整首行与视窗边界合理。",
+    "未验证确认真实入手、取消命令合法性、结算、AI、联机、生产部署及其它游戏。",
+    "仅覆盖 1440×900 桌面及 812×375 横屏；没有竖屏、软键盘、真实设备触控热区专项证据。",
+    "横屏卡宽 88、按钮可见高 32 为现有外观；本报告不将其升级为整套移动端触控可用性通过。",
+    "图片只在子代理私有审查上下文读取，未注册查看器或向用户展示。"
+  ]
+}

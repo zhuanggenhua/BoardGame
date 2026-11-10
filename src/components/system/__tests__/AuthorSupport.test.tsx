@@ -1,10 +1,14 @@
 /* @vitest-environment happy-dom */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthorSupportButton } from '../AuthorSupport';
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => ({
+    'hud.about.supportAuthor': '支持作者',
+    'hud.about.closeSupport': '关闭赞助说明',
+}[key] ?? key) }) }));
 vi.mock('../../../lib/publicFileUrl', () => ({ versionedPublicFileUrl: (path: string) => path }));
-afterEach(cleanup);
+beforeEach(() => { vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: query === '(hover: hover)' }) as MediaQueryList); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 describe('支持作者入口', () => {
     it('悬浮展开正式二维码，离开收起；点击固定后离开保持', () => {
         render(<AuthorSupportButton />);
@@ -24,8 +28,10 @@ describe('支持作者入口', () => {
     it('键盘聚焦和触控点击可展开，关闭与退出键收起', () => {
         render(<AuthorSupportButton />);
         const button = screen.getByRole('button', { name: '支持作者' });
+        const matches = vi.spyOn(button, 'matches').mockReturnValue(true);
         fireEvent.focus(button);
         expect(button).toHaveAttribute('aria-expanded', 'true');
+        matches.mockRestore();
         fireEvent.keyDown(button, { key: 'Escape' });
         expect(button).toHaveAttribute('aria-expanded', 'false');
         fireEvent.click(button);
@@ -33,6 +39,18 @@ describe('支持作者入口', () => {
         expect(button).toHaveAttribute('aria-expanded', 'true');
         fireEvent.click(screen.getByRole('button', { name: '关闭赞助说明' }));
         expect(button).toHaveAttribute('aria-expanded', 'false');
+    });
+    it('触屏的兼容鼠标和焦点事件不在点击前展开，点击后固定展开', () => {
+        vi.mocked(window.matchMedia).mockReturnValue({ matches: false } as MediaQueryList);
+        render(<AuthorSupportButton />);
+        const button = screen.getByRole('button', { name: '支持作者' });
+        vi.spyOn(button, 'matches').mockReturnValue(false);
+        fireEvent.mouseEnter(button.parentElement!);
+        fireEvent.focus(button);
+        expect(button).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(button);
+        expect(button).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getAllByRole('img')).toHaveLength(2);
     });
     it('桌面与抽屉实例各自维护展开状态，不读取隐藏实例代替可见实例', () => {
         render(<><div hidden><AuthorSupportButton /></div><AuthorSupportButton /></>);

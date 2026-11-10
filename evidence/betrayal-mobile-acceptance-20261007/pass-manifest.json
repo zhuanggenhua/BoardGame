@@ -1,0 +1,85 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-10-07T19:03:42+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "移动端角色选择滚动后能力说明保持中文可读，正文有效字号不低于16像素。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/basic-flow.e2e.ts 5 passed",
+        "角色详情截图显示滚动后的能力正文",
+        "移动端有效字号断言不低于16像素"
+      ]
+    },
+    {
+      "requirement": "PC与手机同入口同状态对照，剧本选择页的阅读确认关闭三个按钮保持同一排。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/pc-mobile-width-comparison.e2e.ts 6 passed",
+        "手机端三个主操作同排截图",
+        "PC与手机同构宽度对照截图"
+      ]
+    },
+    {
+      "requirement": "剧本正文、翻页、关闭返回选择页和过程文案继续按钮均可读可点。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/basic-flow.e2e.ts 5 passed",
+        "正文与继续按钮有效字号断言不低于16像素",
+        "关闭返回与继续按钮真实入口截图"
+      ]
+    },
+    {
+      "requirement": "当前回合信息保持右上角，主桌面能力说明与行动栏不被移动端布局挤出。",
+      "status": "PASS",
+      "evidence": [
+        "PC与手机布局指标均通过",
+        "手机主桌面截图显示当前回合在右上",
+        "行动栏与能力说明同屏可见"
+      ]
+    },
+    {
+      "requirement": "同分辨率等效视口经过缩放平移移动后，镜头聚焦玩家自己的token。",
+      "status": "PASS",
+      "evidence": [
+        "e2e/betrayal/mobile-zoom-move-animation.e2e.ts 1 passed",
+        "activeTarget=betrayal-explorer-figure-token-0",
+        "targetState=settled",
+        "visibleMapResidualX约为负3.22像素"
+      ]
+    },
+    {
+      "requirement": "最终截图覆盖PC对照、手机角色详情、剧本操作、正文继续、主桌面和移动后聚焦。",
+      "status": "PASS",
+      "evidence": [
+        "最终图片均来自当前工作树同一轮截图",
+        "证据索引按前态中态后态完整覆盖四条链路",
+        "最终图片已通过逐图视觉核验"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\01-PC-角色选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\02-手机-角色选择.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\03-手机-角色详情能力说明.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\04-PC-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\05-手机-主牌桌常态.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\06-PC-剧本三按钮同排.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\07-手机-剧本三按钮同排.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\08-手机-剧本阅读正文.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\09-手机-过场继续.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\10-手机-关闭剧本回选择页.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\11-手机-主桌面能力与HUD.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\12-PC-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\13-手机-移动选目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-mobile-acceptance-20261007\\14-手机-移动后玩家token聚焦.jpg"
+  ],
+  "evidenceIndex": ".e2e-image-index.json"
+}

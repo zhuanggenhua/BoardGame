@@ -1,0 +1,782 @@
+{
+  "generatedAt": "2026-11-02T08:48:25.408Z",
+  "status": "PASS",
+  "scope": "当前十六个独立代表态入口及本聊天UI变更清点，不是完整自然对局或用户批准",
+  "e2eSourceSha256": "0e5190fc1a72a0bba5a07ef00b20fd2997fa74c57dc2281bef3e97f016711cff",
+  "sourceIdentity": [
+    {
+      "file": "src/components/common/overlays/InfoTooltip.tsx",
+      "priorLedgerSha256": "08dd720029c5156179c207dadeee5bb0ba6efbd24b1043199dc275c11744ffa6",
+      "currentSha256": "08dd720029c5156179c207dadeee5bb0ba6efbd24b1043199dc275c11744ffa6",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/Board.tsx",
+      "priorLedgerSha256": "92a5f83fb93036f97db8a025f819214c80e2bbb1a2bb22ce534024a466e2cad3",
+      "currentSha256": "92a5f83fb93036f97db8a025f819214c80e2bbb1a2bb22ce534024a466e2cad3",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/AbilityOverlays.tsx",
+      "priorLedgerSha256": "2790c6ce2a6ece05f877516a8a9a6641f4f432b807e95206eb564b12bd8a5dc3",
+      "currentSha256": "2790c6ce2a6ece05f877516a8a9a6641f4f432b807e95206eb564b12bd8a5dc3",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/BoardOverlays.tsx",
+      "priorLedgerSha256": "df842a2a36c5ef91c62c1b7afd603a4980f6f8aedc31e46dac642c537b328e07",
+      "currentSha256": "df842a2a36c5ef91c62c1b7afd603a4980f6f8aedc31e46dac642c537b328e07",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/CardSpotlightOverlay.tsx",
+      "priorLedgerSha256": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+      "currentSha256": "feebf684923c3d26e8345664441c0ef8172d103a00e25a11a10900d64f6a8d25",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/CenterBoard.tsx",
+      "priorLedgerSha256": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+      "currentSha256": "8125871d8b3ee001e661aab1bde8576f1ecd070517a91062d88a39f8693a48a7",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceModal.tsx",
+      "priorLedgerSha256": "f92f23f7ca5f274efd1d700591b593a5fe1d039891d8ee58252858fb079f5e98",
+      "currentSha256": "f92f23f7ca5f274efd1d700591b593a5fe1d039891d8ee58252858fb079f5e98",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/ChoiceObjectSelection.tsx",
+      "priorLedgerSha256": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299",
+      "currentSha256": "004765252fc51e2ff5dd0ea788c5ec5f1ab1761bb8af9bc084371878bb022299",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/CompareRollOverlay.tsx",
+      "priorLedgerSha256": "6686a77caf0e3e5a466381c01bd498c099f10deaa9071684d66c2f9a1962e03d",
+      "currentSha256": "6686a77caf0e3e5a466381c01bd498c099f10deaa9071684d66c2f9a1962e03d",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/DiceTray.tsx",
+      "priorLedgerSha256": "7d27d8905e1fd2ea410e37facfb1592985e3b70faa311dd3cd895522ac2bc71c",
+      "currentSha256": "7d27d8905e1fd2ea410e37facfb1592985e3b70faa311dd3cd895522ac2bc71c",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/GameHints.tsx",
+      "priorLedgerSha256": "0c66dabbb2174f28df274c571c98803df6b99d2b4e6c16b41b9b0fa85f4a3ec6",
+      "currentSha256": "0c66dabbb2174f28df274c571c98803df6b99d2b4e6c16b41b9b0fa85f4a3ec6",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/HandArea.tsx",
+      "priorLedgerSha256": "898db642d8cc0bcc3e1cdee46476f0cc640edb937a64ab5ac2641bb0efa3b7f4",
+      "currentSha256": "898db642d8cc0bcc3e1cdee46476f0cc640edb937a64ab5ac2641bb0efa3b7f4",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+      "priorLedgerSha256": "ca89a92b23296511275b5f8d1d98ddeb34b856d7bbfd25a76a8a4baf6f154fd8",
+      "currentSha256": "37c8d4ffe4bcd7e0a9573d86f80d87f853fa9ec9da2e160d152b975579808ebd",
+      "changedSincePriorLedger": true
+    },
+    {
+      "file": "src/games/dicethrone/ui/LeftSidebar.tsx",
+      "priorLedgerSha256": "7067ece66fa702c3619d0a7b853fecefcaf399cc6268b39fe720f451b4201c68",
+      "currentSha256": "7067ece66fa702c3619d0a7b853fecefcaf399cc6268b39fe720f451b4201c68",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/PhaseIndicator.tsx",
+      "priorLedgerSha256": "f03950e12c68b48a93a28398be0e42975a61c06e669e5d8958bc6d1235d11dec",
+      "currentSha256": "f03950e12c68b48a93a28398be0e42975a61c06e669e5d8958bc6d1235d11dec",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/RightSidebar.tsx",
+      "priorLedgerSha256": "66493be18b1bffb5bd6b322498db1f81b956c5a5f2c8080d3ea104053922281b",
+      "currentSha256": "f80c9db27af1d0970d67d42eda0680e9f809f1a541fa64c66c43c0284687586c",
+      "changedSincePriorLedger": true
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityChoiceText.ts",
+      "priorLedgerSha256": "f038573ee890fb4095e5a7ccc747e5689b5d14b870484df72aae1f001eccd309",
+      "currentSha256": "f038573ee890fb4095e5a7ccc747e5689b5d14b870484df72aae1f001eccd309",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilityOverlayHelpers.ts",
+      "priorLedgerSha256": "5962a40a22880353ca707ee23c2595b1a30c84f0c5baca3990d1f21a12a47484",
+      "currentSha256": "5962a40a22880353ca707ee23c2595b1a30c84f0c5baca3990d1f21a12a47484",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotLayout.ts",
+      "priorLedgerSha256": "7ad0d26fbb19d08d16196ae2cdc80906513b767874ed7d95075c4b9034809bfb",
+      "currentSha256": "7ad0d26fbb19d08d16196ae2cdc80906513b767874ed7d95075c4b9034809bfb",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/abilitySlotMapping.ts",
+      "priorLedgerSha256": "c8ab960ad9f77aa6f61e64b199014535fc97f57500d49e8bfff2dba8d9755663",
+      "currentSha256": "c8ab960ad9f77aa6f61e64b199014535fc97f57500d49e8bfff2dba8d9755663",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/assets.ts",
+      "priorLedgerSha256": "e150ebb5a729eeca32212a40bd19cca0ae7d4f110d105f103c1bb4548fb9db7d",
+      "currentSha256": "e150ebb5a729eeca32212a40bd19cca0ae7d4f110d105f103c1bb4548fb9db7d",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/cardAtlas.ts",
+      "priorLedgerSha256": "cdb1739ca500f1da9e9114c6c0e2bf5507c7a0bcaec471a168e24d09c7ffaf2c",
+      "currentSha256": "cdb1739ca500f1da9e9114c6c0e2bf5507c7a0bcaec471a168e24d09c7ffaf2c",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/clientDiceMultistepInteraction.ts",
+      "priorLedgerSha256": "59722d33f3ffcc92f8bc20e782c031702bcfbe139875e8380ea35ef0f460ce00",
+      "currentSha256": "59722d33f3ffcc92f8bc20e782c031702bcfbe139875e8380ea35ef0f460ce00",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameButton.tsx",
+      "priorLedgerSha256": "7ae828f917fb6ca6cbde5978b2f7eb306de7f70d277819290af24f10280016a8",
+      "currentSha256": "7ae828f917fb6ca6cbde5978b2f7eb306de7f70d277819290af24f10280016a8",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/components/GameModal.tsx",
+      "priorLedgerSha256": "2389035e678f6969af88c7a342ff5af1e2ea4574debebb1fd98f8647b3ef6a86",
+      "currentSha256": "2389035e678f6969af88c7a342ff5af1e2ea4574debebb1fd98f8647b3ef6a86",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceCombinationChoice.ts",
+      "priorLedgerSha256": "bd1fa618641a0114c62c311bf662b7384e430603faaf55251a748bf3f52119aa",
+      "currentSha256": "bd1fa618641a0114c62c311bf662b7384e430603faaf55251a748bf3f52119aa",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/diceInteractionContract.ts",
+      "priorLedgerSha256": "f1915cab3daafad2485856056154e05ffdcd5c46ad7a574a6aff0a8740481d20",
+      "currentSha256": "6ed7f081a44e928a6e8433db87307376bcd2cf3db64b86f614f00c5340b9a549",
+      "changedSincePriorLedger": true
+    },
+    {
+      "file": "src/games/dicethrone/ui/fxSetup.ts",
+      "priorLedgerSha256": "db5cee6d25db46500d899f403deac914e923902d132334128304c1196b9cf99a",
+      "currentSha256": "db5cee6d25db46500d899f403deac914e923902d132334128304c1196b9cf99a",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/handDiscardInteractionContract.ts",
+      "priorLedgerSha256": "8bfff1f0c04002edd4df231d6449b2cb9feaa7f12496b616941e7935896b7c58",
+      "currentSha256": "8bfff1f0c04002edd4df231d6449b2cb9feaa7f12496b616941e7935896b7c58",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/handLayoutConstants.ts",
+      "priorLedgerSha256": null,
+      "currentSha256": null,
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/handPlayPolicy.ts",
+      "priorLedgerSha256": "7d35a9b053efed5a085b8f00e67a0f779f9c5166c9eae52da399bf6a270b9f26",
+      "currentSha256": "7d35a9b053efed5a085b8f00e67a0f779f9c5166c9eae52da399bf6a270b9f26",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/interactionPresentationContract.ts",
+      "priorLedgerSha256": "d16c6bf50b63ab2cd451399addd88432930f806d342409d297545a0e5fd9d2af",
+      "currentSha256": "d16c6bf50b63ab2cd451399addd88432930f806d342409d297545a0e5fd9d2af",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/resolveMoves.ts",
+      "priorLedgerSha256": "4c119fb121020bea153c0313795b460df804c2bd5b14c7fb9f87f4d8d74a179b",
+      "currentSha256": "4c119fb121020bea153c0313795b460df804c2bd5b14c7fb9f87f4d8d74a179b",
+      "changedSincePriorLedger": false
+    },
+    {
+      "file": "src/games/dicethrone/ui/statusEffects.tsx",
+      "priorLedgerSha256": "eb036b203c8c999633d0c314c1e0cca7cf676d80bf40508fbf020c6f9d597413",
+      "currentSha256": "eb036b203c8c999633d0c314c1e0cca7cf676d80bf40508fbf020c6f9d597413",
+      "changedSincePriorLedger": false
+    }
+  ],
+  "additionalBindingAudit": [
+    {
+      "file": "src/games/dicethrone/hooks/useDiceThroneState.ts",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/hooks/useDiceThroneState.ts",
+      "decision": "保留必要数据透传与候选变化重置，不包含皮肤、构图、尺寸或锚点重造",
+      "changes": "useCurrentChoice透传正式选项metadata到ChoiceObjectSelection；交互重置包含真实来源/候选/选中持有人；其它防御焦点fallback非本聊天UI重造不动",
+      "proof": "git diff c057与本聊天raw patch 44224/44396；旧共有牌再见真实出牌、选中归属及确认后的状态结果单独E2E"
+    },
+    {
+      "file": "src/games/dicethrone/hooks/useInteractionState.ts",
+      "oldNormalSource": "c057cfe76afab5c2078c129183a02d6f1fb21a90:src/games/dicethrone/hooks/useInteractionState.ts",
+      "decision": "保留必要数据透传与候选变化重置，不包含皮肤、构图、尺寸或锚点重造",
+      "changes": "useCurrentChoice透传正式选项metadata到ChoiceObjectSelection；交互重置包含真实来源/候选/选中持有人；其它防御焦点fallback非本聊天UI重造不动",
+      "proof": "git diff c057与本聊天raw patch 44224/44396；旧共有牌再见真实出牌、选中归属及确认后的状态结果单独E2E"
+    }
+  ],
+  "priorLedger": "D:\\gongzuo\\webgame\\BoardGame\\temp\\doctor-restoration-final-ledger.json",
+  "baselineCaution": "博士实施前源码不自动等于正常基线。用户本轮已回答“是这个”确认具体血色杀戮完整UI；当前恢复其完整布局及响应式，不从BoardOverlays借350像素尺寸。灰骨架只确认对象，正式对照采用加载卡图的原组件重放，不假称原时截图。",
+  "decisions": [
+    {
+      "owner": "RightSidebar/diceInteractionContract",
+      "authority": "用户明确要求恢复骰盘左侧垂直居中，并保留上方攻击修正独立位置",
+      "decision": "原暗色琥珀指针气泡、完成及确认动作；不再向顶部GameHints复制普通选骰提示",
+      "evidence": [
+        "23",
+        "24",
+        "25",
+        "54"
+      ]
+    },
+    {
+      "owner": "InteractionOverlay",
+      "authority": "用户确认来源对照第一组完整血色杀戮UI，要求直接复用，博士只接来源与候选",
+      "decision": "恢复原面板锚点、居中换行、响应式卡宽、40vh滚窗与操作行；删除借来的350像素布局、cqh与选中自动滚动；保留正式来源/原optionId、无额外底框、原检视与单清空修复；不改普通手牌/技能槽",
+      "evidence": [
+        "01",
+        "03",
+        "15",
+        "20",
+        "40",
+        "41",
+        "42",
+        "47"
+      ]
+    },
+    {
+      "owner": "InteractionOverlay稳定操作区",
+      "authority": "用户指出按钮随候选数量和搜索结果移动，要求固定容器；此前静态图审遗漏跨状态稳定",
+      "decision": "继续原卡宽皮肤与动作，仅将外壳高度按视口固定，候选区flex内部滚动，确认固定中间列；保留短屏9vh上界与视口底部余量，替代原maxHeight/minHeight随内容增长的预算；同会话六态矩形一致，卡宽未变",
+      "evidence": [
+        "01",
+        "03",
+        "15",
+        "20",
+        "40",
+        "41",
+        "41b",
+        "42",
+        "47"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "scenario": "桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "870e27590bc012aba04b193e79ac2df32ba6a0cbc19cdb8c13b7b3f024a8b2de",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 6,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\奇异博士选择宇宙感知技能-desktop.trace.json",
+          "sha256": "2980d47f6ed90806eb82cf50d1e385a5109ee0c2594a8a9adc2510423fde3ea4",
+          "chainId": "奇异博士选择宇宙感知技能-desktop",
+          "sourceRun": "1793608913726-289884-2a033cdc-76c6-4652-b8c0-433cadbb6575",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\宇宙感知从弃牌堆选择法术-desktop.trace.json",
+          "sha256": "29fecc33e62babcd58d8d961b90ec5422ea6dfa2586af8606d702ea03eae6a79",
+          "chainId": "宇宙感知从弃牌堆选择法术-desktop",
+          "sourceRun": "1793608913726-289884-2a033cdc-76c6-4652-b8c0-433cadbb6575",
+          "status": "PASS",
+          "steps": 3,
+          "outcome": "索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\法瑞拉之牙选择施法值目标-desktop.trace.json",
+          "sha256": "45668997a976b643f3a80c41e4936cc95b58398f1530116b8a54b1d118e28907",
+          "chainId": "法瑞拉之牙选择施法值目标-desktop",
+          "sourceRun": "1793608913726-289884-2a033cdc-76c6-4652-b8c0-433cadbb6575",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。"
+        }
+      ]
+    },
+    {
+      "scenario": "手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "870e27590bc012aba04b193e79ac2df32ba6a0cbc19cdb8c13b7b3f024a8b2de",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 6,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\奇异博士选择宇宙感知技能-mobile.trace.json",
+          "sha256": "0b8194b22bb412a1c58a72174a730725e10c2dc39c6fe0edd59360a7422eb0d0",
+          "chainId": "奇异博士选择宇宙感知技能-mobile",
+          "sourceRun": "1793608933813-289884-fe66401c-f2fd-4767-96b2-931d3c12abba",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\宇宙感知从弃牌堆选择法术-mobile.trace.json",
+          "sha256": "691486564eeffe2616b3bc6a59a5a32766d286aa6a8cc7b514975d9ff69a35c3",
+          "chainId": "宇宙感知从弃牌堆选择法术-mobile",
+          "sourceRun": "1793608933813-289884-fe66401c-f2fd-4767-96b2-931d3c12abba",
+          "status": "PASS",
+          "steps": 3,
+          "outcome": "索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\手机横屏牌桌以真实鼠标选择宇宙感知并从弃牌准备法术\\_runs\\e2e-1793608899966-80c5g9\\法瑞拉之牙选择施法值目标-mobile.trace.json",
+          "sha256": "4cc7a5afe7f032d52630c44516353a61fd006e2124c9a2c7e13ecd99c0fec067",
+          "chainId": "法瑞拉之牙选择施法值目标-mobile",
+          "sourceRun": "1793608933813-289884-fe66401c-f2fd-4767-96b2-931d3c12abba",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引只展示技能选择、弃牌法术候选与选中待确认，以及法瑞拉之牙的玩家选择界面。"
+        }
+      ]
+    },
+    {
+      "scenario": "桌面牌桌真实打出法术并将深红系带施加到对手",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "10c09d46f53eb1724e3c9b3e15d6b6e9c27ad6285ce67231a355990146410838",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 2,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌真实打出法术并将深红系带施加到对手\\_runs\\e2e-1793608899966-80c5g9\\深红系带选择目标玩家.trace.json",
+          "sha256": "04e2a8457e0417829255fc7971ec8d11f52e7c90d8f3ef3ee72c42759d709872",
+          "chainId": "深红系带选择目标玩家",
+          "sourceRun": "1793609056603-289884-7c242194-530e-4eb3-8689-a682a2d2fb50",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引只展示现有玩家选择面中的目标候选和选中待确认界面；状态施加结果由同用例断言验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "桌面牌桌以真实状态选择器移除奇异博士法术指定的状态",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "18c4d441dadd47c56df022f103afe9fe237de9c9b0c7b42d40989bb00e5d3e77",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 7,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793608899966-80c5g9\\奇异博士从弃牌堆选择法术.trace.json",
+          "sha256": "294f411dc549bf3ee5452cef67928733eeb62f09cdc257caa2ff578f1604c0da",
+          "chainId": "奇异博士从弃牌堆选择法术",
+          "sourceRun": "1793608950358-289884-8b4a66c7-e56f-4f48-80ab-2962249f455b",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793608899966-80c5g9\\奇异博士选择宇宙感知技能.trace.json",
+          "sha256": "0bffb856b69023390dd302a424d949d1c655cd9eded22cfa2880eabee7f18ddc",
+          "chainId": "奇异博士选择宇宙感知技能",
+          "sourceRun": "1793608950358-289884-8b4a66c7-e56f-4f48-80ab-2962249f455b",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793608899966-80c5g9\\瓦图姆之风直接选择状态效果-横屏.trace.json",
+          "sha256": "9a84cbb23a04aac4ed010e330ba629f3ea136788be00489e3a948c2d367cad4b",
+          "chainId": "瓦图姆之风直接选择状态效果-横屏",
+          "sourceRun": "1793608950358-289884-8b4a66c7-e56f-4f48-80ab-2962249f455b",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实状态选择器移除奇异博士法术指定的状态\\_runs\\e2e-1793608899966-80c5g9\\瓦图姆之风直接选择状态效果.trace.json",
+          "sha256": "736a1ac9b01fc093c72f34897a6956183d6969d81dd343a4adb01eb81699e8d9",
+          "chainId": "瓦图姆之风直接选择状态效果",
+          "sourceRun": "1793608950358-289884-8b4a66c7-e56f-4f48-80ab-2962249f455b",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引仅含法术卡池、状态候选与选中待确认界面；状态选择一步直达，确认结算另由运行时断言覆盖。"
+        }
+      ]
+    },
+    {
+      "scenario": "桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "af1ca837ce69510d76f56789faba456599aa3813567f1246a2094e140152152a",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 7,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\卡牌候选复用放大阅读.trace.json",
+          "sha256": "41dc859f38eeb2027dcd1d2aa76585bb66814afbecb797a3ddc3e309b3e0bf9e",
+          "chainId": "卡牌候选复用放大阅读",
+          "sourceRun": "1793609006036-289884-4d539561-1192-4207-8625-c02a15255b15",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌返还位置选择.trace.json",
+          "sha256": "7c9cac907c4fe0f82c27acda6b2ba297cff5b100dd910755b3158990179523c1",
+          "chainId": "本次抽牌返还位置选择",
+          "sourceRun": "1793609006036-289884-4d539561-1192-4207-8625-c02a15255b15",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\本次抽牌返还对象选择.trace.json",
+          "sha256": "37ffb71a9a50464ba5f675c38eddf17d43e1fefc43b059d2095a4f8f8626be27",
+          "chainId": "本次抽牌返还对象选择",
+          "sourceRun": "1793609006036-289884-4d539561-1192-4207-8625-c02a15255b15",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\预感替代收入选项.trace.json",
+          "sha256": "d1a639948599c6a26bc4c11dc640ac73faf2429281fd08f3e63cf300e97def19",
+          "chainId": "预感替代收入选项",
+          "sourceRun": "1793609006036-289884-4d539561-1192-4207-8625-c02a15255b15",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\预感替代收入选项横屏.trace.json",
+          "sha256": "b19253167ee904296e66e78820b6e42dd3cab21b5119637154656ebdd06f4d02",
+          "chainId": "预感替代收入选项横屏",
+          "sourceRun": "1793609006036-289884-4d539561-1192-4207-8625-c02a15255b15",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底\\_runs\\e2e-1793608899966-80c5g9\\预感横屏返还比较.trace.json",
+          "sha256": "575ccaab8efaa4c4b5faba3eb01974cc323c763a63852bca56082c3b70ff2921",
+          "chainId": "预感横屏返还比较",
+          "sourceRun": "1793609006036-289884-4d539561-1192-4207-8625-c02a15255b15",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示收入选项、抽牌候选、卡牌选中和返还位置选择；返还结果由同用例断言验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "473d045bf22a8f9e8ec8b1686ca29161a11f892e09cf80b464f75c125685d6df",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 11,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼剩余卡牌重排.trace.json",
+          "sha256": "dbda4c5254a14b68c7003354722e4d0a6e2c5318a638960eeffb309f5ed27591",
+          "chainId": "全知之眼剩余卡牌重排",
+          "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼技能选择.trace.json",
+          "sha256": "1a9fa240939d17848fc4198271dbc4072e49cc66ffd5b8536d50e6bde43b8dc0",
+          "chainId": "全知之眼技能选择",
+          "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼攻击后选择法术.trace.json",
+          "sha256": "0283ceae3d687ea0ddc5581b4cfac0d80c61c2f3506b2dc933c2c2c0db3b56d5",
+          "chainId": "全知之眼攻击后选择法术",
+          "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+          "status": "PASS",
+          "steps": 3,
+          "outcome": "索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\全知之眼顶五法术选择.trace.json",
+          "sha256": "d257d6b6e00e0cc7b2124c861b633b276a6bdf9a581cc0963d382b4c65e1b2c8",
+          "chainId": "全知之眼顶五法术选择",
+          "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+          "status": "PASS",
+          "steps": 3,
+          "outcome": "索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以全知之眼从顶五准备两张不同法术并重排其余卡牌\\_runs\\e2e-1793608899966-80c5g9\\法瑞拉之牙目标玩家选择.trace.json",
+          "sha256": "13abaf5062c755b89546d48f01ef879133775a8649ef8675633d85bce0b080e7",
+          "chainId": "法瑞拉之牙目标玩家选择",
+          "sourceRun": "1793609016514-289884-39eaa5bb-34c0-4e71-ab2d-2988e65f2ab3",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引按法术候选、玩家目标、重排和攻击后施法分组；攻击与法术结算由同用例断言验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "桌面牌桌以真实鼠标选择星际侵入并确认奖励骰",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "2cf110686d50dec57e895da36d659e13a981821bab16867dc7c2162443741ef9",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 2,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793608899966-80c5g9\\星际侵入奖励骰确认.trace.json",
+          "sha256": "45f8c0d40e93ade5a862843dc4b13a04c1b625020d2e5944a4ca9f454cf5d0dc",
+          "chainId": "星际侵入奖励骰确认",
+          "sourceRun": "1793609046051-289884-2da6f1af-626b-4480-a6f2-98af0ea837f8",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引展示技能待结算和奖励骰待确认界面；伤害前状态由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标选择星际侵入并确认奖励骰\\_runs\\e2e-1793608899966-80c5g9\\星际侵入技能选择.trace.json",
+          "sha256": "617361ee40bfced0b86b7bc4a33ae978877168dfc734e2e6dd6cff4c88c0dc4b",
+          "chainId": "星际侵入技能选择",
+          "sourceRun": "1793609046051-289884-2da6f1af-626b-4480-a6f2-98af0ea837f8",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引展示技能待结算和奖励骰待确认界面；伤害前状态由同用例断言验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "45b2a34ab02a125bd6f340c010380ae1691d6ed911d05ebcfe9e21dbc22a7538",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 4,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793608899966-80c5g9\\值得拥有来源卡阅读.trace.json",
+          "sha256": "30694177e22f5543c0a2b390b4b8372467480ac433c55c0f13a3bb80e7943594",
+          "chainId": "值得拥有来源卡阅读",
+          "sourceRun": "1793608975858-289884-96a3633b-bac0-4174-abb9-5b2fc8515371",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "截图只展示骰子候选与选择进度；骰面变化和卡牌去向由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子\\_runs\\e2e-1793608899966-80c5g9\\值得拥有选择投掷者骰子.trace.json",
+          "sha256": "99d150fb3bced1f122827525db18ff3be62ced6c46386d277159483525d4d2f7",
+          "chainId": "值得拥有选择投掷者骰子",
+          "sourceRun": "1793608975858-289884-96a3633b-bac0-4174-abb9-5b2fc8515371",
+          "status": "PASS",
+          "steps": 3,
+          "outcome": "截图只展示骰子候选与选择进度；骰面变化和卡牌去向由同用例断言验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "5b7e97581ceb1ee65c87985d595ab05a67bc139b2205d9080db01f52d768d686",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 2,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793608899966-80c5g9\\即视感状态悬停查看说明.trace.json",
+          "sha256": "9790c78651e20eb02821e245a4c53c4b5d16e7b851b00532a77387f833855345",
+          "chainId": "即视感状态悬停查看说明",
+          "sourceRun": "1793608995483-289884-dad2cda3-85f4-4825-aed8-cfe1640300ac",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "截图只展示状态标记的悬停说明；点击后的阶段与状态变化由同用例断言验证。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\桌面牌桌以真实鼠标消耗即视感并重开进攻投掷阶段\\_runs\\e2e-1793608899966-80c5g9\\奇异博士即视感重开阶段.trace.json",
+          "sha256": "cf4805500ab25b3eb3ff1f4abe5648683c722bdd081c65408e763959820ea0d4",
+          "chainId": "奇异博士即视感重开阶段",
+          "sourceRun": "1793608995483-289884-dad2cda3-85f4-4825-aed8-cfe1640300ac",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "截图只展示状态标记的悬停说明；点击后的阶段与状态变化由同用例断言验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "真实双人联机可选奇异博士并进入牌桌",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "aff9759a69f59a6419c1cd79a5d21303e9275a9f4013bb1fbc4da79c501a4df4",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 4,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793608899966-80c5g9\\双方选角并准备.trace.json",
+          "sha256": "c0529f8eca1f4a7a38a286391db684c6da217746e7f4d8feb6dd17b49239728c",
+          "chainId": "双方选角并准备",
+          "sourceRun": "1793609065043-289884-7b29e4f8-3289-4c7e-a47e-2c848c158301",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793608899966-80c5g9\\奇异博士在线角色选择界面.trace.json",
+          "sha256": "d6b7052d9954574ca57c90744cd96c29b64594a61f8b67193b0cefced6f30f4b",
+          "chainId": "奇异博士在线角色选择界面",
+          "sourceRun": "1793609065043-289884-7b29e4f8-3289-4c7e-a47e-2c848c158301",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\真实双人联机可选奇异博士并进入牌桌\\_runs\\e2e-1793608899966-80c5g9\\房主选择奇异博士.trace.json",
+          "sha256": "fdc749aeee35cddbeca2d6fc2b8d58c889910c42760ff31b14d97a5bc8a8cd58",
+          "chainId": "房主选择奇异博士",
+          "sourceRun": "1793609065043-289884-7b29e4f8-3289-4c7e-a47e-2c848c158301",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "索引只展示桌面/手机选角候选、奇异博士已选和双方准备界面；牌桌对局画面不纳入这组新交互验收图。"
+        }
+      ]
+    },
+    {
+      "scenario": "代表态真实手牌入口覆盖四人玩家选择与公开准备区检视",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "ade8418aacccdcb22154c972b038fcfe9ab32621b0060ca2575d99b90fa91d2c",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 6,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793608899966-80c5g9\\公开准备区浏览.trace.json",
+          "sha256": "97f8313fe5f9f01415319936f591afaf621aedd790c47a1c441bc78b06803adb",
+          "chainId": "公开准备区浏览",
+          "sourceRun": "1793609085694-289884-0c7f5ae3-3723-4243-a2b8-34772062a43e",
+          "status": "PASS",
+          "steps": 4,
+          "outcome": "真实打牌、取消选中和确认完成，公开准备卡通过原阅读组件检视并关闭。"
+        },
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实手牌入口覆盖四人玩家选择与公开准备区检视\\_runs\\e2e-1793608899966-80c5g9\\授予即视感玩家选择.trace.json",
+          "sha256": "ce8f24f2e2ebacd92ca978c05c3ba73bfeae2fe865f7ce16d6c6fdf83f378383",
+          "chainId": "授予即视感玩家选择",
+          "sourceRun": "1793609085694-289884-0c7f5ae3-3723-4243-a2b8-34772062a43e",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "真实打牌、取消选中和确认完成，公开准备卡通过原阅读组件检视并关闭。"
+        }
+      ]
+    },
+    {
+      "scenario": "代表态真实打出瓦图姆之风覆盖多个状态持有人",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "9c0da589ae46b4b67f50519ac379c95284963f7c30ea237a82a0236a4a55e73f",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 2,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖多个状态持有人\\_runs\\e2e-1793608899966-80c5g9\\多持有人状态选择.trace.json",
+          "sha256": "13f5a9b7d2d6ecb438f365bc6d57fa8140909d9e12e0a5bcf35376a3ce2f389b",
+          "chainId": "多持有人状态选择",
+          "sourceRun": "1793609096974-289884-a9d08da8-80e3-4dd5-86e7-bf0c326bd2e3",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "由真实手牌发起并使用既有状态选择或跳过承接，没有额外玩家步骤。"
+        }
+      ]
+    },
+    {
+      "scenario": "代表态真实打出瓦图姆之风覆盖无合法状态跳过",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "048fcdf325bcbced88bcd23d0b04755e09a2573a062272389dbb7993735952a0",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 1,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实打出瓦图姆之风覆盖无合法状态跳过\\_runs\\e2e-1793608899966-80c5g9\\无状态跳过.trace.json",
+          "sha256": "7c2bd8e46cfc5e64f681e7e0d14ff6e920a2a3a41707ca1b8e38f08465ad7e72",
+          "chainId": "无状态跳过",
+          "sourceRun": "1793609103501-289884-b96899e7-a3db-4bad-8ec2-f48ea950d1f9",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "由真实手牌发起并使用既有状态选择或跳过承接，没有额外玩家步骤。"
+        }
+      ]
+    },
+    {
+      "scenario": "代表态真实施放拉格伽多尔之环并浏览弃牌候选",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "79594681990490a65c888f0a50b83fcf6b4620eb89a82b35341141b2aa29f2f3",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 5,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\代表态真实施放拉格伽多尔之环并浏览弃牌候选\\_runs\\e2e-1793608899966-80c5g9\\弃牌直接施放.trace.json",
+          "sha256": "fe81606bcd2602470dfdcf26f3f8eb134fe6c34f8051061a79b293f1ff5dae7f",
+          "chainId": "弃牌直接施放",
+          "sourceRun": "1793609110382-289884-a4a4874a-dcf7-4015-9e0e-dfb4657a28d1",
+          "status": "PASS",
+          "steps": 5,
+          "outcome": "真实施法、搜索空态、清除、选中确认并跳过下一次施放均完成。"
+        }
+      ]
+    },
+    {
+      "scenario": "旧共有牌再见以原状态选择器只选中实际持有人",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "9926464e70648d2678a3eebcab4cbb27ad6ba55d8201294d1857b48295df9b38",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 2,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\旧共有牌再见以原状态选择器只选中实际持有人\\_runs\\e2e-1793608899966-80c5g9\\旧共有牌状态选择对照.trace.json",
+          "sha256": "2ed08075aee1409057944c2a01684585b7371ef8ddd59b2658ffbcfebff657ff",
+          "chainId": "旧共有牌状态选择对照",
+          "sourceRun": "1793608966684-289884-62618f61-68f2-4030-a3eb-0a3a37c934c4",
+          "status": "PASS",
+          "steps": 2,
+          "outcome": "选择归属和确认后的原状态结果单独验证。"
+        }
+      ]
+    },
+    {
+      "scenario": "既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位",
+      "dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位\\_runs\\e2e-1793608899966-80c5g9",
+      "sourceRevision": "5b8883c348c79c585a38ec686ae0e557a635182a71570d767e2483e83b121ad4",
+      "currentSourceIdentityMatches": true,
+      "traceStatus": "PASS",
+      "media": 1,
+      "traces": [
+        {
+          "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\doctor-strange-reuse-capture-20261102\\既有攻击修正与重投提示同屏时保留骰盘上方和左侧独立槽位\\_runs\\e2e-1793608899966-80c5g9\\原骰盘提示与攻击修正同屏.trace.json",
+          "sha256": "49934f855a863eaa4a2fe17f492003543a5c0d9e9b5feb7051db3cb3e86ce01b",
+          "chainId": "原骰盘提示与攻击修正同屏",
+          "sourceRun": "1793608988138-289884-750f83bc-3d2c-45a1-9837-707ce09148a4",
+          "status": "PASS",
+          "steps": 1,
+          "outcome": "普通重投及攻击修正沿原骰盘槽位同时显示。"
+        }
+      ]
+    }
+  ],
+  "runtimeCaution": "旧批次与灰骨架图保留历史；本轮稳定操作区源码冻结后单次十六例结果见doctor-stable-panel-final-e2e-20261102.log，不能用此前静态图审证明跨状态稳定。",
+  "userAcceptance": "pending",
+  "implementationStatus": "in_progress",
+  "thor": "已按用户授权通知自检；不声明雷神已完成验收"
+}

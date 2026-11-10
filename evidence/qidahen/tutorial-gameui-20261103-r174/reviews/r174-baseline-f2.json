@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_f2",
+  "requirements": [
+    {
+      "requirement": "年度支付与所选对象身份",
+      "status": "PASS",
+      "baselineSource": "已实际读取指定旧版叶赫部维护选牌整图，并与三张当前年度支付及平壤整图逐项对照；旧版结论未被沿用。",
+      "preservedInformation": "保留维护城市、待支持部队、已选手牌状态、手牌本体及确认入口；叶赫部三张支付牌仍以金边与已选标记承载身份。",
+      "preservedActions": "保留从手牌选择支付并确认的可见入口，手牌末端仍有返回入口；平壤维护提示承接撤去当地及汉城部队的下一步，实际动作结果不由静态图证明。",
+      "changes": "旧版右侧独立维护面板移到当前手牌上方；当前条目增加已选牌名，手牌翻到末端仍可核对露营阵、火炮技术和银两；平壤城名、步兵与移除提示同屏近邻。",
+      "duplicateDecision": "当前支付条负责维护对象、已选摘要与确认，实牌负责识别和选择；摘要补足滚出窗口的牌名，未额外复制完整牌面规则，旧版选择指令未在当前支付条中重复出现。",
+      "changeAuthority": "依据本轮最终候选私有图审合同与明确分配的年度支付身份要求，仅裁决实际图面关系，不授权规则数值变更，也不冒称亲玩商业教程。",
+      "before": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r154-object-input-pc-20261102/desktop/39-upkeep-yehe-selected.png"
+      ],
+      "after": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/40-upkeep-yehe-selected.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/41-hand-scroll-end.png",
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/42-upkeep-pyongyang.png"
+      ]
+    }
+  ]
+}

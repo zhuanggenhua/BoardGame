@@ -1,0 +1,93 @@
+{
+  "status": "PASS",
+  "verdict": "PASS",
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/final_payment_visual_review"
+  },
+  "reviewedAt": "2026-10-26T12:31:56Z",
+  "objective": "七大恨支付托盘的桌面确认取消主次，以及手机横屏托盘不遮卡头和查看入口的局部图面审查",
+  "sourceRun": "e2e-1793017241967-56b2b2",
+  "sourceIdentity": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/current-run-source.json",
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "revise": 0
+  },
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+      "status": "PASS",
+      "score": 95,
+      "viewport": { "width": 1920, "height": 1080 },
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "确认执行为浅纸色实底，取消本次行动为深底上的浅色文字，主次可以直接区分。征召军队、支付进度已选1/1及已选牌东北大军完整可读。托盘位于手牌上方，三张手牌、类别标签、已选标记和各自看入口保留；当前托盘未压住牌头。对照基线，未见地图、顶部玩家条和牌堆因本轮托盘改动被移除。目标托盘未见破图、文字裁切或错误提示。",
+      "sha256": "0ebe1ca688f3f74691cb0eb87f4572335e2bdd88293c3b9533723c7d6093d5d7",
+      "source": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-current.log",
+      "hardFailures": [],
+      "issues": []
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png",
+      "status": "PASS",
+      "score": 94,
+      "viewport": { "width": 932, "height": 430 },
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "支付托盘下沿约在纵坐标236，最高选中牌顶约在纵坐标260，两者存在清楚间隔；托盘没有盖住选中牌的事件标签和看入口。确认执行、取消本次行动、征召军队、已选1/1及托盘内东北大军名称均可读。三张手牌和各自看入口保留，已选标记完整。另有基线即存在的手牌自身问题：事件角标覆盖部分卡面原印标题，不能宣称卡面原印标题完整；该遮挡来自手牌角标，并非本轮支付托盘。本次通过仅针对托盘分离和既有操作入口保留，不以托盘牌名代替卡面原印标题完整性。",
+      "sha256": "5b065a9755f1790e78f5917f8728369f699efcc9db4de8d97be125d30213a23f",
+      "source": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-current.log",
+      "hardFailures": [],
+      "issues": [],
+      "outOfScopeObservations": ["基线与当前图均有事件角标覆盖部分卡面原印标题；本轮未修复，不属于支付托盘的遮挡。"]
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "桌面支付栏明确区分确认与取消，同时保留支付和手牌信息",
+      "status": "PASS",
+      "baselineSource": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/01-桌面支付确认与取消.png",
+        "sha256": "072a24ae385648f8ecb9c2ba68f32b79a3662eefce0f8f3f8d6cf8663eb7b8ab",
+        "log": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log"
+      },
+      "preservedInformation": ["征召军队", "支付进度已选1/1", "托盘已选牌东北大军", "三张手牌及已选标记", "地图、玩家条和牌堆"],
+      "preservedActions": ["确认执行入口", "取消本次行动入口", "手牌选择对象", "三张手牌的看入口；点击行为由独立行为证据证明"],
+      "changes": ["基线中确认与取消均为浅色实底；当前确认保留浅色实底，取消改为次级文字表达。", "沿用原托盘位置和既有支付信息，未新增同级决策入口。"],
+      "duplicateDecision": "支付进度和已选牌由原托盘承载；卡牌对象及查看入口仍在原手牌，不新增重复支付面板或第三项同级动作。",
+      "changeAuthority": "用户：该优化重构的可以做一下。",
+      "before": ["D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/01-桌面支付确认与取消.png"],
+      "after": ["D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png"]
+    },
+    {
+      "requirement": "手机横屏支付托盘与最高选中手牌保持间隔，不遮挡卡头和查看入口",
+      "status": "PASS",
+      "baselineSource": {
+        "path": "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/02-手机横屏支付确认与取消.png",
+        "sha256": "4c20dd14abccf00847f8d77f249ddde6204260ceb8a5bd68f7494986422643c2",
+        "log": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-baseline.log"
+      },
+      "preservedInformation": ["征召军队、支付进度已选1/1及托盘已选牌名", "三张手牌对象与已选标记", "事件、战术、银两类别标签", "地图与顶部玩家条"],
+      "preservedActions": ["确认执行入口", "取消本次行动入口", "手牌选择对象", "三张手牌的看入口；截图不独立证明操作结果"],
+      "changes": ["基线托盘下沿约在纵坐标263，贴压选中牌顶；当前下沿约在纵坐标236，最高选中牌顶约在纵坐标260，形成可见间隔。", "当前取消为次级文字，确认继续使用浅色实底。", "手牌未为托盘避让而隐藏，三张看入口持续可见。"],
+      "duplicateDecision": "仅对既有托盘避让并区分既有两项动作主次，没有新增代理按钮或第二套支付承载；不把托盘牌名当作卡面原印标题完整性的补证。",
+      "changeAuthority": "用户：该优化重构的可以做一下。原始锁定范围是支付托盘不遮卡头和查看入口；不扩大为手牌自身类别角标的重设计。",
+      "before": ["D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/baseline/02-手机横屏支付确认与取消.png"],
+      "after": ["D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"]
+    }
+  ],
+  "elementResponsibilityAudit": {
+    "ledger": "requirements数组中的信息、操作及职责对照",
+    "decisions": ["原托盘继续承载支付目标、进度和选牌摘要。", "原手牌继续承载卡牌对象、类别和查看入口。", "确认承担提交，取消承担放弃当前选择；保留两项操作。"],
+    "uncoveredElements": ["其它支付种类和其它手牌状态未纳入本次图面评分。"]
+  },
+  "negativeImpactChecks": ["两张图的确认与取消入口均保留。", "手机三张手牌、类别标签、已选标记和看入口未被支付托盘遮住。", "地图、顶部玩家条及原有牌堆未因本轮托盘改动被移除。", "没有以隐藏或缩小手牌解决支付托盘的空间竞争。"],
+  "behavioralVerification": {
+    "source": "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-current.log",
+    "sourceRun": "e2e-1793017241967-56b2b2",
+    "result": "日志显示一个目标端到端用例通过；行为结果不由本次静态图面审查替代。"
+  },
+  "limitations": ["仅覆盖桌面1920乘1080和手机横屏932乘430的征召军队已选1/1代表态。", "手机事件角标覆盖部分卡面原印标题，基线已存在，本次未修复；不宣称卡面原印标题完整或整套手牌界面通过。", "不证明竖屏、其它支付态、轮盘、教程或整游戏验收。", "静态截图只证明当前可见性；悬停后的间隔、真实点击、取消不扣牌及重开清空选择须由独立行为证据承担。"],
+  "hardFailures": []
+}

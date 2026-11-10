@@ -1,0 +1,29 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "PASS",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/paladin_screenshot_review_v2"
+  },
+  "media": [
+    {
+      "path": "01-出牌前四张手牌.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "圣骑士玩家板和提示板清楚，四张手牌标题、费用角标和主要牌面可辨，角标与卡框对齐；牌底贴近屏幕下沿并被截断，但足以判断图集映射。"
+    },
+    {
+      "path": "02-拖动升级牌.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "拖动中的神圣攻击升级牌完整可见，黄虚线技能槽目标清楚，卡图和提示无错位；拖动牌覆盖玩家板中下部，但目标边界仍明确。"
+    },
+    {
+      "path": "03-升级牌落位后.png",
+      "status": "PASS",
+      "checks": ["target-visible", "interaction-ui", "layout-readable", "no-error"],
+      "observation": "神圣攻击升级牌已落入玩家板对应能力槽，剩余三张手牌仍可见，槽位尺寸和对齐正常；余牌下缘被视口截断，但不影响本次素材映射判断。"
+    }
+  ]
+}

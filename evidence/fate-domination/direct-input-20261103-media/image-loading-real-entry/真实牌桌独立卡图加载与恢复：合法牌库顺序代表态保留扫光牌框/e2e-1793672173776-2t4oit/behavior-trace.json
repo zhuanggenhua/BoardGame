@@ -1,0 +1,100 @@
+{
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "sourceRun": "1793672194106-345384-142b1fc6-e502-44ab-b86d-3b1a8bb40a6c",
+  "sourceRevision": "0605becac11e82fe567f87b0822c273c5af6b0b92330b26a929ba20ad00f7c91",
+  "status": "PASS",
+  "visualStatus": "PENDING",
+  "boundary": "合法牌库顺序代表态：正式准备和部署完成后，只将本人未抽牌库的追击实例置顶；再由战略部署真实抽牌并恢复资源请求。不补牌，不代表自然教程主线、生产断网或所有候选耗尽。",
+  "fixture": {
+    "before": [
+      "0:cardluck:11",
+      "0:cardQ3:8",
+      "0:cardB2:3",
+      "0:cardB3:4",
+      "0:cardB1:1",
+      "0:cardQ2:7",
+      "0:cardB1:0",
+      "0:cardB4:5",
+      "0:cardB2:2"
+    ],
+    "after": [
+      "0:cardB1:1",
+      "0:cardluck:11",
+      "0:cardQ3:8",
+      "0:cardB2:3",
+      "0:cardB3:4",
+      "0:cardQ2:7",
+      "0:cardB1:0",
+      "0:cardB4:5",
+      "0:cardB2:2"
+    ]
+  },
+  "requests": [
+    "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp",
+    "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp",
+    "http://127.0.0.1:7273/assets/i18n/zh-CN/fate-domination/cards/compressed/attack-strength-low.webp"
+  ],
+  "loading": [
+    {
+      "alt": "",
+      "label": "Card Preview",
+      "loaded": false,
+      "animation": "img-shimmer",
+      "background": "linear-gradient(100deg, rgba(255, 255, 255, 0.08) 40%, rgba(255, 255, 255, 0.22) 50%, rgba(255, 255, 255, 0.08) 60%)",
+      "width": 207.359375,
+      "height": 292.734375
+    }
+  ],
+  "decoded": [
+    {
+      "label": null,
+      "width": 1658.875,
+      "height": 580.59375
+    },
+    {
+      "label": null,
+      "width": 1658.875,
+      "height": 580.59375
+    },
+    {
+      "label": null,
+      "width": 1658.875,
+      "height": 580.59375
+    },
+    {
+      "label": "Card Preview",
+      "width": 207.359375,
+      "height": 297.875
+    },
+    {
+      "label": null,
+      "width": 1658.875,
+      "height": 580.59375
+    }
+  ],
+  "steps": [
+    {
+      "id": "cards-loading",
+      "action": "正式准备及部署后，战略部署抽取未抽牌库顶部的真实独立卡图",
+      "assertions": [
+        {
+          "name": "shimmer-with-empty-visual-alt",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "cards-loaded",
+      "action": "放行原资源请求，保持同一牌桌",
+      "assertions": [
+        {
+          "name": "decoded-images-replace-shimmer",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    }
+  ]
+}

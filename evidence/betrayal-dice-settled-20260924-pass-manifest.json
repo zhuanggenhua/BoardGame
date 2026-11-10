@@ -1,0 +1,41 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-24",
+  "standard": {
+    "source": ".spec/knowledge/standards/e2e-verification.md",
+    "dynamicEvidenceSource": ".spec/skills/e2e-animation-evidence/SKILL.md",
+    "displaySource": ".spec/skills/show-image-to-user/SKILL.md"
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "directory": "test-results/evidence-screenshots/betrayal/haunt-reveal-dice-settled-final-20260924"
+  },
+  "tests": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/haunt-reveal-discovery-confirmation.e2e.ts \"普通预兆触发作祟时先确认预兆和检定，再承接作祟揭示\"",
+      "result": "1 passed",
+      "scope": "真实预兆作祟检定从物理骰子滚动到停稳后、确认 0/3 的稳定画面"
+    }
+  ],
+  "requirements": [
+    {
+      "requirement": "骰子已经停稳后再截图，且结果层仍显示并等待确认。",
+      "status": "PASS",
+      "evidence": [
+        "测试先等待 data-dice-physics-motion=settled，再保存本截图。",
+        "截图显示实体骰面、总点数 8 和确认 0/3。",
+        "截图发生在任何玩家点击确认之前。"
+      ],
+      "images": [
+        "01-预兆作祟检定-物理骰子停稳后-确认0-3.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\betrayal\\haunt-reveal-dice-settled-final-20260924\\01-预兆作祟检定-物理骰子停稳后-确认0-3.jpg"
+  ]
+}

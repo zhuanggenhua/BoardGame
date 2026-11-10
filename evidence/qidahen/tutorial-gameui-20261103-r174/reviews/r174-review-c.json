@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "reviewer": "/root/r174_c",
+  "score": 93,
+  "issues": [],
+  "actualReadCount": 6,
+  "media": [
+    {
+      "id": "dispatch-source",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/13-dispatch-source.png",
+      "sha256": "ff3ab18f428279ab2145f5ea028a3a23c8801ddada0b17e1869ae93ef65958cd",
+      "status": "PASS",
+      "observation": "出兵来源提示清楚归属大明，辽北以白色边界显示推荐来源，其余合法地区以绿色边界表达，区域内兵牌与所属标记可辨，确认在尚未选定时为不可用外观。",
+      "checks": [
+        "target-visible：来源区域、兵牌与城名可见",
+        "interaction-ui：白色推荐与绿色合法来源可区分",
+        "layout-readable：地图、轮盘、手牌和提示各有承载区域，未遮住推荐来源",
+        "no-error：未见空白素材、错误占位或内部标识泄漏"
+      ]
+    },
+    {
+      "id": "dispatch-troops",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/14-dispatch-troops.png",
+      "sha256": "3aeff4e92b0573d1814cf7d2ea36e8cf90aaa01a6d8d2dfcdcf4766dc1fd549f",
+      "status": "PASS",
+      "observation": "辽北地区已放大，步兵及炮兵牌面、等级角标清楚，合法兵牌以绿色贴边，推荐的两支步兵和一支炮兵以白色贴边，教学说明位于兵群右侧，尚未选择时计数为零且确认置灰。",
+      "checks": [
+        "target-visible：辽北兵牌与推荐对象完整可见",
+        "interaction-ui：合法绿色与推荐白色边界贴牌且易区分",
+        "layout-readable：提示未覆盖推荐兵牌，手牌与地图层级明确",
+        "no-error：未见素材缺失、错误提示或内部标识"
+      ]
+    },
+    {
+      "id": "dispatch-troops-selected",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/15-dispatch-troops-selected.png",
+      "sha256": "12a60f464e47447f74547277cefb92f9c49f3c7dab3ba16abf6b5e96d5eb35a5",
+      "status": "PASS",
+      "observation": "三张已选兵牌改为金色贴边并附勾号，其余合法兵牌保留绿色，牌面兵种仍可辨，右侧已选数量与亮起的确认按钮组成清楚的提交承载。",
+      "checks": [
+        "target-visible：两张步兵与一张炮兵的已选本体可辨",
+        "interaction-ui：金边勾号与未选绿色明确区分，确认亮起",
+        "layout-readable：勾号没有遮住兵种，教学提示未盖住兵群",
+        "no-error：未见错误、空白素材或内部标识"
+      ]
+    },
+    {
+      "id": "dispatch-target",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/16-dispatch-target.png",
+      "sha256": "c6e9922e41baeef5d78347fd253d9d3200a449b0e782cbfec256bb5477b356c3",
+      "status": "PASS",
+      "observation": "叶赫部以白色边界和就近城名承接目标推荐，其余合法区域以绿色区分，辽北三支已选部队仍保留金色勾号，教学提示指向目标附近，右侧重新选择部队承接回退。",
+      "checks": [
+        "target-visible：叶赫部轮廓、城名、阵营标记和辽北已选部队可见",
+        "interaction-ui：来源已选与推荐目标分层清楚，回退按钮明确",
+        "layout-readable：教学浮层未遮住叶赫部主区域与城名，手牌仍可发现",
+        "no-error：未见错误提示、内部标识或破损素材"
+      ]
+    },
+    {
+      "id": "tactic-card",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/17-tactic-card.png",
+      "sha256": "eb7b94fe30d9007a493f28548b4f30218196b1ae7beb2a8c03b79109b62a57b2",
+      "status": "PASS",
+      "observation": "辽北至叶赫部的交战关系在右侧集中承载，叶赫部以红色区域及可辨骑兵牌表示目标，教学提示贴近左侧推荐战术手牌，战术分类与牌面上部可发现，开始战斗入口清楚。",
+      "checks": [
+        "target-visible：攻击来源、目标城名、已选部队及推荐战术牌可见",
+        "interaction-ui：战术牌白色推荐边界与地图交战目标分离",
+        "layout-readable：教学提示在牌区上方，没有遮挡推荐牌面上部或交战对象",
+        "no-error：未见空白关键素材、错误提示或内部标识"
+      ]
+    },
+    {
+      "id": "tactic-card-selected",
+      "path": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r174-gameui-pc-20261102/desktop/18-tactic-card-selected.png",
+      "sha256": "9d7fe9599db1bcc3614fe8537ec259b6452ae2f6875b2635f1946be262020612",
+      "status": "PASS",
+      "observation": "所选战术牌完整抬起并以金色贴边及已选徽记表达状态，打出战术牌与取消按钮贴在该牌上沿，教学说明位于牌右侧，地图上的辽北至叶赫部交战对象仍可辨认。",
+      "checks": [
+        "target-visible：所选战术完整牌面、敌我交战对象均可见",
+        "interaction-ui：打出与取消直接贴所选卡，放大入口独立可见",
+        "layout-readable：教学说明未盖住所选卡，按钮归属清楚且未被手牌遮住",
+        "no-error：未见错误提示、空白关键素材或内部标识"
+      ]
+    }
+  ]
+}

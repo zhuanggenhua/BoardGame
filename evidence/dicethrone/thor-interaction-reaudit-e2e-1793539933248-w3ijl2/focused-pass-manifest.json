@@ -1,0 +1,230 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "visual-only",
+  "changeType": "new",
+  "subject": "thor-new-interactions",
+  "sourceBaseline": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "baselinePixelsAvailable": false,
+  "existingUiPolicy": "restore-and-reuse",
+  "evidenceIndex": ".e2e-image-index.json",
+  "acceptanceReason": "用户限定范围原话：“基本ui你没改吧，要验收的是新ui哦，这点别搞错”；另要求“非必要不要动旧ui”。本清单核对当前新增交互，并用原任意改值完整流程作对照，范围不扩成全游戏或移动端通过。",
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\01-索尔在线角色板九槽.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\02-弃牌飞掷手牌区成本.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\03-奥丁II效果骰选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\04-奥丁II选择两骰保留原动作.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\05-奥丁II空选原确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\06-当之无愧选择固定四或五.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\07-当之无愧固定四选择目标骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\08-当之无愧固定四提交结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\09-当之无愧固定五取消前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\10-当之无愧取消退回费用.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\11-连锁闪电基础效果骰选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\12-连锁闪电基础选择两骰确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\13-弃牌召回成本.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\14-破防失败后剩余标记.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\15-队友不愧是我同骰两次.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\16-队友我又行了任选两骰.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\17-队友下次一定伤害响应前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\18-队友下次一定伤害减少结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\19-队友就这防御骰重投.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\20-连锁闪电二级四骰选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\21-连锁闪电二级选择两骰确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\22-原任意改值选择骰和加减控件.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\23-原任意改值预览和手动确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\24-原任意改值提交结果.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\25-索尔升级技能变体选择.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\26-瓶中闪电II锤子移动选择目标与停止.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\27-飞掷后保留继续或停止.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\28-移动次数用尽后进入攻击响应.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\29-零次停止后进入攻击响应.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\30-不屈意志防御效果骰原确认.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-interaction-reaudit-e2e-1793539933248-w3ijl2\\31-飞掷一次后主动停止并保留攻击响应.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "索尔正式角色板在真实双人入口呈现",
+      "evidence": [
+        "01-索尔在线角色板九槽.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "弃牌飞掷和召回成本复用原手牌区",
+      "evidence": [
+        "02-弃牌飞掷手牌区成本.png",
+        "13-弃牌召回成本.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "奥丁之力二沿原骰盘选择并重掷所选骰子",
+      "evidence": [
+        "03-奥丁II效果骰选择.png",
+        "04-奥丁II选择两骰保留原动作.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "奥丁之力二空选时仍沿原确认入口收束",
+      "evidence": [
+        "05-奥丁II空选原确认.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "当之无愧固定四或五并沿原点骰流程提交",
+      "evidence": [
+        "06-当之无愧选择固定四或五.png",
+        "07-当之无愧固定四选择目标骰.png",
+        "08-当之无愧固定四提交结果.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "当之无愧取消时保持骰面并退回卡牌资源",
+      "evidence": [
+        "09-当之无愧固定五取消前.png",
+        "10-当之无愧取消退回费用.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "连锁闪电在旧骰盘选择效果骰并沿原确认结算",
+      "evidence": [
+        "11-连锁闪电基础效果骰选择.png",
+        "12-连锁闪电基础选择两骰确认.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "破防失败后仍可使用剩余标记",
+      "evidence": [
+        "14-破防失败后剩余标记.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "二对二队友重投保留重复选骰与任选两骰提示",
+      "evidence": [
+        "15-队友不愧是我同骰两次.png",
+        "16-队友我又行了任选两骰.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "队友护盾在索尔真实伤害响应流程中生效",
+      "evidence": [
+        "17-队友下次一定伤害响应前.png",
+        "18-队友下次一定伤害减少结果.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "就这在索尔防御骰盘上复用原重投交互",
+      "status": "PASS",
+      "evidence": [
+        "19-队友就这防御骰重投.png"
+      ]
+    },
+    {
+      "requirement": "连锁闪电二级四骰选择沿原骰盘提示和确认",
+      "status": "PASS",
+      "evidence": [
+        "20-连锁闪电二级四骰选择.png",
+        "21-连锁闪电二级选择两骰确认.png"
+      ]
+    },
+    {
+      "requirement": "原任意改值卡保留旧加减预览和手动确认",
+      "status": "PASS",
+      "evidence": [
+        "22-原任意改值选择骰和加减控件.png",
+        "23-原任意改值预览和手动确认.png",
+        "24-原任意改值提交结果.png"
+      ]
+    },
+    {
+      "requirement": "同一升级技能命中多个规则变体时由玩家选择",
+      "evidence": [
+        "25-索尔升级技能变体选择.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "能力触发的神锤移动沿既有目标选择与停止入口",
+      "evidence": [
+        "26-瓶中闪电II锤子移动选择目标与停止.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "每次飞掷后更新持有者、独立伤害和下一步选择",
+      "evidence": [
+        "27-飞掷后保留继续或停止.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "可选锤子移动到上限后关闭选择并恢复原攻击后续",
+      "evidence": [
+        "28-移动次数用尽后进入攻击响应.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "玩家选择立即停止后清除移动窗口并继续原主攻击事务",
+      "evidence": [
+        "29-零次停止后进入攻击响应.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "致死响应卡的效果骰沿既有骰区与确认动作结算",
+      "evidence": [
+        "30-不屈意志防御效果骰原确认.png"
+      ],
+      "status": "PASS"
+    },
+    {
+      "requirement": "飞掷一次后主动停止，保留已完成伤害与持有者并恢复原攻击响应",
+      "evidence": [
+        "31-飞掷一次后主动停止并保留攻击响应.png"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "primary-agent",
+      "id": "/root"
+    },
+    "reviewFile": "visual-review.json"
+  },
+  "behavioralVerification": {
+    "status": "not-claimed",
+    "reason": "本清单只承载图面裁决；当前 Playwright 与 Vitest 结果单独记录在复审报告中，不由截图清单代替行为验证。"
+  },
+  "separateBehavioralEvidence": {
+    "e2eSourceRun": "e2e-1793539933248-w3ijl2",
+    "e2eResult": "25/25 passed across four Thor real-entry E2E files; latest-run marker is test-results/playwright-artifacts/e2e-1793539933248-w3ijl2/.last-run.json.",
+    "vitestResult": "230/230 passed across eleven targeted files in the current continuation.",
+    "limits": [
+      "2v2 damage-window setup is injected.",
+      "Mobile is not covered.",
+      "The complete 62-row object matrix is not closed."
+    ]
+  },
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  }
+}

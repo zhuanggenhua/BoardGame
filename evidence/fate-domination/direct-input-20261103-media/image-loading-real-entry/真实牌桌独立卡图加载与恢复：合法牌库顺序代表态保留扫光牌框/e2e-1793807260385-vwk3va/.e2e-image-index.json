@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "gameId": "fate-domination",
+  "evidenceCategory": "independent",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "media": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793807260385-vwk3va/01-真实手牌请求延迟时保留扫光牌框.png",
+      "chainId": "fate-real-card-image-loading",
+      "chainStep": "01",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "uiStateId": "cards-loading",
+      "uiChange": "layout",
+      "uiChangeReason": "真实抽牌的图片请求暂未返回，扫光和原生文字分离",
+      "behaviorStepId": "cards-loading",
+      "sourceRevision": "75cc12a4d669062dd71c074ef22f3aecb8d5493ead24eb746717fd63975cbe0e",
+      "description": "真实抽牌的图片请求暂未返回，扫光和原生文字分离",
+      "transition": "真实抽牌的图片请求暂未返回，扫光和原生文字分离",
+      "viewport": "desktop",
+      "sourceRun": "1793807283671-571384-9fd19a59-77ac-43c1-9a2a-aba3499ee667",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793807260385-vwk3va"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793807260385-vwk3va/02-真实资源返回后完整卡面替代扫光.png",
+      "chainId": "fate-real-card-image-loading",
+      "chainStep": "02",
+      "stage": "独特界面态",
+      "role": "main-flow",
+      "uiStateId": "cards-loaded",
+      "uiChange": "layout",
+      "uiChangeReason": "同一手牌真实资源返回并解码，恢复完整卡面",
+      "behaviorStepId": "cards-loaded",
+      "sourceRevision": "75cc12a4d669062dd71c074ef22f3aecb8d5493ead24eb746717fd63975cbe0e",
+      "description": "同一手牌真实资源返回并解码，恢复完整卡面",
+      "transition": "同一手牌真实资源返回并解码，恢复完整卡面",
+      "viewport": "desktop",
+      "sourceRun": "1793807283671-571384-9fd19a59-77ac-43c1-9a2a-aba3499ee667",
+      "sourceDir": "test-results/evidence-screenshots/fate-domination/image-loading-real-entry.e2e/真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保留扫光牌框/_runs/e2e-1793807260385-vwk3va"
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "verdict": "REVISE",
+  "scope": "current-user-request",
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "evidenceMode": "regression-comparison",
+  "evidenceIndex": "../../test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/.e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": false
+  },
+  "scopeNote": "通过范围为本地同源网页修后六张图及用户要求的前后比较证据合同。01原始缺陷、09被用户否决候选仅作真实失败参考，产品结论仍REVISE。未提交、未部署、未作安卓真机或全部游戏视觉验收。",
+  "requirements": [
+    {
+      "requirement": "保留改源码前的真实手机整屏及已撤销候选，明确失败参考身份并提供新旧对比",
+      "status": "PASS",
+      "evidence": [
+        "01原始手机阶段字体约5.73px；09为用户否决候选，未冒充最后正常版本",
+        "逐图报告保留两图productVerdict=REVISE，仅comparisonVerdict=PASS"
+      ]
+    },
+    {
+      "requirement": "修复同源移动HUD字号回归，阶段栏字体与条带比例协调，七个阶段含序号完整显示",
+      "status": "PASS",
+      "evidence": [
+        "mobile-hud-20261019-metrics.json：936横屏阶段字体约11px，812横屏约9.54px，阶段宽度约占画布14%，truncatedPhaseLabels均为空",
+        "两个手机横屏各常态及六标记四状态压力态，经独立整屏视觉复核",
+        "其它HUD实际字号按画布宽度恢复原视口比例，棋盘参考坐标与缩放算法未改"
+      ]
+    },
+    {
+      "requirement": "保留状态承载与牌堆、资源、中央玩家板空间，PC阶段栏保持原尺寸",
+      "status": "PASS",
+      "evidence": [
+        "E2E三种视口各两状态通过原有容量、边界及不遮挡断言，手机压力态阶段与状态间距约6.91px/6.21px",
+        "PC阶段字体仍14.4 CSS px，阶段矩形与修前一致；06、07、08独立目视对照",
+        "六张新图关键真实素材已渲染，截图等待真实手牌翻面完成"
+      ]
+    },
+    {
+      "requirement": "按回归流程检查引入提交、历史行为、影响范围并修正验证缺口",
+      "status": "PASS",
+      "evidence": [
+        "mobile-hud-20261019-regression.md：0286bf1f8的字号迁移因果、两份历史完整源码回放、旧出屏缺陷与目标字号分开判定",
+        "E2E不再将随棋盘缩成小字当正确基线，增加历史字号/宽度比例、完整标签及HUD视口字号断言",
+        "共享新单位采用显式接入，本次仅DiceThrone消费；未将缺Android设备当成共享网页修复阻塞"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/hud_media_audit"
+    },
+    "reviewFile": "mobile-hud-20261019-visual-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/ui/__tests__/LeftSidebar.test.tsx src/games/dicethrone/ui/__tests__/compatLayout.test.tsx src/games/dicethrone/ui/__tests__/compatSource.test.ts src/games/dicethrone/ui/__tests__/PassiveAbilityPanel.test.tsx src/hooks/ui/__tests__/useRuntimeViewport.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1"
+    ],
+    "evidence": [
+      "5文件33项通过，日志.tmp/dt-hud-20261019-vitest.log；共享单位分别覆盖不同manifest宽度及切回PC清理。本轮未修改游戏领域规则，图片不承担数值或规则正确性判断。"
+    ]
+  },
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-手机横屏-阶段栏.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/09-已撤销候选-手机横屏常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/02-修复后-手机横屏常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/03-修复后-较窄手机横屏常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/04-修复后-手机横屏状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/05-修复后-较窄手机横屏状态齐全.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/08-修复前-桌面常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/06-桌面对照-常态.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/07-桌面对照-状态齐全.png"
+  ],
+  "referenceMedia": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/01-修复前-手机横屏-阶段栏.png",
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "purpose": "用户明确要求的修前缺陷或被否决方案比较参考"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/mobile-hud-20261018/09-已撤销候选-手机横屏常态.png",
+      "productVerdict": "REVISE",
+      "comparisonVerdict": "PASS",
+      "purpose": "用户明确要求的修前缺陷或被否决方案比较参考"
+    }
+  ],
+  "outOfScopeMedia": [],
+  "userScopeCorrection": {
+    "reason": "用户纠正：变小的是整体，左上角只是举例。字号和阶段栏局部补偿的目标锁定错误，局部PASS不能证明原始整体缩放问题已修复。",
+    "scope": "移动端整体界面缩放；示例不是唯一对象",
+    "retainedFacts": "原始截图、测量和局部视觉观察保留，不再代表原问题通过"
+  }
+}

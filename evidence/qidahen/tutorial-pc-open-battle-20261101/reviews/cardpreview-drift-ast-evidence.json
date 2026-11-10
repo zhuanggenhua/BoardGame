@@ -1,0 +1,234 @@
+{
+  "status": "OBSERVED-NOT-ACCEPTED",
+  "purpose": "Exact AST and direct consumer evidence for independent impact review; this is not a waiver of source identity",
+  "file": "src/components/common/media/CardPreview.tsx",
+  "capturedRawHash": "c3bbb402d95283e8681410537b4f9ff5100bf4bad3c0d0670731dd8088000c28",
+  "capturedNormalizedHash": "ba34d5333c242b20b9061e40ec45248ab89015de5a24a5ff45047ec55718a8f8",
+  "currentRawHash": "9749b04d954dee916853538712a781646ba409667b8554d5c59eae12f80f1269",
+  "currentNormalizedHash": "4455f9bf5da75ba70afe60e9502758096bcf3575ce5a71581d2757575691111b",
+  "recoveredBefore": "git show HEAD:src/components/common/media/CardPreview.tsx",
+  "recoveredBeforeMatchesServedSource": true,
+  "restoredCapturedSourceMatches": true,
+  "restoredNormalizedHash": "ba34d5333c242b20b9061e40ec45248ab89015de5a24a5ff45047ec55718a8f8",
+  "changedStatements": [
+    {
+      "name": "import:../../../engine/primitives/spriteAtlas",
+      "beforeHash": "a33e384a4f624c2e69136b2ad75c8253fb8755533111826734091e61f98c35e7",
+      "afterHash": "c552a7e32ab98cb48fd8130bf1a9c15bfb73dc966d8dc9646258ef93d01a04f4"
+    },
+    {
+      "name": "getCardPreviewAspectRatio",
+      "beforeHash": "47a2b3ccb328603d7ab043d946a17d8df8bb5af34726ad4f20e6b17ae19463a6",
+      "afterHash": "13db4ae29d7f3c3b3caf91d9a23f6e38fcbfe92973157008e9808d1de97334be"
+    }
+  ],
+  "unchangedStatements": [
+    {
+      "name": "import:react",
+      "sha256": "e11c11638ab1156a5e62f1acb264364344713b53b7a024c208c8b17cdfaf90ea"
+    },
+    {
+      "name": "import:react-i18next",
+      "sha256": "c8e08111877e0a7aeb109194bc59419680ebe24e82d5f38b7be60207ea04c08c"
+    },
+    {
+      "name": "import:../../../core",
+      "sha256": "ac59bc814ec0627906556612c2e50a759677e66210f6073c6ab08598a92f8628"
+    },
+    {
+      "name": "import:../../../core/AssetLoader",
+      "sha256": "e6e19d8f72c7252e48a99b3039c8d1e0cc44ed6c5e00c8da9e7e927256da0387"
+    },
+    {
+      "name": "import:./OptimizedImage",
+      "sha256": "238b7aba90a17a0a29c1836c07cc99fee8b78a493702fe98dd201510b1c4f855"
+    },
+    {
+      "name": "import:./cardAtlasRegistry",
+      "sha256": "855be4bea9996a6744b2b2362a156c30d809a194cf08f071f6dba1281f8fba16"
+    },
+    {
+      "name": "CardPreviewRenderer",
+      "sha256": "e06dcfe57683b32de82344f9816d7790171e04d415b232f868b0b8f1e45c0495"
+    },
+    {
+      "name": "CardPreviewRendererMeta",
+      "sha256": "80300963eb1acba9ec4380b0e69b3907e952ca25604624d30ba367adb9db1d38"
+    },
+    {
+      "name": "CardSvgRenderer",
+      "sha256": "1a1031c48bc2d36860d3feda3031e3cd58d4a29d5bc4be3a2c60913d4a344849"
+    },
+    {
+      "name": "CardAtlasConfig",
+      "sha256": "9828237dfc22ae1c4aa98ef2ccff703634ebb0114ae99ed311f5a76a863f3d1f"
+    },
+    {
+      "name": "CardAtlasSource",
+      "sha256": "2864072fe71a3581d1ca30737412fd1d0802ab8158b5b4fd07ba3ae38b701a78"
+    },
+    {
+      "name": "isFrameAtlasConfig",
+      "sha256": "232543f3b1aa71790020582ccab83aa4d95875e24de9fb616f201ea0813a6059"
+    },
+    {
+      "name": "scaleAtlasConfig",
+      "sha256": "f64e7f90ded86f88668c429bbcb07f7c195b8d3bd3c5bbf5375187c8410ae71a"
+    },
+    {
+      "name": "previewRendererRegistry",
+      "sha256": "f0a825e536dbba20be29e3abd75c6c2aafcbe23be23c6a7bb901175c6f3c727f"
+    },
+    {
+      "name": "previewRendererMetaRegistry",
+      "sha256": "cb929085354b516d8a780411aed5f9776629c79c6ddae996509fd76edeb3f8a4"
+    },
+    {
+      "name": "svgRendererRegistry",
+      "sha256": "b7e00303838d9a669e17faff3d7738b51d3da96a29ef766d4a4686785e8cf6f3"
+    },
+    {
+      "name": "registerCardPreviewRenderer",
+      "sha256": "94dcf0cd22931849263145dda455710a914baf1679e1b27f3678641b17699028"
+    },
+    {
+      "name": "registerCardSvgRenderer",
+      "sha256": "af987b71c38019298a178cbdd79096579f94366453cff8431fb6fbe1d6e13952"
+    },
+    {
+      "name": "ExportDeclaration:export { registerCardAtlasSource, getCardAtlasSource };",
+      "sha256": "9156836351af47bd49ed713109397596638ab8e55dd4ac3a0c025f787d1e140c"
+    },
+    {
+      "name": "getCardPreviewRenderer",
+      "sha256": "0975bf142a70a26d80700aa3aae1b35028bbbf945c09e60f737baef6960c19c5"
+    },
+    {
+      "name": "getCardSvgRenderer",
+      "sha256": "5cffb8279ae18ab253432574e64b71baf79fa32439bb3f2a2f8630459eb88f61"
+    },
+    {
+      "name": "getCardAtlasStyle",
+      "sha256": "38d00c4402d857e1be68be70d5c7fef16b4ffe80e2882ffc1def16b62dcb21c9"
+    },
+    {
+      "name": "CardPreviewProps",
+      "sha256": "cb58a3d6ee227d5e08bdbd266fb997c49787dd742babe95aeea0a287f1b528fc"
+    },
+    {
+      "name": "MIN_VALID_ATLAS_DIMENSION_PX",
+      "sha256": "ac6073b0f64108ac0bacc1d9b7990fae49b829930a86afca35f79af1c9f130bb"
+    },
+    {
+      "name": "LOCAL_ATLAS_CANDIDATE_TIMEOUT_MS",
+      "sha256": "7fecfc69301478ef913671c9b8100738b37db4ef4c4933ac1559fa27b42a47e2"
+    },
+    {
+      "name": "REMOTE_ATLAS_CANDIDATE_TIMEOUT_MS",
+      "sha256": "41ab4ecfac2df73030de0003267f157d332807ef6f1659fc8955777403bf5acf"
+    },
+    {
+      "name": "ATLAS_AUTO_RETRY_MAX",
+      "sha256": "91e9b0da2540f756a47dcf2a5c36a16829cff94aa243b9c11173e5e6836e0ea8"
+    },
+    {
+      "name": "ATLAS_AUTO_RETRY_BASE_MS",
+      "sha256": "633b3df023a17aa7764bf2ce05a5d049793b5f266c9acaea3896d46a50c0c678"
+    },
+    {
+      "name": "ATLAS_AUTO_RETRY_MAX_MS",
+      "sha256": "1dd3f7d35d5f6362ca143e95dad267a89f7ed12fd37c918b28fc7d33e63f8c23"
+    },
+    {
+      "name": "hasUsableAtlasImage",
+      "sha256": "d9cf577cd5ce3799b08d119118c8bf9bb5b9d3c1bf4f304a520d6d0cc28ffe8a"
+    },
+    {
+      "name": "hasSynchronousAtlasImageHit",
+      "sha256": "e6e10d36127a2fd98faa7f66928d285743a8d088ff426d0cebca5ddcbe46a099"
+    },
+    {
+      "name": "getAtlasCandidateTimeoutMs",
+      "sha256": "abab305c99bd347a3217f82c0bde597f0a3ee39c54758c3ee49d147d9b816365"
+    },
+    {
+      "name": "getAtlasRetryDelay",
+      "sha256": "c9a9f213f135e890bec6f66f41c8c2a4be20c686a8cc0f6efe53ee4260b662b7"
+    },
+    {
+      "name": "AtlasCandidateLoaderOptions",
+      "sha256": "75f660987209303db079ac2a9b4564b5ad1e2f191abc9f614903be06302e5e9b"
+    },
+    {
+      "name": "loadAtlasCandidateUrls",
+      "sha256": "4068c796a8524167ef3b9c75df2094f403df90ddeaf21eec7526bd32d60907db"
+    },
+    {
+      "name": "AtlasCandidateLoadResult",
+      "sha256": "4ab2619cc4d363a9ba441342a7a43d50210cdf4e63176932a6dfe17a7b3a0004"
+    },
+    {
+      "name": "atlasCandidateInFlightLoads",
+      "sha256": "0c70fc7f25cdb90159fa7e29f877233a187d16c97b164907d02005485102646d"
+    },
+    {
+      "name": "loadAtlasCandidateUrlsShared",
+      "sha256": "337aa150f351684c34366f515f4ae23ad306f5e06a9932fb21ceeb3d09771021"
+    },
+    {
+      "name": "getCardAtlasCandidateUrls",
+      "sha256": "37e568a739b6ad25bddb22b7fcf8d5adf1b203a1b9ab29bf337471c6456dd44a"
+    },
+    {
+      "name": "markEarlierAtlasCandidateFailures",
+      "sha256": "1ff61ff38d9443bb99c436ffd967fa91e79921d3b040e1bdaa9cf26161d07a01"
+    },
+    {
+      "name": "CardPreview",
+      "sha256": "853232cca03038d607a11ce4bd3412b9aeae0ee4e6da9ac1b0cddc915f50a66c"
+    },
+    {
+      "name": "AtlasCardProps",
+      "sha256": "52a68cf187673ea10e6223e02630c7c68c63fc4542f1e20f83dfc0123c9533dd"
+    },
+    {
+      "name": "AtlasCardLoadState",
+      "sha256": "2a5b84e2e92f288bb12636fd1bbd62d8771890374e618513b1bbd58a75e45566"
+    },
+    {
+      "name": "AtlasCard",
+      "sha256": "969c0b7586eb02a16b5a5b786001254a44c9ed9d36dbedcb71e8beedc3d1cfdf"
+    }
+  ],
+  "directQidahenImports": [
+    {
+      "path": "src/games/qidahen/Board.tsx",
+      "module": "../../components/common/media/CardPreview",
+      "names": [
+        "CardPreview"
+      ]
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenFactionSelectionScreen.tsx",
+      "module": "../../../components/common/media/CardPreview",
+      "names": [
+        "CardPreview"
+      ]
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenInspectPanel.tsx",
+      "module": "../../../components/common/media/CardPreview",
+      "names": [
+        "CardPreview"
+      ]
+    },
+    {
+      "path": "src/games/qidahen/ui/QidahenTurnChoicePanel.tsx",
+      "module": "../../../components/common/media/CardPreview",
+      "names": [
+        "CardPreview"
+      ]
+    }
+  ],
+  "changedHelperDirectlyImportedByQidahen": false
+}

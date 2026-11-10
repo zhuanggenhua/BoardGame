@@ -1,0 +1,35 @@
+{
+  "mode": "all-media",
+  "claimScope": "interaction-ui",
+  "status": "REVISE",
+  "reviewer": {
+    "kind": "subagent",
+    "id": "/root/qidahen_visual_final_b"
+  },
+  "media": [
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r4-probe/media/03f-训练目标选择与等级提示.png",
+      "sha256": "511C23F6794B17431EB4201266FBE02F7C962BF383DFD2AF92B96EFA75A088F4",
+      "status": "PASS",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "PASS",
+        "layout-readable": "PASS",
+        "no-error": "PASS"
+      },
+      "observation": "右侧列表中“辽北·骑兵 1级→2级·野战部队目标1/2”和“皮岛·步兵…目标1/2”均能区分，最底部“宣府·步兵…目标2”整行可见；候选面板、教学提示和地图没有明显遮挡或裁切。"
+    },
+    {
+      "path": "evidence/qidahen/tutorial-basic-opening-20261025-r4-probe/media/03j-额外训练目标与结果.png",
+      "sha256": "AB7E71D7D6AA6A29C65A382B9822D48D50242A393D976898F59C458DF9A8F9CB",
+      "status": "REVISE",
+      "checks": {
+        "target-visible": "PASS",
+        "interaction-ui": "REVISE",
+        "layout-readable": "REVISE",
+        "no-error": "REVISE"
+      },
+      "observation": "候选列表名称已用“野战部队目标1/2”区分，列表末项完整显示，浅黄色结果浮层也不再覆盖标题或进度；但右侧面板顶边贴到画面上沿，“征兵训练”标题被裁出画面，进度与结果文字紧贴顶边。"
+    }
+  ]
+}

@@ -68,7 +68,8 @@ async function requireClickableAbilitySlot(page: Page, selector: string, label: 
         const rollerId = phase === 'defensiveRoll' && core?.pendingAttack
             ? core.pendingAttack.defenderId
             : core?.activePlayerId;
-        const { getAvailableAbilityIds, getDefensiveAbilityIds } = await import('/src/games/dicethrone/domain/rules.ts');
+        const rulesModuleUrl = new URL('/src/games/dicethrone/domain/rules.ts', window.location.origin).href;
+        const { getAvailableAbilityIds, getDefensiveAbilityIds } = await import(rulesModuleUrl);
         const availableAbilityIds = core && rollerId != null
             ? phase === 'defensiveRoll' && core.rollCount === 0 && core.pendingAttack
                 ? getDefensiveAbilityIds(core, rollerId)

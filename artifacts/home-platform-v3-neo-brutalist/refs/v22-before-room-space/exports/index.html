@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>exports</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>exports</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-收藏库主页.png","displayTitle":"01 · 收藏库主页","description":"新情报速递是横版四卡，游戏名版本和更新说明叠在图内","kind":"image"},{"relativePath":"01b-收藏库悬停.png","displayTitle":"01b · 收藏库悬停","description":"封面抬起，半透介绍铺满竖图，玩法说明清楚可读","kind":"image"},{"relativePath":"02-收藏库游戏页.png","displayTitle":"02 · 收藏库游戏页","description":"封面四键同一排且有空隙，配置表是小图标加文字，房间标题没有这些按钮","kind":"image"},{"relativePath":"02b-收藏库排行榜.png","displayTitle":"02b · 收藏库排行榜","description":"排行榜封面四键仍同一排且有空隙，房间好友占满右侧","kind":"image"},{"relativePath":"02c-收藏库规则概览.png","displayTitle":"02c · 收藏库规则概览","description":"规则概览是原文，封面四键同一排且有空隙，对局条压在规则文字上","kind":"image"},{"relativePath":"03-切发现再回收藏库.png","displayTitle":"03 · 切发现再回收藏库","description":"切回收藏库后封面四键仍同一排有空隙，右侧两框贴底","kind":"image"},{"relativePath":"04-点主页.png","displayTitle":"04 · 点主页","description":"右侧回到横版新情报和我的游戏竖封面墙","kind":"image"},{"relativePath":"05-发现网格.png","displayTitle":"05 · 发现网格","description":"发现页六列竖长方形封面，游戏名叠在封面内部","kind":"image"},{"relativePath":"05b-发现悬停.png","displayTitle":"05b · 发现悬停","description":"发现页悬停时封面内叠出大段介绍","kind":"image"},{"relativePath":"06-游戏详情.png","displayTitle":"06 · 游戏详情","description":"主操作独立，三个辅助入口同排有明确间隔；作者为署名，人数时长为只读资料","kind":"image"},{"relativePath":"06b-作者弹窗.png","displayTitle":"06b · 作者弹窗","description":"从署名入口打开作者信息，右上关闭清楚，背景操作已分区","kind":"image"},{"relativePath":"06c-销毁确认.png","displayTitle":"06c · 销毁确认","description":"销毁确认的前景叉号及居中确认清楚，背景为新详情操作区","kind":"image"},{"relativePath":"06d-创建房间.png","displayTitle":"06d · 创建房间","description":"创建表单与真实人数选择按钮完整，详情背景使用新操作分区","kind":"image"},{"relativePath":"07-上传页.png","displayTitle":"07 · 上传页","description":"游戏链接下方绿色写可以打开，人数两个下拉中间写至","kind":"image"},{"relativePath":"07b-上传新游戏.png","displayTitle":"07b · 上传新游戏","description":"空游戏链接下方灰色写粘贴后自动检测能否打开","kind":"image"},{"relativePath":"08-个人主页.png","displayTitle":"08 · 个人主页","description":"左右资料背景中间内容井，动态行写游戏排行和三位小数分数，侧栏没有排行没有评分","kind":"image"},{"relativePath":"m01-收藏库主页.png","displayTitle":"m01 · 收藏库主页","description":"八款收藏封面和中文名全部在首屏对局条上方，搜索排序直接可见，情报默认折叠","kind":"image"},{"relativePath":"m01c-收藏库末项.png","displayTitle":"m01c · 收藏库末项","description":"末两款封面完整可见，情报仍收于游戏后面","kind":"image"},{"relativePath":"m01d-收藏搜索.png","displayTitle":"m01d · 收藏搜索","description":"只显示召唤师战争，计数与搜索条件一致，查找入口保留","kind":"image"},{"relativePath":"m01e-收藏搜索空态.png","displayTitle":"m01e · 收藏搜索空态","description":"显示明确的无匹配反馈，搜索与清除入口仍在","kind":"image"},{"relativePath":"m01f-收藏排序.png","displayTitle":"m01f · 收藏排序","description":"收藏顺序按时长排列，召唤师战争位于幻想国度前面","kind":"image"},{"relativePath":"m01g-返回保留位置.png","displayTitle":"m01g · 返回保留位置","description":"返回前后的封面边界和情报位置一致，浏览位置没有回到顶部","kind":"image"},{"relativePath":"m01h-展开次要情报.png","displayTitle":"m01h · 展开次要情报","description":"游戏之后才展开新闻封面，默认库结构不被推荐内容替代","kind":"image"},{"relativePath":"m02-收藏库游戏页.png","displayTitle":"m02 · 收藏库游戏页","description":"直接进入游戏，顶部保留返回收藏库，房间和主操作可见","kind":"image"},{"relativePath":"m02b-返回全部游戏.png","displayTitle":"m02b · 返回全部游戏","description":"直接进入该游戏详情，顶部有明确返回收藏库入口","kind":"image"},{"relativePath":"m02c-完整房间列表.png","displayTitle":"m02c · 完整房间列表","description":"四行房间完整可见，详情返回入口仍明确","kind":"image"},{"relativePath":"m02d-完整好友列表.png","displayTitle":"m02d · 完整好友列表","description":"六位好友及邀请按钮完整可见，未被容器截断","kind":"image"},{"relativePath":"m05-发现两列.png","displayTitle":"m05 · 发现两列","description":"两列封面，分类全部换行可见，收藏热区至少四十四像素","kind":"image"},{"relativePath":"m05b-发现点开展开.png","displayTitle":"m05b · 发现点开展开","description":"整行展开完整介绍和再次点按提示，网格自动补齐空位","kind":"image"},{"relativePath":"m05c-发现末项.png","displayTitle":"m05c · 发现末项","description":"末行演示卡片完整恢复查看，保留既有素材占位边界","kind":"image"},{"relativePath":"m06-游戏详情.png","displayTitle":"m06 · 游戏详情","description":"主操作独占一行，教程收藏配置同排轻量分组，作者不再占用操作区","kind":"image"},{"relativePath":"m06b-作者弹窗.png","displayTitle":"m06b · 作者弹窗","description":"作者弹窗前景清楚，背后详情为轻量署名及分组操作","kind":"image"},{"relativePath":"m06c-销毁确认.png","displayTitle":"m06c · 销毁确认","description":"手机销毁确认保留独立前景与居中确认，背景操作不抢主层","kind":"image"},{"relativePath":"m06d-创建房间.png","displayTitle":"m06d · 创建房间","description":"手机创建弹窗内人数仍可选择，底部创建与关闭完整","kind":"image"},{"relativePath":"m06e-规则原文.png","displayTitle":"m06e · 规则原文","description":"规则页签保留原文，头部操作已分组且署名不再像主按钮","kind":"image"},{"relativePath":"m06f-创建AI展开.png","displayTitle":"m06f · 创建AI展开","description":"电脑设置在同一创建弹窗展开，背景详情操作层级清楚","kind":"image"},{"relativePath":"m06g-AI创建按钮可达.png","displayTitle":"m06g · AI创建按钮可达","description":"选择二号电脑席位后滚到底，创建按钮完整可达，背景仍为新操作区","kind":"image"},{"relativePath":"m07-上传页.png","displayTitle":"m07 · 上传页","description":"单列表单，两个原生人数下拉，常驻链接检测提示","kind":"image"},{"relativePath":"m07b-上传提交区.png","displayTitle":"m07b · 上传提交区","description":"规则文档、附件、提交审核完整高于对局条","kind":"image"},{"relativePath":"m07c-短视口填写.png","displayTitle":"m07c · 短视口填写","description":"三百七十五乘五百四十压力态，填写后提交仍可达，非真机键盘","kind":"image"},{"relativePath":"m08-个人主页.png","displayTitle":"m08 · 个人主页","description":"保比例顶图、身份、三项统计和动态纵向叠放","kind":"image"},{"relativePath":"m08b-顶栏抽屉.png","displayTitle":"m08b · 顶栏抽屉","description":"搜索、指南、语言有明确抽屉承载，底栏保留","kind":"image"},{"relativePath":"m08c-个人动态末项.png","displayTitle":"m08c · 个人动态末项","description":"末条动态和排行分数完整高于对局条","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

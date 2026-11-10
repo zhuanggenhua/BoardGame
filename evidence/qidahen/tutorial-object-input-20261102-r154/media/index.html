@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="5" />
+  <title>七大恨 · 轮盘与手牌本体交互 · PC待人工验收</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; background: #111827; color: #e5e7eb; }
+    header { position: sticky; top: 0; z-index: 1; padding: 16px 20px; background: #1f2937; border-bottom: 1px solid #374151; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    p { margin: 0; color: #9ca3af; font-size: 13px; }
+    main { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); padding: 20px; }
+    figure { margin: 0; padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 12px; }
+    img { display: block; width: 100%; height: auto; border-radius: 8px; background: #030712; }
+    figcaption { padding-top: 10px; }
+    strong { display: block; font-size: 15px; }
+    span { display: block; margin-top: 4px; color: #9ca3af; font-size: 13px; line-height: 1.5; }
+    .empty { padding: 24px; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>七大恨 · 轮盘与手牌本体交互 · PC待人工验收</h1>
+    <p>这个文件固定在截图目录内；刷新页面会读取该目录当前文件。</p>
+  </header>
+  <main id="gallery"></main>
+  <script>
+    const items = [{"relativePath":"01-PC-公开纪年与年度扩张目标.png","displayTitle":"PC · 公开纪年与年度扩张目标","description":"用实际公开的控制增长条件建立本年扩张目标。","kind":"image"},{"relativePath":"02-PC-轮盘免费前进一步.png","displayTitle":"PC · 轮盘免费前进一步","description":"准备移动轮盘时，合法走法与本次引导落点同时可见。","kind":"image"},{"relativePath":"03-PC-点击轮盘军屯.png","displayTitle":"PC · 点击轮盘军屯","description":"当前轮盘落点直接选择军屯，未来移动不显示为当前可执行。","kind":"image"},{"relativePath":"04-PC-点击轮盘开垦.png","displayTitle":"PC · 点击轮盘开垦","description":"军屯之后选择同一轮盘落点仍可执行的开垦。","kind":"image"},{"relativePath":"05-PC-开垦地区选择.png","displayTitle":"PC · 开垦地区选择","description":"辽东人口与兵力相同而不能收税，选择开垦使其满足接下来年中的税赋条件。","kind":"image"},{"relativePath":"06-PC-从手牌进入征召.png","displayTitle":"PC · 从手牌进入征召","description":"提示贴近真实手牌；没有手牌／轮盘切换菜单及第二次确认。","kind":"image"},{"relativePath":"07-PC-征召弃牌支付.png","displayTitle":"PC · 征召弃牌支付","description":"选择征召后，手牌费用选择与确认入口出现。","kind":"image"},{"relativePath":"08-PC-共享放大镜检视征召手牌.png","displayTitle":"PC · 共享放大镜检视征召手牌","description":"检视支付手牌后，共享放大镜完整显示真实牌面。","kind":"image"},{"relativePath":"09-PC-征召建军地区与辽北引导.png","displayTitle":"PC · 征召建军地区与辽北引导","description":"征召费用确认后，全部合法建军地区及本次辽北引导同时可见。","kind":"image"},{"relativePath":"10-PC-辽北建军方式与完整候选.png","displayTitle":"PC · 辽北建军方式与完整候选","description":"教程避让整个建军列表，数量与等级候选均可阅读。","kind":"image"},{"relativePath":"11-PC-年中税赋与漕运.png","displayTitle":"PC · 年中税赋与漕运","description":"两位对手已行动并触发年中；刚开垦的辽东符合税赋条件，补牌后进入大明手牌上限处理。","kind":"image"},{"relativePath":"12-PC-年中补牌后的手牌上限处理.png","displayTitle":"PC · 年中补牌后的手牌上限处理","description":"年中补牌后，手牌上限处理与弃牌确认入口出现。","kind":"image"},{"relativePath":"13-PC-火炮技术研发.png","displayTitle":"PC · 火炮技术研发","description":"本次研发的真实火炮技术牌与待支付手牌同屏，随后用于前线战斗。","kind":"image"},{"relativePath":"14-PC-先选出兵来源.png","displayTitle":"PC · 先选出兵来源","description":"支付调度费用后，地图先显示可出兵的来源地区。","kind":"image"},{"relativePath":"15-PC-地图兵牌选择出兵.png","displayTitle":"PC · 地图兵牌选择出兵","description":"选定辽北后，可投入行动的实际兵牌全部可见。","kind":"image"},{"relativePath":"16-PC-已选部队与确认出兵.png","displayTitle":"PC · 已选部队与确认出兵","description":"点击参战兵牌后，选中标记与确认出兵入口同时可见。","kind":"image"},{"relativePath":"17-PC-出兵来源到叶赫部目标.png","displayTitle":"PC · 出兵来源到叶赫部目标","description":"确认出兵部队后，地图显示来源与可进攻目标。","kind":"image"},{"relativePath":"18-PC-战术牌使用前.png","displayTitle":"PC · 战术牌使用前","description":"守方响应后，战术窗口与可使用的手牌出现。","kind":"image"},{"relativePath":"19-PC-选中鸳鸯阵并确认.png","displayTitle":"PC · 选中鸳鸯阵并确认","description":"选择鸳鸯阵后，手牌选中反馈与战术确认入口可见。","kind":"image"},{"relativePath":"20-PC-炮兵白骰真实投掷.jpg","displayTitle":"PC · 炮兵白骰真实投掷","description":"本阶段实际参战方的骰子直接在地图空间滚动，阶段与侧别清楚。","kind":"image"},{"relativePath":"21-PC-炮兵停稳与结果.jpg","displayTitle":"PC · 炮兵停稳与结果","description":"实际骰子停稳后，在同侧揭示本阶段的合计与造成损伤。","kind":"image"},{"relativePath":"22-PC-骑兵红骰真实投掷.jpg","displayTitle":"PC · 骑兵红骰真实投掷","description":"本阶段实际参战方的骰子直接在地图空间滚动，阶段与侧别清楚。","kind":"image"},{"relativePath":"23-PC-骑兵停稳与结果.jpg","displayTitle":"PC · 骑兵停稳与结果","description":"实际骰子停稳后，在同侧揭示本阶段的合计与造成损伤。","kind":"image"},{"relativePath":"24-PC-步兵绿骰真实投掷.jpg","displayTitle":"PC · 步兵绿骰真实投掷","description":"本阶段实际参战方的骰子直接在地图空间滚动，阶段与侧别清楚。","kind":"image"},{"relativePath":"25-PC-步兵停稳与结果.jpg","displayTitle":"PC · 步兵停稳与结果","description":"实际骰子停稳后，在同侧揭示本阶段的合计与造成损伤。","kind":"image"},{"relativePath":"26-PC-炮骑步连续真实掷骰录屏.webm","displayTitle":"PC · 炮骑步连续真实掷骰录屏","description":"实际点击开始战斗，连续记录炮骑步的开放投掷、停稳结果和战后退场。","kind":"video"},{"relativePath":"27-PC-战后占领选择.png","displayTitle":"PC · 战后占领选择","description":"真实投掷结束后，战后占领与撤回选项在首屏出现。","kind":"image"},{"relativePath":"28-PC-主动展开只读战报.png","displayTitle":"PC · 主动展开只读战报","description":"默认战后界面只留占领与撤回，点击战报才展开历史点数；关闭后仍可执行原战后选择。","kind":"image"},{"relativePath":"29-PC-外交友好标记选择.png","displayTitle":"PC · 外交友好标记选择","description":"下一回合选择外交后，地图显示可调整的友好标记。","kind":"image"},{"relativePath":"30-PC-外交结果与落点继续.png","displayTitle":"PC · 外交结果与落点继续","description":"完成外交选择后，实际标记结果与落点后续入口可见。","kind":"image"},{"relativePath":"31-PC-点击轮盘雇佣.png","displayTitle":"PC · 点击轮盘雇佣","description":"外交之后在同一轮盘落点选择雇佣，加强大同驻防。","kind":"image"},{"relativePath":"32-PC-在大同建立新守军.png","displayTitle":"PC · 在大同建立新守军","description":"选择大同建立新雇佣军，承接之后的年末换防。","kind":"image"},{"relativePath":"33-PC-保留手牌结束回合.png","displayTitle":"PC · 保留手牌结束回合","description":"轮盘已完成，放弃尚未使用的手牌行动；没有轮盘／手牌切换菜单或第二次确认。","kind":"image"},{"relativePath":"34-PC-新年结算.png","displayTitle":"PC · 新年结算","description":"提示对应新年标记，不再高亮下一次移动候选。","kind":"image"},{"relativePath":"35-PC-山海关维护选择.png","displayTitle":"PC · 山海关维护选择","description":"进入防线维护时，山海关维护与放弃选项同时可见。","kind":"image"},{"relativePath":"36-PC-城市破败与维护取舍.png","displayTitle":"PC · 城市破败与维护取舍","description":"维护选择说明放弃城市防御的具体后果。","kind":"image"},{"relativePath":"37-PC-长城破败与边界宽度.png","displayTitle":"PC · 长城破败与边界宽度","description":"维护选择说明长城完整与破败的防御差异。","kind":"image"},{"relativePath":"38-PC-大同撤旧兵保留新守军.png","displayTitle":"PC · 大同撤旧兵保留新守军","description":"旧低等级守军与新雇佣军都在真实地图中承接耗损选择。","kind":"image"},{"relativePath":"39-PC-叶赫部队维持费用.png","displayTitle":"PC · 叶赫部队维持费用","description":"刚占领的叶赫部属于非汉人区域，正规军不能用当地人口补给；当前选择手牌维持前线。","kind":"image"},{"relativePath":"40-PC-三张费用牌分别选中.png","displayTitle":"PC · 三张费用牌分别选中","description":"逐张选择维持费用后，各张手牌保留独立选中反馈。","kind":"image"},{"relativePath":"41-PC-手牌末端与翻看入口.png","displayTitle":"PC · 手牌末端与翻看入口","description":"使用手牌两侧箭头翻看到末端，其余手牌与向左返回入口可见，原支付选择保持。","kind":"image"},{"relativePath":"42-PC-平壤雇佣军耗损选择.png","displayTitle":"PC · 平壤雇佣军耗损选择","description":"轮到平壤耗损时，地图显示可选择的实际部队。","kind":"image"},{"relativePath":"43-PC-选中平壤耗损部队.png","displayTitle":"PC · 选中平壤耗损部队","description":"点击平壤部队后，兵牌选择反馈与确认入口出现。","kind":"image"},{"relativePath":"44-PC-领取纪年卡的费用.png","displayTitle":"PC · 领取纪年卡的费用","description":"完成年度耗损后，纪年争夺与真实手牌支付入口出现。","kind":"image"},{"relativePath":"45-PC-新纪年顺位与人物出场.png","displayTitle":"PC · 新纪年顺位与人物出场","description":"人物尚未全部出场时，仅当前纪年公开。","kind":"image"},{"relativePath":"46-PC-按当前纪年选择人物.png","displayTitle":"PC · 按当前纪年选择人物","description":"按当前纪年资格选择人物，下一张卡仍未公开。","kind":"image"},{"relativePath":"47-PC-共享放大镜检视杨镐.png","displayTitle":"PC · 共享放大镜检视杨镐","description":"正式检视入口显示本次人物候选杨镐的完整牌面。","kind":"image"},{"relativePath":"48-PC-同次付费的征兵与训练选项.png","displayTitle":"PC · 同次付费的征兵与训练选项","description":"正式征兵与训练入口均在当前行动选择中可见。","kind":"image"},{"relativePath":"49-PC-征兵训练选择原炮兵.png","displayTitle":"PC · 征兵训练选择原炮兵","description":"本次征兵训练付费后，实际可训练部队与原参战炮兵的推荐焦点可见。","kind":"image"},{"relativePath":"50-PC-继续训练原参战步兵.png","displayTitle":"PC · 继续训练原参战步兵","description":"原炮兵已升级，同一费用下继续训练原征召并参战的步兵，随后仍会实际征兵。","kind":"image"},{"relativePath":"51-PC-辽东征兵与新年度目标.png","displayTitle":"PC · 辽东征兵与新年度目标","description":"辽东候选实际进入可见列表，征兵承接本年的建军条件。","kind":"image"},{"relativePath":"52-PC-四次基础行动完成并保留手牌.png","displayTitle":"PC · 四次基础行动完成并保留手牌","description":"同一费用完成三次训练和一次征兵，决定不再额外付费。","kind":"image"},{"relativePath":"53-PC-首点威望与下一年度目标.png","displayTitle":"PC · 首点威望与下一年度目标","description":"已完成约定年度循环，衔接新公开目标及之后的资源预算。","kind":"image"}];
+    const gallery = document.querySelector("#gallery");
+    const cacheBust = Date.now();
+    if (items.length === 0) {
+      gallery.innerHTML = '<div class="empty">当前目录还没有截图。</div>';
+    } else {
+      for (const item of items) {
+        const figure = document.createElement("figure");
+        const image = document.createElement("img");
+        image.alt = item.displayTitle;
+        image.src = "./" + encodeURIComponent(item.relativePath) + "?updated=" + cacheBust;
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("strong");
+        label.textContent = item.displayTitle;
+        caption.append(label);
+        if (item.description) {
+          const description = document.createElement("span");
+          description.textContent = item.description;
+          caption.append(description);
+        }
+        figure.append(image, caption);
+        gallery.append(figure);
+      }
+    }
+  </script>
+</body>
+</html>

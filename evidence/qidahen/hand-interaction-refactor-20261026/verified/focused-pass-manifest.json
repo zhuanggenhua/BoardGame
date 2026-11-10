@@ -1,0 +1,66 @@
+{
+  "verdict": "PASS",
+  "scope": "independent",
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "changeType": "refactor",
+  "acceptanceMode": "visual-only",
+  "acceptanceReason": "本次用户授权基于前轮评审做适当局部优化，本组媒体只验桌面与手机横屏征召军队支付托盘的主次和遮挡；五类手牌决策的行为另由测试证明，不将两张代表态作为整游戏或全流程验收。",
+  "sourceRevision": "cc56474ddb91ddb61b7ad5a3e6ae3c7b53592c4eba3f1769e0383f17583930b9",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "桌面支付栏明确区分确认与取消，同时保留支付和手牌信息",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png"
+      ]
+    },
+    {
+      "requirement": "手机横屏支付托盘与最高选中手牌保持间隔，不遮挡卡头和查看入口",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+      ]
+    }
+  ],
+  "media": [
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/01-桌面支付确认与取消.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/qidahen/hand-interaction-refactor-20261026/verified/02-手机横屏支付确认与取消.png"
+  ],
+  "evidenceIndex": ".e2e-image-index.json",
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/final_payment_visual_review"
+    },
+    "reviewFile": "visual-review.json",
+    "baselineReviewFile": "baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/handInteractionTray.test.tsx src/games/qidahen/__tests__/qidahen-payment-and-hand-action.test.ts src/games/qidahen/__tests__/qidahen-wheel-dispatch-payment.test.ts src/games/qidahen/__tests__/qidahen-wheel-recruit-train.test.ts src/games/qidahen/__tests__/operationPrompt.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 --reporter=json --outputFile=temp/qidahen-ui-refactor-20261026/behavior-current.json"
+    ],
+    "evidence": [
+      "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/behavior-current.json",
+      "五个行为套件共三十六项全部通过，当前工作区真实取消流程通过。",
+      "D:/gongzuo/webgame/BoardGame/temp/qidahen-ui-refactor-20261026/e2e-current.log"
+    ]
+  },
+  "limitations": [
+    "仅覆盖桌面1920乘1080和手机横屏932乘430的征召军队已选1/1代表态。",
+    "手机事件角标覆盖部分卡面原印标题，基线已存在，本次未修复；不宣称卡面原印标题完整或整套手牌界面通过。",
+    "不证明竖屏、其它支付态、轮盘、教程或整游戏验收。",
+    "静态截图只证明当前可见性；悬停后的间隔、真实点击、取消不扣牌及重开清空选择须由独立行为证据承担。"
+  ]
+}

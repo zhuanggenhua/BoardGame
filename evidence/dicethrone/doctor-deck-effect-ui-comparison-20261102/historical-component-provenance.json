@@ -1,0 +1,9 @@
+{
+  "purpose": "historical-component-replay-only",
+  "notOriginalHistoricalScreenshot": true,
+  "notApprovedVisualBaseline": true,
+  "otherApplicationSources": "current-workspace",
+  "revision": "c057cfe76afab5c2078c129183a02d6f1fb21a90",
+  "file": "src/games/dicethrone/ui/InteractionOverlay.tsx",
+  "sha256": "b4a4a979690f3a5860e39c5fdcbcc0ed61de15c862db2a0137a244df461c3770"
+}
