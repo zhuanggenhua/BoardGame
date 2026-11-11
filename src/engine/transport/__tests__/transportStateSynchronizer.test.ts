@@ -132,6 +132,24 @@ describe('TransportStateSynchronizer', () => {
         ]));
     });
 
+    it('重连同步后的基线与权威状态隔离，并能正确发送后续变化', () => {
+        const io = new MockIO();
+        const synchronizer = new TransportStateSynchronizer(io as unknown as never);
+        const match = createMatch();
+        const socket = { emit: () => {} };
+
+        synchronizer.syncSocket({ socket, match, playerID: '0' });
+        (match.state.core as { publicValue: string }).publicValue = 'after';
+        expect((match.lastBroadcastedViews.get('0') as { core: { publicValue: string } }).core.publicValue).toBe('before');
+        match.stateID = 2;
+        synchronizer.broadcast(match);
+
+        expect(io.gameNamespace.sent[0]).toMatchObject({ socketId: 'socket-0', event: 'state:patch' });
+        expect(io.gameNamespace.sent[0].args[1]).toEqual(expect.arrayContaining([
+            expect.objectContaining({ path: '/core/publicValue', value: 'after' }),
+        ]));
+    });
+
     it('广播缓存与权威状态隔离，原地修改后仍能产生下一次更新', () => {
         const io = new MockIO();
         const synchronizer = new TransportStateSynchronizer(io as unknown as never);

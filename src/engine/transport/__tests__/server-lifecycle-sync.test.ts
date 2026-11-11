@@ -354,6 +354,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
                 sys: {
                     phase: 'main',
                     turnNumber: 1,
+                    undo: { snapshots: [], maxSnapshots: 10 },
                     interaction: {
                         current: {
                             id: `interaction-${kind}`,

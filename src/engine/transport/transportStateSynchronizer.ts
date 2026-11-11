@@ -58,7 +58,8 @@ export class TransportStateSynchronizer {
             stateID: args.match.stateID,
         });
 
-        args.match.lastBroadcastedViews.set(args.playerID ?? 'spectator', JSON.parse(JSON.stringify(viewState)));
+        // stripForTransport already returns an independent snapshot for the patch baseline.
+        args.match.lastBroadcastedViews.set(args.playerID ?? 'spectator', viewState);
     }
 
     broadcast(match: TransportStateProjectionMatch): void {
