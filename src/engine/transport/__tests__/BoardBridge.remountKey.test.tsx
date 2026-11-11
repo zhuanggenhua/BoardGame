@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameEngineConfig } from '../engineConfig';
 import type { GameBoardProps } from '../protocol';
 import type { ImperativeBoardRenderer } from '../../boardRenderer';
+import { reportClientAutoFeedbackOnce } from '../../../lib/feedback/clientAutoReport';
 import { BoardBridge, GameClientOverrideProvider, LocalGameProvider, useGameClient } from '../react';
 
 vi.mock('../../../lib/feedback/clientAutoReport', () => ({
@@ -320,4 +321,17 @@ describe('BoardBridge remountKey', () => {
         });
     });
 
+    it('棋盘渲染失败时上报棋盘所属游戏，而非依赖当前路由', async () => {
+        const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const BrokenBoard = () => { throw new Error('board-diagnostic-test'); };
+        try {
+            render(<LocalGameProvider config={testConfig} numPlayers={2} seed="feedback-game-id"><BoardBridge board={BrokenBoard} gameId="splendor" /></LocalGameProvider>);
+            await waitFor(() => expect(reportClientAutoFeedbackOnce).toHaveBeenCalledWith(
+                expect.any(String),
+                expect.objectContaining({ gameId: 'splendor', gameName: 'splendor', errorMessage: 'board-diagnostic-test', boardPlayers: { count: 2, playerIdPresent: false } }),
+            ));
+        } finally {
+            errorLog.mockRestore();
+        }
+    });
 });

@@ -1785,7 +1785,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(armamentLowFidelitySource).toContain('export const hasUpgradableArmament = (');
         expect(armamentLowFidelitySource).toContain('export const resolveSelectedArmamentIdFromCards = (');
         expect(armamentLowFidelitySource).toContain('const targetIndex = (() => {');
-        expect(armamentLowFidelitySource).toContain('return preferredTargetIndex >= 0');
+        expect(armamentLowFidelitySource).toContain('return armaments.findIndex((armament) => armament.id === preferredArmamentId)');
         expect(armamentLowFidelitySource).toContain('const upgradedArmament = {');
         expect(armamentLowFidelitySource).toContain('index === targetIndex ? upgradedArmament : { ...armament }');
 
@@ -1912,7 +1912,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionPreparationSource).toContain('dependencies: QidahenSelectedActionPreparationDependencies = {');
         expect(selectedActionPreparationSource).toContain('const currentFactionCardIds = new Set(');
         expect(selectedActionPreparationSource).toContain('const spentCardIds = cardIds.filter((cardId) => currentFactionCardIds.has(cardId));');
-        expect(selectedActionPreparationSource).toContain('const selectedArmamentId = dependencies.resolveSelectedArmamentIdFromCards(state.handCards, spentCardIds);');
+        expect(selectedActionPreparationSource).toContain('state.selectedHandActionCardId && spentCardIds.includes(state.selectedHandActionCardId)');
         expect(selectedActionPreparationSource).toContain("const marriageSubjugationBlockedReason = actionId === 'marriage-subjugation'");
         expect(selectedActionPreparationSource).toContain("lastSeasonSummary: dependencies.buildSeasonSummary('联姻诱降', timestamp, [");
         expect(selectedActionPreparationSource).not.toContain('getMarriageSubjugationBlockedReason: (');
@@ -2222,7 +2222,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(previewActionReducerSource).toContain('export const resolveQidahenPreviewActionConfirmedEvent = (');
         expect(previewActionReducerSource).toContain('dependencies: QidahenPreviewActionConfirmedDependencies = {');
         expect(previewActionReducerSource).toContain('): QidahenCore => getActionChoiceById(event.payload.actionId)');
-        expect(previewActionReducerSource).toContain('reduceQidahenPreviewActionConfirmed(');
+        expect(previewActionReducerSource).toContain('applyQidahenPreviewAction(');
         expect(previewActionReducerSource).toContain('actionWheelPosition: event.payload.actionId,');
         expect(previewActionReducerSource).toContain('selectedActionId: actionId,');
         expect(previewActionReducerSource).toContain('confirmedActionId: actionId,');
@@ -4600,7 +4600,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(interactionSystemSource).toContain("} from './interactionResolutionPayload';");
         expect(interactionSystemSource).toContain("} from './pendingBattleInteractionEventHandlers';");
         expect(interactionSystemSource).toContain("} from './turnActionInteractionEventHandlers';");
-        expect(interactionSystemSource).toContain('const resolvedCore = resolveQidahenInteractionEvent(nextState, event, random);');
+        expect(interactionSystemSource).toContain('resolveQidahenInteractionEvent(nextState, event, random,');
         expect(interactionSystemSource).not.toContain('const QIDAHEN_INTERACTION_RESOLUTION_HANDLERS: readonly QidahenInteractionResolutionHandler[] = [');
         expect(interactionSystemSource).not.toContain('if (resolvedPayload.sourceId === QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID) {');
         expect(interactionSystemSource).not.toContain('if (resolvedPayload.sourceId === QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID) {');

@@ -409,7 +409,7 @@ describe('mage-wars arena action flow', () => {
         });
         const healingRandom: RandomFn = {
             ...fixedRandom,
-            d: (sides: number) => (sides === 3 ? 2 : fixedRandom.d(sides)),
+            d: (sides: number) => (sides === 3 ? 3 : fixedRandom.d(sides)),
         };
         const state: MatchState<MageWarsCore> = {
             core: withArenaObject(withArenaObject(baseState.core, cleric), woundedCat),
@@ -539,7 +539,7 @@ describe('mage-wars arena action flow', () => {
         });
         const healingRandom: RandomFn = {
             ...fixedRandom,
-            d: (sides: number) => (sides === 3 ? 2 : fixedRandom.d(sides)),
+            d: (sides: number) => (sides === 3 ? 3 : fixedRandom.d(sides)),
         };
         const state: MatchState<MageWarsCore> = {
             core: withArenaObject(withArenaObject(baseState.core, greyAngel), distantWoundedCreature),
@@ -890,20 +890,14 @@ describe('mage-wars arena action flow', () => {
 
         const damageEvent = jetStream.events.find((event) => event.type === 'DAMAGE_DEALT');
         expect(jetStream.success).toBe(true);
+        expect(jetStream.events.find((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED)).toMatchObject({
+            payload: { diceResults: [1, 1, 1, 1], rawEffectDieResult: 3, effectDieResult: 5 },
+        });
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: falconId,
-                actualDamage: 8,
+                actualDamage: 4,
                 sourceAbilityId: 'mw.spell.1711',
-                breakdown: expect.objectContaining({
-                    steps: expect.arrayContaining([
-                        expect.objectContaining({
-                            sourceId: 'mage-wars-flying-bonus',
-                            sourceName: '对抗飞行',
-                            value: 2,
-                        }),
-                    ]),
-                }),
             },
         });
     });
@@ -1414,9 +1408,9 @@ describe('mage-wars arena action flow', () => {
                 payload: expect.objectContaining({
                     attackerObjectId: batId,
                     attackName: '致病噬咬',
-                    diceResults: [3, 3],
+                    diceResults: [1, 1],
                     effectDieResult: 9,
-                    baseDamage: 6,
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
@@ -1469,20 +1463,14 @@ describe('mage-wars arena action flow', () => {
 
         const damageEvent = jetStream.events.find((event) => event.type === 'DAMAGE_DEALT');
         expect(jetStream.success).toBe(true);
+        expect(jetStream.events.find((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED)).toMatchObject({
+            payload: { diceResults: [1, 1, 1, 1], rawEffectDieResult: 3, effectDieResult: 5 },
+        });
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: batId,
-                actualDamage: 8,
+                actualDamage: 4,
                 sourceAbilityId: 'mw.spell.1711',
-                breakdown: expect.objectContaining({
-                    steps: expect.arrayContaining([
-                        expect.objectContaining({
-                            sourceId: 'mage-wars-flying-bonus',
-                            sourceName: '对抗飞行',
-                            value: 2,
-                        }),
-                    ]),
-                }),
             },
         });
     });
@@ -1546,9 +1534,9 @@ describe('mage-wars arena action flow', () => {
             payload: {
                 attackerObjectId: wildcat.id,
                 targetObjectId: target.id,
-                diceResults: [3, 3, 3, 3],
+                diceResults: [1, 1, 1, 1],
                 chargeDiceModifier: 2,
-                baseDamage: 12,
+                baseDamage: 4,
             },
         });
         expect(attackEvent?.payload).not.toHaveProperty('rawEffectDieResult');
@@ -1556,7 +1544,7 @@ describe('mage-wars arena action flow', () => {
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: target.id,
-                actualDamage: 12,
+                actualDamage: 4,
             },
         });
         expect(attacked.state.core.objects[wildcat.id]).toMatchObject({

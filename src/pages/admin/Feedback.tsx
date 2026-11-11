@@ -1590,6 +1590,12 @@ function FeedbackDetailPanel({
                             <p>{item.errorContext.name || '-'}</p>
                             <p>{item.errorContext.message || '-'}</p>
                             <p>{item.errorContext.source || '-'}</p>
+                            {item.clientContext?.failedAsset && (
+                                <p>{t('feedback.detail.failedAsset', { defaultValue: '资源请求' })}: {item.clientContext.failedAsset.path} / HTTP {item.clientContext.failedAsset.responseStatus ?? '?'} / {item.clientContext.failedAsset.durationMs?.toFixed(1) ?? '?'} ms / {item.clientContext.failedAsset.transferSize ?? '?'} B</p>
+                            )}
+                            {item.clientContext?.boardPlayers && (
+                                <p>{t('feedback.detail.boardPlayers', { defaultValue: '棋盘玩家摘要' })}: {item.clientContext.boardPlayers.count} / player ID {String(item.clientContext.boardPlayers.playerIdPresent)} / exists {String(item.clientContext.boardPlayers.playerExists ?? '?')}</p>
+                            )}
                             {(item.clientContext?.appVersion || item.clientContext?.appCommitSha || item.clientContext?.appBuildTime) && (
                                 <p>
                                     {[

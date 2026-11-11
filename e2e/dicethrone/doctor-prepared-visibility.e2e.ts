@@ -8,7 +8,7 @@ import { DOCTOR_STRANGE_CARDS } from '../../src/games/dicethrone/heroes/doctor_s
 
 test('奇异博士准备法术遮盖层收起与恢复', async ({ page, game }) => {
     test.setTimeout(120000);
-    const output = resolve('temp/doctor-outside-follow-20261104');
+    const output = resolve('temp/doctor-outside-current-20261111');
     mkdirSync(output, { recursive: true });
     const random = { shuffle: <T>(a: T[]) => a, random: () => 0.5, d: (_n: number) => 1, range: (n: number, _m: number) => n };
     const ids = ['spell-flames-of-faltine', 'spell-rings-of-raggadorr', 'spell-vapors-of-valtorr'];
@@ -19,6 +19,8 @@ test('奇异博士准备法术遮盖层收起与恢复', async ({ page, game }) 
         await page.setViewportSize({ width, height });
         const player = initHeroState('0', 'doctor_strange', random);
         const opponent = initHeroState('1', 'monk', random);
+        Object.assign(player.resources, { CP: 3, cp: 3, HP: 50, hp: 50 });
+        Object.assign(opponent.resources, { CP: 3, cp: 3, HP: 50, hp: 50 });
         player.preparedSpells = ids.slice(0, count).map(id => structuredClone(DOCTOR_STRANGE_CARDS.find(card => card.id === id)!));
         player.deck = DOCTOR_STRANGE_CARDS.filter(card => !ids.slice(0, count).includes(card.id)).map(card => structuredClone(card));
         player.hand = [];

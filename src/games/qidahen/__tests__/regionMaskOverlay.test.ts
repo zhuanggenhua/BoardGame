@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { QIDAHEN_MASK_REGION_BY_ID, qidahenRegionColorKey } from '../ui/mapGraph';
 import { buildRegionMaskOverlayPixels, buildRegionOwnershipOverlayPixels, REGION_MASK_OVERLAY_TONES } from '../ui/regionMaskOverlay';
 import { buildQidahenRuntimeRegionIdByPixel } from '../ui/runtimeRegionOwnership';
+import { resolveQidahenMapRegionAtPoint } from '../ui/mapRegionHitTesting';
 import sharp from 'sharp';
 
 const parseHexColor = (hex: string): readonly [number, number, number] => {
@@ -69,6 +70,24 @@ const readAlphaAt = (pixels: Uint8ClampedArray, width: number, x: number, y: num
 );
 
 describe('Qidahen region mask overlay', () => {
+    it('普通候选缩细内描边时保留东江狭长地面的填色和点击归属，不改变推荐或选中样式', async () => {
+        const { data, info } = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+        const owners = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), info.width, info.height);
+        Object.freeze(owners);
+        const regionId = 'city-region-22';
+        const hit = (x: number, y: number) => resolveQidahenMapRegionAtPoint(owners, info.width, info.height, { x, y }, [regionId]);
+        const point = { x: 905, y: 505 };
+        expect(hit(point.x, point.y)).toBe(regionId);
+        const pixels = buildRegionOwnershipOverlayPixels(owners, info.width, info.height, new Map([[regionId, 'candidate']]));
+        const pixel = (x: number, y: number) => [...pixels.subarray((y * info.width + x) * 4, (y * info.width + x) * 4 + 4)];
+        expect(REGION_MASK_OVERLAY_TONES.candidate.innerStrokeRadius).toBe(1);
+        expect(pixel(885, 500)).toEqual([...REGION_MASK_OVERLAY_TONES.candidate.fill]);
+        expect(pixel(910, 507)[3]).toBeGreaterThan(0);
+        expect(pixel(918, 510)[3]).toBe(0);
+        expect(hit(point.x, point.y)).toBe(regionId);
+        expect(REGION_MASK_OVERLAY_TONES.tutorialPrimary).toMatchObject({ stroke: [255, 255, 236, 255], innerStrokeRadius: 2 });
+        expect(REGION_MASK_OVERLAY_TONES.selected.stroke).toEqual([255, 221, 112, 255]);
+    });
     it('印刷说明不显示选中光晕或候选描边，紧邻的土地仍用普通填色', async () => {
         const { data, info } = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
         const owners = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), info.width, info.height);

@@ -41,6 +41,18 @@ export type FantasyRealmsScoreEvaluation = EvaluationCandidate & {
     scoreBreakdown: FantasyRealmsScoreLine[];
 };
 
+/** 终局实际选择；null 表示玩家明确不使用该效果。 */
+export interface FantasyRealmsScoreSelections {
+    shapeshifterTargetId: string | null;
+    mirageTargetId: string | null;
+    doppelgangerTargetId: string | null;
+    bookTargetId: string | null;
+    bookSuit: FantasyRealmsSuit | null;
+    islandTargetId: string | null;
+    angelTargetId: string | null;
+    fountainTargetId: string | null;
+}
+
 export type FantasyRealmsScoreOptions = {
     setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null;
     playerCount?: number;
@@ -49,13 +61,13 @@ export type FantasyRealmsScoreOptions = {
 const CARD_BY_ID = new Map<string, TableCard>(ALL_FANTASY_REALMS_CARDS.map((card) => [card.id, card]));
 const BASE_RUNTIME_SUITS: FantasyRealmsSuit[] = ['军队', '神器', '巨兽', '烈焰', '洪流', '土地', '领袖', '武器', '天象', '野牌', '法师'];
 const CURSED_HOARD_RUNTIME_SUITS: FantasyRealmsSuit[] = [...BASE_RUNTIME_SUITS, '建筑', '局外人', '不死族'];
-const SHAPESHIFTER_ALLOWED_BASE_SUITS = new Set<FantasyRealmsSuit>(['神器', '领袖', '法师', '武器', '巨兽']);
+const SHAPESHIFTER_ALLOWED_BASE_SUITS = new Set<FantasyRealmsSuit>(['神器', '领袖', '法师', '武器', '巨兽', '不死族']);
 const SHAPESHIFTER_ALLOWED_CURSED_SUITS = new Set<FantasyRealmsSuit>(['神器', '领袖', '法师', '武器', '巨兽', '不死族']);
-const MIRAGE_ALLOWED_BASE_SUITS = new Set<FantasyRealmsSuit>(['军队', '土地', '天象', '洪流', '烈焰']);
+const MIRAGE_ALLOWED_BASE_SUITS = new Set<FantasyRealmsSuit>(['军队', '建筑', '土地', '天象', '洪流', '烈焰']);
 const MIRAGE_ALLOWED_CURSED_SUITS = new Set<FantasyRealmsSuit>(['军队', '建筑', '土地', '天象', '洪流', '烈焰']);
-const BASE_NECROMANCER_ALLOWED_SUITS = new Set<FantasyRealmsSuit>(['军队', '领袖', '法师', '巨兽']);
+const BASE_NECROMANCER_ALLOWED_SUITS = new Set<FantasyRealmsSuit>(['军队', '领袖', '法师', '巨兽', '不死族']);
 const CURSED_NECROMANCER_ALLOWED_SUITS = new Set<FantasyRealmsSuit>(['军队', '领袖', '法师', '巨兽', '不死族']);
-const WILDFIRE_ALLOWED_SUITS = new Set<FantasyRealmsSuit>(['烈焰', '天象', '法师', '武器', '神器', '野牌']);
+const WILDFIRE_ALLOWED_SUITS = new Set<FantasyRealmsSuit>(['烈焰', '天象', '法师', '武器', '神器']);
 const WILDFIRE_ALLOWED_NAMES = new Set(['Great Flood', 'Island', 'Mountain', 'Unicorn', 'Dragon']);
 const CURSED_HOARD_INDICATOR_IDS = new Set<string>([
     'land-garden',
@@ -96,7 +108,7 @@ function resolveScoringSetup(
     options?: FantasyRealmsScoreOptions,
 ): ScoringSetup {
     const cursedHoardSuitsEnabled = options?.setupConfig?.cursedHoardSuitsEnabled === true
-        || [...hand, ...discardPile].some((card) => CURSED_HOARD_INDICATOR_IDS.has(card.id) || CURSED_HOARD_NEW_SUITS.has(card.suit));
+        || [...hand, ...discardPile].some((card) => CURSED_HOARD_INDICATOR_IDS.has(card.id) || (card.id !== 'land-bell-tower' && CURSED_HOARD_NEW_SUITS.has(card.suit)));
     return {
         cursedHoardSuitsEnabled,
         playerCount: Math.max(2, Math.floor(options?.playerCount ?? 2)),
@@ -376,7 +388,7 @@ function hasBlankingImmunity(
     allCards: readonly EffectiveCard[],
     angelTargetId?: string,
 ): boolean {
-    return (card.effectiveSuit === '不死族' && (hasSourceCard(allCards, 'undead-lich') || hasSourceCard(allCards, 'wizard-necromancer-ch')))
+    return (card.effectiveSuit === '不死族' && (hasSourceCard(allCards, 'undead-lich') || (hasSourceCard(allCards, 'wizard-necromancer-ch') || hasSourceCard(allCards, 'wizard-necromancer'))))
         || isAngel(card.sourceId)
         || (angelTargetId != null && angelTargetId === card.instanceId);
 }
@@ -402,19 +414,19 @@ function isSelfBlanked(
     activeCards: readonly EffectiveCard[],
     allCards: readonly EffectiveCard[],
     islandTargetId?: string,
+    angelTargetId?: string,
 ): boolean {
-    if (hasBlankingImmunity(card, allCards)) return false;
+    if (hasBlankingImmunity(card, allCards, angelTargetId)) return false;
     if (isPenaltyCleared(card, allCards, islandTargetId)) return false;
 
     switch (card.penaltyRuleId) {
-        case 'beast-dragon':
-            return !hasActiveSuit(activeCards, '法师');
         case 'weather-smoke':
             return !hasActiveSuit(activeCards, '烈焰');
         case 'weapon-warship':
             return !hasActiveSuit(activeCards, '洪流');
         case 'weapon-war-dirigible':
-            return !hasActiveSuit(activeCards, '军队') || hasActiveSuit(activeCards, '天象');
+            return (!isArmyWordCleared(card, allCards) && !hasActiveSuit(activeCards, '军队'))
+                || hasActiveSuit(activeCards, '天象');
         case 'land-garden':
             return hasActiveSuit(activeCards, '不死族')
                 || hasActiveName(activeCards, 'Necromancer')
@@ -442,7 +454,7 @@ function sourceAttacksTarget(
 ): boolean {
     switch (source.penaltyRuleId) {
         case 'beast-basilisk':
-            return target.effectiveSuit === '军队'
+            return (target.effectiveSuit === '军队' && !isArmyWordCleared(source, allCards))
                 || target.effectiveSuit === '领袖'
                 || (target.effectiveSuit === '巨兽' && target.instanceId !== source.instanceId);
         case 'building-crypt':
@@ -450,6 +462,7 @@ function sourceAttacksTarget(
         case 'flame-wildfire':
             return !WILDFIRE_ALLOWED_SUITS.has(target.effectiveSuit) && !WILDFIRE_ALLOWED_NAMES.has(target.effectiveName);
         case 'flood-great-flood':
+            if (target.effectiveSuit === '建筑') return true;
             if (target.effectiveSuit === '土地' && target.effectiveName !== 'Mountain') return true;
             if (target.effectiveSuit === '烈焰' && target.effectiveName !== 'Lightning') return true;
             if (target.effectiveSuit === '军队' && !isArmyWordCleared(source, allCards)) return true;
@@ -491,8 +504,8 @@ function resolveDemonBlankedIds(
     return blankedIds;
 }
 
-function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTargetId?: string): EffectiveCard[] {
-    const attackSources = cards.filter((card) => hasAttackEffect(card, cards, islandTargetId));
+function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTargetId?: string, clearingCards: readonly EffectiveCard[] = cards): EffectiveCard[] {
+    const attackSources = cards.filter((card) => hasAttackEffect(card, clearingCards, islandTargetId));
     const accepted = new Set<string>();
     const rejected = new Set<string>();
 
@@ -501,7 +514,7 @@ function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTar
             if (accepted.has(card.instanceId) || rejected.has(card.instanceId)) return false;
             const attackers = attackSources.filter((attacker) => (
                 attacker.instanceId !== card.instanceId
-                && sourceAttacksTarget(attacker, card, cards)
+                && sourceAttacksTarget(attacker, card, clearingCards)
             ));
             return attackers.every((attacker) => rejected.has(attacker.instanceId));
         });
@@ -513,7 +526,7 @@ function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTar
         newlyAccepted.forEach((card) => {
             accepted.add(card.instanceId);
             attackSources.forEach((target) => {
-                if (target.instanceId !== card.instanceId && sourceAttacksTarget(card, target, cards)) {
+                if (target.instanceId !== card.instanceId && sourceAttacksTarget(card, target, clearingCards)) {
                     rejected.add(target.instanceId);
                 }
             });
@@ -530,14 +543,14 @@ function getActiveCards(
 ): EffectiveCard[] {
     const demonBlankedIds = resolveDemonBlankedIds(cards, angelTargetId);
     const cardsAfterDemon = cards.filter((card) => !demonBlankedIds.has(card.instanceId));
-    const acceptedAttackSources = resolveAcceptedAttackSources(cardsAfterDemon, islandTargetId);
+    const acceptedAttackSources = resolveAcceptedAttackSources(cardsAfterDemon, islandTargetId, cards);
     const attackedIds = new Set<string>();
 
     acceptedAttackSources.forEach((source) => {
         cardsAfterDemon.forEach((target) => {
             if (
                 source.instanceId !== target.instanceId
-                && sourceAttacksTarget(source, target, cardsAfterDemon)
+                && sourceAttacksTarget(source, target, cards)
                 && !hasBlankingImmunity(target, cardsAfterDemon, angelTargetId)
             ) {
                 attackedIds.add(target.instanceId);
@@ -549,12 +562,18 @@ function getActiveCards(
         !attackedIds.has(card.instanceId)
         && (
             acceptedAttackSources.some((source) => source.instanceId === card.instanceId)
-            || !hasAttackEffect(card, cardsAfterDemon, islandTargetId)
+            || !hasAttackEffect(card, cards, islandTargetId)
         )
     ));
 
+    // 烟雾自身先无效后，不能再作为天象让飞艇无效。
+    activeCards = activeCards.filter((card) => (
+        card.penaltyRuleId !== 'weather-smoke'
+        || !isSelfBlanked(card, activeCards, cards, islandTargetId, angelTargetId)
+    ));
+
     while (true) {
-        const nextActiveCards = activeCards.filter((card) => !isSelfBlanked(card, activeCards, cardsAfterDemon, islandTargetId));
+        const nextActiveCards = activeCards.filter((card) => !isSelfBlanked(card, activeCards, cards, islandTargetId, angelTargetId));
         if (nextActiveCards.length === activeCards.length) {
             return nextActiveCards;
         }
@@ -620,17 +639,18 @@ function computeBonus(
     discardPile: readonly TableCard[],
     setup: ScoringSetup,
     islandTargetId?: string,
+    fountainTargetId?: string | null,
 ): number {
     switch (card.bonusRuleId) {
         case 'army-rangers':
-            return 10 * countActiveSuit(activeCards, '土地');
+            return 10 * (countActiveSuit(activeCards, '土地') + countActiveSuit(activeCards, '建筑'));
         case 'army-rangers-ch':
             return 10 * (countActiveSuit(activeCards, '土地') + countActiveSuit(activeCards, '建筑'));
         case 'army-elven-archers':
             return countActiveSuit(activeCards, '天象') === 0 ? 5 : 0;
         case 'artifact-world-tree': {
             const suits = new Set(activeCards.map((entry) => entry.effectiveSuit));
-            return suits.size === activeCards.length ? 50 : 0;
+            return suits.size === activeCards.length ? 70 : 0;
         }
         case 'artifact-world-tree-ch': {
             const suits = new Set(activeCards.map((entry) => entry.effectiveSuit));
@@ -643,7 +663,7 @@ function computeBonus(
         case 'artifact-gem-of-order':
             return computeGemOfOrderBonus(activeCards.map((entry) => entry.baseScore));
         case 'beast-warhorse':
-            return hasActiveSuit(activeCards, '领袖') || hasActiveSuit(activeCards, '法师') ? 14 : 0;
+            return 14 * (countActiveSuit(activeCards, '领袖') + countActiveSuit(activeCards, '法师'));
         case 'beast-unicorn':
             if (hasActiveName(activeCards, 'Princess')) return 30;
             return ['Empress', 'Queen', 'Elemental Enchantress'].some((name) => hasActiveName(activeCards, name)) ? 15 : 0;
@@ -663,13 +683,15 @@ function computeBonus(
             return hasActiveName(activeCards, 'Rainstorm') ? 30 : 0;
         case 'flood-fountain-of-life': {
             const eligible = activeCards
-                .filter((entry) => ['武器', '洪流', '烈焰', '土地', '天象'].includes(entry.effectiveSuit))
+                .filter((entry) => ['建筑', '武器', '洪流', '烈焰', '土地', '天象'].includes(entry.effectiveSuit))
+                .filter((entry) => fountainTargetId === undefined || entry.instanceId === fountainTargetId)
                 .map((entry) => entry.baseScore);
             return eligible.length > 0 ? Math.max(...eligible) : 0;
         }
         case 'flood-fountain-of-life-ch': {
             const eligible = activeCards
                 .filter((entry) => ['建筑', '武器', '洪流', '烈焰', '土地', '天象'].includes(entry.effectiveSuit))
+                .filter((entry) => fountainTargetId === undefined || entry.instanceId === fountainTargetId)
                 .map((entry) => entry.baseScore);
             return eligible.length > 0 ? Math.max(...eligible) : 0;
         }
@@ -682,7 +704,7 @@ function computeBonus(
         case 'land-forest':
             return 12 * (countActiveSuit(activeCards, '巨兽') + countActiveName(activeCards, 'Elven Archers'));
         case 'land-bell-tower':
-            return hasActiveSuit(activeCards, '法师') ? 15 : 0;
+            return hasActiveSuit(activeCards, '法师') || hasActiveSuit(activeCards, '不死族') ? 15 : 0;
         case 'building-bell-tower-ch':
             return hasActiveSuit(activeCards, '法师') || hasActiveSuit(activeCards, '不死族') ? 15 : 0;
         case 'land-mountain':
@@ -779,7 +801,7 @@ function computeBonus(
         case 'undead-specter':
             return 6 * discardPile.filter((entry) => ['法师', '神器', '局外人'].includes(entry.suit)).length;
         case 'undead-lich':
-            return (hasActiveName(activeCards, 'Necromancer') ? 10 : 0) + (10 * Math.max(0, countActiveSuit(activeCards, '不死族') - 1));
+            return (hasActiveName(activeCards, 'Necromancer') ? 10 : 0) + (10 * countActiveSuit(activeCards, '不死族'));
         case 'undead-death-knight':
             return 7 * discardPile.filter((entry) => entry.suit === '武器' || entry.suit === '军队').length;
         default:
@@ -828,13 +850,14 @@ function buildCardDeltas(
     setup: ScoringSetup,
     originalHandIds: ReadonlySet<string>,
     islandTargetId?: string,
+    fountainTargetId?: string | null,
 ): FantasyRealmsScoreCardDelta[] {
     const activeInstanceIds = new Set(activeCards.map((card) => card.instanceId));
 
     return cards.map((card) => {
         const isActive = activeInstanceIds.has(card.instanceId);
         const baseScore = isActive ? card.baseScore : 0;
-        const bonus = isActive ? computeBonus(card, activeCards, cards, discardPile, setup, islandTargetId) : 0;
+        const bonus = isActive ? computeBonus(card, activeCards, cards, discardPile, setup, islandTargetId, fountainTargetId) : 0;
         const penalty = isActive && !isPenaltyCleared(card, cards, islandTargetId)
             ? computePenalty(card, activeCards, cards)
             : 0;
@@ -847,6 +870,7 @@ function buildCardDeltas(
             penalty,
             totalDelta: baseScore + bonus - penalty,
             isVirtual: !originalHandIds.has(card.instanceId),
+            isBlanked: !isActive,
         };
     });
 }
@@ -859,10 +883,11 @@ function evaluateFixedCards(
     islandTargetId?: string,
     angelTargetId?: string,
     extraCardId?: string,
+    fountainTargetId?: string | null,
 ): EvaluationCandidate {
     const activeCards = getActiveCards(cards, islandTargetId, angelTargetId);
     const activeBaseScore = activeCards.reduce((sum, card) => sum + card.baseScore, 0);
-    const totalBonus = activeCards.reduce((sum, card) => sum + computeBonus(card, activeCards, cards, discardPile, setup, islandTargetId), 0);
+    const totalBonus = activeCards.reduce((sum, card) => sum + computeBonus(card, activeCards, cards, discardPile, setup, islandTargetId, fountainTargetId), 0);
     const totalPenalty = activeCards.reduce((sum, card) => {
         if (isPenaltyCleared(card, cards, islandTargetId)) return sum;
         return sum + computePenalty(card, activeCards, cards);
@@ -875,7 +900,7 @@ function evaluateFixedCards(
         totalPenalty,
         tiebreakBaseScore: cards.reduce((sum, card) => sum + card.baseScore, 0),
         extraCardId,
-        cardDeltas: buildCardDeltas(cards, activeCards, discardPile, setup, originalHandIds, islandTargetId),
+        cardDeltas: buildCardDeltas(cards, activeCards, discardPile, setup, originalHandIds, islandTargetId, fountainTargetId),
     };
 }
 
@@ -979,18 +1004,43 @@ export function evaluateFantasyRealmsScore(
     return evaluation;
 }
 
+/** 仅消费已提交的终局选择，不为玩家搜索或补选目标。 */
+export function evaluateFantasyRealmsResolvedScore(
+    hand: readonly TableCard[],
+    discardPile: readonly TableCard[],
+    selections: FantasyRealmsScoreSelections,
+    options?: FantasyRealmsScoreOptions,
+): FantasyRealmsScoreEvaluation {
+    const setup = resolveScoringSetup(hand, discardPile, options);
+    const baseCards = buildEffectiveCards(hand, selections.shapeshifterTargetId ?? undefined, selections.mirageTargetId ?? undefined);
+    const copiedCards = applyDoppelganger(baseCards, selections.doppelgangerTargetId ?? undefined);
+    const effectiveCards = applyBookOfChanges(copiedCards, selections.bookTargetId ?? undefined, selections.bookSuit ?? undefined);
+    const result = evaluateFixedCards(
+        effectiveCards, discardPile, setup, new Set(hand.map((card) => card.id)),
+        selections.islandTargetId ?? undefined, selections.angelTargetId ?? undefined, undefined, selections.fountainTargetId,
+    );
+    return {
+        ...result,
+        scoreBreakdown: [
+            { label: '有效基础分', value: result.activeBaseScore },
+            { label: '总加分', value: result.totalBonus },
+            { label: '总减分', value: -result.totalPenalty },
+        ],
+    };
+}
+
 export function resolveFantasyRealmsWinner(
     playerIds: readonly PlayerId[],
     handsByPlayer: Record<PlayerId, readonly TableCard[]>,
     discardPile: readonly TableCard[],
     options?: FantasyRealmsScoreOptions,
+    selectionsByPlayer?: Record<string, FantasyRealmsScoreSelections>,
 ): GameOverResult {
     const evaluations = playerIds.map((playerId) => ({
         playerId,
-        evaluation: evaluateFantasyRealmsScore(handsByPlayer[playerId] ?? [], discardPile, {
-            ...options,
-            playerCount: playerIds.length,
-        }),
+        evaluation: selectionsByPlayer?.[playerId]
+            ? evaluateFantasyRealmsResolvedScore(handsByPlayer[playerId] ?? [], discardPile, selectionsByPlayer[playerId]!, { ...options, playerCount: playerIds.length })
+            : evaluateFantasyRealmsScore(handsByPlayer[playerId] ?? [], discardPile, { ...options, playerCount: playerIds.length }),
     }));
 
     const scores = Object.fromEntries(evaluations.map(({ playerId, evaluation }) => [playerId, evaluation.totalScore]));

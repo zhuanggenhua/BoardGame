@@ -1,7 +1,6 @@
 import {
     CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS,
     FANTASY_REALMS_CARD_REPLACEMENTS,
-    FANTASY_REALMS_EXTRA_CARD_IDS,
     OFFICIAL_FANTASY_REALMS_CARDS,
 } from './data/cards';
 import type { FantasyRealmsRuntimeSetupConfig } from './roomSetup';
@@ -31,6 +30,8 @@ export type TableCard = {
     score: number;
     text: string;
     textZh: string;
+    /** 公开区中的稳定位置；仅位于公开区时有效。 */
+    discardSlot?: number;
     extraCard?: boolean;
     replacesBaseCardId?: string;
 };
@@ -48,12 +49,14 @@ export type FantasyRealmsScoreCardDelta = {
     penalty: number;
     totalDelta: number;
     isVirtual?: boolean;
+    isBlanked?: boolean;
 };
 
 export const FANTASY_REALMS_BASE_HAND_CARD_SLOTS = 7;
 export const FANTASY_REALMS_CURSED_HOARD_SUITS_HAND_CARD_SLOTS = 8;
 export const FANTASY_REALMS_HAND_CARD_SLOTS = FANTASY_REALMS_BASE_HAND_CARD_SLOTS;
 export const FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD = 10;
+export const FANTASY_REALMS_CURSED_HOARD_STANDARD_DISCARD_END_THRESHOLD = 12;
 export const FANTASY_REALMS_DUEL_DISCARD_END_THRESHOLD = 12;
 export const FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD = 14;
 
@@ -88,13 +91,11 @@ export function getFantasyRealmsBaseHandLimit(
 }
 
 export function getFantasyRealmsCurrentHandLimit(
-    hand: readonly Pick<TableCard, 'id' | 'extraCard'>[],
+    _hand: readonly Pick<TableCard, 'id' | 'extraCard'>[],
     setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
 ): number {
-    const baseLimit = getFantasyRealmsBaseHandLimit(setupConfig);
-    return hand.some((card) => card.extraCard === true || FANTASY_REALMS_EXTRA_CARD_IDS.has(card.id))
-        ? baseLimit + 1
-        : baseLimit;
+    // 额外取牌只在终局生效，不改变进行中的手牌上限。
+    return getFantasyRealmsBaseHandLimit(setupConfig);
 }
 
 export function getFantasyRealmsDiscardEndThreshold(
@@ -102,7 +103,9 @@ export function getFantasyRealmsDiscardEndThreshold(
     setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
 ): number {
     if (playerCount > 2) {
-        return FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD;
+        return isFantasyRealmsCursedHoardSuitsEnabled(setupConfig)
+            ? FANTASY_REALMS_CURSED_HOARD_STANDARD_DISCARD_END_THRESHOLD
+            : FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD;
     }
     return isFantasyRealmsCursedHoardSuitsEnabled(setupConfig)
         ? FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD

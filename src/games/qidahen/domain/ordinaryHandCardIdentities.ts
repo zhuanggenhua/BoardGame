@@ -149,7 +149,7 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES = [
         cardDefId: 'qidahen-atlas05-1616-fine-steel-saber',
         displayName: '精钢马刀',
         cardKind: 'armament',
-        armamentId: 'cavalry-firearm',
+        armamentId: 'fine-steel-saber',
     },
     {
         atlasIndex: 17,
@@ -293,7 +293,7 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES = [
         cardDefId: 'qidahen-atlas05-1634-red-coat-cannon',
         displayName: '红衣大炮',
         cardKind: 'armament',
-        armamentId: 'artillery-tech',
+        armamentId: 'red-coat-cannon',
     },
     {
         atlasIndex: 35,
@@ -387,7 +387,7 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES = [
         atlasIndex: 46,
         cardId: 1646,
         cardDefId: 'qidahen-atlas05-1646-linked-muskets',
-        displayName: '连环火铳',
+        displayName: '长管火铳',
         cardKind: 'armament',
         armamentId: 'long-barreled-musket',
     },
@@ -463,7 +463,7 @@ export const QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID = {
     'qidahen-atlas05-1643-silver': '银两资源牌；不能作为独立行动入口，只能作为支付或资源弃牌候选。',
     'qidahen-atlas05-1644-yuanyang-zhen': '不能在攻城、守城时使用；战斗中我方步兵骰子等级 +1；后金、蒙古使用效果同上。',
     'qidahen-atlas05-1645-war-chariot-formation': '本次战斗中步兵部队防御等级 +1；后金、蒙古使用效果同上。',
-    'qidahen-atlas05-1646-linked-muskets': '野战步兵阶段敌方结算掷骰时我方先结算；使用拒马、步骑联合后无效；步兵部队掷骰数 +1；后金、蒙古使用无效果。',
+    'qidahen-atlas05-1646-linked-muskets': '野战步兵阶段、城战肉搏阶段我方先结算掷骰；使用拒马、步骑联合后仍有效；步兵部队掷骰点数 +1；后金、蒙古使用无效果。',
     'qidahen-atlas05-1650-wuzhen-chaoha-special': '指定 1 个步兵部队，使其提前在炮兵阶段进行攻击。每研发 1 张「大炮技术」，这个被指定的步兵部队掷骰点数 +1（该部队仍可以享受其他步兵部队加成，可以承受伤害）。大明、蒙古使用效果：同上。',
     'qidahen-atlas05-1660-feigned-retreat-lure-enemy': '取消对手宣告的骑兵劫掠，敌方骑兵直接投入战斗，照常掷骰。大明、蒙古使用效果：同上。',
 } as const satisfies Record<

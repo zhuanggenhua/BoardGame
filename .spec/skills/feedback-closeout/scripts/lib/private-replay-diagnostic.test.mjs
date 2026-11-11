@@ -23,6 +23,7 @@ test('私密回放摘要保留 Qidahen 故障定位字段并过滤隐藏选项�
         stateId: 734561,
         randomSeed: 'must-not-appear',
         randomCursor: 101,
+        serverMetrics: { capturedAt: '2026-11-11T01:00:00.000Z', processUptimeSeconds: 120, processCpuUserMicros: 1234, processCpuSystemMicros: 567, processRssBytes: 500000, processHeapUsedBytes: 200000, systemLoadAverage: [1, 2, 3], secret: 'server-private-canary' },
         state: {
             sys: {
                 phase: '', turnNumber: 0,
@@ -58,6 +59,7 @@ test('私密回放摘要保留 Qidahen 故障定位字段并过滤隐藏选项�
     assert.equal(summary.hasMatchId, true);
     assert.equal(summary.hasStateId, true);
     assert.equal(summary.randomCursor, 101);
+    assert.deepEqual(summary.serverMetrics, { capturedAt: '2026-11-11T01:00:00.000Z', processUptimeSeconds: 120, processCpuUserMicros: 1234, processCpuSystemMicros: 567, processRssBytes: 500000, processHeapUsedBytes: 200000, systemLoadAverage: [1, 2, 3] });
     assert.equal(summary.stateSummary.hasCurrentPlayer, true);
     assert.deepEqual(summary.stateSummary.interaction, {
         isBlocked: true,
@@ -76,7 +78,7 @@ test('私密回放摘要保留 Qidahen 故障定位字段并过滤隐藏选项�
         'hidden-faction-canary', 'private-player-map-canary', 'private-choice-id-canary',
         'private-armament-choice-id-canary', 'private-replay-match-id-canary-7f31',
         'private-current-player-canary-7f31', 'private-interaction-player-canary-7f31',
-        'private-source-id-canary', '734561',
+        'private-source-id-canary', 'server-private-canary', '734561',
     ]) {
         assert.equal(serialized.includes(secret), false);
     }

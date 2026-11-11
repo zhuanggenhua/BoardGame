@@ -748,11 +748,13 @@ export function validate(
             if (wouldRepeatLastFactionAction(state.core, state.core.confirmedActionId)) {
                 return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
             }
-            if (
-                state.core.confirmedActionId === 'upgrade-armament'
-                && !hasUpgradableArmament(state.core, getCurrentFactionId(state.core))
-            ) {
-                return { valid: false, error: 'noUpgradableArmament' };
+            if (state.core.confirmedActionId === 'upgrade-armament') {
+                const source = state.core.handCards.find(card => card.id === state.core.selectedHandActionCardId
+                    && card.faction === getCurrentFactionId(state.core) && card.cardKind === 'armament' && card.armamentId);
+                if (!source || !state.core.selectedPaymentCardIds.includes(source.id)
+                    || !state.core.selectedPaymentCardIds.some(id => id !== source.id)) {
+                    return { valid: false, error: 'paymentIncomplete' };
+                }
             }
             return (getQidahenSelectedActionPaymentProgress(state.core, state.core.confirmedActionId)
                 ?? computeQidahenSelectedPaymentValue(state.core.handCards, state.core.selectedPaymentCardIds)) >= state.core.payment.required

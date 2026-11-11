@@ -74,27 +74,18 @@ describe('mage-wars spell action cards', () => {
                     sourceAbilityId: 'mw.spell.1706',
                     targetObjectId: skeleton.id,
                     targetZoneId: ARENA_ZONE_IDS.C1,
-                    diceResults: [3, 3],
-                    effectDieResult: 11,
-                    baseDamage: 6,
+                    diceResults: [1, 1, 1, 1],
+                    rawEffectDieResult: 11,
+                    effectDieResult: 13,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: skeleton.id,
-                    actualDamage: 8,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.spell.1706',
-                    breakdown: expect.objectContaining({
-                        steps: expect.arrayContaining([
-                            expect.objectContaining({
-                                sourceId: 'mage-wars-nonliving-bonus',
-                                sourceName: '对抗非活体生物',
-                                value: 2,
-                                runningTotal: 8,
-                            }),
-                        ]),
-                    }),
                 }),
             }),
             expect.objectContaining({
@@ -109,7 +100,7 @@ describe('mage-wars spell action cards', () => {
             }),
         ]));
         expect(attacked.state.core.objects[skeleton.id]).toMatchObject({
-            damage: 8,
+            damage: 4,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
@@ -149,12 +140,12 @@ describe('mage-wars spell action cards', () => {
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: livingCat.id,
-                actualDamage: 6,
+                actualDamage: 2,
                 sourceAbilityId: 'mw.spell.1706',
             },
         });
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-nonliving-bonus');
-        expect(attacked.state.core.objects[livingCat.id].damage).toBe(6);
+        expect(attacked.state.core.objects[livingCat.id].damage).toBe(2);
     });
 
     it('casts Jet Stream with flying bonus damage, push movement, and daze on 11+', () => {
@@ -211,27 +202,18 @@ describe('mage-wars spell action cards', () => {
                     spellCardId: attackSpellId,
                     sourceAbilityId: 'mw.spell.1711',
                     targetObjectId: flyingAngel.id,
-                    diceResults: [3, 3],
-                    effectDieResult: 11,
-                    baseDamage: 6,
+                    diceResults: [1, 1, 1, 1],
+                    rawEffectDieResult: 11,
+                    effectDieResult: 13,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: flyingAngel.id,
-                    actualDamage: 8,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.spell.1711',
-                    breakdown: expect.objectContaining({
-                        steps: expect.arrayContaining([
-                            expect.objectContaining({
-                                sourceId: 'mage-wars-flying-bonus',
-                                sourceName: '对抗飞行',
-                                value: 2,
-                                runningTotal: 8,
-                            }),
-                        ]),
-                    }),
                 }),
             }),
             expect.objectContaining({
@@ -243,7 +225,7 @@ describe('mage-wars spell action cards', () => {
                     targetObjectId: flyingAngel.id,
                     fromZoneId: ARENA_ZONE_IDS.A2,
                     toZoneId: ARENA_ZONE_IDS.A3,
-                    effectDieResult: 11,
+                    effectDieResult: 13,
                 }),
             }),
             expect.objectContaining({
@@ -280,7 +262,7 @@ describe('mage-wars spell action cards', () => {
         expect(pushResolvedIndex).toBeGreaterThanOrEqual(0);
         expect(pushAvailableIndex).toBeLessThan(pushResolvedIndex);
         expect(pushed.state.core.objects[flyingAngel.id]).toMatchObject({
-            damage: 8,
+            damage: 4,
             zoneId: ARENA_ZONE_IDS.A3,
             statusTokens: {
                 [STATUS_TOKEN_IDS.DAZE]: 1,
@@ -328,13 +310,13 @@ describe('mage-wars spell action cards', () => {
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: crippledFlyingAngel.id,
-                actualDamage: 6,
+                actualDamage: 2,
                 sourceAbilityId: 'mw.spell.1711',
             },
         });
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-flying-bonus');
         expect(pushed.state.core.objects[crippledFlyingAngel.id]).toMatchObject({
-            damage: 6,
+            damage: 2,
             zoneId: ARENA_ZONE_IDS.A3,
             statusTokens: {
                 [STATUS_TOKEN_IDS.CRIPPLE]: 1,
@@ -964,17 +946,17 @@ describe('mage-wars spell action cards', () => {
                     spellCardId: explodeSpellId,
                     sourceAbilityId: 'mw.spell.3401',
                     targetPlayerId: '1',
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     rawEffectDieResult: 6,
                     effectDieResult: 6,
-                    baseDamage: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '1',
-                    actualDamage: 12,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.spell.3401',
                 }),
             }),
@@ -1007,7 +989,7 @@ describe('mage-wars spell action cards', () => {
         expect(destroyedIndex).toBeLessThan(attackRolledIndex);
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-mage-equipment-armor');
         expect(exploded.state.core.objects[equipment.id]).toBeUndefined();
-        expect(exploded.state.core.players['1'].damage).toBe(12);
+        expect(exploded.state.core.players['1'].damage).toBe(4);
         expect(exploded.state.core.players['1'].statusTokens[STATUS_TOKEN_IDS.BURN]).toBe(1);
         expect(exploded.state.core.players['0'].discardSpellCardIds).toEqual([explodeSpellId]);
         expect(exploded.state.core.players['0'].mana).toBe(8);

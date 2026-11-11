@@ -466,6 +466,8 @@ export interface TutorialStepSnapshot {
     advanceOnEvents?: TutorialEventMatcher[];
     randomPolicy?: TutorialRandomPolicy;
     aiActions?: TutorialAiAction[];
+    /** 同一动态步骤内的一批正式自动输入；有值时以步骤 ID 与批次 ID 联合去重。 */
+    aiBatchId?: string;
     /**
      * 允许此步骤在玩家教程流程中隐藏并由教程自动命令执行的显式合同。
      * 没有该字段时，`aiActions` 只表示“这一步有教程代执行命令”，
@@ -490,6 +492,8 @@ export interface TutorialStepSnapshot {
     allowManualSkip?: boolean;
     /** 是否等待动画完成后才推进到下一步 */
     waitForAnimation?: boolean;
+    /** 匹配事件后等待动画，再按真实局面继续当前步骤。 */
+    waitForAnimationInStep?: TutorialEventMatcher[];
     /**
      * 纯说明步骤模式：自动禁止所有游戏命令（除了系统命令）
      * 

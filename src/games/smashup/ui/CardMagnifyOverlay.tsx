@@ -5,7 +5,7 @@
  * 基于 MagnifyOverlay 通用壳 + SmashUp 卡牌数据。
  */
 
-import React, { useEffect } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardPreview } from '../../../components/common/media/CardPreview';
@@ -40,6 +40,17 @@ interface Props {
     target: CardMagnifyTarget | null;
     onClose: () => void;
 }
+
+export interface CardMagnifyControllerHandle {
+    setTarget: (target: CardMagnifyTarget | null) => void;
+}
+
+/** 放大状态只更新覆盖层，避免每次看牌都重新计算整张棋盘。 */
+export const CardMagnifyController = forwardRef<CardMagnifyControllerHandle>(function CardMagnifyController(_props, ref) {
+    const [target, setTarget] = useState<CardMagnifyTarget | null>(null);
+    useImperativeHandle(ref, () => ({ setTarget }), []);
+    return <CardMagnifyOverlay target={target} onClose={() => setTarget(null)} />;
+});
 
 export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
     const { t } = useTranslation('game-smashup');

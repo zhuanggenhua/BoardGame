@@ -107,6 +107,35 @@ test('素材下载尚未响应时，代表态地点结算仍能继续', async ({
   await Promise.all(pending.map(route => route.abort().catch(() => {})));
 });
 
+test('地图缩放后攻击演出跟随地点大小', async ({ page, context }) => {
+  test.setTimeout(240000);
+  await initContext(context, { skipImageGate: false });
+  await openBoard(page);
+  await waitForAssets(page);
+  await prepareBattle(page);
+  await waitForBoardArtwork(page);
+  const anchor = page.getByTestId('fate-fgo-anchor-miyama');
+  const initial = await anchor.boundingBox();
+  const map = page.getByTestId('fate-pixi-map-canvas');
+  const mapBox = await map.boundingBox();
+  expect(initial).not.toBeNull();
+  expect(mapBox).not.toBeNull();
+  await page.mouse.move(mapBox!.x + mapBox!.width / 2, mapBox!.y + mapBox!.height / 2);
+  await page.mouse.wheel(0, -450);
+  await expect.poll(async () => (await anchor.boundingBox())?.width ?? 0).toBeGreaterThan(initial!.width * 1.05);
+  await page.getByTestId('fate-domination-primary-action').click();
+  const battle = anchor.getByTestId('fate-fgo-battle');
+  await expect(battle).toBeVisible({ timeout: 15000 });
+  const dimensions = await battle.evaluate(element => {
+    const rendered = element.getBoundingClientRect();
+    const region = element.parentElement!.getBoundingClientRect();
+    return { renderedWidth: rendered.width, renderedHeight: rendered.height, regionWidth: region.width, regionHeight: region.height };
+  });
+  expect(dimensions.renderedWidth).toBeCloseTo(dimensions.regionWidth, 0);
+  expect(dimensions.renderedHeight).toBeCloseTo(dimensions.regionHeight, 0);
+  await expect(battle).toBeHidden({ timeout: 15000 });
+});
+
 for (const attacker of [
   { name: '库丘林', servantId: 'servant-cu-chulainn', chainId: 'cu-saber' },
   { name: '美杜莎', servantId: 'servant-medusa', chainId: 'medusa-saber' },
@@ -186,11 +215,23 @@ test('代表态真实出牌确认释放誓约胜利之剑，宝具演出不拦�
   const noble = page.getByTestId('fate-fgo-noble');
   await expect(noble).toBeVisible({ timeout: 15000 });
   await expect(noble.locator('canvas')).toHaveCount(1);
+  const presentation = await noble.evaluate(element => {
+    const bounds = element.getBoundingClientRect();
+    const canvas = element.querySelector('canvas')!;
+    return { body: element.parentElement === document.body, width: bounds.width, height: bounds.height,
+      viewportWidth: innerWidth, viewportHeight: innerHeight, pointerEvents: getComputedStyle(element).pointerEvents,
+      alpha: canvas.getContext('webgl2')?.getContextAttributes()?.alpha };
+  });
+  expect(presentation.body).toBe(true);
+  expect(presentation.width / presentation.viewportWidth).toBeGreaterThan(0.95);
+  expect(presentation.height / presentation.viewportHeight).toBeGreaterThan(0.95);
+  expect(presentation.pointerEvents).toBe('none');
+  expect(presentation.alpha).toBe(true);
   await expect(action).toBeEnabled();
   await expect.poll(() => page.evaluate(() => (window as any).__FGO_SOURCE_SCENE__?.snapshot().time ?? 0), { timeout: 20000 }).toBeGreaterThan(2.5);
   await page.screenshot({ path: testInfo.outputPath('宝具释放过程.png') });
   const during = await fgoEvidenceSnapshot(page);
-  await expect.poll(() => page.evaluate(() => (window as any).__FGO_SOURCE_SCENE__?.snapshot().time ?? 0), { timeout: 25000 }).toBeGreaterThan(12.5);
+  await expect.poll(() => page.evaluate(() => (window as any).__FGO_SOURCE_SCENE__?.snapshot().time ?? 0), { timeout: 60000, intervals: [100] }).toBeGreaterThan(14);
   await page.screenshot({ path: testInfo.outputPath('宝具光束过程.png') });
   await expect(noble).toBeHidden({ timeout: 45000 });
   await page.screenshot({ path: testInfo.outputPath('宝具演出后.png') });

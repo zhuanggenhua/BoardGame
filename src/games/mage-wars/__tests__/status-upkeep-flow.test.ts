@@ -32,6 +32,7 @@ describe('mage-wars status and upkeep flow', () => {
             sourceObjectId: 'spell-card-2909',
             name: '皇家弓手',
             life: 6,
+            damage: 4,
         });
         const state: MatchState<MageWarsCore> = {
             core: withArenaObject(withArenaObject(baseState.core, attacker), defender),
@@ -519,7 +520,7 @@ describe('mage-wars status and upkeep flow', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: sleepingTarget.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                 }),
             }),
             expect.objectContaining({
@@ -554,7 +555,7 @@ describe('mage-wars status and upkeep flow', () => {
                 ]),
             }),
         ]));
-        expect(attacked.state.core.objects[sleepingTarget.id].damage).toBe(6);
+        expect(attacked.state.core.objects[sleepingTarget.id].damage).toBe(2);
         expect(attacked.state.core.objects[sleepingTarget.id].statusTokens).toEqual({
             [STATUS_TOKEN_IDS.DAZE]: 1,
         });
@@ -651,19 +652,19 @@ describe('mage-wars status and upkeep flow', () => {
                 payload: expect.objectContaining({
                     attackerId: '0',
                     defenderId: '1',
-                    diceResults: [3],
-                    baseDamage: 3,
+                    diceResults: [1],
+                    baseDamage: 1,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '1',
-                    actualDamage: 3,
+                    actualDamage: 1,
                 }),
             }),
         ]));
-        expect(attack.state.core.players['1'].damage).toBe(3);
+        expect(attack.state.core.players['1'].damage).toBe(1);
     });
 
     it('makes dazed mage basic melee attacks miss before damage is rolled', () => {
@@ -1222,7 +1223,7 @@ describe('mage-wars status and upkeep flow', () => {
                     '1': {
                         ...baseState.core.players['1'],
                         mageZoneId: PLAYER_ZERO_START_ZONE,
-                        damage: defenderLife - 8,
+                        damage: defenderLife - 3,
                     },
                 },
                 arena: baseState.core.arena.map((zone) => {

@@ -11,7 +11,7 @@ import { fantasyRealmsAiRuntime } from './ai';
 import { fantasyRealmsCriticalImageResolver } from './criticalImageResolver';
 import { FANTASY_REALMS_AUDIO_CONFIG } from './audio.config';
 
-const ACTION_ALLOWLIST = ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'] as const;
+const ACTION_ALLOWLIST = ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD', 'RESOLVE_SETTLEMENT'] as const;
 
 function findVisibleCard(core: FantasyRealmsCore, cardId: string) {
     return core.discardPile.find((item) => item.id === cardId)
@@ -93,7 +93,7 @@ export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCom
     systems,
     minPlayers: 2,
     maxPlayers: 6,
-    commandTypes: ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'],
+    commandTypes: ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD', 'RESOLVE_SETTLEMENT'],
 });
 
 registerGameAiRuntime(fantasyRealmsAiRuntime);

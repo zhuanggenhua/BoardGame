@@ -66,6 +66,9 @@ export interface FeedbackPerformanceContext {
 }
 
 export interface FeedbackClientContext {
+    /** 对失败的同源构建资源的浏览器性能记录；缺字段代表浏览器未提供。 */
+    failedAsset?: { path: string; observedAt: string; responseStatus?: number; durationMs?: number; transferSize?: number };
+    boardPlayers?: { count: number; playerIdPresent: boolean; playerExists?: boolean };
     route?: string;
     mode?: string;
     matchId?: string;

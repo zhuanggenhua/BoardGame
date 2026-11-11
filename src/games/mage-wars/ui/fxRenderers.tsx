@@ -66,6 +66,7 @@ type ViewportBox = { left: number; top: number; width: number; height: number };
 
 function AttackDiceFeedback({
     diceResults,
+    diceCritical,
     effectDieResult,
     rawEffectDieResult,
     visibleDurationMs,
@@ -73,6 +74,7 @@ function AttackDiceFeedback({
     resultAmount,
 }: {
     diceResults: number[];
+    diceCritical?: boolean[];
     effectDieResult?: number;
     rawEffectDieResult?: number;
     visibleDurationMs: number;
@@ -130,7 +132,7 @@ function AttackDiceFeedback({
                     data-testid="mage-wars-fx-attack-dice-content"
                 >
                     {diceResults.slice(0, 6).map((result, index) => (
-                        <AttackDie key={`${index}-${result}`} result={result} index={index} />
+                        <AttackDie key={`${index}-${result}`} result={result} index={index} critical={diceCritical?.[index]} />
                     ))}
                     {effectDieResult !== undefined ? (
                         <EffectDie result={rawEffectDieResult ?? effectDieResult} resolvedResult={effectDieResult} />
@@ -966,6 +968,9 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const effectDieResult = typeof event.params?.effectDieResult === 'number'
         ? event.params.effectDieResult
         : undefined;
+    const diceCritical = Array.isArray(event.params?.diceCritical)
+        ? event.params.diceCritical.map(value => value === true)
+        : undefined;
     const rawEffectDieResult = typeof event.params?.rawEffectDieResult === 'number'
         ? event.params.rawEffectDieResult
         : undefined;
@@ -1047,6 +1052,7 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 </div>
                 <AttackDiceFeedback
                     diceResults={diceResults}
+                    diceCritical={diceCritical}
                     effectDieResult={effectDieResult}
                     rawEffectDieResult={rawEffectDieResult}
                     visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
@@ -1103,6 +1109,7 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
             />
             <AttackDiceFeedback
                 diceResults={diceResults}
+                diceCritical={diceCritical}
                 effectDieResult={effectDieResult}
                 rawEffectDieResult={rawEffectDieResult}
                 visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}

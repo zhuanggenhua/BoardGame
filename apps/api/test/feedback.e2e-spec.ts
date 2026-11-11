@@ -851,6 +851,8 @@ describe('Feedback Module (e2e)', () => {
                     route: '/play/smashup/match/lazy-load',
                     gameId: 'smashup',
                     appVersion: 'test-build',
+                    failedAsset: { path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0, privateField: 'secret-asset-canary' },
+                    boardPlayers: { count: 2, playerIdPresent: true, playerExists: false, privateField: 'secret-board-canary' },
                     performance: {
                         capturedAt: '2026-10-06T10:00:01.000Z',
                         windowMs: 30_000,
@@ -918,6 +920,8 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.hasErrorContext).toBe(true);
         expect(summaryItem.clientContext?.route).toBe('/play/:game/match');
         expect(summaryItem.clientContext?.performance?.network?.connectionRttMs).toBe(160);
+        expect(summaryItem.clientContext?.failedAsset).toEqual({ path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0 });
+        expect(summaryItem.clientContext?.boardPlayers).toEqual({ count: 2, playerIdPresent: true, playerExists: false });
         expect(summaryItem.errorContext?.name).toBe('TypeError');
         expect(summaryItem.errorContext?.message).toBe('pipeline_error');
         expect(summaryItem.canManage).toBe(true);
@@ -936,6 +940,9 @@ describe('Feedback Module (e2e)', () => {
         expect(detailRes.body.diagnosticPacket.captureId).toBe('capture-feedback-1');
         expect(detailRes.body.diagnosticPacket.missingFields).toContain('snapshots.before');
         expect(detailRes.body.clientContext?.route).toBe('/play/:game/match');
+        expect(detailRes.body.clientContext?.failedAsset?.responseStatus).toBe(404);
+        expect(JSON.stringify(detailRes.body)).not.toContain('secret-asset-canary');
+        expect(JSON.stringify(detailRes.body)).not.toContain('secret-board-canary');
         expect(detailRes.body.clientContext?.lastUserAction?.target).toBeUndefined();
         expect(detailRes.body.clientContext?.performance?.frame?.minFps).toBe(12.1);
         expect(detailRes.body.errorContext?.message).toBe('pipeline_error');

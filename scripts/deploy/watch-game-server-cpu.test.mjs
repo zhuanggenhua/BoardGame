@@ -76,6 +76,8 @@ esac
         assert.match(evidence, /## host thread snapshot/);
         assert.match(evidence, /## container process snapshot/);
         assert.match(evidence, /cpuProfileStatus=captured/);
+        assert.match(evidence, /profileCaptureStartedAt=\d{4}-\d\d-\d\dT/);
+        assert.match(evidence, /profileCaptureFinishedAt=\d{4}-\d\d-\d\dT/);
         assert.match(evidence, /cpuProfileFile=.*\.cpuprofile/);
         assert.match(evidence, /profileInspectorPort=9229/);
         assert.match(evidence, /fake container process snapshot/);

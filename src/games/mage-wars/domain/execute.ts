@@ -6,11 +6,11 @@ import {
 } from '../data/configPackage';
 import { MAGE_WARS_COMMANDS } from './commands';
 import { MAGE_WARS_EVENTS } from './events';
+import { rollMageWarsAttackDice, summarizeMageWarsAttackDice } from './attackDice';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore, MageWarsEvent, MageWarsPhase } from './types';
 import {
-    createMageWarsFlyingBonusDamageModifiers,
     createMageWarsMageEquipmentArmorDamageModifiers,
-    createMageWarsNonlivingBonusDamageModifiers,
+    resolveMageWarsTargetTraitAttackBonus,
     createMageWarsObjectArmorDamageModifiers,
     resolveMageWarsMageEquipmentAttackDiceModifier,
     resolveMageWarsMageEquipmentTraitText,
@@ -264,10 +264,6 @@ interface MageWarsObjectAttackTarget {
     rulesText?: string;
 }
 
-function rollD3(random: RandomFn, diceCount: number): number[] {
-    return Array.from({ length: diceCount }, () => random.d(3));
-}
-
 function createMageWarsDamageBarrierEvents(
     state: MatchState<MageWarsCore>,
     sourceCommandType: string,
@@ -295,8 +291,9 @@ function createMageWarsDamageBarrierEvents(
         source.diceCount,
         { attackDiceModifier: aegisDiceModifier },
     );
-    const diceResults = rollD3(random, diceCount);
-    const baseDamage = diceResults.reduce((total, result) => total + result, 0);
+    const roll = summarizeMageWarsAttackDice(rollMageWarsAttackDice(random, diceCount));
+    const diceResults = roll.values;
+    const baseDamage = roll.total;
 
     return [{
         type: MAGE_WARS_EVENTS.DAMAGE_BARRIER_AVAILABLE,
@@ -308,6 +305,7 @@ function createMageWarsDamageBarrierEvents(
             ...(attackerObjectId ? { attackerObjectId } : {}),
             roundNumber: state.core.turnNumber,
             diceResults,
+            diceCritical: roll.critical,
             baseDamage,
             damageTypes: [...source.damageTypes],
             unavoidable: source.unavoidable,
@@ -1089,6 +1087,10 @@ export function resolveMageWarsObjectAttackEvents(
 
     for (let strikeIndex = 0; strikeIndex < attackProfile.strikeCount; strikeIndex += 1) {
         const damageTypeAdjustment = resolveMageWarsDamageTypeAdjustment(attackProfile.damageTypes, target);
+        const targetTraitBonus = resolveMageWarsTargetTraitAttackBonus({
+            spellCardId: attacker.sourceSpellCardId,
+            attackOrTraitLine: attackProfile.line,
+        }, target);
         const mageEquipmentAttackDiceModifier = attacker.kind === 'equipment' && attacker.anchoredToPlayerId
             ? resolveMageWarsMageEquipmentAttackDiceModifier(
                 state.core,
@@ -1107,10 +1109,11 @@ export function resolveMageWarsObjectAttackEvents(
         const diceCount = resolveMageWarsModifiedAttackDiceCount(
             attackProfile.diceCount + weakAttackDiceModifier + chargeDiceModifier + meleeDiceModifier + bloodthirstDiceModifier
                 + attackDiceModifier.value + rangedDiceModifier.value + deathMarkAttackModifier.value + aegisAttackDiceModifier
-                + mageEquipmentAttackDiceModifier.value,
+                + mageEquipmentAttackDiceModifier.value + targetTraitBonus,
             damageTypeAdjustment,
         );
-        const diceResults = rollD3(random, diceCount);
+        const roll = summarizeMageWarsAttackDice(rollMageWarsAttackDice(random, diceCount));
+        const diceResults = roll.values;
         if (attackProfile.rangeKind === 'melee' && diceResults.length > 0) {
             hasRolledMeleeAttackDice = true;
         }
@@ -1120,8 +1123,8 @@ export function resolveMageWarsObjectAttackEvents(
             ? undefined
             : rawEffectDieResult
                 + damageTypeAdjustment.effectDieModifier
-                + mageEquipmentAttackDiceModifier.value;
-        const baseDamage = diceResults.reduce((total, result) => total + result, 0);
+                + mageEquipmentAttackDiceModifier.value + targetTraitBonus;
+        const baseDamage = roll.total;
         const damageEvents = createDamageCalculation({
             state,
             source: { playerId: attacker.ownerId, abilityId: sourceAbilityId },
@@ -1132,19 +1135,13 @@ export function resolveMageWarsObjectAttackEvents(
             autoCollectBonusDamage: false,
             damageScope: 'attack',
             additionalModifiers: [
-                ...createMageWarsFlyingBonusDamageModifiers({
-                    spellCardId: attacker.sourceSpellCardId,
-                    attackOrTraitLine: attackProfile.line,
-                }, target),
-                ...createMageWarsNonlivingBonusDamageModifiers({
-                    spellCardId: attacker.sourceSpellCardId,
-                    attackOrTraitLine: attackProfile.line,
-                }, target),
                 ...createMageWarsObjectArmorDamageModifiers(target, {
                     pierce: attackProfile.pierce + pierceModifier,
+                    normalDamage: roll.normal,
                 }),
                 ...createMageWarsMageEquipmentArmorDamageModifiers(state.core, target, {
                     pierce: attackProfile.pierce + pierceModifier,
+                    normalDamage: roll.normal,
                 }),
             ],
             timestamp,
@@ -1165,6 +1162,7 @@ export function resolveMageWarsObjectAttackEvents(
                 targetObjectId: target.targetObjectId,
                 targetZoneId: target.zoneId,
                 diceResults,
+                diceCritical: roll.critical,
                 ...(effectDieResult === undefined ? {} : {
                     effectDieResult,
                     rawEffectDieResult,
@@ -1603,8 +1601,9 @@ export function resolveMageWarsBasicAttackEvents(
         attacker.baseMeleeDice + resolveMageWarsWeakAttackDiceModifier(attacker),
         { attackDiceModifier: 0 },
     );
-    const diceResults = Array.from({ length: diceCount }, () => random.d(3));
-    const baseDamage = diceResults.reduce((total, result) => total + result, 0);
+    const roll = summarizeMageWarsAttackDice(rollMageWarsAttackDice(random, diceCount));
+    const diceResults = roll.values;
+    const baseDamage = roll.total;
     const damageEvents = createDamageCalculation({
         state,
         source: { playerId: attacker.id, abilityId: 'mage-basic-melee' },
@@ -1616,7 +1615,7 @@ export function resolveMageWarsBasicAttackEvents(
         damageScope: 'attack',
         additionalModifiers: createMageWarsMageEquipmentArmorDamageModifiers(state.core, {
             targetPlayerId: defender.id,
-        }),
+        }, { normalDamage: roll.normal }),
         timestamp,
     }).toEvents() as MageWarsEvent[];
     const damageAmount = damageEvents.reduce((total, event) => (
@@ -1630,6 +1629,7 @@ export function resolveMageWarsBasicAttackEvents(
             attackerId: attacker.id,
             defenderId: defender.id,
             diceResults,
+            diceCritical: roll.critical,
             baseDamage,
         },
         sourceCommandType,

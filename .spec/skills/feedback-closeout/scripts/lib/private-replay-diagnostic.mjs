@@ -439,6 +439,15 @@ export function summarizePrivateFeedbackReplay(encodedReplay, replayError) {
             ...(shortString(value.gameId) ? { gameId: value.gameId } : {}),
             ...(shortNumber(value.stateId) !== undefined ? { hasStateId: true } : {}),
             ...(shortNumber(value.randomCursor) !== undefined ? { randomCursor: value.randomCursor } : {}),
+            ...(asRecord(value.serverMetrics) ? { serverMetrics: {
+                ...(shortString(value.serverMetrics.capturedAt) ? { capturedAt: value.serverMetrics.capturedAt } : {}),
+                ...Object.fromEntries(['processUptimeSeconds', 'processCpuUserMicros', 'processCpuSystemMicros', 'processRssBytes', 'processHeapUsedBytes']
+                    .filter(key => shortNumber(value.serverMetrics[key]) !== undefined)
+                    .map(key => [key, value.serverMetrics[key]])),
+                ...(Array.isArray(value.serverMetrics.systemLoadAverage) && value.serverMetrics.systemLoadAverage.length === 3
+                    && value.serverMetrics.systemLoadAverage.every(item => shortNumber(item) !== undefined)
+                    ? { systemLoadAverage: value.serverMetrics.systemLoadAverage } : {}),
+            } } : {}),
             stateSummary: summarizePrivateReplayState(value.gameId, value.state),
         };
     } catch {

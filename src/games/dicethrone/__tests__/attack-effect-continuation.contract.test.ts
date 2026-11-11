@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameEvent } from '../../../engine/types';
+import { clearActiveResolutionBlock, setActiveResolutionBlock } from '../../../engine/systems/resolutionStack';
 import type { DiceThroneEvent } from '../domain/types';
 import { attachAttackEffectContinuation, getEffectSequenceBlockerId, isAttackEffectSequenceBlocker } from '../domain/attackEffectContinuationTypes';
 import { isEffectSequenceSuspensionEvent } from '../domain/effects';
@@ -125,6 +126,21 @@ describe('攻击效果续接帧完成信号合同', () => {
         expect(resumed?.events.filter((event) => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toHaveLength(1);
         expect(resumed?.state.sys.resolution?.frames ?? []).toHaveLength(0);
         expect(resumeCompletedEffectSequence(resumed!.state, [completion], fixedRandom, 13)).toBeUndefined();
+    });
+
+    it.each(cases)('$name 完成时被后续交互阻塞，仍记录完成并在解除后只恢复一次', ({ request, blockerId, completion }) => {
+        let state = beginEffectSequenceContinuation(createState(), tagged(request), blockerId).state;
+        state = setActiveResolutionBlock(state, { type: 'interaction', id: 'subsequent-choice' });
+
+        const blocked = resumeCompletedEffectSequence(state, [completion], fixedRandom, 12);
+        expect(blocked?.events).toEqual([]);
+        expect(blocked?.state.sys.resolution?.frames[0].metadata?.completedBlockerIds).toContain(blockerId);
+
+        const unblocked = clearActiveResolutionBlock(blocked!.state, 'interaction');
+        const resumed = resumeCompletedEffectSequence(unblocked, [], fixedRandom, 13);
+        expect(resumed?.events.filter(event => event.type === 'ATTACK_PRE_DEFENSE_RESOLVED')).toHaveLength(1);
+        expect(resumed?.state.sys.resolution?.frames ?? []).toHaveLength(0);
+        expect(resumeCompletedEffectSequence(resumed!.state, [completion], fixedRandom, 14)).toBeUndefined();
     });
 
     it('同一游标的多个阻塞都完成前不恢复，最后一个信号持久化后只恢复一次', () => {

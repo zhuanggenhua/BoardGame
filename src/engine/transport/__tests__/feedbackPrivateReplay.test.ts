@@ -30,6 +30,12 @@ describe('权威故障现场采集', () => {
             trigger,
         });
         expect(archive.state.sys.undo.snapshots[0].core.health).toBe(42);
+        expect(archive.serverMetrics).toMatchObject({
+            capturedAt: expect.any(String), processUptimeSeconds: expect.any(Number),
+            processCpuUserMicros: expect.any(Number), processCpuSystemMicros: expect.any(Number),
+            processRssBytes: expect.any(Number), processHeapUsedBytes: expect.any(Number),
+            systemLoadAverage: expect.arrayContaining([expect.any(Number)]),
+        });
     });
 
     it('无法序列化时明确报告失败，不伪装成完整现场', () => {

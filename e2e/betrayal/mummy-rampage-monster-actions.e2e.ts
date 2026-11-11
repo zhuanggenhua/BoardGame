@@ -1901,7 +1901,7 @@ const completeMummyScenarioFromRealEntry = async (page: Page): Promise<void> => 
     await page.getByTestId('betrayal-start-scenario-opening-continue').click();
     await expect(openingStage).toHaveCount(0);
     await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('betrayal-action-explore')).toBeVisible();
+    await expect(page.locator('[data-testid^="betrayal-room-explore-target-"]').first()).toBeVisible();
 };
 
 const openBetrayalAsTraitor = async (page: Page): Promise<void> => {
@@ -2128,8 +2128,6 @@ const exploreMummyGoldenDiscoveryRoom = async (
     fixture: ReturnType<typeof createMummyGoldenPreHauntDiscoveryCore>,
     screenshots: { targetReady?: string } = {},
 ): Promise<void> => {
-    await expect(page.getByTestId('betrayal-action-explore')).toContainText('探索');
-    await page.getByTestId('betrayal-action-explore').click();
     await switchRoomMapToFloor(page, fixture.targetRoomFloor);
     await expect(page.getByTestId(`betrayal-room-explore-target-${fixture.targetRoomId}`)).toBeVisible();
     if (screenshots.targetReady) {
@@ -2151,11 +2149,9 @@ const exerciseEventSymbolSkipAfterRoomReveal = async (
     } = {},
 ): Promise<void> => {
     await expect(page.getByTestId('betrayal-explore-option-traitor-event-skip')).toHaveCount(0);
-    await expect(page.getByTestId('betrayal-action-explore')).toContainText('探索');
     if (screenshots.exploreReady) {
         await saveScreenshot(page, screenshots.exploreReady);
     }
-    await page.getByTestId('betrayal-action-explore').click();
     await switchRoomMapToFloor(page, fixture.targetRoomFloor);
     await expect(page.getByTestId(`betrayal-room-explore-target-${fixture.targetRoomId}`)).toBeVisible();
     if (screenshots.targetReady) {
@@ -2479,8 +2475,8 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             currentRoomId: 'hallway',
         });
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟前|Pre-Haunt/i);
-        await expect(page.getByTestId('betrayal-action-explore')).toContainText('探索');
-        await saveScreenshot(page, goldenFlowProcessScreenshot(1, '开局牌桌-探索入口可见'));
+        await expect(page.getByTestId(`betrayal-room-explore-target-${eventFixture.targetRoomId}`)).toBeVisible();
+        await saveScreenshot(page, goldenFlowProcessScreenshot(1, '开局牌桌-可探索房间高亮'));
         await saveScreenshot(page, GOLDEN_FLOW_OPENING_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
@@ -2514,7 +2510,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await injectCoreAfterSettlement(page, itemFixture.core, '事件牌结算后的物品段');
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await saveScreenshot(page, goldenFlowProcessScreenshot(4, '物品段开局牌桌-探索入口可见'));
+        await saveScreenshot(page, goldenFlowProcessScreenshot(4, '物品段开局牌桌-可探索房间高亮'));
         await exploreMummyGoldenDiscoveryRoom(page, itemFixture, {
             targetReady: goldenFlowProcessScreenshot(5, '物品房探索目标高亮-点击前'),
         });

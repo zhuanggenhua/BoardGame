@@ -112,11 +112,11 @@ export function resolveMageWarsMageEquipmentTraitText(core: MageWarsCore, player
 
 export function createMageWarsObjectArmorDamageModifiers(
     target: { targetObjectId?: string; armor?: number },
-    options: { pierce?: number } = {},
+    options: { pierce?: number; normalDamage?: number } = {},
 ): ModifierDef<DamageContext>[] {
     if (!target.targetObjectId || !target.armor || target.armor <= 0) return [];
 
-    const effectiveArmor = Math.max(0, target.armor - Math.max(0, options.pierce ?? 0));
+    const effectiveArmor = Math.min(options.normalDamage ?? Infinity, Math.max(0, target.armor - Math.max(0, options.pierce ?? 0)));
     if (effectiveArmor <= 0) return [];
 
     return [{
@@ -168,14 +168,14 @@ export function resolveMageWarsMageEquipmentArmor(core: MageWarsCore, playerId: 
 export function createMageWarsMageEquipmentArmorDamageModifiers(
     core: MageWarsCore,
     target: { targetPlayerId?: PlayerId },
-    options: { pierce?: number } = {},
+    options: { pierce?: number; normalDamage?: number } = {},
 ): ModifierDef<DamageContext>[] {
     if (!target.targetPlayerId) return [];
 
     const armor = resolveMageWarsMageEquipmentArmor(core, target.targetPlayerId);
     if (armor <= 0) return [];
 
-    const effectiveArmor = Math.max(0, armor - Math.max(0, options.pierce ?? 0));
+    const effectiveArmor = Math.min(options.normalDamage ?? Infinity, Math.max(0, armor - Math.max(0, options.pierce ?? 0)));
     if (effectiveArmor <= 0) return [];
 
     return [{
@@ -188,46 +188,13 @@ export function createMageWarsMageEquipmentArmorDamageModifiers(
     }];
 }
 
-export function createMageWarsNonlivingBonusDamageModifiers(
+export function resolveMageWarsTargetTraitAttackBonus(
     spell: Pick<MageWarsConfigSpellCard, 'spellCardId' | 'attackOrTraitLine'>,
-    target: { targetObjectId?: string; nonliving?: boolean },
-): ModifierDef<DamageContext>[] {
-    if (!target.targetObjectId || !target.nonliving) return [];
-
-    const match = /对抗非活体(?:生物)?\+?(\d+)/.exec(spell.attackOrTraitLine ?? '');
-    if (!match) return [];
-
-    const value = Number(match[1]);
-    if (!Number.isFinite(value) || value <= 0) return [];
-
-    return [{
-        id: `mage-wars-nonliving-bonus-${spell.spellCardId}-${target.targetObjectId}`,
-        type: 'flat',
-        value,
-        priority: 50,
-        source: 'mage-wars-nonliving-bonus',
-        description: '对抗非活体生物',
-    }];
-}
-
-export function createMageWarsFlyingBonusDamageModifiers(
-    spell: Pick<MageWarsConfigSpellCard, 'spellCardId' | 'attackOrTraitLine'>,
-    target: { targetObjectId?: string; flying?: boolean },
-): ModifierDef<DamageContext>[] {
-    if (!target.targetObjectId || !target.flying) return [];
-
-    const match = /对抗飞行\+?(\d+)/.exec(spell.attackOrTraitLine ?? '');
-    if (!match) return [];
-
-    const value = Number(match[1]);
-    if (!Number.isFinite(value) || value <= 0) return [];
-
-    return [{
-        id: `mage-wars-flying-bonus-${spell.spellCardId}-${target.targetObjectId}`,
-        type: 'flat',
-        value,
-        priority: 50,
-        source: 'mage-wars-flying-bonus',
-        description: '对抗飞行',
-    }];
+    target: { targetObjectId?: string; nonliving?: boolean; flying?: boolean },
+): number {
+    if (!target.targetObjectId) return 0;
+    const line = spell.attackOrTraitLine ?? '';
+    const nonliving = target.nonliving ? Number(/对抗非活体(?:生物)?\+?(\d+)/.exec(line)?.[1] ?? 0) : 0;
+    const flying = target.flying ? Number(/对抗飞行\+?(\d+)/.exec(line)?.[1] ?? 0) : 0;
+    return nonliving + flying;
 }

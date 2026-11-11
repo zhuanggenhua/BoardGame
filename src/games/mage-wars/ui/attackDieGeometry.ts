@@ -43,7 +43,7 @@ export const ATTACK_DIE_FACES: readonly AttackDieFace[] = [
     { id: 'front-hit2', kind: 'hit2', result: 2, ...uv(483, 320), cubeRotate: '', glyphRotateDeg: 0 },
     { id: 'back-hit1', kind: 'hit1', result: 1, ...uv(483, 946), cubeRotate: 'rotateY(180deg)', glyphRotateDeg: 90 },
     { id: 'right-blank', kind: 'blank', result: 0, ...uv(797, 320), cubeRotate: 'rotateY(90deg)', glyphRotateDeg: 0 },
-    { id: 'left-burst', kind: 'burst', result: 3, ...uv(169, 320), cubeRotate: 'rotateY(-90deg)', glyphRotateDeg: 90 },
+    { id: 'left-burst', kind: 'burst', result: 1, ...uv(169, 320), cubeRotate: 'rotateY(-90deg)', glyphRotateDeg: 90 },
     { id: 'top-blank', kind: 'blank', result: 0, ...uv(483, 7), cubeRotate: 'rotateX(90deg)', glyphRotateDeg: 0 },
     { id: 'bottom-two', kind: 'hit2', result: 2, ...uv(483, 633), cubeRotate: 'rotateX(-90deg)', glyphRotateDeg: 0 },
 ];
@@ -91,7 +91,9 @@ export function getAttackDieFaceKind(result: number): AttackDieFaceKind {
     return 'blank';
 }
 
-export function getAttackDieSettledFaceId(result: number): string {
+export function getAttackDieSettledFaceId(result: number, critical?: boolean): string {
+    if (critical !== undefined && result === 2) return critical ? 'front-hit2' : 'bottom-two';
+    if (critical !== undefined && result === 1) return critical ? 'left-burst' : 'back-hit1';
     return SETTLED_FACE_ID[getAttackDieFaceKind(result)];
 }
 
@@ -99,8 +101,8 @@ export function getAttackDieSettledTransform(_result?: number): string {
     return ATTACK_DIE_SETTLED_TRANSFORM;
 }
 
-export function getAttackDieResultFace(result: number): AttackDieFace {
-    const settledFaceId = getAttackDieSettledFaceId(result);
+export function getAttackDieResultFace(result: number, critical?: boolean): AttackDieFace {
+    const settledFaceId = getAttackDieSettledFaceId(result, critical);
     return ATTACK_DIE_FACES.find((face) => face.id === settledFaceId) ?? ATTACK_DIE_FACES[0];
 }
 
@@ -110,5 +112,6 @@ export function getAttackDieResultFace(result: number): AttackDieFace {
  */
 export function getAttackDieTileUprightRotateDeg(kind: AttackDieFaceKind): number {
     if (kind === 'hit1') return 270;
+    if (kind === 'burst') return 90;
     return 0;
 }

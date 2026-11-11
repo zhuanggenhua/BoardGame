@@ -1,0 +1,164 @@
+[
+  {
+    "reason": "before-opening-move",
+    "at": 1794360255272,
+    "visibility": "visible",
+    "focus": true,
+    "phase": "action-window",
+    "wheel": "wheel-recruit-train",
+    "player": "0",
+    "choices": [
+      {
+        "id": "move-1-free",
+        "label": "免费走 1",
+        "steps": 1,
+        "drawText": "对手不抽牌"
+      },
+      {
+        "id": "move-2-one-opponent",
+        "label": "一名对手抽 2，走 2",
+        "steps": 2,
+        "drawText": "指定的对手抽 2"
+      },
+      {
+        "id": "move-3-all-opponents",
+        "label": "所有对手抽 2，走 3",
+        "steps": 3,
+        "drawText": "每名对手各抽 2"
+      }
+    ],
+    "wheelUsed": false,
+    "handLimitPending": null,
+    "factionUsed": false,
+    "wheelLayer": "<g data-testid=\"qidahen-wheel-move-layer\"><path role=\"button\" tabindex=\"0\" aria-label=\"免费走 1\" data-testid=\"qidahen-wheel-move-target-move-1-free\" data-tutorial-id=\"qidahen-wheel-move-move-1-free\" d=\"M 371.171 174.748 A 180 180 0 0 1 326.812 311.272 L 236.937 231.757 A 60 60 0 0 0 251.724 186.249 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-primary=\"true\" data-wheel-candidate-level=\"primary\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"一名对手抽 2，走 2\" data-testid=\"qidahen-wheel-move-target-move-2-one-opponent\" data-tutorial-id=\"qidahen-wheel-move-move-2-one-opponent\" d=\"M 347.093 283.357 A 180 180 0 0 1 230.959 367.733 L 204.986 250.578 A 60 60 0 0 0 243.698 222.452 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-candidate-level=\"secondary\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"所有对手抽 2，走 3\" data-testid=\"qidahen-wheel-move-target-move-3-all-opponents\" data-tutorial-id=\"qidahen-wheel-move-move-3-all-opponents\" d=\"M 263.775 357.071 A 180 180 0 0 1 120.225 357.071 L 168.075 247.024 A 60 60 0 0 0 215.925 247.024 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-candidate-level=\"secondary\"></path></g>",
+    "boardWheelCount": 1,
+    "targets": [
+      {
+        "id": "qidahen-wheel-move-target-move-1-free",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-2-one-opponent",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-3-all-opponents",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      }
+    ]
+  },
+  {
+    "reason": "before-battle-move",
+    "at": 1794360299290,
+    "visibility": "visible",
+    "focus": true,
+    "phase": "action-window",
+    "wheel": "wheel-midyear",
+    "player": "0",
+    "choices": [
+      {
+        "id": "move-1-free",
+        "label": "免费走 1",
+        "steps": 1,
+        "drawText": "对手不抽牌"
+      },
+      {
+        "id": "move-2-one-opponent",
+        "label": "一名对手抽 2，走 2",
+        "steps": 2,
+        "drawText": "指定的对手抽 2"
+      },
+      {
+        "id": "move-3-all-opponents",
+        "label": "所有对手抽 2，走 3",
+        "steps": 3,
+        "drawText": "每名对手各抽 2"
+      }
+    ],
+    "wheelUsed": false,
+    "handLimitPending": null,
+    "factionUsed": false,
+    "wheelLayer": "<g data-testid=\"qidahen-wheel-move-layer\"><path role=\"button\" tabindex=\"0\" aria-label=\"免费走 1\" data-testid=\"qidahen-wheel-move-target-move-1-free\" data-tutorial-id=\"qidahen-wheel-move-move-1-free\" d=\"M 153.041 367.733 A 180 180 0 0 1 36.907 283.357 L 140.302 222.452 A 60 60 0 0 0 179.014 250.578 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-primary=\"true\" data-wheel-candidate-level=\"primary\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"一名对手抽 2，走 2\" data-testid=\"qidahen-wheel-move-target-move-2-one-opponent\" data-tutorial-id=\"qidahen-wheel-move-move-2-one-opponent\" d=\"M 57.188 311.272 A 180 180 0 0 1 12.829 174.748 L 132.276 186.249 A 60 60 0 0 0 147.063 231.757 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-candidate-level=\"secondary\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"所有对手抽 2，走 3\" data-testid=\"qidahen-wheel-move-target-move-3-all-opponents\" data-tutorial-id=\"qidahen-wheel-move-move-3-all-opponents\" d=\"M 12.829 209.252 A 180 180 0 0 1 57.188 72.728 L 147.063 152.243 A 60 60 0 0 0 132.276 197.751 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-candidate-level=\"secondary\"></path></g>",
+    "boardWheelCount": 1,
+    "targets": [
+      {
+        "id": "qidahen-wheel-move-target-move-1-free",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-2-one-opponent",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-3-all-opponents",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      }
+    ]
+  },
+  {
+    "reason": "failure-capture:upgrade-card",
+    "at": 1794360304180,
+    "visibility": "visible",
+    "focus": true,
+    "phase": "action-window",
+    "wheel": "wheel-hire",
+    "player": "0",
+    "choices": [
+      {
+        "id": "move-1-free",
+        "label": "免费走 1",
+        "steps": 1,
+        "drawText": "对手不抽牌"
+      },
+      {
+        "id": "move-2-one-opponent",
+        "label": "一名对手抽 2，走 2",
+        "steps": 2,
+        "drawText": "指定的对手抽 2"
+      },
+      {
+        "id": "move-3-all-opponents",
+        "label": "所有对手抽 2，走 3",
+        "steps": 3,
+        "drawText": "每名对手各抽 2"
+      }
+    ],
+    "wheelUsed": false,
+    "handLimitPending": null,
+    "factionUsed": false,
+    "wheelLayer": "<g data-testid=\"qidahen-wheel-move-layer\"><path role=\"button\" tabindex=\"0\" aria-label=\"免费走 1\" data-testid=\"qidahen-wheel-move-target-move-1-free\" data-tutorial-id=\"qidahen-wheel-move-move-1-free\" d=\"M 57.188 311.272 A 180 180 0 0 1 12.829 174.748 L 132.276 186.249 A 60 60 0 0 0 147.063 231.757 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-not-allowed\" aria-disabled=\"true\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"一名对手抽 2，走 2\" data-testid=\"qidahen-wheel-move-target-move-2-one-opponent\" data-tutorial-id=\"qidahen-wheel-move-move-2-one-opponent\" d=\"M 12.829 209.252 A 180 180 0 0 1 57.188 72.728 L 147.063 152.243 A 60 60 0 0 0 132.276 197.751 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-not-allowed\" aria-disabled=\"true\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"所有对手抽 2，走 3\" data-testid=\"qidahen-wheel-move-target-move-3-all-opponents\" data-tutorial-id=\"qidahen-wheel-move-move-3-all-opponents\" d=\"M 36.907 100.643 A 180 180 0 0 1 153.041 16.267 L 179.014 133.422 A 60 60 0 0 0 140.302 161.548 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-not-allowed\" aria-disabled=\"true\"></path></g>",
+    "boardWheelCount": 1,
+    "targets": [
+      {
+        "id": "qidahen-wheel-move-target-move-1-free",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "true"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-2-one-opponent",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "true"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-3-all-opponents",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "true"
+      }
+    ]
+  }
+]

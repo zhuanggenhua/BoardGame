@@ -37,7 +37,7 @@ class SourceSceneRuntime implements CutsceneRuntimeHandle {
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.1, 2000);
   private readonly cameraSpace = new THREE.Group();
-  private readonly renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
+  private readonly renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   private readonly materials: SourceMaterials;
   private readonly hero: SourceActor;
   private readonly cutIn: SourceCutIn;
@@ -80,7 +80,7 @@ class SourceSceneRuntime implements CutsceneRuntimeHandle {
     this.materials = new SourceMaterials(metadata, textures);
     this.geometries = particleGeometries(data.meshes);
     this.renderer.autoClear = false;
-    this.renderer.setClearColor(0x000000);
+    this.renderer.setClearColor(0x000000, 0);
     this.renderer.setTransparentSort((a, b) => sourceTransparentSort(a, b, this.camera.position));
     this.scene.add(this.cameraSpace);
     this.backgroundScene = new SourceBackground(metadata, textures, this.scene);
@@ -329,7 +329,7 @@ class SourceSceneRuntime implements CutsceneRuntimeHandle {
     if (this.destroyed) return;
     if (this.playing) {
       if (this.lastTick) {
-        const next = clamp(this.current + Math.min((timestamp - this.lastTick) / 1000, 0.1) * this.speed, 0, this.data.duration);
+        const next = clamp(this.current + Math.min((timestamp - this.lastTick) / 1000, 0.25) * this.speed, 0, this.data.duration);
         this.moveTo(next);
         if (next >= this.data.duration) this.pause();
         this.render();

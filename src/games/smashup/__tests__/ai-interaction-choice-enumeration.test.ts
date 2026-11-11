@@ -92,6 +92,19 @@ describe('Smash Up AI 交互候选枚举', () => {
         registerGameAiRuntime(smashUpAiRuntime);
     });
 
+    it('计分响应期间另一玩家仍在选择时，AI 不应提供会被交互锁拒绝的 pass', () => {
+        const state = makeAiState({
+            core: makeState({ turnOrder: ['0', '1'], currentPlayerIndex: 0, bases: [makeBase('base_a')] }) as any,
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: { id: 'mate-choice', playerId: '0', kind: 'simple-choice', data: { sourceId: 'pirate_first_mate_choose_base', options: [{ id: 'skip', label: '跳过', value: { skip: true } }] } }, queue: [] },
+                resolution: { activeFrameId: 'score-after', frames: [{ id: 'score-after', kind: 'smashup:reaction:score-after', step: 'optional', status: 'running', metadata: { smashupReactionSession: { frameId: 'score-after', frameKind: 'score-after', phase: 'optional', activePlayerId: '1', currentPlayerId: '0', consecutivePasses: 0, passedPlayerIds: [], sourceBaseIndex: 0, responseWindowType: 'afterScoring', consumedTriggerIds: [] } } }] },
+            } as any,
+        });
+        expect(buildSmashUpAiLegalActions({ playerId: '1', state })).toEqual([]);
+        expect(buildSmashUpAiLegalActions({ playerId: '0', state }).map(action => action.kind)).toEqual(['interaction-choice']);
+    });
+
     it('optional multi 交互应保留空选动作，避免链式 special 卡死', () => {
         const state = makeAiState({
             sys: {

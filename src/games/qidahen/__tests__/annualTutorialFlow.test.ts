@@ -31,6 +31,7 @@ describe('连续年度教程正式管线', () => {
     cases.push(['city-region-15', 'level-2-troops', 'recruit-first']);
     cases.push(['city-region-15', 'level-2-troops', 'other-train']);
     cases.push(['city-region-15', 'level-2-troops', 'extra-training']);
+    cases.push(['city-region-15', 'level-2-troops', 'decline-year']);
     it.each(cases)('真实教程管线 %s / %s / %s 完成年中、新年与次年训练', (recruitRegion, recruitChoice, variation) => {
         let state = initial();
         const visited: string[] = [];
@@ -38,6 +39,11 @@ describe('连续年度教程正式管线', () => {
         let handBeforeTraining = 0;
         let practiceInitial: QidahenCore | undefined;
         let usedAlternative = false;
+        let diplomacyDone = false;
+        let hireDone = false;
+        let farmDone = false;
+        let reclaimDone = false;
+        let openingHandStage = 0;
         const send = (type: string, payload: unknown = {}, playerId = '0', authoredAi = false) => {
             const command = { type, payload, playerId, timestamp: 100, ...(authoredAi ? { skipValidation: true } : {}) } as QidahenCommand;
             if (authoredAi) expect(QidahenDomain.validate(state, command).valid, `${state.sys.tutorial.step?.id} AI legality`).toBe(true);
@@ -51,7 +57,7 @@ describe('连续年度教程正式管线', () => {
             visited.push(step.id);
             if (step.aiActions?.length) {
                 for (const command of step.aiActions) send(command.commandType, command.payload, command.playerId, true);
-                send(TUTORIAL_COMMANDS.AI_CONSUMED, { stepId: step.id });
+                send(TUTORIAL_COMMANDS.AI_CONSUMED, { stepId: step.id, ...(step.aiBatchId ? { batchId: step.aiBatchId } : {}) });
                 if (state.sys.tutorial.step?.id !== step.id) continue;
             }
             // 核对讲解赖以成立的真实前因，不能只证明输入能够走通。
@@ -109,8 +115,23 @@ describe('连续年度教程正式管线', () => {
                 }
             }
             if (step.infoStep) { send(TUTORIAL_COMMANDS.NEXT, { reason: 'manual' }); continue; }
-            const command = step.allowedCommands![0];
+            let command = step.allowedCommands?.[0];
             let targets = step.allowedTargets ?? [];
+            if (step.id === 'opening-farm-cycle') {
+                const frame = getQidahenTurnResolutionFrame(state)!.metadata.qidahenTurn;
+                if (frame.step === 'menu') { command = INTERACTION_COMMANDS.RESPOND; targets = [!farmDone ? 'military-farm' : !reclaimDone ? 'reclaim' : openingHandStage === 0 ? 'hand-action:recruit' : 'finish-slot']; }
+                else if (frame.step === 'farm-target') { command = INTERACTION_COMMANDS.RESPOND; targets = ['city-region-15']; farmDone = true; }
+                else if (frame.step === 'reclaim-targets') { command = INTERACTION_COMMANDS.RESPOND; targets = ['city-region-15-liaodong']; reclaimDone = true; }
+                else if (frame.step === 'finish-hand') { command = INTERACTION_COMMANDS.RESPOND; targets = [openingHandStage === 0 ? 'hand-action:recruit' : 'skip-hand']; }
+                else if (frame.step === 'await-hand') {
+                    [command, targets] = [
+                        ['SELECT_PAYMENT_CARD', ['hand-3']], ['EXECUTE_SELECTED_ACTION', []],
+                        ['SELECT_REGION', [recruitRegion]], [INTERACTION_COMMANDS.RESPOND, [recruitChoice]],
+                    ][openingHandStage] as [string, string[]];
+                    openingHandStage++;
+                } else throw new Error(`Unexpected opening phase ${frame.step}`);
+            }
+            if (!command) throw new Error(`Missing command for ${step.id}`);
             if (step.id === 'dispatch-source') targets = ['city-region-15'];
             if (step.id === 'dispatch-troops') {
                 const farm = state.core.pieces.find(piece => piece.sourceStackId.startsWith('ming-farm-') && piece.regionId === 'city-region-15')!;
@@ -137,12 +158,23 @@ describe('连续年度教程正式管线', () => {
             }
             if (step.id === 'recruit-source') targets = [recruitRegion];
             if (step.id === 'recruit-troops') targets = [recruitChoice];
+            if (step.id === 'claim-year' && variation === 'decline-year') targets = ['decline'];
             const beforeInput = state.core;
             if (command === INTERACTION_COMMANDS.RESPOND) {
                 const prompt = getCurrentInteractionSummary(state);
                 const data = getCurrentInteractionData<SimpleChoiceData>(state);
                 if (!prompt.playerId || !data) throw new Error(`Missing prompt for tutorial step ${step.id}`);
-                if (step.id.startsWith('season-upkeep-player-')) {
+                if (step.id === 'diplomacy-cycle') {
+                    const frame = getQidahenTurnResolutionFrame(state)!.metadata.qidahenTurn;
+                    if (frame.step === 'menu') targets = [!diplomacyDone ? 'diplomacy' : !hireDone ? 'hire' : 'finish-slot'];
+                    else if (frame.step === 'diplomacy-targets') {
+                        targets = [diplomacyDone ? 'finish-diplomacy' : 'city-region-2'];
+                        diplomacyDone = true;
+                    } else if (frame.step === 'hire-payment') targets = [data.options.find(option => !option.disabled)!.id];
+                    else if (frame.step === 'hire-target') { targets = ['city-region-1']; hireDone = true; }
+                    else if (frame.step === 'finish-hand') targets = ['skip-hand'];
+                    else throw new Error(`Unexpected diplomacy state ${frame.step}`);
+                } else if (step.id.startsWith('season-upkeep-player-')) {
                     const frame = getQidahenTurnResolutionFrame(state)!.metadata.qidahenTurn;
                     const regionId = frame.upkeepTasks[frame.upkeepIndex].regionId;
                     const special: Record<string, string> = {
@@ -197,14 +229,16 @@ describe('连续年度教程正式管线', () => {
                     controller: 'ming', diplomacyMarkerFaction: 'ming', diplomacyMarkerSide: 'vassal', controlLabel: '大明附庸',
                 });
             }
-            if (!step.id.startsWith('season-upkeep-player-') && step.id !== 'season-chronology-payment' && step.id !== 'training-practice')
+            if (!step.id.startsWith('season-upkeep-player-') && step.id !== 'season-chronology-payment' && step.id !== 'training-practice' && step.id !== 'diplomacy-cycle' && step.id !== 'opening-farm-cycle')
                 expect(state.sys.tutorial.step?.id, `${step.id} did not advance`).not.toBe(step.id);
         }
-        expect(visited).toEqual(expect.arrayContaining(['season-upkeep-player-1', 'season-chronology-payment', 'training-practice', 'finish']));
+        expect(visited).toEqual(expect.arrayContaining(['season-upkeep-player-1', 'training-practice', 'finish']));
+        expect(visited).toContain(variation === 'decline-year' ? 'season-chronology-opponent-1' : 'season-chronology-payment');
         expect(state.sys.tutorial.active).toBe(false);
         expect(state.core.currentYearIndex).toBe(1);
         if (variation === 'recruit-first' || variation === 'other-train' || variation === 'extra-training') expect(usedAlternative).toBe(true);
-        expect(state.core.chronology.claimedCardIds.ming).toEqual([1301]);
+        expect(state.core.chronology.claimedCardIds.ming ?? []).toEqual(variation === 'decline-year' ? [] : [1301]);
+        if (variation === 'decline-year') expect(state.core.chronology.claimedCardIds.jin).toEqual([1301]);
         if (variation !== 'recruit-first' && variation !== 'other-train')
             expect(state.core.pieces.find(piece => piece.id === 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1')?.level).toBe(variation === 'early-finish' ? 1 : 2);
         expect(state.core.regions.find(region => region.id === 'city-region-7')?.controller).toBe('ming');

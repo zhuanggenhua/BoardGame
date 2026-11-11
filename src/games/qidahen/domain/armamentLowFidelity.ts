@@ -3,6 +3,7 @@ import type {
     QidahenArmamentState,
     QidahenCore,
 } from './types';
+import { getArmamentNameById } from './armamentCatalogState';
 
 const QIDAHEN_ARMAMENT_LOW_FIDELITY_MAX_LEVEL = 2;
 
@@ -18,14 +19,13 @@ export const upgradeLowFidelityArmament = (
         if (!preferredArmamentId) {
             return armaments.findIndex(isLowFidelityUpgradeableArmament);
         }
-        const preferredTargetIndex = armaments.findIndex((armament) => (
-            armament.id === preferredArmamentId && isLowFidelityUpgradeableArmament(armament)
-        ));
-        return preferredTargetIndex >= 0
-            ? preferredTargetIndex
-            : armaments.findIndex(isLowFidelityUpgradeableArmament);
+        return armaments.findIndex((armament) => armament.id === preferredArmamentId);
     })();
     if (targetIndex < 0) {
+        if (preferredArmamentId) {
+            const upgradedArmament = { id: preferredArmamentId, name: getArmamentNameById(preferredArmamentId), level: 1 };
+            return { armaments: [...armaments.map(armament => ({ ...armament })), upgradedArmament], upgradedArmament };
+        }
         return { armaments: armaments.map((armament) => ({ ...armament })), upgradedArmament: null };
     }
     const upgradedArmament = {
@@ -48,7 +48,7 @@ export const hasUpgradableArmament = (
 );
 
 export const resolveSelectedArmamentIdFromCards = (
-    handCards: readonly Pick<QidahenCore['handCards'][number], 'id' | 'cardKind' | 'armamentId'>[],
+    handCards: readonly Pick<QidahenCore['handCards'][number], 'id' | 'cardKind' | 'armamentId' | 'cardDefId'>[],
     cardIds: readonly string[],
 ): QidahenArmamentId | null => {
     const armamentIds = new Set<QidahenArmamentId>();
@@ -57,7 +57,8 @@ export const resolveSelectedArmamentIdFromCards = (
         if (!card || card.cardKind !== 'armament' || !card.armamentId) {
             continue;
         }
-        armamentIds.add(card.armamentId);
+        armamentIds.add(card.cardDefId === 'qidahen-atlas05-1634-red-coat-cannon' ? 'red-coat-cannon'
+            : card.cardDefId === 'qidahen-atlas05-1616-fine-steel-saber' ? 'fine-steel-saber' : card.armamentId);
         if (armamentIds.size > 1) {
             return null;
         }

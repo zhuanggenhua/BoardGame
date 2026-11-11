@@ -195,6 +195,9 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(players);
     const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
     const compactSingleStatusHolder = isDoctorStrangeInteraction && isStatusSelection && targetPlayerIds.length === 1;
+    const compactWatoombStatusHolders = isStatusSelection
+        && interaction.sourceCardId === 'spell-winds-of-watoomb'
+        && targetPlayerIds.length === 2;
     const isTransferStatusSelection = (
         (interactionType === 'selectStatus' || interactionType === 'selectTargetStatus')
         && interaction.transferConfig !== undefined
@@ -601,8 +604,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     )}
                 </div>
             }
-            width={compactSingleStatusHolder ? 'sm' : 'xl'}
-            density={compactSingleStatusHolder ? 'compact' : 'normal'}
+            width={compactSingleStatusHolder ? 'sm' : compactWatoombStatusHolders ? 'lg' : 'xl'}
+            density={compactSingleStatusHolder || compactWatoombStatusHolders ? 'compact' : 'normal'}
             closeOnBackdrop={false} // Force interaction
             allowBackgroundInteraction={allowBackgroundInteraction}
             footer={

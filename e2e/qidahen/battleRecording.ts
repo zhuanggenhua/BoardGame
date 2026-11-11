@@ -1,14 +1,18 @@
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
+import { BattleCaptureDiagnosticsError, createBattleCaptureDiagnostics, type CaptureMode } from './battleCaptureDiagnostics';
 
 type Bounds = { left: number; top: number; width: number; height: number };
 type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: Bounds | null; regions: Bounds[]; objects: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
 
 /** 只观察正式页面：连续采集实际视口，按墙钟间隔编码，不注入或重演投掷。 */
 export async function beginBattleRecording(page: Page, directory: string, flow: 'natural-flow' | 'representative-state' = 'natural-flow') {
+    const requestedDiagnostics = process.env.QIDAHEN_BATTLE_CAPTURE_DIAGNOSTICS;
+    if (requestedDiagnostics && requestedDiagnostics !== 'sync' && requestedDiagnostics !== 'queued') throw new Error('Invalid battle capture diagnostics mode');
+    const diagnosticMode = requestedDiagnostics as CaptureMode | undefined;
     const participants = await page.evaluate(() => {
         const core = (window as any).__BG_TEST_HARNESS__.state.get().core;
         const battle = core.pendingTargetAction ?? core.postBattleSelection;
@@ -69,12 +73,77 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         sample();
         (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation = { states, observer };
     });
+    // 独立录制诊断：关闭本模块的 CDP screencast，交由 Playwright 原生视频记录真实页面。
+    // 此路径明确失败退出，绝不能替代完整链或原采集合同的验收结果。
+    if (process.env.QIDAHEN_DESKTOP_VIDEO_DIAGNOSTIC === 'true') {
+        const needle = `QidahenBattleDiagnostic-${process.pid}`;
+        const previousTitle = await page.title();
+        await page.evaluate(title => { document.title = title; }, needle);
+        writeFileSync(resolve(directory, 'battle-desktop-title.json'), JSON.stringify({ previousTitle, requestedTitle: needle, actualTitle: await page.title(), workerPid: process.pid }));
+        const child = spawn('python', [resolve('e2e/qidahen/desktopBattleCapture.py'), needle, directory, String(process.pid)], { windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'] });
+        let errorText = '';
+        child.stderr?.on('data', data => { errorText += String(data); });
+        let exitCode: number | null | undefined;
+        const done = new Promise<void>((resolveDone, reject) => {
+            child.once('error', reject);
+            child.once('exit', code => { exitCode = code; resolveDone(); });
+        });
+        const ready = resolve(directory, 'battle-desktop-ready.json');
+        await expect.poll(() => existsSync(ready) || exitCode !== undefined, { timeout: 15_000 }).toBe(true);
+        if (!existsSync(ready)) { await done; throw new Error(`Desktop recording could not start: ${errorText}`); }
+        return async () => {
+            await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
+            writeFileSync(resolve(directory, 'battle-desktop-stop'), 'stop');
+            await done;
+            if (exitCode !== 0) throw new Error(`Desktop recording failed: ${exitCode} ${errorText}`);
+            throw new Error('Desktop window video diagnostic completed; inspect raw recording (not acceptance)');
+        };
+    }
+    if (process.env.QIDAHEN_NATIVE_VIDEO_DIAGNOSTIC === 'true') {
+        // 截图仅用于交叉检查真实 damage 状态；该调用可能触发额外合成，不能证明视频连续性。
+        const damageCapture = page.waitForSelector('[data-battle-roll-phase="infantry"][data-battle-roll-state="damage"]', { timeout: 30_000 })
+            .then(() => page.screenshot({ path: resolve(directory, 'battle-native-infantry-damage-diagnostic.png'), fullPage: false }))
+            .then(() => null, error => String(error));
+        return async () => {
+        await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
+        const damageCaptureError = await damageCapture;
+        const states = await page.evaluate(() => {
+            const record = (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation;
+            record.observer.disconnect();
+            return record.states;
+        });
+        writeFileSync(resolve(directory, 'battle-native-video-diagnostic.json'), JSON.stringify({ flow, states, damageCaptureError, screenshotMayTriggerComposite: true, verdict: 'DIAGNOSTIC_ONLY', reason: 'Playwright native video cross-check; not an E2E acceptance' }, null, 2));
+        throw new Error('Native video diagnostic completed; inspect the retained Playwright recording (not acceptance)');
+        };
+    }
+    if (diagnosticMode) await page.evaluate(() => {
+        const record = { frames: [] as number[], active: true };
+        const tick = (timestamp: number) => {
+            if (!record.active) return;
+            record.frames.push(performance.timeOrigin + timestamp);
+            requestAnimationFrame(tick);
+        };
+        (window as any).__annualBattleRafDiagnostics = record;
+        requestAnimationFrame(tick);
+    });
     type Frame = { path: string; at: number; startedAt: number; endedAt: number; source: 'screencast' };
     const screencastFrames: Frame[] = [];
     const streamSession = await page.context().newCDPSession(page);
+    const traceSession = diagnosticMode === 'queued' ? await page.context().newCDPSession(page) : undefined;
+    if (traceSession) {
+        await traceSession.send('Tracing.start', { transferMode: 'ReturnAsStream',
+            categories: 'devtools.timeline,disabled-by-default-devtools.timeline,v8,blink.console' });
+        await page.evaluate(() => console.timeStamp(`QIDAHEN_BATTLE_CLOCK_${Date.now()}`));
+    }
     let streamFailure: unknown;
     const streamAcks: Promise<void>[] = [];
+    const diagnostics = diagnosticMode ? createBattleCaptureDiagnostics({
+        mode: diagnosticMode,
+        pathForIndex: index => resolve(frameDirectory, `stream-${String(index).padStart(5, '0')}.jpg`),
+        ack: sessionId => streamSession.send('Page.screencastFrameAck', { sessionId }),
+    }) : undefined;
     streamSession.on('Page.screencastFrame', event => {
+        if (diagnostics) { diagnostics.receive(event); return; }
         try {
             const at = event.metadata.timestamp;
             if (typeof at !== 'number' || Math.abs(at - Date.now() / 1000) > 60) throw new Error('Missing or invalid compositor timestamp');
@@ -87,15 +156,49 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
     });
     await streamSession.send('Page.startScreencast', { format: 'jpeg', quality: 90, everyNthFrame: 1 });
     // 只用一条带时间戳的合成流。并发全屏截图会卡住合成器，遗漏正在投掷的实帧。
-    await expect.poll(() => screencastFrames.length).toBeGreaterThan(0);
+    await expect.poll(() => (diagnostics?.frames ?? screencastFrames).length).toBeGreaterThan(0);
     return async () => {
         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
         const exitAt = await page.evaluate(() => {
             const record = (window as unknown as { __annualBattleObservation: { states: State[] } }).__annualBattleObservation;
             return record.states.at(-1)!.at;
         });
-        await expect.poll(() => screencastFrames.at(-1)!.at, { timeout: 10_000, message: 'actual composed viewport after dice exit must be captured' }).toBeGreaterThanOrEqual(exitAt);
+        await expect.poll(() => (diagnostics?.frames ?? screencastFrames).at(-1)!.at, { timeout: 10_000, message: 'actual composed viewport after dice exit must be captured' }).toBeGreaterThanOrEqual(exitAt);
         await streamSession.send('Page.stopScreencast');
+        if (traceSession) {
+            await page.evaluate(() => console.timeStamp(`QIDAHEN_BATTLE_END_${Date.now()}`));
+            const complete = new Promise<{ stream?: string }>(resolve => traceSession.once('Tracing.tracingComplete', resolve));
+            await traceSession.send('Tracing.end');
+            const { stream } = await complete;
+            if (!stream) throw new Error('Chrome trace stream missing');
+            const tracePath = resolve(directory, 'battle-chrome-trace.json');
+            writeFileSync(tracePath, '');
+            for (;;) {
+                const chunk = await traceSession.send('IO.read', { handle: stream });
+                appendFileSync(tracePath, chunk.base64Encoded ? Buffer.from(chunk.data, 'base64') : chunk.data);
+                if (chunk.eof) break;
+            }
+            await traceSession.send('IO.close', { handle: stream });
+            await traceSession.detach();
+        }
+        if (diagnostics) {
+            let capture: Awaited<ReturnType<typeof diagnostics.finish>>;
+            let diagnosticFailure: BattleCaptureDiagnosticsError | undefined;
+            try { capture = await diagnostics.finish(); }
+            catch (error) {
+                if (!(error instanceof BattleCaptureDiagnosticsError)) throw error;
+                diagnosticFailure = error;
+                capture = error.report;
+            }
+            screencastFrames.push(...capture.frames);
+            const raf = await page.evaluate(() => {
+                const record = (window as any).__annualBattleRafDiagnostics as { frames: number[]; active: boolean };
+                record.active = false;
+                return record.frames;
+            });
+            writeFileSync(resolve(directory, 'battle-capture-diagnostics.json'), JSON.stringify({ ...capture, raf, failure: diagnosticFailure?.message, rafTimebase: 'UTC milliseconds (page performance time origin + RAF timestamp)' }, null, 2));
+            if (diagnosticFailure) throw diagnosticFailure;
+        }
         await Promise.all(streamAcks);
         await streamSession.detach();
         if (streamFailure) throw streamFailure;
@@ -108,6 +211,14 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         const captureMethod = 'Timestamped same-page compositor stream, with no concurrent full-page screenshot capture';
         expect(frames.every((frame, index) => frame.source === 'screencast' && (index === 0 || frame.at > frames[index - 1].at)), 'video frames use a single strictly ordered timestamped source').toBe(true);
         writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, screencastFrames, timebase: 'UTC seconds; compositor timestamps', captureMethod, flow }, null, 2));
+        const video = resolve(directory, 'battle-real-time.webm');
+        const encodeOriginalFrames = () => {
+            const list = resolve(frameDirectory, 'frames.txt');
+            writeFileSync(list, frames.map((frame, index) => `file '${frame.path.replaceAll('\\', '/')}'\noption framerate 1000${index + 1 < frames.length ? '\nduration ' + (frames[index + 1].at - frame.at) : ''}`).join('\n'));
+            execFileSync(ffmpeg, ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-fps_mode', 'passthrough', '-enc_time_base', '1:1000', '-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0', video], { stdio: 'ignore', timeout: 90_000 });
+        };
+        // 诊断运行即使阶段断言失败，也保留同次真实帧编码的视频供私有排查。
+        if (diagnosticMode) encodeOriginalFrames();
         expect(frames.length).toBeGreaterThan(15);
         expect(states.flatMap(state => state.dice).filter(die => die.failure)).toEqual([]);
         expect(states.filter(state => state.phase != null && state.regionTipVisible), 'map hover information must leave before battle playback').toEqual([]);
@@ -170,10 +281,7 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             }
         }
         writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, screencastFrames, selectedFrames, timebase: 'UTC seconds; compositor timestamps', captureMethod, flow }, null, 2));
-        const list = resolve(frameDirectory, 'frames.txt');
-        writeFileSync(list, frames.map((frame, index) => `file '${frame.path.replaceAll('\\', '/')}'\noption framerate 1000${index + 1 < frames.length ? '\nduration ' + (frames[index + 1].at - frame.at) : ''}`).join('\n'));
-        const video = resolve(directory, 'battle-real-time.webm');
-        execFileSync(ffmpeg, ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-fps_mode', 'passthrough', '-enc_time_base', '1:1000', '-c:v', 'libvpx-vp9', '-crf', '30', '-b:v', '0', video], { stdio: 'ignore', timeout: 90_000 });
+        if (!diagnosticMode) encodeOriginalFrames();
         return { pictures, video, frameCount: frames.length, durationSeconds: frames.at(-1)!.at - frames[0].at };
     };
 }

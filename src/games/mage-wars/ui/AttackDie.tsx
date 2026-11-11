@@ -25,7 +25,7 @@ function resolveAttackDieTextureUrl(): string {
 }
 
 /** CSS 3D cube from the official attack-die net. Result paints on the camera-front face like Summoner Wars Dice3D. */
-export function AttackDie({ result, index = 0 }: { result: number; index?: number }) {
+export function AttackDie({ result, index = 0, critical }: { result: number; index?: number; critical?: boolean }) {
     const reducedMotion = useReducedMotion() === true;
     const tumbleMs = ATTACK_DIE_REVEAL_MS + index * ATTACK_DIE_REVEAL_STAGGER_MS;
     const settleMs = MAGE_WARS_FX_TIMING.diceResultSettleMs;
@@ -35,9 +35,9 @@ export function AttackDie({ result, index = 0 }: { result: number; index?: numbe
         animateOnMount: !reducedMotion,
         isActive: !reducedMotion,
     });
-    const settledKind = getAttackDieFaceKind(result);
-    const settledFaceId = getAttackDieSettledFaceId(result);
-    const resultFace = getAttackDieResultFace(result);
+    const resultFace = getAttackDieResultFace(result, critical);
+    const settledKind = critical === undefined ? getAttackDieFaceKind(result) : resultFace.kind;
+    const settledFaceId = getAttackDieSettledFaceId(result, critical);
     const textureUrl = React.useMemo(() => resolveAttackDieTextureUrl(), []);
     const translateZ = 'calc(var(--attack-die-size) / 2)';
     const isMiss = result <= 0;

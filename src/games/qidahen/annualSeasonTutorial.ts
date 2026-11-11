@@ -7,6 +7,7 @@ const RESPONSE = 'SYS_INTERACTION_RESPOND';
 const PLAYER_PREFIX = 'season-upkeep-player-';
 const OPPONENT_PREFIX = 'season-upkeep-opponent-';
 const PAYMENT = 'season-chronology-payment';
+const CHRONOLOGY_OPPONENT_PREFIX = 'season-chronology-opponent-';
 
 /**
  * 一个玩家步骤可承接连续地区和分次支付；切换到对手时才进入自动步骤。
@@ -41,12 +42,26 @@ export function createAnnualChronologyPaymentStep(): TutorialStepSnapshot {
         highlightFrame: 'none', highlightTarget: 'qidahen-hand-zone', position: 'top', allowedCommands: [RESPONSE] };
 }
 
+/** 大明放弃后，依真实顺位由对手决定与支付；每个独立槽处理一次正式输入。 */
+export function createAnnualChronologyOpponentSteps(): TutorialStepSnapshot[] {
+    return Array.from({ length: 12 }, (_, index) => ({ id: `${CHRONOLOGY_OPPONENT_PREFIX}${index + 1}`, content: '',
+        aiActions: [{ commandType: RESPONSE, playerId: '2', payload: { optionId: 'claim' }, waitForBoardSyncAfter: true }],
+        hiddenAutomation: { kind: 'compressed-repeat' as const, equivalentStepIds: ['claim-year'],
+            reason: '对手依已展示的纪年领取和支付规则处理自己的选择。' } }));
+}
+
 /** 未处理的 id 返回 undefined，便于与其它教学步骤校验组合。 */
 export function validateAnnualSeasonTutorialStep(state: MatchState<QidahenCore>, step: TutorialStepSnapshot): boolean | undefined {
     const isPlayer = step.id.startsWith(PLAYER_PREFIX);
     const isOpponent = step.id.startsWith(OPPONENT_PREFIX);
-    if (!isPlayer && !isOpponent && step.id !== PAYMENT) return undefined;
+    const isChronologyOpponent = step.id.startsWith(CHRONOLOGY_OPPONENT_PREFIX);
+    if (!isPlayer && !isOpponent && !isChronologyOpponent && step.id !== PAYMENT) return undefined;
     const data = getQidahenTurnResolutionFrame(state)?.metadata.qidahenTurn;
+    if (isChronologyOpponent) {
+        if (!data || !['chronology', 'chronology-payment'].includes(data.step)) return false;
+        const choice = buildQidahenTurnChoice(state.core, data);
+        return Boolean(choice && choice.factionId !== 'ming');
+    }
     if (step.id === PAYMENT) return data?.step === 'chronology-payment';
     if (data?.step !== 'upkeep') return false;
     const task = data.upkeepTasks[data.upkeepIndex];
@@ -65,6 +80,13 @@ export function resolveAnnualSeasonTutorialStep(state: MatchState<QidahenCore>, 
 
     if (step.id === PAYMENT) {
         return { ...step, allowedTargets: undefined, tooltipAnchorTarget: `qidahen-hand-guide-${candidates[0]}` };
+    }
+    if (step.id.startsWith(CHRONOLOGY_OPPONENT_PREFIX)) {
+        const current = state.sys.interaction?.current as { id?: string; data?: { multi?: unknown } } | null | undefined;
+        const optionId = candidates.includes('claim') ? 'claim' : candidates[0];
+        return { ...step, aiActions: [{ commandType: RESPONSE, playerId: state.core.factions[choice.factionId].playerId,
+            payload: { ...(current?.id ? { interactionId: current.id } : {}),
+                ...(current?.data?.multi ? { optionIds: [optionId] } : { optionId }) }, waitForBoardSyncAfter: true }] };
     }
     const task = data.upkeepTasks[data.upkeepIndex];
     if (step.id.startsWith(PLAYER_PREFIX)) {

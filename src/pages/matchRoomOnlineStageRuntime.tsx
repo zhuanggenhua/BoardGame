@@ -223,6 +223,7 @@ const MatchRoomOnlineBoardBridge = ({
     return (
         <BoardBridge
             board={board}
+            gameId={loading.gameId}
             renderer={boardRenderer}
             remountKey={false}
             loading={(

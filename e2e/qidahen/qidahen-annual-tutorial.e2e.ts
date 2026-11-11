@@ -2,7 +2,7 @@ import { verifyQidahenMapCandidateRecovery } from './mapCandidateRecovery';
 import { dragQidahenMap } from './mapPointer';
 import { trackQidahenBlobUrls } from './blobUrlDiagnostics';
 import { createHash } from 'node:crypto';
-import sharp from 'sharp';
+import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
@@ -17,7 +17,7 @@ import { readQidahenStoredTutorialStep, readQidahenTutorialProgressStatus } from
 import { QIDAHEN_ANNUAL_TUTORIAL } from '../../src/games/qidahen/annualTutorial';
 
 // 七大恨的图集地图与物理骰子按正常浏览器GPU呈现；不继承Windows软件光栅化测试开关。
-test.use({ channel: 'chromium', launchOptions: { args: [] } });
+test.use({ channel: process.env.QIDAHEN_DIAGNOSTIC_BROWSER_CHANNEL || 'chromium', launchOptions: { args: [] } });
 
 const runId = process.env.QIDAHEN_ANNUAL_RUN_ID ?? new Date().toISOString().replace(/[:.]/g, '-');
 const root = resolve(process.env.QIDAHEN_ANNUAL_EVIDENCE_ROOT ?? `test-results/evidence-screenshots/_shared/qidahen-连续年度教程/${runId}`);
@@ -247,6 +247,21 @@ async function clickPiece(page: Page, snapshot: Snapshot, pieceId: string) {
 }
 
 async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[], onSelected?: () => Promise<void>) {
+    if (targets.length === 1 && targets[0].startsWith('hand-action:')) {
+        const button = page.getByTestId(`qidahen-action-${targets[0].slice('hand-action:'.length)}`);
+        const beforeHover = (await button.boundingBox())!;
+        await button.hover();
+        await expect.poll(async () => Math.abs((await button.boundingBox())!.x - beforeHover.x)).toBeLessThan(2);
+        await button.click();
+        await onSelected?.();
+        return;
+    }
+    if (targets.length === 1 && ['opening-farm-cycle', 'diplomacy-cycle'].includes(snapshot.tutorial.step.id)
+        && ['military-farm', 'reclaim', 'diplomacy', 'hire', 'finish-slot', 'finish-diplomacy', 'skip-hand'].includes(targets[0])) {
+        await page.getByTestId(`qidahen-turn-option-${targets[0]}`).click();
+        await onSelected?.();
+        return;
+    }
     if (snapshot.tutorial.step.advanceOnEvents?.some(event => event.type === 'TURN_RESOLUTION_APPLIED' && (event.match?.fromStep === 'menu' || event.match?.fromStep === 'finish-hand'))) {
         expect(targets).toHaveLength(1);
         await expect(page.getByTestId('qidahen-turn-confirm')).toHaveCount(0);
@@ -286,6 +301,15 @@ async function submitTurnChoice(page: Page, snapshot: Snapshot, targets: string[
 function annualDynamicTargets(snapshot: Snapshot): string[] {
     const step = snapshot.tutorial.step;
     const valid = snapshot.interaction?.data.options.filter(option => !option.disabled).map(option => option.id) ?? [];
+    if (step.id === 'dispatch-source') return ['city-region-15'];
+    if (step.id === 'dispatch-troops') {
+        const farm = snapshot.core.pieces.find(piece => piece.sourceStackId.startsWith('ming-farm-') && piece.regionId === 'city-region-15');
+        if (!farm) throw new Error('真实军屯步兵不存在');
+        return [farm.id, 'ming-post-sarhu-1619-liaobei-cavalry-cavalry-lv1__compat__1', 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1'];
+    }
+    if (step.id === 'dispatch-target') return ['city-region-7'];
+    if (step.id === 'battle-roll' || step.id === 'battle-roll-followup') return ['fight'];
+    if (step.id === 'occupy') return ['occupy'];
     if (step.id === 'season-chronology-payment') return valid.slice(0, 1);
     if (!step.id.startsWith('season-upkeep-player-')) return step.allowedTargets ?? [];
     const regionId = step.highlightTarget?.replace('qidahen-map-region-focus-', '') ?? '';
@@ -347,17 +371,24 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
     test.describe.configure({ timeout: 1_200_000 });
     for (const viewport of [{ name: 'desktop', width: 1920, height: 1080 }, { name: 'mobile', width: 915, height: 412 }]) {
         test(`${viewport.name} 从正式教程入口走完核心行动、年中、新年与次年训练`, async ({ page, browser }, testInfo) => {
+            const moduleMark = (label: string) => { if (process.env.QIDAHEN_MODULE_DIAGNOSTIC === 'true') console.info('ANNUAL_SETUP', label); };
+            moduleMark('test-start');
             const touchContext = viewport.name === 'mobile' ? await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, isMobile: true, hasTouch: true }) : null;
             if (touchContext) page = await touchContext.newPage();
             page.setDefaultTimeout(15_000);
             await page.setViewportSize({ width: viewport.width, height: viewport.height });
+            moduleMark('viewport');
             await setChineseLocale(page); await disableAudio(page);
+            moduleMark('locale-audio');
             await page.addInitScript(() => { (window as unknown as { __E2E_TEST_MODE__: boolean }).__E2E_TEST_MODE__ = true; });
             const diagnostics = attachPageDiagnostics(page);
+            moduleMark('page-diagnostics');
             const browserSession = await browser.newBrowserCDPSession();
             const rendererInfo = await browserSession.send('SystemInfo.getInfo'); await browserSession.detach();
+            moduleMark('gpu');
             const performanceSession = await page.context().newCDPSession(page);
             await performanceSession.send('Performance.enable');
+            moduleMark('performance');
             const performanceSamples: object[] = [];
             const inputDiagnostics: object[] = [];
             const recordWheelSurface = async (reason: string) => {
@@ -378,6 +409,11 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             const pendingRequests = new Set<string>();
             let progress = 'entry';
             let dynamicTargets: string[] = [];
+            let diplomacyDone = false;
+            let hireDone = false;
+            let farmDone = false;
+            let reclaimDone = false;
+            let openingHandStage = 0;
             const capturedUpkeepRegions = new Set<string>();
             const capturedPracticeStates = new Set<string>();
             page.on('request', request => pendingRequests.add(request.url()));
@@ -385,12 +421,19 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             page.on('requestfailed', request => pendingRequests.delete(request.url()));
             const heartbeat = setInterval(() => console.info('ANNUAL_WAIT', JSON.stringify({ progress, pending: [...pendingRequests].slice(-12) })), 15_000);
             const verifySourceIdentity = trackQidahenSourceIdentity(page, 'e2e/qidahen/qidahen-annual-tutorial.e2e.ts', [
-                'e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', 'e2e/qidahen/mapCandidateRecovery.ts',
+                'e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', 'e2e/qidahen/battleCaptureDiagnostics.ts', 'e2e/qidahen/mapCandidateRecovery.ts',
                 'e2e/qidahen/mapPointer.ts', 'e2e/qidahen/blobUrlDiagnostics.ts', 'e2e/qidahen/tutorialPointer.ts',
                 'e2e/qidahen/visualReady.ts', 'e2e/qidahen/tutorialPersistence.ts', 'e2e/helpers/common.ts',
-            ], [...QIDAHEN_VISUAL_SOURCE_PATHS, 'public/assets/i18n/zh-CN/qidahen/cards/inspect/compressed/ming-4.webp']);
+            ], [...QIDAHEN_VISUAL_SOURCE_PATHS, 'public/assets/i18n/zh-CN/qidahen/cards/inspect/compressed/ming-4.webp',
+                'src/games/qidahen/annualTutorial.ts', 'src/games/qidahen/annualFarmTutorial.ts',
+                'src/games/qidahen/annualHandActionTutorial.ts', 'src/games/qidahen/annualDiplomacyTutorial.ts',
+                'src/games/qidahen/annualDispatchTutorial.ts', 'src/games/qidahen/annualSeasonTutorial.ts',
+                'src/games/qidahen/annualBranchTutorial.ts', 'src/games/qidahen/Board.tsx',
+                'src/engine/systems/TutorialSystem.ts', 'src/contexts/TutorialContext.tsx',
+                'public/locales/zh-CN/game-qidahen.json']);
             const dir = resolve(root, viewport.name); mkdirSync(dir, { recursive: true });
             const saveBlobDiagnostics = await trackQidahenBlobUrls(page, resolve(dir, 'blob-url-diagnostics.json'));
+            moduleMark('blob');
             writeFileSync(resolve(dir, 'browser-renderer.json'), JSON.stringify(rendererInfo.gpu, null, 2));
             const trace: { gameId: string; evidenceCategory: string; sourceRun: string; status: string; steps: object[]; uiStates: object[]; sourceIdentity?: object; captureContract?: object; chainId: string; sourceRevision: string; browserContextId: string; outcome?: object } = {
                 gameId: 'qidahen', evidenceCategory: 'tutorial', sourceRun: runId, status: 'RUNNING', steps: [], uiStates: [],
@@ -465,6 +508,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                             // 地区名称只是区域内文字；面积型目标以正式蒙版的实际像素为阅读对象。
                             const rgb = [1, 3, 5].map(offset => parseInt(color.slice(offset, offset + 2), 16));
                             const map = (await page.getByTestId('qidahen-map-content').boundingBox())!;
+                            const { default: sharp } = await import('sharp');
                             const mask = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
                             let distance = Infinity;
                             for (let y = 0; y < mask.info.height; y++) for (let x = 0; x < mask.info.width; x++) {
@@ -517,6 +561,17 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const dy = Math.max(0, hint.y - wheel.y - wheel.height, wheel.y - hint.y - hint.height);
                     expect(Math.hypot(dx, dy), 'wheel introduction stays adjacent to its actual HUD object').toBeLessThanOrEqual(64);
                 }
+                if (id === 'midyear' || id === 'new-year') {
+                    const wheel = (await page.getByTestId('qidahen-action-wheel').boundingBox())!;
+                    const hint = (await page.getByTestId('tutorial-overlay-card').boundingBox())!;
+                    expect(hint.x < wheel.x + wheel.width && hint.x + hint.width > wheel.x
+                        && hint.y < wheel.y + wheel.height && hint.y + hint.height > wheel.y,
+                    `${id} explanation cannot cover the wheel it explains`).toBe(false);
+                    const dx = Math.max(0, hint.x - wheel.x - wheel.width, wheel.x - hint.x - hint.width);
+                    const dy = Math.max(0, hint.y - wheel.y - wheel.height, wheel.y - hint.y - hint.height);
+                    expect(Math.hypot(dx, dy), `${id} explanation remains near the wheel`).toBeLessThanOrEqual(64);
+                    writeFileSync(resolve(dir, `${id}-wheel-geometry.json`), JSON.stringify({ wheel, hint, distance: Math.hypot(dx, dy) }, null, 2));
+                }
                 if (id === 'dispatch-troops') {
                     const snapshot = await read(page);
                     const hint = (await page.getByTestId('tutorial-overlay-card').boundingBox())!;
@@ -533,8 +588,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect(troop).toHaveAttribute('data-qidahen-unit-level', String(piece.level));
                         await expect(page.getByTestId(`qidahen-unit-level-${tokenId}`)).toHaveText(String(piece.level));
                     }
-                    if (suffix === '-selected') await expect(page.getByTestId('qidahen-committed-troop-check')).toHaveCount(snapshot.tutorial.step.allowedTargets!.length);
-                    await expect(page.locator('[data-qidahen-tutorial-recommended="true"]')).toHaveCount(snapshot.tutorial.step.allowedTargets!.length);
+                    if (suffix === '-selected') await expect(page.getByTestId('qidahen-committed-troop-check')).toHaveCount(dynamicTargets.length);
+                    await expect(page.locator('[data-qidahen-tutorial-recommended="true"]')).toHaveCount((snapshot.tutorial.step.recommendedTargets ?? snapshot.tutorial.step.allowedTargets ?? []).length);
                 }
                 if (id === 'tactic-card' && suffix === '-selected') {
                     const covered = await page.getByTestId('qidahen-tactic-card-selection-panel').evaluate(panel => {
@@ -744,6 +799,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             };
             try {
                 progress = 'navigate';
+                if (process.env.QIDAHEN_MODULE_DIAGNOSTIC === 'true') writeFileSync(resolve('test-results/qidahen-annual-modules.json'), JSON.stringify({ modules: Object.keys(createRequire(import.meta.url).cache), report: process.report?.getReport().sharedObjects }, null, 2));
+                if (process.env.QIDAHEN_DIAGNOSTIC_BROWSER_CHANNEL) console.info('DIAGNOSTIC_BROWSER_VERSION', page.context().browser()?.version(), 'SHARP_ENTRY_MODULES', Object.keys(createRequire(import.meta.url).cache).filter(path => /[\\/]sharp[\\/]/.test(path)));
                 await page.goto('/play/qidahen/tutorial/basic-opening', { waitUntil: 'domcontentloaded', timeout: 45_000 });
                 console.info('ANNUAL_ENTRY', JSON.stringify({ body: (await page.locator('body').innerText()).slice(0, 600), state: await read(page).then(value => value.tutorial.step?.id).catch(() => null) }));
                 await page.waitForFunction(() => document.querySelector('[data-tutorial-step="frontier-goal"]') || document.body.innerText.includes('游戏加载失败'), undefined, { timeout: 120_000 });
@@ -790,6 +847,32 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     }
                     const before = await read(page);
                     dynamicTargets = annualDynamicTargets(before);
+                    let dynamicCommand = step.allowedCommands?.[0];
+                    if (step.id === 'opening-farm-cycle') {
+                        const content = step.content;
+                        if (content.endsWith('farm-target-dynamic')) { dynamicCommand = 'SYS_INTERACTION_RESPOND'; dynamicTargets = ['city-region-15']; }
+                        else if (content.endsWith('reclaim-target-dynamic')) { dynamicCommand = 'SYS_INTERACTION_RESPOND'; dynamicTargets = ['city-region-15-liaodong']; }
+                        else if (content.includes('farm-menu-') || content.endsWith('farm-hand-menu-dynamic')) {
+                            dynamicCommand = 'SYS_INTERACTION_RESPOND';
+                            dynamicTargets = [!farmDone ? 'military-farm' : !reclaimDone ? 'reclaim' : openingHandStage === 0 ? 'hand-action:recruit' : 'finish-slot'];
+                        } else {
+                            [dynamicCommand, dynamicTargets] = [
+                                ['SELECT_PAYMENT_CARD', ['hand-3']], ['EXECUTE_SELECTED_ACTION', []],
+                                ['SELECT_REGION', ['city-region-15']], ['SYS_INTERACTION_RESPOND', ['level-2-troops']],
+                            ][openingHandStage] as [string, string[]];
+                        }
+                    }
+                    if (step.id === 'diplomacy-cycle') {
+                        dynamicCommand = 'SYS_INTERACTION_RESPOND';
+                        const valid = before.interaction?.data.options.filter(option => !option.disabled).map(option => option.id) ?? [];
+                        if (step.content.endsWith('diplomacy-menu-dynamic')) dynamicTargets = [!diplomacyDone ? 'diplomacy' : !hireDone ? 'hire' : 'finish-slot'];
+                        else if (step.content.endsWith('diplomacy-target-dynamic')) dynamicTargets = [diplomacyDone ? 'finish-diplomacy' : 'city-region-2'];
+                        else if (step.content.endsWith('hire-payment-dynamic')) dynamicTargets = [valid[0]];
+                        else if (step.content.includes('hire-target-')) dynamicTargets = ['city-region-1'];
+                        else if (step.content.endsWith('diplomacy-hand-menu-dynamic')) dynamicTargets = ['skip-hand'];
+                        else throw new Error(`Unknown diplomacy prompt: ${step.content}`);
+                        expect(valid).toContain(dynamicTargets[0]);
+                    }
                     const beforeVisible = await page.locator('body').innerText();
                     if (step.id === 'new-order' || step.id === 'year-character') {
                         await expect(page.getByTestId('qidahen-player-float')).toContainText('本年先手');
@@ -802,52 +885,28 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect(page.getByTestId('qidahen-year-card-slot-next-year')).toBeVisible();
                         uiAssertions.set(step.id, [assertEqual('next-chronology-revealed-after-all-characters', before.core.yearCards.map(card => card.id), ['current-year', 'next-year'])]);
                     }
-                    if (step.id === 'farm-target') {
-                        const callout = viewport.name === 'desktop' ? await page.locator('[data-qidahen-map-region-choice="true"]').evaluateAll((nodes, allowed) => {
-                            const node = nodes.find(node => allowed.includes(node.getAttribute('data-qidahen-map-token-region')!) && node.getAttribute('data-qidahen-map-token-region') !== 'city-region-15');
-                            return node ? { id: node.getAttribute('data-qidahen-map-token-region')!, testId: node.getAttribute('data-testid')! } : null;
-                        }, before.interaction!.data.options.map(option => option.id)) : null;
-                        if (viewport.name === 'desktop') expect(callout, 'a legal external army has its own region hit target').not.toBeNull();
-                        const other = callout ?? before.interaction!.data.options.find(option => option.id !== 'city-region-15' && before.core.regions.some(region => !region.isLogicalRegion && region.id === option.id));
-                        expect(other, 'another formally legal farm region remains selectable').toBeDefined();
-                        const view = () => page.getByTestId('qidahen-map-layer').evaluate(node => ({ x: Number(node.getAttribute('data-map-pan-x')), y: Number(node.getAttribute('data-map-pan-y')) }));
-                        const originalView = await view();
-                        if (callout) {
-                            const plan = await page.getByTestId(callout.testId).evaluate(node => {
-                                const box = node.getBoundingClientRect();
-                                for (const y of [innerHeight * .6, innerHeight * .5, innerHeight * .4]) for (const x of [innerWidth * .7, innerWidth * .5, innerWidth * .3]) {
-                                    const dx = x - box.left - box.width / 2, dy = y - box.top - box.height / 2;
-                                    if (Math.abs(dx) > innerWidth * .45 || Math.abs(dy) > innerHeight * .45) continue;
-                                    const hit = document.elementFromPoint(x, y);
-                                    if (hit?.closest('[data-testid="qidahen-map-layer"]') && !hit.closest('button,[role="button"],[data-qidahen-map-token-region]')) return { dx, dy };
-                                }
-                                throw new Error('No clear map area to inspect the external army');
-                            });
-                            await dragQidahenMap(page, plan.dx, plan.dy);
-                            await expect(page.getByTestId(callout.testId)).toBeInViewport({ ratio: 1 });
-                        }
-                        await clickRegion(page, other!.id, callout?.testId);
-                        await expect(page.getByTestId('qidahen-turn-confirm')).toBeEnabled();
-                        const actualRegion = callout ? await page.getByTestId(callout.testId).getAttribute('aria-pressed') : null;
-                        if (callout) expect(actualRegion, 'clicking an external army selects its own region, not the mask beneath it').toBe('true');
-                        if (callout) await capture('callout-region-choice', '', 'farm-alternative-checkpoint');
-                        await page.getByTestId('qidahen-turn-confirm').click();
-                        await expect.poll(async () => ({ id: await stepId(page), core: (await read(page)).core })).toEqual({ id: step.id, core: before.core });
-                        await expect(page.getByTestId('qidahen-turn-confirm')).toBeDisabled();
-                        trace.steps.push({ id: 'farm-alternative-checkpoint', action: 'select-other-legal-region-and-confirm', targetIds: [other!.id],
-                            before: { visible: { text: beforeVisible }, authoritative: summarize(before) },
-                            after: { visible: { text: await page.locator('body').innerText() }, authoritative: summarize(await read(page)) },
-                            assertions: [...(callout ? [assertEqual('external-army-selects-own-region', actualRegion, 'true')] : []), assertEqual('same-step-restored', await stepId(page), step.id), assertEqual('no-resource-or-board-change', (await read(page)).core, before.core)] });
-                        if (callout) {
-                            const currentView = await view();
-                            await dragQidahenMap(page, originalView.x - currentView.x, originalView.y - currentView.y);
-                            await expect.poll(async () => Math.abs((await view()).x - originalView.x)).toBeLessThan(2);
-                            await expect.poll(async () => Math.abs((await view()).y - originalView.y)).toBeLessThan(2);
-                        }
-                    }
                     const finishBattleRecording = step.id === 'battle-roll' ? await beginBattleRecording(page, dir) : undefined;
-                    if (step.id === 'recruit-troops') await assertWholeRegionVisible(page, 'city-region-15');
+                    if (step.id === 'recruit-troops' || (step.id === 'opening-farm-cycle' && step.content.endsWith('hand-recruit-choice'))) await assertWholeRegionVisible(page, 'city-region-15');
                     if ((viewport.name === 'desktop' ? KEY_STATES : MOBILE_STATES).has(step.id)) await capture(step.id);
+                    if (step.id === 'opening-farm-cycle') {
+                        const captureId = step.content.endsWith('farm-target-dynamic') ? 'farm-target'
+                            : step.content.endsWith('reclaim-target-dynamic') ? 'reclaim-target'
+                            : step.content.endsWith('farm-menu-initial') ? 'farm-action'
+                            : step.content.endsWith('farm-menu-after-farm') ? 'reclaim-action'
+                            : step.content.endsWith('farm-menu-hand-action') && openingHandStage === 0 ? 'recruit-action'
+                            : step.content.endsWith('hand-recruit-rule') && openingHandStage === 0 ? 'recruit-payment'
+                            : step.content.endsWith('hand-recruit-rule') && openingHandStage === 1 ? 'recruit-confirm'
+                            : step.content.endsWith('hand-recruit-region') ? 'recruit-source'
+                            : step.content.endsWith('hand-recruit-choice') ? 'recruit-troops' : undefined;
+                        if (captureId) await capture(captureId, '', step.id);
+                    }
+                    if (step.id === 'diplomacy-cycle') {
+                        const captureId = step.content.endsWith('diplomacy-target-dynamic') ? (diplomacyDone ? 'diplomacy-finish' : 'diplomacy-target')
+                            : step.content.endsWith('diplomacy-menu-dynamic') && diplomacyDone && !hireDone ? 'hire-action'
+                            : step.content.endsWith('diplomacy-hand-menu-dynamic') ? 'save-hand'
+                            : step.content.includes('hire-target-') ? 'hire-target' : undefined;
+                        if (captureId) await capture(captureId, '', step.id);
+                    }
                     const practice = step.id === 'training-practice' ? before.core.wheelRecruitTrainProgress : null;
                     const practiceCaptureId = practice?.phase === 'choose-action' && practice.actionsCompleted === 0 ? 'training-kind'
                         : practice?.phase === 'choose-training-target' && practice.actionsCompleted === 0 ? 'training-target'
@@ -862,7 +921,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         : upkeepRegion === 'city-region-18' ? 'upkeep-pyongyang' : undefined;
                     const firstUpkeepCapture = Boolean(upkeepCaptureId && !capturedUpkeepRegions.has(upkeepCaptureId));
                     if (firstUpkeepCapture && viewport.name === 'desktop') { capturedUpkeepRegions.add(upkeepCaptureId!); await capture(upkeepCaptureId!, '', step.id); }
-                    if (step.id === 'diplomacy-target' && viewport.name === 'desktop') {
+                    if (step.id === 'diplomacy-cycle' && step.content.endsWith('diplomacy-target-dynamic') && !diplomacyDone && viewport.name === 'desktop') {
                         const ids = before.interaction!.data.options.map(option => option.id)
                             .filter(id => before.core.regions.some(region => region.id === id && !region.isLogicalRegion));
                         const observed = await probeDiplomacyCandidates(page, ids);
@@ -890,7 +949,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect(page.getByTestId('qidahen-post-battle-dice-summary')).not.toBeVisible();
                         expect((await read(page)).core, '只读战报不改变对局').toEqual(coreBeforeReport);
                     }
-                    if (step.id === 'recruit-payment') {
+                    if (step.id === 'recruit-payment' || (step.id === 'opening-farm-cycle' && step.content.endsWith('hand-recruit-rule') && openingHandStage === 0)) {
                         const handBefore = before.core.factions.ming.handCount;
                         if (touchContext) {
                             const card = page.getByTestId('qidahen-hand-card-hand-3');
@@ -909,11 +968,11 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                             await expect.poll(async () => { const raised = (await shell.boundingBox())!; return raised.y + raised.height; },
                                 { timeout: 5_000 }).toBeLessThanOrEqual(viewport.height + 1);
                             expect((await read(page)).core.selectedPaymentCardIds).toEqual([]);
-                            await capture(step.id, '-hover');
+                            await capture('recruit-payment', '-hover', step.id);
                             await page.getByTestId('qidahen-hand-card-magnify-hand-3').click();
                         }
                         await waitMagnifyReady(page);
-                        await capture(step.id, '-inspect');
+                        await capture('recruit-payment', '-inspect', step.id);
                         expect((await read(page)).core.factions.ming.handCount).toBe(handBefore);
                         expect((await read(page)).core.selectedPaymentCardIds).toEqual([]);
                         await page.getByTestId('qidahen-card-magnify-overlay').getByRole('button', { name: /关闭/ }).click();
@@ -929,17 +988,25 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     if (step.infoStep) {
                         await clickVisibleButton(page, 'tutorial-next-button');
                     } else {
-                        const command = step.allowedCommands![0];
+                        const command = dynamicCommand;
+                        if (!command) throw new Error(`Missing command for ${step.id}`);
                         const targets = dynamicTargets;
+                        if (step.id === 'battle-roll' && before.core.handCards.some(card => card.id === 'hand-2')) {
+                            await capture('tactic-card', '', step.id);
+                            await clickCard(page, 'hand-2');
+                            await capture('tactic-card', '-selected', step.id);
+                            await page.getByTestId('qidahen-confirm-tactic-card').click();
+                        }
                         if (command === 'SYS_INTERACTION_RESPOND') {
                             if (before.interaction?.data.sourceId === 'qidahen:turn-resolution-choice') await submitTurnChoice(page, before, targets,
-                                ['reclaim-target', 'dispatch-troops'].includes(step.id) ? async () => { await capture(step.id, '-selected'); }
+                                step.id === 'opening-farm-cycle' && step.content.endsWith('reclaim-target-dynamic') ? async () => { await capture('reclaim-target', '-selected', step.id); }
+                                    : step.id === 'dispatch-troops' ? async () => { await capture(step.id, '-selected'); }
                                     : firstUpkeepCapture && viewport.name === 'desktop' && (upkeepCaptureId === 'upkeep-yehe' || upkeepCaptureId === 'upkeep-pyongyang')
                                         ? async () => { await capture(upkeepCaptureId!, '-selected', step.id); if (upkeepCaptureId === 'upkeep-yehe') await browseHand(); } : undefined);
                             else if (step.id === 'hand-limit') {
                                 for (const id of targets) await clickCard(page, id);
                                 await page.getByTestId('qidahen-resolve-hand-limit-discard').click();
-                            } else if (step.id === 'recruit-troops') await page.getByTestId(`qidahen-recruit-choice-${targets[0]}`).click();
+                            } else if (step.id === 'recruit-troops' || (step.id === 'opening-farm-cycle' && openingHandStage === 3)) await page.getByTestId(`qidahen-recruit-choice-${targets[0]}`).click();
                             else if (step.id === 'battle-roll') {
                                 for (const id of before.core.pendingTargetAction!.forceCommitments!.flatMap(force => force.selectedSpecialPieceIds ?? [])) {
                                     const token = before.core.mapTokens.find(token => token.pieceId === id)!;
@@ -983,6 +1050,15 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         }
                         else throw new Error(`Missing real input ${command}`);
                     }
+                    if (step.id === 'opening-farm-cycle') {
+                        if (step.content.endsWith('farm-target-dynamic')) farmDone = true;
+                        else if (step.content.endsWith('reclaim-target-dynamic')) reclaimDone = true;
+                        else if (dynamicCommand !== 'SYS_INTERACTION_RESPOND' || openingHandStage === 3) openingHandStage++;
+                    }
+                    if (step.id === 'diplomacy-cycle') {
+                        if (step.content.endsWith('diplomacy-target-dynamic') && dynamicTargets[0] !== 'finish-diplomacy') diplomacyDone = true;
+                        if (step.content.includes('hire-target-')) hireDone = true;
+                    }
                     if (step.id === 'battle-roll') {
                         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toBeVisible();
                         await expect(page.getByTestId('qidahen-battle-roll-context')).toBeVisible();
@@ -1010,17 +1086,19 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         trace.uiStates.push({ id: 'battle-real-time', stepId: step.id, path: recording.video, viewport: viewport.name,
                             frameCount: recording.frameCount, durationSeconds: recording.durationSeconds, sha256: createHash('sha256').update(readFileSync(recording.video)).digest('hex') });
                     }
-                    const dynamicPayment = step.id.startsWith('season-upkeep-player-') || step.id === 'season-chronology-payment';
-                    if (step.id === 'training-practice') await expect.poll(async () => JSON.stringify((await read(page)).core.wheelRecruitTrainProgress),
+                    const dynamicPayment = step.id.startsWith('season-upkeep-player-') || step.id === 'season-chronology-payment' || step.id === 'diplomacy-cycle';
+                    if (step.id === 'opening-farm-cycle') await expect.poll(async () => JSON.stringify({ core: (await read(page)).core, interaction: (await read(page)).interaction?.id }),
+                        { timeout: 60_000, message: 'opening action must change real state or prompt' }).not.toBe(JSON.stringify({ core: before.core, interaction: before.interaction?.id }));
+                    else if (step.id === 'training-practice') await expect.poll(async () => JSON.stringify((await read(page)).core.wheelRecruitTrainProgress),
                         { timeout: 60_000, message: 'training choice must change the real training progress' }).not.toBe(JSON.stringify(before.core.wheelRecruitTrainProgress));
                     else if (dynamicPayment) await expect.poll(async () => ({ step: await stepId(page), interaction: (await read(page)).interaction?.id }),
                         { timeout: 60_000, message: `${step.id} must advance its formal payment interaction` }).not.toEqual({ step: step.id, interaction: before.interaction?.id });
                     else await expect.poll(() => stepId(page), { timeout: 60_000, message: `${step.id} should advance through its real event` }).not.toBe(step.id);
                     const after = await read(page);
-                    trace.steps.push({ id: step.id, action: step.infoStep ? 'manual-next' : step.allowedCommands![0], targetIds: step.allowedTargets,
+                    trace.steps.push({ id: step.id, action: step.infoStep ? 'manual-next' : dynamicCommand, targetIds: dynamicTargets,
                         before: { visible: { text: beforeVisible }, authoritative: summarize(before) },
                         after: { visible: { text: await page.locator('body').innerText() }, authoritative: summarize(after) },
-                        assertions: [assertEqual('formal-event-advanced-input', after.tutorial.step?.id !== step.id || dynamicPayment && after.interaction?.id !== before.interaction?.id || step.id === 'training-practice' && JSON.stringify(after.core.wheelRecruitTrainProgress) !== JSON.stringify(before.core.wheelRecruitTrainProgress), true), ...assertOutcome(step.id, before, after), ...(uiAssertions.get(step.id) ?? [])],
+                        assertions: [assertEqual('formal-event-advanced-input', after.tutorial.step?.id !== step.id || dynamicPayment && after.interaction?.id !== before.interaction?.id || step.id === 'opening-farm-cycle' && (after.interaction?.id !== before.interaction?.id || JSON.stringify(after.core) !== JSON.stringify(before.core)) || step.id === 'training-practice' && JSON.stringify(after.core.wheelRecruitTrainProgress) !== JSON.stringify(before.core.wheelRecruitTrainProgress), true), ...assertOutcome(step.id, before, after), ...(uiAssertions.get(step.id) ?? [])],
                     });
                     writeFileSync(resolve(dir, 'behavior-trace.json'), JSON.stringify(trace, null, 2));
                 }

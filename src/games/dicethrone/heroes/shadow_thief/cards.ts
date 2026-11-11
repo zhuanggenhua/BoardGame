@@ -100,7 +100,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         id: 'upgrade-dagger-strike-2',
         name: cardText('upgrade-dagger-strike-2', 'name'),
         type: 'upgrade',
-        cpCost: 0,
+        cpCost: 2, // 中文卡面误印为 0 CP；按已确认勘误执行。
         timing: 'main',
         description: cardText('upgrade-dagger-strike-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 7 },

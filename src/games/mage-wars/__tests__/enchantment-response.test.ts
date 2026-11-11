@@ -917,7 +917,7 @@ describe('mage-wars enchantment response windows', () => {
         expect(sourceDefeatedIndex).toBeGreaterThanOrEqual(0);
         expect(consumeAvailableIndex).toBeLessThan(sourceDefeatedIndex);
         expect(resolved.state.core.objects[response.id]).toBeUndefined();
-        expect(resolved.state.core.objects[attacker.id]?.damage).toBe(6);
+        expect(resolved.state.core.objects[attacker.id]?.damage).toBe(2);
         expect(resolved.state.core.objects[defender.id]?.damage).toBe(0);
     });
 
@@ -958,6 +958,6 @@ describe('mage-wars enchantment response windows', () => {
         ]));
         expect(resolved.state.core.objects[response.id]).toBeUndefined();
         expect(resolved.state.core.objects[attacker.id]?.damage).toBe(0);
-        expect(resolved.state.core.objects[defender.id]?.damage).toBe(6);
+        expect(resolved.state.core.objects[defender.id]?.damage).toBe(2);
     });
 });

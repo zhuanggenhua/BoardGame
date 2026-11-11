@@ -12,6 +12,8 @@ export type QidahenTroopClass = 'regular' | 'secondary' | 'auxiliary';
 export type QidahenPlunderSource = 'attacker' | 'defender';
 export type QidahenArmamentId =
     | 'artillery-tech'
+    | 'red-coat-cannon'
+    | 'fine-steel-saber'
     | 'infantry-armor'
     | 'cavalry-armor'
     | 'western-bastion'

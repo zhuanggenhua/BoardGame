@@ -94,12 +94,12 @@ describe('mage-wars creature summoning', () => {
             timestamp: 0,
             state: attackedObjectState,
             command: attackCommand,
-            random: fixedRandom,
+            random: { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 },
             spell: attackSpell!,
             manaCost: 4,
         });
         const rawAttackSpellEventTypes = rawAttackSpellEvents.map((event) => event.type);
-        const attackedObject = runCommand(attackedObjectState, attackCommand);
+        const attackedObject = runCommand(attackedObjectState, attackCommand, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
 
         expect(attackedObject.success).toBe(true);
         expect(rawAttackSpellEventTypes).toContain(MAGE_WARS_EVENTS.SPELL_ATTACK_DEFEAT_AVAILABLE);
@@ -110,15 +110,15 @@ describe('mage-wars creature summoning', () => {
                 payload: expect.objectContaining({
                     spellCardId: attackSpellId,
                     targetObjectId: objectId,
-                    diceResults: [3, 3, 3],
-                    baseDamage: 9,
+                    diceResults: [2, 2, 2],
+                    baseDamage: 6,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: objectId,
-                    actualDamage: 9,
+                    actualDamage: 6,
                     sourceAbilityId: 'mw.spell.1710',
                 }),
             }),
@@ -281,7 +281,7 @@ describe('mage-wars creature summoning', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: nonlivingTarget.id,
-                    actualDamage: 8,
+                    actualDamage: 4,
                 }),
             }),
         ]));
@@ -454,22 +454,22 @@ describe('mage-wars creature summoning', () => {
                     attackProfileId: 'attack-0',
                     attackName: '长弓',
                     targetObjectId: armoredTarget.id,
-                    diceResults: [3, 3, 3, 3],
-                    baseDamage: 12,
+                    diceResults: [1, 1, 1, 1],
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: armoredTarget.id,
-                    actualDamage: 10,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.object.2816.attack-0',
                     breakdown: expect.objectContaining({
                         steps: expect.arrayContaining([
                             expect.objectContaining({
                                 sourceId: 'mage-wars-object-armor',
                                 value: -2,
-                                runningTotal: 10,
+                                runningTotal: 2,
                             }),
                         ]),
                     }),
@@ -477,7 +477,7 @@ describe('mage-wars creature summoning', () => {
             }),
         ]));
         expect(attacked.state.core.objects[armoredTarget.id]).toMatchObject({
-            damage: 10,
+            damage: 2,
             armor: 3,
         });
     });
@@ -636,9 +636,9 @@ describe('mage-wars creature summoning', () => {
                     attackProfileId: 'attack-0',
                     attackName: '剧毒噬咬',
                     targetObjectId: livingTarget.id,
-                    diceResults: [3, 3, 3],
+                    diceResults: [1, 1, 1],
                     effectDieResult: 8,
-                    baseDamage: 9,
+                    baseDamage: 3,
                 }),
             }),
             expect.objectContaining({
@@ -653,7 +653,7 @@ describe('mage-wars creature summoning', () => {
             }),
         ]));
         expect(attacked.state.core.objects[livingTarget.id]).toMatchObject({
-            damage: 9,
+            damage: 3,
             statusTokens: {
                 [STATUS_TOKEN_IDS.ROT]: 1,
             },
@@ -1003,8 +1003,8 @@ describe('mage-wars creature summoning', () => {
         expect(sameZoneWounded.success).toBe(true);
         expect(sameZoneWoundedRoll).toEqual(expect.objectContaining({
             payload: expect.objectContaining({
-                diceResults: [3, 3, 3, 3, 3, 3],
-                baseDamage: 18,
+                diceResults: [1, 1, 1, 1, 1, 1],
+                baseDamage: 6,
                 bloodthirstDiceModifier: 2,
             }),
         }));
@@ -1016,8 +1016,8 @@ describe('mage-wars creature summoning', () => {
         expect(differentZoneWounded.success).toBe(true);
         expect(differentZoneWoundedRoll).toEqual(expect.objectContaining({
             payload: expect.objectContaining({
-                diceResults: [3, 3, 3, 3, 3],
-                baseDamage: 15,
+                diceResults: [1, 1, 1, 1, 1],
+                baseDamage: 5,
                 bloodthirstDiceModifier: 1,
             }),
         }));
@@ -1031,8 +1031,8 @@ describe('mage-wars creature summoning', () => {
             expect(result.success).toBe(true);
             expect(attackRoll).toEqual(expect.objectContaining({
                 payload: expect.objectContaining({
-                    diceResults: [3, 3, 3, 3],
-                    baseDamage: 12,
+                    diceResults: [1, 1, 1, 1],
+                    baseDamage: 4,
                 }),
             }));
             expect(attackRoll?.payload).not.toMatchObject({ bloodthirstDiceModifier: expect.any(Number) });
@@ -1048,10 +1048,10 @@ describe('mage-wars creature summoning', () => {
                 payload: expect.objectContaining({
                     attackProfileId: 'attack-1',
                     attackName: '野性利爪',
-                    diceResults: [3, 3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1, 1],
                     strikeIndex: 0,
                     strikeCount: 2,
-                    baseDamage: 15,
+                    baseDamage: 5,
                     bloodthirstDiceModifier: 2,
                 }),
             }),
@@ -1059,10 +1059,10 @@ describe('mage-wars creature summoning', () => {
                 payload: expect.objectContaining({
                     attackProfileId: 'attack-1',
                     attackName: '野性利爪',
-                    diceResults: [3, 3, 3],
+                    diceResults: [1, 1, 1],
                     strikeIndex: 1,
                     strikeCount: 2,
-                    baseDamage: 9,
+                    baseDamage: 3,
                 }),
             }),
         ]);

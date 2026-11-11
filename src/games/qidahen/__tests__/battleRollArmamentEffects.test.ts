@@ -228,10 +228,10 @@ const buildArtilleryTechBattleCore = (): QidahenCore => {
             restriction: '测试 · 火炮技术',
             battleWidth: 3,
             boundaryUnitCap: null,
-            sourceAvailableTroops: 2,
-            committedTroops: 2,
+            sourceAvailableTroops: 3,
+            committedTroops: 3,
             movementProfileId: 'dispatch-infantry',
-            attackPressure: 2,
+            attackPressure: 3,
             attackBoundaryType: 'plain',
             resolutionHint: '测试',
             defenderPayCost: null,
@@ -245,7 +245,7 @@ const buildArtilleryTechBattleCore = (): QidahenCore => {
                     ...region,
                     controller: 'ming',
                     controlLabel: '大明',
-                    troops: 2,
+                    troops: 3,
                     specialTroops: [
                         {
                             id: 'ming-artillery-lv2',
@@ -255,6 +255,7 @@ const buildArtilleryTechBattleCore = (): QidahenCore => {
                             count: 2,
                             level: 2,
                         },
+                        { id: 'ming-infantry-lv2', label: '大明步兵', faction: 'ming', troopKind: 'infantry', count: 1, level: 2 },
                     ],
                 };
             }
@@ -397,7 +398,7 @@ const buildRedCoatCannonFieldDefenseBattleCore = (): QidahenCore => {
                     ...region,
                     controller: 'ming',
                     controlLabel: '大明',
-                    troops: 2,
+                    troops: 3,
                     specialTroops: [
                         {
                             id: 'ming-artillery-lv2',
@@ -407,6 +408,7 @@ const buildRedCoatCannonFieldDefenseBattleCore = (): QidahenCore => {
                             count: 2,
                             level: 2,
                         },
+                        { id: 'ming-infantry-lv2', label: '大明步兵', faction: 'ming', troopKind: 'infantry', count: 1, level: 2 },
                     ],
                 };
             }
@@ -680,7 +682,7 @@ const buildLinkedMusketsPriorityBattleCore = (): QidahenCore => {
 };
 
 describe('七大恨战斗军备效果', () => {
-    it('火炮技术升级后会让每个炮兵额外掷 1 颗骰', () => {
+    it('火炮技术让每个炮兵每骰点数 +1', () => {
         const core = buildArtilleryTechBattleCore();
         const rolls = createQidahenStructuredBattleRolls(
             core,
@@ -695,14 +697,14 @@ describe('七大恨战斗军备效果', () => {
         );
         const artilleryStage = rolls?.stages.find((stage) => stage.phase === 'artillery');
 
-        expect(rolls?.summary).toContain('炮兵 攻4/4/4/4=16/守-=0');
-        expect(artilleryStage?.attackerRolls).toHaveLength(4);
+        expect(rolls?.summary).toContain('炮兵 攻4->5/4->5=10/守-=0');
+        expect(artilleryStage?.attackerRolls).toHaveLength(2);
         expect(artilleryStage?.attackerRolls).toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'artillery', level: 2, dieSides: 8 }),
         ]));
     });
 
-    it('红衣大炮来源牌会让攻城进攻炮兵每个额外掷 2 颗骰', () => {
+    it('红衣大炮让攻城进攻炮兵每骰点数 +2', () => {
         const core = buildRedCoatCannonCityAttackBattleCore();
         const rolls = createQidahenStructuredBattleRolls(
             core,
@@ -717,14 +719,14 @@ describe('七大恨战斗军备效果', () => {
         );
         const artilleryStage = rolls?.stages.find((stage) => stage.phase === 'artillery');
 
-        expect(rolls?.summary).toContain('炮兵 攻4/4/4/4/4/4/4/4=32/守-=0');
-        expect(artilleryStage?.attackerRolls).toHaveLength(8);
+        expect(rolls?.summary).toContain('炮兵 攻4->6/4->6=12/守-=0');
+        expect(artilleryStage?.attackerRolls).toHaveLength(2);
         expect(artilleryStage?.attackerRolls).toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'artillery', level: 2, dieSides: 8 }),
         ]));
     });
 
-    it('红衣大炮来源牌会让野战防守炮兵每个额外掷 1 颗骰', () => {
+    it('红衣大炮让野战防守炮兵每骰点数 +1', () => {
         const core = buildRedCoatCannonFieldDefenseBattleCore();
         const rolls = createQidahenStructuredBattleRolls(
             core,
@@ -739,14 +741,14 @@ describe('七大恨战斗军备效果', () => {
         );
         const artilleryStage = rolls?.stages.find((stage) => stage.phase === 'artillery');
 
-        expect(rolls?.summary).toContain('炮兵 攻-=0/守4/4/4/4/4/4=24');
-        expect(artilleryStage?.defenderRolls).toHaveLength(6);
+        expect(rolls?.summary).toContain('炮兵 攻-=0/守4->5/4->5=10');
+        expect(artilleryStage?.defenderRolls).toHaveLength(2);
         expect(artilleryStage?.defenderRolls).toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'artillery', level: 2, dieSides: 8 }),
         ]));
     });
 
-    it('骑兵火器升级后会让野战骑兵阶段每个骑兵额外掷 1 颗骰', () => {
+    it('骑兵火器使骑兵每骰点数 +1', () => {
         const core = buildCavalryFirearmBattleCore();
         const rolls = createQidahenStructuredBattleRolls(
             core,
@@ -761,8 +763,8 @@ describe('七大恨战斗军备效果', () => {
         );
         const cavalryStage = rolls?.stages.find((stage) => stage.phase === 'cavalry');
 
-        expect(rolls?.summary).toContain('骑兵 攻4/4/4/4=16/守-=0');
-        expect(cavalryStage?.attackerRolls).toHaveLength(4);
+        expect(rolls?.summary).toContain('骑兵 攻4->5/4->5=10/守-=0');
+        expect(cavalryStage?.attackerRolls).toHaveLength(2);
         expect(cavalryStage?.attackerRolls).toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'cavalry', level: 2, dieSides: 8 }),
         ]));
@@ -783,11 +785,11 @@ describe('七大恨战斗军备效果', () => {
         );
         const cavalryStage = rolls?.stages.find((stage) => stage.phase === 'cavalry');
 
-        expect(rolls?.summary).toContain('骑兵(骑兵火器指定骑兵先掷) 攻4/4/4/4=16/守-=0');
+        expect(rolls?.summary).toContain('骑兵(骑兵火器指定骑兵先掷) 攻4->5/4->5=10/守-=0');
         expect(cavalryStage?.priorityNote).toBe('骑兵火器指定骑兵先掷');
-        expect(cavalryStage?.attackerRolls).toHaveLength(4);
+        expect(cavalryStage?.attackerRolls).toHaveLength(2);
         expect(cavalryStage?.defenderRolls).toHaveLength(0);
-        expect(cavalryStage?.attackerDamage).toBe(5);
+        expect(cavalryStage?.attackerDamage).toBe(2);
     });
 
     it('拒马会让对手骑兵火器骑兵先结算修正失效', () => {
@@ -819,9 +821,9 @@ describe('七大恨战斗军备效果', () => {
         );
         const cavalryStage = rolls?.stages.find((stage) => stage.phase === 'cavalry');
 
-        expect(rolls?.summary).toContain('骑兵 攻4/4/4/4=16/守4=4');
+        expect(rolls?.summary).toContain('骑兵 攻4->5/4->5=10/守4=4');
         expect(cavalryStage?.priorityNote).toBeNull();
-        expect(cavalryStage?.attackerRolls).toHaveLength(4);
+        expect(cavalryStage?.attackerRolls).toHaveLength(2);
         expect(cavalryStage?.defenderRolls).toHaveLength(1);
     });
 
@@ -891,7 +893,7 @@ describe('七大恨战斗军备效果', () => {
         ]));
     });
 
-    it('精钢马刀来源牌只有控制鄂尔多斯部时才让野战骑兵额外掷 1 颗骰', () => {
+    it('精钢马刀只有控制鄂尔多斯部时使骑兵每骰点数 +1', () => {
         const uncontrolledCore = buildFineSteelSaberBattleCore(false);
         const uncontrolledRolls = createQidahenStructuredBattleRolls(
             uncontrolledCore,
@@ -924,9 +926,9 @@ describe('七大恨战斗军备效果', () => {
         );
         const controlledCavalryStage = controlledRolls?.stages.find((stage) => stage.phase === 'cavalry');
 
-        expect(controlledRolls?.summary).toContain('骑兵 攻4/4/4/4=16/守-=0');
+        expect(controlledRolls?.summary).toContain('骑兵 攻4->5/4->5=10/守-=0');
         expect(controlledCavalryStage?.priorityNote).toBeNull();
-        expect(controlledCavalryStage?.attackerRolls).toHaveLength(4);
+        expect(controlledCavalryStage?.attackerRolls).toHaveLength(2);
     });
 
     it('西式棱堡升级后会让城战守方每个部队投 2 颗骰', () => {
@@ -1024,7 +1026,7 @@ describe('七大恨战斗军备效果', () => {
         ]);
     });
 
-    it('连环火铳升级后会让野战步兵阶段每个步兵额外掷 1 颗骰', () => {
+    it('长管火铳使步兵每骰点数 +1', () => {
         const core = buildLinkedMusketsBattleCore();
         const rolls = createQidahenStructuredBattleRolls(
             core,
@@ -1040,14 +1042,14 @@ describe('七大恨战斗军备效果', () => {
         const infantryStage = rolls?.stages.find((stage) => stage.phase === 'infantry');
 
         expect(rolls?.summary).toContain('战斗掷骰（野战）');
-        expect(rolls?.summary).toContain('步兵 攻4/4/4/4=16');
-        expect(infantryStage?.attackerRolls).toHaveLength(4);
+        expect(rolls?.summary).toContain('步兵 攻4->5/4->5=10');
+        expect(infantryStage?.attackerRolls).toHaveLength(2);
         expect(infantryStage?.attackerRolls).toEqual(expect.arrayContaining([
             expect.objectContaining({ troopKind: 'infantry', level: 2, dieSides: 8 }),
         ]));
     });
 
-    it('连环火铳升级后会让野战步兵阶段先结算并压制对手反击', () => {
+    it('长管火铳让野战步兵阶段先结算并压制对手反击', () => {
         const core = buildLinkedMusketsPriorityBattleCore();
         const rolls = createQidahenStructuredBattleRolls(
             core,
@@ -1062,14 +1064,14 @@ describe('七大恨战斗军备效果', () => {
         );
         const infantryStage = rolls?.stages.find((stage) => stage.phase === 'infantry');
 
-        expect(rolls?.summary).toContain('步兵(连环火铳指定步兵先掷) 攻4/4/4/4=16/守-=0');
-        expect(infantryStage?.priorityNote).toBe('连环火铳指定步兵先掷');
-        expect(infantryStage?.attackerRolls).toHaveLength(4);
+        expect(rolls?.summary).toContain('步兵(长管火铳指定步兵先掷) 攻4->5/4->5=10/守-=0');
+        expect(infantryStage?.priorityNote).toBe('长管火铳指定步兵先掷');
+        expect(infantryStage?.attackerRolls).toHaveLength(2);
         expect(infantryStage?.defenderRolls).toHaveLength(0);
-        expect(infantryStage?.attackerDamage).toBe(5);
+        expect(infantryStage?.attackerDamage).toBe(2);
     });
 
-    it('拒马会让对手连环火铳步兵先结算修正失效', () => {
+    it('拒马不会取消对手长管火铳的步兵先结算', () => {
         const core = buildLinkedMusketsPriorityBattleCore();
         core.pendingTargetAction = {
             ...core.pendingTargetAction!,
@@ -1098,9 +1100,9 @@ describe('七大恨战斗军备效果', () => {
         );
         const infantryStage = rolls?.stages.find((stage) => stage.phase === 'infantry');
 
-        expect(rolls?.summary).toContain('步兵 攻4/4/4/4=16/守4->5=5');
-        expect(infantryStage?.priorityNote).toBeNull();
-        expect(infantryStage?.attackerRolls).toHaveLength(4);
-        expect(infantryStage?.defenderRolls).toHaveLength(1);
+        expect(rolls?.summary).toContain('步兵(长管火铳指定步兵先掷) 攻4->5/4->5=10/守-=0');
+        expect(infantryStage?.priorityNote).toBe('长管火铳指定步兵先掷');
+        expect(infantryStage?.attackerRolls).toHaveLength(2);
+        expect(infantryStage?.defenderRolls).toHaveLength(0);
     });
 });

@@ -308,7 +308,7 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
         expect(attack.success).toBe(true);
         expect(declared?.payload).toMatchObject({
             rangedDiceModifier: 1,
-            diceResults: [3, 3, 3],
+            diceResults: [1, 1, 1],
         });
     });
 
@@ -478,8 +478,8 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
             type: MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED,
             payload: expect.objectContaining({
                 spellCardId: 3423,
-                diceResults: Array(12).fill(3),
-                healing: 36,
+                diceResults: Array(12).fill(2),
+                healing: 24,
                 actualHealing: 8,
             }),
         }));
@@ -718,11 +718,11 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
             attackProfileId: 'attack-0',
             attackName: '伏特力之箭',
             targetPlayerId: '1',
-            diceResults: [3, 3, 3, 3],
-            baseDamage: 12,
+            diceResults: [1, 1, 1, 1],
+            baseDamage: 4,
             actionCost: 'normal',
         });
-        expect(attack.state.core.players['1'].damage).toBe(12);
+        expect(attack.state.core.players['1'].damage).toBe(4);
     });
 
     it('implements 3712 Guardian Crown through the shared passive armor equipment chain', () => {
@@ -925,15 +925,15 @@ describe('mage-wars standard starting spellbook implementation batch', () => {
                 payload: expect.objectContaining({
                     attackerObjectId: vampireId,
                     vampiric: true,
-                    diceResults: [3, 3, 3, 3, 3],
-                    baseDamage: 15,
+                    diceResults: [1, 1, 1, 1, 1],
+                    baseDamage: 5,
                 }),
             }),
             expect.objectContaining({
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_VAMPIRIC_HEALING_AVAILABLE,
                 payload: expect.objectContaining({
                     spellCardId,
-                    healing: 15,
+                    healing: 5,
                 }),
             }),
         ]));

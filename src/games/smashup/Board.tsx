@@ -45,7 +45,7 @@ import { getFactionMeta } from './ui/factionMeta';
 import { PLAYER_CONFIG } from './ui/playerConfig';
 import { BaseZone } from './ui/BaseZone';
 import { MeFirstOverlay, type MeFirstPendingCard } from './ui/MeFirstOverlay';
-import { CardMagnifyOverlay, type CardMagnifyTarget } from './ui/CardMagnifyOverlay';
+import { CardMagnifyController, type CardMagnifyControllerHandle, type CardMagnifyTarget } from './ui/CardMagnifyOverlay';
 import { GameButton as SmashUpGameButton } from './ui/GameButton';
 import { DeckDiscardZone } from './ui/DeckDiscardZone';
 import { getDiscardPlayOptions } from './domain/discardPlayability';
@@ -2804,7 +2804,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [playerID, respondReactionFieldTriggerSource, reactionFieldTriggerSourceOptions.optionIdsByTitanUid, isTitanReactionPrompt, reactionTitanTriggerOptionIdsByUid, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, respondCurrentPrompt, titanPromptBaseSelection, setAsideTitanActivationState, toastCommandFeedback, handleTitanReactionTrigger]);
 
     // VIEWING STATE
-    const [viewingCard, setViewingCard] = useState<CardMagnifyTarget | null>(null);
+    const cardMagnifyRef = useRef<CardMagnifyControllerHandle>(null);
+    const setViewingCard = useCallback((target: CardMagnifyTarget | null) => {
+        cardMagnifyRef.current?.setTarget(target);
+    }, []);
 
     const backtimersStasisCards = useMemo<BacktimersStasisDisplayCard[]>(() => {
         const orderedPlayerIds = playerDisplayOrder.length > 0
@@ -2956,7 +2959,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (currentPrompt && !shouldRenderPromptInOverlay) {
             setViewingCard(null);
         }
-    }, [currentPrompt, currentPrompt?.id, shouldRenderPromptInOverlay]);
+    }, [currentPrompt, currentPrompt?.id, shouldRenderPromptInOverlay, setViewingCard]);
 
     const handleBaseClick = useCallback((index: number) => {
         if (!G || !core) return;
@@ -5517,7 +5520,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 />
 
                 {/* PREVIEW OVERLAY */}
-                <CardMagnifyOverlay target={viewingCard} onClose={() => setViewingCard(null)} />
+                <CardMagnifyController ref={cardMagnifyRef} />
 
                 {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆交互时隐藏，由对应区域直接处理） */}
                 {(() => {

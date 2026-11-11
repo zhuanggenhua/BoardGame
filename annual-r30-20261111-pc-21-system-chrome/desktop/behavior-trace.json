@@ -1,0 +1,3187 @@
+{
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "sourceRun": "2026-11-10T17-12-32-594Z",
+  "status": "RUNNING",
+  "steps": [
+    {
+      "id": "frontier-goal",
+      "action": "manual-next",
+      "targetIds": [],
+      "before": {
+        "visible": {
+          "text": "101%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n开垦\n军屯\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n征兵\n训练\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n你执掌大明，每张纪年卡计1点威望，先得3点即可获胜。新年按下一张纪年卡的条件决定领取资格；眼前的条件是增加最多控制区域。\n下一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-recruit-train",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "120%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n回到轮盘\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n开垦\n军屯\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n征兵\n训练\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n这一年从辽北夺取叶赫部，争取第一张纪年卡。\n上一步\n下一步\n叶赫部"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-recruit-train",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "assertions": [
+        {
+          "name": "formal-event-advanced-input",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "frontier-target",
+      "action": "manual-next",
+      "targetIds": [],
+      "before": {
+        "visible": {
+          "text": "120%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n回到轮盘\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n开垦\n军屯\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n征兵\n训练\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n这一年从辽北夺取叶赫部，争取第一张纪年卡。\n上一步\n下一步\n叶赫部"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-recruit-train",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "100%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n开垦\n军屯\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n征兵\n训练\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n三方共用这个行动轮盘。前进1格免费；前进2格须指定一名对手抽2张牌，前进3格则所有对手各抽2张。这次前进1格，利用开垦、军屯准备前线。\n上一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-recruit-train",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "assertions": [
+        {
+          "name": "formal-event-advanced-input",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "opening-move",
+      "action": "EXECUTE_WHEEL_MOVE",
+      "targetIds": [],
+      "before": {
+        "visible": {
+          "text": "100%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n开垦\n军屯\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n征兵\n训练\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n三方共用这个行动轮盘。前进1格免费；前进2格须指定一名对手抽2张牌，前进3格则所有对手各抽2张。这次前进1格，利用开垦、军屯准备前线。\n上一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-recruit-train",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "100%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n开垦\n军屯\n放弃剩余轮盘行动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n突袭作战\n征召军队\n赐印招安\n驱虎吞狼\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n开垦增加人口，军屯建立部队并补充手牌。先选择一项行动。\n上一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "assertions": [
+        {
+          "name": "formal-event-advanced-input",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "opening-farm-cycle",
+      "action": "SYS_INTERACTION_RESPOND",
+      "targetIds": [
+        "military-farm"
+      ],
+      "before": {
+        "visible": {
+          "text": "100%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n开垦\n军屯\n放弃剩余轮盘行动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n突袭作战\n征召军队\n赐印招安\n驱虎吞狼\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n开垦增加人口，军屯建立部队并补充手牌。先选择一项行动。\n上一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "182%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n1\n1\n1\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n回到轮盘\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明 · 选择军屯区域\n确认\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n选择可以建立正规军的本土区域，建立1支2级正规军并抽2张牌。\n上一步\n辽北"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "assertions": [
+        {
+          "name": "formal-event-advanced-input",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "opening-farm-cycle",
+      "action": "SYS_INTERACTION_RESPOND",
+      "targetIds": [
+        "city-region-15"
+      ],
+      "before": {
+        "visible": {
+          "text": "182%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n1\n1\n1\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n回到轮盘\n大明VP0\n3/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明 · 选择军屯区域\n确认\n大明抽牌\n36\n事件\n战术\n银两\n大明弃牌\n0\n🛠️\n选择可以建立正规军的本土区域，建立1支2级正规军并抽2张牌。\n上一步\n辽北"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 3,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3"
+          ],
+          "artillery": 1
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "100%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n5/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n开垦\n放弃剩余轮盘行动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n突袭作战\n征召军队\n赐印招安\n驱虎吞狼\n大明抽牌\n34\n事件\n战术\n银两\n军备\n事件\n大明弃牌\n0\n🛠️\n军屯已完成；还可以开垦或结束轮盘行动。\n上一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 5,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 4,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3",
+            "deck-ming-4",
+            "deck-ming-5"
+          ],
+          "artillery": 1
+        }
+      },
+      "assertions": [
+        {
+          "name": "formal-event-advanced-input",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "opening-farm-cycle",
+      "action": "SYS_INTERACTION_RESPOND",
+      "targetIds": [
+        "reclaim"
+      ],
+      "before": {
+        "visible": {
+          "text": "100%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n大明VP0\n5/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n开垦\n放弃剩余轮盘行动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n突袭作战\n征召军队\n赐印招安\n驱虎吞狼\n大明抽牌\n34\n事件\n战术\n银两\n军备\n事件\n大明弃牌\n0\n🛠️\n军屯已完成；还可以开垦或结束轮盘行动。\n上一步"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 5,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 4,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3",
+            "deck-ming-4",
+            "deck-ming-5"
+          ],
+          "artillery": 1
+        }
+      },
+      "after": {
+        "visible": {
+          "text": "182%\n后金\n蒙古\n蒙古\n蒙古\n后金\n蒙古\n后金\n后金\n后金\n后金\n后金\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n蒙古\n1\n1\n1\n1\n1\n1\n2\n2\n1\n5\n2\n2\n1\n2\n2\n2\n3\n1\n2\n2\n3\n2\n1\n2\n2\n2\n1\n2\n3\n2\n3\n1\n3\n2\n2\n-\n复位\n+\n回到轮盘\n大明VP0\n5/15\n当前回合\n蒙古VP0\n6/10\n后金VP0\n10/10\n新年\n开垦\n军屯\n征兵\n训练\n调度\n进攻\n年中\n调度\n进攻\n外交\n雇佣\n征兵\n训练\n外交\n雇佣\n开垦\n军屯\n新年 >>>\n年中\n行\n轮\n盘\n动\n朝鲜牌库\n24\n朝鲜弃牌\n0\n大明 · 选择开垦区域（最多5处）\n确认\n大明抽牌\n34\n事件\n战术\n银两\n军备\n事件\n大明弃牌\n0\n🛠️\n选择要增加人口的合法区域，最多选择5处。\n上一步\n辽东"
+        },
+        "authoritative": {
+          "phase": "action-window",
+          "playerId": "0",
+          "wheel": "wheel-military-farm",
+          "year": 0,
+          "hand": 5,
+          "regions": [
+            {
+              "id": "city-region-1",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-2",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-3",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-4",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "city-region-5",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-6",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-7",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-8",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-9",
+              "controller": "jin",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-10",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-11",
+              "controller": "jin",
+              "troops": 2,
+              "population": 2
+            },
+            {
+              "id": "xian-xing",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-13",
+              "controller": "jin",
+              "troops": 3,
+              "population": 2
+            },
+            {
+              "id": "city-region-14",
+              "controller": "mongol",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-15",
+              "controller": "ming",
+              "troops": 4,
+              "population": 3
+            },
+            {
+              "id": "city-region-16",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-17",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-18",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-19",
+              "controller": "mongol",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "city-region-20",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-21",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 2
+            },
+            {
+              "id": "jinzhou",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-22",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "song-jin",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-24",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-25",
+              "controller": "ming",
+              "troops": 0,
+              "population": 0
+            },
+            {
+              "id": "city-region-26",
+              "controller": "neutral",
+              "troops": 0,
+              "population": 3
+            },
+            {
+              "id": "city-region-27",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28-jizhen",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-28",
+              "controller": "ming",
+              "troops": 3,
+              "population": 5
+            },
+            {
+              "id": "city-region-29",
+              "controller": "ming",
+              "troops": 1,
+              "population": 0
+            },
+            {
+              "id": "city-region-30",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-31",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-32",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-33",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "city-region-15-liaodong",
+              "controller": "ming",
+              "troops": 3,
+              "population": 3
+            },
+            {
+              "id": "city-region-19-liaoxi",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            },
+            {
+              "id": "duoyan",
+              "controller": "ming",
+              "troops": 1,
+              "population": 1
+            },
+            {
+              "id": "xuan-fu",
+              "controller": "ming",
+              "troops": 1,
+              "population": 2
+            }
+          ],
+          "cards": [
+            "hand-1",
+            "hand-2",
+            "hand-3",
+            "deck-ming-4",
+            "deck-ming-5"
+          ],
+          "artillery": 1
+        }
+      },
+      "assertions": [
+        {
+          "name": "formal-event-advanced-input",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "frontier-goal",
+      "stepId": "frontier-goal",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\annual-r30-20261111-pc-21-system-chrome\\desktop\\00-frontier-goal.png",
+      "viewport": "desktop",
+      "sha256": "3f92e782c8dfef17bac991dc725efcfca61109f6ee934e262c53a881d6ee59d0"
+    },
+    {
+      "id": "frontier-target",
+      "stepId": "frontier-target",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\annual-r30-20261111-pc-21-system-chrome\\desktop\\01-frontier-target.png",
+      "viewport": "desktop",
+      "sha256": "b86e72e83bf48495195791e1ba37697bcc335a4a980f71f7d06fb00437b44e1c"
+    },
+    {
+      "id": "opening-move",
+      "stepId": "opening-move",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\annual-r30-20261111-pc-21-system-chrome\\desktop\\02-opening-move.png",
+      "viewport": "desktop",
+      "sha256": "3e19d6f7a206cc05094573f6caddc1b7308508a93bef3a1b3b6798a793a34f66"
+    },
+    {
+      "id": "farm-action",
+      "stepId": "opening-farm-cycle",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\annual-r30-20261111-pc-21-system-chrome\\desktop\\03-farm-action.png",
+      "viewport": "desktop",
+      "sha256": "67784192d96fc9c7689282ded32876888ce54eed8a826884bd88e66afc564d4f"
+    },
+    {
+      "id": "farm-target",
+      "stepId": "opening-farm-cycle",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\annual-r30-20261111-pc-21-system-chrome\\desktop\\04-farm-target.png",
+      "viewport": "desktop",
+      "sha256": "396f58292d6c0516b2805a9fbab13756385e05a9d47eb056896e5d5c722cdff7"
+    },
+    {
+      "id": "reclaim-action",
+      "stepId": "opening-farm-cycle",
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\annual-r30-20261111-pc-21-system-chrome\\desktop\\05-reclaim-action.png",
+      "viewport": "desktop",
+      "sha256": "c827c77aa0e6b557d5505181c48d3a3ba898d23be01a0745541c8872330c3748"
+    }
+  ],
+  "chainId": "qidahen-annual-desktop",
+  "sourceRevision": "annual-revision-30",
+  "browserContextId": "2026-11-10T17-12-32-594Z:desktop"
+}

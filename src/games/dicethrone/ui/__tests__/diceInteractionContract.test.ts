@@ -70,7 +70,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
             interaction: groupRerollInteraction,
             result: { selectedDiceIds: selectedIds },
         });
-        expect(hint).toEqual({ key: selectedIds.length ? 'interaction.hint_group_reroll_selected' : 'interaction.hint_group_reroll', params: { count: selectedIds.length } });
+        expect(hint).toEqual({ key: 'interaction.hint_select', params: { current: selectedIds.length, max: 5 } });
     });
 
     it('普通多步选骰也必须由同一交互合同派生非空提示', () => {
@@ -141,7 +141,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
             allowedDieIds: [1, 2, 3],
             completedDieIds: [],
             completedCount: 0,
-            hint: { key: 'interaction.hint_group_reroll_selected', params: { count: 1 } },
+            hint: { key: 'interaction.hint_select', params: { current: 1, max: 3 } },
             actions: {
                 left: {
                     kind: 'submitSelection',
@@ -532,7 +532,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
                 data: { allowedDieIds: [0], meta: { dtType: 'selectDie', selectionMode: 'reroll', selectCount: 1, targetOpponentDice: false } },
             } as InteractionDescriptor,
             result: { selectedDiceIds: [1] },
-            message: 'Invalid current die selection',
+            message: 'Invalid current die selection (outside_candidates; selected=1; completed=0; remaining=1; candidates=1)',
         },
         {
             id: 'selection-reuses-completed-die',
@@ -544,7 +544,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
                 },
             } as InteractionDescriptor,
             result: { selectedDiceIds: [0] },
-            message: 'Invalid current die selection',
+            message: 'Invalid current die selection (already_completed; selected=1; completed=1; remaining=1; candidates=2)',
         },
         {
             id: 'modify-count-mismatch',

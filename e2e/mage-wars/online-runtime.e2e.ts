@@ -6298,6 +6298,12 @@ async function deployCreatureWithSummonProcessEvidence(
     await expect(page.getByTestId('mage-wars-fx-summon')).toHaveCount(0, { timeout: 5_000 });
     await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤落场完成截图前`);
     await frameMageWarsArenaForEvidence(page, `${label} 召唤完成单位落场`);
+    await dragArenaViewportUntilLocatorActionable(
+        page,
+        page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${summonFxAudit.objectId}"]`).first(),
+        `${label} 召唤落场对象可见`,
+        { safeInset: Math.round((page.viewportSize()?.height ?? 720) * 0.38) },
+    );
     if (!isMageWarsGoldenVideoRun()) {
         await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`, {
             evidenceDir: options.evidenceDir,
@@ -7073,6 +7079,12 @@ test.describe('Mage Wars formal online runtime', () => {
             await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '召唤完成稳定收口截图前');
             await frameMageWarsArenaForEvidence(match.hostPage, '召唤完成并可继续');
+            await dragArenaViewportUntilLocatorActionable(
+                match.hostPage,
+                match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostSummon.objectId}"]`).first(),
+                '召唤稳定收口对象可见',
+                { safeInset: Math.round((match.hostPage.viewportSize()?.height ?? 720) * 0.38) },
+            );
             await saveEvidenceScreenshot(
                 match.hostPage,
                 testInfo,
@@ -7199,6 +7211,7 @@ test.describe('Mage Wars formal online runtime', () => {
             ).not.toBe('0');
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '召唤和攻击必要过程帧完成后');
             await frameMageWarsArenaForEvidence(attackPage, '远程攻击稳定收口');
+            await dragArenaViewportUntilLocatorActionable(attackPage, attackTarget, '远程攻击稳定收口目标可见', { safeInset: Math.round((attackPage.viewportSize()?.height ?? 720) * 0.38) });
             await saveEvidenceScreenshot(attackPage, testInfo, '04-远程攻击稳定收口-目标损伤已落地', {
                 evidenceDir: rangedEvidenceRun.stagingDir,
             });
@@ -7768,8 +7781,23 @@ test.describe('Mage Wars formal online runtime', () => {
         } | null = null;
 
         try {
+            const randomSeed = await new Promise<string>((resolve, reject) => {
+                const socket = io(`${getGameServerBaseURL()}/game`, { parser: msgpackParser, transports: ['websocket'], forceNew: true, reconnection: false });
+                const timeout = setTimeout(() => { socket.disconnect(); reject(new Error('读取治疗之光随机种子超时')); }, 5_000);
+                socket.on('connect', () => socket.emit('sync', match.matchId, '0', match.hostCredentials));
+                socket.on('connect_error', (error) => { clearTimeout(timeout); socket.disconnect(); reject(error); });
+                socket.on('state:sync', (id: string, _state: unknown, _players: unknown, meta: { seed?: unknown }) => {
+                    if (id !== match.matchId || typeof meta?.seed !== 'string') return;
+                    clearTimeout(timeout); socket.disconnect(); resolve(meta.seed);
+                });
+            });
+            const random = createSeededRandom(randomSeed);
+            let randomCursor = 0;
+            while (randomCursor < 1000 && random.d(3) !== 3) randomCursor += 1;
+            expect(randomCursor).toBeLessThan(1000);
             await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
                 phase: 'creatureAction',
+                randomCursor,
                 replaceObjects: true,
                 objects: [
                     {
@@ -7862,29 +7890,6 @@ test.describe('Mage Wars formal online runtime', () => {
             await healingLightButton.click({ timeout: 3_000, noWaitAfter: true });
             await expect(animalCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
             await waitForFxLayerIdle(match.hostPage, '治疗之光目标提交前');
-            await waitForTestHarness(match.hostPage);
-            const healingDiceReady = await match.hostPage.evaluate(() => {
-                const harness = (window as Window & {
-                    __BG_TEST_HARNESS__?: {
-                        dice?: {
-                            setValues?: (values: number[]) => void;
-                            remaining?: () => number;
-                            getValues?: () => number[];
-                        };
-                    };
-                }).__BG_TEST_HARNESS__;
-                harness?.dice?.setValues?.([2]);
-                return {
-                    hasHarness: Boolean(harness),
-                    remaining: harness?.dice?.remaining?.() ?? null,
-                    values: harness?.dice?.getValues?.() ?? [],
-                };
-            });
-            expect(healingDiceReady).toMatchObject({
-                hasHarness: true,
-                remaining: 1,
-                values: [2],
-            });
             gifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
             const healingFxAuditPromise = captureMageWarsFxProcessScreenshots(
                 match.hostPage,
@@ -9418,6 +9423,9 @@ test.describe('Mage Wars formal online runtime', () => {
                 '群兽法杖治疗前玩家画面必须显示目标当前生命低于最大生命',
             ).toBeLessThan(beforeHealingLife.life);
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖治疗动作前截图');
+            await dragArenaViewportUntilLocatorActionable(match.hostPage, animalCard, '群兽法杖治疗前受伤目标可见', {
+                safeInset: Math.round((match.hostPage.viewportSize()?.height ?? 720) * 0.38),
+            });
             await saveEvidenceScreenshot(
                 match.hostPage,
                 testInfo,

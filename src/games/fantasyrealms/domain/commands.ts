@@ -1,12 +1,14 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { getFantasyRealmsCurrentHandLimit } from '../foundation';
 import type { FantasyRealmsCommand, FantasyRealmsCore } from './types';
+import { getSettlementOptions, matchesSettlementOption } from './settlement';
 
 export const FANTASY_REALMS_COMMANDS = {
     SET_FOCUS_CARD: 'SET_FOCUS_CARD',
     DRAW_FROM_DECK: 'DRAW_FROM_DECK',
     TAKE_FROM_DISCARD: 'TAKE_FROM_DISCARD',
     DISCARD_CARD: 'DISCARD_CARD',
+    RESOLVE_SETTLEMENT: 'RESOLVE_SETTLEMENT',
 } as const;
 
 const fail = (error: string): ValidationResult => ({ valid: false, error });
@@ -96,6 +98,12 @@ export function validate(
                 return fail('handCardUnavailable');
             }
             return { valid: true };
+
+        case FANTASY_REALMS_COMMANDS.RESOLVE_SETTLEMENT:
+            if (!core.settlement || core.settlement.step === 'done') return fail('notInSettlement');
+            if (command.playerId !== core.currentPlayer) return fail('notYourTurn');
+            return getSettlementOptions(core).some((option) => matchesSettlementOption(option.choice, command.payload))
+                ? { valid: true } : fail('invalidSettlementChoice');
 
         default:
             return fail('unknownCommand');

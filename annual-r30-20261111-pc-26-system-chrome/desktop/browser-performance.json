@@ -1,0 +1,110 @@
+[
+  {
+    "step": "frontier-goal",
+    "at": 1794359437205,
+    "metrics": {
+      "Nodes": 2146,
+      "LayoutDuration": 0.20744,
+      "RecalcStyleDuration": 0.729644,
+      "ScriptDuration": 4.350214,
+      "TaskDuration": 8.172268,
+      "JSHeapUsedSize": 85563032
+    }
+  },
+  {
+    "step": "frontier-target",
+    "at": 1794359441596,
+    "metrics": {
+      "Nodes": 2186,
+      "LayoutDuration": 0.221963,
+      "RecalcStyleDuration": 0.74325,
+      "ScriptDuration": 4.924744,
+      "TaskDuration": 10.696731,
+      "JSHeapUsedSize": 94285220
+    }
+  },
+  {
+    "step": "opening-move",
+    "at": 1794359443773,
+    "metrics": {
+      "Nodes": 2203,
+      "LayoutDuration": 0.235553,
+      "RecalcStyleDuration": 0.749959,
+      "ScriptDuration": 5.273645,
+      "TaskDuration": 11.221046,
+      "JSHeapUsedSize": 99305576
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794359446099,
+    "metrics": {
+      "Nodes": 2271,
+      "LayoutDuration": 0.252342,
+      "RecalcStyleDuration": 0.758318,
+      "ScriptDuration": 5.767356,
+      "TaskDuration": 11.931519,
+      "JSHeapUsedSize": 104377540
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794359450329,
+    "metrics": {
+      "Nodes": 2415,
+      "LayoutDuration": 0.270645,
+      "RecalcStyleDuration": 0.771241,
+      "ScriptDuration": 8.109247,
+      "TaskDuration": 14.525907,
+      "JSHeapUsedSize": 138291916
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794359456110,
+    "metrics": {
+      "Nodes": 4184,
+      "LayoutDuration": 0.2821,
+      "RecalcStyleDuration": 0.921034,
+      "ScriptDuration": 9.25001,
+      "TaskDuration": 18.556402,
+      "JSHeapUsedSize": 181753220
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794359459864,
+    "metrics": {
+      "Nodes": 2475,
+      "LayoutDuration": 0.288075,
+      "RecalcStyleDuration": 0.929187,
+      "ScriptDuration": 11.141528,
+      "TaskDuration": 20.763051,
+      "JSHeapUsedSize": 75485664
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794359464188,
+    "metrics": {
+      "Nodes": 2516,
+      "LayoutDuration": 0.294045,
+      "RecalcStyleDuration": 0.935013,
+      "ScriptDuration": 12.208365,
+      "TaskDuration": 22.165818,
+      "JSHeapUsedSize": 81557876
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794359466533,
+    "metrics": {
+      "Nodes": 2557,
+      "LayoutDuration": 0.315086,
+      "RecalcStyleDuration": 0.961207,
+      "ScriptDuration": 12.597015,
+      "TaskDuration": 22.895274,
+      "JSHeapUsedSize": 95341768
+    }
+  }
+]

@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { MatchState } from '../../src/engine/types';
 import { evaluateFantasyRealmsScore, FantasyRealmsDomain } from '../../src/games/fantasyrealms/domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore } from '../../src/games/fantasyrealms/domain';
+import { beginSettlement, applySettlementChoice, getSettlementOptions } from '../../src/games/fantasyrealms/domain/settlement';
 import { ALL_FANTASY_REALMS_CARDS, OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { initContext, waitForTestHarness } from '../helpers/common';
@@ -138,9 +139,20 @@ const gameOverCore = (): FantasyRealmsCore => {
     };
 };
 
-const nearEndDiscardCore = (): FantasyRealmsCore => {
+function settleFixture(core: FantasyRealmsCore): FantasyRealmsCore {
+    let state = core.settlement ? core : beginSettlement({ ...core, stage: 'settlement' });
+    while (state.settlement?.step !== 'done') {
+        const next = getSettlementOptions(state)[0];
+        if (!next) throw new Error('Missing fixture settlement option');
+        state = applySettlementChoice(state, next.choice);
+    }
+    return state;
+}
+
+const nearEndDiscardCore = (withoutChoices = false): FantasyRealmsCore => {
     const baseCore = FantasyRealmsDomain.setup(['0', '1'], random);
-    const cards = OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({ ...card }));
+    const choiceIds = new Set(['wild-shapeshifter', 'wild-mirage', 'wild-doppelganger', 'wizard-necromancer', 'artifact-book-of-changes', 'flood-island', 'flood-fountain-of-life']);
+    const cards = OFFICIAL_FANTASY_REALMS_CARDS.filter((card) => !withoutChoices || !choiceIds.has(card.id)).map((card) => ({ ...card }));
     const discardPile = cards.slice(0, 11);
     const playerZeroHand = cards.slice(11, 19);
     const playerOneHand = cards.slice(19, 26);
@@ -187,9 +199,10 @@ const nearEndDiscardCore = (): FantasyRealmsCore => {
     };
 };
 
-const nearEndMultiplayerDiscardCore = (): FantasyRealmsCore => {
+const nearEndMultiplayerDiscardCore = (withoutChoices = false): FantasyRealmsCore => {
     const baseCore = FantasyRealmsDomain.setup(['0', '1', '2'], random);
-    const cards = OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({ ...card }));
+    const choiceIds = new Set(['wild-shapeshifter', 'wild-mirage', 'wild-doppelganger', 'wizard-necromancer', 'artifact-book-of-changes', 'flood-island', 'flood-fountain-of-life']);
+    const cards = OFFICIAL_FANTASY_REALMS_CARDS.filter((card) => !withoutChoices || !choiceIds.has(card.id)).map((card) => ({ ...card }));
     const discardPile = cards.slice(0, 9);
     const playerZeroHand = cards.slice(9, 17);
     const playerOneHand = cards.slice(17, 24);
@@ -1372,7 +1385,7 @@ test.describe('FantasyRealms live flow', () => {
 
         try {
             await openFantasyRealmsTestPage(page, baseURL);
-            const core = gameOverCore();
+            const core = settleFixture(gameOverCore());
             const gameOverResult = FantasyRealmsDomain.isGameOver?.(core);
             if (!gameOverResult) {
                 throw new Error('Expected injected Fantasy Realms endgame state to produce gameOver result');
@@ -1393,6 +1406,9 @@ test.describe('FantasyRealms live flow', () => {
             await expect(page.getByTestId('fantasyrealms-live-score-strip')).toBeVisible();
             const standingsRegion = page.getByLabel('最终排名');
             await expect(standingsRegion).toBeVisible({ timeout: 10000 });
+            const layoutEvidencePath = getEvidenceScreenshotPath(testInfo, '终局牌桌无弹层');
+            await mkdir(dirname(layoutEvidencePath), { recursive: true });
+            await page.screenshot({ path: layoutEvidencePath, fullPage: false });
             const winnerStanding = sortedStandings.find((standing) => standing.isWinner) ?? sortedStandings[0];
             if (!winnerStanding) {
                 throw new Error('Expected at least one Fantasy Realms final standing');
@@ -1470,7 +1486,7 @@ test.describe('FantasyRealms live flow', () => {
             await openFantasyRealmsTestPage(page, baseURL);
             await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
 
-            const core = nearEndDiscardCore();
+            const core = nearEndDiscardCore(true);
             const discardCardId = core.players['0']!.hand[0]!.id;
             const postDiscardCore = applyCommand(core, {
                 type: 'DISCARD_CARD',
@@ -1601,7 +1617,7 @@ test.describe('FantasyRealms live flow', () => {
             await openFantasyRealmsTestPage(page, baseURL);
             await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
 
-            const core = nearEndMultiplayerDiscardCore();
+            const core = nearEndMultiplayerDiscardCore(true);
             const discardCardId = core.players['0']!.hand[0]!.id;
             const postDiscardCore = applyCommand(core, {
                 type: 'DISCARD_CARD',

@@ -5,6 +5,8 @@ import { FantasyRealmsDomain } from './domain';
 import { evaluateFantasyRealmsScore } from './domain';
 import { getDeckDrawCount } from './domain/commands';
 import type { FantasyRealmsCommand, FantasyRealmsCore } from './domain/types';
+import { getSettlementOptions } from './domain/settlement';
+import { evaluateFantasyRealmsResolvedScore } from './domain/scoring';
 import { createRuntimeDeck } from './foundation';
 
 type FantasyRealmsState = MatchState<FantasyRealmsCore>;
@@ -341,6 +343,14 @@ function evaluateActionOutcome(
     }
 
     const afterAction = applyAiCommand(state, playerId, command);
+    if (action.kind === 'settlement-choice' && afterAction.core.settlement) {
+        const evaluation = evaluateFantasyRealmsResolvedScore(
+            afterAction.core.players[playerId]?.hand ?? [], afterAction.core.discardPile,
+            afterAction.core.settlement.selections[playerId]!,
+            { setupConfig: afterAction.core.setupConfig, playerCount: afterAction.core.playerIds.length },
+        );
+        return { totalScore: evaluation.totalScore, tiebreakBaseScore: evaluation.tiebreakBaseScore };
+    }
     if (afterAction.core.currentPlayer === playerId && afterAction.core.stage === 'discard') {
         return getBestDiscardOutcome({
             hand: afterAction.core.players[playerId]?.hand ?? [],
@@ -364,6 +374,14 @@ export function buildFantasyRealmsAiLegalActions(args: {
     const core = state.core;
     if (state.sys?.gameover) return [];
     if (core.currentPlayer !== args.playerId) return [];
+
+    if (core.stage === 'settlement') {
+        return getSettlementOptions(core).map((option, index) => ({
+            actionId: createAiLegalActionId('settlement-choice', String(index)),
+            kind: 'settlement-choice', label: option.label,
+            commands: [{ type: 'RESOLVE_SETTLEMENT', payload: option.choice }],
+        }));
+    }
 
     if (core.stage === 'draw') {
         const actions: AiLegalAction[] = [];

@@ -189,6 +189,34 @@ describe('TutorialContext', () => {
         vi.useRealTimers();
     });
 
+    it('同一步只执行每个实际批次一次，并在动画结束后执行后续批次', async () => {
+        const manifest: TutorialManifest = { id: 'batch-loop', steps: [{ id: 'loop', content: '', requireAction: true }] };
+        const dispatched: Array<{ type: string; payload?: unknown }> = [];
+        const { result } = renderHook(() => useTutorial(), { wrapper });
+        let generation = 0;
+        act(() => { generation = result.current.bindDispatch((type, payload) => dispatched.push({ type, payload }));
+            result.current.startTutorial(manifest); result.current.notifyBoardMounted(generation); });
+        const snapshot = (batchId: string, pending = false): TutorialState => ({
+            active: true, manifestId: manifest.id, stepIndex: 0, steps: manifest.steps, pendingAnimationAdvance: pending,
+            step: { ...manifest.steps[0], aiBatchId: batchId, aiActions: [{ commandType: 'AI_INPUT', playerId: '1', payload: { interactionId: batchId } }] },
+        });
+        act(() => result.current.syncTutorialState(snapshot('first'), 'first'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(item => item.type === 'AI_INPUT')).toHaveLength(1);
+        expect(dispatched).toContainEqual({ type: TUTORIAL_COMMANDS.AI_CONSUMED, payload: { stepId: 'loop', batchId: 'first' } });
+        act(() => result.current.syncTutorialState(snapshot('first'), 'duplicate'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(item => item.type === 'AI_INPUT')).toHaveLength(1);
+        act(() => result.current.syncTutorialState(snapshot('second'), 'scheduled'));
+        act(() => result.current.syncTutorialState(snapshot('second', true), 'pending'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(item => item.type === 'AI_INPUT')).toHaveLength(1);
+        act(() => result.current.syncTutorialState(snapshot('second'), 'ready'));
+        await runNextTutorialTimer();
+        expect(dispatched.filter(item => item.type === 'AI_INPUT')).toHaveLength(2);
+        expect(dispatched).toContainEqual({ type: TUTORIAL_COMMANDS.AI_CONSUMED, payload: { stepId: 'loop', batchId: 'second' } });
+    });
+
     it('棋盘只改变教学隐藏投影时也会同步，不依赖步骤或事件变化', async () => {
         const manifest: TutorialManifest = { id: 'fate-domination-foundation', steps: [{ id: 'post-battle', content: '事件卡原文' }] };
         const dispatch = vi.fn();

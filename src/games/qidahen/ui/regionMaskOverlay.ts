@@ -103,7 +103,7 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
     candidate: {
         fill: [46, 166, 82, 60],
         stroke: [109, 235, 145, 255],
-        innerStrokeRadius: 2,
+        innerStrokeRadius: 1,
     },
     tutorialCandidate: {
         fill: [46, 166, 82, 24],

@@ -14,6 +14,7 @@ import { logger } from '../../lib/logger';
 import { readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../../lib/browserStorage';
 import { shouldAllowFabDragFromTarget } from './fabDrag';
 import { resolveExpandedFabLayout } from './fabLayout';
+import './global-hud.css';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from './fabPosition';
 import {
     readBoardShellCanvasSizeValue,

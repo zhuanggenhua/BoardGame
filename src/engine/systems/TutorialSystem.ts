@@ -62,6 +62,7 @@ export interface TutorialNextPayload {
 
 export interface TutorialAiConsumedPayload {
     stepId?: string;
+    batchId?: string;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -232,7 +233,7 @@ const bindManifestToExistingTutorialState = <TCore>(
         tutorial.step?.id === manifestStep.id
         && !tutorial.step?.aiActions
         && !tutorial.aiActions
-        && manifestStep.aiActions?.length,
+        && (manifestStep.aiActions?.length || (tutorial.step?.aiBatchId && tutorial.step.aiBatchId === reboundTutorial.step?.aiBatchId)),
     );
     const reboundStep = shouldPreserveConsumedAiActions && reboundTutorial.step
         ? { ...reboundTutorial.step, aiActions: undefined }
@@ -635,6 +636,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 const payload = command.payload as TutorialAiConsumedPayload | undefined;
                 // 动作事件可能已进入下一步，旧步骤的回执不能清除新步骤尚未执行的动作。
                 if (payload?.stepId && payload.stepId !== state.sys.tutorial.step?.id) return { halt: true };
+                if (state.sys.tutorial.step?.aiBatchId !== payload?.batchId) return { halt: true };
                 const timestamp = resolveTimestamp(command);
                 const shouldAdvanceAfterConsume = shouldAutoAdvanceAfterAiConsumed(
                     state.sys.tutorial,
@@ -722,6 +724,17 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 if (!state.sys.tutorial.active || !state.sys.tutorial.pendingAnimationAdvance) {
                     return { halt: true, state };
                 }
+                if (state.sys.tutorial.step?.waitForAnimationInStep?.length) {
+                    const manifest = resolveActiveManifest(state.sys.tutorial);
+                    const original = state.sys.tutorial.steps.find(step => step.id === state.sys.tutorial.step?.id);
+                    const resumed = { ...state.sys.tutorial, pendingAnimationAdvance: false };
+                    const resumedState = applyTutorialState(state, manifest && original
+                        ? resolveTutorialStep(state, manifest, { ...resumed, step: original }) : resumed);
+                    if (shouldAdvanceInvalidCurrentStep(resumedState, activeStepValidator)) {
+                        return { ...transitionTutorialStep(resumedState, 'next', resolveTimestamp(command), activeStepValidator, manifest, random.getCursor?.()), halt: true };
+                    }
+                    return { halt: true, state: resumedState };
+                }
                 const timestamp = resolveTimestamp(command);
                 const result = transitionTutorialStep(
                     state,
@@ -787,11 +800,20 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             }
 
             const step = tutorial.step;
+            // 等待中的战斗事件可能继续归约；动画结束前不重算候选或推进步骤。
+            if (tutorial.pendingAnimationAdvance) return currentState !== state ? { state: currentState } : undefined;
             // A previous action can emit the same event type as the next lesson's action
             // (for example, a riding-choice response and the following PLAY_SKILL both
             // emit FATE_ABILITY_USED). Only let a command advance a step authored for it.
             const matched = commandBelongsToStep(step, command)
                 && shouldAdvance(events, step?.advanceOnEvents);
+
+            const matchedInStep = commandBelongsToStep(step, command)
+                && shouldAdvance(events, step?.waitForAnimationInStep);
+            if (matchedInStep && !tutorial.pendingAnimationAdvance) {
+                return { state: applyTutorialState(currentState, { ...tutorial, pendingAnimationAdvance: true }),
+                    events: [{ type: TUTORIAL_EVENTS.ANIMATION_PENDING, payload: { stepId: step?.id }, timestamp: resolveTimestamp(command, events) }] };
+            }
 
             if (!matched) {
                 // 领域事件尚未归约时不能以暂态 frame 判定动态步骤无效；匹配事件仍正常推进。
@@ -815,8 +837,9 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 if (manifest?.resolveStep && originalStep) {
                     let resolved = resolveTutorialStep(currentState, manifest, { ...tutorial, step: originalStep });
                     // 重新解析不能把已经消费的静态 AI 动作重新排队。
-                    if (!tutorial.aiActions && !tutorial.step?.aiActions && originalStep.aiActions
-                        && JSON.stringify(resolved.step?.aiActions) === JSON.stringify(originalStep.aiActions)) {
+                    if (!tutorial.aiActions && !tutorial.step?.aiActions && ((originalStep.aiActions
+                        && JSON.stringify(resolved.step?.aiActions) === JSON.stringify(originalStep.aiActions))
+                        || (tutorial.step?.aiBatchId && tutorial.step.aiBatchId === resolved.step?.aiBatchId))) {
                         resolved = { ...resolved, aiActions: undefined, step: resolved.step ? { ...resolved.step, aiActions: undefined } : null };
                     }
                     if (JSON.stringify(resolved.step) !== JSON.stringify(tutorial.step)

@@ -94,7 +94,7 @@ describe('mage-wars object enchantments', () => {
         expect(bearAttack.success).toBe(true);
         expect(bearAttackEvent?.payload).toMatchObject({
             meleeDiceModifier: 2,
-            diceResults: [3, 3, 3, 3],
+            diceResults: [1, 1, 1, 1],
         });
 
         const agonizedAttacker = makeArenaObject('agony-attacker-0', '0', PLAYER_ZERO_START_ZONE, {
@@ -136,8 +136,8 @@ describe('mage-wars object enchantments', () => {
         expect(agonizedAttackEvent?.payload).toMatchObject({
             attackDiceModifier: -2,
             attackDiceModifierSourceObjectIds: [agonyEnchantment!.id],
-            diceResults: [3, 3],
-            baseDamage: 6,
+            diceResults: [1, 1],
+            baseDamage: 2,
         });
 
         const woundedCat = makeArenaObject('regrowth-cat-0', '0', PLAYER_ZERO_START_ZONE, {
@@ -218,14 +218,14 @@ describe('mage-wars object enchantments', () => {
                 attackProfileId: 'attack-0',
                 targetObjectId: armoredTarget.id,
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
         const armoredDamageEvent = armoredAttack.events.find((event) => event.type === 'DAMAGE_DEALT');
         expect(rhinoCast.success).toBe(true);
         expect(armoredDamageEvent?.payload).toMatchObject({
             targetId: armoredTarget.id,
-            actualDamage: 4,
+            actualDamage: 2,
         });
-        expect(armoredAttack.state.core.objects[armoredTarget.id].damage).toBe(4);
+        expect(armoredAttack.state.core.objects[armoredTarget.id].damage).toBe(2);
 
         const enduranceTarget = makeArenaObject('bull-endurance-target-1', '1', PLAYER_ZERO_START_ZONE, {
             life: 4,
@@ -261,10 +261,10 @@ describe('mage-wars object enchantments', () => {
                 attackProfileId: 'attack-0',
                 targetObjectId: enduranceTarget.id,
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
         expect(enduranceCast.success).toBe(true);
         expect(enduranceAttack.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
-        expect(enduranceAttack.state.core.objects[enduranceTarget.id].damage).toBe(7);
+        expect(enduranceAttack.state.core.objects[enduranceTarget.id].damage).toBe(5);
 
         const swiftTarget = makeArenaObject('enfeebled-swift-cat-0', '0', PLAYER_ZERO_START_ZONE, {
             attackOrTraitLine: '利爪：快速近战 2 骰；迅捷',
@@ -463,18 +463,18 @@ describe('mage-wars object enchantments', () => {
         expect(repeatAttack.success).toBe(true);
         expect(firstAttackEvent).toMatchObject({
             payload: {
-                diceResults: [3, 3, 3],
+                diceResults: [1, 1, 1],
                 deathMarkDiceModifier: 1,
                 deathMarkSourceObjectIds: [enchantment!.id],
             },
         });
         expect(secondAttackEvent).toMatchObject({
             payload: {
-                diceResults: [3, 3, 3],
+                diceResults: [1, 1, 1],
                 deathMarkDiceModifier: 1,
             },
         });
-        expect(repeatAttackEvent?.payload.diceResults).toEqual([3, 3]);
+        expect(repeatAttackEvent?.payload.diceResults).toEqual([1, 1]);
         expect(repeatAttackEvent?.payload).not.toHaveProperty('deathMarkDiceModifier');
         expect(repeatAttack.state.core.objects[enchantment!.id]).toMatchObject({
             deathMarkRoundNumber: repeatAttack.state.core.turnNumber,
@@ -528,7 +528,7 @@ describe('mage-wars object enchantments', () => {
         expect(multiStrikeAttackEvents).toEqual([
             expect.objectContaining({
                 payload: expect.objectContaining({
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     strikeIndex: 0,
                     strikeCount: 3,
                     deathMarkDiceModifier: 1,
@@ -537,7 +537,7 @@ describe('mage-wars object enchantments', () => {
             }),
             expect.objectContaining({
                 payload: expect.objectContaining({
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     strikeIndex: 1,
                     strikeCount: 3,
                     deathMarkDiceModifier: 1,
@@ -546,7 +546,7 @@ describe('mage-wars object enchantments', () => {
             }),
             expect.objectContaining({
                 payload: expect.objectContaining({
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     strikeIndex: 2,
                     strikeCount: 3,
                     deathMarkDiceModifier: 1,
@@ -1306,7 +1306,7 @@ describe('mage-wars object enchantments', () => {
         expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
         expect(attacked.state.core.objects[attachedBlock!.id]).toBeUndefined();
-        expect(attacked.state.core.objects[target.id].damage).toBe(12);
+        expect(attacked.state.core.objects[target.id].damage).toBe(4);
     });
 
     it('keeps Force Blade defense available through stun while retaining daze dice penalties', () => {
@@ -1576,7 +1576,7 @@ describe('mage-wars object enchantments', () => {
                 payload: expect.objectContaining({
                     spellCardId: 1823,
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                 }),
             }),
             expect.objectContaining({
@@ -1584,7 +1584,7 @@ describe('mage-wars object enchantments', () => {
                 payload: expect.objectContaining({
                     targetId: target.id,
                     sourceAbilityId: 'mw.spell.1823',
-                    actualDamage: 12,
+                    actualDamage: 4,
                 }),
             }),
             expect.objectContaining({
@@ -1597,7 +1597,7 @@ describe('mage-wars object enchantments', () => {
             }),
         ]));
         expect(entered.state.core.objects[trap!.id]).toBeUndefined();
-        expect(entered.state.core.objects[target.id]?.damage).toBe(12);
+        expect(entered.state.core.objects[target.id]?.damage).toBe(4);
     });
 
     it('consumes configured swift/elusive grants and applies limited life in effect order', () => {
@@ -1709,7 +1709,7 @@ describe('mage-wars object enchantments', () => {
                     sourceObjectId: ring?.id,
                     sourceSpellCardId: 1810,
                     attackerObjectId: attacker.id,
-                    diceResults: [3, 3],
+                    diceResults: [1, 1],
                     damageTypes: ['闪电'],
                     unavoidable: true,
                     lethal: false,
@@ -1720,11 +1720,11 @@ describe('mage-wars object enchantments', () => {
                 payload: expect.objectContaining({
                     targetId: attacker.id,
                     sourceAbilityId: 'mw.spell.1810.damage-barrier',
-                    actualDamage: 3,
+                    actualDamage: 2,
                 }),
             }),
         ]));
-        expect(attack.state.core.objects[attacker.id]?.damage).toBe(3);
+        expect(attack.state.core.objects[attacker.id]?.damage).toBe(2);
     });
 
     it('adds Mana Fusion channeling to a configured spawn point during channel phase', () => {

@@ -255,6 +255,7 @@ export function UGCSandbox() {
               >
                 <BoardBridge
                   board={sandboxConfig.board}
+                  gameId={sandboxConfig.engineConfig.gameId}
                   loading={<LoadingScreen title={t('matchRoom.title.sandbox')} description={t('matchRoom.sandbox.initializing')} />}
                 />
               </LocalGameProvider>

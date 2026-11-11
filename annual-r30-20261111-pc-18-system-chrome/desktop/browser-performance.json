@@ -1,0 +1,314 @@
+[
+  {
+    "step": "frontier-goal",
+    "at": 1794328029672,
+    "metrics": {
+      "Nodes": 2160,
+      "LayoutDuration": 0.242319,
+      "RecalcStyleDuration": 0.606739,
+      "ScriptDuration": 4.809602,
+      "TaskDuration": 8.119748,
+      "JSHeapUsedSize": 97031692
+    }
+  },
+  {
+    "step": "frontier-target",
+    "at": 1794328034059,
+    "metrics": {
+      "Nodes": 2188,
+      "LayoutDuration": 0.255033,
+      "RecalcStyleDuration": 0.619929,
+      "ScriptDuration": 5.374238,
+      "TaskDuration": 10.456254,
+      "JSHeapUsedSize": 94157688
+    }
+  },
+  {
+    "step": "opening-move",
+    "at": 1794328036204,
+    "metrics": {
+      "Nodes": 2205,
+      "LayoutDuration": 0.268342,
+      "RecalcStyleDuration": 0.626771,
+      "ScriptDuration": 5.719288,
+      "TaskDuration": 10.974545,
+      "JSHeapUsedSize": 98887588
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328038657,
+    "metrics": {
+      "Nodes": 2273,
+      "LayoutDuration": 0.284904,
+      "RecalcStyleDuration": 0.634766,
+      "ScriptDuration": 6.228221,
+      "TaskDuration": 11.703246,
+      "JSHeapUsedSize": 105440608
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328043818,
+    "metrics": {
+      "Nodes": 2417,
+      "LayoutDuration": 0.310751,
+      "RecalcStyleDuration": 0.647717,
+      "ScriptDuration": 9.193395,
+      "TaskDuration": 15.025054,
+      "JSHeapUsedSize": 115495496
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328048666,
+    "metrics": {
+      "Nodes": 4182,
+      "LayoutDuration": 0.32173,
+      "RecalcStyleDuration": 0.83269,
+      "ScriptDuration": 10.315991,
+      "TaskDuration": 18.867503,
+      "JSHeapUsedSize": 144732320
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328053553,
+    "metrics": {
+      "Nodes": 2475,
+      "LayoutDuration": 0.32801,
+      "RecalcStyleDuration": 0.840882,
+      "ScriptDuration": 12.146595,
+      "TaskDuration": 21.121161,
+      "JSHeapUsedSize": 75303388
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328057972,
+    "metrics": {
+      "Nodes": 2516,
+      "LayoutDuration": 0.333252,
+      "RecalcStyleDuration": 0.846332,
+      "ScriptDuration": 13.269266,
+      "TaskDuration": 22.545142,
+      "JSHeapUsedSize": 81210824
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328060439,
+    "metrics": {
+      "Nodes": 2557,
+      "LayoutDuration": 0.35245,
+      "RecalcStyleDuration": 0.866286,
+      "ScriptDuration": 13.725796,
+      "TaskDuration": 23.291957,
+      "JSHeapUsedSize": 96968888
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328069377,
+    "metrics": {
+      "Nodes": 4136,
+      "LayoutDuration": 0.364036,
+      "RecalcStyleDuration": 1.141875,
+      "ScriptDuration": 14.54822,
+      "TaskDuration": 28.052342,
+      "JSHeapUsedSize": 98362728
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328072853,
+    "metrics": {
+      "Nodes": 4307,
+      "LayoutDuration": 0.372305,
+      "RecalcStyleDuration": 1.153568,
+      "ScriptDuration": 16.213673,
+      "TaskDuration": 29.965515,
+      "JSHeapUsedSize": 123311728
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328075807,
+    "metrics": {
+      "Nodes": 1797,
+      "LayoutDuration": 0.380239,
+      "RecalcStyleDuration": 1.163766,
+      "ScriptDuration": 16.997985,
+      "TaskDuration": 31.165747,
+      "JSHeapUsedSize": 77918452
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794328078255,
+    "metrics": {
+      "Nodes": 1821,
+      "LayoutDuration": 0.385539,
+      "RecalcStyleDuration": 1.170914,
+      "ScriptDuration": 17.542694,
+      "TaskDuration": 32.009018,
+      "JSHeapUsedSize": 85823584
+    }
+  },
+  {
+    "step": "midyear",
+    "at": 1794328082654,
+    "metrics": {
+      "Nodes": 1730,
+      "LayoutDuration": 0.419854,
+      "RecalcStyleDuration": 1.243582,
+      "ScriptDuration": 20.88785,
+      "TaskDuration": 35.960359,
+      "JSHeapUsedSize": 74074776
+    }
+  },
+  {
+    "step": "hand-limit",
+    "at": 1794328091496,
+    "metrics": {
+      "Nodes": 2981,
+      "LayoutDuration": 0.433422,
+      "RecalcStyleDuration": 1.453844,
+      "ScriptDuration": 21.701511,
+      "TaskDuration": 42.506866,
+      "JSHeapUsedSize": 72867124
+    }
+  },
+  {
+    "step": "battle-move",
+    "at": 1794328096767,
+    "metrics": {
+      "Nodes": 1940,
+      "LayoutDuration": 0.450269,
+      "RecalcStyleDuration": 1.520514,
+      "ScriptDuration": 23.235645,
+      "TaskDuration": 44.884506,
+      "JSHeapUsedSize": 77655408
+    }
+  },
+  {
+    "step": "upgrade-card",
+    "at": 1794328097746,
+    "metrics": {
+      "Nodes": 2002,
+      "LayoutDuration": 0.464208,
+      "RecalcStyleDuration": 1.531735,
+      "ScriptDuration": 23.948007,
+      "TaskDuration": 45.779998,
+      "JSHeapUsedSize": 101395896
+    }
+  },
+  {
+    "step": "upgrade-payment",
+    "at": 1794328100979,
+    "metrics": {
+      "Nodes": 2044,
+      "LayoutDuration": 0.474886,
+      "RecalcStyleDuration": 1.553472,
+      "ScriptDuration": 25.009314,
+      "TaskDuration": 47.16054,
+      "JSHeapUsedSize": 92860092
+    }
+  },
+  {
+    "step": "upgrade-confirm",
+    "at": 1794328102594,
+    "metrics": {
+      "Nodes": 2069,
+      "LayoutDuration": 0.476862,
+      "RecalcStyleDuration": 1.573472,
+      "ScriptDuration": 26.129375,
+      "TaskDuration": 48.51147,
+      "JSHeapUsedSize": 116501868
+    }
+  },
+  {
+    "step": "dispatch-action",
+    "at": 1794328104002,
+    "metrics": {
+      "Nodes": 2100,
+      "LayoutDuration": 0.48153,
+      "RecalcStyleDuration": 1.589396,
+      "ScriptDuration": 27.202479,
+      "TaskDuration": 49.741051,
+      "JSHeapUsedSize": 133871116
+    }
+  },
+  {
+    "step": "dispatch-payment",
+    "at": 1794328106168,
+    "metrics": {
+      "Nodes": 1884,
+      "LayoutDuration": 0.487898,
+      "RecalcStyleDuration": 1.761188,
+      "ScriptDuration": 28.017197,
+      "TaskDuration": 51.810019,
+      "JSHeapUsedSize": 76273156
+    }
+  },
+  {
+    "step": "dispatch-source",
+    "at": 1794328113776,
+    "metrics": {
+      "Nodes": 1922,
+      "LayoutDuration": 0.49568,
+      "RecalcStyleDuration": 1.78268,
+      "ScriptDuration": 31.901753,
+      "TaskDuration": 58.741783,
+      "JSHeapUsedSize": 94185568
+    }
+  },
+  {
+    "step": "dispatch-troops",
+    "at": 1794328117528,
+    "metrics": {
+      "Nodes": 2195,
+      "LayoutDuration": 0.532821,
+      "RecalcStyleDuration": 1.803332,
+      "ScriptDuration": 33.904036,
+      "TaskDuration": 60.977571,
+      "JSHeapUsedSize": 133855844
+    }
+  },
+  {
+    "step": "dispatch-target",
+    "at": 1794328126238,
+    "metrics": {
+      "Nodes": 3468,
+      "LayoutDuration": 0.573758,
+      "RecalcStyleDuration": 2.181705,
+      "ScriptDuration": 36.650893,
+      "TaskDuration": 65.959976,
+      "JSHeapUsedSize": 70449188
+    }
+  },
+  {
+    "step": "defender-response",
+    "at": 1794328134859,
+    "metrics": {
+      "Nodes": 3278,
+      "LayoutDuration": 0.591527,
+      "RecalcStyleDuration": 2.208282,
+      "ScriptDuration": 39.083207,
+      "TaskDuration": 72.058099,
+      "JSHeapUsedSize": 132468248
+    }
+  },
+  {
+    "step": "battle-roll",
+    "at": 1794328137116,
+    "metrics": {
+      "Nodes": 3298,
+      "LayoutDuration": 0.592568,
+      "RecalcStyleDuration": 2.228636,
+      "ScriptDuration": 41.130858,
+      "TaskDuration": 74.23875,
+      "JSHeapUsedSize": 165651764
+    }
+  }
+]

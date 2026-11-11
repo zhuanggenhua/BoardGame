@@ -6,7 +6,7 @@ test.describe('井字棋教学 E2E', () => {
         await setChineseLocale(page);
         await page.goto('/');
         await page.waitForLoadState('domcontentloaded');
-        const tictactoeCard = page.getByRole('heading', { name: '井字棋' });
+        const tictactoeCard = page.getByRole('button', { name: '井字棋' });
         await expect(tictactoeCard).toBeVisible({ timeout: 15000 });
         await tictactoeCard.click();
         await expect(page).toHaveURL(/game=tictactoe/);

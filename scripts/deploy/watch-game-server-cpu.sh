@@ -229,6 +229,7 @@ process._debugProcess(pid);
     return 0
   fi
 
+  echo "profileCaptureStartedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >>"$evidence_file"
   if ! timeout "$CPU_PROFILE_TIMEOUT_SECONDS" docker exec "$CONTAINER_NAME" node "$remote_helper" \
     --duration-ms "$duration_ms" \
     --inspector-port "$CPU_PROFILE_INSPECTOR_PORT" \
@@ -238,6 +239,7 @@ process._debugProcess(pid);
     docker exec "$CONTAINER_NAME" rm -f "$remote_helper" "$remote_profile" >>"$evidence_file" 2>&1 || true
     return 0
   fi
+  echo "profileCaptureFinishedAt=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >>"$evidence_file"
   if ! docker cp "$CONTAINER_NAME:$remote_profile" "$local_profile" >>"$evidence_file" 2>&1; then
     cpu_profile_status="profile_copy_failed"
     echo "cpuProfileStatus=$cpu_profile_status" >>"$evidence_file"

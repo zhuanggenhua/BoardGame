@@ -36,16 +36,15 @@ function openingMenu() {
     for (const action of QIDAHEN_ANNUAL_TUTORIAL.steps[0].aiActions!) send(action.commandType, action.payload, action.playerId, true);
     send('SYS_TUTORIAL_AI_CONSUMED', { stepId: 'opening-opponents' });
     send('SYS_TUTORIAL_NEXT', { reason: 'manual' });
+    send('SYS_TUTORIAL_NEXT', { reason: 'manual' });
     send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
-    // 按当前合法课程先完成军屯与开垦，再到手牌入口；不把旧步骤位置当夹具。
-    for (const expectedStep of ['farm-action', 'farm-target', 'reclaim-action', 'reclaim-target']) {
-        expect(state.sys.tutorial.step?.id).toBe(expectedStep);
-        const targets = state.sys.tutorial.step?.allowedTargets;
-        if (!targets?.length) throw new Error('预期教程当前步骤存在合法目标');
+    // 开垦、军屯现在由同一动态步骤承接，依正式交互完成示范行动。
+    for (const target of ['military-farm', 'city-region-15', 'reclaim', 'city-region-15-liaodong']) {
+        expect(state.sys.tutorial.step?.id).toBe('opening-farm-cycle');
         const interactionData = getCurrentInteractionData<{ multi?: unknown }>(state);
-        respond('0', interactionData?.multi ? { optionIds: targets } : { optionId: targets[0] });
+        respond('0', interactionData?.multi ? { optionIds: [target] } : { optionId: target });
     }
-    expect(state.sys.tutorial.step?.id).toBe('recruit-action');
+    expect(state.sys.tutorial.step?.id).toBe('opening-farm-cycle');
     return { get state() { return state; }, get promptResponseCount() { return promptResponseCount; }, sent, send };
 }
 
@@ -58,7 +57,7 @@ describe('正式轮盘选择与教程示范恢复', () => {
         fireEvent.click(view.getByTestId('qidahen-action-recruit'));
         expect(h.promptResponseCount).toBe(responsesBefore + 1);
         expect(h.state.core.confirmedActionId).toBe('recruit');
-        expect(h.state.sys.tutorial.step?.id).toBe('recruit-payment');
+        expect(h.state.sys.tutorial.step?.id).toBe('opening-farm-cycle');
     });
     it('银两不是通用行动入口；点击支付物不会进入另一套手牌模式', () => {
         const h = openingMenu(); h.send('SYS_TUTORIAL_CLOSE');
@@ -69,19 +68,14 @@ describe('正式轮盘选择与教程示范恢复', () => {
         expect(h.state.core.confirmedActionId).toBeNull();
         expect(hook.result.current.handActionCardIds).not.toContain('hand-3');
     });
-    it('本体入口一次提交真实选择；偏离示范恢复完整检查点，正确选择进入手牌行动', () => {
-        const h = openingMenu(); const before = h.state.core;
+    it('本体入口一次提交真实选择，并进入手牌行动支付', () => {
+        const h = openingMenu();
         const hook = renderHook(() => useQidahenTurnInput(h.state, '0', h.send, false));
         expect(hook.result.current.options.some(option => option.id === 'finish-slot')).toBe(true);
-        act(() => hook.result.current.choose('finish-slot')); hook.rerender();
-        expect(h.sent.at(-1)).toBe('SYS_TUTORIAL_RESTART_STEP');
-        expect(h.state.core).toEqual(before);
-        expect(h.state.sys.tutorial.step?.id).toBe('recruit-action');
-        expect(hook.result.current.selectedIds).toEqual([]);
         const responsesBefore = h.promptResponseCount;
         act(() => hook.result.current.choose('hand-action:recruit')); hook.rerender();
         expect(h.promptResponseCount).toBe(responsesBefore + 1);
-        expect(h.state.sys.tutorial.step?.id).toBe('recruit-payment');
+        expect(h.state.sys.tutorial.step?.id).toBe('opening-farm-cycle');
         expect(h.state.core.confirmedActionId).toBe('recruit');
     });
     it('退出教程后相同合法项执行真实落点收口，不再恢复教学检查点', () => {
@@ -99,6 +93,6 @@ describe('正式轮盘选择与教程示范恢复', () => {
         const count = h.sent.length;
         act(() => hook.result.current.choose('hand-action:recruit'));
         expect(h.sent).toHaveLength(count);
-        expect(h.state.sys.tutorial.step?.id).toBe('recruit-action');
+        expect(h.state.sys.tutorial.step?.id).toBe('opening-farm-cycle');
     });
 });

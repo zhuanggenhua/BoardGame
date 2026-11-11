@@ -1,0 +1,56 @@
+[
+  {
+    "reason": "before-opening-move",
+    "at": 1794330776176,
+    "visibility": "visible",
+    "focus": true,
+    "phase": "action-window",
+    "wheel": "wheel-recruit-train",
+    "player": "0",
+    "choices": [
+      {
+        "id": "move-1-free",
+        "label": "免费走 1",
+        "steps": 1,
+        "drawText": "对手不抽牌"
+      },
+      {
+        "id": "move-2-one-opponent",
+        "label": "一名对手抽 2，走 2",
+        "steps": 2,
+        "drawText": "指定的对手抽 2"
+      },
+      {
+        "id": "move-3-all-opponents",
+        "label": "所有对手抽 2，走 3",
+        "steps": 3,
+        "drawText": "每名对手各抽 2"
+      }
+    ],
+    "wheelUsed": false,
+    "handLimitPending": null,
+    "factionUsed": false,
+    "wheelLayer": "<g data-testid=\"qidahen-wheel-move-layer\"><path role=\"button\" tabindex=\"0\" aria-label=\"免费走 1\" data-testid=\"qidahen-wheel-move-target-move-1-free\" data-tutorial-id=\"qidahen-wheel-move-move-1-free\" d=\"M 371.171 174.748 A 180 180 0 0 1 326.812 311.272 L 236.937 231.757 A 60 60 0 0 0 251.724 186.249 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-primary=\"true\" data-wheel-candidate-level=\"primary\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"一名对手抽 2，走 2\" data-testid=\"qidahen-wheel-move-target-move-2-one-opponent\" data-tutorial-id=\"qidahen-wheel-move-move-2-one-opponent\" d=\"M 347.093 283.357 A 180 180 0 0 1 230.959 367.733 L 204.986 250.578 A 60 60 0 0 0 243.698 222.452 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-candidate-level=\"secondary\"></path><path role=\"button\" tabindex=\"0\" aria-label=\"所有对手抽 2，走 3\" data-testid=\"qidahen-wheel-move-target-move-3-all-opponents\" data-tutorial-id=\"qidahen-wheel-move-move-3-all-opponents\" d=\"M 263.775 357.071 A 180 180 0 0 1 120.225 357.071 L 168.075 247.024 A 60 60 0 0 0 215.925 247.024 Z\" fill=\"rgba(255,248,233,0.001)\" stroke=\"transparent\" stroke-width=\"1\" class=\"pointer-events-auto outline-none transition-[fill,stroke] cursor-pointer\" aria-disabled=\"false\" data-wheel-candidate-level=\"secondary\"></path></g>",
+    "boardWheelCount": 1,
+    "targets": [
+      {
+        "id": "qidahen-wheel-move-target-move-1-free",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-2-one-opponent",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      },
+      {
+        "id": "qidahen-wheel-move-target-move-3-all-opponents",
+        "display": "inline",
+        "visibility": "visible",
+        "disabled": "false"
+      }
+    ]
+  }
+]

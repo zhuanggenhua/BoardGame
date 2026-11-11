@@ -110,21 +110,21 @@ describe('mage-wars guard and defense window', () => {
                     attackProfileId: 'attack-0',
                     attackName: '利爪',
                     targetPlayerId: '1',
-                    diceResults: [3, 3],
-                    baseDamage: 6,
+                    diceResults: [1, 1],
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '1',
-                    actualDamage: 6,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.object.2906.attack-0',
                 }),
             }),
         ]));
         expect(attacked.state.core.objects[object.id].actionReady).toBe(false);
-        expect(attacked.state.core.players['1'].damage).toBe(6);
+        expect(attacked.state.core.players['1'].damage).toBe(2);
         expect(actionLogKinds(attacked.state)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
 
         expect(validateCommand(attacked.state, {
@@ -496,8 +496,8 @@ describe('mage-wars guard and defense window', () => {
                     targetObjectId: attacker.id,
                     attackProfileId: 'attack-0',
                     attackName: '短剑',
-                    diceResults: [3, 3, 3, 3],
-                    baseDamage: 12,
+                    diceResults: [1, 1, 1, 1],
+                    baseDamage: 4,
                     actionCost: 'none',
                 }),
             }),
@@ -505,14 +505,14 @@ describe('mage-wars guard and defense window', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: attacker.id,
-                    actualDamage: 12,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.object.2906.attack-0',
                 }),
             }),
         ]));
         expect(counterstruck.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.COUNTERSTRIKE_AVAILABLE);
         expect(counterstruck.state.core.objects[enemyGuard.id].actionReady).toBe(true);
-        expect(counterstruck.state.core.objects[attacker.id].damage).toBe(12);
+        expect(counterstruck.state.core.objects[attacker.id].damage).toBe(4);
     });
 
     it('offers configured 1903 counterstrike without reading the enchantment display text', () => {
@@ -1138,12 +1138,12 @@ describe('mage-wars guard and defense window', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: defender.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                 }),
             }),
         ]));
         expect(passed.state.core.objects[attacker.id].actionReady).toBe(false);
-        expect(passed.state.core.objects[defender.id].damage).toBe(6);
+        expect(passed.state.core.objects[defender.id].damage).toBe(2);
     });
 
     it('makes a successful arena object defense evade the incoming attack before damage', () => {
@@ -1262,12 +1262,12 @@ describe('mage-wars guard and defense window', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: defender.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                 }),
             }),
         ]));
         expect(defended.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.DEFENSE_AVAILABLE);
-        expect(defended.state.core.objects[defender.id].damage).toBe(6);
+        expect(defended.state.core.objects[defender.id].damage).toBe(2);
     });
 
     it('spends one-use arena object defenses until their owner reset readies them', () => {
@@ -1406,6 +1406,6 @@ describe('mage-wars guard and defense window', () => {
         expect(attacked.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.DEFENSE_AVAILABLE);
         expect(attacked.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED);
         expectNoPrompt(attacked.state);
-        expect(attacked.state.core.objects[defender.id].damage).toBe(12);
+        expect(attacked.state.core.objects[defender.id].damage).toBe(4);
     });
 });

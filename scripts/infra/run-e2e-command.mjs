@@ -231,7 +231,7 @@ function ensureManagedRuntimeWithHold(command, args, env) {
         const errorLogFd = fs.openSync(managerLog, 'a');
         const child = spawn(command, args, withWindowsHide({
             stdio: ['pipe', 'pipe', errorLogFd],
-            detached: args.includes('shared-single') || args.includes('shared-version'),
+            detached: args.includes('shared-single'),
             env,
             shell: false,
         }, env));
@@ -296,12 +296,12 @@ function ensureManagedRuntimeWithHold(command, args, env) {
     });
 }
 
-export async function stopHeldManager(child, runtime) {
+async function stopHeldManager(child, runtime) {
     if (!child || child.exitCode !== null || child.killed) {
         return;
     }
 
-    if (['shared-single', 'shared-version'].includes(runtime?.mode)) {
+    if (runtime?.mode === 'shared-single') {
         // 服务 owner 独立存活；测试结束只关闭本次控制连接。
         child.stdin?.end();
         child.stdout?.destroy();
@@ -826,7 +826,6 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
             const runtimeMode = payload.mode;
             const runtimePorts = payload.ports;
             modeEnv.PW_MANAGED_RUNTIME_ID = payload.runtimeId;
-            if (payload.testApiTokenFile) modeEnv.TEST_API_TOKEN_FILE = payload.testApiTokenFile;
             modeEnv.PW_SKIP_RUNTIME_BOOTSTRAP = 'true';
             modeEnv.PW_RUNTIME_MODE = runtimeMode;
             modeEnv.PW_RUNTIME_SCOPE = payload.scope;

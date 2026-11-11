@@ -1,5 +1,7 @@
 # DiceThrone 枪手（Gunslinger）审计报告（2026-04-11）
 
+> 2026-11-10 漏审复盘：本文对 `对决 II` 的“一致”只能证明当时核对的描述和对应实现，不能证明后来共享结算链无回归。2026-11-06 的 `4d84f9156` 引入 `attackEffectContinuation.ts`；阻塞选择时未保存对掷完成信号，选择后可能重复发起对掷。本轮修复前，既有 `cross-hero.test.ts` 的胜利选择减伤用例已失败；该用例早在 2026-03-27 就存在并断言结束状态及伤害。故此次不是没有测试，而是现有回归没有在后续改动交付前有效挡住问题；仅凭仓库不能确认当时是否运行或为何未阻断。另，线上反馈日志的伤害顺序与当前工作区重复对掷现象不能直接等同，本轮只证明当前阻塞帧缺陷已修复，其他未描述现象仍未逐项查明。
+
 > 2026-05-19 范围澄清：本文件只覆盖 `gunslinger` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
 >
 > 2026-05-19 本轮补审回写：已重新复跑 `Mark the Target` 的真实 UI/E2E，旧文档里“`mark-the-target` 仍缺真实 UI/E2E”这条结论失效；当时枪手残余风险一度收敛到 `Loaded` 基础奖励骰特写缺少单独 evidence 文档。

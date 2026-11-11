@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "REVISE",
   "scope": "independent",
   "gameId": "dicethrone",
   "evidenceCategory": "independent",
@@ -10,7 +10,7 @@
   "baselinePixelsAvailable": true,
   "existingUiPolicy": "restore-and-reuse",
   "evidenceIndex": ".e2e-image-index.json",
-  "acceptanceReason": "覆盖本轮已逐图查看的桌面交互代表场景；行为验证另行执行，移动端未覆盖。",
+  "acceptanceReason": "用户于2026-11-10退回全部索尔验收；本图组及其验收结论作废，仅保留历史诊断。",
   "media": [
     "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\01-02-弃牌飞掷选择成本.png",
     "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\thor-review-20261109-h8jftu\\02-03-取消弃牌支付且资源未扣.png",

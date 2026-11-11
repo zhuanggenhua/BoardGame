@@ -11,6 +11,31 @@ export const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMa
     zoom: Math.max(QIDAHEN_MAP_MIN_ZOOM, Math.min(QIDAHEN_MAP_MAX_ZOOM, viewport.zoom)),
 });
 
+/** 手动平移以原图边缘为界；地图小于视口时居中，不裁剪原图。 */
+export function clampQidahenManualViewport(viewport: QidahenMapViewport, options: {
+    origin: { x: number; y: number }; mapScale: number;
+    mapSize: { width: number; height: number }; stage: { width: number; height: number };
+}): QidahenMapViewport {
+    const next = clampQidahenMapViewport(viewport);
+    const clampAxis = (pan: number, origin: number, mapLength: number, stageLength: number) => {
+        const size = mapLength * options.mapScale * next.zoom;
+        if (size <= stageLength) return (stageLength - size) / 2 - origin;
+        return Math.max(stageLength - origin - size, Math.min(-origin, pan));
+    };
+    return { ...next,
+        panX: clampAxis(next.panX, options.origin.x, options.mapSize.width, options.stage.width),
+        panY: clampAxis(next.panY, options.origin.y, options.mapSize.height, options.stage.height) };
+}
+
+/** 按画面中心缩放，保持中心处的地图内容不动。 */
+export function zoomQidahenMapAtPoint(viewport: QidahenMapViewport, zoom: number,
+    origin: { x: number; y: number }, point: { x: number; y: number }): QidahenMapViewport {
+    const nextZoom = Math.max(QIDAHEN_MAP_MIN_ZOOM, Math.min(QIDAHEN_MAP_MAX_ZOOM, zoom));
+    const ratio = nextZoom / viewport.zoom;
+    return { zoom: nextZoom, panX: point.x - origin.x - (point.x - origin.x - viewport.panX) * ratio,
+        panY: point.y - origin.y - (point.y - origin.y - viewport.panY) * ratio };
+}
+
 // 壳层缩放后的相接边可能相差约1e-13，不能因此把有实际留白的空位判成相交。
 const overlaps = (a: Rect, b: Rect) => a.left < b.left + b.width - 1e-6 && a.left + a.width > b.left + 1e-6
     && a.top < b.top + b.height - 1e-6 && a.top + a.height > b.top + 1e-6;

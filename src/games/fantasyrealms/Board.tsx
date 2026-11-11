@@ -22,6 +22,8 @@ import {
     type FantasyRealmsCore,
     type FantasyRealmsPlayerState,
 } from './domain';
+import { getSettlementOptions } from './domain/settlement';
+import { evaluateFantasyRealmsResolvedScore, type FantasyRealmsScoreSelections } from './domain/scoring';
 import { getFantasyRealmsCardBackStyle, getFantasyRealmsCardFaceStyle } from './ui/cardAtlas';
 import { ScoreBurstBadge } from '../../components/common/animations/ScoreBurstBadge';
 import { useTouchInspectGesture } from '../../hooks/ui/useTouchInspectGesture';
@@ -150,8 +152,9 @@ function buildFantasyRealmsEndgameScoreSteps(
     discardPile: readonly TableCard[],
     finalScore: number,
     scoringOptions?: Parameters<typeof evaluateFantasyRealmsScore>[2],
+    selections?: FantasyRealmsScoreSelections,
 ): EndgameScoreStep[] {
-    const evaluation = evaluateFantasyRealmsScore(hand, discardPile, scoringOptions);
+    const evaluation = selections ? evaluateFantasyRealmsResolvedScore(hand, discardPile, selections, scoringOptions) : evaluateFantasyRealmsScore(hand, discardPile, scoringOptions);
     const cardOrder = new Map(hand.map((card, index) => [card.id, index]));
     const visibleCardSteps: EndgameScoreStep[] = evaluation.cardDeltas
         .filter((entry) => cardOrder.has(entry.cardId) && entry.totalDelta !== 0)
@@ -180,8 +183,9 @@ function buildFantasyRealmsEndgameCardDeltaById(
     hand: readonly TableCard[],
     discardPile: readonly TableCard[],
     scoringOptions?: Parameters<typeof evaluateFantasyRealmsScore>[2],
+    selections?: FantasyRealmsScoreSelections,
 ): Map<string, number> {
-    const evaluation = evaluateFantasyRealmsScore(hand, discardPile, scoringOptions);
+    const evaluation = selections ? evaluateFantasyRealmsResolvedScore(hand, discardPile, selections, scoringOptions) : evaluateFantasyRealmsScore(hand, discardPile, scoringOptions);
     return new Map(
         evaluation.cardDeltas
             .filter((entry) => entry.totalDelta !== 0)
@@ -199,10 +203,11 @@ function useFantasyRealmsEndgameScoreSequence(
     discardPile: readonly TableCard[],
     finalScore: number,
     scoringOptions?: Parameters<typeof evaluateFantasyRealmsScore>[2],
+    selections?: FantasyRealmsScoreSelections,
 ): EndgameScoreSequenceState {
     const steps = React.useMemo(
-        () => (enabled ? buildFantasyRealmsEndgameScoreSteps(hand, discardPile, finalScore, scoringOptions) : []),
-        [discardPile, enabled, finalScore, hand, scoringOptions],
+        () => (enabled ? buildFantasyRealmsEndgameScoreSteps(hand, discardPile, finalScore, scoringOptions, selections) : []),
+        [discardPile, enabled, finalScore, hand, scoringOptions, selections],
     );
     const sequenceSignature = React.useMemo(
         () => (enabled
@@ -352,7 +357,7 @@ function isFantasyRealmsCore(value: unknown): value is FantasyRealmsCore {
     return Array.isArray(candidate.drawPile)
         && Array.isArray(candidate.discardPile)
         && typeof candidate.currentPlayer === 'string'
-        && (candidate.stage === 'draw' || candidate.stage === 'discard')
+        && (candidate.stage === 'draw' || candidate.stage === 'discard' || candidate.stage === 'settlement')
         && candidate.players != null
         && typeof candidate.players === 'object'
         && Object.values(candidate.players).every(isFantasyRealmsPlayerState);
@@ -412,7 +417,7 @@ function buildMinimalLiveCenterSlots(cards: TableCard[], totalSlotCount: number)
     return cards.map((card, index) => ({
         key: card.id,
         card,
-        style: slotStyles[index] ?? {},
+        style: slotStyles[card.discardSlot ?? index] ?? {},
     }));
 }
 
@@ -467,12 +472,12 @@ function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
             data-card-renderer="fallback"
             aria-label={t('card.ariaLabel', {
                 name: displayName,
-                suit: card.suit,
+                suit: t(`settlement.suit.${card.suit}`),
                 score: card.score,
             })}
         >
             <div aria-hidden="true" className="fr-card-sheen" />
-            <div className={`fr-card-suit ${card.toneClass}`}>{card.suit}</div>
+            <div className={`fr-card-suit ${card.toneClass}`}>{t(`settlement.suit.${card.suit}`)}</div>
             <div className="fr-card-body">
                 <div className="fr-card-name">{displayName}</div>
                 <div className="fr-card-text">{getFantasyRealmsCardRuleText(card, locale)}</div>
@@ -508,7 +513,7 @@ function FantasyRealmsCard({
             data-atlas-card-id={card.id}
             aria-label={t('card.ariaLabel', {
                 name: displayName,
-                suit: card.suit,
+                suit: t(`settlement.suit.${card.suit}`),
                 score: card.score,
             })}
             style={atlasStyle}
@@ -580,6 +585,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const core = React.useMemo(() => (isFantasyRealmsCore(G?.core) ? G.core : createFallbackCore()), [G]);
     const matchPlayers = matchData ?? EMPTY_MATCH_DATA;
     const [liveMotionCue, setLiveMotionCue] = React.useState<LiveMotionCue>(null);
+    const [settlementBookTarget, setSettlementBookTarget] = React.useState<string | null>(null);
     const [reviewPlayerId, setReviewPlayerId] = React.useState<string | null>(null);
     const [magnifiedCard, setMagnifiedCard] = React.useState<TableCard | null>(null);
     const [hoveredEndgameCardId, setHoveredEndgameCardId] = React.useState<string | null>(null);
@@ -599,6 +605,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const viewerPlayerId = isSpectatorView ? null : playerID;
     const gameOver = G?.sys?.gameover as { winner?: string; draw?: boolean; scores?: Record<string, number>; winners?: string[] } | undefined;
     const isGameOver = Boolean(gameOver);
+    React.useEffect(() => { setSettlementBookTarget(null); }, [core.settlement?.step, core.currentPlayer]);
+    const settlementOptions = React.useMemo(() => (
+        core.stage === 'settlement' && viewerPlayerId === core.currentPlayer ? getSettlementOptions(core) : []
+    ), [core, viewerPlayerId]);
     const discardCards = React.useMemo(() => core.discardPile.map((card) => ({ ...card })), [core.discardPile]);
     const currentPlayerName = React.useMemo(() => {
         const matchPlayer = matchPlayers.find((player) => String(player.id) === String(core.currentPlayer));
@@ -913,7 +923,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 : null;
             const previousSlotStyle = previousCardIndex >= 0
                 ? buildMinimalLiveCenterSlots(
-                    previousSnapshot.discardIds.map((cardId) => ({ id: cardId } as TableCard)),
+                    previousSnapshot.discardCards,
                     discardThreshold,
                 )[previousCardIndex]?.style
                 : undefined;
@@ -942,7 +952,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 : null;
             const nextSlotStyle = incomingDiscardCardIndex >= 0
                 ? buildMinimalLiveCenterSlots(
-                    nextSnapshot.discardIds.map((cardId) => ({ id: cardId } as TableCard)),
+                    nextSnapshot.discardCards,
                     discardThreshold,
                 )[incomingDiscardCardIndex]?.style
                 : undefined;
@@ -1085,18 +1095,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             return;
         }
         if (isTakeDiscardSelectionActive && isTutorialCommandAllowed('TAKE_FROM_DISCARD') && isTutorialTargetAllowed(card.id)) {
-            const selectedSlotStyle = buildMinimalLiveCenterSlots(discardCards, discardThreshold)
-                .find((slot) => slot.card?.id === card.id)?.style;
-            liveMotionSequenceRef.current += 1;
-            const nextKey = liveMotionSequenceRef.current;
-            setLiveCenterMotionOverlay({
-                type: 'exit',
-                playerName: viewerPlayerName ?? t('fallback.viewer'),
-                cueKey: nextKey,
-                slotStyle: selectedSlotStyle ?? {},
-                card: { ...card },
-            });
-            setLiveCenterHeldCard(null);
             dispatch('TAKE_FROM_DISCARD', { cardId: card.id });
             return;
         }
@@ -1189,10 +1187,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             if (liveCenterHeldCard) {
                 hiddenAnimatedCenterCardIds.add(liveCenterHeldCard.cardId);
             }
-            const visibleCenterCards = hiddenAnimatedCenterCardIds.size > 0
-                ? discardCards.filter((card) => !hiddenAnimatedCenterCardIds.has(card.id))
-                : discardCards;
-            return buildMinimalLiveCenterSlots(visibleCenterCards, discardThreshold);
+            return buildMinimalLiveCenterSlots(discardCards, discardThreshold).map((slot) => (
+                slot.card && hiddenAnimatedCenterCardIds.has(slot.card.id) ? { ...slot, card: null } : slot
+            ));
         },
         [discardCards, discardThreshold, liveCenterHeldCard, liveCenterMotionOverlay],
     );
@@ -1217,9 +1214,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     );
     const endgameCardDeltaById = React.useMemo(
         () => (isGameOver
-            ? buildFantasyRealmsEndgameCardDeltaById(displayedHandCards, core.discardPile, endgameScoringOptions)
+            ? buildFantasyRealmsEndgameCardDeltaById(displayedHandCards, core.discardPile, endgameScoringOptions, displayedPlayerId ? core.settlement?.selections[displayedPlayerId] : undefined)
             : new Map<string, number>()),
-        [core.discardPile, displayedHandCards, endgameScoringOptions, isGameOver],
+        [core.discardPile, core.settlement?.selections, displayedHandCards, displayedPlayerId, endgameScoringOptions, isGameOver],
     );
     const endgameScoreSequence = useFantasyRealmsEndgameScoreSequence(
         isGameOver && Boolean(displayedPlayerId) && Boolean(endgameDisplayStanding),
@@ -1227,6 +1224,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         core.discardPile,
         endgameDisplayStanding?.score ?? 0,
         endgameScoringOptions,
+        displayedPlayerId ? core.settlement?.selections[displayedPlayerId] : undefined,
     );
     const activeEndgameScoreStep = endgameScoreSequence.activeStep;
     React.useEffect(() => {
@@ -1256,7 +1254,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const liveDiscardActionLabel = '从手牌弃置一张牌';
     const liveScoreBandLabel = isGameOver
         ? endgameDisplayStanding?.name ?? t('score.panelTitle')
-        : t('score.panelTitle');
+        : t('settlement.provisional');
     const liveScoreBandValue = isGameOver
         ? endgameScoreSequence.displayTotal
         : liveScoreOwner?.scoreVisible
@@ -1510,7 +1508,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         <button
                             key={slot.key}
                             type="button"
-                            className={`fr-card-button fr-card-button--live-center${core.focusCardId === slot.card.id && shouldShowTutorialSelectedCard(slot.card.id) ? ' fr-card-button--selected' : ''}${canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? ' fr-card-button--actionable' : ''}${liveMotionCue?.type === 'hand-to-center' && liveMotionCue.cardIds.includes(slot.card.id) ? ' fr-card-button--motion-center-receive' : ''}`}
+                            className={`fr-card-button fr-card-button--live-center${core.focusCardId === slot.card.id && shouldShowTutorialSelectedCard(slot.card.id) ? ' fr-card-button--selected' : ''}${canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? ' fr-card-button--actionable' : ''}`}
                             onClick={() => handleDiscardPileClick(slot.card!)}
                             style={slot.style}
                             data-action-state={canTutorialTakeDiscard && isTutorialTargetAllowed(slot.card.id) ? 'take' : 'inspect'}
@@ -1709,6 +1707,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         <UndoProvider value={{ G, dispatch: runtimeDispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
             <div className="fr-root">
             <style>{`
+                .fr-settlement-overlay { position: fixed; inset: 0; z-index: 150; background: rgba(0, 0, 0, .32); display: grid; place-items: center; padding: 24px; }
+                .fr-settlement-panel { width: min(1280px, 96vw); max-height: 90vh; overflow: auto; background: #173b32; border: 1px solid #bc9657; border-radius: 16px; padding: 20px; color: #fff0c8; }
+                .fr-settlement-panel h2 { font-size: 24px; margin: 0 0 8px; }
+                .fr-settlement-panel p { margin: 0 0 14px; font-size: 17px; }
+                .fr-settlement-options { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+                .fr-settlement-option { width: clamp(135px, 10vw, 180px); border: 2px solid transparent; border-radius: 9px; padding: 0; background: transparent; cursor: pointer; }
+                .fr-settlement-option--selected, .fr-settlement-option:focus-visible, .fr-settlement-option:hover { border-color: #f4d786; }
+                .fr-settlement-option .fr-card { width: 100%; }
+                .fr-settlement-skip { border: 1px solid #cdb075; border-radius: 8px; background: #243e34; color: #fff0c8; padding: 10px 16px; cursor: pointer; }
                 .fr-root {
                     --fr-board-shell-reference-width: var(--mobile-board-shell-design-width, ${FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX}px);
                     --fr-live-content-width: calc(100vw - ${FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX * 2}px);
@@ -3617,6 +3624,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     gap: 0;
                     height: 100%;
                 }
+                .fr-board--minimal-live .fr-live-table--gameover {
+                    grid-template-rows: clamp(54px, 8vh, 92px) minmax(0, 1fr) auto;
+                }
                 .fr-board--minimal-live .fr-live-table--opening {
                     grid-template-rows: 132px minmax(0, 1fr) 0;
                 }
@@ -4703,6 +4713,37 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             <div className="fr-board fr-board--minimal-live">
                 {liveTableSection}
             </div>
+            {core.stage === 'settlement' && core.settlement?.step !== 'done' ? (
+                <div className="fr-settlement-overlay" data-testid="fantasyrealms-settlement">
+                    <section className="fr-settlement-panel" aria-label={t('settlement.title')}>
+                        <h2>{t('settlement.title')}</h2>
+                        {isMyTurn ? (
+                            <>
+                                <p>{t(`settlement.${core.settlement?.overflowPlayerId ? 'overflow' : core.settlement?.step}`)}</p>
+                                {core.settlement?.step === 'book' && !core.settlement.overflowPlayerId ? (
+                                    <div className="fr-settlement-options">
+                                        {settlementOptions.filter((entry, index, all) => entry.choice.cardId && all.findIndex((other) => other.choice.cardId === entry.choice.cardId) === index).map((entry) => (
+                                            <button key={entry.choice.cardId} className={`fr-settlement-option${settlementBookTarget === entry.choice.cardId ? ' fr-settlement-option--selected' : ''}`} onClick={() => setSettlementBookTarget(entry.choice.cardId!)}>
+                                                {entry.card ? <FantasyRealmsCard card={entry.card} t={t} locale={locale} /> : entry.label}
+                                            </button>
+                                        ))}
+                                        {settlementOptions.filter((entry) => entry.choice.skip).map((entry) => (
+                                            <button key="skip" className="fr-settlement-skip" onClick={() => dispatch('RESOLVE_SETTLEMENT', entry.choice)}>{t('settlement.skip')}</button>
+                                        ))}
+                                    </div>
+                                ) : null}
+                                <div className="fr-settlement-options">
+                                    {settlementOptions.filter((entry) => core.settlement?.step !== 'book' || core.settlement.overflowPlayerId || entry.choice.cardId === settlementBookTarget).map((entry, index) => (
+                                        <button key={`${entry.choice.cardId ?? 'skip'}-${entry.choice.suit ?? index}`} className={entry.choice.suit || entry.choice.skip ? 'fr-settlement-skip' : 'fr-settlement-option'} onClick={() => dispatch('RESOLVE_SETTLEMENT', entry.choice)} data-testid={`fantasyrealms-settlement-option-${index}`}>
+                                            {entry.choice.skip ? t('settlement.skip') : entry.choice.suit ? t(`settlement.suit.${entry.choice.suit}`) : entry.card ? <FantasyRealmsCard card={entry.card} t={t} locale={locale} /> : entry.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        ) : <p>{t('settlement.wait', { player: currentPlayerName })}</p>}
+                    </section>
+                </div>
+            ) : null}
             <MagnifyOverlay
                 isOpen={magnifiedCard != null}
                 onClose={() => setMagnifiedCard(null)}

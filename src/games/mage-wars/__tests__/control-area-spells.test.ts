@@ -166,7 +166,7 @@ describe('mage-wars control and area spells', () => {
         const spell = getMageWarsSpellCardFromConfig(attackSpellId);
         const chainRandom: RandomFn = {
             ...fixedRandom,
-            d: (sides: number) => (sides === 12 ? 8 : 2),
+            d: (sides: number) => (sides === 12 ? 8 : 5),
         };
         const planningState = setupState('planning');
         const planned = runCommand({
@@ -463,9 +463,9 @@ describe('mage-wars control and area spells', () => {
                     sourceAbilityId: 'mw.spell.1709',
                     targetPlayerId: '0',
                     targetZoneId: PLAYER_ONE_START_ZONE,
-                    diceResults: [3, 3],
+                    diceResults: [1, 1],
                     effectDieResult: 10,
-                    baseDamage: 6,
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
@@ -473,9 +473,9 @@ describe('mage-wars control and area spells', () => {
                 payload: expect.objectContaining({
                     targetObjectId: friendlyCat.id,
                     targetZoneId: PLAYER_ONE_START_ZONE,
-                    diceResults: [3, 3],
+                    diceResults: [1, 1],
                     effectDieResult: 10,
-                    baseDamage: 6,
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
@@ -483,16 +483,16 @@ describe('mage-wars control and area spells', () => {
                 payload: expect.objectContaining({
                     targetObjectId: skeleton.id,
                     targetZoneId: PLAYER_ONE_START_ZONE,
-                    diceResults: [3, 3],
-                    effectDieResult: 10,
-                    baseDamage: 6,
+                    diceResults: [1, 1, 1, 1],
+                    effectDieResult: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '0',
-                    actualDamage: 6,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.spell.1709',
                 }),
             }),
@@ -500,7 +500,7 @@ describe('mage-wars control and area spells', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: friendlyCat.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.spell.1709',
                 }),
             }),
@@ -508,18 +508,8 @@ describe('mage-wars control and area spells', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: skeleton.id,
-                    actualDamage: 8,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.spell.1709',
-                    breakdown: expect.objectContaining({
-                        steps: expect.arrayContaining([
-                            expect.objectContaining({
-                                sourceId: 'mage-wars-nonliving-bonus',
-                                sourceName: '对抗非活体生物',
-                                value: 2,
-                                runningTotal: 8,
-                            }),
-                        ]),
-                    }),
                 }),
             }),
             expect.objectContaining({
@@ -558,19 +548,19 @@ describe('mage-wars control and area spells', () => {
             statusTokens: {},
         });
         expect(attacked.state.core.players['0']).toMatchObject({
-            damage: 6,
+            damage: 2,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
         });
         expect(attacked.state.core.objects[friendlyCat.id]).toMatchObject({
-            damage: 6,
+            damage: 2,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
         });
         expect(attacked.state.core.objects[skeleton.id]).toMatchObject({
-            damage: 8,
+            damage: 4,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
@@ -627,9 +617,9 @@ describe('mage-wars control and area spells', () => {
                     sourceAbilityId: 'mw.spell.1707',
                     targetPlayerId: '1',
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1, 1],
                     effectDieResult: 11,
-                    baseDamage: 15,
+                    baseDamage: 5,
                 }),
             }),
             expect.objectContaining({
@@ -665,15 +655,15 @@ describe('mage-wars control and area spells', () => {
         ]));
         expect(attacked.state.core.players['0']).toMatchObject({ damage: 0, statusTokens: {} });
         expect(attacked.state.core.players['1']).toMatchObject({
-            damage: 15,
+            damage: 5,
             statusTokens: { [STATUS_TOKEN_IDS.BURN]: 2 },
         });
         expect(attacked.state.core.objects[friendlyCat.id]).toMatchObject({
-            damage: 15,
+            damage: 5,
             statusTokens: { [STATUS_TOKEN_IDS.BURN]: 2 },
         });
         expect(attacked.state.core.objects[enemyCat.id]).toMatchObject({
-            damage: 15,
+            damage: 5,
             statusTokens: { [STATUS_TOKEN_IDS.BURN]: 2 },
         });
         expect(attacked.state.core.players['0'].discardSpellCardIds).toEqual([attackSpellId]);
@@ -736,9 +726,9 @@ describe('mage-wars control and area spells', () => {
                     sourceAbilityId: 'mw.spell.1704',
                     targetPlayerId: '1',
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     effectDieResult: 9,
-                    baseDamage: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
@@ -746,9 +736,9 @@ describe('mage-wars control and area spells', () => {
                 payload: expect.objectContaining({
                     targetObjectId: friendlyCat.id,
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     effectDieResult: 9,
-                    baseDamage: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
@@ -756,9 +746,9 @@ describe('mage-wars control and area spells', () => {
                 payload: expect.objectContaining({
                     targetObjectId: enemyGuard.id,
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     effectDieResult: 9,
-                    baseDamage: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
@@ -802,19 +792,19 @@ describe('mage-wars control and area spells', () => {
         ]));
         expect(attacked.state.core.players['0'].damage).toBe(0);
         expect(attacked.state.core.players['1']).toMatchObject({
-            damage: 12,
+            damage: 4,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
         });
         expect(attacked.state.core.objects[friendlyCat.id]).toMatchObject({
-            damage: 12,
+            damage: 4,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
         });
         expect(attacked.state.core.objects[enemyGuard.id]).toMatchObject({
-            damage: 12,
+            damage: 4,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },

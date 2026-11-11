@@ -188,7 +188,7 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
             isBonusDiceSettlement
         />);
 
-        expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_group_reroll_selected');
+        expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_select');
         const hintAnchor = screen.getByTestId('dice-interaction-hint-anchor');
         const diceTray = screen.getByTestId('dice-contract-tray');
         expect(hintAnchor).toHaveAttribute('data-placement', 'tray-left-center');

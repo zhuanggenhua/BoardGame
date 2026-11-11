@@ -5,6 +5,7 @@ import {
     type TableCard,
 } from '../foundation';
 import { evaluateFantasyRealmsScore, FantasyRealmsDomain } from '../domain';
+import { getDeckDrawCount, requiresDiscardAfterTakingDiscard } from '../domain/commands';
 import { ALL_FANTASY_REALMS_CARDS } from '../data/cards';
 
 const random = {
@@ -49,6 +50,14 @@ describe('fantasyrealms cursed hoard runtime', () => {
         expect(core.players['1']?.hand).toHaveLength(0);
         expect(core.drawPile).toHaveLength(68);
         expect(getFantasyRealmsDiscardEndThreshold(2, core.setupConfig)).toBe(14);
+    });
+
+    it('双人扩展回合持有小妖精时，手牌上限仍为八张', () => {
+        const core = FantasyRealmsDomain.setup(['0', '1'], random, { variant: 'duel', expansion: 'cursed-hoard-suits' });
+        core.players['0']!.hand = ['outsider-leprechaun', 'outsider-genie', 'leader-king', 'leader-queen', 'leader-princess', 'beast-dragon', 'flame-candle', 'weather-smoke'].map(byId);
+        expect(getDeckDrawCount(core)).toBe(1);
+        expect(requiresDiscardAfterTakingDiscard(core)).toBe(true);
+        expect(getFantasyRealmsDiscardEndThreshold(3, core.setupConfig)).toBe(12);
     });
 
     it('Angel 会保护被选中的牌不被 Demon 提前无效化', () => {

@@ -6,7 +6,8 @@ export const MapViewportControls: React.FC<{
     disabled?: boolean;
     onZoom: (factor: number) => void;
     onReset: () => void;
-}> = ({ onZoom, onReset, disabled = false }) => {
+    onLocateWheel?: () => void;
+}> = ({ onZoom, onReset, onLocateWheel, disabled = false }) => {
     const { t } = useTranslation('game-qidahen');
     return (
         <div
@@ -46,6 +47,10 @@ export const MapViewportControls: React.FC<{
                     +
                 </button>
             </div>
+            {onLocateWheel ? <button type="button" data-testid="qidahen-map-locate-wheel" disabled={disabled}
+                className="inline-flex min-h-[38px] items-center justify-center border-[3px] px-3 text-[12px] font-black"
+                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                onClick={onLocateWheel}>{t('board.map.returnToWheel', { defaultValue: '回到轮盘' })}</button> : null}
         </div>
     );
 };

@@ -110,16 +110,22 @@ const getBattleRollArmamentBonus = (
 ): number => {
     if (!unit.structured || !unit.factionId) return 0;
     if (unit.troopKind === 'artillery') {
-        const sources = state.factions[unit.factionId].armaments.find(armament => armament.id === 'artillery-tech')?.sourceCardDefIds ?? [];
+        const sources = state.factions[unit.factionId].armaments.flatMap(armament => armament.sourceCardDefIds ?? []);
         const artilleryTech = getQidahenArtilleryTechnologyCount(state, unit.factionId);
         const redCoat = unit.factionId === 'ming' ? sources.filter(id => id === RED_COAT_CANNON_CARD_DEF_ID).length : 0;
         return artilleryTech + redCoat * (cityBattle && side === 'attacker' ? 2 : !cityBattle && side === 'defender' ? 1 : 0);
     }
-    if (unit.troopKind === 'cavalry' && controlsOrdosRegion(state, unit.factionId)) {
-        return state.factions[unit.factionId].armaments
-            .flatMap(armament => armament.sourceCardDefIds ?? [])
-            .filter(id => id === FINE_STEEL_SABER_CARD_DEF_ID).length;
+    if (unit.troopKind === 'cavalry') {
+        const armaments = state.factions[unit.factionId].armaments;
+        const saber = controlsOrdosRegion(state, unit.factionId)
+            ? armaments.flatMap(armament => armament.sourceCardDefIds ?? []).filter(id => id === FINE_STEEL_SABER_CARD_DEF_ID).length : 0;
+        const firearmSources = armaments.find(armament => armament.id === 'cavalry-firearm')?.sourceCardDefIds ?? [];
+        const firearm = unit.factionId === 'ming' && getArmamentLevel(state, unit.factionId, 'cavalry-firearm') > 0
+            && (firearmSources.includes(CAVALRY_FIREARM_CARD_DEF_ID) || !firearmSources.includes(FINE_STEEL_SABER_CARD_DEF_ID)) ? 1 : 0;
+        return saber + firearm;
     }
+    if (unit.troopKind === 'infantry' && unit.factionId === 'ming'
+        && getArmamentLevel(state, unit.factionId, 'long-barreled-musket') > 0) return 1;
     return 0;
 };
 
@@ -236,30 +242,7 @@ const getBattleRollArmamentDiceCountBonus = (
     if (!unit.structured || !unit.factionId) {
         return 0;
     }
-    if (!cityBattle && phase === 'cavalry' && unit.troopKind === 'cavalry') {
-        const hasCavalryFirearmSource = hasArmamentSourceCard(
-            state,
-            unit.factionId,
-            'cavalry-firearm',
-            CAVALRY_FIREARM_CARD_DEF_ID,
-        );
-        const hasFineSteelSaberSource = hasArmamentSourceCard(
-            state,
-            unit.factionId,
-            'cavalry-firearm',
-            FINE_STEEL_SABER_CARD_DEF_ID,
-        );
-        const hasLegacyCavalryFirearm = getArmamentLevel(state, unit.factionId, 'cavalry-firearm') > 0
-            && !hasFineSteelSaberSource;
-        return hasCavalryFirearmSource
-            || hasLegacyCavalryFirearm
-            ? 1
-            : 0;
-    }
-    if (!cityBattle && phase === 'infantry' && unit.troopKind === 'infantry') {
-        return getArmamentLevel(state, unit.factionId, 'long-barreled-musket') > 0 ? 1 : 0;
-    }
-    if (cityBattle && side === 'defender' && getArmamentLevel(state, unit.factionId, 'western-bastion') > 0) {
+    if (cityBattle && side === 'defender' && unit.factionId === 'ming' && getArmamentLevel(state, unit.factionId, 'western-bastion') > 0) {
         return 1;
     }
     return 0;
@@ -710,7 +693,7 @@ const hasCavalryFirearmPriority = (
     units: QidahenCombatUnit[],
 ): boolean => units.some((unit) => (
     unit.structured
-    && unit.factionId
+    && unit.factionId === 'ming'
     && unit.troopKind === 'cavalry'
     && (
         hasArmamentSourceCard(
@@ -736,7 +719,7 @@ const hasLinkedMusketsPriority = (
     units: QidahenCombatUnit[],
 ): boolean => units.some((unit) => (
     unit.structured
-    && unit.factionId
+    && unit.factionId === 'ming'
     && unit.troopKind === 'infantry'
     && (
         hasArmamentSourceCard(
@@ -756,11 +739,13 @@ const getArmamentPriorityPhase = (
     defenderUnits: QidahenCombatUnit[],
     cityBattle: boolean,
 ): {
-    phase: Extract<QidahenBattleRollPhase, 'artillery' | 'cavalry' | 'infantry'>;
+    phase: QidahenBattleRollPhase;
     side: QidahenBattleUnitSide;
     note: string;
 } | null => {
     if (cityBattle) {
+        if (hasLinkedMusketsPriority(state, attackerUnits)) return { phase: 'melee', side: 'attacker', note: '长管火铳指定肉搏先掷' };
+        if (hasLinkedMusketsPriority(state, defenderUnits)) return { phase: 'melee', side: 'defender', note: '长管火铳指定肉搏先掷' };
         return null;
     }
     const bothSidesHaveCavalry = attackerUnits.some((unit) => unit.troopKind === 'cavalry')
@@ -792,23 +777,21 @@ const getArmamentPriorityPhase = (
     if (
         bothSidesHaveInfantry
         && hasLinkedMusketsPriority(state, attackerUnits)
-        && !isPrioritySourceCancelledByEnemyModifier(pendingTargetAction, 'attacker', LINKED_MUSKETS_CARD_DEF_ID)
     ) {
         return {
             phase: 'infantry',
             side: 'attacker',
-            note: '连环火铳指定步兵先掷',
+            note: '长管火铳指定步兵先掷',
         };
     }
     if (
         bothSidesHaveInfantry
         && hasLinkedMusketsPriority(state, defenderUnits)
-        && !isPrioritySourceCancelledByEnemyModifier(pendingTargetAction, 'defender', LINKED_MUSKETS_CARD_DEF_ID)
     ) {
         return {
             phase: 'infantry',
             side: 'defender',
-            note: '连环火铳指定步兵先掷',
+            note: '长管火铳指定步兵先掷',
         };
     }
     return null;
@@ -905,7 +888,7 @@ const rollBattleStage = (
     attackerUnits: QidahenCombatUnit[],
     defenderUnits: QidahenCombatUnit[],
     cityBattle: boolean,
-    battlePriority: ReturnType<typeof getEiduPriorityPhase>,
+    battlePriority: { phase: QidahenBattleRollPhase; side: QidahenBattleUnitSide; note: string } | null,
 ) => {
     const stageAttackerUnits = buildBattleStageUnits(pendingTargetAction, takeBattleUnits(attackerUnits, pendingTargetAction.battleWidth), phase, 'attacker', cityBattle);
     const stageDefenderUnits = buildBattleStageUnits(pendingTargetAction, takeBattleUnits(defenderUnits, pendingTargetAction.battleWidth), phase, 'defender', cityBattle);

@@ -28,7 +28,7 @@ type Actor = FgoBattleActorInput & {
 };
 
 const MODEL_HEIGHT = 2.4;
-const VIEW_HEIGHT = 5.6;
+const VIEW_HEIGHT = 3.6;
 const ATTACK_ANIMATIONS: Record<string, { name: string; impact: number }> = {
   'servant-saber': { name: 'attack_b', impact: 0.65 },
   'servant-cu-chulainn': { name: 'attack_q', impact: 0.43 },
@@ -154,7 +154,7 @@ export function createFgoBattleRuntime(
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       const distance = VIEW_HEIGHT / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-      camera.position.set(0, MODEL_HEIGHT / 2 + 0.8, -distance);
+      camera.position.set(0, VIEW_HEIGHT / 2, -distance);
       camera.updateProjectionMatrix();
       camera.projectionMatrix.elements[0] *= -1;
       camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
@@ -177,6 +177,15 @@ export function createFgoBattleRuntime(
             item.actor.root.position.x = item.homeX + item.travel * movement;
           }
           pose(item, time);
+        }
+        // 跳跃时让镜头临时容纳整套动作，落地后恢复地区内的大比例。
+        const jumping = actors.filter(item => item.role === 'attack' && item.servantId === 'servant-medusa');
+        if (jumping.length) {
+          const maxY = Math.max(MODEL_HEIGHT, ...jumping.map(item => item.actor.bounds(true).max.y));
+          const viewHeight = Math.max(VIEW_HEIGHT, maxY * 1.08);
+          camera.position.y = viewHeight / 2;
+          camera.position.z = -viewHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+          camera.updateMatrixWorld(true);
         }
         renderer.render(scene, camera);
         if (elapsed >= duration) {

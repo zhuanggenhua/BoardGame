@@ -1,0 +1,314 @@
+[
+  {
+    "step": "frontier-goal",
+    "at": 1794329725667,
+    "metrics": {
+      "Nodes": 2148,
+      "LayoutDuration": 0.301861,
+      "RecalcStyleDuration": 0.922247,
+      "ScriptDuration": 5.152968,
+      "TaskDuration": 9.377686,
+      "JSHeapUsedSize": 84335152
+    }
+  },
+  {
+    "step": "frontier-target",
+    "at": 1794329730346,
+    "metrics": {
+      "Nodes": 2831,
+      "LayoutDuration": 0.321229,
+      "RecalcStyleDuration": 0.937268,
+      "ScriptDuration": 5.919474,
+      "TaskDuration": 12.025355,
+      "JSHeapUsedSize": 89759344
+    }
+  },
+  {
+    "step": "opening-move",
+    "at": 1794329733395,
+    "metrics": {
+      "Nodes": 2848,
+      "LayoutDuration": 0.361593,
+      "RecalcStyleDuration": 0.94927,
+      "ScriptDuration": 6.508323,
+      "TaskDuration": 12.97184,
+      "JSHeapUsedSize": 102275356
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329736519,
+    "metrics": {
+      "Nodes": 2916,
+      "LayoutDuration": 0.395918,
+      "RecalcStyleDuration": 0.965964,
+      "ScriptDuration": 7.296759,
+      "TaskDuration": 14.114005,
+      "JSHeapUsedSize": 116639956
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329741116,
+    "metrics": {
+      "Nodes": 1659,
+      "LayoutDuration": 0.413979,
+      "RecalcStyleDuration": 0.976237,
+      "ScriptDuration": 9.62788,
+      "TaskDuration": 16.836285,
+      "JSHeapUsedSize": 71798076
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329747140,
+    "metrics": {
+      "Nodes": 1741,
+      "LayoutDuration": 0.427543,
+      "RecalcStyleDuration": 1.144397,
+      "ScriptDuration": 10.739654,
+      "TaskDuration": 20.799185,
+      "JSHeapUsedSize": 78281464
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329751584,
+    "metrics": {
+      "Nodes": 1881,
+      "LayoutDuration": 0.43504,
+      "RecalcStyleDuration": 1.155348,
+      "ScriptDuration": 13.103976,
+      "TaskDuration": 23.435654,
+      "JSHeapUsedSize": 108323464
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329755928,
+    "metrics": {
+      "Nodes": 1922,
+      "LayoutDuration": 0.44102,
+      "RecalcStyleDuration": 1.161683,
+      "ScriptDuration": 14.055255,
+      "TaskDuration": 24.734364,
+      "JSHeapUsedSize": 112737168
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329758529,
+    "metrics": {
+      "Nodes": 1963,
+      "LayoutDuration": 0.461761,
+      "RecalcStyleDuration": 1.18302,
+      "ScriptDuration": 14.481695,
+      "TaskDuration": 25.528972,
+      "JSHeapUsedSize": 131756700
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329768594,
+    "metrics": {
+      "Nodes": 2464,
+      "LayoutDuration": 0.469383,
+      "RecalcStyleDuration": 1.378616,
+      "ScriptDuration": 15.413164,
+      "TaskDuration": 30.393198,
+      "JSHeapUsedSize": 86579652
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329772386,
+    "metrics": {
+      "Nodes": 1781,
+      "LayoutDuration": 0.477713,
+      "RecalcStyleDuration": 1.391051,
+      "ScriptDuration": 17.364777,
+      "TaskDuration": 32.677068,
+      "JSHeapUsedSize": 79985752
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329775045,
+    "metrics": {
+      "Nodes": 1815,
+      "LayoutDuration": 0.485663,
+      "RecalcStyleDuration": 1.399859,
+      "ScriptDuration": 18.041682,
+      "TaskDuration": 33.654433,
+      "JSHeapUsedSize": 78039332
+    }
+  },
+  {
+    "step": "opening-farm-cycle",
+    "at": 1794329777601,
+    "metrics": {
+      "Nodes": 1839,
+      "LayoutDuration": 0.489598,
+      "RecalcStyleDuration": 1.406083,
+      "ScriptDuration": 18.643098,
+      "TaskDuration": 34.564972,
+      "JSHeapUsedSize": 88899820
+    }
+  },
+  {
+    "step": "midyear",
+    "at": 1794329781908,
+    "metrics": {
+      "Nodes": 4271,
+      "LayoutDuration": 0.530327,
+      "RecalcStyleDuration": 1.482693,
+      "ScriptDuration": 22.149162,
+      "TaskDuration": 38.629135,
+      "JSHeapUsedSize": 87491528
+    }
+  },
+  {
+    "step": "hand-limit",
+    "at": 1794329789598,
+    "metrics": {
+      "Nodes": 3632,
+      "LayoutDuration": 0.545037,
+      "RecalcStyleDuration": 1.666122,
+      "ScriptDuration": 23.175568,
+      "TaskDuration": 44.327475,
+      "JSHeapUsedSize": 95193384
+    }
+  },
+  {
+    "step": "battle-move",
+    "at": 1794329795352,
+    "metrics": {
+      "Nodes": 2148,
+      "LayoutDuration": 0.569256,
+      "RecalcStyleDuration": 1.749201,
+      "ScriptDuration": 25.178101,
+      "TaskDuration": 47.418313,
+      "JSHeapUsedSize": 77818728
+    }
+  },
+  {
+    "step": "upgrade-card",
+    "at": 1794329796479,
+    "metrics": {
+      "Nodes": 2210,
+      "LayoutDuration": 0.586819,
+      "RecalcStyleDuration": 1.763344,
+      "ScriptDuration": 25.978578,
+      "TaskDuration": 48.439569,
+      "JSHeapUsedSize": 99687024
+    }
+  },
+  {
+    "step": "upgrade-payment",
+    "at": 1794329799556,
+    "metrics": {
+      "Nodes": 2252,
+      "LayoutDuration": 0.599129,
+      "RecalcStyleDuration": 1.784611,
+      "ScriptDuration": 26.803568,
+      "TaskDuration": 49.648438,
+      "JSHeapUsedSize": 121443460
+    }
+  },
+  {
+    "step": "upgrade-confirm",
+    "at": 1794329806772,
+    "metrics": {
+      "Nodes": 2793,
+      "LayoutDuration": 0.606582,
+      "RecalcStyleDuration": 1.969035,
+      "ScriptDuration": 27.752735,
+      "TaskDuration": 56.098311,
+      "JSHeapUsedSize": 86324500
+    }
+  },
+  {
+    "step": "dispatch-action",
+    "at": 1794329808204,
+    "metrics": {
+      "Nodes": 2824,
+      "LayoutDuration": 0.610671,
+      "RecalcStyleDuration": 1.982621,
+      "ScriptDuration": 28.856163,
+      "TaskDuration": 57.340564,
+      "JSHeapUsedSize": 98324820
+    }
+  },
+  {
+    "step": "dispatch-payment",
+    "at": 1794329809406,
+    "metrics": {
+      "Nodes": 2853,
+      "LayoutDuration": 0.612887,
+      "RecalcStyleDuration": 1.994551,
+      "ScriptDuration": 29.756499,
+      "TaskDuration": 58.413642,
+      "JSHeapUsedSize": 110532212
+    }
+  },
+  {
+    "step": "dispatch-source",
+    "at": 1794329814422,
+    "metrics": {
+      "Nodes": 3023,
+      "LayoutDuration": 0.62231,
+      "RecalcStyleDuration": 2.022502,
+      "ScriptDuration": 34.220914,
+      "TaskDuration": 63.113758,
+      "JSHeapUsedSize": 158318080
+    }
+  },
+  {
+    "step": "dispatch-troops",
+    "at": 1794329818537,
+    "metrics": {
+      "Nodes": 2215,
+      "LayoutDuration": 0.663898,
+      "RecalcStyleDuration": 2.047891,
+      "ScriptDuration": 36.454821,
+      "TaskDuration": 65.767238,
+      "JSHeapUsedSize": 113521708
+    }
+  },
+  {
+    "step": "dispatch-target",
+    "at": 1794329831139,
+    "metrics": {
+      "Nodes": 1247,
+      "LayoutDuration": 0.703119,
+      "RecalcStyleDuration": 2.354712,
+      "ScriptDuration": 39.234117,
+      "TaskDuration": 74.552965,
+      "JSHeapUsedSize": 78241104
+    }
+  },
+  {
+    "step": "defender-response",
+    "at": 1794329835581,
+    "metrics": {
+      "Nodes": 1324,
+      "LayoutDuration": 0.739323,
+      "RecalcStyleDuration": 2.377718,
+      "ScriptDuration": 41.328758,
+      "TaskDuration": 77.06567,
+      "JSHeapUsedSize": 121053524
+    }
+  },
+  {
+    "step": "battle-roll",
+    "at": 1794329838724,
+    "metrics": {
+      "Nodes": 1196,
+      "LayoutDuration": 0.740624,
+      "RecalcStyleDuration": 2.417057,
+      "ScriptDuration": 44.163322,
+      "TaskDuration": 80.139398,
+      "JSHeapUsedSize": 78653772
+    }
+  }
+]

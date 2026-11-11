@@ -280,6 +280,7 @@ export const LocalMatchRoom = () => {
                                                 >
                                                     <BoardBridge
                                                         board={WrappedBoard}
+                                                        gameId={gameId}
                                                         renderer={WrappedBoardRenderer}
                                                         remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
                                                         loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}

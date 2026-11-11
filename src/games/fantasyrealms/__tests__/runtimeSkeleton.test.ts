@@ -84,6 +84,26 @@ describe('fantasyrealms runtime skeleton', () => {
         expect(core.drawPile).toHaveLength(25);
     });
 
+    it('拿走中央牌保留其他牌的位置，新弃牌填入空位并兼容旧对局', () => {
+        const initial = FantasyRealmsDomain.setup(['0', '1', '2'], random);
+        const cards = [byId('flood-swamp'), byId('leader-king'), byId('leader-queen')];
+        const core = { ...initial, discardPile: cards };
+        const afterTake = FantasyRealmsDomain.reduce(core, {
+            type: 'DISCARD_CARD_TAKEN', timestamp: 1,
+            payload: { playerId: '0', card: cards[1]!, nextPlayerId: '0', nextTurn: 1, nextStage: 'discard', requiresDiscard: true },
+        });
+        expect(afterTake.discardPile.map((card) => [card.id, card.discardSlot])).toEqual([
+            ['flood-swamp', 0], ['leader-queen', 2],
+        ]);
+        const newCard = afterTake.players['0']!.hand[0]!;
+        const afterDiscard = FantasyRealmsDomain.reduce(afterTake, {
+            type: 'CARD_DISCARDED', timestamp: 2,
+            payload: { playerId: '0', card: newCard, nextPlayerId: '1', nextTurn: 2, nextStage: 'draw' },
+        });
+        expect(afterDiscard.discardPile.map((card) => card.discardSlot)).toEqual([0, 2, 1]);
+        expect(JSON.parse(JSON.stringify(afterDiscard)).discardPile.map((card: { discardSlot: number }) => card.discardSlot)).toEqual([0, 2, 1]);
+    });
+
     it('playerView 进行中会隐藏其他玩家手牌实体、隐藏牌库实体，并清空隐藏焦点的原始状态', () => {
         const discardPile = [byId('flood-swamp')];
         const hiddenFocusCard = byId('wizard-collector');
@@ -410,16 +430,8 @@ describe('fantasyrealms runtime skeleton', () => {
             },
         };
 
-        const player0Score = evaluateFantasyRealmsScore(core.players['0']!.hand, core.discardPile).totalScore;
-        const player1Score = evaluateFantasyRealmsScore(core.players['1']!.hand, core.discardPile).totalScore;
-
-        expect(FantasyRealmsDomain.isGameOver?.(core)).toEqual({
-            winner: '0',
-            scores: {
-                '0': player0Score,
-                '1': player1Score,
-            },
-        });
+        expect(FantasyRealmsDomain.isGameOver?.(core)).toBeUndefined();
+        // 真实最后弃牌先进入终局选择，不得仅按弃牌数量静默代选。
     });
 
     it('基础版弃牌堆达到 10 张时进入结束态', () => {
@@ -475,23 +487,13 @@ describe('fantasyrealms runtime skeleton', () => {
             },
         };
 
-        const player0Score = evaluateFantasyRealmsScore(player0Hand, forcedCore.discardPile).totalScore;
-        const player1Score = evaluateFantasyRealmsScore(player1Hand, forcedCore.discardPile).totalScore;
-        const player2Score = evaluateFantasyRealmsScore(player2Hand, forcedCore.discardPile).totalScore;
-
-        expect(FantasyRealmsDomain.isGameOver?.(forcedCore)).toEqual({
-            winner: '0',
-            scores: {
-                '0': player0Score,
-                '1': player1Score,
-                '2': player2Score,
-            },
-        });
+        expect(FantasyRealmsDomain.isGameOver?.(forcedCore)).toBeUndefined();
+        // 未走终局选择阶段的代表态不能直接产生胜者。
     });
 
     it('game engine 暴露双人核心回合 commandTypes', () => {
         expect(engineConfig.gameId).toBe('fantasyrealms');
-        expect(engineConfig.commandTypes).toEqual(['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD']);
+        expect(engineConfig.commandTypes).toEqual(['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD', 'RESOLVE_SETTLEMENT']);
         expect(engineConfig.minPlayers).toBe(2);
         expect(engineConfig.maxPlayers).toBe(6);
         expect(engineConfig.systems.map((system) => system.id)).toEqual(expect.arrayContaining(['actionLog', 'undo']));

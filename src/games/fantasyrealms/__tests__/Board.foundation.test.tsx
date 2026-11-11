@@ -1345,7 +1345,7 @@ describe('FantasyRealms Board foundation', () => {
         withViewport(1440, 1024, () => {
             renderBoard();
 
-            expect(screen.getByText('当前总分')).toBeInTheDocument();
+            expect(screen.getByText('暂计')).toBeInTheDocument();
             expect(screen.queryByText('公开弃牌堆')).not.toBeInTheDocument();
             expect(screen.queryByText(/的手牌$/)).not.toBeInTheDocument();
             expect(screen.queryByText('官方总分')).not.toBeInTheDocument();
@@ -1947,7 +1947,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('从公开弃牌拿牌进入弃牌阶段后，会短暂显示谁拿走了这张牌', () => {
+    it('点击公开弃牌只发出拿牌命令，确认状态后才播放动画', () => {
         withViewport(1440, 1024, () => {
             const dispatch = vi.fn();
             renderBoard(makeCore({
@@ -1977,8 +1977,7 @@ describe('FantasyRealms Board foundation', () => {
 
             fireEvent.click(screen.getAllByRole('button', { name: /拿取弃牌/ })[1]!);
 
-            expect(screen.getByTestId('fantasyrealms-live-center-selection-notice')).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-center-selection-notice-badge')).toHaveTextContent('测试玩家');
+            expect(screen.queryByTestId('fantasyrealms-live-center-selection-notice')).not.toBeInTheDocument();
             expect(dispatch).toHaveBeenCalledWith('TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[1]!.id });
         });
     });
@@ -2047,7 +2046,7 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.getByText('0/10')).toBeInTheDocument();
-            expect(screen.getByText('当前总分')).toBeInTheDocument();
+            expect(screen.getByText('暂计')).toBeInTheDocument();
             expect(screen.queryByText(/当前为 3 人基础版/)).not.toBeInTheDocument();
             expect(screen.queryByText(/第 \d+ 名/)).not.toBeInTheDocument();
             await waitFor(() => {

@@ -1,9 +1,10 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import type { MatchState } from '../../src/engine/types';
 import { FantasyRealmsDomain, evaluateFantasyRealmsScore } from '../../src/games/fantasyrealms/domain';
 import { getDeckDrawCount, requiresDiscardAfterTakingDiscard } from '../../src/games/fantasyrealms/domain/commands';
+import { evaluateFantasyRealmsResolvedScore } from '../../src/games/fantasyrealms/domain/scoring';
 import type { FantasyRealmsCore } from '../../src/games/fantasyrealms/domain';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
 import { getFantasyRealmsBaseHandLimit } from '../../src/games/fantasyrealms/foundation';
@@ -590,8 +591,9 @@ async function createPlayerContext(
     browser: NonNullable<BrowserContext['browser']>,
     baseURL: string | undefined,
     storageKey: string,
+    recordVideoDir?: string,
 ) {
-    const context = await browser.newContext({ baseURL });
+    const context = await browser.newContext({ baseURL, ...(recordVideoDir ? { recordVideo: { dir: recordVideoDir, size: { width: 1920, height: 1080 } } } : {}) });
     await initContext(context, {
         storageKey,
         skipImageGate: true,
@@ -1005,6 +1007,7 @@ async function openOnlineFantasyRealmsMatch(
     browser: NonNullable<BrowserContext['browser']>,
     baseURL: string | undefined,
     numPlayers = 2,
+    recordVideoDir?: string,
 ) {
     const players = await Promise.all(
         Array.from({ length: numPlayers }, (_, index) => createPlayerContext(
@@ -1013,6 +1016,7 @@ async function openOnlineFantasyRealmsMatch(
             index === 0
                 ? '__fantasyrealms_online_host__'
                 : `__fantasyrealms_online_guest_${index}__`,
+            index === 0 ? recordVideoDir : undefined,
         )),
     );
     const [host, ...guests] = players;
@@ -2462,7 +2466,9 @@ test.describe('FantasyRealms online basic flow', () => {
     test('3人在线房间从公开弃牌拿牌后，当前玩家必须继续弃1才会结束回合', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const match = await openOnlineFantasyRealmsMatch(browser, baseURL, 3);
+        const videoDir = dirname(getEvidenceScreenshotPath(testInfo, '取牌录像'));
+        await mkdir(videoDir, { recursive: true });
+        const match = await openOnlineFantasyRealmsMatch(browser, baseURL, 3, videoDir);
         if (!match) {
             test.skip(true, 'Game server unavailable for Fantasy Realms online test.');
         }
@@ -2503,6 +2509,9 @@ test.describe('FantasyRealms online basic flow', () => {
                 discardCount: 2,
             });
 
+            await expect.poll(async () => host.page.getByRole('button', { name: /拿取弃牌/ }).evaluateAll((buttons) => (
+                buttons.map((button) => button.getAttribute('data-tutorial-id')?.replace('fantasyrealms-card-discard-', '')).sort()
+            ))).toEqual(core.discardPile.map((card) => card.id).sort());
             const discardButton = host.page.getByRole('button', { name: /拿取弃牌/ }).first();
             const selectedCardId = (await discardButton.getAttribute('data-tutorial-id'))?.replace('fantasyrealms-card-discard-', '');
             expect(selectedCardId).toBeTruthy();
@@ -2514,7 +2523,27 @@ test.describe('FantasyRealms online basic flow', () => {
                     }
                 });
             });
-            await discardButton.click();
+            const otherButton = host.page.getByRole('button', { name: /拿取弃牌/ }).nth(1);
+            const otherCardId = (await otherButton.getAttribute('data-tutorial-id'))?.replace('fantasyrealms-card-discard-', '');
+            const selectedBefore = await discardButton.boundingBox();
+            const otherBefore = await otherButton.boundingBox();
+            expect(selectedBefore).not.toBeNull();
+            expect(otherBefore).not.toBeNull();
+            const motionDir = dirname(getEvidenceScreenshotPath(testInfo, '取牌逐帧'));
+            await mkdir(motionDir, { recursive: true });
+            const samples: Array<{ file: string; elapsedMs: number }> = [];
+            const startTime = Date.now();
+            const recording = (async () => {
+                while (Date.now() - startTime < 1600) {
+                    const file = `take-frame-${String(samples.length).padStart(3, '0')}.png`;
+                    await host.page.screenshot({ path: `${motionDir}/${file}`, fullPage: false });
+                    samples.push({ file, elapsedMs: Date.now() - startTime });
+                    await host.page.waitForTimeout(55);
+                }
+            })();
+            await host.page.locator(`[data-tutorial-id="fantasyrealms-card-discard-${selectedCardId}"]`).click();
+            await recording;
+            await writeFile(`${motionDir}/take-timing.json`, JSON.stringify({ state: 'representative-state', action: '真实点击公开弃牌', samples }, null, 2));
 
             await expect.poll(async () => {
                 const nextCore = await readFantasyRealmsCore(matchId, host.page);
@@ -2538,6 +2567,9 @@ test.describe('FantasyRealms online basic flow', () => {
             const afterTakeCore = await readFantasyRealmsCore(matchId, host.page);
             expect(afterTakeCore.players['0']?.hand.some((card) => card.id === selectedCardId)).toBe(true);
             expect(afterTakeCore.discardPile.some((card) => card.id === selectedCardId)).toBe(false);
+            const otherAfter = await host.page.locator(`[data-tutorial-id="fantasyrealms-card-discard-${otherCardId}"]`).boundingBox();
+            expect(otherAfter?.x).toBeCloseTo(otherBefore!.x, 0);
+            expect(otherAfter?.y).toBeCloseTo(otherBefore!.y, 0);
 
             await host.page.waitForTimeout(1600);
             expect(await host.page.evaluate(() => (window as Window & { __frExitAnimations?: number }).__frExitAnimations)).toBe(1);
@@ -2545,6 +2577,7 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect(host.page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '8');
 
             const handDiscardButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
+            const discardedCardId = (await handDiscardButton.getAttribute('data-tutorial-id'))?.replace('fantasyrealms-card-hand-', '');
             await handDiscardButton.click();
 
             await expect.poll(async () => {
@@ -2566,6 +2599,65 @@ test.describe('FantasyRealms online basic flow', () => {
                 hostHand: 7,
                 discardCount: 2,
             });
+            await expect.poll(async () => {
+                const finalCore = await readFantasyRealmsCore(matchId, host.page);
+                return finalCore.discardPile.find((card) => card.id === discardedCardId)?.discardSlot;
+            }).toBe(0);
+            await expect.poll(async () => {
+                const box = await host.page.locator(`[data-tutorial-id="fantasyrealms-card-discard-${discardedCardId}"]`).boundingBox();
+                return box ? Math.round(box.x - selectedBefore!.x) : null;
+            }).toBe(0);
+        } finally {
+            await Promise.all(players.map((player) => player.context.close().catch(() => {})));
+        }
+    });
+
+    test('三人在线终局由真人选择死灵术士、变形怪和岛屿并同步最终计分', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const match = await openOnlineFantasyRealmsMatch(browser, testInfo.project.use.baseURL as string | undefined, 3);
+        if (!match) throw new Error('Game server unavailable');
+        const { players, matchId } = match;
+        const [host, guest] = players;
+        const byId = (id: string) => ({ ...OFFICIAL_FANTASY_REALMS_CARDS.find((card) => card.id === id)! });
+        try {
+            const state = await readFantasyRealmsMatchState(matchId, host.page);
+            const base = multiplayerTakeDiscardCore();
+            const hostIds = ['wizard-necromancer', 'wild-shapeshifter', 'flood-island', 'flame-wildfire', 'beast-warhorse', 'leader-princess', 'weapon-magic-wand', 'army-elven-archers'];
+            const discardIds = ['leader-queen', 'army-light-cavalry', 'army-dwarvish-infantry', 'land-forest', 'land-mountain', 'weather-blizzard', 'weather-rainstorm', 'beast-hydra', 'weapon-warship'];
+            const used = new Set([...hostIds, ...discardIds]);
+            const others = OFFICIAL_FANTASY_REALMS_CARDS.filter((card) => !used.has(card.id) && !['野牌', '洪流'].includes(card.suit) && !['artifact-book-of-changes'].includes(card.id)).slice(0, 14);
+            const core: FantasyRealmsCore = {
+                ...base, currentPlayer: '0', stage: 'discard', discardPile: discardIds.map(byId),
+                players: {
+                    ...base.players,
+                    '0': { ...base.players['0']!, hand: hostIds.map(byId) },
+                    '1': { ...base.players['1']!, hand: others.slice(0, 7).map((card) => ({ ...card })) },
+                    '2': { ...base.players['2']!, hand: others.slice(7, 14).map((card) => ({ ...card })) },
+                },
+            };
+            await injectMatchState(matchId, { ...state, core, sys: { ...state.sys, matchId, turnOrder: [...core.playerIds], currentPlayerIndex: 0, gameover: null } }, host.page);
+            const discard = host.page.locator('[data-tutorial-id="fantasyrealms-card-hand-army-elven-archers"]');
+            await expect(discard).toBeVisible();
+            await discard.click();
+            const panel = host.page.getByTestId('fantasyrealms-settlement');
+            await expect(panel).toContainText('死灵术士');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, '终局死灵术士选择');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await host.page.screenshot({ path: evidencePath, fullPage: false });
+            await expect(guest.page.getByTestId('fantasyrealms-settlement')).toContainText('等待');
+            await panel.locator('button:has([data-atlas-card-id="leader-queen"])').click();
+            await expect(panel).toContainText('变形怪');
+            await panel.locator('button:has([data-atlas-card-id="leader-king"])').click();
+            await expect(panel).toContainText('岛屿');
+            await panel.locator('button:has([data-atlas-card-id="flame-wildfire"])').click();
+            await expect(host.page.getByLabel('最终排名')).toBeVisible({ timeout: 20000 });
+            const result = await readFantasyRealmsCore(matchId, host.page);
+            expect(result.players['0']!.hand.some((card) => card.id === 'leader-queen')).toBe(true);
+            expect(result.settlement?.selections['0']).toMatchObject({ shapeshifterTargetId: 'leader-king', islandTargetId: 'flame-wildfire' });
+            const expected = evaluateFantasyRealmsResolvedScore(result.players['0']!.hand, result.discardPile, result.settlement!.selections['0']!, { playerCount: 3 });
+            const finalState = await readFantasyRealmsMatchState(matchId, host.page);
+            expect((finalState.sys?.gameover as { scores?: Record<string, number> } | undefined)?.scores?.['0']).toBe(expected.totalScore);
+            await expect(guest.page.getByLabel('最终排名')).toBeVisible({ timeout: 10000 });
         } finally {
             await Promise.all(players.map((player) => player.context.close().catch(() => {})));
         }

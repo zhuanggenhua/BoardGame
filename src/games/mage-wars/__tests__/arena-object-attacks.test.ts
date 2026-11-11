@@ -69,7 +69,7 @@ describe('mage-wars arena object attacks', () => {
                 ...fixedRandom,
                 d: (sides) => {
                     if (sides === 12) effectDieSides.push(sides);
-                    return 12;
+                    return sides === 12 ? 12 : 5;
                 },
             },
             attackerObjectId: attacker.id,
@@ -107,7 +107,7 @@ describe('mage-wars arena object attacks', () => {
             timestamp: 0,
             random: {
                 ...fixedRandom,
-                d: () => value,
+                d: (sides) => sides === 12 ? value : 5,
             },
             attackerObjectId: attacker.id,
             attackProfileId: 'attack-0',
@@ -227,15 +227,16 @@ describe('mage-wars arena object attacks', () => {
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
                 payload: expect.objectContaining({
                     attackerObjectId: weakenedCleric.id,
-                    diceResults: [3, 3],
-                    baseDamage: 6,
+                    diceResults: [1, 1],
+                    diceCritical: [false, false],
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                 }),
             }),
         ]));
@@ -245,12 +246,13 @@ describe('mage-wars arena object attacks', () => {
                 type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
                 payload: expect.objectContaining({
                     attackerObjectId: overWeakenedCat.id,
-                    diceResults: [3],
-                    baseDamage: 3,
+                    diceResults: [1],
+                    diceCritical: [false],
+                    baseDamage: 1,
                 }),
             }),
         ]));
-        expect(minimumAttack.state.core.objects[target.id].damage).toBe(3);
+        expect(minimumAttack.state.core.objects[target.id].damage).toBe(1);
     });
 
     it('resolves triple strike arena object attacks as three separate damage rolls with one action spend', () => {
@@ -292,28 +294,28 @@ describe('mage-wars arena object attacks', () => {
                     attackProfileId: 'attack-1',
                     attackName: '三重噬咬',
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3],
+                    diceResults: [1, 1, 1],
                     strikeIndex: 0,
                     strikeCount: 3,
-                    baseDamage: 9,
+                    baseDamage: 3,
                 }),
             }),
             expect.objectContaining({
                 payload: expect.objectContaining({
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3],
+                    diceResults: [1, 1, 1],
                     strikeIndex: 1,
                     strikeCount: 3,
-                    baseDamage: 9,
+                    baseDamage: 3,
                 }),
             }),
             expect.objectContaining({
                 payload: expect.objectContaining({
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3],
+                    diceResults: [1, 1, 1],
                     strikeIndex: 2,
                     strikeCount: 3,
-                    baseDamage: 9,
+                    baseDamage: 3,
                 }),
             }),
         ]);
@@ -322,27 +324,27 @@ describe('mage-wars arena object attacks', () => {
             expect.objectContaining({
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 9,
+                    actualDamage: 3,
                     sourceAbilityId: 'mw.object.2901.attack-1',
                 }),
             }),
             expect.objectContaining({
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 9,
+                    actualDamage: 3,
                     sourceAbilityId: 'mw.object.2901.attack-1',
                 }),
             }),
             expect.objectContaining({
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 9,
+                    actualDamage: 3,
                     sourceAbilityId: 'mw.object.2901.attack-1',
                 }),
             }),
         ]);
         expect(attacked.state.core.objects[hydra.id].actionReady).toBe(false);
-        expect(attacked.state.core.objects[target.id].damage).toBe(27);
+        expect(attacked.state.core.objects[target.id].damage).toBe(9);
     });
 
     it('drains mana from the damaged target controller on the first mana-drain strike only', () => {
@@ -513,15 +515,15 @@ describe('mage-wars arena object attacks', () => {
                     attackProfileId: 'attack-0',
                     attackName: '长弓',
                     targetPlayerId: '1',
-                    diceResults: [3, 3, 3, 3],
-                    baseDamage: 12,
+                    diceResults: [1, 1, 1, 1],
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '1',
-                    actualDamage: 12,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.object.2816.attack-0',
                 }),
             }),
@@ -576,8 +578,8 @@ describe('mage-wars arena object attacks', () => {
                     attackerObjectId: imp.id,
                     attackProfileId: 'attack-0',
                     effectDieResult: 8,
-                    diceResults: [3, 3],
-                    baseDamage: 6,
+                    diceResults: [1, 1],
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
@@ -630,7 +632,7 @@ describe('mage-wars arena object attacks', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.object.2801.attack-0',
                 }),
             }),
@@ -684,15 +686,15 @@ describe('mage-wars arena object attacks', () => {
                     targetObjectId: target.id,
                     rawEffectDieResult: 9,
                     effectDieResult: 7,
-                    diceResults: [3],
-                    baseDamage: 3,
+                    diceResults: [1],
+                    baseDamage: 1,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 3,
+                    actualDamage: 1,
                     sourceAbilityId: 'mw.object.2801.attack-0',
                 }),
             }),
@@ -703,7 +705,7 @@ describe('mage-wars arena object attacks', () => {
             && event.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
         ))).toBe(false);
         expect(attacked.state.core.objects[target.id]).toMatchObject({
-            damage: 3,
+            damage: 1,
             statusTokens: {},
         });
     });
@@ -951,6 +953,29 @@ describe('mage-wars arena object attacks', () => {
         expect(uncontainableCrippleImmune.state.core.objects[uncontainableTarget.id].statusTokens[STATUS_TOKEN_IDS.CRIPPLE]).toBeUndefined();
     });
 
+    it('protects critical attack dice from armor through the object attack pipeline', () => {
+        const baseState = setupState('creatureAction');
+        const attacker = makeArenaObject('critical-cat', '0', PLAYER_ZERO_START_ZONE);
+        const defender = makeArenaObject('armored-target', '1', PLAYER_ZERO_START_ZONE, { life: 10, armor: 2 });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(withArenaObject(baseState.core, attacker), defender),
+            sys: baseState.sys,
+        };
+        const faces = [3, 6];
+        const random: RandomFn = { ...fixedRandom, d: (sides) => sides === 6 ? faces.shift()! : 1 };
+        const attacked = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: { attackerObjectId: attacker.id, attackProfileId: 'attack-0', targetObjectId: defender.id },
+        }, random);
+        expect(attacked.success).toBe(true);
+        expect(attacked.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED, payload: expect.objectContaining({ diceResults: [1, 2], diceCritical: [false, true], baseDamage: 3 }) }),
+            expect.objectContaining({ type: 'DAMAGE_DEALT', payload: expect.objectContaining({ targetId: defender.id, actualDamage: 2 }) }),
+        ]));
+        expect(attacked.state.core.objects[defender.id].damage).toBe(2);
+    });
+
     it('applies arena object armor through the damage pipeline', () => {
         const baseState = setupState('creatureAction');
         const attacker = makeArenaObject('cat-0', '0', PLAYER_ZERO_START_ZONE);
@@ -974,7 +999,7 @@ describe('mage-wars arena object attacks', () => {
                 attackProfileId: 'attack-0',
                 targetObjectId: armoredDefender.id,
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
 
         expect(attacked.success).toBe(true);
         expect(attacked.events).toEqual(expect.arrayContaining([
@@ -982,7 +1007,7 @@ describe('mage-wars arena object attacks', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: armoredDefender.id,
-                    actualDamage: 4,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.object.2906.attack-0',
                     breakdown: expect.objectContaining({
                         steps: expect.arrayContaining([
@@ -990,7 +1015,7 @@ describe('mage-wars arena object attacks', () => {
                                 sourceId: 'mage-wars-object-armor',
                                 sourceName: '护甲',
                                 value: -2,
-                                runningTotal: 4,
+                                runningTotal: 2,
                             }),
                         ]),
                     }),
@@ -999,7 +1024,7 @@ describe('mage-wars arena object attacks', () => {
         ]));
         expect(attacked.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(attacked.state.core.objects[armoredDefender.id]).toMatchObject({
-            damage: 4,
+            damage: 2,
             armor: 2,
         });
     });
@@ -1040,14 +1065,14 @@ describe('mage-wars arena object attacks', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: armoredDefender.id,
-                    actualDamage: 10,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.object.2816.attack-0',
                     breakdown: expect.objectContaining({
                         steps: expect.arrayContaining([
                             expect.objectContaining({
                                 sourceId: 'mage-wars-object-armor',
                                 value: -2,
-                                runningTotal: 10,
+                                runningTotal: 2,
                             }),
                         ]),
                     }),
@@ -1055,7 +1080,7 @@ describe('mage-wars arena object attacks', () => {
             }),
         ]));
         expect(attacked.state.core.objects[armoredDefender.id]).toMatchObject({
-            damage: 10,
+            damage: 2,
             armor: 3,
         });
     });
@@ -1095,15 +1120,37 @@ describe('mage-wars arena object attacks', () => {
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: armoredDefender.id,
-                actualDamage: 12,
+                actualDamage: 4,
                 sourceAbilityId: 'mw.object.2811.attack-0',
             },
         });
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-object-armor');
         expect(attacked.state.core.objects[armoredDefender.id]).toMatchObject({
-            damage: 12,
+            damage: 4,
             armor: 1,
         });
+    });
+
+    it('preserves critical damage through armor for an attack spell', () => {
+        const attackSpellId = 1710;
+        const planned = runCommand(setupState('planning'), planCommand([attackSpellId]));
+        const defender = makeArenaObject('spell-armored-target', '1', PLAYER_ZERO_START_ZONE, { life: 10, armor: 2 });
+        const faces = [3, 6, 1];
+        const random: RandomFn = { ...fixedRandom, d: (sides) => sides === 6 ? faces.shift()! : 1 };
+        const attacked = runCommand({
+            core: withArenaObject(planned.state.core, defender),
+            sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: attackSpellId, manaCost: 4, targetObjectId: defender.id },
+        }, random);
+        expect(attacked.success).toBe(true);
+        expect(attacked.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED, payload: expect.objectContaining({ diceResults: [1, 2, 0], diceCritical: [false, true, false], baseDamage: 3 }) }),
+            expect.objectContaining({ type: 'DAMAGE_DEALT', payload: expect.objectContaining({ targetId: defender.id, actualDamage: 2 }) }),
+        ]));
+        expect(attacked.state.core.objects[defender.id].damage).toBe(2);
     });
 
     it('applies arena object armor to attack spells that target objects', () => {
@@ -1136,14 +1183,14 @@ describe('mage-wars arena object attacks', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: armoredDefender.id,
-                    actualDamage: 7,
+                    actualDamage: 1,
                     sourceAbilityId: 'mw.spell.1710',
                 }),
             }),
         ]));
         expect(attacked.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED);
         expect(attacked.state.core.objects[armoredDefender.id]).toMatchObject({
-            damage: 7,
+            damage: 1,
             armor: 2,
         });
     });

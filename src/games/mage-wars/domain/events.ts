@@ -610,6 +610,7 @@ export interface MageWarsSpellAttackRolledEvent extends GameEvent<typeof MAGE_WA
         targetObjectId?: string;
         targetZoneId?: ArenaZoneId;
         diceResults: number[];
+        diceCritical?: boolean[];
         effectDieResult?: number;
         rawEffectDieResult?: number;
         chainIndex?: number;
@@ -875,6 +876,7 @@ export interface MageWarsAttackDeclaredEvent extends GameEvent<typeof MAGE_WARS_
         attackerId: PlayerId;
         defenderId: PlayerId;
         diceResults: number[];
+        diceCritical?: boolean[];
         effectDieResult?: number;
         baseDamage: number;
     };
@@ -935,6 +937,7 @@ export interface MageWarsDamageBarrierPayload {
     attackerObjectId?: string;
     roundNumber: number;
     diceResults: number[];
+    diceCritical?: boolean[];
     baseDamage: number;
     damageTypes: string[];
     unavoidable: boolean;
@@ -960,6 +963,7 @@ export interface MageWarsArenaObjectAttackDeclaredEvent extends GameEvent<typeof
         /** 攻击发生时的目标区域；目标被击败后仍供 FX 还原结算落点。 */
         targetZoneId?: ArenaZoneId;
         diceResults: number[];
+        diceCritical?: boolean[];
         effectDieResult?: number;
         rawEffectDieResult?: number;
         strikeIndex?: number;

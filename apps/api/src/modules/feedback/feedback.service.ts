@@ -159,6 +159,10 @@ const projectFeedbackErrorContext = (value: unknown): Feedback['errorContext'] |
 const projectFeedbackClientContext = (value: unknown): Feedback['clientContext'] | undefined => {
     const raw = asRecord(value);
     if (Object.keys(raw).length === 0) return undefined;
+    const failedAsset = asRecord(raw.failedAsset);
+    const boardPlayers = asRecord(raw.boardPlayers);
+    const assetPath = safeContextString(failedAsset.path, 256);
+    const assetObservedAt = safeContextString(failedAsset.observedAt, 40);
     const route = safeContextString(raw.route, 512);
     const safeRoute = route
         ? /^\/play\/[^/?#]+\/match(?:\/[^/?#]+)?(?:[?#].*)?$/i.test(route)
@@ -200,6 +204,16 @@ const projectFeedbackClientContext = (value: unknown): Feedback['clientContext']
     const pageFlags = asRecord(raw.pageFlags);
     const recentRouteChanges = Array.isArray(raw.recentRouteChanges) ? raw.recentRouteChanges : undefined;
     const result = {
+        ...(Number.isInteger(boardPlayers.count) && Number(boardPlayers.count) >= 0 && Number(boardPlayers.count) <= 100 && typeof boardPlayers.playerIdPresent === 'boolean' ? { boardPlayers: {
+            count: Number(boardPlayers.count), playerIdPresent: boardPlayers.playerIdPresent,
+            ...(boardPlayers.playerIdPresent && typeof boardPlayers.playerExists === 'boolean' ? { playerExists: boardPlayers.playerExists } : {}),
+        } } : {}),
+        ...(assetPath && /^\/assets\/[A-Za-z0-9_.-]+\.css$/.test(assetPath) && assetObservedAt ? { failedAsset: {
+            path: assetPath, observedAt: assetObservedAt,
+            ...(safeContextNumber(failedAsset.responseStatus) !== undefined && Number(failedAsset.responseStatus) >= 100 && Number(failedAsset.responseStatus) <= 599 ? { responseStatus: Number(failedAsset.responseStatus) } : {}),
+            ...(safeContextNumber(failedAsset.durationMs) !== undefined ? { durationMs: safeContextNumber(failedAsset.durationMs) } : {}),
+            ...(safeContextNumber(failedAsset.transferSize) !== undefined ? { transferSize: safeContextNumber(failedAsset.transferSize) } : {}),
+        } } : {}),
         ...(safeRoute ? { route: safeRoute } : {}),
         ...(safeContextString(raw.mode, 32) && ['online', 'local', 'spectator', 'tutorial'].includes(String(raw.mode).toLowerCase())
             ? { mode: String(raw.mode).toLowerCase() }
@@ -1615,6 +1629,8 @@ export class FeedbackService {
             },
             clientContext: {
                 gameId: '$clientContext.gameId',
+                failedAsset: '$clientContext.failedAsset',
+                boardPlayers: '$clientContext.boardPlayers',
                 route: '$clientContext.route',
                 appVersion: '$clientContext.appVersion',
                 appCommitSha: '$clientContext.appCommitSha',

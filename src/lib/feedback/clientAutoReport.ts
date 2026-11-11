@@ -44,6 +44,7 @@ type ClientAutoReportPayload = {
     gameName: string;
     source?: ClientAutoReportSource;
     playerId?: string | null;
+    boardPlayers?: { count: number; playerIdPresent: boolean; playerExists?: boolean };
     errorName: string;
     errorMessage: string;
     errorSource: string;
@@ -378,6 +379,25 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     const state = diagnosticContext.state ?? gameFeedbackContext?.state;
     const playerId = payload.playerId ?? gameFeedbackContext?.playerId ?? undefined;
     const clientContext = buildFeedbackClientContext({ mode, matchId, playerId, gameId });
+    if (payload.boardPlayers) clientContext.boardPlayers = payload.boardPlayers;
+    const assetPath = /Unable to preload CSS for (\/assets\/[A-Za-z0-9_.-]+\.css)\b/.exec(payload.errorMessage)?.[1];
+    if (assetPath) {
+        let entry: PerformanceResourceTiming | undefined;
+        try {
+            const entries = typeof performance.getEntriesByName === 'function'
+                ? performance.getEntriesByName(new URL(assetPath, window.location.origin).href, 'resource') : [];
+            entry = entries[entries.length - 1] as PerformanceResourceTiming | undefined;
+        } catch {
+            // 性能条目不可读时仍提交原始错误，不能让诊断采集中断反馈。
+        }
+        const status = entry && 'responseStatus' in entry ? Number(entry.responseStatus) : 0;
+        clientContext.failedAsset = {
+            path: assetPath,
+            observedAt: new Date().toISOString(),
+            ...(status > 0 ? { responseStatus: status } : {}),
+            ...(entry ? { durationMs: entry.duration, transferSize: entry.transferSize } : {}),
+        };
+    }
     const privateReplayRequired = mode === 'online' && Boolean(matchId && playerId);
     const actionLog = state
         ? buildGameFeedbackActionLog(state)

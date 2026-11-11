@@ -260,7 +260,8 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
         beforeCommand: ({ state }) => {
             if (!Reflect.get(state.sys, '_processedDestroyEvents')
                 && !Reflect.get(state.sys, '_processedPlayedEvents')
-                && !Reflect.get(state.sys, '_processedTitanPositionEvents')) {
+                && !Reflect.get(state.sys, '_processedTitanPositionEvents')
+                && !Reflect.get(state.sys, '_processedActionReturnToHandPromptEvents')) {
                 return;
             }
             return {
@@ -272,6 +273,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                         _processedPlayedEvents: undefined,
                         _processedTitanPositionEvents: undefined,
                         _processedImmediateExtraEvents: undefined,
+                        _processedActionReturnToHandPromptEvents: undefined,
                     } as typeof state.sys,
                 },
             };

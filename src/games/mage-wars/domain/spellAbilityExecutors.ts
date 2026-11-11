@@ -9,14 +9,14 @@ import { getMageWarsSpellCardFromConfig, type MageWarsConfigSpellCard } from '..
 import { getMageWarsSpellAbilityId, mageWarsAbilityRegistry } from './abilityCatalog';
 import { MAGE_WARS_COMMANDS, type MageWarsCastSpellCommand } from './commands';
 import {
-    createMageWarsFlyingBonusDamageModifiers,
     createMageWarsMageEquipmentArmorDamageModifiers,
-    createMageWarsNonlivingBonusDamageModifiers,
+    resolveMageWarsTargetTraitAttackBonus,
     createMageWarsObjectArmorDamageModifiers,
     resolveMageWarsMageEquipmentAttackDiceModifier,
     resolveMageWarsMageEquipmentTraitText,
 } from './damageRules';
 import { MAGE_WARS_EVENTS } from './events';
+import { rollMageWarsAttackDice, summarizeMageWarsAttackDice } from './attackDice';
 import { STATUS_TOKEN_IDS, type ArenaZoneId, type StatusTokenId } from './ids';
 import type { MageWarsArenaObjectKind, MageWarsArenaObjectState, MageWarsCore, MageWarsEvent, MageWarsWallState } from './types';
 import { getStatusTokenAmount } from './statusTokens';
@@ -142,7 +142,7 @@ interface MageWarsResolvedDirectDamageTarget {
 }
 
 function rollAttackDice(random: RandomFn, diceCount: number): number[] {
-    return Array.from({ length: diceCount }, () => random.d(3));
+    return Array.from({ length: diceCount }, () => random.d(3) - 1);
 }
 
 function resolveAttackTargetFromArenaObject(
@@ -1565,6 +1565,7 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
         }
 
         const damageTypeAdjustment = resolveMageWarsDamageTypeAdjustment(attackProfile.damageTypes, target);
+        const targetTraitBonus = resolveMageWarsTargetTraitAttackBonus(ctx.spell, target);
         const mageEquipmentAttackDiceModifier = ctx.command.payload.casterObjectId === undefined
             ? resolveMageWarsMageEquipmentAttackDiceModifier(
                 ctx.state.core,
@@ -1580,16 +1581,17 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
             ? resolveMageWarsObjectAegisAttackDiceModifier(ctx.state.core, targetObject)
             : 0;
         const diceCount = resolveMageWarsModifiedAttackDiceCount(
-            chainBaseDiceCount + aegisAttackDiceModifier + mageEquipmentAttackDiceModifier.value,
+            chainBaseDiceCount + aegisAttackDiceModifier + mageEquipmentAttackDiceModifier.value + targetTraitBonus,
             damageTypeAdjustment,
         );
-        const diceResults = rollAttackDice(ctx.random, diceCount);
+        const roll = summarizeMageWarsAttackDice(rollMageWarsAttackDice(ctx.random, diceCount));
+        const diceResults = roll.values;
         const rawEffectDieResult = ctx.random.d(12);
         const effectDieResult = resolveMageWarsChainLightningEffectDieResult(
             rawEffectDieResult,
             chainIndex,
-        ) + damageTypeAdjustment.effectDieModifier + mageEquipmentAttackDiceModifier.value;
-        const baseDamage = diceResults.reduce((total, result) => total + result, 0);
+        ) + damageTypeAdjustment.effectDieModifier + mageEquipmentAttackDiceModifier.value + targetTraitBonus;
+        const baseDamage = roll.total;
 
         events.push({
             type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
@@ -1600,6 +1602,7 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
                 targetObjectId: target.targetObjectId,
                 targetZoneId: target.zoneId,
                 diceResults,
+                diceCritical: roll.critical,
                 effectDieResult,
                 rawEffectDieResult,
                 chainIndex,
@@ -1621,13 +1624,13 @@ function executeChainLightningSpell(ctx: MageWarsSpellAbilityContext): AbilityRe
             autoCollectBonusDamage: false,
             damageScope: 'attack',
             additionalModifiers: [
-                ...createMageWarsFlyingBonusDamageModifiers(ctx.spell, target),
-                ...createMageWarsNonlivingBonusDamageModifiers(ctx.spell, target),
                 ...createMageWarsObjectArmorDamageModifiers(target, {
                     pierce: attackProfile.pierce,
+                    normalDamage: roll.normal,
                 }),
                 ...createMageWarsMageEquipmentArmorDamageModifiers(ctx.state.core, target, {
                     pierce: attackProfile.pierce,
+                    normalDamage: roll.normal,
                 }),
             ],
             timestamp: ctx.timestamp,
@@ -1697,6 +1700,7 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
         const defenseAvailable = createSpellMageDefenseAvailableEvent(ctx, target);
         if (defenseAvailable) return { events: [...events, defenseAvailable] };
         const damageTypeAdjustment = resolveMageWarsDamageTypeAdjustment(attackProfile.damageTypes, target);
+        const targetTraitBonus = resolveMageWarsTargetTraitAttackBonus(ctx.spell, target);
         const mageEquipmentAttackDiceModifier = ctx.command.payload.casterObjectId === undefined
             ? resolveMageWarsMageEquipmentAttackDiceModifier(
                 ctx.state.core,
@@ -1712,15 +1716,16 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
             ? resolveMageWarsObjectAegisAttackDiceModifier(ctx.state.core, targetObject)
             : 0;
         const diceCount = resolveMageWarsModifiedAttackDiceCount(
-            attackProfile.diceCount + aegisAttackDiceModifier + mageEquipmentAttackDiceModifier.value,
+            attackProfile.diceCount + aegisAttackDiceModifier + mageEquipmentAttackDiceModifier.value + targetTraitBonus,
             damageTypeAdjustment,
         );
-        const diceResults = rollAttackDice(ctx.random, diceCount);
+        const roll = summarizeMageWarsAttackDice(rollMageWarsAttackDice(ctx.random, diceCount));
+        const diceResults = roll.values;
         const rawEffectDieResult = ctx.random.d(12);
         const effectDieResult = rawEffectDieResult
             + damageTypeAdjustment.effectDieModifier
-            + mageEquipmentAttackDiceModifier.value;
-        const baseDamage = diceResults.reduce((total, result) => total + result, 0);
+            + mageEquipmentAttackDiceModifier.value + targetTraitBonus;
+        const baseDamage = roll.total;
         const targetZoneId = ctx.command.payload.targetZoneId ?? target.zoneId;
 
         events.push({
@@ -1733,6 +1738,7 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
                 targetObjectId: target.targetObjectId,
                 targetZoneId,
                 diceResults,
+                diceCritical: roll.critical,
                 effectDieResult,
                 rawEffectDieResult,
                 baseDamage,
@@ -1751,13 +1757,13 @@ function executeAttackSpell(ctx: MageWarsSpellAbilityContext): AbilityResult<Mag
             autoCollectBonusDamage: false,
             damageScope: 'attack',
             additionalModifiers: [
-                ...createMageWarsFlyingBonusDamageModifiers(ctx.spell, target),
-                ...createMageWarsNonlivingBonusDamageModifiers(ctx.spell, target),
                 ...createMageWarsObjectArmorDamageModifiers(target, {
                     pierce: attackProfile.pierce,
+                    normalDamage: roll.normal,
                 }),
                 ...createMageWarsMageEquipmentArmorDamageModifiers(ctx.state.core, target, {
                     pierce: attackProfile.pierce,
+                    normalDamage: roll.normal,
                 }),
             ],
             timestamp: ctx.timestamp,

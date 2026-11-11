@@ -1,0 +1,28 @@
+{
+  "purpose": "user-requested-source-review",
+  "productAcceptance": "not-claimed",
+  "userRequest": "修改前后的截图都要有，比较用户指出的部队归属、兵牌布局及地区轮廓问题",
+  "media": [
+    {
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\00-frontier-goal.png",
+      "description": "旧版开局显示区域控制章。",
+      "file": "01-旧版待修订.png",
+      "priorVerdict": "REVISE",
+      "sha256": "1ced14ee96eca2e9c3c9eb187705caaf9149c3e23a31a1121f5b069165f602b1"
+    },
+    {
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\21-dispatch-target.png",
+      "description": "旧版进攻目标显示兵牌及地区提示。",
+      "file": "02-旧版待修订.png",
+      "priorVerdict": "REVISE",
+      "sha256": "ecdbc165c886f3d32f13897fcd9bcea93f38e90af691163ebd7e4920002eb638"
+    },
+    {
+      "source": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r344-gameui-pc-20261108\\desktop\\58-training-recruit-target.png",
+      "description": "旧版征兵界面显示地区与部队。",
+      "file": "03-旧版待修订.png",
+      "priorVerdict": "REVISE",
+      "sha256": "7d5d169566eba1b64037c637ad35982750317c3f97b4fa143c4f8300c387ee26"
+    }
+  ]
+}

@@ -89,18 +89,18 @@ describe('mage-wars spell resolution', () => {
                 spellCardId: quickSpellId,
                 sourceAbilityId: 'mw.spell.1710',
                 targetPlayerId: '1',
-                diceResults: [3, 3, 3],
-                baseDamage: 9,
+                diceResults: [1, 1, 1],
+                baseDamage: 3,
             },
         });
         expect(quickcast.events.find((event) => event.type === 'DAMAGE_DEALT')).toMatchObject({
             payload: {
                 targetId: '1',
-                actualDamage: 9,
+                actualDamage: 3,
                 sourceAbilityId: 'mw.spell.1710',
             },
         });
-        expect(quickcast.state.core.players['1'].damage).toBe(9);
+        expect(quickcast.state.core.players['1'].damage).toBe(3);
         expect(actionLogKinds(quickcast.state)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
             MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
@@ -304,8 +304,8 @@ describe('mage-wars spell resolution', () => {
                     spellCardId: healingSpellId,
                     sourceAbilityId: 'mw.spell.3402',
                     targetObjectId: woundedCat.id,
-                    diceResults: [3, 3, 3, 3, 3],
-                    healing: 15,
+                    diceResults: [2, 2, 2, 2, 2],
+                    healing: 10,
                     actualHealing: 3,
                 }),
             }),
@@ -382,7 +382,7 @@ describe('mage-wars spell resolution', () => {
                     spellCardId: groupHealingSpellId,
                     targetPlayerId: '0',
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3, 3],
+                    diceResults: [2, 2, 2, 2, 2],
                     actualHealing: 4,
                 }),
             }),
@@ -392,7 +392,7 @@ describe('mage-wars spell resolution', () => {
                     spellCardId: groupHealingSpellId,
                     targetObjectId: friendlyCat.id,
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3, 3],
+                    diceResults: [2, 2, 2, 2, 2],
                     actualHealing: 2,
                 }),
             }),
@@ -467,8 +467,8 @@ describe('mage-wars spell resolution', () => {
                     sourceAbilityId: 'mw.spell.3408',
                     targetObjectId: woundedCleric.id,
                     targetZoneId: PLAYER_ONE_START_ZONE,
-                    diceResults: [3, 3, 3, 3, 3, 3, 3, 3],
-                    healing: 24,
+                    diceResults: [2, 2, 2, 2, 2, 2, 2, 2],
+                    healing: 16,
                     actualHealing: 7,
                 }),
             }),
@@ -736,8 +736,8 @@ describe('mage-wars spell resolution', () => {
                     sourceAbilityId: 'mw.spell.3400',
                     healingTargetPlayerId: '0',
                     damagedTargetObjectId: armoredLivingTarget.id,
-                    diceResults: [3, 3, 3, 3, 3],
-                    healing: 15,
+                    diceResults: [2, 2, 2, 2, 2],
+                    healing: 10,
                 }),
             }),
         ]));
@@ -751,15 +751,15 @@ describe('mage-wars spell resolution', () => {
                     sourceAbilityId: 'mw.spell.3400',
                     targetObjectId: armoredLivingTarget.id,
                     targetZoneId: PLAYER_ZERO_START_ZONE,
-                    diceResults: [3, 3, 3, 3, 3],
-                    directDamage: 15,
+                    diceResults: [2, 2, 2, 2, 2],
+                    directDamage: 10,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: armoredLivingTarget.id,
-                    actualDamage: 15,
+                    actualDamage: 10,
                     sourceAbilityId: 'mw.spell.3400',
                 }),
             }),
@@ -771,7 +771,7 @@ describe('mage-wars spell resolution', () => {
                     sourceAbilityId: 'mw.spell.3400',
                     healingTargetPlayerId: '0',
                     damagedTargetObjectId: armoredLivingTarget.id,
-                    healing: 15,
+                    healing: 10,
                 }),
             }),
             expect.objectContaining({
@@ -781,8 +781,8 @@ describe('mage-wars spell resolution', () => {
                     spellCardId: lifeDrainSpellId,
                     sourceAbilityId: 'mw.spell.3400',
                     targetPlayerId: '0',
-                    diceResults: [3, 3, 3, 3, 3],
-                    healing: 15,
+                    diceResults: [2, 2, 2, 2, 2],
+                    healing: 10,
                     actualHealing: 5,
                 }),
             }),
@@ -797,7 +797,7 @@ describe('mage-wars spell resolution', () => {
         expect(healingRolledIndex).toBeGreaterThanOrEqual(0);
         expect(healingAvailableIndex).toBeLessThan(healingRolledIndex);
         expect(JSON.stringify(damageEvent?.payload.breakdown)).not.toContain('mage-wars-object-armor');
-        expect(drained.state.core.objects[armoredLivingTarget.id].damage).toBe(15);
+        expect(drained.state.core.objects[armoredLivingTarget.id].damage).toBe(10);
         expect(drained.state.core.players['0']).toMatchObject({
             mana: 8,
             damage: 0,
@@ -878,7 +878,7 @@ describe('mage-wars spell resolution', () => {
                     spellCardId: lifeDrainSpellId,
                     healingTargetPlayerId: '0',
                     damagedTargetObjectId: livingTarget.id,
-                    healing: 15,
+                    healing: 10,
                 }),
             }),
             expect.objectContaining({
@@ -887,7 +887,7 @@ describe('mage-wars spell resolution', () => {
                     playerId: '0',
                     sourceAbilityId: 'mw.spell.3400',
                     targetPlayerId: '0',
-                    healing: 15,
+                    healing: 10,
                     actualHealing: 5,
                 }),
             }),
@@ -1127,7 +1127,7 @@ describe('mage-wars spell resolution', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: conjuration.id,
-                    actualDamage: 15,
+                    actualDamage: 5,
                 }),
             }),
         ]));
@@ -1181,16 +1181,16 @@ describe('mage-wars spell resolution', () => {
                     spellCardId,
                     sourceAbilityId: 'mw.spell.1702',
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     effectDieResult: 11,
-                    baseDamage: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 12,
+                    actualDamage: 4,
                     sourceAbilityId: 'mw.spell.1702',
                 }),
             }),
@@ -1206,7 +1206,7 @@ describe('mage-wars spell resolution', () => {
             }),
         ]));
         expect(result.state.core.objects[target.id]).toMatchObject({
-            damage: 12,
+            damage: 4,
             statusTokens: {
                 [STATUS_TOKEN_IDS.BURN]: 2,
             },
@@ -1250,16 +1250,16 @@ describe('mage-wars spell resolution', () => {
                     spellCardId,
                     sourceAbilityId: 'mw.spell.1708',
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1, 1, 1],
                     effectDieResult: 7,
-                    baseDamage: 18,
+                    baseDamage: 6,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 18,
+                    actualDamage: 6,
                     sourceAbilityId: 'mw.spell.1708',
                 }),
             }),
@@ -1275,7 +1275,7 @@ describe('mage-wars spell resolution', () => {
             }),
         ]));
         expect(result.state.core.objects[target.id]).toMatchObject({
-            damage: 18,
+            damage: 6,
             statusTokens: { [STATUS_TOKEN_IDS.STUN]: 1 },
         });
         expect(result.state.core.players['0'].discardSpellCardIds).toEqual([spellCardId]);
@@ -1323,7 +1323,7 @@ describe('mage-wars spell resolution', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 12,
+                    actualDamage: 4,
                 }),
             }),
         ]));
@@ -1372,16 +1372,16 @@ describe('mage-wars spell resolution', () => {
                     spellCardId,
                     sourceAbilityId: 'mw.spell.1705',
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1, 1],
                     effectDieResult: 8,
-                    baseDamage: 15,
+                    baseDamage: 5,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 15,
+                    actualDamage: 5,
                     sourceAbilityId: 'mw.spell.1705',
                 }),
             }),
@@ -1397,7 +1397,7 @@ describe('mage-wars spell resolution', () => {
             }),
         ]));
         expect(result.state.core.objects[target.id]).toMatchObject({
-            damage: 15,
+            damage: 5,
             guarding: false,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
@@ -1443,17 +1443,17 @@ describe('mage-wars spell resolution', () => {
                     spellCardId,
                     sourceAbilityId: 'mw.spell.1705',
                     targetObjectId: target.id,
-                    diceResults: [3, 3, 3, 3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1, 1, 1, 1],
                     rawEffectDieResult: 6,
                     effectDieResult: 8,
-                    baseDamage: 21,
+                    baseDamage: 7,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 21,
+                    actualDamage: 7,
                     sourceAbilityId: 'mw.spell.1705',
                 }),
             }),
@@ -1469,7 +1469,7 @@ describe('mage-wars spell resolution', () => {
             }),
         ]));
         expect(result.state.core.objects[target.id]).toMatchObject({
-            damage: 21,
+            damage: 7,
             statusTokens: {
                 [STATUS_TOKEN_IDS.STUN]: 1,
             },
@@ -1541,17 +1541,17 @@ describe('mage-wars spell resolution', () => {
                     spellCardId,
                     sourceAbilityId: 'mw.spell.1702',
                     targetObjectId: target.id,
-                    diceResults: [3, 3],
+                    diceResults: [1, 1],
                     rawEffectDieResult: 11,
                     effectDieResult: 9,
-                    baseDamage: 6,
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: target.id,
-                    actualDamage: 6,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.spell.1702',
                 }),
             }),
@@ -1567,7 +1567,7 @@ describe('mage-wars spell resolution', () => {
             }),
         ]));
         expect(result.state.core.objects[target.id]).toMatchObject({
-            damage: 6,
+            damage: 2,
             statusTokens: {
                 [STATUS_TOKEN_IDS.BURN]: 1,
             },

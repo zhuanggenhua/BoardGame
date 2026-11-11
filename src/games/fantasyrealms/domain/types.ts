@@ -1,8 +1,9 @@
 import type { Command, GameEvent, PlayerId } from '../../../engine/types';
 import type { FantasyRealmsScoreLine, TableCard } from '../foundation';
 import type { FantasyRealmsRuntimeSetupConfig } from '../roomSetup';
+import type { SettlementChoice, SettlementState } from './settlement';
 
-export type FantasyRealmsTurnStage = 'draw' | 'discard';
+export type FantasyRealmsTurnStage = 'draw' | 'discard' | 'settlement';
 
 export interface FantasyRealmsPlayerState {
     id: PlayerId;
@@ -23,6 +24,7 @@ export interface FantasyRealmsCore {
     players: Record<PlayerId, FantasyRealmsPlayerState>;
     focusCardId: string | null;
     hiddenFocusCard?: boolean;
+    settlement?: SettlementState;
 }
 
 export interface SetFocusCardCommand extends Command<'SET_FOCUS_CARD'> {
@@ -47,17 +49,23 @@ export interface DiscardCardCommand extends Command<'DISCARD_CARD'> {
     };
 }
 
+export interface ResolveSettlementCommand extends Command<'RESOLVE_SETTLEMENT'> {
+    payload: SettlementChoice;
+}
+
 export type FantasyRealmsCommand =
     | SetFocusCardCommand
     | DrawFromDeckCommand
     | TakeFromDiscardCommand
-    | DiscardCardCommand;
+    | DiscardCardCommand
+    | ResolveSettlementCommand;
 
 export type FantasyRealmsCommandMap = {
     SET_FOCUS_CARD: SetFocusCardCommand['payload'];
     DRAW_FROM_DECK: DrawFromDeckCommand['payload'];
     TAKE_FROM_DISCARD: TakeFromDiscardCommand['payload'];
     DISCARD_CARD: DiscardCardCommand['payload'];
+    RESOLVE_SETTLEMENT: ResolveSettlementCommand['payload'];
 };
 
 export interface FocusCardSetEvent extends GameEvent<'FOCUS_CARD_SET'> {
@@ -95,8 +103,13 @@ export interface CardDiscardedEvent extends GameEvent<'CARD_DISCARDED'> {
     };
 }
 
+export interface SettlementChoiceEvent extends GameEvent<'SETTLEMENT_CHOICE_RESOLVED'> {
+    payload: { playerId: PlayerId; choice: SettlementChoice };
+}
+
 export type FantasyRealmsEvent =
     | FocusCardSetEvent
     | CardsDrawnEvent
     | DiscardCardTakenEvent
-    | CardDiscardedEvent;
+    | CardDiscardedEvent
+    | SettlementChoiceEvent;

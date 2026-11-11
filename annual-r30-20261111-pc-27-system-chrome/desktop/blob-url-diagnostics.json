@@ -1,0 +1,549 @@
+{
+  "documents": [
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244908,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/9706b5e1-f109-458b-830e-1442ced415c1",
+      "type": "image/webp",
+      "size": 302420,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244913,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/aaa35eca-eda5-4162-bea7-bf21bbe58815",
+      "type": "image/webp",
+      "size": 2388,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244914,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/8768ebe5-08d8-431a-b874-3314d0d1cdd8",
+      "type": "image/webp",
+      "size": 2374,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244914,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/f34b9330-e07a-42a8-9dab-52f6cc9072dc",
+      "type": "image/webp",
+      "size": 2064,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244915,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/a917f55b-584f-4f5f-ab04-223c941f4d5b",
+      "type": "image/webp",
+      "size": 2876,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244915,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/4706c49c-4281-4905-8904-ec1e5cacce3f",
+      "type": "image/webp",
+      "size": 46220,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244915,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/4b94919c-61a6-46cd-a0f1-37d744938afe",
+      "type": "image/webp",
+      "size": 55410,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244915,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/1ff59156-22e6-4fe5-841b-c085f0f6c2d9",
+      "type": "image/webp",
+      "size": 57588,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244915,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/c3ae13a3-fa9f-4bac-988b-0e808a8f022f",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244916,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/be4f23e3-37ac-4a92-b642-eb7cfc7a6f95",
+      "type": "image/webp",
+      "size": 29558,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244916,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/0e84dfa5-b333-4f97-9d0d-d99b6f6e82bb",
+      "type": "image/webp",
+      "size": 62660,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244916,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/3620ec09-425f-4e5f-bb7d-df6c4a825aa2",
+      "type": "image/webp",
+      "size": 56088,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244916,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/213e1bec-ffce-48d2-a908-41aad2dab00c",
+      "type": "image/webp",
+      "size": 29558,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244916,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/9806fb54-178a-4c1b-af61-3936ca3f9969",
+      "type": "image/webp",
+      "size": 62660,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244916,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/6b25518f-6c9e-4201-bc81-ae61df95133f",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244917,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/03451f50-b2bc-4530-8ed4-d25a06a0a80f",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244917,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/8e7c62ca-250b-4a77-89a3-e53c1c584883",
+      "type": "image/webp",
+      "size": 29558,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244917,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/19fc0376-0b9d-4406-b3ba-b79cfd243dab",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244917,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/506cb893-a75a-4171-a49d-8290f7f51b19",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244917,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/72375297-629e-4a9b-8679-667270306afb",
+      "type": "image/webp",
+      "size": 56088,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244917,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/52217f49-e401-41ac-93e2-0c957a450cb1",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244918,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/d1f439b8-4a48-4994-97c4-df3b37f84567",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244918,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/7f774415-d59d-4330-a4b0-a93b3ff49008",
+      "type": "image/webp",
+      "size": 33686,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244918,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/91f30571-fa84-40bc-996b-8427c4be6b00",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244918,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/0141df60-2d5d-419b-906c-db46ce355cf9",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244918,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/fec90bb3-5268-4a2b-bfe7-8ce3968a3647",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244918,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/812a5975-eda3-4a71-9c8c-1fea67d38b6e",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244919,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/dcc8094c-91cd-4a19-a271-659417589d1a",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244919,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/f5f7285a-9608-4903-ad95-7671ed8aa33c",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244919,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/f9712ce3-5697-45c6-ae60-d69316d78b39",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360244919,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/72334dcb-3216-4a7e-9aa5-a34591a62b3a",
+      "type": "image/webp",
+      "size": 45104,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245006,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/9706b5e1-f109-458b-830e-1442ced415c1",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245006,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/c3ae13a3-fa9f-4bac-988b-0e808a8f022f",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245006,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/be4f23e3-37ac-4a92-b642-eb7cfc7a6f95",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245007,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/0e84dfa5-b333-4f97-9d0d-d99b6f6e82bb",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245007,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/9806fb54-178a-4c1b-af61-3936ca3f9969",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245007,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/3620ec09-425f-4e5f-bb7d-df6c4a825aa2",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245007,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/213e1bec-ffce-48d2-a908-41aad2dab00c",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245007,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/6b25518f-6c9e-4201-bc81-ae61df95133f",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245007,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/03451f50-b2bc-4530-8ed4-d25a06a0a80f",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245008,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/19fc0376-0b9d-4406-b3ba-b79cfd243dab",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245008,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/506cb893-a75a-4171-a49d-8290f7f51b19",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245008,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/52217f49-e401-41ac-93e2-0c957a450cb1",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245008,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/d1f439b8-4a48-4994-97c4-df3b37f84567",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245008,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/8e7c62ca-250b-4a77-89a3-e53c1c584883",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245008,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/91f30571-fa84-40bc-996b-8427c4be6b00",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/0141df60-2d5d-419b-906c-db46ce355cf9",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/fec90bb3-5268-4a2b-bfe7-8ce3968a3647",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/812a5975-eda3-4a71-9c8c-1fea67d38b6e",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/72375297-629e-4a9b-8679-667270306afb",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/dcc8094c-91cd-4a19-a271-659417589d1a",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/f5f7285a-9608-4903-ad95-7671ed8aa33c",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245009,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/f9712ce3-5697-45c6-ae60-d69316d78b39",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245010,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/7f774415-d59d-4330-a4b0-a93b3ff49008",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245010,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/72334dcb-3216-4a7e-9aa5-a34591a62b3a",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245010,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/aaa35eca-eda5-4162-bea7-bf21bbe58815",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245010,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/8768ebe5-08d8-431a-b874-3314d0d1cdd8",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245010,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/f34b9330-e07a-42a8-9dab-52f6cc9072dc",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245010,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/a917f55b-584f-4f5f-ab04-223c941f4d5b",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245011,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/4706c49c-4281-4905-8904-ec1e5cacce3f",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245011,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/1ff59156-22e6-4fe5-841b-c085f0f6c2d9",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360245011,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/4b94919c-61a6-46cd-a0f1-37d744938afe",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360276629,
+      "event": "create",
+      "url": "blob:http://127.0.0.1:7273/991512c6-89bd-469f-9116-85240b9dddf0",
+      "type": "image/webp",
+      "size": 81934,
+      "stack": "Error\n    at URL.createObjectURL (<anonymous>:19:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:193:29"
+    },
+    {
+      "document": "http://127.0.0.1:7273/play/qidahen/tutorial/basic-opening",
+      "at": 1794360278584,
+      "event": "revoke",
+      "url": "blob:http://127.0.0.1:7273/991512c6-89bd-469f-9116-85240b9dddf0",
+      "consumers": [],
+      "stack": "Error\n    at URL.revokeObjectURL (<anonymous>:36:16)\n    at http://127.0.0.1:7273/src/components/common/media/OptimizedImage.tsx:206:13\n    at Object.react_stack_bottom_frame (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:18573:13)\n    at runWithFiberInDEV (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:997:72)\n    at commitHookEffectListUnmount (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9449:160)\n    at commitHookPassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:9468:60)\n    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11593:15)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11465:15)\n    at commitPassiveUnmountOnFiber (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11516:13)\n    at recursivelyTraversePassiveUnmountEffects (http://127.0.0.1:7273/node_modules/.vite/port-7273/deps/react-dom_client.js?v=3fa011f0:11481:13)"
+    }
+  ],
+  "failures": []
+}

@@ -293,14 +293,6 @@ function getSelectDieHint(input: {
             },
         };
     }
-    if (meta.selectionMode === 'bonusGroupReroll') {
-        const selectedCount = result.selectedDiceIds.length;
-        return {
-            key: selectedCount ? 'interaction.hint_group_reroll_selected' : 'interaction.hint_group_reroll',
-            params: { count: selectedCount },
-        };
-    }
-
     const count = completedCount + result.selectedDiceIds.length;
     let key = meta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
     if (meta.diceOwnerId && meta.diceOwnerId !== input.rootPlayerId) {
@@ -449,7 +441,14 @@ export function createDiceInteractionContract(input: {
             || result.selectedDiceIds.length > remainingSelectCount
             || (allowedDieIds && result.selectedDiceIds.some(id => !allowedDieIds.includes(id)))
         ) {
-            throw new Error(`[DiceThrone] Invalid current die selection: ${interaction?.id ?? 'unknown interaction'}`);
+            const ids = isRecord(result) && Array.isArray(result.selectedDiceIds) ? result.selectedDiceIds : undefined;
+            const reason = !ids ? 'invalid_shape'
+                : ids.some(id => !isFiniteNumber(id) || !Number.isInteger(id)) ? 'invalid_id'
+                    : !meta.allowRepeatedDieSelection && new Set(ids).size !== ids.length ? 'duplicate'
+                        : !meta.allowRepeatedDieSelection && ids.some(id => completedDieIds.includes(id)) ? 'already_completed'
+                            : ids.length > remainingSelectCount ? 'too_many'
+                                : 'outside_candidates';
+            throw new Error(`[DiceThrone] Invalid current die selection (${reason}; selected=${ids?.length ?? 0}; completed=${completedCount}; remaining=${remainingSelectCount}; candidates=${allowedDieIds?.length ?? 0}): ${interaction?.id ?? 'unknown interaction'}`);
         }
     }
     if (result && meta.dtType === 'modifyDie') {

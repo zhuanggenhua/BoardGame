@@ -20,6 +20,7 @@ function createHiddenCard(id: string): TableCard {
 }
 
 function shouldRevealAllHands(state: FantasyRealmsCore): boolean {
+    if (state.settlement) return true;
     if (state.playerIds.length === 2) {
         const allHandsFull = state.playerIds.every((playerId) => (
             (state.players[playerId]?.hand.length ?? 0) >= getFantasyRealmsBaseHandLimit(state.setupConfig)
@@ -66,7 +67,9 @@ export function playerView(state: FantasyRealmsCore, viewingPlayerId: PlayerId):
         ));
 
     return {
-        drawPile: state.drawPile.map((_, index) => createHiddenCard(`${HIDDEN_DRAW_CARD_ID_PREFIX}:${index}`)),
+        drawPile: state.settlement?.step === 'genie' && state.currentPlayer === viewingPlayerId
+            ? state.drawPile.map((card) => ({ ...card }))
+            : state.drawPile.map((_, index) => createHiddenCard(`${HIDDEN_DRAW_CARD_ID_PREFIX}:${index}`)),
         players,
         focusCardId: hiddenFocusCard ? null : state.focusCardId,
         hiddenFocusCard,

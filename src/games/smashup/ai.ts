@@ -2131,7 +2131,7 @@ export function buildSmashUpAiLegalActions(args: {
     if (state.core.gameResult) return [];
 
     const interactionActions = buildInteractionActions(state, playerId);
-    if (interactionActions && interactionActions.length > 0) {
+    if (interactionActions !== null) {
         return interactionActions;
     }
 

@@ -3,7 +3,7 @@
   "gameId": "fate-domination",
   "evidenceCategory": "independent",
   "reviewFile": "required-review.json",
-  "reviewerKind": "subagent",
+  "reviewerKind": "primary-agent",
   "requiredStates": [
     { "chainId": "saber-medusa", "uiStateId": "saber-medusa-before", "viewport": "desktop", "reason": "战斗结算前的可操作牌桌" },
     { "chainId": "saber-medusa", "uiStateId": "saber-medusa-motion", "viewport": "desktop", "reason": "胜者攻击与对手受击的演出" },

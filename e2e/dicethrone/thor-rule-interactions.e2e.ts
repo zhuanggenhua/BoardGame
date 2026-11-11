@@ -261,7 +261,7 @@ for (const upgraded of [false, true]) test(`索尔奥丁${upgraded ? '二级空�
     await attack(page, game, info, { dice: [1, 1, 4, 4, 4], slot: 'sky', upgrade: upgraded ? 'upgrade-thor-odinforce-2' : undefined, bonus: [4, 4, 6, 6, 6] });
     await expect.poll(async () => (await game.getState()).core.pendingBonusDiceSettlement?.dice.length).toBe(5);
     await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
-    if (upgraded) await expect(page.getByTestId('dice-interaction-hint')).toContainText('确认保留当前结果');
+    if (upgraded) await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择重投骰子（0/5）');
     else await expect(page.getByTestId('dice-interaction-hint')).toHaveText('确认效果骰结果并继续结算');
     await expectDiceHintSurface(page, 'dice-tray-left-center');
     await shot(page, info, '02-五颗效果骰与原确认保留结果');

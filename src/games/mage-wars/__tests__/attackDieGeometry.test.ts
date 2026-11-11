@@ -49,8 +49,12 @@ describe('mage wars attack die cube net', () => {
         expect(ATTACK_DIE_SETTLED_TILT).toBe('camera-front');
         expect(getAttackDieTileUprightRotateDeg('hit1')).toBe(270);
         expect(getAttackDieTileUprightRotateDeg('hit2')).toBe(0);
-        expect(getAttackDieTileUprightRotateDeg('burst')).toBe(0);
+        expect(getAttackDieTileUprightRotateDeg('burst')).toBe(90);
         expect(getAttackDieTileUprightRotateDeg('blank')).toBe(0);
+        expect(getAttackDieSettledFaceId(1, false)).toBe('back-hit1');
+        expect(getAttackDieSettledFaceId(1, true)).toBe('left-burst');
+        expect(getAttackDieSettledFaceId(2, false)).toBe('bottom-two');
+        expect(getAttackDieSettledFaceId(2, true)).toBe('front-hit2');
     });
 
     it('crops official net faces with the same CSS background math as Summoner Wars Dice3D', () => {

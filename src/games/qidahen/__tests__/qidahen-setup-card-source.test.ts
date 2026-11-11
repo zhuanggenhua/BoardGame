@@ -13,7 +13,8 @@ import { random, stateOf, apply, factionHandCards } from './helpers/paymentSelec
 
 // 这些测试只验证大明手牌入口；正式开局顺位由正常年度链验证。
 const createMingActionWindowFixture = () => syncFactionActionWindow({
-    ...createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true), currentPlayer: '0',
+    ...createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true), currentPlayer: '0', wheelActionUsed: true,
+    actionWheelPosition: 'wheel-reclaim',
 }, 'ming');
 
 describe('七大恨开局、地图与手牌真相源', () => {
@@ -333,7 +334,7 @@ it('atlas05 普通手牌真相表只解析通过验收的事件、军备、战�
         const promotedRedCoatCannonCard = resolveQidahenAtlas05OrdinaryHandCardIdentity(34);
         expect(promotedRedCoatCannonCard).toMatchObject({
             cardKind: 'armament',
-            armamentId: 'artillery-tech',
+            armamentId: 'red-coat-cannon',
             cardDefId: 'qidahen-atlas05-1634-red-coat-cannon',
             rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID['qidahen-atlas05-1634-red-coat-cannon'],
         });
@@ -436,6 +437,8 @@ it('剧本一开局已开发军备遵循规则设置', () => {
 
         expect(core.factions.ming.armaments).toMatchObject([
             { id: 'artillery-tech', name: '火炮技术', level: 1 },
+            { id: 'red-coat-cannon', name: '红衣大炮', level: 0 },
+            { id: 'fine-steel-saber', name: '精钢马刀', level: 0 },
             { id: 'infantry-armor', name: '步兵铁甲', level: 0 },
             { id: 'cavalry-armor', name: '骑兵铁甲', level: 0 },
             { id: 'western-bastion', name: '西式棱堡', level: 0 },
@@ -448,6 +451,8 @@ it('剧本一开局已开发军备遵循规则设置', () => {
         ]);
         expect(core.factions.mongol.armaments).toMatchObject([
             { id: 'artillery-tech', name: '火炮技术', level: 0 },
+            { id: 'red-coat-cannon', name: '红衣大炮', level: 0 },
+            { id: 'fine-steel-saber', name: '精钢马刀', level: 0 },
             { id: 'infantry-armor', name: '步兵铁甲', level: 0 },
             { id: 'cavalry-armor', name: '骑兵铁甲', level: 1 },
             { id: 'western-bastion', name: '西式棱堡', level: 0 },
@@ -460,6 +465,8 @@ it('剧本一开局已开发军备遵循规则设置', () => {
         ]);
         expect(core.factions.jin.armaments).toMatchObject([
             { id: 'artillery-tech', name: '火炮技术', level: 0 },
+            { id: 'red-coat-cannon', name: '红衣大炮', level: 0 },
+            { id: 'fine-steel-saber', name: '精钢马刀', level: 0 },
             { id: 'infantry-armor', name: '步兵铁甲', level: 1 },
             { id: 'cavalry-armor', name: '骑兵铁甲', level: 0 },
             { id: 'western-bastion', name: '西式棱堡', level: 0 },
@@ -852,7 +859,7 @@ it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件入�
             }
             if (isPersistentEvent) {
                 expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('持续事件：此牌未进入弃牌堆');
-                expect(executed.actionLog[0]?.text).toContain('打出为持续事件，不进入弃牌堆');
+                expect(executed.actionLog.some(log => log.text.includes('打出为持续事件，不进入弃牌堆'))).toBe(true);
                 expect(executed.activeEventCards).toEqual(expect.arrayContaining([
                     expect.objectContaining({
                         cardDefId: identity.cardDefId,
@@ -863,14 +870,14 @@ it('atlas05 已确认事件牌全集都能从手牌本体进入执行事件入�
                 ]));
             } else if (isRemovedFromGameEvent) {
                 expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后移出游戏：此牌未进入弃牌堆。');
-                expect(executed.actionLog[0]?.text).toContain('打出并移出游戏');
+                expect(executed.actionLog.some(log => log.text.includes('打出并移出游戏'))).toBe(true);
             } else {
                 expect(executed.lastSeasonSummary?.lines.join(' ')).toContain('使用后进入当前势力弃牌堆。');
             }
             if (!isPersistentEvent) {
                 expect(executed.activeEventCards.some((card) => card.cardDefId === identity.cardDefId)).toBe(false);
             }
-            expect(executed.actionLog[0]?.text).toContain(`执行事件「${identity.displayName}」`);
+            expect(executed.actionLog.some(log => log.text.includes(`执行事件「${identity.displayName}」`))).toBe(true);
         }
     });
 });

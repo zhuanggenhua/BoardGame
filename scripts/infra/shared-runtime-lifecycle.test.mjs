@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { stopHeldManager } from './run-e2e-command.mjs';
 import { getSharedRegistryFilePath } from './e2e-runtime-registry.js';
 
 const manager = new URL('./e2e-runtime-manager.mjs', import.meta.url).href;
@@ -42,32 +41,6 @@ test('存活进程持有的旧注册锁不会被并发启动者删除', async ()
         if (child.exitCode === null) child.kill();
         await exited;
         fs.rmSync(cwd, { recursive: true, force: true });
-    }
-});
-
-test('版本共享服务的发起测试退出时，关闭连接不会终止仍在使用的服务', async () => {
-    const child = spawn(process.execPath, ['-e', `
-        process.stdin.resume();
-        process.stdin.once('end', () => console.log('DETACHED'));
-        setInterval(() => {}, 1000);
-        console.log('READY');
-    `], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
-    const exited = new Promise(resolve => child.once('exit', resolve));
-    let output = '';
-    child.stdout.on('data', chunk => { output += chunk; });
-    try {
-        const deadline = Date.now() + 10000;
-        while (!output.includes('READY')) {
-            if (Date.now() > deadline || child.exitCode !== null) throw new Error(`服务未启动: ${output}`);
-            await new Promise(resolve => setTimeout(resolve, 25));
-        }
-        await stopHeldManager(child, { mode: 'shared-version' });
-        await new Promise(resolve => setTimeout(resolve, 5250));
-        assert.equal(child.exitCode, null, '发起测试退出后不能停止共享版本的服务');
-        assert.equal(child.killed, false);
-    } finally {
-        child.kill();
-        await exited;
     }
 });
 

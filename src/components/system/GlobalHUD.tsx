@@ -5,7 +5,6 @@ import { useModalStack } from '../../contexts/ModalStackContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
-import './global-hud.css';
 import '../home/platform-display-theme.css';
 import { PlatformAudioSettings } from './PlatformAudioSettings';
 import { HomeStyleSettings } from '../home/HomeStyleSettings';
@@ -228,7 +227,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
             event.preventDefault(); event.stopPropagation(); closeSettings();
         }}>
             {isHomeEntryRoute(location.pathname) && <HomeStyleSettings currentStyle={homeStyle} onSelectStyle={style => { persistHomeEntryStyle(style); closeSettings(); }} />}
-            <PlatformAudioSettings isDark={isDark}/>
+            <PlatformAudioSettings isDark={isHomeEntryRoute(location.pathname) || isDark}/>
         </div>;
         }
 
@@ -318,9 +317,9 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
     return (
         <>
             <FabMenu
-                className={homeStyle === 'modern' && isHomeEntryRoute(location.pathname) ? 'platform-global-fab' : undefined}
+                className={isHomeEntryRoute(location.pathname) ? 'platform-global-fab' : undefined}
                 key={`global-hud-${location.pathname}`}
-                isDark={isDark}
+                isDark={isHomeEntryRoute(location.pathname) || isDark}
                 items={items}
                 position="bottom-right"
                 movePanelsWithMenu={isHomeEntryRoute(location.pathname)}

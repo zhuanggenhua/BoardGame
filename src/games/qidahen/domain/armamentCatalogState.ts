@@ -2,6 +2,8 @@ import type { QidahenArmamentId, QidahenArmamentState, QidahenFactionId } from '
 
 const qidahenArmamentCatalog: readonly Pick<QidahenArmamentState, 'id' | 'name'>[] = [
     { id: 'artillery-tech', name: '火炮技术' },
+    { id: 'red-coat-cannon', name: '红衣大炮' },
+    { id: 'fine-steel-saber', name: '精钢马刀' },
     { id: 'infantry-armor', name: '步兵铁甲' },
     { id: 'cavalry-armor', name: '骑兵铁甲' },
     { id: 'western-bastion', name: '西式棱堡' },

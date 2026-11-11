@@ -21,6 +21,8 @@ import type { GameBoardRenderer, ImperativeBoardRenderer, ReactBoardRenderer } f
  */
 type BoardBridgeBaseProps = {
     loading?: React.ReactNode;
+    /** 错误上报所需的棋盘所属游戏，不依赖报错时的浏览器地址。 */
+    gameId?: string;
     /**
      * 默认按 playerID 重挂载 Board，保留旧行为。
      * 传入 false 时保持同一个 Board 实例，只通过 props 更新视角。
@@ -50,6 +52,7 @@ export function BoardBridge<
     renderer,
     loading: Loading,
     remountKey,
+    gameId,
 }: BoardBridgeProps<TCore, TCommandMap>) {
     const props = useBoardProps<TCore, TCommandMap>();
 
@@ -70,17 +73,27 @@ export function BoardBridge<
         throw new Error('BoardBridge 需要 board 或 renderer');
     }
 
+    const core = props.G.core as { players?: unknown } | null;
+    const players = core?.players;
+    const playerMap = players && typeof players === 'object' && !Array.isArray(players) ? players as Record<string, unknown> : undefined;
+    const playerIdPresent = typeof props.playerID === 'string';
+    const boardPlayers = playerMap ? {
+        count: Object.keys(playerMap).length,
+        playerIdPresent,
+        ...(playerIdPresent ? { playerExists: Object.hasOwn(playerMap, props.playerID!) } : {}),
+    } : undefined;
+
     if (activeRenderer.kind === 'react') {
         const RendererBoard = activeRenderer.component;
         return (
-            <BoardErrorBoundary fallback={Loading} resetKey={stableKey} resetIdentity={RendererBoard}>
+            <BoardErrorBoundary fallback={Loading} resetKey={stableKey} resetIdentity={RendererBoard} gameId={gameId} boardPlayers={boardPlayers}>
                 <RendererBoard key={stableKey} {...props} />
             </BoardErrorBoundary>
         );
     }
 
     return (
-        <BoardErrorBoundary fallback={Loading} resetKey={stableKey} resetIdentity={activeRenderer.mount}>
+        <BoardErrorBoundary fallback={Loading} resetKey={stableKey} resetIdentity={activeRenderer.mount} gameId={gameId} boardPlayers={boardPlayers}>
             <ImperativeBoardRendererHost
                 key={stableKey}
                 renderer={activeRenderer}
@@ -185,6 +198,8 @@ export const shouldShowBoardRenderFallback = ({
  */
 type BoardErrorBoundaryProps = {
     children: React.ReactNode;
+    gameId?: string;
+    boardPlayers?: { count: number; playerIdPresent: boolean; playerExists?: boolean };
     fallback?: React.ReactNode;
     resetKey: React.Key;
     resetIdentity: unknown;
@@ -217,8 +232,9 @@ class BoardErrorBoundary extends React.Component<
             content: `[auto][board-render-error] ${error.message || 'Board render error'}`,
             autoReportKind: 'board-render-error',
             source: 'board-render-error',
-            gameId: 'unknown',
-            gameName: 'client',
+            gameId: this.props.gameId ?? 'unknown',
+            gameName: this.props.gameId ?? 'client',
+            boardPlayers: this.props.boardPlayers,
             errorName: error.name || 'Error',
             errorMessage: error.message || 'Board render error',
             errorSource: 'board.error_boundary',

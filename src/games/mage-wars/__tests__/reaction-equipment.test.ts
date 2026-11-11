@@ -864,7 +864,7 @@ describe('mage-wars reaction equipment', () => {
                 payload: expect.objectContaining({
                     sourceObjectId: cuirass.id,
                     attackerObjectId: attacker.id,
-                    diceResults: [3],
+                    diceResults: [1],
                     damageTypes: ['aether'],
                     unavoidable: true,
                     lethal: true,
@@ -877,11 +877,11 @@ describe('mage-wars reaction equipment', () => {
             type: 'DAMAGE_DEALT',
             payload: {
                 targetId: attacker.id,
-                actualDamage: 3,
+                actualDamage: 1,
             },
         });
-        expect(attacked.state.core.objects[attacker.id].damage).toBe(3);
-        expect(attacked.state.core.players['1'].damage).toBe(6);
+        expect(attacked.state.core.objects[attacker.id].damage).toBe(1);
+        expect(attacked.state.core.players['1'].damage).toBe(2);
         expect(attacked.state.core.objects[cuirass.id]).toMatchObject({
             damageBarrierRoundNumber: attacked.state.core.turnNumber,
             damageBarrierAttackerIdsThisRound: [attacker.id],
@@ -909,7 +909,7 @@ describe('mage-wars reaction equipment', () => {
                 attackProfileId: 'attack-0',
                 targetPlayerId: '1',
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
 
         expect(attacked.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -947,20 +947,20 @@ describe('mage-wars reaction equipment', () => {
                 payload: expect.objectContaining({
                     sourceObjectId: cuirass.id,
                     attackerId: '0',
-                    diceResults: [3],
+                    diceResults: [1],
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '0',
-                    actualDamage: 3,
+                    actualDamage: 1,
                     sourceAbilityId: 'mw.equipment.3700.damage-barrier',
                 }),
             }),
         ]));
-        expect(attacked.state.core.players['0'].damage).toBe(3);
-        expect(attacked.state.core.players['1'].damage).toBe(9);
+        expect(attacked.state.core.players['0'].damage).toBe(1);
+        expect(attacked.state.core.players['1'].damage).toBe(3);
     });
 
     it('does not trigger Demon Cuirass for an attack spell', () => {

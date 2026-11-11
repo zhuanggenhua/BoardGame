@@ -212,6 +212,7 @@ const TutorialLocalGameRuntime = ({
             >
                 <BoardBridge
                     board={runtime.board}
+                    gameId={runtime.gameId}
                     renderer={runtime.boardRenderer}
                     loading={(
                         <LoadingScreen

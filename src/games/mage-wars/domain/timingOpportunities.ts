@@ -1728,6 +1728,9 @@ function createDamageBarrierOpportunity(
     const baseDamage = nonLethalDamageCap === undefined
         ? event.payload.baseDamage
         : Math.min(event.payload.baseDamage, nonLethalDamageCap);
+    const normalDamage = event.payload.diceCritical
+        ? event.payload.diceResults.reduce((sum, value, index) => sum + (event.payload.diceCritical?.[index] ? 0 : value), 0)
+        : undefined;
     const damageEvents = createDamageCalculation({
         state: args.state,
         source: { playerId: event.payload.targetPlayerId, abilityId: sourceAbilityId },
@@ -1740,8 +1743,8 @@ function createDamageBarrierOpportunity(
         additionalModifiers: event.payload.lethal
             ? []
             : attackerObject
-                ? createMageWarsObjectArmorDamageModifiers(attackerObject, { pierce: 0 })
-                : createMageWarsMageEquipmentArmorDamageModifiers(args.state.core, { targetPlayerId: targetId }),
+                ? createMageWarsObjectArmorDamageModifiers(attackerObject, { pierce: 0, normalDamage })
+                : createMageWarsMageEquipmentArmorDamageModifiers(args.state.core, { targetPlayerId: targetId }, { normalDamage }),
         timestamp: event.timestamp ?? 0,
     }).toEvents() as MageWarsEvent[];
     const damageAmount = damageEvents.reduce((total, damageEvent) => (

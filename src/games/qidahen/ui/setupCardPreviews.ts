@@ -49,6 +49,8 @@ const armamentPreviewIndexById: Record<QidahenArmamentId, number> = {
     'cavalry-armor': 10,
     'horse-breeding': 17,
     'artillery-tech': 26,
+    'red-coat-cannon': 34,
+    'fine-steel-saber': 16,
     'cavalry-firearm': 39,
     'western-bastion': 42,
     'long-barreled-musket': 46,

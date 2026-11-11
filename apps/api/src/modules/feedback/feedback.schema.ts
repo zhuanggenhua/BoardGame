@@ -29,6 +29,8 @@ export enum FeedbackReporterType {
 }
 
 export interface FeedbackClientContext {
+    failedAsset?: { path: string; observedAt: string; responseStatus?: number; durationMs?: number; transferSize?: number };
+    boardPlayers?: { count: number; playerIdPresent: boolean; playerExists?: boolean };
     route?: string;
     mode?: string;
     matchId?: string;

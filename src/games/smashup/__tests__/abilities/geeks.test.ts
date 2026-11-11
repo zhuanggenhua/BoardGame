@@ -466,7 +466,9 @@ describe('极客派系隐藏实现批', () => {
         const justiceOption = actionPrompt.options.find((option: any) => option.value?.cardUid === 'justice-1');
         expect(justiceOption).toBeTruthy();
 
-        const afterPlay = respondToPrompt(played.finalState, justiceOption.id, '0', fixedRandom as any);
+        // 线上状态持久化会经过 JSON；上一条命令的临时去重集合不能跨命令使用。
+        const restored = JSON.parse(JSON.stringify(played.finalState));
+        const afterPlay = respondToPrompt(restored, justiceOption.id, '0', fixedRandom as any);
         expect(afterPlay.success).toBe(true);
         expect(afterPlay.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['loop-1', 'justice-1']);
 

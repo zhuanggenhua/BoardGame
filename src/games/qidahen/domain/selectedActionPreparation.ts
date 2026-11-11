@@ -96,7 +96,8 @@ export function prepareQidahenSelectedAction(
     const spentCardIds = cardIds.filter((cardId) => currentFactionCardIds.has(cardId));
     const selectedCardIds = new Set(spentCardIds);
     const spentCardCount = spentCardIds.length;
-    const selectedArmamentId = dependencies.resolveSelectedArmamentIdFromCards(state.handCards, spentCardIds);
+    const selectedArmamentId = dependencies.resolveSelectedArmamentIdFromCards(state.handCards,
+        state.selectedHandActionCardId && spentCardIds.includes(state.selectedHandActionCardId) ? [state.selectedHandActionCardId] : spentCardIds);
     const selectedEventActionCard = actionId === 'play-event-card'
         ? state.handCards.find((card) => (
             spentCardIds.includes(card.id)
@@ -128,7 +129,7 @@ export function prepareQidahenSelectedAction(
         ? state.handCards.find((card) => (
             spentCardIds.includes(card.id)
             && card.cardKind === 'armament'
-            && card.armamentId === selectedArmamentId
+            && (state.selectedHandActionCardId ? card.id === state.selectedHandActionCardId : card.armamentId === selectedArmamentId)
         )) ?? null
         : null;
     const selectedHandActionCardLabel = selectedArmamentActionCard?.label ?? null;

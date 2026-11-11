@@ -126,9 +126,9 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 attackerObjectId: friendlyWolf.id,
                 targetObjectId: target.id,
-                diceResults: [3, 3, 3, 3],
+                diceResults: [1, 1, 1, 1],
                 meleeDiceModifier: 1,
-                baseDamage: 12,
+                baseDamage: 4,
             },
         });
 
@@ -161,8 +161,8 @@ describe('mage-wars combat enchantments', () => {
         expect(rangedAttackEvent).toMatchObject({
             payload: {
                 attackerObjectId: friendlyArcherAnimal.id,
-                diceResults: [3, 3],
-                baseDamage: 6,
+                diceResults: [1, 1],
+                baseDamage: 2,
             },
         });
         expect(rangedAttackEvent?.payload).not.toHaveProperty('meleeDiceModifier');
@@ -294,8 +294,8 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 attackerObjectId: attacker.id,
                 targetObjectId: armoredTarget.id,
-                diceResults: [3, 3],
-                baseDamage: 6,
+                diceResults: [1, 1],
+                baseDamage: 2,
                 vampiricNextMelee: true,
                 pierceModifier: 1,
             },
@@ -303,7 +303,7 @@ describe('mage-wars combat enchantments', () => {
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: armoredTarget.id,
-                actualDamage: 5,
+                actualDamage: 1,
             },
         });
         expect(healingEvent).toMatchObject({
@@ -313,8 +313,8 @@ describe('mage-wars combat enchantments', () => {
                 sourceAbilityId: 'mw.spell.3404',
                 targetPlayerId: '0',
                 diceResults: [],
-                healing: 5,
-                actualHealing: 5,
+                healing: 1,
+                actualHealing: 1,
             },
         });
         expect(attacked.events).toEqual(expect.arrayContaining([
@@ -328,7 +328,7 @@ describe('mage-wars combat enchantments', () => {
             }),
         ]));
         expect(attacked.state.core.objects[attacker.id].temporaryTraits).toBeUndefined();
-        expect(attacked.state.core.players['0'].damage).toBe(2);
+        expect(attacked.state.core.players['0'].damage).toBe(6);
     });
 
     it('keeps Bloodstrike through ranged attacks and clears it at creature action end', () => {
@@ -397,8 +397,8 @@ describe('mage-wars combat enchantments', () => {
         expect(rangedAttackEvent).toMatchObject({
             payload: {
                 attackerObjectId: attacker.id,
-                diceResults: [3, 3],
-                baseDamage: 6,
+                diceResults: [1, 1],
+                baseDamage: 2,
             },
         });
         expect(rangedAttackEvent?.payload).not.toHaveProperty('vampiricNextMelee');
@@ -488,7 +488,7 @@ describe('mage-wars combat enchantments', () => {
                 attackProfileId: 'attack-0',
                 targetObjectId: armoredTarget.id,
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
         const healingEvents = attacked.events.filter((event) => (
             event.type === MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED
         ));
@@ -511,8 +511,8 @@ describe('mage-wars combat enchantments', () => {
                 payload: expect.objectContaining({
                     attackerObjectId: attacker.id,
                     targetObjectId: armoredTarget.id,
-                    diceResults: [3, 3],
-                    baseDamage: 6,
+                    diceResults: [2, 2],
+                    baseDamage: 4,
                     vampiric: true,
                 }),
             }),
@@ -520,7 +520,7 @@ describe('mage-wars combat enchantments', () => {
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: armoredTarget.id,
-                    actualDamage: 4,
+                    actualDamage: 2,
                 }),
             }),
         ]));
@@ -529,11 +529,11 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 spellCardId,
                 sourceAbilityId: 'mw.spell.1910',
-                healing: 4,
-                actualHealing: 4,
+                healing: 2,
+                actualHealing: 2,
             },
         });
-        expect(attacked.state.core.players['0'].damage).toBe(3);
+        expect(attacked.state.core.players['0'].damage).toBe(5);
         expect(attacked.state.core.objects[enchantment!.id]).toMatchObject({
             sourceSpellCardId: spellCardId,
             anchoredToObjectId: attacker.id,
@@ -631,8 +631,8 @@ describe('mage-wars combat enchantments', () => {
         expect(attackEvent).toMatchObject({
             payload: {
                 targetObjectId: friendlyTarget.id,
-                diceResults: [3, 3],
-                baseDamage: 6,
+                diceResults: [1, 1],
+                baseDamage: 2,
             },
         });
     });
@@ -694,11 +694,11 @@ describe('mage-wars combat enchantments', () => {
 
         expect(enemyAttack.success).toBe(true);
         expect(enemyAttackEvent).toMatchObject({
-            payload: { diceResults: [3, 3, 3], baseDamage: 9 },
+            payload: { diceResults: [1, 1, 1], baseDamage: 3 },
         });
         expect(outsideAttack.success).toBe(true);
         expect(outsideAttackEvent).toMatchObject({
-            payload: { diceResults: [3, 3, 3], baseDamage: 9 },
+            payload: { diceResults: [1, 1, 1], baseDamage: 3 },
         });
     });
 
@@ -742,8 +742,8 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 spellCardId,
                 targetObjectId: target.id,
-                diceResults: [3, 3, 3],
-                baseDamage: 9,
+                diceResults: [1, 1, 1],
+                baseDamage: 3,
             },
         });
     });
@@ -791,7 +791,7 @@ describe('mage-wars combat enchantments', () => {
         expect(moved.state.core.objects[target.id]?.zoneId).toBe(ARENA_ZONE_IDS.A2);
         expect(attacked.success).toBe(true);
         expect(attackEvent).toMatchObject({
-            payload: { diceResults: [3, 3, 3], baseDamage: 9 },
+            payload: { diceResults: [1, 1, 1], baseDamage: 3 },
         });
     });
 
@@ -837,7 +837,7 @@ describe('mage-wars combat enchantments', () => {
 
         expect(attacked.success).toBe(true);
         expect(attackEvent).toMatchObject({
-            payload: { diceResults: [3, 3], baseDamage: 6 },
+            payload: { diceResults: [1, 1], baseDamage: 2 },
         });
     });
 
@@ -874,7 +874,7 @@ describe('mage-wars combat enchantments', () => {
 
         expect(attacked.success).toBe(true);
         expect(attackEvent).toMatchObject({
-            payload: { diceResults: [3, 3], baseDamage: 6 },
+            payload: { diceResults: [1, 1], baseDamage: 2 },
         });
     });
 
@@ -926,8 +926,8 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 attackerObjectId: attacker.id,
                 targetObjectId: target.id,
-                diceResults: [3, 3],
-                baseDamage: 6,
+                diceResults: [1, 1],
+                baseDamage: 2,
             },
         });
     });
@@ -965,8 +965,8 @@ describe('mage-wars combat enchantments', () => {
         expect(attacked.success).toBe(true);
         expect(attackEvent).toMatchObject({
             payload: {
-                diceResults: [3],
-                baseDamage: 3,
+                diceResults: [1],
+                baseDamage: 1,
             },
         });
     });
@@ -1013,8 +1013,8 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 spellCardId,
                 targetObjectId: target.id,
-                diceResults: [3, 3, 3],
-                baseDamage: 9,
+                diceResults: [1, 1, 1],
+                baseDamage: 3,
             },
         });
     });
@@ -1130,7 +1130,7 @@ describe('mage-wars combat enchantments', () => {
                 ...base.core.players,
                 '0': {
                     ...base.core.players['0'],
-                    damage: 20,
+                    damage: 10,
                 },
             },
         };
@@ -1138,7 +1138,7 @@ describe('mage-wars combat enchantments', () => {
             state: { core, sys: base.sys },
             sourceCommandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
             timestamp: 0,
-            random: fixedRandom,
+            random: { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 },
             attackerObjectId: attacker.id,
             attackProfileId: 'attack-1',
             targetObjectId: target.id,
@@ -1156,7 +1156,7 @@ describe('mage-wars combat enchantments', () => {
                 attackProfileId: 'attack-1',
                 targetObjectId: target.id,
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
         const healingEvents = attacked.events.filter((event) => (
             event.type === MAGE_WARS_EVENTS.SPELL_HEALING_ROLLED
         ));
@@ -1167,11 +1167,11 @@ describe('mage-wars combat enchantments', () => {
             payload: {
                 spellCardId: 1910,
                 sourceAbilityId: 'mw.spell.1910',
-                healing: 21,
-                actualHealing: 20,
+                healing: 12,
+                actualHealing: 10,
             },
         });
-        expect(attacked.state.core.objects[target.id]).toMatchObject({ damage: 21 });
+        expect(attacked.state.core.objects[target.id]).toMatchObject({ damage: 12 });
         expect(attacked.state.core.players['0'].damage).toBe(0);
         expect(attacked.state.core.objects[enchantment.id]).toBeDefined();
     });

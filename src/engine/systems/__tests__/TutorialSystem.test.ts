@@ -41,6 +41,41 @@ const createTestState = (): MatchState<TestCore> => ({
 describe('TutorialSystem', () => {
     const system = createTutorialSystem<TestCore>();
 
+    it('同一步按批次处理对手输入：旧回执不清新批次，恢复与重复归约不重发已消费批次', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = { id: 'batched', steps: [{ id: 'loop', content: '', requireAction: true }],
+            resolveStep: (state, step) => ({ ...step, aiBatchId: `interaction-${(state.core as TestCore).value}`,
+                aiActions: [{ commandType: 'RESPOND', playerId: '1' }] }) };
+        const call = (state: MatchState<TestCore>, type: string, payload: unknown = {}) => sys.beforeCommand!({ state, command: { type, playerId: '0', payload }, events: [], random: mockRandom, playerIds: ['0', '1'] });
+        let state = call(createTestState(), TUTORIAL_COMMANDS.START, { manifest })!.state!;
+        expect(state.sys.tutorial.step?.aiBatchId).toBe('interaction-0');
+        state = sys.afterEvents!({ state: { ...state, core: { value: 1 } }, command: { type: 'RESPOND', playerId: '1', payload: {} }, events: [{ type: 'NEXT_PROMPT', payload: {}, timestamp: 1 }], random: mockRandom, playerIds: ['0', '1'] })!.state!;
+        expect(state.sys.tutorial.step?.aiBatchId).toBe('interaction-1');
+        expect(call(state, TUTORIAL_COMMANDS.AI_CONSUMED, { stepId: 'loop', batchId: 'interaction-0' })?.state ?? state).toEqual(state);
+        state = call(state, TUTORIAL_COMMANDS.AI_CONSUMED, { stepId: 'loop', batchId: 'interaction-1' })!.state!;
+        expect(state.sys.tutorial.step?.aiActions).toBeUndefined();
+        state = call(state, TUTORIAL_COMMANDS.BIND_MANIFEST, { manifest })!.state!;
+        expect(state.sys.tutorial.step?.aiActions).toBeUndefined();
+        const duplicate = sys.afterEvents!({ state, command: { type: 'OTHER', playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0', '1'] });
+        expect(duplicate?.state?.sys.tutorial.step?.aiActions ?? state.sys.tutorial.step?.aiActions).toBeUndefined();
+        state = sys.afterEvents!({ state: { ...state, core: { value: 2 } }, command: { type: 'OTHER', playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0', '1'] })!.state!;
+        expect(state.sys.tutorial.step).toMatchObject({ aiBatchId: 'interaction-2', aiActions: [{ commandType: 'RESPOND' }] });
+    });
+
+    it('步骤内等待动画，完成后按真实状态重算而不是跳步', () => {
+        const sys = createTutorialSystem<TestCore>();
+        const manifest: TutorialManifest = { id: 'animation-loop',
+            resolveStep: (state, step) => ({ ...step, content: String((state.core as TestCore).value) }),
+            steps: [{ id: 'loop', content: '', requireAction: true, allowedCommands: ['FIGHT'], waitForAnimationInStep: [{ type: 'ROLLED' }] }, { id: 'next', content: '' }] };
+        let state = sys.beforeCommand!({ state: createTestState(), command: { type: TUTORIAL_COMMANDS.START, playerId: '0', payload: { manifest } }, events: [], random: mockRandom, playerIds: ['0'] })!.state!;
+        state = sys.afterEvents!({ state: { ...state, core: { value: 1 } }, command: { type: 'FIGHT', playerId: '0', payload: {} }, events: [{ type: 'ROLLED', payload: {}, timestamp: 1 }], random: mockRandom, playerIds: ['0'] })!.state!;
+        expect(state.sys.tutorial.pendingAnimationAdvance).toBe(true);
+        expect(sys.beforeCommand!({ state, command: { type: 'FIGHT', playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0'] })?.error).toBe(TUTORIAL_ERRORS.COMMAND_BLOCKED);
+        state = sys.beforeCommand!({ state, command: { type: TUTORIAL_COMMANDS.ANIMATION_COMPLETE, playerId: '0', payload: {} }, events: [], random: mockRandom, playerIds: ['0'] })!.state!;
+        expect(state.sys.tutorial.pendingAnimationAdvance).toBe(false);
+        expect(state.sys.tutorial.step).toMatchObject({ id: 'loop', content: '1' });
+    });
+
     it('真实动画等待期间拦截玩家命令和交互响应，保留教程控制且不影响非教程对局', () => {
         const sys = createTutorialSystem<TestCore>();
         const state = createTestState();

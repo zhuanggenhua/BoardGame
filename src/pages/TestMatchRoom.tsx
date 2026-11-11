@@ -371,6 +371,7 @@ export const TestMatchRoom: React.FC = () => {
                                         />
                                         <BoardBridge
                                             board={WrappedBoard}
+                                            gameId={gameId}
                                             remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
                                             loading={(
                                                 <LoadingScreen

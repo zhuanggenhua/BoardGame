@@ -1073,6 +1073,8 @@ test('桌面牌桌以真实状态选择器移除奇异博士法术指定的状�
     const spellOption = page.getByTestId(`dt-discard-card-option-${removalSpellId}`);
     await expect.poll(async () => (await game.getState())?.core?.players?.['0']?.deck?.length, { timeout: 15000 }).toBe(28);
     await expect(spellOption).toBeVisible({ timeout: 10000 });
+    // 宇宙感知的抽牌演出可能仍在翻面，稳定后再记录候选态。
+    await page.waitForTimeout(2000);
     const cardCandidatesScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '瓦图姆之风-弃牌法术候选',
         'remove-status-prepare-card-candidates', '真实使用宇宙感知打开弃牌法术选择',
@@ -1286,12 +1288,12 @@ test('旧共有牌再见以原状态选择器只选中实际持有人', async ({
     await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace, '旧共有牌状态选择对照', '选择归属和确认后的原状态结果单独验证。');
 });
 
-test('四人组队中奇异博士队友真实打出值得拥有并重掷当前投掷者的骰子', async ({ page, game }, testInfo) => {
+test('四人组队中奇异博士队友真实打出不愧是我并重掷当前投掷者的骰子', async ({ page, game }, testInfo) => {
     test.setTimeout(120000);
     const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
     const media: EvidenceScreenshotIndexEntry[] = [];
     const trace = newEvidenceTraceRecorder();
-    const chainId = '奇异博士队友使用值得拥有重掷队友骰子';
+    const chainId = '奇异博士队友使用不愧是我重掷队友骰子';
     await page.setViewportSize({ width: 1440, height: 900 });
     await setChineseLocale(page.context());
     await game.openTestGame('dicethrone', {
@@ -1425,11 +1427,11 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(sourceCard).toBeVisible();
     const sourceReadingScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-来源卡等待玩家关闭',
+        page, game, evidenceRun, trace, '不愧是我-来源卡等待玩家关闭',
         'worthy-source-card-reading', '来源卡出现后等待超过原三秒并切换窗口尺寸',
         '来源卡未自行关闭', snapshot => snapshot.visible.cardSpotlightId, 'card-worthy-of-me',
     );
-    media.push({ path: sourceReadingScreenshot, chainId: '值得拥有来源卡阅读', chainStep: '等待主动关闭', stage: '中态',
+    media.push({ path: sourceReadingScreenshot, chainId: '不愧是我来源卡阅读', chainStep: '等待主动关闭', stage: '中态',
         uiStateId: 'doctor-strange-worthy-source-reading', behaviorStepId: 'worthy-source-card-reading',
         description: '队友打出的来源卡保持完整显示，等待玩家主动关闭后选择骰子。',
         role: 'main-flow', viewport: 'desktop', transition: '来源卡显示超过原自动退场时长。' });
@@ -1455,7 +1457,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     expect(diceHintGeometry.x + diceHintGeometry.width).toBeLessThanOrEqual(diceHintGeometry.parent.x);
     expect(Math.abs(diceHintGeometry.centerDelta),JSON.stringify(diceHintGeometry)).toBeLessThanOrEqual(2);
     const targetScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-投掷者骰区目标态',
+        page, game, evidenceRun, trace, '不愧是我-投掷者骰区目标态',
         'worthy-teammate-dice-targets', '队友出牌后由当前投掷者查看自己的骰区',
         '交互归当前投掷者，且其骰子可点击',
         snapshot => {
@@ -1478,7 +1480,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         },
     );
     media.push({
-        path: targetScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '骰子候选', stage: '中态',
+        path: targetScreenshot, chainId: '不愧是我选择投掷者骰子', chainStep: '骰子候选', stage: '中态',
         uiStateId: 'doctor-strange-worthy-teammate-targets', uiChange: 'interaction-mode',
         uiChangeReason: '队友牌出牌后进入骰子选择，玩家可在当前投掷者的实际骰区选择。',
         behaviorStepId: 'worthy-teammate-dice-targets',
@@ -1489,7 +1491,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await firstRollerDie.click();
     await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择重投骰子（1/2）');
     const oneRerollScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-同骰已选一次',
+        page, game, evidenceRun, trace, '不愧是我-同骰已选一次',
         'worthy-teammate-dice-selected-once', '真实鼠标首次选择当前投掷者的一颗骰子',
         '同一颗骰子出现选中态且仍可再次选择',
         snapshot => ({
@@ -1500,7 +1502,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         { selected: true, hint: '选择重投骰子（1/2）' },
     );
     media.push({
-        path: oneRerollScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '已选1/2', stage: '中态',
+        path: oneRerollScreenshot, chainId: '不愧是我选择投掷者骰子', chainStep: '已选1/2', stage: '中态',
         uiStateId: 'doctor-strange-worthy-teammate-die-selected-once',
         behaviorStepId: 'worthy-teammate-dice-selected-once',
         description: '当前投掷者选中一颗骰子后显示1/2进度；该骰仍是可再次点击的合法目标。',
@@ -1512,7 +1514,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
     await expect(page.getByTestId('dice-interaction-confirm-button')).toHaveText('确认');
     await expect(firstRollerDie).toHaveAttribute('data-selected', 'true');
     const selectedScreenshot = await captureTracedState(
-        page, game, evidenceRun, trace, '值得拥有-投掷者同骰重选两次',
+        page, game, evidenceRun, trace, '不愧是我-投掷者同骰重选两次',
         'worthy-teammate-dice-selected', '真实鼠标连续选择当前投掷者的同一颗骰子两次',
         '同一颗骰子计入两次重掷预算并进入待确认状态',
         snapshot => {
@@ -1522,7 +1524,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         true,
     );
     media.push({
-        path: selectedScreenshot, chainId: '值得拥有选择投掷者骰子', chainStep: '已选2/2待确认', stage: '中态',
+        path: selectedScreenshot, chainId: '不愧是我选择投掷者骰子', chainStep: '已选2/2待确认', stage: '中态',
         uiStateId: 'doctor-strange-worthy-teammate-selected-dice', uiChange: 'target-highlight',
         uiChangeReason: '真实鼠标连续点击后同一颗合法骰子显示选中态且进度达到2/2。',
         behaviorStepId: 'worthy-teammate-dice-selected',
@@ -1547,7 +1549,7 @@ test('四人组队中奇异博士队友真实打出值得拥有并重掷当前�
         strangeHand: [], strangeDiscard: ['card-worthy-of-me'],
     });
     await promoteTracedEvidenceScreenshotRun(page, evidenceRun, media, trace,
-        '奇异博士队友可以真实打出值得拥有并重掷当前投掷者骰子',
+        '奇异博士队友可以真实打出不愧是我并重掷当前投掷者骰子',
         '截图只展示骰子候选与选择进度；骰面变化和卡牌去向由同用例断言验证。');
 });
 
@@ -1800,6 +1802,8 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
     const drawnCardChoices = page.locator('#modal-root [data-testid^="dt-hand-card-option-"]');
     await expect(drawnCardChoices).toHaveCount(3, { timeout: 10000 });
     await assertCardCandidatesDistinctFromBoard(page);
+    // 三张抽牌各有错峰飞行和翻面，等待演出结束后记录稳定选择界面。
+    await page.waitForTimeout(2000);
     const cardChoiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '本次抽牌返还选择-桌面',
         'income-return-drawn-card', '支付3层预感并从本次抽到的牌中选择返还对象',
@@ -1815,7 +1819,7 @@ test('桌面牌桌使用3层预感替代收入并将本次抽牌放回牌库底'
     );
     media.push({ path: phoneDrawnScreenshot, chainId: '预感横屏返还比较', chainStep: '多卡候选', stage: '中态',
         uiStateId: 'doctor-strange-income-phone-card-candidates', behaviorStepId: 'income-phone-card-candidates',
-        description: '横屏沿用旧卡池的等比卡面、多行候选、上方标题和下方动作。', role: 'main-flow', viewport: 'mobile', transition: '进入同一返还候选的横屏视口。' });
+        description: '横屏沿用旧卡池的等比卡面，三张候选单行排列，标题在上、操作在下。', role: 'main-flow', viewport: 'mobile', transition: '进入同一返还候选的横屏视口。' });
     const phoneCardPool = page.getByTestId('dt-card-pool-selection');
     if (await phoneCardPool.evaluate(element => element.scrollHeight > element.clientHeight + 1)) {
         await phoneCardPool.hover();
@@ -2302,6 +2306,8 @@ test('桌面牌桌以真实鼠标选择星际侵入并确认奖励骰', async ({
         { value: 1, face: DOCTOR_STRANGE_FACE.MANDALA },
         { value: 3, face: DOCTOR_STRANGE_FACE.BOOK },
     ]);
+    // 骰面状态可能先于旋转演出落定；验收图须呈现静止的实际骰面。
+    await page.waitForTimeout(2000);
     const bonusDiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '星际侵入奖励骰待确认-桌面',
         'astral-bonus-dice-pending', '提交技能结算并等待右侧奖励骰普通确认',
@@ -2808,6 +2814,17 @@ for (const empty of [false, true]) test(`代表态真实打出瓦图姆之风覆
     if (!empty) {
         await page.getByTestId('dt-status-effect-0-blinded').click();
         await expect(page.getByTestId('dt-status-effect-0-blinded')).toHaveAttribute('data-selected', 'true');
+        for (const viewport of [{ width: 1440, height: 900 }, { width: 812, height: 375 }]) {
+            await page.setViewportSize(viewport);
+            const id = `status-multiple-selected-${viewport.width}`;
+            const image = await captureTracedState(page, game, evidenceRun, trace,
+                `多持有人状态已选-${viewport.width > 1000 ? '桌面' : '横屏'}`,
+                id, '选择本人状态后检查选中反馈', '本人状态已选且确认可用',
+                snapshot => (snapshot.visible.choiceIds as string[]).length, 2);
+            media.push({ path: image, chainId: '多持有人状态选择', chainStep: '本人状态已选', stage: '中态',
+                uiStateId: `doctor-strange-${id}`, behaviorStepId: id, description: '本人状态显示选中标记，对手状态仍可辨认，确认按钮可用。',
+                role: 'main-flow', viewport: viewport.width > 1000 ? 'desktop' : 'mobile', transition: '选择本人状态后切换视口。' });
+        }
         await page.getByTestId('dt-interaction-confirm').click();
         await expect.poll(async () => (await game.getState())?.core?.players?.['0']?.statusEffects?.blinded ?? 0).toBe(0);
     } else await page.getByRole('button', { name: '跳过', exact: true }).click();
@@ -2844,12 +2861,12 @@ test('代表态真实施放拉格伽多尔之环并浏览弃牌候选', async ({
     if (await largeStraight.isVisible()) {
         await expect(page.getByRole('button', { name: /小顺子/ })).toContainText('造成6点攻击伤害');
         await expect(largeStraight).toContainText('造成9点攻击伤害');
-        const variantImage = await captureTracedState(page, game, evidenceRun, trace, '神秘飞弹原技能分支-桌面',
-            'bolt-original-ability-choice', '点击神秘飞弹后通过原技能分支界面选择', '原技能分支可读',
+        const variantImage = await captureTracedState(page, game, evidenceRun, trace, '秘术雷击原技能分支-桌面',
+            'bolt-original-ability-choice', '点击秘术雷击后通过原技能分支界面选择', '原技能分支可读',
             snapshot => (snapshot.visible.modalButtonLabels as string[]).some(label => label.includes('大顺')), true);
         media.push({ path: variantImage, chainId: '弃牌直接施放', chainStep: '原技能分支', stage: '中态',
             uiStateId: 'doctor-strange-bolt-original-ability-choice', behaviorStepId: 'bolt-original-ability-choice',
-            description: '神秘飞弹通过原技能分支界面选择本次进攻效果。', role: 'main-flow', viewport: 'desktop', transition: '真实点击神秘飞弹技能槽。' });
+            description: '秘术雷击通过原技能分支界面选择本次进攻效果。', role: 'main-flow', viewport: 'desktop', transition: '真实点击秘术雷击技能槽。' });
         await largeStraight.click();
     }
     await expect.poll(async () => (await game.getState())?.core?.pendingAttack?.sourceAbilityId).toMatch(/^strange-mystic-bolt/);

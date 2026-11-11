@@ -14,8 +14,9 @@ import {
     requiresDiscardAfterTakingDiscard,
     validate,
 } from './commands';
-import { evaluateFantasyRealmsScore, resolveFantasyRealmsWinner } from './scoring';
+import { evaluateFantasyRealmsScore, evaluateFantasyRealmsResolvedScore, resolveFantasyRealmsWinner } from './scoring';
 import { playerView } from './view';
+import { applySettlementChoice, beginSettlement, emptySelections } from './settlement';
 import type {
     FantasyRealmsCommand,
     FantasyRealmsCore,
@@ -48,7 +49,7 @@ function recalculatePlayerSummary(
     discardPile: readonly TableCard[],
     core: Pick<FantasyRealmsCore, 'playerIds' | 'setupConfig'>,
 ): FantasyRealmsPlayerState {
-    const evaluation = evaluateFantasyRealmsScore(player.hand, discardPile, {
+    const evaluation = evaluateFantasyRealmsResolvedScore(player.hand, discardPile, emptySelections(), {
         setupConfig: core.setupConfig,
         playerCount: core.playerIds.length,
     });
@@ -68,6 +69,17 @@ function recalculatePlayerSummaries(core: FantasyRealmsCore): FantasyRealmsCore 
         ...core,
         players,
     };
+}
+
+function ensureDiscardSlots(cards: readonly TableCard[]): TableCard[] {
+    const occupied = new Set(cards.map((card) => card.discardSlot).filter((slot): slot is number => slot !== undefined));
+    return cards.map((card) => {
+        if (card.discardSlot !== undefined) return card;
+        let slot = 0;
+        while (occupied.has(slot)) slot += 1;
+        occupied.add(slot);
+        return { ...card, discardSlot: slot };
+    });
 }
 
 function resolveVisibleCardById(core: FantasyRealmsCore, cardId: string | null): TableCard | undefined {
@@ -183,37 +195,14 @@ function createDiscardEvent(core: FantasyRealmsCore, playerId: PlayerId, cardId:
 }
 
 function applyGameEnd(core: FantasyRealmsCore): GameOverResult | undefined {
-    if (isDuelVariant(core)) {
-        const allHandsFull = core.playerIds.every((playerId) => (
-            (core.players[playerId]?.hand.length ?? 0) >= getFantasyRealmsBaseHandLimit(core.setupConfig)
-        ));
-        if (!allHandsFull || core.discardPile.length < getFantasyRealmsDiscardEndThreshold(core.playerIds.length, core.setupConfig)) {
-            return undefined;
-        }
-        return resolveFantasyRealmsWinner(
-            core.playerIds,
-            Object.fromEntries(core.playerIds.map((playerId) => [playerId, core.players[playerId]?.hand ?? []])) as Record<PlayerId, readonly TableCard[]>,
-            core.discardPile,
-            {
-                setupConfig: core.setupConfig,
-                playerCount: core.playerIds.length,
-            },
-        );
-    }
-
-    if (core.discardPile.length >= getFantasyRealmsDiscardEndThreshold(core.playerIds.length, core.setupConfig)) {
-        return resolveFantasyRealmsWinner(
-            core.playerIds,
-            Object.fromEntries(core.playerIds.map((playerId) => [playerId, core.players[playerId]?.hand ?? []])) as Record<PlayerId, readonly TableCard[]>,
-            core.discardPile,
-            {
-                setupConfig: core.setupConfig,
-                playerCount: core.playerIds.length,
-            },
-        );
-    }
-
-    return undefined;
+    if (core.settlement?.step !== 'done') return undefined;
+    return resolveFantasyRealmsWinner(
+        core.playerIds,
+        Object.fromEntries(core.playerIds.map((id) => [id, core.players[id]?.hand ?? []])),
+        core.discardPile,
+        { setupConfig: core.setupConfig, playerCount: core.playerIds.length },
+        core.settlement.selections,
+    );
 }
 
 export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent> = {
@@ -240,6 +229,8 @@ export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCom
                 return [createTakeDiscardEvent(state.core, command.playerId, command.payload.cardId, timestamp)];
             case FANTASY_REALMS_COMMANDS.DISCARD_CARD:
                 return [createDiscardEvent(state.core, command.playerId, command.payload.cardId, timestamp)];
+            case FANTASY_REALMS_COMMANDS.RESOLVE_SETTLEMENT:
+                return [{ type: 'SETTLEMENT_CHOICE_RESOLVED', payload: { playerId: command.playerId, choice: command.payload }, sourceCommandType: command.type, timestamp }];
             default:
                 return [];
         }
@@ -278,9 +269,9 @@ export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCom
                         hand: [...currentPlayer!.hand, { ...event.payload.card }],
                     },
                 };
-                const nextDiscardPile = core.discardPile
-                    .filter((card) => card.id !== event.payload.card.id)
-                    .map((card) => ({ ...card }));
+                // 旧对局可能没有位置字段，先按已有顺序固定位置再移除。
+                const nextDiscardPile = ensureDiscardSlots(core.discardPile)
+                    .filter((card) => card.id !== event.payload.card.id);
                 const nextCore = recalculatePlayerSummaries({
                     ...core,
                     currentPlayer: event.payload.nextPlayerId,
@@ -292,6 +283,9 @@ export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCom
                 return withResolvedFocus(nextCore, event.payload.card.id);
             }
 
+            case 'SETTLEMENT_CHOICE_RESOLVED':
+                return applySettlementChoice(core, event.payload.choice);
+
             case 'CARD_DISCARDED': {
                 const currentPlayer = core.players[event.payload.playerId];
                 const nextPlayers = {
@@ -301,15 +295,25 @@ export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCom
                         hand: currentPlayer!.hand.filter((card) => card.id !== event.payload.card.id).map((card) => ({ ...card })),
                     },
                 };
+                const existingDiscardCards = ensureDiscardSlots(core.discardPile);
+                const occupied = new Set(existingDiscardCards.map((card) => card.discardSlot));
+                let discardSlot = 0;
+                while (occupied.has(discardSlot)) discardSlot += 1;
                 const nextCore = recalculatePlayerSummaries({
                     ...core,
                     currentPlayer: event.payload.nextPlayerId,
                     turn: event.payload.nextTurn,
                     stage: event.payload.nextStage,
-                    discardPile: [...core.discardPile, { ...event.payload.card }],
+                    discardPile: [...existingDiscardCards, { ...event.payload.card, discardSlot }],
                     players: nextPlayers,
                 });
-                return withResolvedFocus(nextCore, event.payload.card.id);
+                const focusedCore = withResolvedFocus(nextCore, event.payload.card.id);
+                const allHandsFull = !isDuelVariant(focusedCore) || focusedCore.playerIds.every((id) => (
+                    (focusedCore.players[id]?.hand.length ?? 0) >= getFantasyRealmsBaseHandLimit(focusedCore.setupConfig)
+                ));
+                return allHandsFull && focusedCore.discardPile.length >= getFantasyRealmsDiscardEndThreshold(focusedCore.playerIds.length, focusedCore.setupConfig)
+                    ? beginSettlement({ ...focusedCore, stage: 'settlement' })
+                    : focusedCore;
             }
 
             default:

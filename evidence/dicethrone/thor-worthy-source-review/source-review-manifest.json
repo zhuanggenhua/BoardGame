@@ -1,0 +1,13 @@
+{
+  "purpose": "user-requested-source-review",
+  "userRequest": "查看当之无愧卡面及原规则",
+  "productAcceptance": "not-claimed",
+  "media": [
+    {
+      "file": "当之无愧-原卡面.png",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\temp\\dicethrone-intake\\thor\\cards\\slot-27.png",
+      "description": "从索尔原始牌图集裁出的完整第27号卡面",
+      "sha256": "498cd503e684e0b3a21b1064dafeb182886c642ff5e868a9aac38b96d72f6422"
+    }
+  ]
+}

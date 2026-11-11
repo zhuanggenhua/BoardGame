@@ -31,7 +31,7 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
     const cardIds = active ? options.filter(option => state.core.handCards.some(card => card.id === option.id)).map(option => option.id) : [];
     const pieceIds = step === 'dispatch-troops' || step === 'upkeep' ? options.filter(option => state.core.pieces.some(piece => piece.id === option.id)).map(option => option.id) : [];
     const allowedTargets = state.sys.tutorial?.active ? state.sys.tutorial.step?.allowedTargets : undefined;
-    const authoredSelectionAllowed = (ids: string[]) => ['dispatch-source', 'dispatch-troops', 'dispatch-target'].includes(tutorialStep?.id ?? '')
+    const authoredSelectionAllowed = (ids: string[]) => ['dispatch-source', 'dispatch-troops', 'dispatch-target', 'claim-year'].includes(tutorialStep?.id ?? '')
         || !allowedTargets?.length || ids.length > 0 && ids.every(id => allowedTargets.includes(id)
         || allowedTargets.includes(state.core.handCards.find(card => card.id === id)?.cardDefId ?? ''))
         && (!data?.multi || allowedTargets.every(id => ids.includes(id)));

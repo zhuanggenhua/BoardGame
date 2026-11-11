@@ -15,7 +15,9 @@ import {
     seedMatchCredentials,
     waitForMatchAvailable,
 } from '../helpers/common';
-import { getMatchState } from '../helpers/state-injection';
+import { getMatchState, injectMatchState } from '../helpers/state-injection';
+import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
+import { beginSettlement } from '../../src/games/fantasyrealms/domain/settlement';
 
 const GAME_NAME = 'fantasyrealms';
 const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
@@ -292,15 +294,15 @@ async function readOnlineAiCore(matchId: string, page: Page): Promise<FantasyRea
 }
 
 async function expectFinalStandingsVisible(page: Page, standings: FinalStanding[]) {
-    const standingsRegion = page.locator('.fr-endgame-list');
+    const standingsRegion = page.getByTestId('fantasyrealms-live-endgame');
     await expect(standingsRegion).toBeVisible();
-    const rows = standingsRegion.locator('.fr-endgame-row');
+    const rows = standingsRegion.locator('[data-testid^="fantasyrealms-endgame-rank-"]');
     await expect(rows).toHaveCount(standings.length);
     for (const [index, standing] of standings.entries()) {
         const row = rows.nth(index);
-        await expect(row).toContainText(`第 ${standing.rank} 名`);
+        await expect(row).toContainText(new RegExp(`第\\s*${standing.rank}\\s*名`));
         await expect(row).toContainText(standing.playerName);
-        await expect(row.locator('.fr-endgame-score')).toHaveText(String(standing.score));
+        await expect(row.locator('[data-score-role="final-score"]')).toHaveText(String(standing.score));
     }
 }
 
@@ -385,6 +387,18 @@ async function openFantasyRealmsOnlineAiRoom(
     };
 }
 
+async function resolveHostSettlementChoice(page: Page): Promise<void> {
+    const panel = page.getByTestId('fantasyrealms-settlement');
+    if (!await panel.isVisible().catch(() => false)) return;
+    const skip = panel.getByRole('button', { name: '不使用' });
+    if (await skip.isVisible().catch(() => false)) {
+        await skip.click();
+        return;
+    }
+    const option = panel.locator('button.fr-settlement-option, button[data-testid^="fantasyrealms-settlement-option-"]').first();
+    if (await option.isVisible().catch(() => false)) await option.click();
+}
+
 async function completeHostDeckTurnUntilAiOrGameOver(args: {
     matchId: string;
     page: Page;
@@ -431,6 +445,10 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
         const record = state as { core?: FantasyRealmsCore; G?: { core?: FantasyRealmsCore }; sys?: { gameover?: unknown } };
         const core = record.core ?? record.G?.core;
         if (!core) return false;
+        if (core.stage === 'settlement' && !record.sys?.gameover) {
+            if (core.currentPlayer === args.hostPlayerId) await resolveHostSettlementChoice(args.page);
+            return false;
+        }
         const hostDiscardApplied = (core.players[args.hostPlayerId]?.hand.length ?? Number.POSITIVE_INFINITY) <= (afterDrawSummary.handCounts[args.hostPlayerId] ?? 0) - 1
             && core.turn >= beforeTurn
             && (
@@ -498,6 +516,10 @@ async function waitForMultiSeatAiRoundtripOrGameOver(args: {
         const record = state as { core?: FantasyRealmsCore; G?: { core?: FantasyRealmsCore }; sys?: { gameover?: unknown } };
         const core = record.core ?? record.G?.core;
         if (!core) return false;
+        if (core.stage === 'settlement' && !record.sys?.gameover) {
+            if (core.currentPlayer === args.hostPlayerId) await resolveHostSettlementChoice(args.page);
+            return false;
+        }
         return Boolean(record.sys?.gameover)
             || (
                 core.currentPlayer === args.hostPlayerId
@@ -682,6 +704,35 @@ test.describe('FantasyRealms online AI golden flows', () => {
             diagnosticsLabel: 'fantasyrealms-online-ai-three-player-full-game-natural-gameover',
             settledAiSeatIds: ['1', '2'],
         });
+    });
+
+    test('三人在线 AI 在终局自主选择死灵术士候选并推进到排名', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const match = await openFantasyRealmsOnlineAiRoom(browser, testInfo.project.use.baseURL as string | undefined, { numPlayers: 3, aiSeatIds: ['1', '2'] });
+        if (!match) throw new Error('Game server unavailable');
+        const { context, page, matchId } = match;
+        try {
+            const state = await readOnlineAiMatchState(matchId, page);
+            const base = await readOnlineAiCore(matchId, page);
+            const byId = (id: string) => ({ ...OFFICIAL_FANTASY_REALMS_CARDS.find((card) => card.id === id)! });
+            const core = beginSettlement({
+                ...base, stage: 'settlement',
+                discardPile: ['leader-king', 'army-rangers', 'army-celestial-knights', 'beast-dragon', 'land-forest', 'weather-rainstorm', 'weather-blizzard', 'flame-forge', 'weapon-warship', 'leader-queen'].map(byId),
+                players: {
+                    ...base.players,
+                    '0': { ...base.players['0']!, hand: ['army-light-cavalry', 'army-dwarvish-infantry', 'flame-candle', 'flame-lightning', 'beast-hydra', 'land-mountain', 'leader-warlord'].map(byId) },
+                    '1': { ...base.players['1']!, hand: ['wizard-necromancer', 'weapon-magic-wand', 'beast-warhorse', 'leader-princess', 'artifact-protection-rune', 'weather-whirlwind', 'flame-fire-elemental'].map(byId) },
+                    '2': { ...base.players['2']!, hand: ['wizard-collector', 'wizard-beastmaster', 'wizard-warlock-lord', 'weapon-sword-of-keth', 'weapon-elven-longbow', 'beast-unicorn', 'flame-wildfire'].map(byId) },
+                },
+            });
+            expect(core.currentPlayer).toBe('1');
+            await injectMatchState(matchId, { ...state, core, sys: { ...state.sys, matchId, turnOrder: [...core.playerIds], currentPlayerIndex: 1, gameover: null } }, page);
+            await expect(page.getByLabel('最终排名')).toBeVisible({ timeout: 45000 });
+            const finalCore = await readOnlineAiCore(matchId, page);
+            expect(finalCore.settlement?.step).toBe('done');
+            expect(finalCore.players['1']!.hand).toHaveLength(8);
+            expect(finalCore.players['1']!.hand.some((card) => ['leader-king', 'leader-queen'].includes(card.id))).toBe(true);
+        } finally { await context.close().catch(() => {}); }
     });
 
     test('4人在线房里 host 与 seat1 / seat2 / seat3 local AI 可从真实开局完成一整轮串行托管并把回合交回 host', async ({ browser }, testInfo) => {

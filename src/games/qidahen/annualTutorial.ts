@@ -1,8 +1,11 @@
 import type { TutorialAiAction, TutorialManifest, TutorialStepSnapshot as TutorialStep } from '../../engine/types';
 import type { QidahenCore } from './domain/types';
 import { resolveAnnualBranchTutorialStep } from './annualBranchTutorial';
-import { createAnnualSeasonTutorialSteps, createAnnualChronologyPaymentStep, resolveAnnualSeasonTutorialStep, validateAnnualSeasonTutorialStep } from './annualSeasonTutorial';
+import { createAnnualSeasonTutorialSteps, createAnnualChronologyPaymentStep, createAnnualChronologyOpponentSteps, resolveAnnualSeasonTutorialStep, validateAnnualSeasonTutorialStep } from './annualSeasonTutorial';
 import { createAnnualBattleTutorialSteps, resolveAnnualDispatchTutorialStep, validateAnnualDispatchTutorialStep } from './annualDispatchTutorial';
+import { createAnnualDiplomacyTutorialStep, resolveAnnualDiplomacyTutorialStep, validateAnnualDiplomacyTutorialStep } from './annualDiplomacyTutorial';
+import { createAnnualFarmTutorialStep, resolveAnnualFarmTutorialStep, validateAnnualFarmTutorialStep } from './annualFarmTutorial';
+import { resolveAnnualHandActionTutorialStep } from './annualHandActionTutorial';
 
 const SYS = 'SYS_INTERACTION_RESPOND';
 const turnFact = 'TURN_RESOLUTION_APPLIED';
@@ -60,13 +63,14 @@ const repeatedOthers = (id: string, aiActions: TutorialAiAction[], equivalentSte
 
 /** 正式萨尔浒开局的一局连续课程。固定合法洗牌与骰序，所有中途变化都走正式命令。 */
 export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
-    id: 'basic-opening', revision: 29, numPlayers: 3,
-    stepValidator: (state, step) => validateAnnualDispatchTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step) ?? (step.id === 'training-practice'
+    id: 'basic-opening', revision: 30, numPlayers: 3,
+    stepValidator: (state, step) => validateAnnualFarmTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step) ?? validateAnnualDiplomacyTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step) ?? validateAnnualDispatchTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step) ?? (step.id === 'training-practice'
         ? Boolean((state.core as QidahenCore).wheelRecruitTrainProgress)
         : validateAnnualSeasonTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step) ?? true),
-    resolveStep: (state, step) => resolveAnnualDispatchTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>,
+    resolveStep: (state, step) => resolveAnnualHandActionTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, resolveAnnualDispatchTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>,
         resolveAnnualBranchTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>,
-            resolveAnnualSeasonTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step))),
+            resolveAnnualSeasonTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>,
+                resolveAnnualDiplomacyTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, resolveAnnualFarmTutorialStep(state as import('../../engine/types').MatchState<QidahenCore>, step)))))),
     selectBranch: (state, step) => step.id === 'year-character'
         ? ((state.core as QidahenCore).factions.ming.handCount === 0 ? 'recovery' : 'normal') : undefined,
     stayOnMatchAfterCompletion: true,
@@ -77,19 +81,8 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
         info('frontier-goal', 'qidahen-chronology-zone', { position: 'right', highlightFrame: 'none' }),
         info('frontier-target', 'qidahen-map-region-focus-city-region-7', { position: 'right', highlightFrame: 'none', tooltipAnchorTarget: 'qidahen-map-region-focus-name', tooltipMaxWidth: 260, avoidOverlapSelectors: [...PROTECTED_UI, '[data-tutorial-id="qidahen-map-region-focus-city-region-7"]'] }),
         moveStep('opening-move'),
-        wheelChoice('farm-action', 'military-farm'),
-        mapChoice('farm-target', 'farm-target', ['city-region-15']),
-        wheelChoice('reclaim-action', 'reclaim'),
-        mapChoice('reclaim-target', 'reclaim-targets', ['city-region-15-liaodong']),
-        choice('recruit-action', 'menu', ['hand-action:recruit'], 'qidahen-action-recruit', { position: 'top', highlightFrame: 'none' }),
-        action('recruit-payment', 'SELECT_PAYMENT_CARD', 'PAYMENT_CARD_SELECTED', 'qidahen-hand-zone', { cardId: 'hand-3' }, { position: 'top', allowedTargets: ['hand-3'] }),
-        action('recruit-confirm', 'EXECUTE_SELECTED_ACTION', 'SELECTED_ACTION_EXECUTED', 'qidahen-action-payment-confirm', { actionId: 'recruit' }),
-        action('recruit-source', 'SELECT_REGION', 'REGION_SELECTED', 'qidahen-map-region-focus-city-region-15', undefined, { position: 'right', highlightFrame: 'none', tooltipAnchorTarget: 'qidahen-map-region-focus-name', tooltipMaxWidth: 280, allowedTargets: ['city-region-15'], avoidOverlapSelectors: [...PROTECTED_UI, '[data-qidahen-map-candidate-protection="true"]', '[data-qidahen-candidate-object="true"]'] }),
-        action('recruit-troops', SYS, 'SYS_INTERACTION_RESOLVED', 'qidahen-map-region-focus-city-region-15', undefined, {
-            allowedTargets: ['level-2-troops'], highlightFrame: 'none', tooltipAnchorTarget: 'qidahen-recruit-choice-level-2-troops', avoidOverlapSelectors: [...PROTECTED_UI, '[data-testid="qidahen-recruit-selection"]'],
-        }),
-        choice('opening-finish', 'menu', ['finish-slot'], 'qidahen-turn-option-finish-slot'),
-        info('midyear', 'qidahen-wheel-sector-label-wheel-midyear', { position: 'top', tooltipAnchorTarget: 'qidahen-wheel-sector-label-wheel-midyear', avoidOverlapSelectors: WHEEL_ACTION_PROTECTION, highlightFrame: 'none', aiDelayMs: 1000, aiActions: [...emptyTurn('1'), freeMove('2'), response('finish-slot', '2'), response('skip-hand', '2')], autoAdvanceAfterAi: false }),
+        createAnnualFarmTutorialStep(PROTECTED_UI),
+        info('midyear', 'qidahen-wheel-sector-label-wheel-midyear', { position: 'right', tooltipAnchorTarget: 'qidahen-wheel-sector-label-wheel-midyear', avoidOverlapSelectors: PROTECTED_UI, highlightFrame: 'none', aiDelayMs: 1000, aiActions: [...emptyTurn('1'), freeMove('2'), response('finish-slot', '2'), response('skip-hand', '2')], autoAdvanceAfterAi: false }),
         action('hand-limit', SYS, 'SYS_INTERACTION_RESOLVED', 'qidahen-hand-zone', { sourceId: 'qidahen:hand-limit-discard' }, {
             position: 'top', allowedTargets: ['hand-1', 'deck-ming-5', 'deck-ming-6', 'deck-ming-7', 'deck-ming-8', 'deck-ming-9'],
         }),
@@ -111,15 +104,8 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
         choice('battle-finish', 'menu', ['finish-slot'], 'qidahen-turn-option-finish-slot'),
         repeatedOthers('opponent-round', [...emptyTurn('1'), ...emptyTurn('2')], ['midyear'], '重复已经观察的对手免费移动及放弃可选行动；本批没有新季节结算，不额外要求阅读轮到谁的播报。'),
         moveStep('diplomacy-move'),
-        wheelChoice('diplomacy-action', 'diplomacy'),
-        mapChoice('diplomacy-target', 'diplomacy-targets', ['city-region-2']),
-        choice('diplomacy-finish', 'diplomacy-targets', ['finish-diplomacy'], 'qidahen-turn-option-finish-diplomacy'),
-        wheelChoice('hire-action', 'hire'),
-        payChoice('hire-payment', 'hire-payment', ['deck-ming-12']),
-        { ...mapChoice('hire-target', 'hire-target', ['city-region-1']), compactTooltipWidth: 260 },
-        choice('diplomacy-round-finish', 'menu', ['finish-slot'], 'qidahen-turn-option-finish-slot'),
-        choice('save-hand', 'finish-hand', ['skip-hand'], 'qidahen-turn-option-skip-hand'),
-        info('new-year', 'qidahen-wheel-sector-label-wheel-new-year', { position: 'bottom', tooltipAnchorTarget: 'qidahen-wheel-sector-label-wheel-new-year', avoidOverlapSelectors: WHEEL_ACTION_PROTECTION, highlightFrame: 'none', aiDelayMs: 1000, aiActions: [freeMove('1'), response('finish-slot', '1')], autoAdvanceAfterAi: false }),
+        createAnnualDiplomacyTutorialStep(PROTECTED_UI),
+        info('new-year', 'qidahen-wheel-sector-label-wheel-new-year', { position: 'right', tooltipAnchorTarget: 'qidahen-wheel-sector-label-wheel-new-year', avoidOverlapSelectors: PROTECTED_UI, highlightFrame: 'none', aiDelayMs: 1000, aiActions: [freeMove('1'), response('finish-slot', '1')], autoAdvanceAfterAi: false }),
         maintenance('maintain-shanhai', 'maintain'),
         payChoice('maintenance-first-card', 'maintenance-payment', ['deck-ming-13']),
         payChoice('maintenance-second-card', 'maintenance-payment', ['deck-ming-14']),
@@ -132,6 +118,7 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
             position: 'right', tooltipAnchorTarget: 'qidahen-turn-choice',
             avoidOverlapSelectors: PROTECTED_UI,
         }),
+        ...createAnnualChronologyOpponentSteps(),
         createAnnualChronologyPaymentStep(),
         info('new-order', 'qidahen-chronology-zone', { aiActions: [response('mongol-gunchu-ketuji', '1')], autoAdvanceAfterAi: false }),
         choice('year-character', 'year-characters', ['ming-yang-gao'], 'qidahen-turn-option-ming-yang-gao'),
@@ -165,7 +152,7 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
         const anchored = { ...step, highlightTarget: target, tooltipAnchorTarget: handAnchor ?? step.tooltipAnchorTarget,
             // 读手牌时地图属于背景，只有同层手牌、支付控件和常驻HUD参与避让。
             ...(step.highlightTarget === 'qidahen-hand-zone' || step.id === 'upgrade-card'
-                ? { avoidOverlapSelectors: HUD_PROTECTION, tooltipMaxWidth: 380, tooltipArrow: 'anchor' as const } : {}),
+                ? { avoidOverlapSelectors: HUD_PROTECTION, tooltipMaxWidth: step.id === 'upgrade-card' ? 260 : 380, tooltipArrow: 'anchor' as const } : {}),
         };
         const framed = step.highlightTarget === 'qidahen-hand-zone' || step.id === 'finish'
             ? { ...anchored, highlightFrame: 'none' as const } : anchored;

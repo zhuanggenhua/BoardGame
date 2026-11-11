@@ -12,7 +12,6 @@ import { captureSourceIdentity } from './e2e-source-identity.mjs';
 await assertChildProcessSupport('bundle-runner / esbuild watch', { probeEsbuild: true });
 
 const repoRoot = process.cwd();
-const runtimeRoot = process.env.PW_E2E_RUNTIME_CWD?.trim() || repoRoot;
 const args = parseArgs(process.argv.slice(2));
 
 const label = args.label || 'bundle-runner';
@@ -212,7 +211,7 @@ async function restartRuntime(reason) {
         absOutfile,
     ];
     const runtimeChild = spawn(process.execPath, runtimeArgs, withWindowsHide({
-        cwd: runtimeRoot,
+        cwd: repoRoot,
         env: process.env,
         stdio: ['ignore', 'pipe', 'pipe'],
     }));

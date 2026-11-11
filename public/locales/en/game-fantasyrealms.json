@@ -156,5 +156,37 @@
     "tutorial_manifest_invalid": "Tutorial configuration is invalid.",
     "tutorial_command_blocked": "This action is blocked in the tutorial.",
     "tutorial_step_locked": "The current tutorial step cannot be skipped."
+  },
+  "settlement": {
+    "title": "Endgame choices",
+    "wait": "Waiting for {{player}}",
+    "overflow": "Your hand exceeds nine cards. Discard a card that has not been used to draw another card.",
+    "genie": "Genie: choose a card from the draw deck.",
+    "necromancer": "Necromancer: choose an eligible card from the discard area, or skip.",
+    "doppelganger": "Doppelganger: choose a card in your hand to copy, or skip.",
+    "mirage": "Mirage: choose a card to become, or skip.",
+    "shapeshifter": "Shapeshifter: choose a card to become, or skip.",
+    "book": "Book of Changes: choose another card and its new suit, or skip.",
+    "island": "Island: choose a Flood or Flame card to clear its penalty.",
+    "angel": "Angel: choose a card to protect from being blanked.",
+    "fountain": "Fountain of Life: choose an eligible card to add its base strength.",
+    "skip": "Skip",
+    "suit": {
+      "军队": "Army",
+      "神器": "Artifact",
+      "巨兽": "Beast",
+      "烈焰": "Flame",
+      "洪流": "Flood",
+      "土地": "Land",
+      "领袖": "Leader",
+      "武器": "Weapon",
+      "天象": "Weather",
+      "野牌": "Wild",
+      "法师": "Wizard",
+      "建筑": "Building",
+      "局外人": "Outsider",
+      "不死族": "Undead"
+    },
+    "provisional": "Provisional"
   }
 }

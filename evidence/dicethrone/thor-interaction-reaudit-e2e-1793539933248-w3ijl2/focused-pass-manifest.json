@@ -1,5 +1,5 @@
 {
-  "verdict": "PASS",
+  "verdict": "REVISE",
   "scope": "current-user-request",
   "gameId": "dicethrone",
   "evidenceCategory": "independent",
@@ -226,5 +226,7 @@
     "trigger": "user-requested-evidence",
     "viewer": "web",
     "finalPassBeforeOpen": true
-  }
+  },
+  "previousVerdict": "PASS",
+  "invalidationReason": "2026-11-10 用户退回全部索尔交互验收；历史图面结论不再有效，须按旧流程重审。"
 }

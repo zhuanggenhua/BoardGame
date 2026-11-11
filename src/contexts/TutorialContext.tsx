@@ -41,7 +41,7 @@ interface TutorialController {
     next: (reason?: TutorialNextReason) => void;
     previous: () => void;
     close: () => void;
-    consumeAi: (stepId?: string) => void;
+    consumeAi: (stepId?: string, batchId?: string) => void;
     animationComplete: () => void;
     dispatchCommand: (commandType: string, payload?: unknown) => void;
 }
@@ -64,7 +64,7 @@ interface TutorialContextType {
     nextStep: (reason?: TutorialNextReason) => void;
     previousStep: () => void;
     closeTutorial: (scope?: TutorialSessionScope | null) => void;
-    consumeAi: (stepId?: string) => void;
+    consumeAi: (stepId?: string, batchId?: string) => void;
     /** 动画完成回调：通知教程系统动画已播放完毕，可以推进到下一步 */
     animationComplete: () => void;
     bindDispatch: (dispatch: (type: string, payload?: unknown) => void, scope?: TutorialSessionScope | null) => number;
@@ -92,7 +92,7 @@ const buildTutorialController = (dispatch: DispatchFn): TutorialController => {
         next: (reason) => dispatchCommand(TUTORIAL_COMMANDS.NEXT, { reason }),
         previous: () => dispatchCommand(TUTORIAL_COMMANDS.PREVIOUS, {}),
         close: () => dispatchCommand(TUTORIAL_COMMANDS.CLOSE, {}),
-        consumeAi: (stepId) => dispatchCommand(TUTORIAL_COMMANDS.AI_CONSUMED, { stepId }),
+        consumeAi: (stepId, batchId) => dispatchCommand(TUTORIAL_COMMANDS.AI_CONSUMED, { stepId, ...(batchId === undefined ? {} : { batchId }) }),
         animationComplete: () => dispatchCommand(TUTORIAL_COMMANDS.ANIMATION_COMPLETE, {}),
     };
 };
@@ -145,6 +145,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const fallbackTimerRef = useRef<number | undefined>(undefined);
     // AI 动作 timer 与执行代际：防止旧步骤的自动命令在步骤切换后继续派发
     const aiTimerRef = useRef<number | undefined>(undefined);
+    const aiScheduledKeyRef = useRef<string | undefined>(undefined);
     const aiExecutionGenerationRef = useRef(0);
     const latestTutorialStepIdRef = useRef<string | null>(null);
     const latestTutorialStepIndexRef = useRef(-1);
@@ -295,6 +296,12 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         latestTutorialStepIndexRef.current = normalized.active ? normalized.stepIndex : -1;
         const nextStepId = normalized.active ? (normalized.step?.id ?? null) : null;
+        if (normalized.pendingAnimationAdvance && aiTimerRef.current !== undefined) {
+            window.clearTimeout(aiTimerRef.current);
+            aiTimerRef.current = undefined;
+            if (aiScheduledKeyRef.current) executedAiStepsRef.current.delete(aiScheduledKeyRef.current);
+            aiScheduledKeyRef.current = undefined;
+        }
         if (!normalized.active || latestTutorialStepIdRef.current !== nextStepId) {
             aiExecutionGenerationRef.current += 1;
             if (aiTimerRef.current !== undefined) {
@@ -412,8 +419,8 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         activateTutorialSession(null);
     }, [activateTutorialSession]);
 
-    const consumeAi = useCallback((stepId?: string) => {
-        controllerRef.current?.consumeAi(stepId);
+    const consumeAi = useCallback((stepId?: string, batchId?: string) => {
+        controllerRef.current?.consumeAi(stepId, batchId);
     }, []);
 
     const animationComplete = useCallback(() => {
@@ -423,13 +430,15 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // AI 动作执行 effect
     // 使用 ref 管理 timer，避免 tutorial 对象频繁变化导致 timer 被 React effect cleanup 取消
     useEffect(() => {
-        if (!tutorial.active || !tutorial.step || !hasAiActions(tutorial.step)) return;
+        if (!tutorial.active || !tutorial.step || !hasAiActions(tutorial.step) || tutorial.pendingAnimationAdvance) return;
         if (!isControllerReady) return;
         if (!isBoardMounted) return;
 
         const stepId = tutorial.step.id;
-        if (executedAiStepsRef.current.has(stepId)) return;
-        executedAiStepsRef.current.add(stepId);
+        const batchId = tutorial.step.aiBatchId;
+        const executionKey = batchId === undefined ? stepId : JSON.stringify([stepId, batchId]);
+        if (executedAiStepsRef.current.has(executionKey)) return;
+        executedAiStepsRef.current.add(executionKey);
 
         // 缓存当前步骤的 aiActions，避免闭包引用被清理后的状态
         const aiActions = tutorial.step.aiActions ? [...tutorial.step.aiActions] : [];
@@ -448,6 +457,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         aiTimerRef.current = window.setTimeout(() => {
             aiTimerRef.current = undefined;
+            aiScheduledKeyRef.current = undefined;
             const controller = controllerRef.current;
             if (!controller) return;
             const executionGeneration = aiExecutionGenerationRef.current + 1;
@@ -512,9 +522,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // 始终调用 consumeAi 清除 aiActions（防止 effect 重复触发）。
                 // 自动 AI 步骤是否推进下一步由 TutorialSystem 在同一命令里裁定，
                 // 避免 React 再发一个 NEXT 命令时读到过期本地状态。
-                controller.consumeAi(stepId);
+                controller.consumeAi(stepId, batchId);
             })();
         }, delay);
+        aiScheduledKeyRef.current = executionKey;
 
         // 不返回 cleanup 函数 — timer 通过 aiTimerRef 管理
         // 只在新步骤的 AI actions 需要执行时才清除旧 timer

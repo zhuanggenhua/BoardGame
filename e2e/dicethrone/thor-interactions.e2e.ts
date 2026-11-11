@@ -61,7 +61,7 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await sky.click();
  await page.locator('[data-tutorial-id="advance-phase-button"]').click();
  await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
- await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择要一起重掷的骰子，或确认保留当前结果');
+ await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（0/5）');
  await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.locator('[data-testid^="die-button-"]')).toHaveCount(5);
  await expect(page.getByTestId('dice-reroll-selected-group')).toHaveCount(0);
@@ -79,7 +79,7 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await expect(page.getByText('重置所选',{exact:true})).toHaveCount(0);
  await expect(settleBonusDice).toHaveText('确认');
  await expect(settleBonusDice).toHaveAttribute('data-tutorial-id','dice-confirm-button');
- await expect(page.getByTestId('dice-interaction-hint')).toHaveText('已选择2颗骰子，点击重掷；也可确认保留当前结果');
+ await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（2/5）');
  await expectDiceHintSurface(page,'dice-tray-left-center');
  await shot(page,info,'07-使用原整组重掷动作提交两颗所选骰子');
  await rerollSelected.click();
@@ -139,7 +139,7 @@ test('索尔奥丁之力II可用原确认入口跳过额外重掷', async ({ pag
  await page.locator('[data-tutorial-id="advance-phase-button"]').click();
 
  const confirm = page.getByTestId('dice-bonus-settlement-confirm-button');
- await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要一起重掷的骰子');
+ await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择重投骰子（0/5）');
  await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'false');
  await expect(confirm).toHaveText('确认');

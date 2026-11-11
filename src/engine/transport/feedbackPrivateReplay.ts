@@ -1,4 +1,5 @@
 import { gzipSync } from 'node:zlib';
+import { loadavg } from 'node:os';
 import type { MatchState } from '../types';
 import { deliverFeedbackWithRetry, FeedbackDeliveryHttpError } from '../../lib/feedback/feedbackDelivery';
 
@@ -32,6 +33,8 @@ export function capturePrivateFeedbackReplay(
     trigger?: PrivateFeedbackReplayTrigger,
 ): { data?: string; error?: string } {
     try {
+        const memory = process.memoryUsage();
+        const cpu = process.cpuUsage();
         const archive = JSON.stringify({
             schemaVersion: 1,
             matchId: match.matchID,
@@ -39,6 +42,16 @@ export function capturePrivateFeedbackReplay(
             stateId: match.stateID,
             randomSeed: match.randomSeed,
             randomCursor: match.getRandomCursor?.(),
+            // 私密现场保存采集时游戏服务进程指标；累计 CPU 不是瞬时 CPU 使用率。
+            serverMetrics: {
+                capturedAt: new Date().toISOString(),
+                processUptimeSeconds: process.uptime(),
+                processCpuUserMicros: cpu.user,
+                processCpuSystemMicros: cpu.system,
+                processRssBytes: memory.rss,
+                processHeapUsedBytes: memory.heapUsed,
+                systemLoadAverage: loadavg(),
+            },
             state: match.state,
             ...(trigger ? { trigger } : {}),
         });

@@ -12,7 +12,8 @@ const EXPECTED_SUIT_COUNTS = {
     巨兽: 5,
     烈焰: 5,
     洪流: 5,
-    土地: 5,
+    土地: 4,
+    建筑: 1,
     领袖: 5,
     武器: 5,
     天象: 5,
@@ -21,7 +22,7 @@ const EXPECTED_SUIT_COUNTS = {
 } as const;
 
 describe('fantasyrealms official card catalog', () => {
-    it('官方基础卡表包含 53 张唯一卡牌，且花色分布符合真相源', () => {
+    it('基础牌组包含 53 张唯一卡牌，花色按实际牌图而非历史英文表计算', () => {
         expect(OFFICIAL_FANTASY_REALMS_CARDS).toHaveLength(53);
 
         const ids = OFFICIAL_FANTASY_REALMS_CARDS.map((card) => card.id);
@@ -39,7 +40,7 @@ describe('fantasyrealms official card catalog', () => {
         expect(OFFICIAL_FANTASY_REALMS_CARDS.every((card) => card.textZh.trim().length > 0)).toBe(true);
     });
 
-    it('官方卡表的 id 与花色前缀保持一致', () => {
+    it('历史卡牌 ID 保持稳定，钟塔花色遵循实际牌图', () => {
         const suitPrefixes: Record<string, string> = {
             军队: 'army-',
             神器: 'artifact-',
@@ -47,6 +48,7 @@ describe('fantasyrealms official card catalog', () => {
             烈焰: 'flame-',
             洪流: 'flood-',
             土地: 'land-',
+            建筑: 'land-',
             领袖: 'leader-',
             武器: 'weapon-',
             天象: 'weather-',
@@ -54,6 +56,7 @@ describe('fantasyrealms official card catalog', () => {
             法师: 'wizard-',
         };
 
+        expect(OFFICIAL_FANTASY_REALMS_CARDS.find((card) => card.id === 'land-bell-tower')?.suit).toBe('建筑');
         OFFICIAL_FANTASY_REALMS_CARDS.forEach((card) => {
             expect(card.id.startsWith(suitPrefixes[card.suit])).toBe(true);
         });
@@ -105,7 +108,7 @@ describe('fantasyrealms official card catalog', () => {
         expect(warship).toBeDefined();
         expect(getFantasyRealmsCardRuleText(candle!, 'zh-CN')).toContain('奖励：与变化之书');
         expect(getFantasyRealmsCardRuleText(candle!, 'en')).toContain('Bonus: +100');
-        expect(getFantasyRealmsCardRuleText(warship!, 'zh-CN')).toContain('惩罚：若手中没有至少一张洪流牌');
+        expect(getFantasyRealmsCardRuleText(warship!, 'zh-CN')).toContain('惩罚：若手中没有至少一张洪水牌');
         expect(getFantasyRealmsCardRuleText(warship!, 'en')).toContain('Penalty: Blanked unless with at least one Flood');
     });
 });

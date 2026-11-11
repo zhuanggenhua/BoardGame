@@ -511,15 +511,15 @@ describe('mage-wars mage equipment', () => {
                 payload: expect.objectContaining({
                     attackerId: '1',
                     defenderId: '0',
-                    diceResults: [3, 3, 3],
-                    baseDamage: 9,
+                    diceResults: [1, 1, 1],
+                    baseDamage: 3,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '0',
-                    actualDamage: 8,
+                    actualDamage: 2,
                     sourceAbilityId: 'mage-basic-melee',
                     breakdown: expect.objectContaining({
                         steps: expect.arrayContaining([
@@ -527,14 +527,14 @@ describe('mage-wars mage equipment', () => {
                                 sourceId: 'mage-wars-mage-equipment-armor',
                                 sourceName: '装备护甲',
                                 value: -1,
-                                runningTotal: 8,
+                                runningTotal: 2,
                             }),
                         ]),
                     }),
                 }),
             }),
         ]));
-        expect(attacked.state.core.players['0'].damage).toBe(8);
+        expect(attacked.state.core.players['0'].damage).toBe(2);
     });
 
     it('applies mage equipment fire resistance to attack spells and then reduces damage with armor', () => {
@@ -542,7 +542,7 @@ describe('mage-wars mage equipment', () => {
         const attackSpellId = 1702;
         const statusRandom: RandomFn = {
             ...fixedRandom,
-            d: (sides: number) => (sides === 12 ? 11 : 3),
+            d: (sides: number) => (sides === 12 ? 11 : 5),
         };
         const planningState = setupState('planning');
         const wizardPlanned = runCommand({
@@ -597,17 +597,17 @@ describe('mage-wars mage equipment', () => {
                     spellCardId: attackSpellId,
                     sourceAbilityId: 'mw.spell.1702',
                     targetPlayerId: '0',
-                    diceResults: [3, 3],
+                    diceResults: [2, 2],
                     rawEffectDieResult: 11,
                     effectDieResult: 9,
-                    baseDamage: 6,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '0',
-                    actualDamage: 4,
+                    actualDamage: 2,
                     sourceAbilityId: 'mw.spell.1702',
                     breakdown: expect.objectContaining({
                         steps: expect.arrayContaining([
@@ -615,7 +615,7 @@ describe('mage-wars mage equipment', () => {
                                 sourceId: 'mage-wars-mage-equipment-armor',
                                 sourceName: '装备护甲',
                                 value: -2,
-                                runningTotal: 4,
+                                runningTotal: 2,
                             }),
                         ]),
                     }),
@@ -623,7 +623,7 @@ describe('mage-wars mage equipment', () => {
             }),
         ]));
         expect(attacked.state.core.players['0']).toMatchObject({
-            damage: 4,
+            damage: 2,
             statusTokens: {
                 [STATUS_TOKEN_IDS.BURN]: 1,
             },
@@ -665,7 +665,7 @@ describe('mage-wars mage equipment', () => {
                 attackProfileId: 'attack-0',
                 targetPlayerId: '1',
             },
-        });
+        }, { ...fixedRandom, d: (sides) => sides === 6 ? 5 : 3 });
 
         expect(attacked.success).toBe(true);
         expect(attacked.events).toEqual(expect.arrayContaining([
@@ -674,15 +674,15 @@ describe('mage-wars mage equipment', () => {
                 payload: expect.objectContaining({
                     attackerObjectId: attacker.id,
                     targetPlayerId: '1',
-                    diceResults: [3],
-                    baseDamage: 3,
+                    diceResults: [2],
+                    baseDamage: 2,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: '1',
-                    actualDamage: 2,
+                    actualDamage: 1,
                     sourceAbilityId: 'mw.object.2801.attack-0',
                     breakdown: expect.objectContaining({
                         steps: expect.arrayContaining([
@@ -690,14 +690,14 @@ describe('mage-wars mage equipment', () => {
                                 sourceId: 'mage-wars-mage-equipment-armor',
                                 sourceName: '装备护甲',
                                 value: -1,
-                                runningTotal: 2,
+                                runningTotal: 1,
                             }),
                         ]),
                     }),
                 }),
             }),
         ]));
-        expect(attacked.state.core.players['1'].damage).toBe(2);
+        expect(attacked.state.core.players['1'].damage).toBe(1);
     });
 
     it('casts Arcane Staff as mage-attached weapon equipment and resolves its melee mana drain attack', () => {
@@ -762,8 +762,8 @@ describe('mage-wars mage equipment', () => {
                     attackProfileId: 'attack-0',
                     attackName: '奥术击打',
                     targetPlayerId: '1',
-                    diceResults: [3, 3, 3, 3],
-                    baseDamage: 12,
+                    diceResults: [1, 1, 1, 1],
+                    baseDamage: 4,
                     actionCost: 'normal',
                 }),
             }),
@@ -782,7 +782,7 @@ describe('mage-wars mage equipment', () => {
         expect(attacked.state.core.players['0'].actionReady).toBe(false);
         expect(attacked.state.core.objects[equipment!.id].actionReady).toBe(false);
         expect(attacked.state.core.players['1']).toMatchObject({
-            damage: 12,
+            damage: 4,
             mana: equipped.state.core.players['1'].mana - 1,
         });
         expect(actionLogKinds(attacked.state)).toEqual(expect.arrayContaining([
@@ -861,8 +861,8 @@ describe('mage-wars mage equipment', () => {
                     attackProfileId: 'attack-1',
                     attackName: '奥术爆弹',
                     targetPlayerId: '1',
-                    diceResults: [3, 3, 3],
-                    baseDamage: 9,
+                    diceResults: [1, 1, 1],
+                    baseDamage: 3,
                 }),
             }),
             expect.objectContaining({
@@ -946,27 +946,18 @@ describe('mage-wars mage equipment', () => {
                     attackProfileId: 'attack-0',
                     attackName: '天界神击',
                     targetObjectId: stunnedTarget.id,
-                    diceResults: [3, 3, 3, 3],
-                    baseDamage: 12,
+                    diceResults: [1, 1, 1, 1, 1, 1],
+                    baseDamage: 6,
                     rawEffectDieResult: 11,
-                    effectDieResult: 11,
+                    effectDieResult: 13,
                 }),
             }),
             expect.objectContaining({
                 type: 'DAMAGE_DEALT',
                 payload: expect.objectContaining({
                     targetId: stunnedTarget.id,
-                    actualDamage: 14,
+                    actualDamage: 6,
                     sourceAbilityId: 'mw.object.3706.attack-0',
-                    breakdown: expect.objectContaining({
-                        steps: expect.arrayContaining([
-                            expect.objectContaining({
-                                sourceId: 'mage-wars-nonliving-bonus',
-                                sourceName: '对抗非活体生物',
-                                value: 2,
-                            }),
-                        ]),
-                    }),
                 }),
             }),
             expect.objectContaining({
@@ -1074,10 +1065,10 @@ describe('mage-wars mage equipment', () => {
                     attackProfileId: 'attack-0',
                     attackName: '炽热鞭笞',
                     targetObjectId: flyingTarget.id,
-                    diceResults: [3, 3, 3, 3],
+                    diceResults: [1, 1, 1, 1],
                     rawEffectDieResult: 11,
                     effectDieResult: 11,
-                    baseDamage: 12,
+                    baseDamage: 4,
                 }),
             }),
             expect.objectContaining({
@@ -1091,7 +1082,7 @@ describe('mage-wars mage equipment', () => {
                 }),
             }),
         ]));
-        expect(attacked.state.core.objects[flyingTarget.id].damage).toBe(12);
+        expect(attacked.state.core.objects[flyingTarget.id].damage).toBe(4);
         expect(attacked.state.core.objects[flyingTarget.id].statusTokens[STATUS_TOKEN_IDS.BURN]).toBe(2);
     });
 
@@ -1511,7 +1502,7 @@ describe('mage-wars mage equipment', () => {
             mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
             manaCost: 3,
             attackManaCost: 5,
-            expectedDice: [3, 3, 3],
+            expectedDice: [1, 1, 1],
             rawEffectDieResult: 3,
             effectDieResult: 4,
             statusTokenId: STATUS_TOKEN_IDS.DAZE,
@@ -1522,7 +1513,7 @@ describe('mage-wars mage equipment', () => {
             mageId: MAGE_IDS.WARLOCK_APPRENTICE,
             manaCost: 3,
             attackManaCost: 5,
-            expectedDice: [3, 3, 3, 3, 3],
+            expectedDice: [1, 1, 1, 1, 1],
             rawEffectDieResult: 6,
             effectDieResult: 7,
             statusTokenId: STATUS_TOKEN_IDS.BURN,

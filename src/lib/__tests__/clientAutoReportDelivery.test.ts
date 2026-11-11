@@ -27,6 +27,29 @@ describe('自动反馈投递', () => {
         delete (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
     });
 
+    it('CSS 预加载失败时附带该同源资源的可用响应信息', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.spyOn(performance, 'getEntriesByName').mockReturnValue([{ duration: 42, transferSize: 132, responseStatus: 404 }] as any);
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        await reportClientAutoFeedbackOnce('css-diagnostic', { ...payload, errorMessage: 'Unable to preload CSS for /assets/HomeEntry-abc.css' });
+        const body = JSON.parse(feedbackCalls(fetchMock)[0][1].body);
+        expect(body.clientContext.failedAsset).toEqual(expect.objectContaining({ path: '/assets/HomeEntry-abc.css', responseStatus: 404, durationMs: 42, transferSize: 132 }));
+        vi.restoreAllMocks();
+    });
+
+    it('CSS 性能条目不可读时仍提交原始错误', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.spyOn(performance, 'getEntriesByName').mockImplementation(() => { throw new Error('unavailable'); });
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        await reportClientAutoFeedbackOnce('css-diagnostic-unavailable', { ...payload, errorMessage: 'Unable to preload CSS for /assets/games-abc.css' });
+        const body = JSON.parse(feedbackCalls(fetchMock)[0][1].body);
+        expect(body.clientContext.failedAsset.path).toBe('/assets/games-abc.css');
+        expect(body.clientContext.failedAsset.responseStatus).toBeUndefined();
+        vi.restoreAllMocks();
+    });
+
     it('首次请求返回 HTTP 失败时自动重发同一份现场，成功后才去重', async () => {
         let attempts = 0;
         const fetchMock = vi.fn(async (url: unknown) => url === '/feedback' && attempts++ === 0

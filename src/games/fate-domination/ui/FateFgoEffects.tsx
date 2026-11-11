@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { UI_Z_INDEX } from '../../../core/ui/zIndex';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import { useEventStreamCursor } from '../../../engine/hooks/useEventStreamCursor';
 import { useEventStreamRollback } from '../../../engine/hooks/EventStreamRollbackContext';
@@ -60,7 +61,7 @@ function NobleMotion({ onComplete }: { onComplete: () => void }) {
       return () => { alive = false; };
     }
   }, [onComplete]);
-  return <div ref={host} className="fd-fgo-noble" data-testid="fate-fgo-noble" aria-hidden="true" />;
+  return <div ref={host} className="fd-fgo-noble" style={{ zIndex: UI_Z_INDEX.cinematic }} data-testid="fate-fgo-noble" aria-hidden="true" />;
 }
 
 export function FateFgoEffects({ state, viewerId, battleAnchors }: {
@@ -115,5 +116,5 @@ export function FateFgoEffects({ state, viewerId, battleAnchors }: {
   if (active.kind === 'battle') return battleAnchor ? createPortal(
     <BattleMotion key={active.id} sequence={active} onComplete={finish} />, battleAnchor,
   ) : null;
-  return <NobleMotion key={active.id} onComplete={finish} />;
+  return createPortal(<NobleMotion key={active.id} onComplete={finish} />, document.body);
 }
