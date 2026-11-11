@@ -118,7 +118,7 @@ describe('年度教程外交与雇佣', () => {
         const dispatch = vi.fn();
         const menu = renderHook(() => useQidahenTurnInput(match.state, '0', dispatch, false));
         act(() => menu.result.current.choose('hire'));
-        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', expect.objectContaining({ optionId: 'hire' }));
+        expect(dispatch).toHaveBeenCalledWith(createRespondToPromptCommand(match.state, { playerId: '0', optionId: 'hire' }).type, expect.objectContaining({ optionId: 'hire' }));
         expect(dispatch).not.toHaveBeenCalledWith('SYS_TUTORIAL_RESTART_STEP', expect.anything());
         menu.unmount();
 
@@ -128,7 +128,7 @@ describe('年度教程外交与雇佣', () => {
         const map = renderHook(() => useQidahenTurnInput(match.state, '0', dispatch, false));
         act(() => map.result.current.toggle(regionId));
         act(() => map.result.current.confirm());
-        expect(dispatch).toHaveBeenLastCalledWith('SYS_INTERACTION_RESPOND', expect.objectContaining({ optionId: regionId }));
+        expect(dispatch).toHaveBeenLastCalledWith(createRespondToPromptCommand(match.state, { playerId: '0', optionId: regionId }).type, expect.objectContaining({ optionId: regionId }));
         expect(dispatch.mock.calls.some(call => call[0] === 'SYS_TUTORIAL_RESTART_STEP')).toBe(false);
         map.unmount();
         match.choose(regionId);
