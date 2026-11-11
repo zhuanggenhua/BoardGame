@@ -111,6 +111,8 @@
       "screenshotAlt": "Screenshot"
     },
     "detail": {
+      "failedAsset": "Asset request: {{path}} / HTTP {{status}} / {{duration}} ms / {{size}} B",
+      "boardPlayers": "Board players: {{count}} / player ID present {{playerIdPresent}} / player exists {{playerExists}}",
       "title": "Details",
       "emptyTitle": "Select feedback to view details",
       "emptyDescription": "Use the dense list on the left for scanning and the right panel for full content, logs, and snapshots.",

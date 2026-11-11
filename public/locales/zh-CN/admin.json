@@ -111,6 +111,8 @@
       "screenshotAlt": "截图"
     },
     "detail": {
+      "failedAsset": "资源请求：{{path}} / HTTP {{status}} / {{duration}} ms / {{size}} B",
+      "boardPlayers": "棋盘玩家摘要：{{count}} / 玩家 ID 存在 {{playerIdPresent}} / 玩家存在 {{playerExists}}",
       "title": "详情",
       "emptyTitle": "选择一条反馈查看详情",
       "emptyDescription": "左侧列表用于高密度浏览，右侧显示完整内容、日志和状态快照。",
