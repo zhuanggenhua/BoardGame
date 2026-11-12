@@ -67,7 +67,7 @@ full 额外选项:
 说明:
   - OTA 包版本在发布时决定；可通过 --version/--display-version/--product-version 显式指定
   - --expected-base-version 只是可选 package.json 断言，不再作为 OTA 或服务器部署门禁
-  - 所有 OTA 都强制更新；--no-force-update 已禁用
+  - Android OTA 使用非强制更新，发布前须验证旧客户端安全过渡
   - 正式 Android OTA 必须写入 latest.json，禁止跳过更新发现入口
   - OTA 客户端按 bundle version 这个内部游标判断新旧；publishedAt 只用于审计和展示
   - OTA / native / full 可使用 --bump 自动递增版本后再发布
@@ -263,12 +263,6 @@ const applyAndroidBackendDefaults = () => {
     logStep(`Android 后端地址: ${backendUrl}`);
 };
 
-const ensureForcedOta = (sourceArgs = args) => {
-    if (hasFlag('no-force-update', sourceArgs)) {
-        throw new Error('所有 OTA 已强制更新，禁止使用 --no-force-update。');
-    }
-};
-
 const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
@@ -295,7 +289,7 @@ const buildNativeArgs = (sourceArgs = args) => collectPassthroughArgs(
         'notes',
         'apk',
     ]),
-    new Set(['dry-run', 'skip-latest', 'no-force-update']),
+    new Set(['dry-run', 'skip-latest', 'no-force-update', 'force-update']),
     sourceArgs,
 );
 
@@ -351,7 +345,6 @@ const describeOtaProductVersion = (fallbackVersion, sourceArgs = args) => (
 const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
-    ensureForcedOta();
     applyAndroidBackendDefaults();
     applyOtaClientBuildDefaults();
     await runDoctor();
@@ -393,7 +386,6 @@ const shouldRunPackagesInFull = () => hasFlag('with-packages', args) || Boolean(
 const runFullRelease = async () => {
     const nativeInfo = prepareNativeVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
-    ensureForcedOta();
     applyAndroidBackendDefaults();
     applyOtaClientBuildDefaults();
     await runDoctor();

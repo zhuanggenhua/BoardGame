@@ -119,9 +119,11 @@ export const resolveAndroidOtaVersionBase = ({
 
 export const resolveOtaForceUpdateOptions = ({
     noForceUpdateFlag = false,
+    optionalUpdate = false,
     forceUpdateTitle = '',
     forceUpdateMessage = '',
 } = {}) => {
+    if (optionalUpdate) return { forceUpdate: false, forceUpdateTitle: '', forceUpdateMessage: '' };
     if (noForceUpdateFlag) {
         throw new Error('所有 OTA 已强制更新，禁止使用 --no-force-update。');
     }

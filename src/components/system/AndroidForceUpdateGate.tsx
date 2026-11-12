@@ -1,4 +1,4 @@
-import { RefreshCw, X } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../core';
 import type { AndroidForceUpdateState } from '../../lib/mobile/androidLiveUpdates';
@@ -101,14 +101,14 @@ export const AndroidForceUpdateGate = ({
                 <section className={isBlocking
                     ? 'pointer-events-auto relative max-h-[calc(100dvh-3rem)] w-full max-w-[24rem] overflow-y-auto rounded-[18px] border border-amber-200/15 bg-[#161008]/92 p-6 text-center shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-md'
                     : 'pointer-events-auto relative max-h-[min(70dvh,32rem)] w-full max-w-[34rem] overflow-y-auto rounded-[18px] border border-amber-200/15 bg-[#161008]/95 p-4 text-center shadow-[0_18px_48px_rgba(0,0,0,0.3)] backdrop-blur-md'}>
-                    <button
+                    {state.phase !== 'applying' && <button
                         type="button"
                         onClick={onDismiss}
                         aria-label={t('ota.forceUpdate.closeAction')}
-                        className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-amber-100/60 transition-colors hover:bg-amber-50/10 hover:text-amber-50"
+                        className="absolute right-2 top-2 inline-flex min-h-11 items-center justify-center rounded-full px-3 text-sm text-amber-100/80 transition-colors hover:bg-amber-50/10 hover:text-amber-50"
                     >
-                        <X size={18} />
-                    </button>
+                        {t('common:cancel')}
+                    </button>}
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-amber-300/20 bg-amber-100/5">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-amber-200/20 border-t-amber-300" />
                     </div>
@@ -122,6 +122,7 @@ export const AndroidForceUpdateGate = ({
                     <p className="mt-3 text-sm leading-6 text-amber-100/75">
                         {description}
                     </p>
+                    {state.phase !== 'applying' && <p className="mt-2 text-xs text-amber-100/60">{t('ota.forceUpdate.cancelHint')}</p>}
 
                     {(displayVersion || state.currentNativeVersion || state.requiredNativeVersion) && (
                         <div className="mt-5 rounded-2xl border border-amber-200/12 bg-black/20 px-4 py-3 text-left text-xs text-amber-100/70">

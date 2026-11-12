@@ -1,6 +1,7 @@
 import { logMobileRuntime, logMobileRuntimeCritical } from './mobileRuntimeDebug';
 import type { NativeAndroidRuntimeDiagnostics } from './androidRuntime';
 import { getNativeMobileRuntimeDiagnostics } from './mobileRuntime';
+import { canActivateMobileUpdate } from './updateActivationSafety';
 
 type PluginListenerHandle = {
     remove(): Promise<void>;
@@ -136,7 +137,7 @@ type AndroidOtaManifestReadResult =
     | { status: 'error'; reason: string };
 
 export type AndroidLiveUpdateResult =
-    | { status: 'disabled' | 'not-native' | 'up-to-date' }
+    | { status: 'disabled' | 'not-native' | 'up-to-date' | 'cancelled' }
     | { status: 'incompatible'; version: string; reason: string; requiredNativeVersion?: string }
     | { status: 'queued'; version: string; source: 'downloaded' | 'cached'; mode: 'background' | 'immediate' }
     | { status: 'error'; reason: string };
@@ -207,6 +208,14 @@ let updaterLoader: Promise<CapacitorUpdaterModule | null> | null = null;
 let notifyAppReadyPromise: Promise<void> | null = null;
 let backgroundUpdatePromise: Promise<AndroidLiveUpdateResult> | null = null;
 let backgroundUpdatePromiseMode: AndroidLiveUpdateApplyMode | null = null;
+let updateAttempt = 0;
+/** 取消本次操作的后续激活；原生下载不支持中断时允许其完成但不应用。 */
+export const cancelAndroidLiveUpdateCheck = () => {
+    updateAttempt += 1;
+    backgroundUpdatePromise = null;
+    backgroundUpdatePromiseMode = null;
+    clearImmediateActivityPhase();
+};
 let listenerRegistrationPromise: Promise<PluginListenerHandle[] | null> | null = null;
 const liveUpdateRequestListeners = new Set<(request: {
     interactive?: boolean;
@@ -832,17 +841,6 @@ export const readAndroidLiveUpdateSnapshot = async (
     return snapshot;
 };
 
-const queueDownloadedBundle = async (
-    updater: CapacitorUpdaterModule['CapacitorUpdater'],
-    bundleId: string,
-) => {
-    await updater.next({ id: bundleId });
-    await updater.setMultiDelay({
-        // Capgo 的 background delay 需要显式毫秒值；传空值会导致“已下载但切后台不生效”的假象。
-        delayConditions: [{ kind: 'background', value: '0' }],
-    });
-};
-
 const applyBundleImmediately = async (
     updater: CapacitorUpdaterModule['CapacitorUpdater'],
     bundleId: string,
@@ -1078,6 +1076,8 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
         || (requestedApplyMode === 'immediate' && backgroundUpdatePromiseMode === 'background');
 
     if (shouldStartNewRun) {
+        const attempt = ++updateAttempt;
+        const cancelled = () => attempt !== updateAttempt;
         const runPromise = (async () => {
             const { onForceStateChange } = options;
             const applyMode = requestedApplyMode;
@@ -1148,6 +1148,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
             const downloadTimeoutMs = resolveDownloadTimeoutMs(config.appReadyTimeoutMs);
 
             const updaterModule = await loadUpdater();
+            if (cancelled()) return { status: 'cancelled' } as const;
             if (!updaterModule) {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
@@ -1168,6 +1169,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 config.manifestUrls,
                 Math.max(DEFAULT_MANIFEST_TIMEOUT_MS, config.appReadyTimeoutMs),
             );
+            if (cancelled()) return { status: 'cancelled' } as const;
             if (manifestResult.status === 'missing') {
                 if (applyMode === 'immediate') {
                     clearImmediateActivityPhase();
@@ -1230,7 +1232,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
             const manifestDisplayVersion = getManifestDisplayVersion(manifest);
 
             const isForceUpdate = manifest.forceUpdate === true;
-            const resolvedApplyMode = isForceUpdate ? 'immediate' : applyMode;
+            const resolvedApplyMode = nativeDiagnostics.nativeIos && isForceUpdate ? 'immediate' : applyMode;
 
             try {
                 const { CapacitorUpdater } = updaterModule;
@@ -1239,6 +1241,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     nativeOperationTimeoutMs,
                     `OTA 校验超时：读取当前 bundle 超过 ${nativeOperationTimeoutMs}ms`,
                 );
+                if (cancelled()) return { status: 'cancelled' } as const;
                 emitCriticalOtaLog('current-bundle-read', {
                     nativeVersion: current.native,
                     currentBundleVersion: current.bundle.version,
@@ -1295,7 +1298,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         reason: compatibility.reason,
                         compatible: false,
                     });
-                    if (isForceUpdate) {
+                    if (resolvedApplyMode === 'immediate') {
                         emitForceState(onForceStateChange, {
                             phase: 'native-update-required',
                             blocking: true,
@@ -1365,7 +1368,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         displayVersion: manifestDisplayVersion,
                         releaseNotes: manifest.notes,
                         title: '发现新版本',
-                        message: '正在后台准备更新，完成后会自动切换。',
+                        message: '正在后台准备更新，下次启动时生效。',
                     });
                 }
 
@@ -1377,6 +1380,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                 const cachedBundle = bundleList.bundles.find(
                     (bundle) => bundle.version === manifest.version && isBundleReadyForActivation(bundle.status),
                 );
+                if (cancelled()) return { status: 'cancelled' } as const;
                 if (cachedBundle) {
                     emitCriticalOtaLog('cached-bundle-hit', {
                         bundleId: cachedBundle.id,
@@ -1393,7 +1397,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     logMobileRuntime('OTA', 'cached-bundle-hit', {
                         cachedBundle,
                     });
-                    if (resolvedApplyMode === 'immediate') {
+                    if (canActivateMobileUpdate()) {
                         setImmediateActivityPhase('applying', {
                             version: manifest.version,
                             displayVersion: manifestDisplayVersion,
@@ -1428,7 +1432,8 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         } as const;
                     }
 
-                    await queueDownloadedBundle(CapacitorUpdater, cachedBundle.id);
+                    if (cancelled()) return { status: 'cancelled' } as const;
+                    if (resolvedApplyMode === 'immediate') clearImmediateActivityPhase();
                     emitCriticalOtaLog('cached-bundle-queued', {
                         bundleId: cachedBundle.id,
                         version: manifest.version,
@@ -1477,7 +1482,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                             displayVersion: manifestDisplayVersion,
                             releaseNotes: manifest.notes,
                             title: '正在后台下载更新',
-                            message: '更新会在后台继续，完成后自动切换。',
+                            message: '更新会在后台继续，下次启动时生效。',
                         });
                     }
 
@@ -1506,6 +1511,7 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         downloadTimeoutMs,
                         `OTA 下载超时：超过 ${downloadTimeoutMs}ms 未完成 bundle 下载`,
                     );
+                    if (cancelled()) return { status: 'cancelled' } as const;
                     emitCriticalOtaLog('download-finished', {
                         downloadedBundle,
                     });
@@ -1520,8 +1526,9 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     });
 
                     await removeListenerSafely(downloadHandle);
+                    if (cancelled()) return { status: 'cancelled' } as const;
 
-                    if (resolvedApplyMode === 'immediate') {
+                    if (resolvedApplyMode === 'immediate' && canActivateMobileUpdate()) {
                         setImmediateActivityPhase('applying', {
                             version: manifest.version,
                             displayVersion: manifestDisplayVersion,
@@ -1560,7 +1567,8 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         } as const;
                     }
 
-                    await queueDownloadedBundle(CapacitorUpdater, downloadedBundle.id);
+                    if (cancelled()) return { status: 'cancelled' } as const;
+                    if (resolvedApplyMode === 'immediate') clearImmediateActivityPhase();
                     emitCriticalOtaLog('downloaded-bundle-queued', {
                         bundleId: downloadedBundle.id,
                         version: manifest.version,
@@ -1580,13 +1588,14 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                         status: 'queued',
                         version: manifest.version,
                         source: 'downloaded',
-                        mode: resolvedApplyMode,
+                        mode: 'background',
                     } as const;
                 } catch (error) {
                     await removeListenerSafely(downloadHandle);
                     throw error;
                 }
             } catch (error) {
+                if (cancelled()) return { status: 'cancelled' } as const;
                 if (resolvedApplyMode === 'immediate') {
                     clearImmediateActivityPhase();
                 }

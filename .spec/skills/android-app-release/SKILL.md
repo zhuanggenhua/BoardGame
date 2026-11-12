@@ -41,7 +41,7 @@ description: "BoardGame Android 打包、上传、发布和验包流程。用于
 - Android native 自动更新比较 `versionCode`；旧设备不会把更低 versionCode 当更新。展示版本和原生递增版本码必须分开处理。
 - OTA 发布真相源必须是已推送 git ref；本地无关脏改不阻塞指定 ref 的 OTA，但不得混入本次发布。
 - 服务器部署版本、OTA 包版本、商业产品版本和原生壳版本必须分开：服务器看 git ref / 镜像，OTA 在上传时生成或显式传版本，商业产品版本只在正式产品发布时调整，原生壳版本只在 native 发布时递增。
-- Android 所有 OTA channel 必须 `forceUpdate: true`；`--no-force-update` 或等价关闭入口必须拒绝。
+- 更新时机与旧客户端安全过渡按 [`update-mobile-safe-update-flow`](../../../openspec/changes/update-mobile-safe-update-flow/proposal.md) 执行；未证明旧客户端对局不受影响前不得切换生产更新入口。
 - OTA 清单读取失败不得静默当作“没有更新”；网络、CORS、超时、非 2xx、内容类型错误、JSON 解析失败都必须显式暴露。
 - Docker 镜像构建、Android stable OTA、native workflow 和部署整步上限统一按 30 分钟处理；超时必须失败，不得后台假卡死。
 

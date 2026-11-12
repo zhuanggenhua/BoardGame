@@ -450,7 +450,8 @@
       "progressLabel": "Download progress",
       "progressPercent": "{{percent}}%",
       "progressPending": "Preparing",
-      "closeAction": "Close update panel and continue in background",
+      "closeAction": "Cancel this update",
+      "cancelHint": "The update will not be installed. A download may still finish in the background.",
       "retryAction": "Check again"
     }
   },
@@ -480,7 +481,8 @@
     "progressPercent": "{{percent}}%",
     "progressPending": "Preparing",
     "progressHint": "Fetching download progress. Please wait.",
-    "closeAction": "Close update panel and continue in background",
+    "closeAction": "Cancel this update",
+    "cancelHint": "The update will not be installed. A download may still finish in the background.",
     "openSettings": "Open install settings",
     "continueInstall": "Continue install",
     "retryAction": "Check again",

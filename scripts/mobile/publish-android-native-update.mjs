@@ -62,7 +62,7 @@ const versionCode = Number.isFinite(parsedVersionCode) && parsedVersionCode > 0
     ? parsedVersionCode
     : resolveAndroidVersionCode(packageJson.androidVersionCode, version);
 const notes = readArgValue('notes', 'Android native APK update');
-const forceUpdate = hasFlag('no-force-update') ? false : true;
+const forceUpdate = hasFlag('force-update') && !hasFlag('no-force-update');
 const forceUpdateTitle = forceUpdate
     ? (readArgValue('force-update-title', '需要安装新版 App').trim() || '需要安装新版 App')
     : '';

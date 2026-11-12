@@ -54,8 +54,7 @@ Android OTA 发布脚本
 
 默认策略：
 - OTA 默认面向所有已安装版本，不按原生版本做 target/min/max 门禁
-- 所有 OTA 都强制更新，客户端必须阻塞下载并立即切换 bundle
-- --no-force-update 已禁用，任何发布入口都不得关闭强制更新
+- Android OTA 为非强制更新，自动检查在后台准备，由客户端决定安全生效时机。
 - OTA 只携带 H5 代码、中文语言包、字体和资源清单；游戏资源继续走服务器资源链
 - 若误传任何 target/min/max 原生版本兼容参数，脚本会直接失败，防止再次发出“只给某个原生版本”的错误 OTA
 
@@ -191,6 +190,7 @@ const {
     forceUpdateTitle,
     forceUpdateMessage,
 } = resolveOtaForceUpdateOptions({
+    optionalUpdate: true,
     noForceUpdateFlag: hasFlag('no-force-update'),
     forceUpdateTitle: readArgValue('force-update-title', ''),
     forceUpdateMessage: readArgValue('force-update-message', ''),

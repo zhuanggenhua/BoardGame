@@ -165,12 +165,12 @@ const AppRouteChrome = ({
       <Toaster />
       {isNativeAndroid ? (
         <React.Suspense fallback={null}>
-          <LazyAndroidNativeUpdateManager />
+          <LazyAndroidNativeUpdateManager isPlayRoute={isPlayRoute || location.pathname.startsWith('/external/')} />
         </React.Suspense>
       ) : null}
       {isNativeMobile ? (
         <React.Suspense fallback={null}>
-          <LazyMobileLiveUpdateManager />
+          <LazyMobileLiveUpdateManager isPlayRoute={isPlayRoute || location.pathname.startsWith('/external/')} />
         </React.Suspense>
       ) : null}
       <EngineNotificationListener />

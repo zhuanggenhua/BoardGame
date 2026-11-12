@@ -450,7 +450,8 @@
       "progressLabel": "下载进度",
       "progressPercent": "{{percent}}%",
       "progressPending": "准备中",
-      "closeAction": "关闭更新面板，继续后台更新",
+      "closeAction": "取消本次更新",
+      "cancelHint": "取消后不会安装本次更新，下载可能会在后台结束。",
       "retryAction": "重新检查"
     }
   },
@@ -480,7 +481,8 @@
     "progressPercent": "{{percent}}%",
     "progressPending": "准备中",
     "progressHint": "正在获取下载进度，请稍候。",
-    "closeAction": "关闭更新面板，继续后台更新",
+    "closeAction": "取消本次更新",
+    "cancelHint": "取消后不会安装本次更新，下载可能会在后台结束。",
     "openSettings": "打开安装权限设置",
     "continueInstall": "继续安装",
     "retryAction": "重新检查",

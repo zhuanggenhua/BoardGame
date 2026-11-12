@@ -44,8 +44,8 @@ Web 内容更新默认走 `embedded + OTA / Live Update`。原生插件、权限
 
 - 运行时插件：`@capgo/capacitor-updater`。
 - 发布源：服务器素材主源 `official/app-updates/android/<channel>/...`。
-- 当前策略：所有 channel 强制更新，manifest 固定 `forceUpdate: true`。
-- 启动检查发现新 bundle 后显示阻塞式下载和切换反馈。
+- Android OTA 采用非强制更新；自动检查后台准备，计划在下次启动生效，右下角手动检查可立即更新。
+- 更新取消后不得继续激活或重启；旧客户端过渡必须单独验证。
 - 每次原生启动尽早调用 `notifyAppReady()`，避免插件回滚已下载 bundle。
 - OTA zip 不携带运行时大图片、图集配置、状态图集 JSON、缩略图、支付二维码和共享音频。
 
@@ -60,7 +60,7 @@ OTA manifest 关键字段：
   "checksum": "sha256-hex",
   "size": 123456,
   "channel": "stable",
-  "forceUpdate": true,
+  "forceUpdate": false,
   "publishedAt": "2026-04-04T00:00:00.000Z",
   "notes": "Android OTA update"
 }

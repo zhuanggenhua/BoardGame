@@ -97,6 +97,7 @@ public class MainActivity extends BridgeActivity {
         }
         registerPlugin(GamePackagePlugin.class);
         registerPlugin(AppUpdatePlugin.class);
+        registerPlugin(ExternalBrowserPlugin.class);
         bridgeBuilder.addWebViewListener(
             new WebViewListener() {
                 @Override

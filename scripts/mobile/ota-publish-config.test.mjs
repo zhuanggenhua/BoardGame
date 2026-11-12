@@ -65,11 +65,19 @@ test('Android OTA 拒绝显式降到历史桥接下限以下', () => {
     );
 });
 
-test('所有 OTA 默认强制更新', () => {
+test('未启用非强制选项时保留原有强制更新合同', () => {
     assert.deepEqual(resolveOtaForceUpdateOptions(), {
         forceUpdate: true,
         forceUpdateTitle: DEFAULT_FORCE_UPDATE_TITLE,
         forceUpdateMessage: DEFAULT_FORCE_UPDATE_MESSAGE,
+    });
+});
+
+test('Android 可发布非强制 OTA', () => {
+    assert.deepEqual(resolveOtaForceUpdateOptions({ optionalUpdate: true }), {
+        forceUpdate: false,
+        forceUpdateTitle: '',
+        forceUpdateMessage: '',
     });
 });
 
@@ -84,7 +92,7 @@ test('OTA 允许自定义强制更新文案', () => {
     });
 });
 
-test('禁止关闭 OTA 强制更新', () => {
+test('原有强制合同拒绝关闭更新', () => {
     assert.throws(
         () => resolveOtaForceUpdateOptions({ noForceUpdateFlag: true }),
         /禁止使用 --no-force-update/,

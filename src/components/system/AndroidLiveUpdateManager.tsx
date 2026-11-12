@@ -9,6 +9,7 @@ import {
     registerAndroidLiveUpdateListeners,
     subscribeAndroidLiveUpdateRequests,
     startAndroidLiveUpdateBackgroundCheck,
+    cancelAndroidLiveUpdateCheck,
 } from '../../lib/mobile/androidLiveUpdates';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { shouldShowAndroidOtaToastOncePerDay } from '../../lib/mobile/otaToastGate';
@@ -19,7 +20,7 @@ const HIDDEN_FORCE_UPDATE_STATE: AndroidForceUpdateState = {
     blocking: false,
 };
 
-export const AndroidLiveUpdateManager = () => {
+export const AndroidLiveUpdateManager = ({ isPlayRoute = false }: { isPlayRoute?: boolean }) => {
     const { t } = useTranslation('lobby');
     const toast = useToast();
     const isNativeAndroid = isNativeAndroidRuntime();
@@ -46,7 +47,7 @@ export const AndroidLiveUpdateManager = () => {
             result: Awaited<ReturnType<typeof startAndroidLiveUpdateBackgroundCheck>>,
             options?: { interactive?: boolean },
         ) => {
-            if (disposed) return;
+            if (disposed || dismissedRef.current) return;
 
             if (result.status === 'queued') {
                 return;
@@ -54,6 +55,10 @@ export const AndroidLiveUpdateManager = () => {
 
             if (result.status === 'up-to-date' && options?.interactive) {
                 publishState(HIDDEN_FORCE_UPDATE_STATE);
+                if (isNativeAndroid) {
+                    requestAndroidNativeUpdateCheck({ interactive: true });
+                    return;
+                }
                 if (shouldShowAndroidOtaToastOncePerDay('up-to-date')) {
                     toast.success(t('nativeUpdate.toast.upToDate'), t('nativeUpdate.eyebrow'), {
                         dedupeKey: 'android-ota-up-to-date',
@@ -89,7 +94,7 @@ export const AndroidLiveUpdateManager = () => {
             hasAutoStartedAndroidLiveUpdateCheck = true;
             void startAndroidLiveUpdateBackgroundCheck({
                 onForceStateChange: (state) => {
-                    publishState(state);
+                    if (state.phase === 'error') publishState({ ...state, blocking: false });
                 },
                 applyMode: 'background',
             }).then((result) => {
@@ -117,7 +122,7 @@ export const AndroidLiveUpdateManager = () => {
         };
     }, [isNativeAndroid, isNativeMobile, t, toast]);
 
-    if (!isNativeMobile) {
+    if (!isNativeMobile || isPlayRoute) {
         return null;
     }
 
@@ -126,6 +131,7 @@ export const AndroidLiveUpdateManager = () => {
             state={forceUpdateState}
             onDismiss={() => {
                 dismissedRef.current = true;
+                cancelAndroidLiveUpdateCheck();
                 setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
             }}
             onRetry={() => {

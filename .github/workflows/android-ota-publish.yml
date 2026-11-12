@@ -47,9 +47,9 @@ on:
         default: false
         type: boolean
       force_update:
-        description: '兼容旧触发器的强制更新字段；项目规定必须为 true'
+        description: '兼容旧触发器的字段；Android OTA 始终按非强制更新发布'
         required: true
-        default: true
+        default: false
         type: boolean
       force_update_title:
         description: '强更页标题（可选）'
@@ -124,11 +124,6 @@ jobs:
 
           if [[ -z "${target_ref}" ]]; then
             target_ref="${GITHUB_SHA}"
-          fi
-
-          if [[ "${force_update}" != "true" ]]; then
-            echo "::error::所有 OTA 已强制更新，force_update 必须为 true。"
-            exit 1
           fi
 
           if [[ "${skip_latest}" == "true" && "${dry_run}" != "true" ]]; then
@@ -388,8 +383,6 @@ jobs:
           if [[ "${{ steps.params.outputs.skip_latest }}" == "true" ]]; then
             args+=(--skip-latest)
           fi
-
-          args+=(--force-update)
 
           if [[ -n "${{ steps.params.outputs.force_update_title }}" ]]; then
             args+=(--force-update-title "${{ steps.params.outputs.force_update_title }}")

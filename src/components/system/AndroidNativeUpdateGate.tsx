@@ -1,4 +1,3 @@
-import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../core';
 import type { AndroidNativeUpdateState } from '../../lib/mobile/androidNativeUpdates';
@@ -108,14 +107,14 @@ export const AndroidNativeUpdateGate = ({
                 <section className={isBlocking
                     ? 'pointer-events-auto relative max-h-[calc(100dvh-3rem)] w-full max-w-[24rem] overflow-y-auto rounded-[18px] border border-sky-200/15 bg-[#0f1422]/92 p-6 text-center shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-md'
                     : 'pointer-events-auto relative max-h-[min(70dvh,32rem)] w-full max-w-[34rem] overflow-y-auto rounded-[18px] border border-sky-200/15 bg-[#0f1422]/95 p-4 text-center shadow-[0_18px_48px_rgba(0,0,0,0.3)] backdrop-blur-md'}>
-                    <button
+                    {state.phase !== 'installing' && <button
                         type="button"
                         onClick={onDismiss}
                         aria-label={t('nativeUpdate.closeAction')}
-                        className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-sky-100/60 transition-colors hover:bg-sky-50/10 hover:text-sky-50"
+                        className="absolute right-2 top-2 inline-flex min-h-11 items-center justify-center rounded-full px-3 text-sm text-sky-100/80 transition-colors hover:bg-sky-50/10 hover:text-sky-50"
                     >
-                        <X size={18} />
-                    </button>
+                        {t('common:cancel')}
+                    </button>}
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-sky-300/20 bg-sky-100/5">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-sky-200/20 border-t-sky-300" />
                     </div>
@@ -129,6 +128,7 @@ export const AndroidNativeUpdateGate = ({
                     <p className="mt-3 text-sm leading-6 text-sky-100/75">
                         {description}
                     </p>
+                    {state.phase !== 'installing' && <p className="mt-2 text-xs text-sky-100/60">{t('nativeUpdate.cancelHint')}</p>}
 
                     {state.version && (
                         <div className="mt-5 rounded-2xl border border-sky-200/12 bg-black/20 px-4 py-3 text-left text-xs text-sky-100/70">

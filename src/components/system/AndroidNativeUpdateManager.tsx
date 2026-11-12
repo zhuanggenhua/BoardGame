@@ -7,7 +7,6 @@ import {
     continueAndroidNativeUpdateInstall,
     mapNativeUpdateEventToState,
     openAndroidUnknownSourcesSettings,
-    prepareAndroidNativeUpdateInstall,
     readPreparedAndroidUpdateState,
     requestAndroidNativeUpdateCheck,
     startAndroidNativeUpdatePreload,
@@ -21,6 +20,7 @@ import {
 import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { AndroidNativeUpdateGate } from './AndroidNativeUpdateGate';
+import { canActivateMobileUpdate } from '../../lib/mobile/updateActivationSafety';
 
 let hasAutoStartedAndroidNativeUpdateCheck = false;
 
@@ -29,6 +29,7 @@ const shouldAutoResumePreparedUpdate = (state: AndroidPreparedUpdateState) => (
     || state.status === 'downloading'
     || state.status === 'verifying'
 );
+
 
 const normalizeRecoveredPreparedUpdate = (state: AndroidPreparedUpdateState): AndroidPreparedUpdateState => {
     if (state.status !== 'installing') {
@@ -53,13 +54,15 @@ const isPrepareResultTaskStatus = (
     || status === 'error'
 );
 
-export const AndroidNativeUpdateManager = () => {
+export const AndroidNativeUpdateManager = ({ isPlayRoute = false }: { isPlayRoute?: boolean }) => {
     const toast = useToast();
     const { t } = useTranslation('lobby');
     const isNativeAndroid = isNativeAndroidRuntime();
     const [state, setState] = useState<AndroidNativeUpdateState>(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
     const pendingManifestRef = useRef<AndroidNativeUpdateManifest | null>(null);
     const interactiveRef = useRef(false);
+    const installStartedRef = useRef(false);
+    const attemptRef = useRef(0);
     const dismissedRef = useRef(false);
     const toastRef = useRef(toast);
     const tRef = useRef(t);
@@ -77,20 +80,21 @@ export const AndroidNativeUpdateManager = () => {
         let disposed = false;
         let listenerHandlePromise: Promise<{ remove(): Promise<void> } | null> | null = null;
         const publishState = (nextState: AndroidNativeUpdateState) => {
-            if (disposed || dismissedRef.current) {
+            if (disposed || dismissedRef.current || !interactiveRef.current) {
                 return;
             }
             setState(nextState);
         };
 
         const applyCheck = async (interactive = false) => {
+            const attempt = ++attemptRef.current;
             try {
                 interactiveRef.current = interactive;
                 const config = readAndroidNativeUpdateConfig();
                 if (!config.enabled) {
                     pendingManifestRef.current = null;
-                    interactiveRef.current = false;
                     publishState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
+                    interactiveRef.current = false;
                     if (interactive) {
                         toastRef.current.warning(tRef.current('nativeUpdate.toast.disabled'));
                     }
@@ -98,14 +102,14 @@ export const AndroidNativeUpdateManager = () => {
                 }
 
                 const availability = await checkAndroidNativeUpdateAvailability();
-                if (disposed) {
+                if (disposed || dismissedRef.current || attempt !== attemptRef.current) {
                     return;
                 }
 
                 if (!availability.available || !availability.manifest) {
                     pendingManifestRef.current = null;
-                    interactiveRef.current = false;
                     publishState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
+                    interactiveRef.current = false;
                     if (interactive && availability.reason === 'up-to-date') {
                         toastRef.current.success(tRef.current('nativeUpdate.toast.upToDate'), '应用更新', {
                             dedupeKey: 'android-native-update:up-to-date',
@@ -117,12 +121,12 @@ export const AndroidNativeUpdateManager = () => {
 
                 pendingManifestRef.current = availability.manifest;
                 const preparedState = await readPreparedAndroidUpdateState(availability.manifest.version);
-                if (disposed) {
+                if (disposed || dismissedRef.current || attempt !== attemptRef.current) {
                     return;
                 }
 
                 interactiveRef.current = interactive;
-                const shouldBlock = availability.manifest.forceUpdate === true || interactive;
+                const shouldBlock = interactive;
                 const displayTitle = availability.manifest.forceUpdateTitle || undefined;
                 const displayMessage = availability.manifest.forceUpdateMessage || undefined;
 
@@ -145,8 +149,9 @@ export const AndroidNativeUpdateManager = () => {
                         !shouldAutoResumePreparedUpdate(preparedState)
                         && !(interactive && preparedState.status === 'error')
                     ) {
-                        if (interactive && preparedState.status === 'prepared') {
+                        if (interactive && !installStartedRef.current && !dismissedRef.current && canActivateMobileUpdate() && preparedState.status === 'prepared') {
                             try {
+                                installStartedRef.current = true;
                                 const installResult = await continueAndroidNativeUpdateInstall(availability.manifest.version);
                                 if (disposed) {
                                     return;
@@ -188,10 +193,13 @@ export const AndroidNativeUpdateManager = () => {
                 });
 
                 try {
-                    const result = interactive || availability.manifest.forceUpdate === true
-                        ? await prepareAndroidNativeUpdateInstall(availability.manifest, { autoInstall: true })
-                        : await startAndroidNativeUpdatePreload(availability.manifest);
-                    if (disposed) {
+                    const result = await startAndroidNativeUpdatePreload(availability.manifest);
+                    if (disposed || dismissedRef.current || attempt !== attemptRef.current) {
+                        return;
+                    }
+                    if (interactive && !installStartedRef.current && !dismissedRef.current && canActivateMobileUpdate() && result.status === 'prepared') {
+                        installStartedRef.current = true;
+                        await continueAndroidNativeUpdateInstall(availability.manifest.version);
                         return;
                     }
                     logMobileRuntimeCritical('NativeUpdate', 'manager-prepare-result', {
@@ -249,14 +257,14 @@ export const AndroidNativeUpdateManager = () => {
                     error: message,
                 });
                 pendingManifestRef.current = null;
-                interactiveRef.current = false;
                 publishState({
                     phase: 'error',
-                    blocking: true,
+                    blocking: interactive,
                     reason: message,
                     title: tRef.current('nativeUpdate.title.error'),
                     message: tRef.current('nativeUpdate.description.checkFailed'),
                 });
+                interactiveRef.current = false;
             }
         };
 
@@ -266,8 +274,16 @@ export const AndroidNativeUpdateManager = () => {
             }
 
             const manifest = pendingManifestRef.current;
+            if (event.status === 'prepared' && interactiveRef.current && !installStartedRef.current && canActivateMobileUpdate()) {
+                installStartedRef.current = true;
+                void continueAndroidNativeUpdateInstall(manifest.version).catch((error) => {
+                    publishState({ phase: 'error', blocking: true, version: manifest.version,
+                        reason: error instanceof Error ? error.message : String(error) });
+                });
+                return;
+            }
             publishState(mapNativeUpdateEventToState(event, {
-                blocking: manifest.forceUpdate === true || interactiveRef.current,
+                blocking: interactiveRef.current,
                 title: manifest.forceUpdateTitle || undefined,
                 message: manifest.forceUpdateMessage || undefined,
             }));
@@ -275,6 +291,7 @@ export const AndroidNativeUpdateManager = () => {
 
         const unsubscribeRequest = subscribeAndroidNativeUpdateRequests((request) => {
             dismissedRef.current = false;
+            installStartedRef.current = false;
             void applyCheck(request.interactive !== false);
         });
 
@@ -292,7 +309,7 @@ export const AndroidNativeUpdateManager = () => {
         };
     }, [isNativeAndroid]);
 
-    if (!isNativeAndroid) {
+    if (!isNativeAndroid || isPlayRoute) {
         return null;
     }
 
@@ -331,6 +348,7 @@ export const AndroidNativeUpdateManager = () => {
             state={state}
             onDismiss={() => {
                 dismissedRef.current = true;
+                attemptRef.current += 1;
                 setState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
             }}
             onRetry={handleRetry}

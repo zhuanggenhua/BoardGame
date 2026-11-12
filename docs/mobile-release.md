@@ -63,7 +63,7 @@ node scripts/release/deploy-and-ota.mjs --resume-ci-run-id <id> --resume-ota-run
 
 ## 当前固定口径
 
-- `stable` OTA 面向所有已安装版本，全部强制更新；不再使用 native version 的 `target / min / max` 分流。
+- `stable` OTA 不再要求强制更新；新客户端后台准备，下一次启动生效。旧客户端的实际应用时机须在发布前单独验证。
 - Android OTA 内部游标最低按 `6.0.0` 处理，避免历史高游标客户端拒绝更新。
 - OTA `version` 是客户端比较用内部游标；`displayVersion` 是用户可见更新号；`productVersion` 是商业产品版本展示值；`publishedAt` 只用于展示和审计。
 - “更新部署 / 发线上”不要求自增产品版本；服务器部署版本看 git ref / 镜像，OTA 包版本在上传时生成或显式传入。

@@ -13,6 +13,7 @@ import { PlatformFavoriteButton } from './PlatformFavoriteButton';
 import { PlatformExternalCover } from './PlatformExternalCover';
 import { ExternalGameAuthor } from './GameAuthorInfo';
 import { writeSessionStorageItem } from '../../lib/browserStorage';
+import { canOpenExternalBrowser, openExternalBrowser } from '../../lib/mobile/externalBrowser';
 
 interface ExternalGameDetailsProps {
     gameId: string;
@@ -30,6 +31,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
     const game = useQuery({ queryKey: ['external-game', gameId], queryFn: () => getExternalGame(gameId), enabled: Boolean(gameId) });
     const item = game.data;
     const embed = item ? resolveExternalEmbed(item, window.location.origin, window.location.protocol) : null;
+    const nativeBrowser = item ? canOpenExternalBrowser(item.url) : false;
     const startPlay = () => {
         const from = `${window.location.pathname}${window.location.search}`;
         writeSessionStorageItem('bg-external-return', JSON.stringify({ url: from, scroll: window.scrollY }));
@@ -43,7 +45,9 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
             : <PlatformGameDetails presentation={presentation} title={item.name} description={<ExternalGameText text={item.description} />}
                 thumbnail={thumbnail} playerOptions={playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
                 onClose={onClose} tabs={[{ id: 'about' as const, label: t('platform.externalGamePage.about') }]} selectedTab={tab} onTab={setTab}
-                primaryActions={embed?.canEmbed
+                primaryActions={nativeBrowser
+                    ? <button type="button" data-testid="external-game-native-play" onClick={() => void openExternalBrowser(item!.url).catch(() => window.alert(t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })))}>{t('platform.externalGamePage.start')}</button>
+                    : embed?.canEmbed
                     ? <button type="button" data-testid="external-game-play" onClick={startPlay}>{t('platform.externalGamePage.start')}</button>
                     : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}
                 secondaryActions={<>
@@ -52,7 +56,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 </>}
                 author={<ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
                     isOwner={Boolean(user && item.ownerUserId === user.id)} onManageWorks={() => navigate('/?section=profile&tab=works')} />}>
-                {embed?.restricted && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
+                {embed?.restricted && !nativeBrowser && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
                 {embed && !embed.safeHttps && <p className="platform-details-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
                 {embed?.sameOrigin && <p className="platform-details-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
                 <GameRulesDocumentLink document={item.rulesDocument} />

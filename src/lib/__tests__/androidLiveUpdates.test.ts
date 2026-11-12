@@ -1114,15 +1114,13 @@ describe('androidLiveUpdates', () => {
             version: '6.0.0-ota-bridge-2026-06-16T01-22-25-293Z',
             checksum: 'new',
         });
-        expect(nextMock).toHaveBeenCalledWith({ id: 'bundle-next' });
-        expect(setMultiDelayMock).toHaveBeenCalledWith({
-            delayConditions: [{ kind: 'background', value: '0' }],
-        });
+        expect(nextMock).not.toHaveBeenCalled();
+        expect(setMultiDelayMock).not.toHaveBeenCalled();
         expect(states).toContainEqual({ phase: 'checking', blocking: false });
         expect(states).toContainEqual({ phase: 'downloading', blocking: false });
     });
 
-    it('强制 OTA manifest 若发现新版本，后台检查也必须立即阻塞应用', async () => {
+    it('旧强制 OTA 清单在自动检查时不会立即中断应用', async () => {
         vi.resetModules();
 
         vi.doMock('@capacitor/core', () => ({
@@ -1211,13 +1209,13 @@ describe('androidLiveUpdates', () => {
             status: 'queued',
             version: '0.5.1-ota-2026-04-04T03-34-46-472Z',
             source: 'downloaded',
-            mode: 'immediate',
+            mode: 'background',
         });
         expect(downloadMock).toHaveBeenCalledTimes(1);
         expect(nextMock).not.toHaveBeenCalled();
         expect(setMultiDelayMock).not.toHaveBeenCalled();
-        expect(setMock).toHaveBeenCalledWith({ id: 'bundle-next' });
-        expect(states.some((state) => state.blocking)).toBe(true);
+        expect(setMock).not.toHaveBeenCalled();
+        expect(states.some((state) => state.blocking)).toBe(false);
         expect(states).toContainEqual(expect.objectContaining({
             phase: 'checking',
             releaseNotes: '- 修正 OTA 更新记录显示来源',
@@ -1316,10 +1314,8 @@ describe('androidLiveUpdates', () => {
             mode: 'background',
         });
         expect(downloadMock).toHaveBeenCalledTimes(1);
-        expect(nextMock).toHaveBeenCalledWith({ id: 'bundle-next' });
-        expect(setMultiDelayMock).toHaveBeenCalledWith({
-            delayConditions: [{ kind: 'background', value: '0' }],
-        });
+        expect(nextMock).not.toHaveBeenCalled();
+        expect(setMultiDelayMock).not.toHaveBeenCalled();
     });
 
     it('OTA 下载超时后应返回错误，并释放检查锁以便下一次重新发起', async () => {
@@ -1422,10 +1418,8 @@ describe('androidLiveUpdates', () => {
                 mode: 'background',
             });
             expect(downloadMock).toHaveBeenCalledTimes(2);
-            expect(nextMock).toHaveBeenCalledWith({ id: 'bundle-next' });
-            expect(setMultiDelayMock).toHaveBeenCalledWith({
-                delayConditions: [{ kind: 'background', value: '0' }],
-            });
+            expect(nextMock).not.toHaveBeenCalled();
+            expect(setMultiDelayMock).not.toHaveBeenCalled();
         } finally {
             vi.useRealTimers();
         }
@@ -1610,8 +1604,7 @@ describe('androidLiveUpdates', () => {
             },
         });
 
-        await Promise.resolve();
-        await Promise.resolve();
+        await vi.waitFor(() => expect(downloadMock).toHaveBeenCalledTimes(1));
 
         const immediateResult = await startAndroidLiveUpdateBackgroundCheck({
             force: true,
@@ -1643,16 +1636,9 @@ describe('androidLiveUpdates', () => {
             status: 'success',
         });
 
-        await expect(backgroundPromise).resolves.toEqual({
-            status: 'queued',
-            version: '0.5.1-ota-2026-04-04T03-34-46-472Z',
-            source: 'downloaded',
-            mode: 'background',
-        });
-        expect(nextMock).toHaveBeenCalledWith({ id: 'bundle-background' });
-        expect(setMultiDelayMock).toHaveBeenCalledWith({
-            delayConditions: [{ kind: 'background', value: '0' }],
-        });
+        await expect(backgroundPromise).resolves.toEqual({ status: 'cancelled' });
+        expect(nextMock).not.toHaveBeenCalled();
+        expect(setMultiDelayMock).not.toHaveBeenCalled();
     });
 
     it('读取原生 APK 自更新配置时，只有启用且 manifest URL 合法才算开启', () => {
@@ -1937,6 +1923,7 @@ describe('androidLiveUpdates', () => {
             initialImmediatePhase?: 'checking' | 'downloading';
         }) => void) | null = null;
         const toastSuccessMock = vi.fn();
+        const nativeCheckMock = vi.fn();
 
         const startMock = vi.fn()
             .mockResolvedValueOnce({ status: 'up-to-date' })
@@ -1959,7 +1946,7 @@ describe('androidLiveUpdates', () => {
             startAndroidLiveUpdateBackgroundCheck: startMock,
         }));
         vi.doMock('../mobile/androidNativeUpdates', () => ({
-            requestAndroidNativeUpdateCheck: vi.fn(),
+            requestAndroidNativeUpdateCheck: nativeCheckMock,
         }));
         vi.doMock('../mobile/androidRuntime', () => ({
             isNativeAndroidRuntime: () => true,
@@ -1994,14 +1981,12 @@ describe('androidLiveUpdates', () => {
 
         await waitFor(() => {
             expect(view.getByTestId('force-update-phase').textContent).toBe('hidden:false');
-            expect(toastSuccessMock).toHaveBeenCalledWith('nativeUpdate.toast.upToDate', 'nativeUpdate.eyebrow', {
-                dedupeKey: 'android-ota-up-to-date',
-                ttlMs: 3000,
-            });
+            expect(nativeCheckMock).toHaveBeenCalledWith({ interactive: true });
+            expect(toastSuccessMock).not.toHaveBeenCalled();
         });
     });
 
-    it('AndroidLiveUpdateManager 后台 OTA 错误应保留错误遮罩，不再用一次性 toast 静默降级', async () => {
+    it('AndroidLiveUpdateManager 后台 OTA 错误显示非阻塞提示', async () => {
         vi.resetModules();
 
         const toastErrorMock = vi.fn();
@@ -2049,7 +2034,7 @@ describe('androidLiveUpdates', () => {
 
         await waitFor(() => {
             expect(view.getByTestId('force-update-phase').textContent).toBe(
-                'error:true:OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                'error:false:OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
             );
         });
         expect(toastErrorMock).not.toHaveBeenCalled();
@@ -2077,7 +2062,7 @@ describe('androidLiveUpdates', () => {
                     forceUpdateMessage: '请安装新版应用',
                 },
             }),
-            continueAndroidNativeUpdateInstall: vi.fn(),
+            continueAndroidNativeUpdateInstall: prepareMock,
             mapNativeUpdateEventToState: vi.fn(() => ({
                 phase: 'checking',
                 blocking: true,
@@ -2138,7 +2123,7 @@ describe('androidLiveUpdates', () => {
         });
     });
 
-    it('AndroidNativeUpdateManager 强更自动检查应继续进入原生安装链路', async () => {
+    it('AndroidNativeUpdateManager 旧强更清单自动检查只预下载', async () => {
         vi.resetModules();
 
         const prepareMock = vi.fn().mockResolvedValue({ status: 'installer-launched' });
@@ -2164,7 +2149,8 @@ describe('androidLiveUpdates', () => {
                 blocking: true,
             })),
             openAndroidUnknownSourcesSettings: vi.fn(),
-            prepareAndroidNativeUpdateInstall: prepareMock,
+            prepareAndroidNativeUpdateInstall: vi.fn(),
+            startAndroidNativeUpdatePreload: prepareMock,
             readPreparedAndroidUpdateState: vi.fn().mockResolvedValue(null),
             requestAndroidNativeUpdateCheck: vi.fn(),
             readAndroidNativeUpdateConfig: vi.fn(() => ({
@@ -2370,7 +2356,7 @@ describe('androidLiveUpdates', () => {
         }));
     });
 
-    it('AndroidNativeUpdateManager 冷启动命中原生下载中状态时强更版本仍应保持阻塞态', async () => {
+    it('AndroidNativeUpdateManager 旧强更清单冷启动续传不阻塞', async () => {
         vi.resetModules();
 
         const prepareMock = vi.fn().mockResolvedValue({ status: 'installer-launched' });
@@ -2398,7 +2384,8 @@ describe('androidLiveUpdates', () => {
             continueAndroidNativeUpdateInstall: vi.fn(),
             mapNativeUpdateEventToState: mapStateMock,
             openAndroidUnknownSourcesSettings: vi.fn(),
-            prepareAndroidNativeUpdateInstall: prepareMock,
+            prepareAndroidNativeUpdateInstall: vi.fn(),
+            startAndroidNativeUpdatePreload: prepareMock,
             readPreparedAndroidUpdateState: vi.fn().mockResolvedValue({
                 version: '0.5.2',
                 status: 'downloading',
@@ -2445,7 +2432,7 @@ describe('androidLiveUpdates', () => {
             status: 'downloading',
             progressPercent: 42,
         }), expect.objectContaining({
-            blocking: true,
+            blocking: false,
         }));
     });
 
@@ -2562,7 +2549,8 @@ describe('androidLiveUpdates', () => {
                 blocking: true,
             })),
             openAndroidUnknownSourcesSettings: vi.fn(),
-            prepareAndroidNativeUpdateInstall: prepareMock,
+            prepareAndroidNativeUpdateInstall: vi.fn(),
+            startAndroidNativeUpdatePreload: prepareMock,
             readPreparedAndroidUpdateState: vi.fn().mockResolvedValue({
                 version: '0.5.2',
                 status: 'error',
