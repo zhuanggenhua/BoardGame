@@ -107,7 +107,7 @@ export const AndroidForceUpdateGate = ({
                         aria-label={t('ota.forceUpdate.closeAction')}
                         className="absolute right-2 top-2 inline-flex min-h-11 items-center justify-center rounded-full px-3 text-sm text-amber-100/80 transition-colors hover:bg-amber-50/10 hover:text-amber-50"
                     >
-                        {t('common:cancel')}
+                        {t('common:button.cancel')}
                     </button>}
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-amber-300/20 bg-amber-100/5">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-amber-200/20 border-t-amber-300" />

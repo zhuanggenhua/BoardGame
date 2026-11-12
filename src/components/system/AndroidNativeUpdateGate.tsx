@@ -113,7 +113,7 @@ export const AndroidNativeUpdateGate = ({
                         aria-label={t('nativeUpdate.closeAction')}
                         className="absolute right-2 top-2 inline-flex min-h-11 items-center justify-center rounded-full px-3 text-sm text-sky-100/80 transition-colors hover:bg-sky-50/10 hover:text-sky-50"
                     >
-                        {t('common:cancel')}
+                        {t('common:button.cancel')}
                     </button>}
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-sky-300/20 bg-sky-100/5">
                         <div className="h-9 w-9 animate-spin rounded-full border-2 border-sky-200/20 border-t-sky-300" />
