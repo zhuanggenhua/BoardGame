@@ -487,7 +487,11 @@
     "continueInstall": "Continue install",
     "retryAction": "Check again",
     "toast": {
-      "upToDate": "You already have the latest version."
+      "upToDate": "You already have the latest version.",
+      "disabled": "App updates are unavailable. Update the app resources and try again.",
+      "installerOpened": "The installer is open. Follow the system instructions to update.",
+      "openSettingsFailed": "Could not open installation permissions.",
+      "missingPreparedUpdate": "The downloaded update was not found. Check for updates again."
     }
   },
   "gameDetails": {

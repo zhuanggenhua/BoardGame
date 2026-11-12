@@ -40,7 +40,7 @@ export function GameSubmissionForm({ record, ownedGame, onSaved, onDraftSaved, h
     return <form className="platform-upload-form platform-submission-form" onSubmit={async event => {
         event.preventDefault();
         const action = (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') ?? 'submit';
-        if (!token || busy || (rulesError && action !== 'draft')) return;
+        if (!token || busy || rulesError) return;
         const form = new FormData(event.currentTarget);
         const minPlayers = form.get('minPlayers') ? Number(form.get('minPlayers')) : undefined;
         const maxPlayers = form.get('maxPlayers') ? Number(form.get('maxPlayers')) : undefined;

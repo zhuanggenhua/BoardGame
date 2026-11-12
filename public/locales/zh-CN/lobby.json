@@ -487,7 +487,11 @@
     "continueInstall": "继续安装",
     "retryAction": "重新检查",
     "toast": {
-      "upToDate": "当前已经是最新版本。"
+      "upToDate": "当前已经是最新版本。",
+      "disabled": "当前应用的原生更新暂不可用，请更新应用资源后重试。",
+      "installerOpened": "安装界面已打开，请按系统提示完成更新。",
+      "openSettingsFailed": "无法打开安装权限设置。",
+      "missingPreparedUpdate": "未找到已下载的更新包，请重新检查更新。"
     }
   },
   "gameDetails": {
