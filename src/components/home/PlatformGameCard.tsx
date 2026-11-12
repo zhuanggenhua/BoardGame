@@ -7,6 +7,7 @@ import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { resolveGameDescription, resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { ImplementationStatusRibbon } from '../game/framework/ImplementationStatusRibbon';
 import type { LobbyGamePlayerCounts } from '../../hooks/useLobbyStats';
+import { isExternalGameId } from '../../shared/externalGames';
 
 const EMPTY_PLAYER_COUNTS: LobbyGamePlayerCounts = { online: 0, waiting: 0 };
 
@@ -33,11 +34,12 @@ export function PlatformGameCard({ game, mode, favorite, favoritePending, onOpen
     const [pressed, setPressed] = useState(false);
     const title = resolveGameDisplayName(game, t);
     const description = resolveGameDescription(game, t);
-    const visiblePlayerCounts = hasPlayerCounts ? playerCounts ?? EMPTY_PLAYER_COUNTS : undefined;
+    const external = isExternalGameId(game.id);
+    const visiblePlayerCounts = hasPlayerCounts && !external ? playerCounts ?? EMPTY_PLAYER_COUNTS : undefined;
     const players = game.playersKey ? t(game.playersKey, { defaultValue: game.playersKey }) : '';
     const category = game.category ? t(`common:category.${game.category}`, { defaultValue: game.category }) : '';
     const meta = [players, category].filter(Boolean).join(' · ');
-    return <article className={`platform-game-card${mode === 'discover' && visiblePlayerCounts ? ' has-presence' : ''}`} data-game-id={game.id} data-pressed={mobile && pressed || undefined}>
+    return <article className={`platform-game-card${mode === 'discover' && (visiblePlayerCounts || external) ? ' has-presence' : ''}`} data-game-id={game.id} data-pressed={mobile && pressed || undefined}>
         <div className="platform-game-surface">
             <button type="button" className="platform-game-open" aria-label={title}
                 onPointerDown={event => {
@@ -56,6 +58,7 @@ export function PlatformGameCard({ game, mode, favorite, favoritePending, onOpen
             </button>
             <span className="platform-game-copy">
                 <strong aria-hidden="true" title={title}>{title}</strong>
+                {mode === 'discover' && external && <span className="platform-game-presence">{t('platform.externalGamePage.externalGame')}</span>}
                 {mode === 'discover' && visiblePlayerCounts && <span className="platform-game-presence" aria-label={t('homeV2.gamePresence.label', { online: visiblePlayerCounts.online, waiting: visiblePlayerCounts.waiting })}>
                     <span>{t('homeV2.gamePresence.online', { count: visiblePlayerCounts.online })}</span>
                     <span>{t('homeV2.gamePresence.waiting', { count: visiblePlayerCounts.waiting })}</span>

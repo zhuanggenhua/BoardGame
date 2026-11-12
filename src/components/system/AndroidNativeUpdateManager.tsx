@@ -21,6 +21,7 @@ import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { AndroidNativeUpdateGate } from './AndroidNativeUpdateGate';
 import { canActivateMobileUpdate } from '../../lib/mobile/updateActivationSafety';
+import { consumeNativeUpdateAfterOta } from '../../lib/mobile/mobileUpdateHandoff';
 
 let hasAutoStartedAndroidNativeUpdateCheck = false;
 
@@ -297,7 +298,8 @@ export const AndroidNativeUpdateManager = ({ isPlayRoute = false }: { isPlayRout
 
         if (!hasAutoStartedAndroidNativeUpdateCheck) {
             hasAutoStartedAndroidNativeUpdateCheck = true;
-            void applyCheck(false);
+            const continueManualUpdate = consumeNativeUpdateAfterOta() && canActivateMobileUpdate();
+            void applyCheck(continueManualUpdate);
         }
 
         return () => {

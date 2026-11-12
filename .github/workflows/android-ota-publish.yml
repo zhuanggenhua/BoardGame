@@ -334,6 +334,10 @@ jobs:
           CAPACITOR_APP_ID=${{ vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
           CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || '易桌游' }}
           ANDROID_WEBVIEW_MODE=embedded
+          VITE_ANDROID_NATIVE_UPDATE_ENABLED=true
+          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=${{ env.ANDROID_CONTROL_ASSETS_BASE_URL }}/native-app-updates/android/${{ steps.params.outputs.channel }}/latest.json
+          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS=${{ env.ANDROID_DOWNLOAD_ASSETS_BASE_URL }}/native-app-updates/android/${{ steps.params.outputs.channel }}/latest.json
+          VITE_ANDROID_NATIVE_UPDATE_CHANNEL=${{ steps.params.outputs.channel }}
           VITE_ANDROID_OTA_ENABLED=true
           VITE_ANDROID_OTA_MANIFEST_URL=${{ steps.bundle.outputs.manifest_url }}
           VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS=${{ steps.bundle.outputs.fallback_manifest_url }}

@@ -2683,6 +2683,7 @@
       }
     },
     "externalGamePage": {
+      "updateAppForBrowser": "Update the app to play inside it",
       "loading": "Loading game…",
       "loadFailed": "Could not load the game: {{message}}",
       "back": "Back",

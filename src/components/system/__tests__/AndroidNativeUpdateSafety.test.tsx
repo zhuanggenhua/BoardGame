@@ -22,9 +22,20 @@ vi.mock('../../../lib/mobile/androidNativeUpdates', () => ({
     openAndroidUnknownSourcesSettings: vi.fn(), requestAndroidNativeUpdateCheck: vi.fn(),
 }));
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); mocks.listener = null; });
+afterEach(() => { cleanup(); vi.clearAllMocks(); mocks.listener = null; window.sessionStorage.clear(); });
 
 describe('原生更新取消', () => {
+    it('手动 OTA 重载后继续检查并安装已下载的原生更新', async () => {
+        vi.resetModules();
+        window.sessionStorage.setItem('bg-android-update-check-native-after-ota', '1');
+        mocks.availability.mockResolvedValue({ available: true, manifest: { version: '2' } });
+        mocks.prepared.mockResolvedValue({ version: '2', status: 'prepared' });
+        mocks.install.mockResolvedValue({ status: 'installer-launched' });
+        const { AndroidNativeUpdateManager } = await import('../AndroidNativeUpdateManager');
+        render(<AndroidNativeUpdateManager />);
+        await waitFor(() => expect(mocks.install).toHaveBeenCalledWith('2'));
+        expect(window.sessionStorage.getItem('bg-android-update-check-native-after-ota')).toBeNull();
+    });
     it('取消手动更新后，迟到的下载结果不打开安装器', async () => {
         vi.resetModules();
         let finish!: (value: { status: string }) => void;

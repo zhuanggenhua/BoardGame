@@ -2692,6 +2692,7 @@
       }
     },
     "externalGamePage": {
+      "updateAppForBrowser": "更新 App 后在应用内游玩",
       "loading": "正在加载游戏…",
       "loadFailed": "游戏加载失败：{{message}}",
       "back": "返回",

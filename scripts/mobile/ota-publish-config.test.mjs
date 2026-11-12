@@ -15,6 +15,10 @@ test('Android OTA 客户端构建默认指向正式 stable 清单', () => {
         VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
         VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/app-updates/android/stable/latest.json',
         VITE_ANDROID_OTA_CHANNEL: 'stable',
+        VITE_ANDROID_NATIVE_UPDATE_ENABLED: 'true',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/native-app-updates/android/stable/latest.json',
+        VITE_ANDROID_NATIVE_UPDATE_CHANNEL: 'stable',
     });
 });
 
@@ -27,6 +31,10 @@ test('Android OTA 客户端构建使用命令指定的 channel', () => {
         VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.example.com/root/app-updates/android/gray/latest.json',
         VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/app-updates/android/gray/latest.json',
         VITE_ANDROID_OTA_CHANNEL: 'gray',
+        VITE_ANDROID_NATIVE_UPDATE_ENABLED: 'true',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL: 'https://assets.example.com/root/native-app-updates/android/gray/latest.json',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS: 'http://8.148.71.102/official/native-app-updates/android/gray/latest.json',
+        VITE_ANDROID_NATIVE_UPDATE_CHANNEL: 'gray',
     });
 });
 
@@ -40,6 +48,10 @@ test('Android OTA 客户端构建支持控制域名和下载 IP 分离', () => {
         VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.example.com/official/app-updates/android/stable/latest.json',
         VITE_ANDROID_OTA_MANIFEST_FALLBACK_URLS: 'http://192.0.2.10/official/app-updates/android/stable/latest.json',
         VITE_ANDROID_OTA_CHANNEL: 'stable',
+        VITE_ANDROID_NATIVE_UPDATE_ENABLED: 'true',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL: 'https://assets.example.com/official/native-app-updates/android/stable/latest.json',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS: 'http://192.0.2.10/official/native-app-updates/android/stable/latest.json',
+        VITE_ANDROID_NATIVE_UPDATE_CHANNEL: 'stable',
     });
 });
 

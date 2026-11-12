@@ -8,9 +8,10 @@ vi.mock('@capacitor/core', () => ({
 import { canOpenExternalBrowser, openExternalBrowser } from '../externalBrowser';
 
 describe('外站原生浏览器', () => {
-    it('只在原生插件可用时接受不含凭据的 HTTPS 地址', () => {
+    it('只在原生插件可用时接受不含凭据的 HTTP(S) 地址', () => {
         expect(canOpenExternalBrowser('https://yuanyigames.top/')).toBe(true);
-        expect(canOpenExternalBrowser('http://example.com')).toBe(false);
+        expect(canOpenExternalBrowser('http://e7-auto.7skyun.com:41956/')).toBe(true);
+        expect(canOpenExternalBrowser('javascript:alert(1)')).toBe(false);
         expect(canOpenExternalBrowser('https://user:pass@example.com')).toBe(false);
         native.available = false;
         expect(canOpenExternalBrowser('https://yuanyigames.top/')).toBe(false);

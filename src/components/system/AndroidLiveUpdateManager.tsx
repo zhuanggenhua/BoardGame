@@ -13,6 +13,7 @@ import {
 } from '../../lib/mobile/androidLiveUpdates';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { shouldShowAndroidOtaToastOncePerDay } from '../../lib/mobile/otaToastGate';
+import { clearNativeUpdateAfterOta, markNativeUpdateAfterOta } from '../../lib/mobile/mobileUpdateHandoff';
 
 let hasAutoStartedAndroidLiveUpdateCheck = false;
 const HIDDEN_FORCE_UPDATE_STATE: AndroidForceUpdateState = {
@@ -104,14 +105,17 @@ export const AndroidLiveUpdateManager = ({ isPlayRoute = false }: { isPlayRoute?
 
         const unsubscribeRequest = subscribeAndroidLiveUpdateRequests((request) => {
             dismissedRef.current = false;
+            clearNativeUpdateAfterOta();
             void startAndroidLiveUpdateBackgroundCheck({
                 force: true,
                 applyMode: request.applyMode ?? 'immediate',
                 initialImmediatePhase: request.initialImmediatePhase,
                 onForceStateChange: (state) => {
+                    if (isNativeAndroid && request.interactive && state.phase === 'applying') markNativeUpdateAfterOta();
                     publishState(state);
                 },
             }).then((result) => {
+                if (result.status !== 'queued' || result.mode !== 'immediate') clearNativeUpdateAfterOta();
                 handleResult(result, { interactive: request.interactive });
             });
         });
@@ -131,6 +135,7 @@ export const AndroidLiveUpdateManager = ({ isPlayRoute = false }: { isPlayRoute?
             state={forceUpdateState}
             onDismiss={() => {
                 dismissedRef.current = true;
+                clearNativeUpdateAfterOta();
                 cancelAndroidLiveUpdateCheck();
                 setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
             }}

@@ -14,6 +14,8 @@ import { PlatformExternalCover } from './PlatformExternalCover';
 import { ExternalGameAuthor } from './GameAuthorInfo';
 import { writeSessionStorageItem } from '../../lib/browserStorage';
 import { canOpenExternalBrowser, openExternalBrowser } from '../../lib/mobile/externalBrowser';
+import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
+import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 
 interface ExternalGameDetailsProps {
     gameId: string;
@@ -49,6 +51,8 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                     ? <button type="button" data-testid="external-game-native-play" onClick={() => void openExternalBrowser(item!.url).catch(() => window.alert(t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })))}>{t('platform.externalGamePage.start')}</button>
                     : embed?.canEmbed
                     ? <button type="button" data-testid="external-game-play" onClick={startPlay}>{t('platform.externalGamePage.start')}</button>
+                    : isNativeAndroidRuntime()
+                    ? <button type="button" onClick={() => requestAndroidNativeUpdateCheck({ interactive: true })}>{t('platform.externalGamePage.updateAppForBrowser')}</button>
                     : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}
                 secondaryActions={<>
                     {embed?.canEmbed && <a href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}

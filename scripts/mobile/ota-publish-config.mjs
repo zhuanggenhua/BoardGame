@@ -68,6 +68,10 @@ export const resolveAndroidOtaClientBuildEnv = ({
         VITE_ANDROID_OTA_ENABLED: 'true',
         VITE_ANDROID_OTA_MANIFEST_URL: primaryManifestUrl,
         VITE_ANDROID_OTA_CHANNEL: normalizedChannel,
+        VITE_ANDROID_NATIVE_UPDATE_ENABLED: 'true',
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL: `${normalizedControlAssetsBaseUrl}/native-app-updates/android/${normalizedChannel}/latest.json`,
+        VITE_ANDROID_NATIVE_UPDATE_MANIFEST_FALLBACK_URLS: `${normalizedDownloadAssetsBaseUrl}/native-app-updates/android/${normalizedChannel}/latest.json`,
+        VITE_ANDROID_NATIVE_UPDATE_CHANNEL: normalizedChannel,
     };
 
     if (manifestFallbackUrls.length > 0) {
