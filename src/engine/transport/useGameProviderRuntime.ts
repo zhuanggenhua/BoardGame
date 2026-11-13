@@ -82,6 +82,13 @@ type DeferredCommand = {
     type: string;
     payload: unknown;
     feedbackTraceRecorded?: boolean;
+    retryCount?: number;
+};
+
+type PendingTransportCommand = DeferredCommand & {
+    commandId: string;
+    sequence: number;
+    timedOut?: boolean;
 };
 
 export function useGameProviderRuntime(args: {
@@ -130,9 +137,11 @@ export function useGameProviderRuntime(args: {
     const lastConfirmedStateIDRef = useRef<number | null>(null);
     const commandDispatchBlockedUntilSyncRef = useRef(false);
     const inFlightSerializedCommandTypeRef = useRef<string | null>(null);
-    const lastSerializedCommandRef = useRef<DeferredCommand | null>(null);
     const deferredSerializedCommandRef = useRef<DeferredCommand | null>(null);
-    const dispatchRef = useRef<((type: string, payload: unknown, recordFeedbackTrace?: boolean) => boolean) | null>(null);
+    const pendingTransportCommandsRef = useRef(new Map<string, PendingTransportCommand>());
+    const staleRejectedCommandQueueRef = useRef<PendingTransportCommand[]>([]);
+    const transportCommandSeqRef = useRef(0);
+    const dispatchRef = useRef<((type: string, payload: unknown, recordFeedbackTrace?: boolean, retryCount?: number) => boolean) | null>(null);
     const engineConfigRef = useRef(engineConfig);
     const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
         watermark: null,
@@ -176,6 +185,17 @@ export function useGameProviderRuntime(args: {
         deferredSerializedCommandRef.current = null;
     }, []);
 
+    const flushStaleRejectedCommands = useCallback(() => {
+        const dispatchCurrent = dispatchRef.current;
+        if (!dispatchCurrent || commandDispatchBlockedUntilSyncRef.current) return;
+        staleRejectedCommandQueueRef.current.sort((a, b) => a.sequence - b.sequence);
+        while (staleRejectedCommandQueueRef.current.length > 0) {
+            const command = staleRejectedCommandQueueRef.current[0];
+            if (!dispatchCurrent(command.type, command.payload, false, command.retryCount ?? 1)) return;
+            staleRejectedCommandQueueRef.current.shift();
+        }
+    }, []);
+
     const flushDeferredSerializedCommand = useCallback(() => {
         const command = deferredSerializedCommandRef.current;
         if (!command) {
@@ -190,7 +210,7 @@ export function useGameProviderRuntime(args: {
         }
         // 只有命令真正交给 transport 后才能移除排队项。
         // 连接尚未就绪或发送被拒绝时保留它，等待后续权威同步/重连继续尝试。
-        if (dispatchCurrent(command.type, command.payload, command.feedbackTraceRecorded !== true)) {
+        if (dispatchCurrent(command.type, command.payload, command.feedbackTraceRecorded !== true, command.retryCount ?? 0)) {
             deferredSerializedCommandRef.current = null;
         } else if (!deferredSerializedCommandRef.current) {
             // 发送失败的恢复路径会清理 deferred ref；把当前命令放回队列，
@@ -239,14 +259,82 @@ export function useGameProviderRuntime(args: {
         }
         commandDispatchBlockedUntilSyncRef.current = true;
         inFlightSerializedCommandTypeRef.current = null;
-        if (!deferredSerializedCommandRef.current && lastSerializedCommandRef.current) {
-            deferredSerializedCommandRef.current = lastSerializedCommandRef.current;
-        }
         resetOptimisticProviderRuntime();
         // 命令过期属于明确的权威竞争：立即打断可能卡住的普通同步重试，
         // 让 UI 尽快回到服务端最新状态，而不是再等一个同步超时周期。
         requestProviderResync(true);
     }, [requestProviderResync, resetOptimisticProviderRuntime]);
+
+    const handleCommandResult = useCallback((commandId: string, accepted: boolean) => {
+        pendingTransportCommandsRef.current.delete(commandId);
+        if (!accepted) {
+            // Uncorrelated command failures are synchronized but never replayed.
+            requestProviderResync(true);
+        }
+    }, [requestProviderResync]);
+
+    const handleCommandRejected = useCallback((commandId: string, reason: 'stale_state') => {
+        const command = pendingTransportCommandsRef.current.get(commandId);
+        if (!command) return;
+        pendingTransportCommandsRef.current.delete(commandId);
+        if ((command.retryCount ?? 0) >= 1) {
+            commandDispatchBlockedUntilSyncRef.current = true;
+            inFlightSerializedCommandTypeRef.current = null;
+            resetOptimisticProviderRuntime();
+            requestProviderResync(true);
+            onErrorRef.current?.(reason);
+            return;
+        }
+        staleRejectedCommandQueueRef.current.push({ ...command, retryCount: 1 });
+        commandDispatchBlockedUntilSyncRef.current = true;
+        inFlightSerializedCommandTypeRef.current = null;
+        resetOptimisticProviderRuntime();
+        requestProviderResync(true);
+    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+
+    const handleCommandAckTimeout = useCallback((commandId: string) => {
+        // A missing acknowledgement does not prove the server dropped the command.
+        // Refresh authority, but wait for an explicit correlated stale rejection before replay.
+        const pending = pendingTransportCommandsRef.current.get(commandId);
+        if (pending) pending.timedOut = true;
+        requestProviderResync(true);
+    }, [requestProviderResync]);
+
+    const sendCommandWithIdentity = useCallback((
+        client: GameTransportClient,
+        type: string,
+        payload: unknown,
+        expectedStateID: number | undefined,
+        recordFeedbackTrace: boolean,
+        retryCount = 0,
+    ): boolean => {
+        const sequence = ++transportCommandSeqRef.current;
+        const commandId = globalThis.crypto?.randomUUID?.()
+            ?? `cmd-${Date.now().toString(36)}-${sequence}-${Math.random().toString(36).slice(2, 9)}`;
+        const pendingCommand: PendingTransportCommand = {
+            commandId,
+            type,
+            payload,
+            sequence,
+            retryCount,
+            feedbackTraceRecorded: recordFeedbackTrace,
+        };
+        const pending = pendingTransportCommandsRef.current;
+        if (pending.size >= 256) {
+            for (const [oldId, oldCommand] of pending) {
+                if (oldCommand.timedOut) {
+                    pending.delete(oldId);
+                    if (pending.size < 256) break;
+                }
+            }
+        }
+        pending.set(commandId, pendingCommand);
+        const sent = expectedStateID === undefined
+            ? client.sendCommand(type, payload, { commandId })
+            : client.sendCommand(type, payload, { expectedStateID, commandId });
+        if (!sent) pending.delete(commandId);
+        return sent;
+    }, []);
 
     useEffect(() => {
         onErrorRef.current = onError;
@@ -300,9 +388,7 @@ export function useGameProviderRuntime(args: {
                     const expectedStateID = typeof lastStateID === 'number'
                         ? lastStateID + Math.max(0, pendingCount - 1)
                         : undefined;
-                    const sent = expectedStateID === undefined
-                        ? client.sendCommand(command.type, command.payload)
-                        : client.sendCommand(command.type, command.payload, { expectedStateID });
+                    const sent = sendCommandWithIdentity(client, command.type, command.payload, expectedStateID, true);
                     if (!sent) {
                         rollbackOptimisticRenderAndResync();
                     }
@@ -332,7 +418,7 @@ export function useGameProviderRuntime(args: {
             batcher.destroy();
             batcherRef.current = null;
         };
-    }, [latencyConfig, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+    }, [latencyConfig, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync, sendCommandWithIdentity]);
 
     useEffect(() => {
         const client = new GameTransportClient({
@@ -342,6 +428,7 @@ export function useGameProviderRuntime(args: {
             credentials,
             getAdminDebugToken: () => adminTokenRef.current,
             onStateUpdate: (newState, players, meta, randomMeta) => {
+                if (clientRef.current !== client) return;
                 const normalizedAuthoritativeState = normalizeReceivedStateForGame(
                     engineConfigRef.current,
                     newState as MatchState<unknown>,
@@ -366,7 +453,6 @@ export function useGameProviderRuntime(args: {
 
                 commandDispatchBlockedUntilSyncRef.current = false;
                 inFlightSerializedCommandTypeRef.current = null;
-                lastSerializedCommandRef.current = null;
 
                 if (meta?.stateID !== undefined) {
                     lastConfirmedStateIDRef.current = meta.stateID;
@@ -415,9 +501,11 @@ export function useGameProviderRuntime(args: {
                 const refreshedState = refreshInteractionOptions(finalState);
                 setState(refreshedState);
                 setMatchPlayers(players);
+                flushStaleRejectedCommands();
                 flushDeferredSerializedCommand();
             },
             onConnectionChange: (connected) => {
+                if (clientRef.current !== client) return;
                 setIsConnected(connected);
                 onConnectionChangeRef.current?.(connected);
                 if (connected) {
@@ -427,17 +515,29 @@ export function useGameProviderRuntime(args: {
                     setFeedbackMetadata({ scopeId: matchId });
                     commandDispatchBlockedUntilSyncRef.current = false;
                     inFlightSerializedCommandTypeRef.current = null;
-                    lastSerializedCommandRef.current = null;
                     clearDeferredSerializedCommand();
                     lastConfirmedStateIDRef.current = null;
                 }
             },
             onError: (error) => {
+                if (clientRef.current !== client) return;
                 recoverFromRejectedCommand(error);
                 onErrorRef.current?.(error);
             },
-            onAdminDebugAccessChange: setAdminDebugAvailable,
+            onCommandRejected: (commandId, reason) => {
+                if (clientRef.current === client) handleCommandRejected(commandId, reason);
+            },
+            onCommandResult: (commandId, accepted) => {
+                if (clientRef.current === client) handleCommandResult(commandId, accepted);
+            },
+            onCommandAckTimeout: (commandId) => {
+                if (clientRef.current === client) handleCommandAckTimeout(commandId);
+            },
+            onAdminDebugAccessChange: (available) => {
+                if (clientRef.current === client) setAdminDebugAvailable(available);
+            },
             onPlayerConnectionChange: (connectionPlayerId, connected) => {
+                if (clientRef.current !== client) return;
                 setMatchPlayers((previous) => previous.map((player) => {
                     if (String(player.id) !== String(connectionPlayerId)) {
                         return player;
@@ -463,9 +563,17 @@ export function useGameProviderRuntime(args: {
             hasReportedStateReadyRef.current = false;
             unregisterFeedbackCapture?.();
             client.disconnect();
-            clientRef.current = null;
+            if (clientRef.current === client) {
+                pendingTransportCommandsRef.current.clear();
+                staleRejectedCommandQueueRef.current = [];
+                deferredSerializedCommandRef.current = null;
+                commandDispatchBlockedUntilSyncRef.current = false;
+                inFlightSerializedCommandTypeRef.current = null;
+                lastConfirmedStateIDRef.current = null;
+                clientRef.current = null;
+            }
         };
-    }, [clearDeferredSerializedCommand, credentials, flushDeferredSerializedCommand, matchId, playerId, recoverFromRejectedCommand, resetOptimisticProviderRuntime, server]);
+    }, [clearDeferredSerializedCommand, credentials, flushDeferredSerializedCommand, flushStaleRejectedCommands, handleCommandAckTimeout, handleCommandRejected, handleCommandResult, matchId, playerId, recoverFromRejectedCommand, resetOptimisticProviderRuntime, server]);
 
     useEffect(() => {
         if (!adminToken) setAdminDebugAvailable(false);
@@ -482,7 +590,7 @@ export function useGameProviderRuntime(args: {
         });
     }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
-    const dispatch = useCallback((type: string, payload: unknown, recordFeedbackTrace = true): boolean => {
+    const dispatch = useCallback((type: string, payload: unknown, recordFeedbackTrace = true, retryCount = 0): boolean => {
         if (isSpectator) {
             return false;
         }
@@ -581,9 +689,7 @@ export function useGameProviderRuntime(args: {
                 lastStateID,
                 precedingPendingCount,
             });
-            sent = expectedStateID === undefined
-                ? client.sendCommand(type, payload)
-                : client.sendCommand(type, payload, { expectedStateID });
+            sent = sendCommandWithIdentity(client, type, payload, expectedStateID, recordFeedbackTrace, retryCount);
         }
         if (!sent && engine && !batcher) {
             rollbackOptimisticRenderAndResync();
@@ -591,7 +697,6 @@ export function useGameProviderRuntime(args: {
         }
         if (sent && serialized) {
             inFlightSerializedCommandTypeRef.current = type;
-            lastSerializedCommandRef.current = { type, payload, feedbackTraceRecorded: recordFeedbackTrace };
         }
         if (sent && recordFeedbackTrace) {
             recordGameFeedbackCommand({
@@ -603,7 +708,7 @@ export function useGameProviderRuntime(args: {
             });
         }
         return sent;
-    }, [deferCommandWaitingForPreviousStep, isSpectator, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+    }, [deferCommandWaitingForPreviousStep, isSpectator, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync, sendCommandWithIdentity]);
 
     const adminDebugDispatch = useCallback((type: string, payload: unknown): boolean => {
         if (!adminDebugAvailable) return false;

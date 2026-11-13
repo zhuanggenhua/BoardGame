@@ -6088,8 +6088,27 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-deck-resolution-ledger-step')).not.toBeInTheDocument();
     });
 
-    it('单独获得物品卡会在 3 秒后自动收起', () => {
+    it('单独获得物品卡在面板可见 3 秒后自动收起', () => {
         vi.useFakeTimers();
+        const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+        const getBoundingClientRect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect');
+        getBoundingClientRect.mockImplementation(function (this: HTMLElement) {
+            if (this.dataset.testid === 'betrayal-discovery-panel') {
+                this.style.opacity = '1';
+                return {
+                    x: 0,
+                    y: 0,
+                    left: 0,
+                    top: 0,
+                    right: 1280,
+                    bottom: 720,
+                    width: 1280,
+                    height: 720,
+                    toJSON: () => ({}),
+                } as DOMRect;
+            }
+            return originalGetBoundingClientRect.call(this);
+        });
         try {
             const itemCard = BETRAYAL_DISCOVERY_POOLS.possessions.item[0]!;
             const core = createBetrayalFoundationCore(['0', '1', '2']);
@@ -6122,7 +6141,11 @@ describe('Betrayal Board foundation', () => {
                 matchData: defaultMatchData.slice(0, 3),
             });
 
-            expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
+            const panel = screen.getByTestId('betrayal-discovery-panel');
+            expect(panel).toBeInTheDocument();
+            expect(panel).toBeVisible();
+            act(() => vi.advanceTimersToNextFrame());
+            act(() => vi.advanceTimersToNextFrame());
             act(() => vi.advanceTimersByTime(2999));
             expect(dispatch).not.toHaveBeenCalledWith(
                 BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
@@ -6134,6 +6157,7 @@ describe('Betrayal Board foundation', () => {
                 { resolutionId: 'standalone-item-gain' },
             );
         } finally {
+            getBoundingClientRect.mockRestore();
             vi.useRealTimers();
         }
     });

@@ -11,6 +11,7 @@ type MockClientInstance = {
     disconnect: ReturnType<typeof vi.fn>;
     resync: ReturnType<typeof vi.fn>;
     canSendCommand: ReturnType<typeof vi.fn>;
+    requestAdminDebugAccess: ReturnType<typeof vi.fn>;
     sendCommand: ReturnType<typeof vi.fn>;
     sendBatch: ReturnType<typeof vi.fn>;
     emitStateUpdate: (state: unknown, players?: unknown[], meta?: unknown, randomMeta?: unknown) => void;
@@ -45,6 +46,7 @@ vi.mock('../client', () => {
         disconnect = vi.fn();
         resync = vi.fn();
         canSendCommand = vi.fn(() => true);
+        requestAdminDebugAccess = vi.fn();
         sendCommand = vi.fn(() => true);
         sendBatch = vi.fn(() => true);
 
@@ -182,6 +184,18 @@ function SingleAdvanceProbe(): JSX.Element {
             }}
         >
             single advance
+        </button>
+    );
+}
+
+function ConsecutiveSetupActionsProbe(): JSX.Element {
+    const { dispatch } = useGameClient();
+    return (
+        <button data-testid="dispatch-consecutive-setup-actions" onClick={() => {
+            dispatch('SELECT_FACTION', { factionId: 'ming' });
+            dispatch('CONFIRM_SETUP', { choiceId: 'host-confirm' });
+        }}>
+            confirm setup
         </button>
     );
 }
@@ -354,6 +368,104 @@ describe('GameProvider transport baseline', () => {
         expect(client.latestState).not.toEqual(expect.objectContaining({
             __refreshedByUi: true,
         }));
+    });
+
+    it('only retries the specifically rejected pending command once; timeout alone never retries', () => {
+        const onError = vi.fn();
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-correlated-stale-command"
+                playerId="0"
+                onError={onError}
+            >
+                <ConsecutiveSetupActionsProbe />
+            </GameProvider>,
+        );
+        const client = mockClientInstances[0]!;
+
+        act(() => screen.getByTestId('dispatch-consecutive-setup-actions').click());
+        expect(client.sendCommand).toHaveBeenCalledTimes(2);
+        const firstContext = client.sendCommand.mock.calls[0]?.[2] as { commandId?: string };
+        const secondContext = client.sendCommand.mock.calls[1]?.[2] as { commandId?: string };
+        expect(firstContext.commandId).toBeTruthy();
+        expect(secondContext.commandId).toBeTruthy();
+        expect(secondContext.commandId).not.toBe(firstContext.commandId);
+
+        act(() => client.config.onCommandRejected?.(secondContext.commandId, 'stale_state'));
+        act(() => client.emitStateUpdate({ core: { phase: 'setup' }, sys: {} }, [], { stateID: 3, randomCursor: 0 }));
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(3);
+        expect(client.sendCommand.mock.calls[2]?.[0]).toBe('CONFIRM_SETUP');
+        expect(client.sendCommand.mock.calls[2]?.[1]).toEqual({ choiceId: 'host-confirm' });
+        const retriedContext = client.sendCommand.mock.calls[2]?.[2] as { commandId?: string };
+        expect(retriedContext.commandId).not.toBe(secondContext.commandId);
+        expect(client.sendCommand.mock.calls[0]?.[0]).toBe('SELECT_FACTION');
+
+        const resyncCountBeforeSecondRejection = client.resync.mock.calls.length;
+        act(() => client.config.onCommandRejected?.(retriedContext.commandId, 'stale_state'));
+        expect(client.sendCommand).toHaveBeenCalledTimes(3);
+        expect(client.resync.mock.calls.length).toBeGreaterThan(resyncCountBeforeSecondRejection);
+        expect(client.resync.mock.calls.at(-1)?.[0]).toEqual({ force: true });
+        expect(onError).toHaveBeenCalledWith('stale_state');
+
+        act(() => client.config.onCommandAckTimeout?.(firstContext.commandId));
+        act(() => client.emitStateUpdate({ core: { phase: 'setup' }, sys: {} }, [], { stateID: 4, randomCursor: 0 }));
+        expect(client.sendCommand).toHaveBeenCalledTimes(3);
+    });
+
+    it('replays multiple correlated stale commands in their original same-player order', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-correlated-stale-order"
+                playerId="0"
+            >
+                <ConsecutiveSetupActionsProbe />
+            </GameProvider>,
+        );
+        const client = mockClientInstances[0]!;
+        act(() => screen.getByTestId('dispatch-consecutive-setup-actions').click());
+        const firstId = (client.sendCommand.mock.calls[0]?.[2] as { commandId: string }).commandId;
+        const secondId = (client.sendCommand.mock.calls[1]?.[2] as { commandId: string }).commandId;
+
+        act(() => {
+            client.config.onCommandRejected?.(secondId, 'stale_state');
+            client.config.onCommandRejected?.(firstId, 'stale_state');
+        });
+        act(() => client.emitStateUpdate({ core: { phase: 'setup' }, sys: {} }, [], { stateID: 4, randomCursor: 0 }));
+
+        expect(client.sendCommand).toHaveBeenCalledTimes(4);
+        expect(client.sendCommand.mock.calls[2]?.[0]).toBe('SELECT_FACTION');
+        expect(client.sendCommand.mock.calls[3]?.[0]).toBe('CONFIRM_SETUP');
+    });
+
+    it('切换 match 后丢弃旧房间的 stale 重试队列，并忽略旧 client 的迟到状态', () => {
+        const renderProvider = (matchId: string) => (
+            <GameProvider server="http://127.0.0.1:3000" matchId={matchId} playerId="0">
+                <>
+                    <ConsecutiveSetupActionsProbe />
+                    <StateProbe />
+                </>
+            </GameProvider>
+        );
+        const view = render(renderProvider('match-react-old-stale-queue'));
+        const oldClient = mockClientInstances[0]!;
+
+        act(() => screen.getByTestId('dispatch-consecutive-setup-actions').click());
+        const oldSecondCommandId = (oldClient.sendCommand.mock.calls[1]?.[2] as { commandId: string }).commandId;
+        act(() => oldClient.config.onCommandRejected?.(oldSecondCommandId, 'stale_state'));
+
+        view.rerender(renderProvider('match-react-new-stale-queue'));
+        const newClient = mockClientInstances[1]!;
+        expect(oldClient.disconnect).toHaveBeenCalledTimes(1);
+
+        act(() => oldClient.emitStateUpdate({ core: { match: 'old' }, sys: {} }, [], { stateID: 50, randomCursor: 0 }));
+        expect(screen.getByTestId('state').textContent).not.toContain('"match":"old"');
+
+        act(() => newClient.emitStateUpdate({ core: { match: 'new' }, sys: {} }, [], { stateID: 1, randomCursor: 0 }));
+        expect(screen.getByTestId('state').textContent).toContain('"match":"new"');
+        expect(newClient.sendCommand).not.toHaveBeenCalled();
     });
 
     it('旁观者保留公共交互入口，但 dispatch 不产生预测、不发命令', () => {
@@ -1182,11 +1294,11 @@ describe('GameProvider transport baseline', () => {
 
         expect(client.sendBatch).not.toHaveBeenCalled();
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', {});
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', {}, expect.objectContaining({ commandId: expect.any(String) }));
         expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'SYS_INTERACTION_RESPOND', {
             interactionId: 'sea-dogs-from-base',
             optionId: 'base_0',
-        });
+        }, expect.objectContaining({ commandId: expect.any(String) }));
     });
 
     it('queues repeated serialized commands even when the first command is optimistically predicted', () => {
@@ -1273,7 +1385,7 @@ describe('GameProvider transport baseline', () => {
         expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
         expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
 
         act(() => {
@@ -1293,7 +1405,7 @@ describe('GameProvider transport baseline', () => {
 
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, { expectedStateID: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
         expect(screen.getByTestId('state').textContent).toContain('predicted-ai-turn');
 
         mockEngine.processCommand.mockClear();
@@ -1422,12 +1534,12 @@ describe('GameProvider transport baseline', () => {
         expect(mockEngine.processCommand).toHaveBeenCalledWith('PLAY_CARD', { cardId: 'card-get-away' }, '0');
         expect(client.sendBatch).not.toHaveBeenCalled();
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'PLAY_CARD', { cardId: 'card-get-away' }, { expectedStateID: 1 });
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'PLAY_CARD', { cardId: 'card-get-away' }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
         expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'REMOVE_STATUS', {
             targetPlayerId: '0',
             statusId: 'hypnosis',
             interactionId: 'dt-interaction-card-get-away-1',
-        }, { expectedStateID: 2 });
+        }, expect.objectContaining({ expectedStateID: 2, commandId: expect.any(String) }));
     });
 
     it('sends undo requests as command companions while an optimistic command is pending', () => {
@@ -1524,8 +1636,8 @@ describe('GameProvider transport baseline', () => {
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenCalledWith('ADVANCE_PHASE', { step: 1 }, '0');
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
-        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'SYS_REQUEST_UNDO', {}, { expectedStateID: 2 });
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
+        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'SYS_REQUEST_UNDO', {}, expect.objectContaining({ expectedStateID: 2, commandId: expect.any(String) }));
         expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandWaitingForPreviousStep');
         expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandQueuedAfterPreviousStep');
     });
@@ -1598,8 +1710,8 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
-        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
-        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'TOGGLE_DIE_LOCK', { dieId: 2 }, { expectedStateID: 2 });
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
+        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'TOGGLE_DIE_LOCK', { dieId: 2 }, expect.objectContaining({ expectedStateID: 2, commandId: expect.any(String) }));
         expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandWaitingForPreviousStep');
         expect(screen.getByTestId('toasts').textContent).not.toContain('toast.commandQueuedAfterPreviousStep');
     });
@@ -1703,7 +1815,7 @@ describe('GameProvider transport baseline', () => {
             targetPlayerId: '0',
             statusId: 'hypnosis',
             interactionId: 'dt-interaction-card-get-away-1',
-        }, { expectedStateID: 2 });
+        }, expect.objectContaining({ expectedStateID: 2, commandId: expect.any(String) }));
     });
 
     it('keeps only one retry for rapid serialized phase advances', () => {
@@ -1788,7 +1900,7 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
         expect(mockEngine.processCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, '0');
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, { expectedStateID: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
         expect(screen.getByTestId('state').textContent).toContain('predicted-step-1');
         expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
 
@@ -1810,7 +1922,7 @@ describe('GameProvider transport baseline', () => {
         expect(client.sendCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(2);
         expect(mockEngine.processCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, '0');
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, { expectedStateID: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, expect.objectContaining({ expectedStateID: 1, commandId: expect.any(String) }));
 
         act(() => {
             client.emitStateUpdate({
@@ -1896,7 +2008,7 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ commandId: expect.any(String) }));
 
         client.sendCommand.mockClear();
         mockEngine.processCommand.mockClear();
@@ -2124,7 +2236,7 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ commandId: expect.any(String) }));
     });
 
     it('blocks repeated serialized commands even when the first command is not optimistically predicted', () => {
@@ -2197,7 +2309,7 @@ describe('GameProvider transport baseline', () => {
 
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ commandId: expect.any(String) }));
         expect(screen.getByTestId('state').textContent).toContain('authoritative-second-phase');
         expect(screen.getByTestId('toasts').textContent).toContain('toast.commandQueuedAfterPreviousStep');
 
@@ -2210,7 +2322,7 @@ describe('GameProvider transport baseline', () => {
 
         expect(mockEngine.processCommand).toHaveBeenCalledTimes(1);
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, expect.objectContaining({ commandId: expect.any(String) }));
     });
 
     it('releases serialized commands as soon as an authoritative state arrives', () => {
@@ -2290,7 +2402,7 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(client.sendCommand).toHaveBeenCalledTimes(1);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 1 }, expect.objectContaining({ commandId: expect.any(String) }));
 
         act(() => {
             client.emitStateUpdate(confirmedState, [], {
@@ -2377,7 +2489,7 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(client.sendCommand).toHaveBeenCalledTimes(3);
-        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 });
+        expect(client.sendCommand).toHaveBeenLastCalledWith('ADVANCE_PHASE', { step: 2 }, expect.objectContaining({ commandId: expect.any(String) }));
     });
 
     it('rejects an optimistic command before prediction when transport is not ready', () => {

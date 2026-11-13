@@ -51,14 +51,15 @@ export async function verifyQidahenMapCandidateRecovery(page: Page, onRecovered:
                             const originalView = await view();
                             await dragQidahenMap(page, plan.dx, plan.dy);
                             const unit = page.getByTestId(plan.id);
-                            console.info('MAP_RECOVERY', JSON.stringify({ plan, originalView, actualView: await view(), unit: await unit.boundingBox() }));
+                            const actualView = await view();
+                            console.info('MAP_RECOVERY', JSON.stringify({ plan, originalView, actualView, unit: await unit.boundingBox() }));
                             await expect.poll(() => unit.evaluate(node => {
                                 const box = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
                             }), { message: 'a map candidate behind the hand can be recovered and hit by real panning' }).toBe(true);
                             await onRecovered();
                             expect((await read(page)).core, 'viewing another candidate does not change rules or selections').toEqual(coreBeforePan);
                             expect((await view()).selected, 'viewing another candidate preserves selected units').toEqual(originalView.selected);
-                            await dragQidahenMap(page, -plan.dx, -plan.dy);
+                            await dragQidahenMap(page, originalView.x - actualView.x, originalView.y - actualView.y);
                             // 浏览器鼠标坐标以整像素投递，两次相反拖动允许不到两像素的取整差。
                             await expect.poll(async () => Math.abs((await view()).x - originalView.x)).toBeLessThan(2);
                             await expect.poll(async () => Math.abs((await view()).y - originalView.y)).toBeLessThan(2);

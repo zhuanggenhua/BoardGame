@@ -296,6 +296,13 @@
   "leaderboard": {
     "loading": "加载中…",
     "title": "ELO 排行",
+    "tiersTitle": "段位",
+    "tierAtLeast": "{{min}} 积分及以上",
+    "tierAtMost": "{{max}} 积分及以下",
+    "tierRange": "{{min}}–{{max}} 积分",
+    "pointsTitle": "积分排行",
+    "points": "{{rating}} 积分",
+    "pointsHelp": "积分反映你在这个游戏中的对战表现，会根据胜负和对手积分变化。游客不进入排行榜。",
     "empty": "暂无数据",
     "rating": "{{rating}} ELO",
     "record": "{{wins}}胜 {{losses}}负 {{draws}}平 · {{winRate}}% / {{matches}}局",
@@ -2697,6 +2704,8 @@
     },
     "externalGamePage": {
       "updateAppForBrowser": "更新 App 后在应用内游玩",
+      "uploader": "上传者：{{name}}",
+      "anonymousUploader": "佚名",
       "loading": "正在加载游戏…",
       "loadFailed": "游戏加载失败：{{message}}",
       "back": "返回",

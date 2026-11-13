@@ -781,7 +781,7 @@ test('索尔2v2合法代表态：真实入口复用选骰、随机目标与队�
                 entry: '真实在线四人对局、真实僧侣能力槽和正式玩家投骰入口',
                 preparedState: '对局开局后预置僧侣莲花掌可用骰面与两名友方各自牌库中的一张下次一定；此为合法代表态',
                 randomControl: 'targetingRoll 由正式服务端随机源掷出，测试读取实际结果并处理自动目标或手选目标分支',
-                playerAction: '僧侣点选莲花掌、掷目标骰；必要时按正式候选 UI 选索尔；索尔队友从本人手牌打出护盾并继续结算',
+                playerAction: '僧侣点选莲花掌、掷目标骰；必要时按正式候选 UI 选索尔；受击者的队友从本人手牌打出护盾并继续结算',
             },
         );
         captures.push(capture);
@@ -932,6 +932,7 @@ test('索尔2v2合法代表态：真实入口复用选骰、随机目标与队�
                 const responderId = queue[index];
                 if (!responderId) throw new Error('目标骰响应窗口缺少当前响应者');
                 const responderPage = match.players[Number(responderId)]!.page;
+                await continueAttackShowcaseIfVisible(responderPage);
                 const responsePassButton = responderPage.getByTestId('dicethrone-response-pass-button');
                 const windowId = String(currentRollResponseWindow.id);
                 await expect(responsePassButton).toBeVisible({ timeout: 10000 });
@@ -1083,12 +1084,12 @@ test('索尔2v2合法代表态：真实入口复用选骰、随机目标与队�
             { name: 'owner-card-discarded', expected: true, read: snapshot => asStrings(asRecord(asRecord(snapshot.authoritative.players)[cardOwnerId]).discard).includes(CARD_NEXT_TIME) },
             { name: 'owner-cp-spent', expected: 4, read: snapshot => asRecord(asRecord(snapshot.authoritative.players)[cardOwnerId]).cp },
         ]);
-        await captureThorEvidenceScreen(capture, targetPage, '队友打出下次一定后显示卡牌原文与伤害归零', 'play-teammate-shield-card', 'panel', '正式卡牌特写显示下次一定原文；同一受击目标的五点待结算伤害已降为零', '索尔的队友真实拖放本人手牌中的下次一定', {
+        await captureThorEvidenceScreen(capture, targetPage, '队友打出下次一定后显示卡牌原文与伤害归零', 'play-teammate-shield-card', 'panel', '正式卡牌特写显示下次一定原文；同一受击目标的五点待结算伤害已降为零', '受击者的队友真实拖放本人手牌中的下次一定', {
             preservePointer: true,
             observeSourcesBeforeScreenshot: false,
             captureCardSpotlight: true,
         });
-        await recordThorEvidenceStep(match, capture, targetPage, 'dismiss-shield-card-spotlight', '索尔关闭既有卡牌特写后回到受伤响应操作现场', async () => {
+        await recordThorEvidenceStep(match, capture, targetPage, 'dismiss-shield-card-spotlight', '关闭既有卡牌特写后回到受击者的响应操作现场', async () => {
             await dismissCardSpotlightsForAllPlayers(match);
             await expect(targetPage.getByTestId('card-spotlight-overlay')).toHaveCount(0);
             await expect(targetPage.getByTestId('current-total-damage-badge')).toHaveAttribute('data-current-damage', '0');
@@ -1096,7 +1097,7 @@ test('索尔2v2合法代表态：真实入口复用选骰、随机目标与队�
             { name: 'card-spotlight-closed', expected: false, read: snapshot => asRecords(asRecord(snapshot.visible.elements).spotlight)[0]?.visible ?? false },
             { name: 'zero-damage-remains', expected: 0, read: snapshot => asRecord(snapshot.authoritative.pendingDamage).currentDamage },
         ]);
-        await captureThorEvidenceScreen(capture, targetPage, '退出卡牌特写后仍可从旧响应界面继续结算', 'dismiss-shield-card-spotlight', 'interaction-mode', '卡牌阅读层退出，原有响应按钮和零伤害状态仍在', '索尔点按既有特写遮罩关闭卡牌阅读层');
+        await captureThorEvidenceScreen(capture, targetPage, '退出卡牌特写后仍可从旧响应界面继续结算', 'dismiss-shield-card-spotlight', 'interaction-mode', '卡牌阅读层退出，原有响应按钮和零伤害状态仍在', '受击者关闭既有卡牌阅读层');
 
         const continueDamageButton = targetPage.getByTestId('dicethrone-response-pass-button');
         await expect(continueDamageButton).toBeEnabled();
@@ -1125,7 +1126,7 @@ test('索尔2v2合法代表态：真实入口复用选骰、随机目标与队�
             { name: 'shield-cleaned-after-response', expected: 0, read: snapshot => asRecords(asRecord(asRecord(snapshot.authoritative.players)[targetId]).shields).length },
             { name: 'teammate-card-consumed', expected: true, read: snapshot => asStrings(asRecord(asRecord(snapshot.authoritative.players)[cardOwnerId]).discard).includes(CARD_NEXT_TIME) },
         ]);
-        await captureThorEvidenceScreen(capture, targetPage, '确认继续后五点伤害均被防止且索尔生命保持五十', 'continue-zero-damage-response', 'interaction-mode', '响应窗口收口，受击者生命仍为50，伤害未落地，队友卡牌已消耗', '受击者点击正式继续按钮，服务端结算并清理一次性护盾');
+        await captureThorEvidenceScreen(capture, targetPage, '确认继续后五点伤害均被防止且受击者生命保持五十', 'continue-zero-damage-response', 'interaction-mode', '响应窗口收口，受击者生命仍为50，伤害未落地，队友卡牌已消耗', '受击者点击正式继续按钮，服务端结算并清理一次性护盾');
 
         const sourcePages = new Set<Page>();
         for (const evidence of captures) for (const page of evidence.pages) sourcePages.add(page);

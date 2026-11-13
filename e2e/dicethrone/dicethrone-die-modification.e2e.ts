@@ -10,7 +10,6 @@ import { ZHANSHUJIA_PASSIVE_ABILITIES } from '../../src/games/dicethrone/heroes/
 import {
     getRightTrayDiceTray,
     expectRightTrayBonusDiceConfirmation,
-    expectRightTrayBonusDiceReadOnlyReview,
     settleCurrentBonusDice,
 } from './bonus-dice-flow';
 
@@ -537,7 +536,6 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         const dieButton = page.locator('[data-testid="die-button-0"]');
         await expect(dieButton).toBeVisible({ timeout: 5000 });
         await dieButton.click();
-        await confirmDiceInteraction(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -790,7 +788,6 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await expect(dieButton).toBeVisible({ timeout: 5000 });
         await expect(dieButton).toHaveAttribute('data-clickable', 'true');
         await dieButton.click();
-        await confirmDiceInteraction(page);
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -847,7 +844,9 @@ test.describe('DiceThrone - 选择骰子修改', () => {
                 diceValues: [6],
             },
         });
-        await expectRightTrayBonusDiceReadOnlyReview(page, { expectedValues: [6] });
+        // 父掷骰阶段恢复主骰盘；效果骰最终值已由上面的权威状态断言覆盖。
+        await expect.poll(async () => page.locator('[data-testid="die-button-0"]').first().getAttribute('data-display-value'))
+            .toBe('1');
 
         await game.screenshot('终极来源骰-改骰后确认结算', testInfo);
     });
@@ -1570,7 +1569,7 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await game.screenshot('战争贩子-军刀奖励骰确认后-进入防御投掷', testInfo);
     });
 
-    test('对方防御骰确认后的响应窗口应显示战术优势，并允许攻击方重掷防御骰', async ({ page, game }, testInfo) => {
+    test('对方防御骰确认后战术优势不能重掷对手骰子', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone', HUMAN_DICE_MODIFICATION_QUERY);
         await game.setupScene({
             gameId: 'dicethrone',
@@ -1658,57 +1657,14 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             tacticalAdvantage: 1,
         });
 
-        const passiveReroll = page.getByTestId('passive-action-zhanshujia-tactical-advantage-1');
+        // 战术家提示板规定仅能重掷自己的骰；当前骰属于防御方。
+        await expect(page.getByTestId('passive-action-zhanshujia-tactical-advantage-1')).toHaveCount(0);
         const defenderDie = page.getByTestId('die-button-0').first();
-        await expect(passiveReroll).toBeVisible({ timeout: 10000 });
-        await expect(passiveReroll).toBeEnabled();
-        await expect(defenderDie).toBeVisible({ timeout: 5000 });
         await expect(defenderDie).toHaveAttribute('data-owner-id', '1');
         await expect(defenderDie).toHaveAttribute('data-display-value', '2');
         await expect(defenderDie).toHaveAttribute('data-clickable', 'false');
-        await game.screenshot('防御骰确认后-攻击方响应窗口可见战术优势', testInfo);
-
-        await passiveReroll.click();
-        await expect(passiveReroll).toContainText(/取消|Cancel/);
-        await expect(defenderDie).toHaveAttribute('data-clickable', 'true');
-        await defenderDie.click();
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            const rerollEvent = [...(state?.sys?.eventStream?.entries ?? [])]
-                .reverse()
-                .map((entry: any) => entry.event)
-                .find((event: any) => event?.type === 'DIE_REROLLED');
-            return {
-                firstDefenseDie: state?.core?.dice?.[0]?.value ?? null,
-                tacticalAdvantage: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? null,
-                rerollEvent: rerollEvent
-                    ? {
-                        dieId: rerollEvent.payload?.dieId ?? null,
-                        oldValue: rerollEvent.payload?.oldValue ?? null,
-                        newValue: rerollEvent.payload?.newValue ?? null,
-                        playerId: rerollEvent.payload?.playerId ?? null,
-                        ownerId: rerollEvent.payload?.ownerId ?? null,
-                        target: rerollEvent.payload?.target ?? null,
-                    }
-                    : null,
-            };
-        }, { timeout: 10000 }).toEqual({
-            firstDefenseDie: 6,
-            tacticalAdvantage: 0,
-            rerollEvent: {
-                dieId: 0,
-                oldValue: 2,
-                newValue: 6,
-                playerId: '0',
-                ownerId: '1',
-                target: null,
-            },
-        });
-        await expect(defenderDie).toHaveAttribute('data-display-value', '6');
-        await expect.poll(() => defenderDie.getByTestId('dice-2d').getAttribute('data-roll-animation'), { timeout: 5000 })
-            .toBe('settled');
-        await game.screenshot('防御骰确认后-战术优势已重掷对方防御骰', testInfo);
+        await expect.poll(async () => (await game.getState())?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(1);
+        await game.screenshot('防御骰确认后不能重掷对方骰子', testInfo);
     });
 
     test('战术家可从真实主骰入口主动使用战术优势重掷已锁定骰', async ({ page, game }, testInfo) => {

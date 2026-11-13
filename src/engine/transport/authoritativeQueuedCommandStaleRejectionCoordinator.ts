@@ -16,6 +16,7 @@ export type AuthoritativeQueuedCommandStaleRejectionMatch = {
 
 export type AuthoritativeQueuedCommandOptions = {
     expectedStateID?: number | null;
+    commandId?: string;
     onlineAiCircuitSource?: OnlineAiCircuitSource;
     feedbackSource?: string;
     onlineAiAttemptKey?: string | null;
@@ -26,6 +27,7 @@ export type AuthoritativeQueuedCommandStaleRejectionHooks<
     TMatch extends AuthoritativeQueuedCommandStaleRejectionMatch,
 > = {
     resolveSeatControllerType: (match: TMatch, playerId: string) => AuthoritativeCommandSeatControllerType;
+    emitPlayerError: (match: TMatch, playerId: string, reason: 'stale_state', commandId?: string) => void;
     admitOnlineAiCircuitCommand: (args: {
         matchId: string;
         playerId: string;
@@ -68,7 +70,14 @@ export class AuthoritativeQueuedCommandStaleRejectionCoordinator<
         command: QueuedAuthoritativeCommand<AuthoritativeQueuedCommandOptions>;
     }): Promise<void> {
         const { match, command } = args;
-        if (this.hooks.resolveSeatControllerType(match, command.playerID) !== 'human') {
+        const seatControllerType = this.hooks.resolveSeatControllerType(match, command.playerID);
+        if (seatControllerType === 'human') {
+            // The command became stale while it waited behind another action (often an AI
+            // turn). Notify the originating player so the existing client path resyncs and
+            // replays this exact serialized command against the latest authoritative state.
+            // The command still passes through normal server-side legality checks.
+            this.hooks.emitPlayerError(match, command.playerID, 'stale_state', command.options?.commandId);
+        } else {
             const expectedStateID = command.options?.expectedStateID ?? command.stateIDAtEnqueue;
             const source = command.options?.onlineAiCircuitSource
                 ?? (command.options?.feedbackSource === 'online-ai-watchdog' ? 'watchdog' : 'client');

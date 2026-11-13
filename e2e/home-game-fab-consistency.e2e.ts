@@ -27,6 +27,7 @@ for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as
             await page.getByTestId('fab-menu').locator('[data-fab-id="settings"]').click();
             await expect(page.getByTestId('fab-panel-settings')).toBeVisible();
             await expect(page.getByTestId('fab-panel-settings').locator('input[type="range"]').first()).toBeVisible();
+            const homePanel = await page.getByTestId('fab-panel-settings').evaluate(node => ({ background: getComputedStyle(node).backgroundColor, color: getComputedStyle(node).color }));
             await capture(page, `${mobile ? '手机' : '桌面'}-${style}-首页设置展开`);
             await page.getByTestId('fab-menu').locator('[data-fab-id="settings"]').click();
             await expect(page.getByTestId('fab-panel-settings')).toHaveCount(0);
@@ -49,6 +50,7 @@ for (const mobile of [false, true]) for (const style of ['modern', 'classic'] as
             await gameSettings.click();
             await expect(page.getByTestId('fab-panel-settings')).toBeVisible();
             await expect(page.getByTestId('fab-panel-settings').locator('input[type="range"]').first()).toBeVisible();
+            await expect.poll(() => page.getByTestId('fab-panel-settings').evaluate(node => ({ background: getComputedStyle(node).backgroundColor, color: getComputedStyle(node).color }))).toEqual(homePanel);
             await capture(page, `${mobile ? '手机' : '桌面'}-${style}-局内设置展开`);
         } finally { await context.close(); }
     });

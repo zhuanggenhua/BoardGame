@@ -26,3 +26,9 @@
 ## 2026-10-25 定时任务实查（2026-10-26）
 
 只读实查云服务器 systemd 状态：timer 仍为 enabled；最近一次触发为 `Sun 2026-10-25 03:00:05 CST`，下次为 `Sun 2026-11-01 03:00:00 CST`。`boardgame-asset-weekly-backup.service` 的 `Result=success`、`ExecMainStatus=0`，执行区间为 03:00:05–03:09:33 CST。服务日志记录 `assetWeeklyBackup=completed week=2026-W43`，目标为 `r2-boardgame:boardgame-assets/weekly-server-backups/2026-W43`；本次传输 25 项、12.106 MiB。此为定时周备份运行记录，首次 4.088 GiB 全量备份仍按上节记录。
+
+## 2026-11-12 定时任务回查
+
+只读回查：timer 为 enabled/active，最近一次于 2026-11-08 03:00:07 CST 触发；service 为 Result=success、ExecMainStatus=0，04:03:00 退出；下一次为 2026-11-15 03:00 CST。这证明 systemd 调度及该次服务退出成功，不单独证明远端每个对象的内容校验。
+
+2026-11-12 再次以 HTTP HEAD 回查索尔的 player-board、tip、ability-cards、dice、status-icons-atlas、portrait 六个正式压缩图地址，均返回 200；仅验证公开访问状态，不推断 CDN 上每个文件的哈希。

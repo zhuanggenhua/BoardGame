@@ -51,10 +51,12 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
     const [size, setSize] = React.useState({ w: 0, h: 0 });
     const [pose, setPose] = React.useState<MapViewportState>({ zoom: .65, panX: 0, panY: 0 });
     const previousFit = React.useRef<MapViewportState | null>(null);
+    const focusDeployment = React.useRef<() => void>(() => {});
     const reset = React.useCallback(() => {
         if (!size.w || !size.h)
             return;
         setPose(fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT));
+        requestAnimationFrame(() => focusDeployment.current());
     }, [size]);
     React.useLayoutEffect(() => {
         if (!host)
@@ -75,6 +77,31 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             setPose(current => resizeFateTableCamera(current,before,nextFit));
         }
     }, [size]);
+    const needsDeploymentTargets = core.phase === 'outpost' && viewerId === core.currentPlayerId && legalLocations.includes('shinto');
+    React.useLayoutEffect(() => {
+        if (!host || !needsDeploymentTargets) return;
+        // 只在进入可部署状态时调整地图，不移动手牌或改变卡牌尺寸。
+        const focus = () => {
+            const target = host.querySelector<HTMLElement>('[data-testid="fate-domination-location-shinto"]');
+            if (!target) return;
+            const bounds = target.getBoundingClientRect();
+            const cards = Array.from(host.closest('.fd-runtime-table')?.querySelectorAll<HTMLElement>('.fd-runtime-hand-grid .fd-runtime-card') ?? []);
+            const blockers = cards.map(card => card.getBoundingClientRect()).filter(card =>
+                card.left < bounds.right && card.right > bounds.left && card.top < bounds.bottom && card.bottom > bounds.top);
+            if (!blockers.length) return;
+            const slotIndex = nextFateDeploymentSlot(core, 'shinto');
+            const slot = slotIndex === null ? undefined : DEPLOYMENT_SLOTS.shinto?.[slotIndex];
+            if (!slot) return;
+            const availableHeight = Math.min(...blockers.map(card => card.top)) - host.getBoundingClientRect().top - 12;
+            setPose(current => {
+                const zoom = Math.max(.25, Math.min(current.zoom, availableHeight / (slot.pawnY + 44)));
+                return {...current, zoom, panX:(host.clientWidth-WIDTH*zoom)/2, panY:0};
+            });
+        };
+        focusDeployment.current = focus;
+        const frame = requestAnimationFrame(focus);
+        return () => { cancelAnimationFrame(frame); focusDeployment.current = () => {}; };
+    }, [host, needsDeploymentTargets]);
     const project = React.useCallback((display: MapViewportState) => {
         if (overlay.current)
             overlay.current.style.transform = `translate(${display.panX}px, ${display.panY}px) scale(${display.zoom})`;

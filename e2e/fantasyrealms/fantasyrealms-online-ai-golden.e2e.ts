@@ -172,6 +172,7 @@ async function createFantasyRealmsAiRoom(
                 ownerType: 'guest',
                 enableAi: true,
                 seatControllers,
+                setupSelections: { variant: numPlayers === 2 ? 'duel' : 'standard', expansion: 'base' },
             },
             unlisted: false,
         },
@@ -464,7 +465,11 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
             && core.stage === 'draw'
             && core.turn > beforeTurn
             && hostDiscardApplied
-            && args.aiSeatIds.every((seatId) => (core.players[seatId]?.hand.length ?? 0) === 7)
+            && args.aiSeatIds.every((seatId) => {
+                const previousCount = beforeSummary.handCounts[seatId] ?? 0;
+                const expectedCount = beforeHandCount < 7 ? Math.min(7, previousCount + 1) : previousCount;
+                return (core.players[seatId]?.hand.length ?? 0) === expectedCount;
+            })
             && (
                 beforeSummary.eventStreamNextId === null
                 || (

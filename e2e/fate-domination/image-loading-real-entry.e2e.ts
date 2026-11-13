@@ -27,6 +27,8 @@ test('真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保�
         await page.goto(`${baseURL}/play/fate-domination/tutorial`, {waitUntil: 'domcontentloaded'});
         await expect(page.getByTestId('tutorial-overlay-card')).toBeVisible({timeout: 45000});
         await page.getByRole('button', {name: '下一步', exact: true}).click();
+        await expect(page.getByTestId('tutorial-overlay-card')).toContainText('准备、前哨、行动和战斗');
+        await page.getByRole('button', {name: '下一步', exact: true}).click();
         await expect(page.getByTestId('tutorial-overlay-card')).toContainText('将他们的手牌补充到上限');
         await page.getByRole('button', {name: '下一步', exact: true}).click();
         await page.getByTestId('fate-domination-primary-action').click();

@@ -16,6 +16,8 @@ type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
     locale?: string;
     /** 是否显示加载占位 shimmer，默认 true */
     placeholder?: boolean;
+    /** 当前图片真实解码完成，包括浏览器未触发 load 事件的情况。 */
+    onReady?: () => void;
 };
 
 const isSvgSource = (src: string) => /^data:image\/svg\+xml[;,]/i.test(src) || /\.svg(\?|#|$)/i.test(src);
@@ -109,6 +111,7 @@ export const OptimizedImage = ({
     alt,
     onError,
     onLoad: onLoadProp,
+    onReady,
     onDragStart,
     style: styleProp,
     placeholder = true,
@@ -120,6 +123,8 @@ export const OptimizedImage = ({
     const effectiveLocale = locale || i18n.language || 'zh-CN';
     const [fallbackLevel, setFallbackLevel] = React.useState(0);
     const [loaded, setLoaded] = React.useState(false);
+    const onReadyRef = React.useRef(onReady);
+    onReadyRef.current = onReady;
     const [errored, setErrored] = React.useState(false);
     const [objectUrl, setObjectUrl] = React.useState<string | null>(null);
     const [localFetchDebug, setLocalFetchDebug] = React.useState('idle');
@@ -202,6 +207,10 @@ export const OptimizedImage = ({
     
     // 资源缓存只决定候选 URL；当前 DOM 图片解码成功后才能显示。
     const effectiveLoaded = loaded;
+
+    React.useEffect(() => {
+        if (effectiveLoaded) onReadyRef.current?.();
+    }, [effectiveLoaded]);
 
     // 只有逻辑资源或语言切换时才完全重置。
     // 不能把 currentSrc（候选 URL 切换）放进依赖里，否则切到 fallback 后会立刻

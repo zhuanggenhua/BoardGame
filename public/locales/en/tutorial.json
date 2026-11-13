@@ -3,7 +3,9 @@
     "finish": "Finish and return",
     "next": "Next",
     "previous": "Back",
-    "clickToContinue": "Complete the current action to continue"
+    "clickToContinue": "Complete the current action to continue",
+    "visualLoading": "Loading illustration…",
+    "visualError": "The illustration failed to load. Check your connection and try again."
   },
   "default": {
     "welcome": "Welcome to Tic-Tac-Toe! The goal is to align three marks.",

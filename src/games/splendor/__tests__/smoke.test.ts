@@ -237,6 +237,18 @@ describe('splendor smoke', () => {
         expect(core.hostStarted).toBe(false);
     });
 
+    test.each(['local', 'tutorial'] as const)('explicit %s setup starts the local game before interaction', (mode) => {
+        const core = SplendorDomain.setup(['0', '1'], makeRandom(), undefined, { mode });
+
+        expect(core.hostStarted).toBe(true);
+    });
+
+    test('explicit online setup preserves the host start gate', () => {
+        const core = SplendorDomain.setup(['0', '1'], makeRandom(), undefined, { mode: 'online' });
+
+        expect(core.hostStarted).toBe(false);
+    });
+
     test('setupData.startingPlayerId can override opening player and keeps turn order rotation', () => {
         const core = SplendorDomain.setup(['0', '1', '2'], makeRandom(), { startingPlayerId: '2' });
 

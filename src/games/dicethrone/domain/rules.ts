@@ -1104,7 +1104,10 @@ const checkStandardCardPlay = (
     if (
         hasExistingDiceToolEffect(card)
         && currentRollContext
-        && currentRollContext.policy.allowDiceCardTargeting !== true
+        && (
+            currentRollContext.policy.allowDiceCardTargeting !== true
+            || (currentRollContext.kind === 'offensive' && !!state.pendingDamage)
+        )
     ) {
         return { ok: false, reason: 'rollContextLocked' };
     }

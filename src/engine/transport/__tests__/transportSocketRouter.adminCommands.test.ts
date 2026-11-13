@@ -73,6 +73,44 @@ describe('transport socket admin debug route', () => {
         expect(harness.socketEmit).toHaveBeenCalledWith('error', 'match-1', 'admin_debug_channel_required');
     });
 
+    it('逐条命令返回独立结果 ack，保留原始命令身份元数据', async () => {
+        const harness = createRouterHarness({
+            socketInfo: { matchID: 'match-1', playerID: '0', credentials: 'seat-token' },
+            match: { matchID: 'match-1', state: { core: {}, sys: {} } },
+        });
+        harness.handleCommand.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+        const firstAck = vi.fn();
+        const secondAck = vi.fn();
+
+        await harness.invoke('command', 'match-1', 'SELECT_FACTION', { factionId: 'ming' }, 'seat-token', {
+            expectedStateID: 1,
+            commandId: 'cmd-first',
+        }, firstAck);
+        await harness.invoke('command', 'match-1', 'CONFIRM_SETUP', {}, 'seat-token', {
+            expectedStateID: 2,
+            commandId: 'cmd-second',
+        }, secondAck);
+
+        expect(firstAck).toHaveBeenCalledWith({ accepted: false });
+        expect(secondAck).toHaveBeenCalledWith({ accepted: true });
+        expect(harness.handleCommand).toHaveBeenNthCalledWith(
+            1,
+            'match-1',
+            '0',
+            'SELECT_FACTION',
+            { factionId: 'ming' },
+            expect.objectContaining({ commandId: 'cmd-first', expectedStateID: 1 }),
+        );
+        expect(harness.handleCommand).toHaveBeenNthCalledWith(
+            2,
+            'match-1',
+            '0',
+            'CONFIRM_SETUP',
+            {},
+            expect.objectContaining({ commandId: 'cmd-second', expectedStateID: 2 }),
+        );
+    });
+
     it('拒绝普通批次通道夹带作弊调试命令', async () => {
         const harness = createRouterHarness({
             socketInfo: { matchID: 'match-1', playerID: '0', credentials: 'seat-token' },

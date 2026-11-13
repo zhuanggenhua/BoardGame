@@ -199,7 +199,8 @@ describe('Monk 技能完整覆盖测试', () => {
 
             const promptState = runner.getState();
             const prompt = getSimpleChoicePrompt(promptState, 'zen-forget');
-            expect(promptState.core.pendingAttack?.preDefenseResolved).toBe(true);
+            // 玩家尚未完成选择，防御前结算仍在等待；下方继续验证选择后的完整收口。
+            expect(promptState.core.pendingAttack?.preDefenseResolved).not.toBe(true);
 
             const purifyOption = prompt.options.find(option => option.id === 'option-1');
             expect(purifyOption).toBeTruthy();

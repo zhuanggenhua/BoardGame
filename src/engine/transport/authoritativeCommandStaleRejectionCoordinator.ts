@@ -24,7 +24,7 @@ export type AuthoritativeCommandStaleRejectionHooks<TMatch extends Authoritative
         onlineAiAttemptKey?: string | null;
         clientTransport?: OnlineAiClientTransportDiagnostics | null;
     }) => Promise<OnlineAiCircuitSnapshot>;
-    emitPlayerError: (match: TMatch, playerId: string, reason: 'stale_state') => void;
+    emitPlayerError: (match: TMatch, playerId: string, reason: 'stale_state', commandId?: string) => void;
 };
 
 export type AuthoritativeCommandStaleRejectionCoordinatorConfig<
@@ -65,6 +65,7 @@ export class AuthoritativeCommandStaleRejectionCoordinator<
         onlineAiCircuitSource: OnlineAiCircuitSource;
         onlineAiAttemptKey?: string | null;
         clientTransport?: OnlineAiClientTransportDiagnostics | null;
+        commandId?: string;
     }): Promise<{ rejected: true } | { rejected: false }> {
         if (
             typeof args.expectedStateID !== 'number'
@@ -114,7 +115,7 @@ export class AuthoritativeCommandStaleRejectionCoordinator<
             });
         }
 
-        this.hooks.emitPlayerError(args.match, args.playerId, 'stale_state');
+        this.hooks.emitPlayerError(args.match, args.playerId, 'stale_state', args.commandId);
         return { rejected: true };
     }
 }

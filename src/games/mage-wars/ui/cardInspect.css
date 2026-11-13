@@ -1,0 +1,24 @@
+@media (hover: hover) {
+    .mw-card-hover:hover > .mw-card-inspect {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+.mw-card-hover:has(:focus-visible) > .mw-card-inspect {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: hover) {
+    .mw-magnify-close {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .group\/modal:hover > .mw-magnify-close,
+    .mw-magnify-close:focus-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}

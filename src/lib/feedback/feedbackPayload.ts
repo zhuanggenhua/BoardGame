@@ -95,6 +95,7 @@ export interface FeedbackClientContext {
 }
 
 export interface FeedbackErrorContext {
+    location?: { bundle: string; line: number; column: number };
     message?: string;
     name?: string;
     stack?: string;

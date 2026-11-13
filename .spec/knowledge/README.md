@@ -56,7 +56,7 @@ metadata:
 | [`global-systems.md`](standards/global-systems.md) | 全局系统标准：跨游戏公共能力和入口边界——改全局能力时查 |
 | [`golden-rules.md`](standards/golden-rules.md) | 项目黄金规则：高频硬边界和不可降级口径——开工前或复盘时查 |
 | [`regression-closeout.md`](standards/regression-closeout.md) | 回归收口标准：症状保真、红测、同类扩审和证据口径——修回归问题时查 |
-| [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：Choice Request、权限、响应窗口和 AI 合法动作——新游戏、卡牌效果和特殊响应设计时查 |
+| [`rule-driven-interaction-design.md`](standards/rule-driven-interaction-design.md) | 规则驱动交互设计：同类交互检索与复用、Choice Request、权限、响应窗口和 AI 合法动作——新游戏、玩家交互、卡牌效果和特殊响应设计时查 |
 | [`rule-contract-audit.md`](standards/rule-contract-audit.md) | 规则合同审计：规则源、录入合同和实现消费一致性——查规则 bug 时查 |
 | [`shared-refactor-guard.md`](standards/shared-refactor-guard.md) | 共享重构护栏：共享层影响面、代表场景和防误伤验收——改公共代码时查 |
 | [`code-design.md`](standards/code-design.md) | 代码设计原则、设计模式选择和反模式预防规范：写业务代码、拆职责、加抽象或审查反模式时查 |

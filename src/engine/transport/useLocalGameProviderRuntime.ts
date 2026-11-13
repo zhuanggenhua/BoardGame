@@ -9,6 +9,7 @@ import {
 import type { AiSeatController } from '../ai/types';
 import type { GameClientContextValue } from './reactContext';
 import type { GameEngineConfig } from './engineConfig';
+import type { DomainSetupContext } from '../types';
 import type { LocalMatchSnapshot } from './localSession';
 import { resolveLocalPregameControlledPlayerId } from './followCurrentTurnPlayer';
 import { useLocalAiRuntime } from './useLocalAiRuntime';
@@ -24,6 +25,7 @@ export function useLocalGameProviderRuntime(args: {
     seed: string;
     randomSeed?: string;
     setupData: unknown;
+    setupContext: DomainSetupContext;
     onCommandRejected?: (commandType: string, error: string) => void;
     seatControllers: Record<string, AiSeatController>;
     playerNames?: Record<string, string>;
@@ -65,6 +67,7 @@ export function useLocalGameProviderRuntime(args: {
         seed: args.seed,
         randomSeed: args.randomSeed,
         setupData: args.setupData,
+        setupContext: args.setupContext,
         setupPlayerIds,
         aiSeatIds,
         persistSession: args.persistSession,

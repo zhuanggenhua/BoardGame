@@ -2,7 +2,9 @@ import type {FatePassageId,FateTutorialCopy} from './tutorialText';
 
 /** 作者目标总账：先选学习目标及必要来源，再让正式动作投影消费；这些理由不进入玩家文案。 */
 export const FATE_TUTORIAL_LESSONS = {
- opening:{goal:'知道怎样赢',when:'首个规则决定之前',why:'胜负句已包含十一天，不重复局长',passages:['victory']},
+ opening:{goal:'了解圣杯战争与回合',when:'首个规则决定之前',why:'先建立主题与基本目标',passages:['duration','overviewBattle']},
+ overview:{goal:'理解战果及四阶段',when:'准备阶段之前',why:'先了解整体流程，再在具体行动处学习规则',passages:['overviewPoints']},
+ ending:{goal:'理解最终胜负',when:'第十一回合结束前',why:'在终局真正到来时说明胜负规则',passages:['victory']},
  preparation:{goal:'补充手牌',when:'首次准备',why:'理解手牌从何而来',passages:['preparation']},
  deployment:{goal:'首次在工房取得魔力',when:'第一次实际选择工房点位',why:'工房顺序与收益沿用首次部署选择的同一来源，不换一个来源ID重复通用部署规则',passages:['workshopOrder']},
  deploymentChoice:{goal:'选择合法部署地点与点位',when:'首次部署选择',why:'在学员首次选点时解释部署地点与工房顺序，工房收益不在两段重复；地利留到实际战场部署',passages:['deploymentPlaces','workshopOrder']},

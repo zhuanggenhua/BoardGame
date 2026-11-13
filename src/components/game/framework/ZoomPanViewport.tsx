@@ -116,6 +116,8 @@ export interface ZoomPanViewportProps {
     panToTarget?: string | null;
     panToTargetKey?: string | number | null;
     panToScale?: number;
+    /** 教程目标已在视口内且能命中时，保留玩家当前镜头。 */
+    skipPanWhenTargetVisible?: boolean;
     controlledViewport?: ZoomPanViewportState;
     onControlledViewportChange?: (viewport: ZoomPanViewportState) => void;
     controlledViewportSchedule?: 'sync' | 'animation-frame';
@@ -161,6 +163,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     panToTarget,
     panToTargetKey,
     panToScale,
+    skipPanWhenTargetVisible = false,
     controlledViewport,
     onControlledViewportChange,
     controlledViewportSchedule = 'sync',
@@ -1003,6 +1006,24 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 : currentZoomLevel;
             const containerRect = containerEl.getBoundingClientRect();
             const elementRect = targetRect;
+            if (skipPanWhenTargetVisible && panToScale == null) {
+                // The previous tutorial bubble can briefly cover the next target;
+                // it will be repositioned for the new step and is not a reason to pan.
+                // A large zone can remain clickable even if its center is covered by the HUD.
+                const points = [[0.5, 0.5], [0.25, 0.25], [0.5, 0.25], [0.75, 0.25], [0.25, 0.5], [0.75, 0.5], [0.25, 0.75], [0.5, 0.75], [0.75, 0.75]];
+                const hasHittablePoint = points.some(([rx, ry]) => {
+                    const x = elementRect.left + elementRect.width * rx;
+                    const y = elementRect.top + elementRect.height * ry;
+                    if (x < containerRect.left || x > containerRect.right || y < containerRect.top || y > containerRect.bottom) return false;
+                    const hit = document.elementsFromPoint(x, y).find((element) => !element.closest('[data-tutorial-step]'));
+                    return Boolean(hit && targetEl.contains(hit));
+                });
+                if (hasHittablePoint) {
+                    handledPanInstructionRef.current = panInstructionKey;
+                    setSettledPanInstructionKey(panInstructionKey);
+                    return;
+                }
+            }
             // `containerSize` / `fitCenterOffset` are measured in the viewport's
             // layout coordinate system. On mobile the whole board shell can be
             // transformed, so focus math must first convert them to the current
@@ -1037,10 +1058,6 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - containerRect.top;
                 const deltaX = viewportCenterX - targetCenterX;
                 const deltaY = viewportCenterY - targetCenterY;
-                const renderedScale = Math.max(
-                    0.01,
-                    baseScale * currentZoomLevel * Math.max(0.01, shellScaleX),
-                );
                 const renderedTranslateMatch = contentEl.style.transform.match(
                     /translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)/,
                 );
@@ -1060,10 +1077,10 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                     }
                     : currentRenderPosition;
                 targetPosition = {
-                    // position is applied before scale(); convert the observed
-                    // screen-space correction back into pre-scale coordinates.
-                    x: currentPosition.x + deltaX / renderedScale,
-                    y: currentPosition.y + deltaY / renderedScale,
+                    // translate() is outside scale() in the CSS transform; only
+                    // an outer shell transform scales the translation itself.
+                    x: currentPosition.x + deltaX / Math.max(0.01, shellScaleX),
+                    y: currentPosition.y + deltaY / Math.max(0.01, shellScaleY),
                 };
             } else {
                 const savedTransform = contentEl.style.transform;
@@ -1221,6 +1238,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         panToScale,
         panToTarget,
         panToTargetKey,
+        skipPanWhenTargetVisible,
         revealScaleBadge,
     ]);
 

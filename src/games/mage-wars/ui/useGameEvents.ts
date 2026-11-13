@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useVisualEntityBuffer } from '../../../components/game/framework/hooks/useVisualEntityBuffer';
 import { useVisualEventStream } from '../../../components/game/framework/hooks/useVisualEventStream';
 import { useVisualStateBuffer, type UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
@@ -658,7 +659,9 @@ export function useMageWarsGameEvents({ G, fxBus, resolveFxAnchorSnapshot }: Use
             ));
         }
         if (relocatingFxMapRef.current.delete(id)) {
-            setRelocatingAnchorIds([...new Set(relocatingFxMapRef.current.values())]);
+            flushSync(() => {
+                setRelocatingAnchorIds([...new Set(relocatingFxMapRef.current.values())]);
+            });
         }
     }, [visualEntityBuffer]);
 

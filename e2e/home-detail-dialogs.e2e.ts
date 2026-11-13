@@ -77,6 +77,9 @@ test('360窄屏长介绍与完整动作区保持可用', async ({ browser }, inf
         await expect(intro).toContainText('骰子');
         const cover = await details.locator('.platform-details-cover').boundingBox();
         const description = await intro.boundingBox();
+        const close = await details.getByTestId('game-details-close-button').boundingBox();
+        expect(close).toBeTruthy();
+        expect(description!.y).toBeGreaterThanOrEqual(close!.y + close!.height);
         expect(description!.x).toBeGreaterThanOrEqual(cover!.x + cover!.width);
         expect(description!.y).toBeLessThan(cover!.y + cover!.height);
         expect(await intro.evaluate(node => node.scrollHeight > node.clientHeight)).toBe(true);
@@ -87,6 +90,14 @@ test('360窄屏长介绍与完整动作区保持可用', async ({ browser }, inf
         await expect(page.getByTestId('game-details-author-modal')).toBeVisible();
         await page.getByTestId('game-details-author-modal').locator('.platform-dialog-close').tap();
         await page.getByTestId('game-details-close-button').tap();
+        await expect(details).toHaveCount(0);
+        await page.locator('[data-game-id="cardia"] .platform-game-open').tap();
+        await expect(details).toBeVisible();
+        const cardiaDescription = await details.getByTestId('game-details-description').boundingBox();
+        const cardiaClose = await details.getByTestId('game-details-close-button').boundingBox();
+        expect(cardiaDescription!.y).toBeGreaterThanOrEqual(cardiaClose!.y + cardiaClose!.height);
+        await capture(page, '手机卡迪亚详情关闭按钮与介绍');
+        await details.getByTestId('game-details-close-button').tap();
         await expect(details).toHaveCount(0);
         await record('窄屏介绍与动作区', { realLongDescription: true, descriptionBesideCover: true, scrollable: true,
             actionsFit: true, authorAndCloseHitTest: true, screenshotOmitted: '与375版同构，不重复交付相同UI' });
@@ -364,3 +375,43 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
     });
 
 }
+
+test('手机详情按钮和长昵称排行榜布局', async ({ browser }, info) => {
+    const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: 360, height: 796 }, hasTouch: true, isMobile: true });
+    try {
+        const page = await context.newPage();
+        await page.route('**/games/dicethrone/leaderboard', route => route.fulfill({ json: { leaderboard: [{ name: '这是一个非常长的玩家昵称用于验证排行榜不会横向滚动', rating: 1234, wins: 10, losses: 3, draws: 0, matches: 13, winRate: 0.77, tier: 'master', provisional: false }] } }));
+        await initHome(page);
+        await page.locator('[data-game-id="dicethrone"] .platform-game-open').tap();
+        const details = page.getByTestId('game-details-modal-root');
+        const tutorial = details.locator('.platform-details-tutorial');
+        const favorite = details.locator('.platform-details-favorite');
+        const config = details.locator('.platform-details-config');
+        await expect(tutorial).toBeVisible();
+        const a = await tutorial.boundingBox(), b = await favorite.boundingBox();
+        expect(a!.x + a!.width).toBeLessThanOrEqual(b!.x);
+        expect(a!.width).toBeGreaterThan(b!.width);
+        if (await config.count()) { const c = await config.boundingBox(); expect(c!.x).toBeGreaterThanOrEqual(a!.x + a!.width); expect(c!.x + c!.width).toBeLessThanOrEqual(b!.x); }
+        await capture(page, '手机详情教程与收藏');
+        await details.getByTestId('game-details-tab-leaderboard').tap();
+        await expect(details.getByText('这是一个非常长的玩家昵称用于验证排行榜不会横向滚动')).toBeVisible();
+        const noOverflow = await details.evaluate(root => [...root.querySelectorAll('*')].every(el => el.scrollWidth <= el.clientWidth + 1 || getComputedStyle(el).overflowX !== 'visible'));
+        expect(noOverflow).toBe(true);
+        await capture(page, '手机排行榜长昵称');
+        await details.getByRole('button', { name: '1234 积分' }).tap();
+        const rankingInfo = page.getByRole('dialog', { name: '积分排行' });
+        await expect(rankingInfo).toBeVisible();
+        await expect(rankingInfo).toContainText('游客不进入排行榜');
+        await capture(page, '手机积分说明');
+        await rankingInfo.getByRole('button', { name: '关闭' }).tap();
+        await expect(rankingInfo).toHaveCount(0);
+        await details.getByRole('button', { name: '大师', exact: true }).tap();
+        const tierInfo = page.getByRole('dialog', { name: '段位' });
+        await expect(tierInfo).toBeVisible();
+        await expect(tierInfo).toContainText('700 积分及以上');
+        await expect(tierInfo).toContainText('100–199 积分');
+        await capture(page, '手机段位说明');
+        await tierInfo.getByRole('button', { name: '关闭' }).tap();
+        await expect(tierInfo).toHaveCount(0);
+    } finally { await context.close(); }
+});

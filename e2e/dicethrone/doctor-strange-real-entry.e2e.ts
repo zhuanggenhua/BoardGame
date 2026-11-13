@@ -2145,6 +2145,7 @@ test('桌面牌桌以全知之眼从顶五准备两张不同法术并重排其�
     );
     await page.getByTestId('dt-interaction-confirm').click();
     await expect(page.getByRole('button', { name: '跳过', exact: true })).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(2000);
     const secondCastChoiceScreenshot = await captureTracedState(
         page, game, evidenceRun, trace, '全知之眼下一次施放选择-桌面',
         'ultimate-second-cast-choice', '完成第一次施放后显示剩余准备法术与跳过操作',

@@ -764,6 +764,8 @@ export default function BetrayalBoard({
   const [latestDiscoveryQueue, setLatestDiscoveryQueue] = React.useState<
     LatestDiscoveryDisplayEntry[]
   >([]);
+  const [latestDiscoveryPanelMountedId, setLatestDiscoveryPanelMountedId] =
+    React.useState<string | null>(null);
   const [optimisticCardResolutionAcknowledgement, setOptimisticCardResolutionAcknowledgement] =
     React.useState<{ resolutionId: string; playerId: string } | null>(null);
   const [
@@ -3534,6 +3536,19 @@ export default function BetrayalBoard({
     displayedTitle: latestDiscoveryDisplayedTitle,
     continueButton: latestDiscoveryContinueButton,
   } = latestDiscoveryPresentation;
+  const shouldShowLatestDiscoverySurface = Boolean(
+    shouldShowLatestDiscovery &&
+      !shouldAutoReturnAfterLatestDiscovery &&
+      !isRoomRevealActive &&
+      !roomDiscoveryScene &&
+      !pendingEventChoice,
+  );
+  const latestDiscoverySurfacePresentationId =
+    latestDiscoveryPendingCardResolution?.id ?? latestDiscoveryKey ?? null;
+  const latestDiscoverySurfaceCanBeAcknowledged =
+    shouldShowLatestDiscoverySurface &&
+    !isVisualBusy &&
+    latestDiscoveryPanelMountedId === latestDiscoveryPendingCardResolution?.id;
   const latestDiscoveryRerollSelection =
     canCurrentPlayerModifyLatestDiscoveryRoll
       ? recentRollRerollSelection
@@ -3878,6 +3893,7 @@ export default function BetrayalBoard({
       !pendingResolution ||
       !latestDiscoveryIsStandaloneItemGain ||
       pendingDamageAllocation ||
+      !latestDiscoverySurfaceCanBeAcknowledged ||
       pendingResolution.acknowledgedPlayerIds?.includes(viewerPlayerId)
     ) {
       return;
@@ -3888,6 +3904,7 @@ export default function BetrayalBoard({
         currentResolution?.id !== pendingResolution?.id ||
         !canCurrentViewerAcknowledgeCardResolution ||
         pendingDamageAllocation ||
+        !latestDiscoverySurfaceCanBeAcknowledged ||
         isVisualBusy
       ) {
         return;
@@ -3903,6 +3920,7 @@ export default function BetrayalBoard({
     isVisualBusy,
     latestDiscoveryPendingCardResolution,
     latestDiscoveryIsStandaloneItemGain,
+    latestDiscoverySurfaceCanBeAcknowledged,
     pendingDamageAllocation,
     viewerPlayerId,
   ]);
@@ -6579,13 +6597,8 @@ export default function BetrayalBoard({
                 </div>
 
                 <BetrayalLatestDiscoverySurface
-                  visible={
-                    shouldShowLatestDiscovery &&
-                    !shouldAutoReturnAfterLatestDiscovery &&
-                    !isRoomRevealActive &&
-                    !roomDiscoveryScene &&
-                    !renderedEventChoice
-                  }
+                  visible={shouldShowLatestDiscoverySurface && !renderedEventChoice}
+                  presentationId={latestDiscoverySurfacePresentationId}
                   discovery={latestDiscovery}
                   displayedKindLabel={latestDiscoveryDisplayedKindLabel}
                   displayedTitle={latestDiscoveryDisplayedTitle}
@@ -6629,6 +6642,7 @@ export default function BetrayalBoard({
                   onDismiss={handleDismissLatestDiscovery}
                   onRollLatestDiscoveryEvent={handleRollLatestDiscoveryEvent}
                   onContinue={handleContinueLatestDiscovery}
+                  onPanelMountedChange={setLatestDiscoveryPanelMountedId}
                   onDiceSettledChange={handleRecentRollDiceSettledChange}
                 />
 

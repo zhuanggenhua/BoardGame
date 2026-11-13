@@ -87,9 +87,9 @@ it('首席先占工房+2，学员面对三个合法+1点位并以正式输入部
     expect(firstSeatDeployment.advanceOnEvents?.length).toBe(1);
     expect(firstSeatDeployment.highlightTarget).toBe('fate-deployment-workshop');
     expect(firstSeatDeployment.hideOverlay).toBe(true);
-    expect(deployment.highlightTarget).toBe('fate-deployment-workshop');
+    expect(deployment.highlightTarget).toBe('fate-map');
     expect(deployment.fateCopy?.passages).toContain('workshopOrder');
-    expect(new Set(deployment.fateCommandOptions?.map(option=>option.payload.locationId))).toEqual(new Set(['workshop']));
+    expect(new Set(deployment.fateCommandOptions?.map(option=>option.payload.locationId))).toEqual(new Set(['workshop','miyama','shinto']));
     expect(deployment.fateCommandOptions?.filter(option=>option.payload.locationId==='workshop').map(option=>option.payload.deploymentSlot)).toEqual([1,2,3]);
     const index = plan.steps.indexOf(deployment);
     expect(plan.steps[index+1].fateCommand?.type).toBe('PLAY_SKILL');
@@ -127,10 +127,9 @@ it('正式教程运行时按真实教程计划把学员放在第二顺位', () =
     })).toBeNull();
 });
 
-it.each([1,2,3])('首次工房练习选择 +1 点位%s后，正式教程继续且拒绝其它地点',slot=>{
-    const locationId='workshop';
+it.each([{locationId:'workshop',slot:1},{locationId:'workshop',slot:2},{locationId:'workshop',slot:3},{locationId:'miyama',slot:0},{locationId:'shinto',slot:0}] as const)('首次部署至 $locationId 点位 $slot 后，正式教程沿真实局面继续',({locationId,slot})=>{
     const ids=['1','0','2'],random=createSeededRandom(FATE_TUTORIAL_SEED);
-    const planned=buildFateTutorialPlan().commands;let actionIndex=0;
+    const planned=buildFateTutorialPlan(FATE_TUTORIAL_SEED,locationId).commands;let actionIndex=0;
     let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,FATE_TUTORIAL_SEED)};
     const send=(type:string,payload:unknown,playerId='0',automatic=false)=>{
         const data=payload as Record<string,unknown>;
@@ -148,19 +147,18 @@ it.each([1,2,3])('首次工房练习选择 +1 点位%s后，正式教程继续�
     for(let iteration=0;state.sys.tutorial.active&&iteration<1000;iteration++){
         const step=state.sys.tutorial.step!;
         if(step.aiActions?.length){for(const action of step.aiActions)send(action.commandType,action.payload,action.playerId,true);send('SYS_TUTORIAL_AI_CONSUMED',{stepId:step.id});if(state.sys.tutorial.step?.id===step.id)send('SYS_TUTORIAL_NEXT',{reason:step.autoAdvanceAfterAi===false?'manual':'auto'});continue;}
-        if(step.fateCommandOptions?.length){
-            expect(new Set(step.fateCommandOptions.map(option=>option.payload.locationId))).toEqual(new Set(['workshop']));
+        if(!branchChosen&&step.fateCommandOptions?.length){
+            expect(new Set(step.fateCommandOptions.map(option=>option.payload.locationId))).toEqual(new Set(['workshop','miyama','shinto']));
             expect(fateTutorialAllows(state.sys.tutorial,'DEPLOY_MASTER',{locationId:'recon',deploymentSlot:undefined})).toBe(false);
-            for(const id of ['miyama','shinto'])expect(fateTutorialAllows(state.sys.tutorial,'DEPLOY_MASTER',{locationId:id,deploymentSlot:0})).toBe(false);
+            for(const id of ['miyama','shinto'])expect(fateTutorialAllows(state.sys.tutorial,'DEPLOY_MASTER',{locationId:id,deploymentSlot:0})).toBe(true);
             for(const option of step.fateCommandOptions.filter(candidate=>candidate.payload.locationId==='workshop'))
                 expect(fateTutorialAllows(state.sys.tutorial,option.type,option.payload)).toBe(true);
             const option=step.fateCommandOptions.find(candidate=>candidate.payload.locationId===locationId&&candidate.payload.deploymentSlot===slot)!;
             expect(fateTutorialAllows(state.sys.tutorial,option.type,option.payload)).toBe(true);
             send(option.type,option.payload);
             branchChosen=String(option.payload.locationId);
-            expect(state.sys.tutorial.selectedBranch).toBeUndefined();
+            expect(state.sys.tutorial.route).toEqual([{round:1,locationId,deploymentSlot:slot}]);
             expect(branchChosen).toBe(locationId);
-            expect(state.sys.tutorial.steps.every(candidate=>!candidate.branch||candidate.branch===locationId)).toBe(true);
             continue;
         }
         if(step.fateCommand)send(step.fateCommand.type,step.fateCommand.payload);
@@ -174,6 +172,59 @@ it('自然课程中学员亲自处理战后选择，不能只观察他席选择'
     const responses = plan.steps.filter(step => step.fateCommand?.type === INTERACTION_COMMANDS.RESPOND
         && typeof step.fateCommand.payload.optionId === 'string');
     expect(responses.map(step => step.fateCommand!.payload.optionId)).toContain('restore');
+});
+
+it.each(['workshop','shinto'])('后续手动部署到 %s 后沿真实局面完成课程', (target) => {
+    const ids=['1','0','2'], random=createSeededRandom(FATE_TUTORIAL_SEED);
+    let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,FATE_TUTORIAL_SEED)};
+    const send=(type:string,payload:unknown,playerId='0',automatic=false)=>{
+        const result=executePipeline({domain:FateDominationDomain,systems:engineConfig.systems},state,buildTutorialDispatchCommand(state,type,payload,playerId,automatic).command,random,ids);
+        expect(result.success,`${state.sys.tutorial.step?.id}/${type}: ${result.error??''}`).toBe(true);state=result.state;
+    };
+    send('SYS_TUTORIAL_START',{manifest:FateDominationTutorial});
+    let found=false;
+    const lessons=new Set<string>();
+    for(let iteration=0;state.sys.tutorial.active&&iteration<1000;iteration++){
+        const step=state.sys.tutorial.step!;
+        if(step.fateCopy?.lessonId)lessons.add(step.fateCopy.lessonId);
+        if(step.aiActions?.length){for(const action of step.aiActions)send(action.commandType,action.payload,action.playerId,true);send('SYS_TUTORIAL_AI_CONSUMED',{stepId:step.id});if(state.sys.tutorial.step?.id===step.id)send('SYS_TUTORIAL_NEXT',{reason:step.autoAdvanceAfterAi===false?'manual':'auto'});continue;}
+        if(!found&&step.fateCommand?.type==='DEPLOY_MASTER'&&state.core.round>1){
+            const legal=buildFateAiLegalActions({playerId:'0',state}).flatMap(action=>action.commands).filter(command=>command.type==='DEPLOY_MASTER');
+            expect(legal.length).toBeGreaterThan(1);
+            expect(legal.filter(command=>!fateTutorialAllows(state.sys.tutorial,command.type,command.payload))).toEqual([]);
+            const alternative=legal.find(command=>(command.payload as {locationId:string}).locationId===target)!;
+            const decisionIndex=state.sys.tutorial.stepIndex;
+            expect(alternative).toBeDefined();found=true;send(alternative.type,alternative.payload);
+            expect(state.core.players['0'].locationId).toBe(target);
+            expect(state.sys.tutorial.steps[decisionIndex].fateCommandOptions).toEqual(step.fateCommandOptions);
+            const selectedState=state.core;
+            const selectedStep=state.sys.tutorial.step?.id;
+            const selectedRoute=state.sys.tutorial.route;
+            send('SYS_TUTORIAL_BIND_MANIFEST',{manifest:FateDominationTutorial});
+            expect(state.core).toEqual(selectedState);
+            expect(state.sys.tutorial.step?.id).toBe(selectedStep);
+            expect(state.sys.tutorial.route).toEqual(selectedRoute);
+            while(target==='shinto'&&state.sys.tutorial.aiActions?.length){
+                const pending=state.sys.tutorial.step!;
+                for(const action of pending.aiActions ?? [])send(action.commandType,action.payload,action.playerId,true);
+                send('SYS_TUTORIAL_AI_CONSUMED',{stepId:pending.id});
+                if(state.sys.tutorial.step?.id===pending.id)send('SYS_TUTORIAL_NEXT',{reason:pending.autoAdvanceAfterAi===false?'manual':'auto'});
+            }
+            if(target==='shinto'){
+                send('SYS_TUTORIAL_PREVIOUS',{});
+                expect(state.sys.tutorial.step?.id).toBe(step.id);
+                expect(state.core.players['0'].locationId).toBeNull();
+                expect(fateTutorialAllows(state.sys.tutorial,alternative.type,alternative.payload)).toBe(true);
+                send(alternative.type,alternative.payload);
+            }
+            continue;
+        }
+        if(step.fateCommand)send(step.fateCommand.type,step.fateCommand.payload);
+        else send('SYS_TUTORIAL_NEXT',{reason:step.requireAction?'auto':'manual'});
+    }
+    expect(found).toBe(true);
+    expect(state.sys.gameover).toBeTruthy();
+    for(const lesson of ['battleDeployment','battlefieldDarkAttack','postBattle','elimination','ending'])expect(lessons.has(lesson),`${target} 分支缺少课程 ${lesson}`).toBe(true);
 });
 
 it('先读费用与技能门槛再支付；自动收牌先于查看弃牌，不把关闭攻击当查看操作',()=>{

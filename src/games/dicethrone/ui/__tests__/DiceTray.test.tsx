@@ -310,7 +310,7 @@ describe('DiceTray', () => {
         expect(step).toHaveBeenNthCalledWith(2, { action: 'setAny', dieId: 1, newValue: 5 });
     });
 
-    it('原卡固定4/5直接选择目标值，未选值不能点骰且不存在加减', () => {
+    it('固定多值复用选择窗口，选定数值后沿原固定值流程点骰', () => {
         const step = vi.fn();
         const interaction = createModifyInteraction('set', 1, [4, 5]);
         const tray = (targetValue?: number) => <DiceTray dice={twoDice} rollCount={1} onToggleLock={vi.fn()} currentPhase="offensiveRoll" canInteract isRolling={false}
@@ -319,12 +319,21 @@ describe('DiceTray', () => {
         expect(screen.queryByTestId('die-adjust-increment-0')).toBeNull();
         expect(screen.queryByTestId('die-target-value-6')).toBeNull();
         expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'false');
-        fireEvent.click(screen.getByTestId('die-target-value-5'));
+        fireEvent.click(screen.getByRole('button', { name: '5' }));
         expect(step).toHaveBeenLastCalledWith({ action: 'chooseValue', value: 5 });
         rerender(tray(5));
         expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'true');
         fireEvent.click(screen.getByTestId('die-button-0'));
         expect(step).toHaveBeenLastCalledWith({ action: 'select', dieId: 0, dieValue: 1 });
+    });
+
+    it('固定多值改骰时非操作者不出现可操作的数值选择', () => {
+        const step = vi.fn();
+        render(<DiceTray dice={twoDice} rollCount={1} onToggleLock={vi.fn()} currentPhase="offensiveRoll" canInteract={false} isRolling={false}
+            diceInteraction={createDiceInteraction(createModifyInteraction('set', 1, [4, 5]), createMultistepState({ modifications: {}, modCount: 0, totalAdjustment: 0 }, step))} />);
+        expect(screen.queryByTestId('dt-choice-options')).toBeNull();
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-clickable', 'false');
+        expect(step).not.toHaveBeenCalled();
     });
 
     it('响应选骰直接点击右侧骰子本体', () => {

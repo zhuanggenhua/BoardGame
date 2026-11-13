@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Check } from 'lucide-react';
 import { GameButton } from './components/GameButton';
+import { ChoiceModal } from './ChoiceModal';
 import type { Die, TurnPhase } from '../types';
 import type { DiceModifyResult, DiceModifyStep, DiceSelectResult, DiceSelectStep } from '../domain/systems';
 import { Dice2D } from './Dice2D';
@@ -304,20 +305,22 @@ export const DiceTray = ({
             <div className={shadowClassName} />
 
             <div className={trayInnerClassName} style={trayInnerStyle}>
-                {fixedTargetValues && (
-                    <div className="flex justify-center" style={{ gap: dtUnit(0.35) }} role="group" aria-label={t('interaction.hint_choose_value')}>
-                        {fixedTargetValues.map(value => (
-                            <button key={value} type="button" data-testid={`die-target-value-${value}`}
-                                aria-label={t('interaction.set_value', { value })} aria-pressed={targetValue === value}
-                                disabled={!canInteract}
-                                className={clsx('rounded font-black border', targetValue === value ? 'bg-amber-500 text-slate-950 border-amber-200' : 'bg-slate-800 text-amber-100 border-amber-500/60')}
-                                style={{ width: dtUnit(2.1), height: dtUnit(2.1), fontSize: dtUnit(1.15) }}
-                                onClick={() => diceInteraction?.controller?.step({ action: 'chooseValue', value } as DiceModifyStep)}>
-                                {value}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                <ChoiceModal
+                    headingKey="interaction.modifyDie"
+                    choice={needsTargetValue && canInteract && fixedTargetValues ? {
+                        title: 'interaction.hint_choose_value',
+                        options: [
+                            ...fixedTargetValues.map(value => ({ id: String(value), label: String(value) })),
+                            { id: '__cancel__', label: 'common.cancel' },
+                        ],
+                    } : null}
+                    canResolve={canInteract}
+                    onResolve={id => {
+                        if (id === '__cancel__') diceInteraction?.controller?.cancel();
+                        else diceInteraction?.controller?.step({ action: 'chooseValue', value: Number(id) } as DiceModifyStep);
+                    }}
+                    locale={locale}
+                />
                 {dice.map((die) => {
                     const selected = isSelected(die.id);
                     const selectedOccurrenceCount = allowRepeatedDieSelection

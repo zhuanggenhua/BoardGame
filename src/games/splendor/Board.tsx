@@ -387,8 +387,8 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
                             onReserveOpen={handleReserveOpen}
                         />
 
-                        <section className="rounded-2xl border border-white/10 bg-black/20 p-3 shadow-lg">
-                            <h2 className="mb-3 text-center text-sm font-semibold" data-tutorial-id="sp-bank">{t('sections.bank')}</h2>
+                        <section className="rounded-2xl border border-white/10 bg-black/20 p-3 shadow-lg" data-tutorial-id="sp-bank">
+                            <h2 className="mb-3 text-center text-sm font-semibold">{t('sections.bank')}</h2>
                             <div className="grid gap-2">
                                 {Object.entries(G.core.bank).map(([color, count]) => {
                                     const tokenColor = color as TokenColor;

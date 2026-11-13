@@ -34,6 +34,7 @@ export type GameSocketRouteMatch = {
 
 export type GameSocketRouteCommandOptions = {
     expectedStateID?: number;
+    commandId?: string;
     onlineAiAttemptKey?: string | null;
     clientTransport?: OnlineAiClientTransportDiagnostics | null;
 };
@@ -115,8 +116,15 @@ export function registerGameSocketRoutes<TMatch extends GameSocketRouteMatch>(
             payload: unknown,
             credentials?: string,
             commandMeta?: CommandDispatchMeta,
+            acknowledge?: (result: { accepted: boolean }) => void,
         ) => {
-            await handleCommandRoute({ socket, matchID, commandType, payload, credentials, commandMeta, hooks });
+            try {
+                const result = await handleCommandRoute({ socket, matchID, commandType, payload, credentials, commandMeta, hooks });
+                acknowledge?.(result);
+            } catch (error) {
+                acknowledge?.({ accepted: false });
+                throw error;
+            }
         });
 
         socket.on('batch', async (
@@ -242,30 +250,30 @@ async function handleCommandRoute<TMatch extends GameSocketRouteMatch>(args: {
     credentials?: string;
     commandMeta?: CommandDispatchMeta;
     hooks: GameSocketRouteHooks<TMatch>;
-}): Promise<void> {
+}): Promise<{ accepted: boolean }> {
     const { socket, matchID, commandType, payload, credentials, commandMeta, hooks } = args;
-    if (!matchID || !commandType) return;
+    if (!matchID || !commandType) return { accepted: false };
     const info = hooks.getSocketInfo(socket.id);
-    if (!info || info.matchID !== matchID || !info.playerID) return;
+    if (!info || info.matchID !== matchID || !info.playerID) return { accepted: false };
     const authorized = await hooks.validateCommandAuth(matchID, info.playerID, info.credentials ?? credentials);
     if (!authorized) {
         socket.emit('error', matchID, 'unauthorized');
-        return;
+        return { accepted: false };
     }
 
     const meta = parseDispatchPayloadMeta(payload);
     const match = hooks.getMatch(matchID);
     if (match && hooks.isAdminDebugCommand?.(match, commandType)) {
         socket.emit('error', matchID, 'admin_debug_channel_required');
-        return;
+        return { accepted: false };
     }
     if (meta.legacyManualAiSeatId) {
         socket.emit('error', matchID, 'online_ai_server_authority');
-        return;
+        return { accepted: false };
     }
     if (match && hooks.resolveOnlineAiSeatControllerType(match, info.playerID) !== 'human') {
         socket.emit('error', matchID, 'online_ai_server_authority');
-        return;
+        return { accepted: false };
     }
     const isTutorialActive = Boolean((match?.state?.sys as { tutorial?: { active?: boolean } } | undefined)
         ?.tutorial?.active);
@@ -286,16 +294,17 @@ async function handleCommandRoute<TMatch extends GameSocketRouteMatch>(args: {
         : meta.normalizedPayload;
     const commandOptions = buildCommandRouteOptions(commandMeta);
     if (commandOptions) {
-        await hooks.handleCommand(
+        const accepted = await hooks.handleCommand(
             matchID,
             resolvedPlayerId,
             commandType,
             tutorialInjectedPayload,
             commandOptions,
         );
-        return;
+        return { accepted };
     }
-    await hooks.handleCommand(matchID, resolvedPlayerId, commandType, tutorialInjectedPayload);
+    const accepted = await hooks.handleCommand(matchID, resolvedPlayerId, commandType, tutorialInjectedPayload);
+    return { accepted };
 }
 
 async function handleBatchRoute<TMatch extends GameSocketRouteMatch>(args: {
@@ -452,15 +461,22 @@ function buildCommandRouteOptions(
     commandMeta: CommandDispatchMeta | undefined,
 ): GameSocketRouteCommandOptions | undefined {
     const expectedStateID = commandMeta?.expectedStateID;
+    const commandId = typeof commandMeta?.commandId === 'string'
+        && commandMeta.commandId.length > 0
+        && commandMeta.commandId.length <= 128
+        ? commandMeta.commandId
+        : undefined;
     if (
         typeof expectedStateID !== 'number'
         && !commandMeta?.onlineAiAttemptKey
         && !commandMeta?.clientTransport
+        && !commandId
     ) {
         return undefined;
     }
     return {
         ...(typeof expectedStateID === 'number' ? { expectedStateID } : {}),
+        ...(commandId ? { commandId } : {}),
         onlineAiAttemptKey: normalizeOnlineAiAttemptKey(commandMeta?.onlineAiAttemptKey),
         clientTransport: normalizeOnlineAiClientTransportDiagnostics(commandMeta?.clientTransport),
     };

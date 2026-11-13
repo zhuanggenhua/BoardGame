@@ -63,6 +63,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 {embed?.restricted && !nativeBrowser && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
                 {embed && !embed.safeHttps && <p className="platform-details-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
                 {embed?.sameOrigin && <p className="platform-details-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
+                <p>{t('platform.externalGamePage.uploader', { name: item.uploaderName || t('platform.externalGamePage.anonymousUploader') })}</p>
                 <GameRulesDocumentLink document={item.rulesDocument} />
                 {item.rules && <p><ExternalGameText text={item.rules} /></p>}
             </PlatformGameDetails>}

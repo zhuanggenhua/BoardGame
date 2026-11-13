@@ -847,6 +847,10 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 武僧雷霆万钧：伤害由奖励骰结算链路落地，基础 mock 只会创建待结算骰面
             'thunder-strike-roll-damage',
             'thunder-strike-2-roll-damage',
+            // 索尔雷轰电掣追加当前攻击加伤；连锁闪电先请求效果骰，确认和选择后才结算伤害。
+            // 两条实际伤害链由 thor-flow.test.ts 覆盖，不能要求入口 handler 直接发出伤害事件。
+            'thor-thunder-strike',
+            'thor-chain-roll',
             // 蜘蛛侠蜘蛛感应：伤害由 bonus settlement handler 在奖励骰确认后落地
             'zhizhuxia-spider-reflex',
             // 蜘蛛侠奇袭：先把伤害加到当前攻击，后续攻击结算才会产生 DAMAGE_DEALT

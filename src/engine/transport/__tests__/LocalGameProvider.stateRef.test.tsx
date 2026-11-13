@@ -3,9 +3,10 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameEngineConfig } from '../engineConfig';
-import type { Command, GameEvent, MatchState } from '../../types';
+import type { Command, DomainSetupContext, GameEvent, MatchState, RandomFn } from '../../types';
 import type { EngineSystem } from '../../systems/types';
 import { LocalGameProvider, useGameClient } from '../react';
+import { GameModeProvider } from '../../../contexts/GameModeContext';
 
 type RaceCore = {
     marker: string;
@@ -148,4 +149,29 @@ describe('LocalGameProvider state ref sequencing', () => {
         expect(screen.getByTestId('captured-race-core').textContent).toContain('"marker":"started"');
         expect(screen.getByTestId('captured-race-core').textContent).toContain('"observedMarker":"started"');
     });
+
+    it('首次 setup 显式接收教程 mode，不依赖父级 layout effect 的全局写入时序', () => {
+        const setup = vi.fn((_ids: string[], _random: RandomFn, _setupData: unknown, context?: DomainSetupContext) => ({ marker: context?.mode ?? 'missing' }));
+        const modeConfig: GameEngineConfig = {
+            ...testConfig,
+            gameId: 'local-setup-mode',
+            domain: { ...testConfig.domain, setup },
+        };
+
+        render(
+            <GameModeProvider mode="tutorial">
+                <LocalGameProvider config={modeConfig} numPlayers={1} seed="local-setup-mode">
+                    <Probe />
+                </LocalGameProvider>
+            </GameModeProvider>,
+        );
+
+        expect(setup).toHaveBeenCalledWith(['0'], expect.any(Object), undefined, { mode: 'tutorial' });
+        expect(screen.getByTestId('probe-state').textContent).toContain('"marker":"tutorial"');
+    });
 });
+
+function Probe(): JSX.Element {
+    const { state } = useGameClient<RaceCore>();
+    return <pre data-testid="probe-state">{JSON.stringify((state as MatchState<RaceCore>)?.core)}</pre>;
+}

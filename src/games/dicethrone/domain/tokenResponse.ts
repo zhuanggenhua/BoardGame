@@ -481,8 +481,9 @@ export function maybeCreateDamageResponseEvent(params: {
     const target = state.players[dmgTargetId];
     const hasNyraRedirect = isNyraCompanionActive(target)
         && state.pendingAttack?.isUltimate !== true;
-    const candidatePendingDamage = damageScope === 'attack'
-        && state.pendingAttack?.defenderId === dmgTargetId
+    // 独立伤害同样可能被“防止即将受到的伤害”的卡牌响应；预检必须携带本次实际伤害。
+    const candidatePendingDamage = (damageScope === 'direct'
+        || (damageScope === 'attack' && state.pendingAttack?.defenderId === dmgTargetId))
         ? applyExistingDamagePreventionToPendingDamage(
             state,
             createPendingDamage(

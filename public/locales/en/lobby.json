@@ -296,6 +296,13 @@
   "leaderboard": {
     "loading": "Loading...",
     "title": "ELO Ranking",
+    "tiersTitle": "Tiers",
+    "tierAtLeast": "{{min}} points and above",
+    "tierAtMost": "{{max}} points and below",
+    "tierRange": "{{min}}–{{max}} points",
+    "pointsTitle": "Points ranking",
+    "points": "{{rating}} points",
+    "pointsHelp": "Points reflect your performance in this game and change based on results and opponents. Guests are not ranked.",
     "empty": "No data",
     "rating": "{{rating}} ELO",
     "record": "{{wins}}W {{losses}}L {{draws}}D · {{winRate}}% / {{matches}}G",
@@ -2688,6 +2695,8 @@
     },
     "externalGamePage": {
       "updateAppForBrowser": "Update the app to play inside it",
+      "uploader": "Uploaded by: {{name}}",
+      "anonymousUploader": "Anonymous",
       "loading": "Loading game…",
       "loadFailed": "Could not load the game: {{message}}",
       "back": "Back",

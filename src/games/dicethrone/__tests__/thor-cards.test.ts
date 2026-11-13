@@ -9,6 +9,7 @@ import { RESOURCE_IDS as R } from '../domain/resources';
 import { TOKEN_IDS as T } from '../domain/ids';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { THOR_CARDS, getThorStartingDeck } from '../heroes/thor/cards';
+import { buildDiceThroneAiLegalActions } from '../ai';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent } from '../domain/types';
 import { createHeroMatchup, createQueuedRandom, fixedRandom, testSystems } from './test-utils';
 
@@ -16,6 +17,18 @@ const scene=()=>createHeroMatchup('thor','monk')(['0','1'],fixedRandom);
 const cfg={domain:DiceThroneDomain,systems:testSystems};
 const act=(state:DiceThroneCore,id:string,params:Record<string,number|boolean>={})=>getCustomActionHandler(id)!({state,attackerId:'0',targetId:'1',sourceAbilityId:id,timestamp:10,random:fixedRandom,action:{type:'custom',target:'self',customActionId:id,params},ctx:{state,attackerId:'0',defenderId:'1',sourceAbilityId:id,damageDealt:0}} as CustomActionContext);
 const apply=(state:DiceThroneCore,events:DiceThroneEvent[])=>events.reduce(reduce,state);
+// 预期来自物理卡录入合同 slot 18–26，不从待测 effects 推导目标或费用。
+const upgradeRules = [
+   {id:'upgrade-thor-hammer-2',target:'thor-hammer',level:2,cost:0},
+   {id:'upgrade-thor-hammer-3',target:'thor-hammer',level:3,cost:2},
+   {id:'upgrade-thor-mighty-summon-2',target:'thor-mighty-summon',level:2,cost:2},
+   {id:'upgrade-thor-chain-lightning-2',target:'thor-chain-lightning',level:2,cost:2},
+   {id:'upgrade-thor-odinforce-2',target:'thor-odinforce',level:2,cost:2},
+   {id:'upgrade-thor-thunder-strike-2',target:'thor-thunder-strike',level:2,cost:2},
+   {id:'upgrade-thor-power-of-thunder-2',target:'thor-power-of-thunder',level:2,cost:2},
+   {id:'upgrade-thor-bottled-lightning-2',target:'thor-bottled-lightning',level:2,cost:2},
+   {id:'upgrade-thor-thunder-wheel-2',target:'thor-thunder-wheel',level:2,cost:2},
+];
 
 describe('索尔物理牌、升级和最终效果',()=>{
  it('当之无愧原卡slot27只允许将自己一骰设为固定结果4或5',()=>{
@@ -76,6 +89,56 @@ describe('索尔物理牌、升级和最终效果',()=>{
    expect(result.state.core.players['0'].resources[R.CP]).toBe(10-card.cpCost);
    expect(result.state.core.players['0'].hand).toHaveLength(0);
  });
+ it.each(upgradeRules)('$id按原卡支付 $cost 并仅升级 $target 至 $level',({id,target,level,cost})=>{
+   const state=scene(); const player=state.core.players['0'];
+   player.hand=[THOR_CARDS.find(card=>card.id===id)!]; player.resources[R.CP]=5;
+   const result=executePipeline(cfg,state,{type:'PLAY_UPGRADE_CARD',playerId:'0',payload:{cardId:id,targetAbilityId:target},timestamp:10} as DiceThroneCommand,fixedRandom,['0','1']);
+   expect(result.success,result.error).toBe(true);
+   const next=result.state.core.players['0'];
+   expect(next.resources[R.CP]).toBe(5-cost);
+   expect(next.abilityLevels[target]).toBe(level);
+   expect(next.abilities.filter(ability=>ability.id===target)).toHaveLength(1);
+   expect(next.upgradeCardByAbilityId?.[target]?.cardId).toBe(id);
+   expect(next.hand.some(card=>card.id===id)).toBe(false);
+   for(const [abilityId,beforeLevel] of Object.entries(player.abilityLevels)){
+     if(abilityId!==target)expect(next.abilityLevels[abilityId]).toBe(beforeLevel);
+   }
+ });
+ it('雷神之锤先直接升至三级后，手中的二级牌不能降级或扣费',()=>{
+   const state=scene();
+   const player=state.core.players['0'];
+   player.hand=['upgrade-thor-hammer-2','upgrade-thor-hammer-3'].map(id=>THOR_CARDS.find(card=>card.id===id)!);
+   player.resources[R.CP]=5;
+   const play=(current:typeof state,cardId:string)=>executePipeline(cfg,current,{type:'PLAY_UPGRADE_CARD',playerId:'0',payload:{cardId,targetAbilityId:'thor-hammer'},timestamp:10} as DiceThroneCommand,fixedRandom,['0','1']);
+   const third=play(state,'upgrade-thor-hammer-3');
+   expect(third.success,third.error).toBe(true);
+   expect(third.state.core.players['0'].resources[R.CP]).toBe(3);
+   const downgrade=play(third.state,'upgrade-thor-hammer-2');
+   expect(downgrade.success).toBe(false);
+   expect(downgrade.state.core.players['0'].resources[R.CP]).toBe(3);
+   expect(downgrade.state.core.players['0'].abilityLevels['thor-hammer']).toBe(3);
+   expect(downgrade.state.core.players['0'].hand.some(card=>card.id==='upgrade-thor-hammer-2')).toBe(true);
+ });
+ it.each(upgradeRules)('AI可按原卡合同打出$id并在升级后重算动作',({id,target,level,cost})=>{
+   const state=scene();
+   state.core.players['0'].hand=[THOR_CARDS.find(card=>card.id===id)!];
+   state.core.players['0'].resources[R.CP]=5;
+   const action=buildDiceThroneAiLegalActions({state,playerId:'0'}).find(candidate=>candidate.kind==='play-upgrade-card');
+   expect(action?.commands).toMatchObject([{type:'PLAY_UPGRADE_CARD',payload:{cardId:id,targetAbilityId:target}}]);
+   const command=action!.commands[0];
+   const result=executePipeline(cfg,state,{...command,playerId:'0',timestamp:10} as DiceThroneCommand,fixedRandom,['0','1']);
+   expect(result.success,result.error).toBe(true);
+   expect(result.state.core.players['0'].abilityLevels[target]).toBe(level);
+   expect(result.state.core.players['0'].resources[R.CP]).toBe(5-cost);
+   expect(result.state.core.players['0'].hand).toHaveLength(0);
+   const nextActions=buildDiceThroneAiLegalActions({state:result.state,playerId:'0'});
+   expect(nextActions.some(candidate=>candidate.kind==='play-upgrade-card')).toBe(false);
+   const advance=nextActions.find(candidate=>candidate.kind==='advance-phase');
+   expect(advance).toBeDefined();
+   const continuation=executePipeline(cfg,result.state,{...advance!.commands[0],playerId:'0',timestamp:11} as DiceThroneCommand,fixedRandom,['0','1']);
+   expect(continuation.success,continuation.error).toBe(true);
+   expect(continuation.state.sys.phase).toBe('offensiveRoll');
+ });
  it.each([{id:'thor-thunderous',electro:2,cp:0,guard:0},{id:'thor-storm-brewing',electro:1,cp:1,guard:1}])('$id的抽牌和资源全部落地',({id,electro,cp,guard})=>{
    const state=scene().core,before=state.players['0'];
    const next=apply(state,act(state,id));
@@ -116,11 +179,15 @@ describe('索尔物理牌、升级和最终效果',()=>{
    expect(result.state.core.players['0'].resources[R.CP]).toBe(3);
    expect(result.state.core.players['0'].tokens[T.GUARD_BREAK]).toBe(1);
  });
- it.each([{cardId:'card-thor-impenetrable',hp:5,roll:1,expected:5},{cardId:'card-thor-undaunted',hp:5,roll:4,expected:1},{cardId:'card-thor-undaunted',hp:5,roll:1,expected:0}])('$cardId面对真实致命攻击，骰值$roll后生命=$expected',({cardId,hp,roll,expected})=>{
+ it.each([
+   {cardId:'card-thor-impenetrable',hp:5,roll:1,expected:5,scope:'attack' as const},
+   {cardId:'card-thor-impenetrable',hp:5,roll:1,expected:5,scope:'direct' as const},
+   ...[1,2,3,4,5,6].map(roll=>({cardId:'card-thor-undaunted',hp:5,roll,expected:roll===4||roll===5?1:0,scope:'attack' as const})),
+ ])('$cardId面对预置$scope致命伤害响应，骰值$roll后生命=$expected',({cardId,hp,roll,expected,scope})=>{
    let state=scene();state.core.players['0'].hand=[THOR_CARDS.find(c=>c.id===cardId)!];state.core.players['0'].tokens[T.ELECTROKINESIS]=2;state.core.players['0'].resources[R.HP]=hp;
    state.sys.phase='defensiveRoll';state.core.turnPhase='defensiveRoll';state.core.activePlayerId='1';
    state.core.pendingAttack={attackerId:'1',defenderId:'0',sourceAbilityId:'fist-technique-5',isDefendable:false,settlementStage:'preDamage',preDefenseResolved:true} as DiceThroneCore['pendingAttack'];
-   const damage={type:'DAMAGE_DEALT',timestamp:10,payload:{targetId:'0',amount:10,actualDamage:5,sourcePlayerId:'1',sourceAbilityId:'fist-technique-5',damageScope:'attack',damageOrigin:'ability',unblockable:true}} as DiceThroneEvent;
+   const damage={type:'DAMAGE_DEALT',timestamp:10,payload:{targetId:'0',amount:10,actualDamage:5,sourcePlayerId:'1',sourceAbilityId:'fist-technique-5',damageScope:scope,damageOrigin:'ability',unblockable:true}} as DiceThroneEvent;
    const response=maybeCreateDamageResponseEvent({state:state.core,damageEvent:damage as Extract<DiceThroneEvent,{type:'DAMAGE_DEALT'}>,attackerId:'1',sourceAbilityId:'fist-technique-5',timestamp:10,allowAttackerBoost:false});
    expect(response).not.toBeNull();
    if (!response) throw new Error(`${cardId} 的真实受伤响应窗口没有打开`);
@@ -144,5 +211,29 @@ describe('索尔物理牌、升级和最终效果',()=>{
    }
    expect(state.core.players['0'].resources[R.HP]).toBe(expected);
    expect(state.core.players['0'].resources[R.CP]).toBe(0);
+ });
+ it.each([
+   {cardId:'card-thor-impenetrable',electro:1,amount:10,scope:'attack' as const},
+   {cardId:'card-thor-undaunted',electro:2,amount:4,scope:'attack' as const},
+   {cardId:'card-thor-undaunted',electro:2,amount:10,scope:'direct' as const},
+ ])('$cardId不满足资源或致命攻击条件时不能支付或打出',({cardId,electro,amount,scope})=>{
+   const state=scene();
+   state.core.players['0'].hand=[THOR_CARDS.find(card=>card.id===cardId)!, COMMON_CARDS.find(card=>card.id==='card-next-time')!];
+   state.core.players['0'].tokens[T.ELECTROKINESIS]=electro;
+   state.core.players['0'].resources[R.HP]=5;
+   state.core.players['0'].resources[R.CP]=5;
+   state.sys.phase='defensiveRoll';state.core.turnPhase='defensiveRoll';state.core.activePlayerId='1';
+   state.core.pendingAttack={attackerId:'1',defenderId:'0',sourceAbilityId:'fist-technique-5',isDefendable:false,settlementStage:'preDamage',preDefenseResolved:true} as DiceThroneCore['pendingAttack'];
+   const damage={type:'DAMAGE_DEALT',timestamp:10,payload:{targetId:'0',amount,actualDamage:Math.min(amount,5),sourcePlayerId:'1',sourceAbilityId:'fist-technique-5',damageScope:scope,damageOrigin:'ability',unblockable:true}} as DiceThroneEvent;
+   const response=maybeCreateDamageResponseEvent({state:state.core,damageEvent:damage as Extract<DiceThroneEvent,{type:'DAMAGE_DEALT'}>,attackerId:'1',sourceAbilityId:'fist-technique-5',timestamp:10,allowAttackerBoost:false});
+   expect(response).not.toBeNull();
+   if(!response)throw Error('缺少受伤响应');
+   state.core=reduce(state.core,response);
+   const result=executePipeline(cfg,state,{type:'PLAY_CARD',playerId:'0',payload:{cardId},timestamp:11} as DiceThroneCommand,fixedRandom,['0','1']);
+   expect(result.success).toBe(false);
+   expect(result.state.core.players['0'].resources[R.CP]).toBe(5);
+   expect(result.state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(electro);
+   expect(result.state.core.players['0'].hand.some(card=>card.id===cardId)).toBe(true);
+   expect(result.state.core.pendingDamage?.currentDamage).toBe(amount);
  });
 });

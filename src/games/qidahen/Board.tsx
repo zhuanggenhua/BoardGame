@@ -7133,7 +7133,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             : mapContextRegionIdsKey ? `turn-context:${mapContextRegionIdsKey}` : null);
     const mapTargetSelectionActive = mapSelectionCandidateIds.length > 0;
     // 同一玩家交互中，手动调整视野后不能因为选中或浮层变化而夺回镜头。
-    const manualViewportScope = `${tutorialStep?.id ?? ''}:${turnInput.step ?? ''}:${activeInteraction?.id ?? ''}`;
+    const manualViewportScope = `${tutorialStep?.id ?? ''}:${turnInput.step ?? ''}:${activeInteraction?.id ?? ''}:${tutorialMapRegionFocusId ?? ''}`;
     const manuallyAdjustedScopeRef = React.useRef<string | null>(null);
     const updateManualMapViewport = React.useCallback((next: QidahenMapViewport) => {
         manuallyAdjustedScopeRef.current = manualViewportScope;

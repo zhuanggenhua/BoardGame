@@ -4,6 +4,18 @@ import { FeedbackReplayCommandHistory } from '../feedbackReplayCommandHistory';
 import { capturePrivateFeedbackReplay } from '../feedbackPrivateReplay';
 
 describe('权威反馈触发命令历史', () => {
+    it('前后状态共享的子树只保留一个冻结副本，原状态变化不影响回放', () => {
+        const history = new FeedbackReplayCommandHistory();
+        const shared = { entries: [{ kind: 'ROLL' }] };
+        const before = { core: { log: shared, hp: 50 }, sys: {} };
+        const after = { core: { log: shared, hp: 43 }, sys: {} };
+        history.record({ matchId: 'm', gameId: 'dicethrone', playerId: '0', commandType: 'PLAY_CARD', commandPayload: {}, stateIdBefore: 1, stateIdAfter: 2, stateBefore: before as any, stateAfter: after as any });
+        shared.entries[0].kind = 'MUTATED';
+        const record = history.find('m', '0', { commandType: 'PLAY_CARD', playerId: '0', stateIdBefore: 1 })!;
+        expect((record.stateBefore.core as any).log).toBe((record.stateAfter.core as any).log);
+        expect((record.stateBefore.core as any).log.entries[0].kind).toBe('ROLL');
+    });
+
     it('按对局、座位、命令和提交前 stateId 找回不可变的前后状态与 payload', () => {
         const history = new FeedbackReplayCommandHistory(() => 100);
         const before = { core: { hp: 50 }, sys: { stateId: 8 } };

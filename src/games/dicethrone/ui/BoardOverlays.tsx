@@ -91,7 +91,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const isMultiCardPreview = props.magnifiedCards.length > 0;
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(props.viewCharacterId);
     const playerBoardPreviewWidth = `min(90vw, calc(90vh * ${playerBoardAspectRatio}))`;
-    const magnifiedCardAspectRatio = props.magnifiedCard?.previewRef
+    const magnifiedCardAspectRatio = props.magnifiedCard?.type === 'spell' && props.magnifiedCard.previewRef
         ? getCardPreviewAspectRatio(props.magnifiedCard.previewRef, props.locale)
         : undefined;
     const magnifiedCardWidth = magnifiedCardAspectRatio
@@ -154,7 +154,8 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 style={{
                                     backgroundColor: '#0f172a',
                                     width: magnifiedCardWidth,
-                                    height: magnifiedCardAspectRatio ? `calc(${magnifiedCardWidth} / ${magnifiedCardAspectRatio})` : undefined,
+                                    height: `calc(${magnifiedCardWidth} / ${magnifiedCardAspectRatio ?? 0.61})`,
+                                    ...(!magnifiedCardAspectRatio ? { aspectRatio: '0.61 / 1' } : {}),
                                 }}
                                 previewRef={props.magnifiedCard.previewRef}
                                 locale={props.locale}

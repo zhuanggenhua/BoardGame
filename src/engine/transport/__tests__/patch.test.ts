@@ -265,6 +265,9 @@ describe('Feature: incremental-state-sync', () => {
   function createConnectedClient(overrides?: {
     onStateUpdate?: (...args: unknown[]) => void;
     onPlayerConnectionChange?: (playerID: string, connected: boolean) => void;
+    onCommandRejected?: (commandId: string, reason: 'stale_state') => void;
+    onCommandResult?: (commandId: string, accepted: boolean) => void;
+    onCommandAckTimeout?: (commandId: string) => void;
   }) {
     const onStateUpdate = overrides?.onStateUpdate ?? vi.fn();
     const client = new GameTransportClient({
@@ -274,6 +277,9 @@ describe('Feature: incremental-state-sync', () => {
       credentials: 'test-cred',
       onStateUpdate: onStateUpdate as never,
       onPlayerConnectionChange: overrides?.onPlayerConnectionChange,
+      onCommandRejected: overrides?.onCommandRejected,
+      onCommandResult: overrides?.onCommandResult,
+      onCommandAckTimeout: overrides?.onCommandAckTimeout,
     });
     client.connect();
     // 手动触发 connect 事件（mock 的 io() 不会自动触发）
@@ -835,6 +841,47 @@ describe('Feature: incremental-state-sync', () => {
       expect(commandEmits[0]?.args[4]).toEqual({ expectedStateID: 7 });
 
       client.disconnect();
+    });
+
+    it('parallel command ACK and stale rejection stay correlated to their own command ids', () => {
+      const onCommandRejected = vi.fn();
+      const onCommandResult = vi.fn();
+      const { client } = createConnectedClient({ onCommandRejected, onCommandResult });
+      simulateSync({ core: { phase: 'setup' } }, [{ id: 0 }], 7);
+      mockSocket.clearEmitted();
+
+      client.sendCommand('SELECT_FACTION', { factionId: 'ming' }, { commandId: 'cmd-first' });
+      client.sendCommand('CONFIRM_SETUP', {}, { commandId: 'cmd-second' });
+      const commands = mockSocket.findEmitted('command');
+      expect(commands[0]?.args[4]).toEqual({ expectedStateID: 7, commandId: 'cmd-first' });
+      expect(commands[1]?.args[4]).toEqual({ expectedStateID: 7, commandId: 'cmd-second' });
+
+      mockSocket.simulateEvent('command:rejected', 'test-match', 'cmd-second', 'stale_state');
+      (commands[1]?.args[5] as ((result: { accepted: boolean }) => void) | undefined)?.({ accepted: false });
+      (commands[0]?.args[5] as ((result: { accepted: boolean }) => void) | undefined)?.({ accepted: true });
+
+      expect(onCommandRejected).toHaveBeenCalledTimes(1);
+      expect(onCommandRejected).toHaveBeenCalledWith('cmd-second', 'stale_state');
+      expect(onCommandResult).toHaveBeenNthCalledWith(1, 'cmd-second', false);
+      expect(onCommandResult).toHaveBeenNthCalledWith(2, 'cmd-first', true);
+      client.disconnect();
+    });
+
+    it('command ACK timeout reports uncertainty without synthesizing a rejection', () => {
+      vi.useFakeTimers();
+      const onCommandAckTimeout = vi.fn();
+      const onCommandRejected = vi.fn();
+      const { client } = createConnectedClient({ onCommandAckTimeout, onCommandRejected });
+      simulateSync({ core: { phase: 'setup' } }, [{ id: 0 }], 7);
+      client.sendCommand('SELECT_FACTION', { factionId: 'ming' }, { commandId: 'cmd-timeout' });
+
+      vi.advanceTimersByTime(15000);
+
+      expect(onCommandAckTimeout).toHaveBeenCalledTimes(1);
+      expect(onCommandAckTimeout).toHaveBeenCalledWith('cmd-timeout');
+      expect(onCommandRejected).not.toHaveBeenCalled();
+      client.disconnect();
+      vi.useRealTimers();
     });
 
     it('sendCommand permits an optimistic chain to provide the next expected stateID', () => {

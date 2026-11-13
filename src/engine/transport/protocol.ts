@@ -96,6 +96,8 @@ export interface BatchDispatchMeta extends OnlineAiDispatchMeta {
 export interface CommandDispatchMeta extends OnlineAiDispatchMeta {
     /** 单条命令发起时客户端所基于的权威 stateID */
     expectedStateID?: number;
+    /** 仅用于将明确的 stale 拒绝关联回原始命令，不参与权威裁决。 */
+    commandId?: string;
 }
 
 /**
@@ -137,6 +139,7 @@ export interface ClientToServerEvents {
         payload: unknown,
         credentials?: string,
         meta?: CommandDispatchMeta,
+        acknowledge?: (result: { accepted: boolean }) => void,
     ) => void;
 
     /** 批量命令：将多个命令合并为一次网络请求发送 */
@@ -218,6 +221,8 @@ export interface ServerToClientEvents {
 
     /** 命令执行错误 */
     'error': (matchID: string, error: string) => void;
+    /** 某条具体命令因权威版本过期被拒绝；只供原始命令的一次安全恢复使用。 */
+    'command:rejected': (matchID: string, commandId: string, reason: 'stale_state') => void;
 
     /** 玩家连接状态变更 */
     'player:connected': (matchID: string, playerID: string) => void;

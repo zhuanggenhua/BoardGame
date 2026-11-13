@@ -23,7 +23,7 @@ const text = (id: string, field: string) => `cards.${id}.${field}`;
 
 export const DOCTOR_STRANGE_SPELLS: AbilityCard[] = DOCTOR_STRANGE_SPELL_IDS.map((id, index) => ({
     id, name: text(id, 'name'), description: text(id, 'description'), type: 'spell', timing: 'main', cpCost: 0,
-    sfxKey: DOCTOR_STRANGE_SFX, sourceAtlasIndex: index + 18, previewRef: preview(index + 18),
+    sfxKey: DOCTOR_STRANGE_SFX, sourceAtlasIndex: index + 18, previewRef: { ...preview(index + 18), aspectRatio: 669 / 1086 },
     spell: { starting: index === 0, index, destination: index === 0 ? 'hand' : 'discard' },
 }));
 

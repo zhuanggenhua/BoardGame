@@ -39,13 +39,13 @@ body .platform-details-cover .betrayal-game-thumbnail img { object-fit: cover; o
 .platform-details-scroll { display: contents; }
 @media (max-width: 1023px) {
     .platform-game-details { width: 100vw; height: min(640px, calc(var(--runtime-viewport-height, 100dvh) * .8)); max-height: min(640px, calc(var(--runtime-viewport-height, 100dvh) * .8)); min-height: 0; border: 0; border-top: 3px solid #000; border-radius: 16px 16px 0 0; box-shadow: none; overflow: hidden; }
-    .platform-details-close { position: absolute; top: max(8px, env(safe-area-inset-top)); right: 8px; }
+    .platform-details-close { position: absolute; top: 8px; right: 8px; }
     .platform-details-summary { grid-template-columns: 72px minmax(0, 1fr); grid-template-areas: 'cover copy' 'players players' 'actions actions'; grid-template-rows: auto auto auto; gap: 6px 12px; padding: 16px; flex: none; min-height: 0; }
     .platform-details-cover { width:72px; }
     .platform-details-players { display: none; }
     .platform-details-mobile-players { grid-area:players; display:flex; align-items:center; flex-wrap:wrap; gap:4px 12px; margin:0; font-size:12px; color:var(--platform-night-muted,#555); }
     .platform-details-description { display: block; min-height: 0; overflow-y: auto; overscroll-behavior: contain; font-size: 13px; line-height: 1.5; padding-right: 4px; scrollbar-width: thin; }
-    .platform-details-heading { padding-right: 44px; align-self: center; }
+    .platform-details-heading { min-height: 44px; padding-right: 44px; align-self: center; }
     .platform-details-title { font-size: 22px; line-height: 1.3; margin: 0; min-width: 0; overflow-wrap: anywhere; }
     .platform-details-actions { gap:10px 12px; }
     .platform-details-primary { width:100%; }
@@ -171,6 +171,10 @@ html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-d
     html[data-home-entry-style="modern"] .platform-details-heading { align-self: start; }
     html[data-home-entry-style="modern"] .platform-details-description { max-height: 76px; font-size: 13px; }
     html[data-home-entry-style="modern"] .platform-details-secondary button { padding-inline: 8px; }
+    html[data-home-entry-style="modern"] .platform-details-secondary { width: 100%; flex-wrap: nowrap; }
+    html[data-home-entry-style="modern"] .platform-details-secondary .platform-details-tutorial { order: 0; flex: 1 1 0; min-width: 0; }
+    html[data-home-entry-style="modern"] .platform-details-secondary .platform-details-config { order: 1; flex: 0 0 auto; white-space: nowrap; }
+    html[data-home-entry-style="modern"] .platform-details-secondary .platform-details-favorite { order: 2; }
 }
 .platform-details-loading-layer { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:24px; pointer-events:none; }
 .platform-details-skeleton { background:#ddd; min-height:44px; }

@@ -533,48 +533,30 @@ test.describe('Cardia 完整回合流程', () => {
             // ===== 阶段1：打出卡牌 =====
             console.log('\n--- 阶段1：打出卡牌 ---');
             
+            console.log('P1 打出最后一张牌');
             await playCard(setup.player1Page, 0);
+            console.log('P2 打出最后一张牌');
             await playCard(setup.player2Page, 0);
             
             const afterPlay = await readCoreState(setup.player1Page);
-            expect(afterPlay.phase).toBe('ability');
-            console.log('✅ 阶段1验证通过');
-            
-            // ===== 阶段2：等待游戏结束 =====
-            console.log('\n--- 阶段2：等待游戏结束（双方无牌可打）---');
-            
+            const afterPlayPlayers = afterPlay.players as Record<string, PlayerState>;
+            expect(afterPlayPlayers['0'].playedCards.length).toBe(1);
+            expect(afterPlayPlayers['1'].playedCards.length).toBe(1);
+            expect(afterPlayPlayers['0'].hand).toHaveLength(0);
+            expect(afterPlayPlayers['1'].hand).toHaveLength(0);
+            expect(afterPlayPlayers['0'].deck).toHaveLength(0);
+            expect(afterPlayPlayers['1'].deck).toHaveLength(0);
+
+            // 败者仍须处理本轮能力窗口；跳过后才在回合边界检查双方是否还能继续。
             await waitForPhase(setup.player1Page, 'ability');
-            
-            // 双方都无牌可打，游戏应该自动结束
-            // 不需要点击跳过能力按钮，因为游戏会自动检测到无牌可打并结束
-            
-            // ===== 验证游戏结束 =====
-            console.log('\n--- 验证游戏结束 ---');
-            
-            // 等待游戏结束弹窗出现（增加超时时间）
+            const skipAbilityButton = setup.player1Page.locator('[data-testid="cardia-skip-ability-btn"]');
+            await skipAbilityButton.waitFor({ state: 'visible', timeout: 5000 });
+            await skipAbilityButton.click();
+
+            console.log('\n--- 验证双方无牌后的终局 ---');
             const endgameOverlay = setup.player1Page.locator('[data-testid="endgame-overlay"]');
-            
-            try {
-                await endgameOverlay.waitFor({ state: 'visible', timeout: 15000 });
-                console.log('✅ 游戏结束弹窗已出现');
-            } catch (error) {
-                console.log('❌ 游戏结束弹窗未出现，检查当前状态...');
-                
-                // 读取当前状态
-                const currentState = await readLiveState(setup.player1Page);
-                const currentPlayers = currentState.core.players as Record<string, PlayerState>;
-                
-                console.log('当前状态:', {
-                    p1Hand: currentPlayers['0'].hand.length,
-                    p2Hand: currentPlayers['1'].hand.length,
-                    p1Deck: currentPlayers['0'].deck.length,
-                    p2Deck: currentPlayers['1'].deck.length,
-                    phase: currentState.core.phase,
-                    gameover: currentState.sys?.gameover,
-                });
-                
-                throw error;
-            }
+            await endgameOverlay.waitFor({ state: 'visible', timeout: 15000 });
+            console.log('✅ 游戏结束弹窗已出现');
             
             // 读取最终状态（使用 readLiveState 获取实时状态）
             const finalState = await readLiveState(setup.player1Page);
@@ -588,7 +570,7 @@ test.describe('Cardia 完整回合流程', () => {
                 gameover: finalState.sys?.gameover,
             });
             
-            // 验证：游戏结束
+            // 验证：双方已实际打出最后一张牌，且正式胜负结果已写入。
             expect(finalState.sys?.gameover).toBeDefined();
             
             // 验证：P2获胜（双方都无牌可打，P2有1个印戒，P1有0个印戒）

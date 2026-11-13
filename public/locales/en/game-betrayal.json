@@ -382,7 +382,7 @@
       "actionCueExplore": "Exploration is unavailable right now",
       "actionCueExploreSelect": "Now: tap a question mark to explore",
       "actionCueExploreOrient": "Now: rotate {{room}} and confirm",
-      "actionCueUse": "Now: tap Use",
+      "actionCueUse": "Now: select an item from your inventory",
       "actionCueUseCard": "Now: use {{card}}",
       "actionCueRoomEffectMysticElevator": "Now: tap Mystic Elevator",
       "actionCueTrade": "Now: tap Trade",

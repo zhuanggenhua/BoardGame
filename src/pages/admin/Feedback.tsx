@@ -1174,6 +1174,7 @@ function FeedbackRow({
                                 <div className="font-semibold">{item.errorContext.name || '-'}</div>
                                 <div>{item.errorContext.message || '-'}</div>
                                 <div className="text-red-500">{item.errorContext.source || '-'}</div>
+                                {item.errorContext.location && <code>{item.errorContext.location.bundle}:{item.errorContext.location.line}:{item.errorContext.location.column}</code>}
                                 {item.clientContext?.lastUserAction && (
                                     <div className="text-red-500">
                                         {t('feedback.detail.recentAction')}: {item.clientContext.lastUserAction.type} / {summarizeFeedbackElement(item.clientContext.lastUserAction.target)}
@@ -1590,6 +1591,7 @@ function FeedbackDetailPanel({
                             <p>{item.errorContext.name || '-'}</p>
                             <p>{item.errorContext.message || '-'}</p>
                             <p>{item.errorContext.source || '-'}</p>
+                            {item.errorContext.location && <p><code>{item.errorContext.location.bundle}:{item.errorContext.location.line}:{item.errorContext.location.column}</code></p>}
                             {item.clientContext?.failedAsset && (
                                 <p>{t('feedback.detail.failedAsset', { path: item.clientContext.failedAsset.path, status: item.clientContext.failedAsset.responseStatus ?? '?', duration: item.clientContext.failedAsset.durationMs?.toFixed(1) ?? '?', size: item.clientContext.failedAsset.transferSize ?? '?' })}</p>
                             )}

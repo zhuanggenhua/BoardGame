@@ -21,9 +21,13 @@ export function describeFateTutorialAction(state: MatchState<FateDominationCore>
         return { ...base, target, fateCopy, content: fateTutorialText(fateCopy) };
     };
     switch (command.type) {
+        case 'ADVANCE_PHASE':
+            return core.phase === 'outpost' && command.playerId === '0'
+                ? lesson('phaseOrder', '手牌已经准备好。接下来前往战场争夺事件战果。')
+                : lesson(core.phase === 'preparation' ? 'preparation' : core.phase === 'battle' ? 'battle' : 'phaseOrder');
         case 'SELECT_MASTER':
         case 'SELECT_SERVANT': return lesson('phaseOrder');
-        case 'DEPLOY_MASTER': return {...lesson(place==='workshop'?'deployment':'battleDeployment', `这次选择${location}的亮起点位。`, `fate-deployment-${place}`),family:`${base.family}-${place==='workshop'?'workshop':'battlefield'}`};
+        case 'DEPLOY_MASTER': return {...lesson(place==='workshop'?'deployment':'battleDeployment', place==='miyama'?'可以选择任一亮起的点位；深山町的地利可在战斗结算时增加威力。':`这次选择${location}的亮起点位。`, `fate-deployment-${place}`),family:`${base.family}-${place==='workshop'?'workshop':'battlefield'}`};
         case 'MOVE_PLAYER': return lesson('movement', `点击棋盘上的韦伯，再点${location}；也可直接把韦伯拖到${location}${['miyama','shinto'].includes(place)?'，前往战场争夺事件战果':''}。`, 'fate-pawn-0');
         case 'CONFIRM_ATTACK': {
             const names = (payload.cardIds as string[]).map(id => `${resolveFateAttack(player, id)?.definition.name ?? '攻击牌'}（${(payload.faceDownIds as string[]).includes(id) ? '暗置' : '明置'}）`).join('、');

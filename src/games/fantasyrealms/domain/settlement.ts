@@ -32,7 +32,7 @@ function resolvedSuit(core: FantasyRealmsCore, playerId: string, card: TableCard
     const targetId = card.id.startsWith('wild-shapeshifter') ? picks.shapeshifterTargetId : card.id.startsWith('wild-mirage') ? picks.mirageTargetId : null;
     const target = catalog.find((candidate) => candidate.id === targetId);
     const other = card.id === 'wild-doppelganger' ? core.players[playerId]!.hand.find((entry) => entry.id === picks.doppelgangerTargetId) : null;
-    const copied = other ? resolvedSuit(core, playerId, other) : undefined;
+    const copied = other?.suit;
     return picks.bookTargetId === card.id && picks.bookSuit ? picks.bookSuit : copied ?? target?.suit ?? card.suit;
 }
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { OptimizedImage } from '../OptimizedImage';
 
@@ -13,6 +13,15 @@ vi.mock('../../../../core/AssetLoader', () => ({
 }));
 
 describe('封面缓存与加载占位', () => {
+    it('浏览器未派发 load 时，图片实际解码完成仍通知调用方', async () => {
+        const onReady = vi.fn();
+        const { container } = render(<OptimizedImage src="cover" onReady={onReady} />);
+        const image = container.querySelector('img')!;
+        Object.defineProperty(image, 'complete', { configurable: true, value: true });
+        Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 200 });
+        await waitFor(() => expect(onReady).toHaveBeenCalledTimes(1));
+        expect(image.style.opacity).toBe('1');
+    });
     it('默认扫光加载及失败切换时不显示浏览器破图文本，成功后恢复图片说明', () => {
         const { container } = render(<OptimizedImage src="cover" alt="正式卡面" />);
         const image = container.querySelector('img')!;

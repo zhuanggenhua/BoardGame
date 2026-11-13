@@ -25,6 +25,7 @@ interface AbilityChoiceModalProps {
     options: AbilityChoiceOption[];
     onSelect: (abilityId: string) => void;
     onSkip: () => void;
+    emphasizeOptions?: boolean;
 }
 
 export const AbilityChoiceModal: React.FC<AbilityChoiceModalProps> = ({
@@ -32,6 +33,7 @@ export const AbilityChoiceModal: React.FC<AbilityChoiceModalProps> = ({
     options,
     onSelect,
     onSkip,
+    emphasizeOptions = false,
 }) => {
     const { t } = useTranslation('game-dicethrone');
 
@@ -49,16 +51,17 @@ export const AbilityChoiceModal: React.FC<AbilityChoiceModalProps> = ({
                 {options.map((opt) => (
                     <button
                         key={opt.abilityId}
-                        className="w-full text-left px-4 py-3 rounded-xl border border-amber-500/30
-                            bg-slate-800/80 hover:bg-amber-500/20 hover:border-amber-400/60
-                            transition-all duration-150 cursor-pointer group"
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 cursor-pointer group
+                            ${emphasizeOptions
+                                ? 'bg-slate-600 border-slate-300 hover:bg-slate-500 hover:border-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300'
+                                : 'border-amber-500/30 bg-slate-800/80 hover:bg-amber-500/20 hover:border-amber-400/60'}`}
                         onClick={() => onSelect(opt.abilityId)}
                     >
                         <div className="font-bold text-amber-300 group-hover:text-amber-200 text-base">
                             {opt.name}
                         </div>
                         {opt.description && (
-                            <div className="text-xs text-slate-400 group-hover:text-slate-300 mt-1 line-clamp-2">
+                            <div className={`text-xs mt-1 line-clamp-2 ${emphasizeOptions ? 'text-white' : 'text-slate-400 group-hover:text-slate-300'}`}>
                                 {opt.description}
                             </div>
                         )}

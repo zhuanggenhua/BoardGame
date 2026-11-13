@@ -177,6 +177,7 @@ export const TutorialOverlay: React.FC = () => {
   const namespaces = Array.from(new Set(["tutorial", ...stepNamespaces]));
   const { t } = useTranslation(namespaces);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [visualStatus, setVisualStatus] = useState<{ src: string; status: 'loaded' | 'error' } | null>(null);
   const lastStepIdRef = useRef<string | null>(null);
   const hasAutoScrolledRef = useRef(false);
   const [positionedStepId, setPositionedStepId] = useState<string | null>(null);
@@ -1140,13 +1141,22 @@ export const TutorialOverlay: React.FC = () => {
               }`}
             >
               <OptimizedImage
+                key={currentVisual.src}
                 src={currentVisual.src}
                 alt={visualAlt}
                 className={`block w-full object-contain ${
                   isCompactTutorialLayout ? "max-h-[34vh]" : "max-h-[300px]"
                 }`}
                 placeholder={false}
+                onLoad={() => setVisualStatus({ src: currentVisual.src, status: 'loaded' })}
+                onReady={() => setVisualStatus({ src: currentVisual.src, status: 'loaded' })}
+                onError={() => setVisualStatus({ src: currentVisual.src, status: 'error' })}
               />
+              {visualStatus?.src !== currentVisual.src || visualStatus.status !== 'loaded' ? (
+                <div role="status" className="grid min-h-28 place-items-center px-3 py-4 text-center text-sm text-[#765f3d]">
+                  {visualStatus?.src === currentVisual.src && visualStatus.status === 'error' ? t('overlay.visualError') : t('overlay.visualLoading')}
+                </div>
+              ) : null}
               {visualCaption ? (
                 <figcaption
                   data-testid="tutorial-overlay-visual-caption"

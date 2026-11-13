@@ -2,14 +2,42 @@ import { describe, expect, it } from 'vitest';
 import { buildLeaderboardEntries, isLeaderboardHumanPlayer } from '../leaderboard';
 
 describe('leaderboard', () => {
+    it('游客对局仍是对手，但游客身份不会出现在排行榜', () => {
+        const entries = buildLeaderboardEntries([{ players: [
+            { id: 'user:1', ownerKey: 'user:1', name: '玩家' },
+            { id: 'guest:6433', ownerKey: 'guest:6433', name: '游客6433' },
+        ], winnerID: 'user:1' }]);
+        expect(entries.map(entry => entry.name)).toEqual(['玩家']);
+        expect(entries[0].matches).toBe(1);
+    });
+
+    it('旧游客名称不入榜，明确的账号身份不因昵称受影响', () => {
+        const entries = buildLeaderboardEntries([{ players: [
+            { id: '0', name: '游客6433' },
+            { id: 'user:1', ownerKey: 'user:1', name: '游客1234' },
+        ], winnerID: 'user:1' }]);
+        expect(entries.map(entry => entry.name)).toEqual(['游客1234']);
+    });
+
+    it('碰撞的游客编号不会跨对局累积积分影响账号', () => {
+        const account = { id: 'user:1', ownerKey: 'user:1', name: '玩家' };
+        const guest = { id: 'guest:6433', ownerKey: 'guest:6433', name: '游客6433' };
+        const once = buildLeaderboardEntries([{ players: [account, guest], winnerID: 'user:1', endedAt: 2 }]);
+        const afterGuestHistory = buildLeaderboardEntries([
+            { players: [guest, { id: 'AI-1', name: 'AI-1', isAi: true }], winnerID: 'guest:6433', endedAt: 1 },
+            { players: [account, guest], winnerID: 'user:1', endedAt: 2 },
+        ]);
+        expect(afterGuestHistory).toEqual(once);
+    });
+
     it('AI 对战给真人低权重等级分，但 AI 座位不进入排行榜', () => {
         const entries = buildLeaderboardEntries([
             {
                 players: [
-                    { id: 'guest:host-1', ownerKey: 'guest:host-1', name: '房主' },
+                    { id: 'user:host-1', ownerKey: 'user:host-1', name: '房主' },
                     { id: 'AI-1', name: 'AI-1', isAi: true },
                 ],
-                winnerID: 'guest:host-1',
+                winnerID: 'user:host-1',
                 endedAt: 1,
             },
         ]);
@@ -33,7 +61,7 @@ describe('leaderboard', () => {
         const entries = buildLeaderboardEntries([
             {
                 players: [
-                    { id: 'guest:host-1', ownerKey: 'guest:host-1', name: '房主' },
+                    { id: 'user:host-1', ownerKey: 'user:host-1', name: '房主' },
                     { id: 'AI-1', name: 'AI-1', isAi: true },
                 ],
                 winnerID: 'AI-1',
@@ -60,10 +88,10 @@ describe('leaderboard', () => {
         const entries = buildLeaderboardEntries([
             {
                 players: [
-                    { id: 'guest:host-1', ownerKey: 'guest:host-1', name: '房主' },
-                    { id: 'guest:guest-2', ownerKey: 'guest:guest-2', name: '访客' },
+                    { id: 'user:host-1', ownerKey: 'user:host-1', name: '房主' },
+                    { id: 'user:player-2', ownerKey: 'user:player-2', name: '访客' },
                 ],
-                winnerID: 'guest:host-1',
+                winnerID: 'user:host-1',
                 endedAt: 1,
             },
         ]);

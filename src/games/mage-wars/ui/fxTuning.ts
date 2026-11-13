@@ -119,7 +119,7 @@ export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTr
 } as const;
 
 export const MAGE_WARS_TELEPORT_FX_TUNING = {
-    sourcePreset: 'magicDust' as BoardBurstPresetName,
+    sourcePreset: 'summonGlow' as BoardBurstPresetName,
     arrivalPreset: 'summonGlow' as BoardBurstPresetName,
     arrivalStrongPreset: 'summonGlowStrong' as BoardBurstPresetName,
     sourceOverflow: 2.2,

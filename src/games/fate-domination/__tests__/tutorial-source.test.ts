@@ -9,6 +9,19 @@ import {FATE_ATTACK_BY_ID} from '../data';
 import {FATE_TUTORIAL_MAP_PROTECTION} from '../ui/tutorialPresentation';
 
 const normalize = (text:string) => text.replace(/\s+/g,'');
+it('首个规则行动之前先说明战争、战果和四阶段，不把终局判定当成开场',()=>{
+    const steps=buildFateTutorialPlan().steps;
+    const opening=steps.find(step=>step.id==='intro')!;
+    const overview=steps.find(step=>step.id==='overview')!;
+    const preparation=steps.findIndex(step=>step.fateCopy?.lessonId==='preparation');
+    expect(opening.content).toContain(FATE_TUTORIAL_PASSAGES.duration.quote);
+    expect(opening.content).toContain(FATE_TUTORIAL_PASSAGES.overviewBattle.quote);
+    expect(overview.content).toContain(FATE_TUTORIAL_PASSAGES.overviewPoints.quote);
+    expect(overview.content).toContain('准备、前哨、行动和战斗');
+    expect(opening.content).not.toContain(FATE_TUTORIAL_PASSAGES.victory.quote);
+    expect(steps.indexOf(opening)).toBeLessThan(steps.indexOf(overview));
+    expect(steps.indexOf(overview)).toBeLessThan(preparation);
+});
 it('手牌课程始终保护实际卡牌、威力、身份和席位；地图关系课程另保护印刷读数',()=>{
     const steps=buildFateTutorialPlan().steps;
     const dark=steps.find(step=>step.fateCopy?.lessonId==='battlefieldDarkAttack')!;
@@ -70,7 +83,7 @@ it('每张可见课程来自登记摘句与必要功能说明，首课不要求�
     }
 });
 
-it('教程开局只提供工房部署；同一规则摘句只在一个真实用途处教学',()=>{
+it('教程开局提供全部合法部署；同一规则摘句只在一个真实用途处教学',()=>{
     const plan=buildFateTutorialPlan();
     const passages=plan.steps.flatMap(step=>step.fateCopy?.passages??[]);
     expect(new Set(passages).size).toBe(passages.length);
@@ -80,5 +93,5 @@ it('教程开局只提供工房部署；同一规则摘句只在一个真实用�
     expect(learnerAttacks).toHaveLength(1);
     expect(plan.steps.some(step=>step.id==='first-deployment-result'||step.id==='map-camera')).toBe(false);
     const opening=plan.steps.find(step=>step.fateCommandOptions?.some(option=>option.type==='DEPLOY_MASTER'))!;
-    expect(opening.fateCommandOptions?.filter(option=>option.type==='DEPLOY_MASTER').map(option=>option.payload.locationId)).toEqual(['workshop','workshop','workshop']);
+    expect(opening.fateCommandOptions?.filter(option=>option.type==='DEPLOY_MASTER').map(option=>option.payload.locationId)).toEqual(['workshop','workshop','workshop','miyama','shinto']);
 });

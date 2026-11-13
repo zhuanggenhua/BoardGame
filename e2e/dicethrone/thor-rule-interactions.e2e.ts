@@ -45,8 +45,81 @@ async function chooseCustom(page: Page, game: GameTestContext, customId: string,
     const options = state.sys.interaction.current?.data?.options ?? [];
     const option = options.find((o: { value?: { customId?: string; value?: number } }) => o.value?.customId === customId && (value === undefined || o.value?.value === value));
     expect(option, `当前正式候选缺少${customId}/${value}`).toBeDefined();
-    await page.locator(`[data-option-id="${option.id}"]`).click();
+    if (customId === 'thor-mjolnir-move' && options.some((o: { value?: { choiceKind?: string } }) => o.value?.choiceKind === 'player')) {
+        if (value === -1) {
+            await page.getByRole('button', { name: '停止移动', exact: true }).click();
+        } else {
+            await page.getByTestId(`dt-player-target-${value}`).click();
+            await page.locator('#modal-root').getByRole('button', { name: '确认', exact: true }).last().click();
+        }
+    } else {
+        await page.locator(`[data-option-id="${option.id}"]`).click();
+    }
 }
+
+test('索尔阿斯加德神力以三头盔治疗而不发起攻击', async ({ page, game }, info) => {
+    test.setTimeout(150000);
+    await attack(page, game, info, { dice: [4, 4, 4, 1, 6], slot: 'calm', upgrade: 'upgrade-thor-power-of-thunder-2' });
+    await expect.poll(async () => {
+        const s = await game.getState();
+        return { hp: s.core.players['0'].resources.hp, targetHp: s.core.players['1'].resources.hp,
+            phase: s.sys.phase, attack: s.core.pendingAttack ?? null };
+    }).toEqual({ hp: 34, targetHp: 50, phase: 'main2', attack: null });
+    await waitForDamageNumbersToSettle(page);
+    await shot(page, info, '02-治疗完成直接回主要阶段');
+});
+
+// 五枚锤面触发各等级最高档；基础版只飞掷，升级版额外授予驭电。
+for (const input of [
+    { name: '雷神之锤基础', dice: [1, 1, 1, 1, 1], slot: 'fist', source: 'thor-hammer-5', electro: 0 },
+    { name: '雷神之锤二级', dice: [1, 1, 1, 1, 1], slot: 'fist', upgrade: 'upgrade-thor-hammer-2', source: 'thor-hammer-2-5', electro: 1 },
+    { name: '雷神之锤三级', dice: [1, 1, 1, 1, 1], slot: 'fist', upgrade: 'upgrade-thor-hammer-3', source: 'thor-hammer-3-5', electro: 1 },
+]) test(`索尔${input.name}从技能槽触发最高档`, async ({ page, game }, info) => {
+    test.setTimeout(150000);
+    await attack(page, game, info, input);
+    await expect.poll(async () => {
+        const s = await game.getState();
+        return { hp: s.core.players['1'].resources.hp, holder: s.core.players['1'].tokens.mjolnir,
+            electro: s.core.players['0'].tokens.electrokinesis ?? 0, source: s.core.pendingAttack?.sourceAbilityId };
+    }).toEqual({ hp: 49, holder: 1, electro: input.electro, source: input.source });
+    await waitForDamageNumbersToSettle(page);
+    await shot(page, info, '02-飞锤与最高档攻击分别保留');
+});
+
+// 驭雷策电基础/升级的治疗和资源，与同张升级牌的电闪雷鸣攻击是独立分支。
+for (const input of [
+    { name: '驭雷策电基础', dice: [1, 4, 4, 6, 4], slot: 'chi', hp: 32, electro: 3, guard: 2, phase: 'main2', source: null },
+    { name: '驭雷策电二级', dice: [1, 4, 4, 6, 4], slot: 'chi', upgrade: 'upgrade-thor-mighty-summon-2', hp: 33, electro: 3, guard: 2, phase: 'main2', source: null },
+    { name: '电闪雷鸣', dice: [1, 1, 6, 6, 4], slot: 'chi', upgrade: 'upgrade-thor-mighty-summon-2', hp: 30, electro: 2, guard: 0, phase: 'defensiveRoll', source: 'thor-flash-and-thunder' },
+]) test(`索尔${input.name}从技能槽结算对应分支`, async ({ page, game }, info) => {
+    test.setTimeout(150000);
+    await attack(page, game, info, input);
+    await expect.poll(async () => {
+        const s = await game.getState();
+        return { hp: s.core.players['0'].resources.hp, electro: s.core.players['0'].tokens.electrokinesis ?? 0,
+            guard: s.core.players['0'].tokens.guard_break ?? 0, phase: s.sys.phase, source: s.core.pendingAttack?.sourceAbilityId ?? null };
+    }).toEqual({ hp: input.hp, electro: input.electro, guard: input.guard, phase: input.phase, source: input.source });
+    await waitForDamageNumbersToSettle(page);
+    await shot(page, info, '02-对应分支结算后回到原阶段');
+});
+
+// 原玩家板：雷轰电掣基础版按目标持锤分支结算；升级版和两种雷霆之力移动神锤。
+for (const input of [
+    { name: '雷轰电掣基础', dice: [1, 2, 3, 4, 4], slot: 'combo', source: 'thor-thunder-strike', electro: 1, hp: 50, holder: 0 },
+    { name: '雷轰电掣二级', dice: [1, 2, 3, 4, 4], slot: 'combo', upgrade: 'upgrade-thor-thunder-strike-2', source: 'thor-thunder-strike', electro: 1, hp: 49, holder: 1 },
+    { name: '雷霆之力基础', dice: [1, 2, 3, 4, 5], slot: 'calm', source: 'thor-power-of-thunder', electro: 2, hp: 49, holder: 1 },
+    { name: '雷霆之力二级', dice: [1, 2, 3, 4, 5], slot: 'calm', upgrade: 'upgrade-thor-power-of-thunder-2', source: 'thor-power-of-thunder-2', electro: 2, hp: 49, holder: 1 },
+]) test(`索尔${input.name}从技能槽结算并保留攻击`, async ({ page, game }, info) => {
+    test.setTimeout(150000);
+    await attack(page, game, info, input);
+    await expect.poll(async () => {
+        const s = await game.getState();
+        return { hp: s.core.players['1'].resources.hp, holder: s.core.players['1'].tokens.mjolnir ?? 0,
+            electro: s.core.players['0'].tokens.electrokinesis, source: s.core.pendingAttack?.sourceAbilityId };
+    }).toEqual({ hp: input.hp, holder: input.holder, electro: input.electro, source: input.source });
+    await waitForDamageNumbersToSettle(page);
+    await shot(page, info, '02-技能结算后神锤归属与原攻击保留');
+});
 
 test('索尔俺也一样通过原骰盘复制锁定骰', async ({ page, game }, info) => {
     test.setTimeout(120000);
@@ -357,6 +430,27 @@ for (const upgraded of [false, true]) test(`索尔雷电之轮${upgraded ? '二�
     await expect.poll(async () => (await game.getState()).core.players['0'].resources.hp).toBe(upgraded ? 32 : 34);
     await waitForDamageNumbersToSettle(page);
     await shot(page, info, '03-防御减伤和每组神锤移动后结算生命');
+});
+
+test('索尔防御召回神锤与雷电各获得一驭电', async ({ page, game }, info) => {
+    test.setTimeout(120000);
+    await scene(page, game, info, { gameId: 'dicethrone', phase: 'defensiveRoll', currentPlayer: '1',
+        randomQueue: [1, 1, 6].map(v => (v - .5) / 6),
+        player0: { hand: [], resources: { hp: 40, cp: 2 }, tokens: { mjolnir: 0, electrokinesis: 0 } },
+        player1: { hand: [], resources: { hp: 50, cp: 2 }, tokens: { mjolnir: 1 } },
+        extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true, rollCount: 0, rollConfirmed: false, dice: [], pendingAttack: { attackerId: '1', defenderId: '0', sourceAbilityId: 'fist-technique-5', damage: 8, bonusDamage: 0, isDefendable: true, preDefenseResolved: true, offensiveRollEndTokenResolved: true } } });
+    await page.getByRole('button', { name: '开始防御', exact: true }).click();
+    await page.locator('[data-ability-slot="meditate"][data-can-click="true"]').first().click();
+    await page.locator('[data-tutorial-id="dice-roll-button"]').click();
+    await shot(page, info, '01-防御骰两神锤一雷电');
+    await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
+    await page.locator('[data-tutorial-id="advance-phase-button"]').click();
+    await expect.poll(async () => { const state = await game.getState(); return {
+        phase: state.sys.phase, holder: state.core.players['0'].tokens.mjolnir,
+        electro: state.core.players['0'].tokens.electrokinesis,
+    }; }).toEqual({ phase: 'main2', holder: 1, electro: 2 });
+    await waitForDamageNumbersToSettle(page);
+    await shot(page, info, '02-防御完成后神锤回归并获得两驭电');
 });
 
 for (const roll of [1, 6]) test(`索尔推广彩虹桥投出${roll}沿原效果骰确认`, async ({ page, game }, info) => {

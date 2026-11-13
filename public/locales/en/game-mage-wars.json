@@ -76,6 +76,16 @@
     "channelingShort": "Chan {{value}}",
     "damageShort": "Dmg {{value}}"
   },
+  "phaseDescriptions": {
+    "reset": "Reset action and quickcast markers used during the round.",
+    "channel": "Both players gain mana equal to their channeling.",
+    "upkeep": "Resolve ongoing effects, conditions, and upkeep costs.",
+    "planning": "Secretly prepare spells from your spellbook.",
+    "deployment": "Deploy creatures through spawnpoints.",
+    "initiativeQuickcast": "Players may use their quickcast marker before actions.",
+    "creatureAction": "Players alternate activating mages or creatures to move, attack, and cast.",
+    "finalQuickcast": "Players may use any remaining quickcast marker after actions."
+  },
   "phases": {
     "reset": "Reset",
     "channel": "Channel",
@@ -304,7 +314,7 @@
     "targetOutOfRange": "The target is out of range.",
     "wallEdgeOccupied": "That edge already has a wall.",
     "missingTarget": "Choose a legal target first.",
-    "spellRequiresCodeSupport": "That spell is not in the current playable scope yet.",
+    "spellRequiresCodeSupport": "This spell's effect is not implemented yet and cannot be cast.",
     "resurrectionTargetNotLivingCreature": "Resurrection can only choose a defeated living creature from your discard pile.",
     "resurrectionTargetNotInSpellbook": "That creature is not in your spellbook.",
     "resurrectionTargetNotDefeated": "That creature is not in your defeated living-creature pool.",

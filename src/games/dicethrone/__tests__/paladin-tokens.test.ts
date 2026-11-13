@@ -229,6 +229,12 @@ describe('圣骑士 Token 定义', () => {
         expect(checkPlayCard(state.core, '1', nextTime, 'offensiveRoll', 'afterRollConfirmed'))
             .toEqual({ ok: false, reason: 'wrongPhaseForCard' });
 
+        // 对仍有待伤害的响应窗口，保留既有的阶段兼容合同。
+        expect(checkPlayCard(state.core, '1', nextTime, 'main2', 'afterAttackResolved'))
+            .toEqual({ ok: true });
+        // 结算结束后，不得把上一笔待伤害继续带进后续阶段。
+        state.core.pendingDamage = undefined;
+        state.core.pendingAttack = undefined;
         expect(checkPlayCard(state.core, '1', nextTime, 'main2', 'afterAttackResolved'))
             .toEqual({ ok: false, reason: 'wrongPhaseForRoll' });
     });

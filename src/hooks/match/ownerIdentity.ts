@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { generateUUID } from '../../lib/uuid';
 import { readLocalStorageItem, readSessionStorageItem, writeLocalStorageItem, writeSessionStorageItem } from '../../lib/browserStorage';
 
 const GUEST_ID_KEY = 'guest_id';
@@ -44,12 +45,7 @@ const writeGuestId = (id: string): void => {
     document.cookie = `${GUEST_ID_COOKIE_KEY}=${encodeURIComponent(id)}; expires=${expires}; path=/; SameSite=Lax`;
 };
 
-/**
- * 生成 4 位数字 ID（1000-9999）
- */
-const generateGuestId = (): string => {
-    return String(Math.floor(Math.random() * 9000) + 1000);
-};
+const generateGuestId = (): string => generateUUID();
 
 export const getOrCreateGuestId = (): string => {
     if (typeof window === 'undefined') return 'guest';
@@ -68,7 +64,7 @@ export const getOrCreateGuestId = (): string => {
 
 export const getGuestName = (t: TFunction, guestId?: string): string => {
     const id = guestId || getOrCreateGuestId();
-    return t('player.guest', { id, ns: 'lobby' });
+    return t('player.guest', { id: id.length > 4 ? id.slice(-4) : id, ns: 'lobby' });
 };
 
 export const getOwnerKey = (userId?: string | null, guestId?: string): string => {

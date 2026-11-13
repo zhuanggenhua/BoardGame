@@ -17,10 +17,10 @@ export function RenderQualitySettingsSection({ t }: RenderQualitySettingsSection
       data-testid="render-quality-settings"
     >
       <div>
-        <div className="text-xs font-bold uppercase tracking-wider text-sky-200">
+        <div className="text-xs font-bold uppercase tracking-wider text-[#433422]">
           {t('hud.graphics.title')}
         </div>
-        <div className="mt-1 text-[11px] text-white/55">
+        <div className="mt-1 text-[11px] text-[#6f6253]">
           {t('hud.graphics.description')}
         </div>
       </div>
@@ -36,12 +36,12 @@ export function RenderQualitySettingsSection({ t }: RenderQualitySettingsSection
               onClick={() => setPreset(option)}
               className={`rounded-md border px-2 py-2 text-xs font-bold transition-colors ${
                 active
-                  ? 'border-sky-300 bg-sky-300/25 text-white'
-                  : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                  ? 'border-sky-300 bg-sky-300/25 text-[#433422]'
+                  : 'border-[#d3ccba] bg-[#f4f1eb] text-[#625647] hover:bg-[#e7e1d6]'
               }`}
             >
               <span className="block">{t(`hud.graphics.${option}`)}</span>
-              <span className="mt-0.5 block text-[9px] font-medium text-white/50">
+              <span className="mt-0.5 block text-[9px] font-medium text-[#6f6253]">
                 {t(`hud.graphics.${option}Hint`)}
               </span>
             </button>

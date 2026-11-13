@@ -54,6 +54,11 @@ export interface GameTransportClientConfig {
     onPlayerConnectionChange?: (playerID: string, connected: boolean) => void;
     /** 错误回调 */
     onError?: (error: string) => void;
+    /** 与原命令关联的权威版本拒绝。 */
+    onCommandRejected?: (commandId: string, reason: 'stale_state') => void;
+    /** 命令处理结果确认；超时不会自动重放命令。 */
+    onCommandResult?: (commandId: string, accepted: boolean) => void;
+    onCommandAckTimeout?: (commandId: string) => void;
     onAdminDebugAccessChange?: (allowed: boolean) => void;
     /** 调试事件回调 */
     onDebugEvent?: (event: {
@@ -87,6 +92,7 @@ export class GameTransportClient {
     private _latestState: unknown = null;
     private _matchPlayers: MatchPlayerInfo[] = [];
     private _destroyed = false;
+    private readonly commandAckTimers = new Map<string, ReturnType<typeof setTimeout>>();
     /** 最近一次成功处理的 stateID，用于增量同步连续性校验 */
     private _lastReceivedStateID: number | null = null;
     /** 正在等待全量权威状态；此期间禁止用旧 stateID 继续发命令。 */
@@ -106,6 +112,7 @@ export class GameTransportClient {
     private static readonly HEALTH_CHECK_INTERVAL_MS = 30000; // 30秒检查一次
     private static readonly TERMINAL_ERRORS = new Set(['match_not_found', 'unauthorized']);
     private static readonly COMMAND_REJECTION_RESYNC_ERRORS = new Set(['stale_state', 'player_mismatch']);
+    private static readonly COMMAND_ACK_TIMEOUT_MS = 15000;
 
     constructor(config: GameTransportClientConfig) {
         this.config = config;
@@ -410,6 +417,11 @@ export class GameTransportClient {
             this.config.onError?.(error);
         });
 
+        socket.on('command:rejected', (matchID, commandId, reason) => {
+            if (this._destroyed || matchID !== this.config.matchID) return;
+            this.config.onCommandRejected?.(commandId, reason);
+        });
+
         socket.on('player:connected', (matchID, playerID) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
             this.updateKnownPlayerConnection(playerID, true);
@@ -450,7 +462,7 @@ export class GameTransportClient {
     sendCommand(
         commandType: string,
         payload: unknown,
-        dispatchContext?: Pick<CommandDispatchMeta, 'onlineAiAttemptKey' | 'expectedStateID'>,
+        dispatchContext?: Pick<CommandDispatchMeta, 'onlineAiAttemptKey' | 'expectedStateID' | 'commandId'>,
     ): boolean {
         if (!this.socket || this._destroyed) return false;
         if (this._syncInFlight) {
@@ -472,6 +484,7 @@ export class GameTransportClient {
         }
         const commandMeta: CommandDispatchMeta = {
             expectedStateID: dispatchContext?.expectedStateID ?? this._lastReceivedStateID ?? undefined,
+            ...(dispatchContext?.commandId ? { commandId: dispatchContext.commandId } : {}),
             ...(dispatchContext?.onlineAiAttemptKey
                 ? {
                     onlineAiAttemptKey: dispatchContext.onlineAiAttemptKey,
@@ -479,6 +492,13 @@ export class GameTransportClient {
                 }
                 : {}),
         };
+        if (dispatchContext?.commandId) {
+            const timer = setTimeout(() => {
+                this.commandAckTimers.delete(dispatchContext.commandId!);
+                if (!this._destroyed) this.config.onCommandAckTimeout?.(dispatchContext.commandId!);
+            }, GameTransportClient.COMMAND_ACK_TIMEOUT_MS);
+            this.commandAckTimers.set(dispatchContext.commandId, timer);
+        }
         this.socket.emit(
             'command',
             this.config.matchID,
@@ -486,6 +506,14 @@ export class GameTransportClient {
             payload,
             this.config.credentials,
             commandMeta,
+            (result) => {
+                if (dispatchContext?.commandId) {
+                    const timer = this.commandAckTimers.get(dispatchContext.commandId);
+                    if (timer) clearTimeout(timer);
+                    this.commandAckTimers.delete(dispatchContext.commandId);
+                    this.config.onCommandResult?.(dispatchContext.commandId, result.accepted);
+                }
+            },
         );
         return true;
     }
@@ -666,6 +694,8 @@ export class GameTransportClient {
     /** 断开连接并清理资源 */
     disconnect(): void {
         this._destroyed = true;
+        for (const timer of this.commandAckTimers.values()) clearTimeout(timer);
+        this.commandAckTimers.clear();
         this.clearSyncTimer();
         this.clearHealthCheck();
         if (this.socket) {

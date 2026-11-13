@@ -1,3 +1,5 @@
+import { captureDiceCanvas } from '../dice-box-threejs/canvasCapture';
+
 type FeedbackScreenshotContext = {
     gameId?: string | null;
     matchId?: string | null;
@@ -16,6 +18,8 @@ type FeedbackScreenshotCacheSession = {
     initialCaptureCancel: (() => void) | null;
     endgameCaptureId: number | null;
     observer: MutationObserver;
+    animationObserver: MutationObserver;
+    backgroundPending: boolean;
     lastEndgameOverlay: Element | null;
     visibilityHandler: () => void;
 };
@@ -26,6 +30,7 @@ const CACHE_CAPTURE_SCALE = 1;
 const SCREENSHOT_MAX_WIDTH = 1280;
 const SCREENSHOT_MAX_HEIGHT = 960;
 const SCREENSHOT_JPEG_QUALITY = 0.7;
+const SCREENSHOT_WORKER_TIMEOUT_MS = 5000;
 const GAME_END_CAPTURE_DELAY_MS = 900;
 
 let html2CanvasLoader: Promise<Html2CanvasFn> | null = null;
@@ -34,6 +39,13 @@ const capturePromises = new Map<string, Promise<string | null>>();
 const latestCaptureGeneration = new Map<string, number>();
 const cacheSessions = new Map<string, FeedbackScreenshotCacheSession>();
 let nextCaptureGeneration = 0;
+
+class BackgroundCaptureDeferred extends Error {}
+
+// 战斗结果间仍属于同一演出；等待整段结束后再补采，避免下一轮投骰时抢跑。
+const criticalAnimationActive = () => Boolean(document.querySelector(
+    '[data-battle-roll-phase], [data-dice-physics-source][data-dice-settled="false"]',
+));
 
 const buildCacheKey = (context: FeedbackScreenshotContext): string | null => {
     const gameId = context.gameId?.trim();
@@ -60,16 +72,30 @@ const visibleViewportSize = (target: HTMLElement) => ({
     height: Math.max(1, Math.round(window.innerHeight || target.clientHeight || 1)),
 });
 
-const captureFeedbackScreenshot = async (scale: number): Promise<string | null> => {
+const captureFeedbackScreenshot = async (scale: number, defer?: () => boolean): Promise<string | null> => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
         return null;
     }
 
     const html2canvas = await loadHtml2Canvas();
+    if (defer?.()) throw new BackgroundCaptureDeferred();
     // Game overlays such as EndgameOverlay are portaled directly to body, outside the game root.
     // Capture the viewport from body so the feedback image reflects the visible end-of-game state.
     const target = document.body;
     if (!target) return null;
+
+    // 渲染器也在 canvas 本体写入相同属性；只对容器取快照，避免把画布当成第二个骰子。
+    const diceWrappers = [...target.querySelectorAll<HTMLElement>('[data-dice-physics-source="dice-box-threejs"]:not(canvas)')];
+    const diceSnapshots = diceWrappers.map(wrapper => {
+        const canvas = wrapper.querySelector('canvas');
+        if (!canvas) {
+            if (wrapper.dataset.diceEngineReady === 'true') throw new Error('骰子渲染画布不存在');
+            return { id: wrapper.dataset.testid ?? null, image: null };
+        }
+        const copy = captureDiceCanvas(canvas);
+        if (!copy) throw new Error('骰子渲染画布未注册截图');
+        return { id: wrapper.dataset.testid ?? null, image: copy.toDataURL() };
+    });
 
     const viewport = visibleViewportSize(target);
     const canvas = await html2canvas(target, {
@@ -88,6 +114,22 @@ const captureFeedbackScreenshot = async (scale: number): Promise<string | null> 
         scrollX: window.scrollX,
         scrollY: window.scrollY,
         onclone: async (clonedDocument) => {
+            try {
+            const abortIfDeferred = () => {
+                if (!defer?.()) return;
+                throw new BackgroundCaptureDeferred();
+            };
+            abortIfDeferred();
+            const clonedDice = [...clonedDocument.querySelectorAll<HTMLElement>('[data-dice-physics-source="dice-box-threejs"]:not(canvas)')];
+            if (clonedDice.length !== diceSnapshots.length) throw new Error(`骰子截图期间画布数量发生变化（源 ${diceSnapshots.length}，副本 ${clonedDice.length}）`);
+            diceSnapshots.forEach((snapshot, index) => {
+                const wrapper = clonedDice[index];
+                if ((wrapper.dataset.testid ?? null) !== snapshot.id) throw new Error('骰子截图期间画布顺序发生变化');
+                if (!snapshot.image) return;
+                const images = wrapper.querySelectorAll('img');
+                if (images.length !== 1) throw new Error('骰子截图副本不匹配');
+                images[0].src = snapshot.image;
+            });
             clonedDocument.querySelectorAll(
                 '[data-feedback-exclude="true"], [data-testid="feedback-modal"]',
             ).forEach((element) => element.remove());
@@ -112,13 +154,52 @@ const captureFeedbackScreenshot = async (scale: number): Promise<string | null> 
                 image.removeAttribute('srcset');
                 await image.decode();
             }));
+            abortIfDeferred();
+            } catch (error) {
+                // html2canvas 在 onclone 抛错时不会回收 iframe。
+                clonedDocument.defaultView?.frameElement?.remove();
+                throw error;
+            }
         },
     });
 
-    return compressFeedbackCanvas(canvas);
+    return compressFeedbackCanvasAsync(canvas);
 };
 
-const captureAndCache = (cacheKey: string, scale: number, forceFresh = false): Promise<string | null> => {
+/** 将缩放和 JPEG 编码移到 worker，避免压住正在播放的游戏动画。 */
+const compressFeedbackCanvasAsync = async (canvas: HTMLCanvasElement): Promise<string> => {
+    if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap !== 'function') {
+        return compressFeedbackCanvas(canvas);
+    }
+    let bitmap: ImageBitmap | undefined;
+    let worker: Worker | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+        bitmap = await createImageBitmap(canvas);
+        worker = new Worker(new URL('./feedbackScreenshot.worker.ts', import.meta.url), { type: 'module' });
+        const result = await new Promise<string>((resolve, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('截图编码 worker 超时')), SCREENSHOT_WORKER_TIMEOUT_MS);
+            worker!.onmessage = (event: MessageEvent<{ dataUrl?: string; error?: string }>) => {
+                if (event.data.error || !event.data.dataUrl) reject(new Error(event.data.error || '截图编码未返回结果'));
+                else resolve(event.data.dataUrl);
+            };
+            worker!.onerror = (event) => reject(new Error(event.message || '截图编码 worker 失败'));
+            worker!.onmessageerror = () => reject(new Error('截图编码 worker 返回数据无法解析'));
+            worker!.postMessage({ bitmap, maxWidth: SCREENSHOT_MAX_WIDTH, maxHeight: SCREENSHOT_MAX_HEIGHT, quality: SCREENSHOT_JPEG_QUALITY }, [bitmap!]);
+            bitmap = undefined;
+        });
+        return result;
+    } catch (error) {
+        console.warn('[feedback-screenshot] worker encoding failed; using canvas encoding', error);
+        return compressFeedbackCanvas(canvas);
+    } finally {
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
+        bitmap?.close();
+        worker?.terminate();
+    }
+};
+
+const captureAndCache = (cacheKey: string, scale: number, forceFresh = false, defer?: () => boolean): Promise<string | null> => {
     const requestKey = `${cacheKey}:${scale}`;
     const currentCapture = capturePromises.get(requestKey);
     if (currentCapture && !forceFresh) return currentCapture;
@@ -126,7 +207,7 @@ const captureAndCache = (cacheKey: string, scale: number, forceFresh = false): P
     const generation = ++nextCaptureGeneration;
     const capturedAt = Date.now();
     latestCaptureGeneration.set(cacheKey, generation);
-    const capturePromise = captureFeedbackScreenshot(scale)
+    const capturePromise = captureFeedbackScreenshot(scale, defer)
         .then((dataUrl) => {
             if (dataUrl && latestCaptureGeneration.get(cacheKey) === generation) {
                 screenshotCache.set(cacheKey, { dataUrl, capturedAt });
@@ -157,18 +238,32 @@ const requestIdleCapture = (callback: () => void): (() => void) => {
     return () => window.clearTimeout(timeoutId);
 };
 
+const runPendingBackgroundCapture = (cacheKey: string, session: FeedbackScreenshotCacheSession) => {
+    if (cacheSessions.get(cacheKey) !== session || !session.backgroundPending || document.visibilityState === 'hidden'
+        || document.querySelector('[data-testid="feedback-modal"]') || criticalAnimationActive()) return;
+    session.backgroundPending = false;
+    void captureAndCache(cacheKey, CACHE_CAPTURE_SCALE, false, criticalAnimationActive).catch((error) => {
+        if (!(error instanceof BackgroundCaptureDeferred)) {
+            console.warn('[feedback-screenshot-cache] capture failed', error);
+            return;
+        }
+        if (cacheSessions.get(cacheKey) !== session) return;
+        session.backgroundPending = true;
+        // 动画可能在异步截图拒绝前已经结束，不能只依赖后续 DOM 通知。
+        queueMicrotask(() => runPendingBackgroundCapture(cacheKey, session));
+    });
+};
+
 const scheduleBackgroundCapture = (cacheKey: string, session: FeedbackScreenshotCacheSession) => {
+    session.backgroundPending = true;
+    if (criticalAnimationActive()) return;
     if (session.initialCaptureCancel) {
         session.initialCaptureCancel();
     }
 
     session.initialCaptureCancel = requestIdleCapture(() => {
         session.initialCaptureCancel = null;
-        if (document.visibilityState === 'hidden'
-            || document.querySelector('[data-testid="feedback-modal"]')) return;
-        void captureAndCache(cacheKey, CACHE_CAPTURE_SCALE).catch((error) => {
-            console.warn('[feedback-screenshot-cache] capture failed', error);
-        });
+        runPendingBackgroundCapture(cacheKey, session);
     });
 };
 
@@ -210,12 +305,15 @@ export const startFeedbackScreenshotCache = (
 
     const session = {} as FeedbackScreenshotCacheSession;
     session.refCount = 1;
+    session.backgroundPending = false;
     session.initialCaptureCancel = null;
     session.endgameCaptureId = null;
     session.lastEndgameOverlay = endgameOverlay();
     session.visibilityHandler = () => {
         const cached = screenshotCache.get(cacheKey);
-        if (document.visibilityState === 'visible'
+        if (document.visibilityState === 'visible' && session.backgroundPending) {
+            runPendingBackgroundCapture(cacheKey, session);
+        } else if (document.visibilityState === 'visible'
             && (!cached || Date.now() - cached.capturedAt >= CACHE_FRESHNESS_MS)) {
             scheduleBackgroundCapture(cacheKey, session);
         }
@@ -241,6 +339,11 @@ export const startFeedbackScreenshotCache = (
     // EndgameOverlay portals directly to body. Observe only its direct children to avoid
     // reacting to the game's many nested board updates.
     session.observer.observe(document.body, { childList: true });
+    session.animationObserver = new MutationObserver(() => {
+        if (session.backgroundPending && !criticalAnimationActive()) runPendingBackgroundCapture(cacheKey, session);
+    });
+    session.animationObserver.observe(document.body, { subtree: true, childList: true, attributes: true,
+        attributeFilter: ['data-battle-roll-state', 'data-dice-settled'] });
     session.intervalId = window.setInterval(() => scheduleBackgroundCapture(cacheKey, session), CACHE_INTERVAL_MS);
     document.addEventListener('visibilitychange', session.visibilityHandler);
     cacheSessions.set(cacheKey, session);
@@ -268,6 +371,7 @@ const stopFeedbackScreenshotCache = (cacheKey: string, session: FeedbackScreensh
     window.clearInterval(session.intervalId);
     document.removeEventListener('visibilitychange', session.visibilityHandler);
     session.observer.disconnect();
+    session.animationObserver.disconnect();
     cacheSessions.delete(cacheKey);
     screenshotCache.delete(cacheKey);
     latestCaptureGeneration.delete(cacheKey);
@@ -319,7 +423,7 @@ export const compressFeedbackImage = (file: File): Promise<string> => new Promis
         }
 
         context.drawImage(image, 0, 0, width, height);
-        resolve(compressFeedbackCanvas(canvas));
+        void compressFeedbackCanvasAsync(canvas).then(resolve, reject);
     };
     image.onerror = () => {
         URL.revokeObjectURL(objectUrl);

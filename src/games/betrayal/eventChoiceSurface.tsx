@@ -150,7 +150,7 @@ export function BetrayalEventChoiceSurface({
       >
         <div
           data-testid="betrayal-event-choice-content"
-          className={`custom-scrollbar grid min-h-0 flex-1 items-start gap-6 overflow-y-auto ${isEventSymbolSkip || isMobileViewport ? "grid-cols-1" : "grid-cols-[minmax(180px,280px)_minmax(0,1fr)] max-[1300px]:grid-cols-1"}`}
+          className={`custom-scrollbar grid min-h-0 flex-1 items-stretch gap-6 overflow-y-auto ${isEventSymbolSkip || isMobileViewport ? "grid-cols-1" : "grid-cols-[minmax(180px,280px)_minmax(0,1fr)] max-[1300px]:grid-cols-1"}`}
         >
           {isEventSymbolSkip ? null : (
             <div className="pointer-events-none w-full min-w-0 max-w-[280px] justify-self-center drop-shadow-[0_26px_54px_rgba(0,0,0,0.58)]">

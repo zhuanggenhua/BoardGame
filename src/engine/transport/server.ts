@@ -157,6 +157,7 @@ type ExecuteCommandInternalOptions = {
     onlineAiCircuitSource?: OnlineAiCircuitSource;
     onlineAiAttemptKey?: string | null;
     clientTransport?: OnlineAiClientTransportDiagnostics | null;
+    commandId?: string;
 };
 
 type ActiveMatch = MatchRoomRegistryActiveMatch<ExecuteCommandInternalOptions>;
@@ -572,6 +573,18 @@ export class GameTransportServer {
                 resolveSeatControllerType: (match, playerId) => (
                     this.resolveOnlineAiSeatControllerType(match, playerId)
                 ),
+                emitPlayerError: (match, playerId, reason, commandId) => {
+                    const sockets = match.connections.get(playerId);
+                    if (!sockets) return;
+                    const namespace = this.io.of('/game');
+                    for (const socketId of sockets) {
+                        if (commandId) {
+                            namespace.to(socketId).emit('command:rejected', match.matchID, commandId, reason);
+                        } else {
+                            namespace.to(socketId).emit('error', match.matchID, reason);
+                        }
+                    }
+                },
                 admitOnlineAiCircuitCommand: (args) => this.onlineAiCircuitBreaker.admit(args),
                 recordOnlineAiCircuitFailure: (args) => this.recordOnlineAiCircuitFailure(args),
             },
@@ -1837,6 +1850,7 @@ export class GameTransportServer {
                 reportFailureFeedback: options?.adminDebug ? false : options?.reportFailureFeedback ?? true,
                 feedbackSource: options?.feedbackSource,
                 expectedStateID: options?.expectedStateID,
+                commandId: options?.commandId,
                 onlineAiCircuitSource: options?.onlineAiCircuitSource,
                 onlineAiAttemptKey: options?.onlineAiAttemptKey,
                 clientTransport: options?.clientTransport,
@@ -1845,6 +1859,7 @@ export class GameTransportServer {
             directOptions: {
                 reportFailureFeedback: options?.adminDebug ? false : options?.reportFailureFeedback ?? true,
                 expectedStateID: options?.expectedStateID,
+                commandId: options?.commandId,
                 onlineAiAttemptKey: options?.onlineAiAttemptKey,
                 clientTransport: options?.clientTransport,
                 adminDebug: options?.adminDebug,
@@ -2045,6 +2060,7 @@ export class GameTransportServer {
             commandPayload: effectivePayload,
             seatControllerType: onlineAiSeatControllerType,
             expectedStateID: options?.expectedStateID,
+            commandId: options?.commandId,
             stateIdBefore,
             progressMarker: progressMarkerBeforeCommand,
             onlineAiCircuitSource,

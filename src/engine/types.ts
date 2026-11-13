@@ -555,6 +555,8 @@ export interface TutorialManifest {
     resolveStep?: (state: MatchState<unknown>, step: TutorialStepSnapshot) => TutorialStepSnapshot;
     /** Select one course branch from a successfully completed visible step. */
     selectBranch?: (state: MatchState<unknown>, step: TutorialStepSnapshot, command: Command, events: GameEvent[]) => string | undefined;
+    /** 根据已经成功执行的教程选择重建后续步骤；路径随教程状态和检查点保存。 */
+    replanAfterCommand?: (state: MatchState<unknown>, step: TutorialStepSnapshot, command: Command) => { steps: TutorialStepSnapshot[]; route: unknown } | undefined;
 }
 
 /**
@@ -623,6 +625,8 @@ export interface TutorialState {
     /** 每个可见教程步骤的完整状态节点，按步骤顺序排列。 */
     checkpoints?: TutorialCheckpoint[];
     selectedBranch?: string;
+    /** 动态课程的真实玩家选择，用于后续重演和回退。 */
+    route?: unknown;
 }
 
 export const DEFAULT_TUTORIAL_STATE: TutorialState = {
@@ -774,6 +778,12 @@ export type EventCommitResult<TEvent extends GameEvent = GameEvent> =
     | null
     | undefined;
 
+/** Runtime context for domain setup; local providers pass it explicitly because
+ * React mode effects run after the provider's initial state is constructed. */
+export type DomainSetupContext = {
+    mode: 'local' | 'online' | 'tutorial' | 'test';
+};
+
 /**
  * 领域内核定义（每个游戏实现）
  */
@@ -786,7 +796,7 @@ export interface DomainCore<
     gameId: string;
 
     /** 初始化游戏状态（仅返回 core，sys 由系统层 setup） */
-    setup(playerIds: PlayerId[], random: RandomFn, setupData?: unknown): TState;
+    setup(playerIds: PlayerId[], random: RandomFn, setupData?: unknown, context?: DomainSetupContext): TState;
 
     /**
      * 可选：命令进入 pipeline 前的权威状态归一化。

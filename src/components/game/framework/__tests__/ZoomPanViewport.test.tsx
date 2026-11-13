@@ -662,6 +662,39 @@ describe('ZoomPanViewport', () => {
         expect(content.style.transform).toContain('scale(0.7');
     });
 
+    it('keeps the camera when the tutorial target is already visible and hittable', async () => {
+        const { rerender } = render(
+            <ZoomPanViewport initialScale={1} panBoundsMode="free" skipPanWhenTargetVisible containerTestId="viewport" contentTestId="content">
+                <div data-zoom-pan-target="room-a">room a</div>
+            </ZoomPanViewport>,
+        );
+        const viewport = screen.getByTestId('viewport');
+        const content = screen.getByTestId('content');
+        const target = screen.getByText('room a');
+        mockElementBox(viewport, { width: 400, height: 300 });
+        mockElementBox(content, { width: 800, height: 600 });
+        mockElementBox(target, { width: 40, height: 40, left: 75, top: 50 });
+        const originalElementsFromPoint = Object.getOwnPropertyDescriptor(document, 'elementsFromPoint');
+        const oldBubble = document.createElement('div');
+        oldBubble.dataset.tutorialStep = 'previous';
+        const hud = document.createElement('div');
+        const hit = vi.fn().mockImplementation((x: number, y: number) =>
+            x === 95 && y === 70 ? [oldBubble, hud] : [oldBubble, target]);
+        Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: hit });
+        await refreshMeasuredSizes();
+        const before = content.style.transform;
+        rerender(
+            <ZoomPanViewport initialScale={1} panBoundsMode="free" panToTarget="room-a" skipPanWhenTargetVisible containerTestId="viewport" contentTestId="content">
+                <div data-zoom-pan-target="room-a">room a</div>
+            </ZoomPanViewport>,
+        );
+        await act(async () => { await new Promise(resolve => requestAnimationFrame(resolve)); });
+        expect(hit.mock.calls.length).toBeGreaterThan(1);
+        expect(content.style.transform).toBe(before);
+        if (originalElementsFromPoint) Object.defineProperty(document, 'elementsFromPoint', originalElementsFromPoint);
+        else Reflect.deleteProperty(document, 'elementsFromPoint');
+    });
+
     it('centers a focused target from its current rendered screen position', async () => {
         render(
             <ZoomPanViewport
@@ -690,7 +723,7 @@ describe('ZoomPanViewport', () => {
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('translate(0px, 160px)');
+            expect(content.style.transform).toContain('translate(0px, 80px)');
         });
     });
 
@@ -723,7 +756,7 @@ describe('ZoomPanViewport', () => {
         });
 
         await waitFor(() => {
-            expect(content.style.transform).toContain('translate(-160px, 40px)');
+            expect(content.style.transform).toContain('translate(-20px, -20px)');
         });
     });
 });

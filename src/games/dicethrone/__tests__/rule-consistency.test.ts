@@ -741,8 +741,13 @@ describe('Property 9: 4 人玩家目标交互验证', () => {
             tokenId: TOKEN_IDS.RETRIBUTION,
             amount: 1,
         });
-        expect(resolvedEvent).toBeTruthy();
-        expect(resolvedEvent.payload.defenderId).toBeUndefined();
+        // 玩家选择尚未完成时必须暂停；续接完成及最终状态由四人正式命令链另行验证。
+        expect(resolvedEvent).toBeUndefined();
+        expect(interactionEvent.resolutionContinuation).toMatchObject({
+            ownerGame: 'dicethrone',
+            action: 'resume-attack-effect-sequence',
+            payload: { kind: 'attack-effect-sequence', stage: 'preDefense', attackerId: '0' },
+        });
     });
 
     it('TRANSFER_STATUS 禁止把状态或 token 转移回来源玩家自己', () => {

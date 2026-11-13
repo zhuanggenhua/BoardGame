@@ -2878,6 +2878,14 @@ async function waitForFxSourceImpactAudit(
     });
     const audit = await handle.jsonValue() as MageWarsFxAudit;
     if (kind === 'teleport') {
+        await page.waitForFunction(() => {
+            const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="mage-wars-fx-teleport-source-wake"] canvas');
+            if (!canvas || !canvas.width || !canvas.height) return false;
+            const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
+            if (!pixels) return false;
+            for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) return true;
+            return false;
+        }, undefined, { timeout: 1_000 });
         expect(audit.hasSourceWake).toBe(true);
     }
     if (kind === 'push') {
@@ -7385,6 +7393,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 match.hostPage,
                 target,
                 '近战攻击前态玩家镜头',
+                { xRatio: 0.8 },
             );
             await saveEvidenceScreenshot(match.hostPage, testInfo, '01-近战攻击代表态-来源和目标可见', {
                 evidenceDir: evidenceRun.stagingDir,

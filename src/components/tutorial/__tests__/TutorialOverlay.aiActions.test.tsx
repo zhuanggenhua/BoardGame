@@ -23,8 +23,8 @@ vi.mock('../../../lib/audio/useGameAudio', () => ({
 }));
 
 vi.mock('../../common/media/OptimizedImage', () => ({
-    OptimizedImage: ({ src, alt, className }: { src: string; alt?: string; className?: string }) => (
-        <img src={src} alt={alt} className={className} />
+    OptimizedImage: ({ src, alt, className, onLoad, onError }: React.ImgHTMLAttributes<HTMLImageElement>) => (
+        <img src={src} alt={alt} className={className} onLoad={onLoad} onError={onError} />
     ),
 }));
 
@@ -191,6 +191,9 @@ describe('TutorialOverlay aiActions visibility', () => {
         expect(screen.getByTestId('tutorial-overlay-visual')).toBeTruthy();
         const legend = screen.getByAltText('game-mage-wars:tutorial.visuals.spellCardLegendAlt') as HTMLImageElement;
         expect(legend.getAttribute('src')).toBe('mage-wars/references/spell-card-legend');
+        expect(screen.getByRole('status')).toHaveTextContent('overlay.visualLoading');
+        fireEvent.load(legend);
+        expect(screen.queryByRole('status')).toBeNull();
         expect(screen.getByTestId('tutorial-overlay-visual-caption').textContent)
             .toBe('game-mage-wars:tutorial.visuals.spellCardLegendCaption');
     });

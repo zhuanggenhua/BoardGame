@@ -2276,8 +2276,8 @@ export const GameDetailsModal = ({ presentation = 'modal', homeStyle = 'modern',
                     secondaryActions={<>
                         {favoriteControl}
                         <GameDetailsDesktopAssets gameId={gameId} />
-                        {hasTutorialEntry && <button type="button" onClick={handleTutorial}>{t('actions.tutorial')}</button>}
-                        {hasConfigReview && <button type="button" data-testid="game-details-config-review-button" onClick={handleConfigReview}>{t('actions.configReview')}</button>}
+                        {hasTutorialEntry && <button type="button" className="platform-details-tutorial" onClick={handleTutorial}>{t('actions.tutorial')}</button>}
+                        {hasConfigReview && <button type="button" className="platform-details-config" data-testid="game-details-config-review-button" onClick={handleConfigReview}>{t('actions.configReview')}</button>}
                     </>}
                     author={<ExternalGameAuthor author={gameAuthorName} gameId={normalizedGameId} gameName={gameDisplayName} isOwner={false}
                         onManageWorks={() => { onNavigate?.(); navigate('/?section=profile&tab=works'); }} />}
@@ -2370,7 +2370,7 @@ export const GameDetailsModal = ({ presentation = 'modal', homeStyle = 'modern',
                             />
                         )}
                         {activeTab === 'leaderboard' && (
-                            <LeaderboardTab
+                            <LeaderboardTab modern
                                 leaderboardData={leaderboardData}
                                 error={leaderboardError}
                             />

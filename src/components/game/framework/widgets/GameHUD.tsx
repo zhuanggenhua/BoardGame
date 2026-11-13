@@ -428,18 +428,18 @@ export const GameHUD = ({
         content: (
             <div className="flex flex-col gap-2 pr-0.5 sm:pr-1">
                 {actionLogRows.length === 0 ? (
-                    <div className="text-xs text-white/40 text-center py-6">
+                    <div className="text-xs text-[#817363] text-center py-6">
                         {t('hud.actionLog.empty')}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-2">
                         {actionLogRows.map((row) => (
-                            <div key={row.id} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2.5" data-testid="hud-action-log-row">
-                                <div className="flex flex-col gap-1 text-[10px] text-white/50 sm:flex-row sm:items-center sm:justify-between" data-testid="hud-action-log-meta">
+                            <div key={row.id} className="rounded-lg border border-[#d3ccba] bg-[#f4f1eb] px-3 py-2.5" data-testid="hud-action-log-row">
+                                <div className="flex flex-col gap-1 text-[10px] text-[#6f6253] sm:flex-row sm:items-center sm:justify-between" data-testid="hud-action-log-meta">
                                     <span className="font-mono leading-none">{row.timeLabel}</span>
-                                    <span className="font-semibold leading-tight text-white/70 break-words sm:max-w-[10rem] sm:text-right">{row.playerLabel}</span>
+                                    <span className="font-semibold leading-tight text-[#625647] break-words sm:max-w-[10rem] sm:text-right">{row.playerLabel}</span>
                                 </div>
-                                <div className="mt-1.5 break-words text-xs leading-relaxed text-white/90">
+                                <div className="mt-1.5 break-words text-xs leading-relaxed text-[#433422]">
                                     <ActionLogSegments
                                         segments={row.segments}
                                         locale={locale}
@@ -595,7 +595,7 @@ export const GameHUD = ({
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                            <span className="text-white/60">{t('hud.labels.turn')}</span>
+                            <span className="text-[#6f6253]">{t('hud.labels.turn')}</span>
                             <span className={`font-bold ${currentPlayerId === '0' ? 'text-amber-400' : 'text-purple-400'}`}>
                                 {t('hud.status.playerShort', {
                                     id: String(currentPlayerId) === '0' ? 1 : 2,
@@ -609,13 +609,13 @@ export const GameHUD = ({
                     <div className="space-y-4 mt-3">
                         {matchId && (
                             <div className="space-y-1">
-                                <span className="text-[10px] text-white/60 uppercase font-bold">{t('hud.labels.roomId')}</span>
+                                <span className="text-[10px] text-[#6f6253] uppercase font-bold">{t('hud.labels.roomId')}</span>
                                 <button
                                     onClick={copyRoomId}
-                                    className="w-full flex items-center justify-between px-3 py-2 rounded bg-white/5 hover:bg-white/10 transition-colors group border border-white/5"
+                                    className="w-full flex items-center justify-between px-3 py-2 rounded bg-[#eeeae2] hover:bg-[#e1dbcf] transition-colors group border border-[#d3ccba]"
                                 >
                                     <span className="font-mono text-sm tracking-widest">{matchId}</span>
-                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-white/40 group-hover:text-white/80" />}
+                                    {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} className="text-[#817363] group-hover:text-[#433422]" />}
                                 </button>
                             </div>
                         )}
@@ -624,7 +624,7 @@ export const GameHUD = ({
 
                 {renderRuntimeSettings?.(t)}
 
-                <AudioControlSection isDark={true} />
+                <AudioControlSection isDark={false} />
             </div>
         )
     };
@@ -649,7 +649,7 @@ export const GameHUD = ({
                             navigate('/');
                         }}
                         disabled={isLoading}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 transition-all font-bold text-xs"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-[#f4f1eb] hover:bg-[#eeeae2] text-[#433422] border border-[#d3ccba] transition-all font-bold text-xs"
                     >
                         <LogOut size={16} />
                         <div className="min-w-0 flex-1 text-left flex flex-col items-start">
@@ -666,7 +666,7 @@ export const GameHUD = ({
                             <button
                                 onClick={handleLeave}
                                 disabled={isLoading}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 transition-all font-bold text-xs"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-[#f4f1eb] hover:bg-[#eeeae2] text-[#433422] border border-[#d3ccba] transition-all font-bold text-xs"
                             >
                                 <LogOut size={16} />
                                 <div className="min-w-0 flex-1 text-left flex flex-col items-start">
@@ -732,7 +732,7 @@ export const GameHUD = ({
                             <button
                                 onClick={handleForceExit}
                                 disabled={isLoading}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 transition-all font-bold text-xs"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-[#f4f1eb] hover:bg-[#eeeae2] text-[#433422] border border-[#d3ccba] transition-all font-bold text-xs"
                             >
                                 <LogOut size={16} />
                                 <div className="min-w-0 flex-1 text-left flex flex-col items-start">
@@ -814,7 +814,7 @@ export const GameHUD = ({
                 label: t('controls.undo.title'),
                 content: (
                     <div className="space-y-3">
-                        <p className="text-xs text-white/60">{t('controls.undo.loading')}</p>
+                        <p className="text-xs text-[#6f6253]">{t('controls.undo.loading')}</p>
                     </div>
                 )
             });
@@ -826,10 +826,10 @@ export const GameHUD = ({
                 active: true,
                 content: (
                     <div className="flex flex-col gap-3">
-                        <div className="text-sm font-bold text-amber-400 border-b border-white/10 pb-2">
+                        <div className="text-sm font-bold text-amber-400 border-b border-[#d3ccba] pb-2">
                             {t('controls.undo.opponentRequest')}
                         </div>
-                        <p className="text-xs text-white/80">{t('controls.undo.reviewHint')}</p>
+                        <p className="text-xs text-[#514637]">{t('controls.undo.reviewHint')}</p>
                         <div className="flex gap-2">
                             <button onClick={() => undoState.dispatch(UNDO_COMMANDS.APPROVE_UNDO)} className="flex-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/50 rounded px-3 py-2 text-xs font-bold transition-colors">
                                 {t('controls.undo.approve')}
@@ -850,7 +850,7 @@ export const GameHUD = ({
                 color: isWaiting ? 'text-amber-400' : undefined,
                 content: (
                     <div className="space-y-3">
-                        <p className="text-xs text-white/70">
+                        <p className="text-xs text-[#625647]">
                             {isWaiting ? t('controls.undo.waiting') : t('controls.undo.requestHint')}
                         </p>
                         <button
@@ -860,7 +860,7 @@ export const GameHUD = ({
                             }}
                             className={`w-full py-2 rounded font-bold text-xs transition-colors ${isWaiting
                                 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 hover:bg-amber-500/40'
-                                : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+                                : 'bg-[#eeeae2] text-[#433422] border border-[#c8beae] hover:bg-[#ded7c9]'
                                 }`}
                         >
                             {isWaiting ? t('controls.undo.cancel') : t('controls.undo.request')}
@@ -875,7 +875,7 @@ export const GameHUD = ({
                 label: t('controls.undo.title'),
                 content: (
                     <div className="space-y-3">
-                        <p className="text-xs text-white/60">{t('controls.undo.none')}</p>
+                        <p className="text-xs text-[#6f6253]">{t('controls.undo.none')}</p>
                     </div>
                 )
             });
@@ -903,7 +903,7 @@ export const GameHUD = ({
                             <p className="text-xs font-bold text-amber-300">
                                 {t('hud.ai.forceEndPhase')}
                             </p>
-                            <p className="text-xs text-white/70">
+                            <p className="text-xs text-[#625647]">
                                 {t('hud.ai.forceEndPhaseHint')}
                             </p>
                             <button
@@ -931,7 +931,7 @@ export const GameHUD = ({
                             <p className="text-xs font-bold text-rose-200">
                                 {t('hud.ai.forceDismissPopup')}
                             </p>
-                            <p className="text-xs text-white/70">
+                            <p className="text-xs text-[#625647]">
                                 {t('hud.ai.forceDismissPopupHint')}
                             </p>
                             <button
@@ -1009,7 +1009,7 @@ export const GameHUD = ({
 
             <FabMenu
                 className="platform-global-fab"
-                isDark={true}
+                isDark={false}
                 items={items}
                 position={fabMenuPosition}
                 initialOffset={gameHudFabLayout?.resolveInitialOffset?.(viewportHeight)

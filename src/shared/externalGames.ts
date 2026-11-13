@@ -26,6 +26,8 @@ export interface ExternalGame extends ExternalGameFields {
     embedCheckedUrl?: string;
     embedCheckedAt?: string;
     ownerUserId: string | null;
+    /** 投稿账号的当前昵称；后台直接收录没有投稿账号。 */
+    uploaderName?: string | null;
     updatedAt: string;
 }
 export type ClaimStatus = 'draft' | 'pending' | 'approved' | 'rejected';

@@ -1,4 +1,4 @@
-import type { MatchState, RandomFn } from '../types';
+import type { DomainSetupContext, MatchState, RandomFn } from '../types';
 import type { EngineSystem } from '../systems/types';
 import type { GameEngineConfig } from './engineConfig';
 import {
@@ -102,6 +102,7 @@ export function createInitialLocalProviderState(args: {
     initialRandom: LocalProviderRandom;
     setupData: unknown;
     setupPlayerIds: string[];
+    setupContext: DomainSetupContext;
 }): MatchState<unknown> {
     const {
         config,
@@ -110,6 +111,7 @@ export function createInitialLocalProviderState(args: {
         initialRandom,
         setupData,
         setupPlayerIds,
+        setupContext,
     } = args;
     if (persistedState && isPersistedLocalStateCompatible({
         state: persistedState,
@@ -138,7 +140,7 @@ export function createInitialLocalProviderState(args: {
         }
     }
 
-    const core = config.domain.setup(setupPlayerIds, initialRandom, setupData);
+    const core = config.domain.setup(setupPlayerIds, initialRandom, setupData, setupContext);
     const sys = createInitialSystemState(
         setupPlayerIds,
         config.systems as EngineSystem[],

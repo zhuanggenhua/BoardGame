@@ -383,7 +383,7 @@
       "actionCueExplore": "当前没有可探索门位",
       "actionCueExploreSelect": "现在：点问号探索房间",
       "actionCueExploreOrient": "现在：旋转{{room}}并确认",
-      "actionCueUse": "现在：点使用",
+      "actionCueUse": "现在：点持有区物品",
       "actionCueUseCard": "现在：点使用{{card}}",
       "actionCueRoomEffectMysticElevator": "现在：点神秘电梯",
       "actionCueTrade": "现在：点交易",

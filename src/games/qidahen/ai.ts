@@ -30,6 +30,8 @@ import {
     isQidahenWheelRecruitTrainPaymentPending,
 } from './domain/wheelRecruitTrain';
 import { buildPendingTargetChoiceOptions } from './domain/pendingTargetChoiceOptions';
+import { buildPendingTargetAction, getExplicitRaidTargetAction, getMarriageSubjugationBlockedReason } from './domain/pendingTargetActionBuilder';
+import { QIDAHEN_TURN_RESOLUTION_CHOICE } from './domain/turnResolutionTypes';
 import type { QidahenCore, QidahenFactionId } from './domain/types';
 
 type QidahenState = MatchState<QidahenCore>;
@@ -245,10 +247,38 @@ const buildCurrentInteractionActions = (
     const semanticDecisions = Array.isArray(currentInteraction.data?.ai?.decisions)
         ? currentInteraction.data.ai.decisions
         : [];
+    const sourceId = typeof currentInteraction.data?.sourceId === 'string'
+        ? currentInteraction.data.sourceId
+        : '';
+    const isUnavailableTurnHandAction = (candidateId: string): boolean => {
+        if (sourceId !== QIDAHEN_TURN_RESOLUTION_CHOICE || !candidateId.startsWith('hand-action:')) {
+            return false;
+        }
+        const actionId = candidateId.slice('hand-action:'.length);
+        const factionId = getFactionIdByPlayerId(state.core, playerId);
+        if (actionId === 'raid') {
+            return getExplicitRaidTargetAction({ ...state.core, confirmedActionId: 'raid' }, factionId) == null;
+        }
+        if (actionId === 'marriage-subjugation') {
+            const selectedRegion = state.core.regions.find((region) => region.id === state.core.selectedRegionId);
+            return Boolean(getMarriageSubjugationBlockedReason(state.core, selectedRegion)
+                || !selectedRegion
+                || !buildPendingTargetAction(state.core, factionId, 'marriage-subjugation', selectedRegion, selectedRegion.id));
+        }
+        return false;
+    };
     if (semanticDecisions.length > 0) {
         const actions: AiLegalAction[] = [];
         for (const decision of semanticDecisions) {
-            for (const action of buildAiLegalActionsFromInteractionDecision(decision as AiDecisionDescriptor)) {
+            const typedDecision = decision as AiDecisionDescriptor;
+            const filteredDecision = typedDecision.kind === 'choose-option'
+                && typedDecision.sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE
+                ? {
+                    ...typedDecision,
+                    candidates: typedDecision.candidates.filter((candidate) => !isUnavailableTurnHandAction(candidate.id)),
+                }
+                : typedDecision;
+            for (const action of buildAiLegalActionsFromInteractionDecision(filteredDecision)) {
                 appendIfValid(actions, state, playerId, action);
             }
         }
@@ -263,7 +293,7 @@ const buildCurrentInteractionActions = (
             label?: string;
             disabled?: boolean;
             value?: unknown;
-        } => typeof option?.id === 'string' && option.disabled !== true)
+        } => typeof option?.id === 'string' && option.disabled !== true && !isUnavailableTurnHandAction(option.id))
         : [];
     if (options.length <= 0) {
         return [];
@@ -914,6 +944,48 @@ const buildActionWindowActions = (
 
     if (hasRemainingFactionAction(core)) {
         for (const actionChoice of core.actionChoices) {
+            if (actionChoice.id === 'marriage-subjugation') {
+                const currentRegion = core.regions.find((region) => region.id === core.selectedRegionId);
+                if (getMarriageSubjugationBlockedReason(core, currentRegion)) {
+                    if (core.confirmedActionId != null && core.confirmedActionId !== 'raid') {
+                        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+                            actionId: createAiLegalActionId('cancel-blocked-action', core.confirmedActionId),
+                            kind: 'cancel-preview-action',
+                            label: '取消不可执行的预选行动',
+                            commandType: QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION,
+                            payload: {},
+                            metadata: { actionId: core.confirmedActionId },
+                        }));
+                        continue;
+                    }
+                    const factionId = getFactionIdByPlayerId(core, playerId);
+                    const legalTargetRegion = core.regions.find((region) => (
+                        !region.isLogicalRegion
+                        && !getMarriageSubjugationBlockedReason(core, region)
+                        && buildPendingTargetAction(core, factionId, 'marriage-subjugation', region, region.id) != null
+                    ));
+                    if (!legalTargetRegion) continue;
+                    const selectAndExecute: AiLegalAction = {
+                        actionId: createAiLegalActionId('execute-action', `${actionChoice.id}:${legalTargetRegion.id}`),
+                        kind: 'execute-action',
+                        label: `${actionChoice.label}（${legalTargetRegion.name}）`,
+                        commands: [
+                            ...(core.confirmedActionId === 'raid'
+                                ? [{ type: QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION, payload: {} }]
+                                : []),
+                            { type: QIDAHEN_COMMANDS.SELECT_REGION, payload: { regionId: legalTargetRegion.id } },
+                            { type: QIDAHEN_COMMANDS.EXECUTE_ACTION, payload: { actionId: actionChoice.id } },
+                        ],
+                        metadata: {
+                            actionId: actionChoice.id,
+                            targetRegionId: legalTargetRegion.id,
+                            cost: actionChoice.cost,
+                        },
+                    };
+                    appendIfValid(actions, state, playerId, selectAndExecute);
+                    continue;
+                }
+            }
             appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
                 actionId: createAiLegalActionId('execute-action', actionChoice.id),
                 kind: 'execute-action',

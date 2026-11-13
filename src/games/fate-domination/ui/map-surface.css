@@ -6,7 +6,7 @@
 .fd-runtime-location { position: absolute; z-index:1; padding: 0; border: 2px solid #ead28f; background: transparent; box-shadow:0 0 12px rgb(235 196 100 / .24); pointer-events: auto; cursor: pointer; }
 .fd-runtime-location:hover { background: rgb(255 255 255 / .32); }
 .fd-runtime-deployment-slot { border-radius:50%; }
-.fd-runtime-deployment-slot:not(:disabled) { border-color:#ead28f; background:rgb(161 119 39 / .66); box-shadow:0 0 0 2px #17140e,0 0 15px rgb(235 196 100 / .6); }
+.fd-runtime-deployment-slot:not(:disabled) { border-color:#fff4c8; background:rgb(161 119 39 / .66); box-shadow:0 0 0 2px #17140e,0 0 0 4px #fff0b9,0 0 15px rgb(235 196 100 / .6); }
 .fd-runtime-deployment-slot:not(:disabled):hover { background:rgb(224 190 109 / .8); }
 .fd-runtime-location.fd-runtime-deployment-slot[aria-pressed="true"] { border-color:#fff; background:rgb(236 222 174 / .2); box-shadow:0 0 0 2px #17140e; }
 .fd-runtime-deployment-slot:disabled { border-color:transparent; background:transparent; box-shadow:none; cursor:default; }

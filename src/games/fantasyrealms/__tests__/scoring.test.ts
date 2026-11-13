@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_FANTASY_REALMS_CARDS } from '../data/cards';
 import { evaluateFantasyRealmsScore, resolveFantasyRealmsWinner } from '../domain';
 import { evaluateFantasyRealmsResolvedScore, type FantasyRealmsScoreSelections } from '../domain/scoring';
+import { emptySelections } from '../domain/settlement';
 
 function byId(cardId: string) {
     const card = ALL_FANTASY_REALMS_CARDS.find((entry) => entry.id === cardId);
@@ -12,6 +13,52 @@ function byId(cardId: string) {
 }
 
 describe('fantasyrealms official scoring', () => {
+    it.each([
+        ['beast-basilisk', '军队'],
+        ['flame-wildfire', '领袖'],
+        ['flood-great-flood-ch', '军队'],
+        ['weather-rainstorm', '烈焰'],
+        ['weather-blizzard', '洪流'],
+        ['building-crypt', '领袖'],
+        ['outsider-demon', '军队'],
+    ] as const)('变化之书将 %s 变成其惩罚指定类别时会无效自身', (id, suit) => {
+        const result = evaluateFantasyRealmsResolvedScore(
+            [byId('artifact-book-of-changes'), byId(id)], [],
+            { ...emptySelections(), bookTargetId: id, bookSuit: suit },
+        );
+        expect(result.cardDeltas.find((entry) => entry.cardId === id)?.isBlanked).toBe(true);
+    });
+    it('野火变为军队后与蛇怪相互无效，即使野火也会无效自身', () => {
+        const result = evaluateFantasyRealmsResolvedScore(
+            [byId('artifact-book-of-changes'), byId('flame-wildfire'), byId('beast-basilisk')], [],
+            { ...emptySelections(), bookTargetId: 'flame-wildfire', bookSuit: '军队' },
+        );
+        expect(result.cardDeltas.find((entry) => entry.cardId === 'flame-wildfire')?.isBlanked).toBe(true);
+        expect(result.cardDeltas.find((entry) => entry.cardId === 'beast-basilisk')?.isBlanked).toBe(true);
+    });
+    it('烟雾变成亡灵但因缺火无效后，不再令花园无效', () => {
+        const result = evaluateFantasyRealmsResolvedScore(
+            [byId('artifact-book-of-changes'), byId('weather-smoke'), byId('land-garden')], [],
+            { ...emptySelections(), bookTargetId: 'weather-smoke', bookSuit: '不死族' },
+        );
+        expect(result.cardDeltas.find((entry) => entry.cardId === 'weather-smoke')?.isBlanked).toBe(true);
+        expect(result.cardDeltas.find((entry) => entry.cardId === 'land-garden')?.isBlanked).toBe(false);
+    });
+    it.each([
+        ['flame-fire-elemental', 'flame-candle', '法师', 'bonus', 15],
+        ['flood-water-elemental', 'flood-island', '法师', 'bonus', 15],
+        ['land-earth-elemental', 'land-mountain', '法师', 'bonus', 15],
+        ['weather-air-elemental', 'weather-blizzard', '法师', 'bonus', 15],
+        ['leader-princess', 'leader-queen', '法师', 'bonus', 16],
+        ['building-castle', 'building-bell-tower-ch', '武器', 'bonus', 10],
+        ['army-dwarvish-infantry', 'army-light-cavalry', '法师', 'penalty', 2],
+        ['leader-empress', 'leader-queen', '法师', 'penalty', 5],
+        ['wizard-warlock-lord', 'wizard-collector', '领袖', 'penalty', 20],
+    ] as const)('变化之书改变 %s 类别后仍正确计算其他牌', (id, otherId, suit, field, expected) => {
+        const hand = [byId('artifact-book-of-changes'), byId(id), byId(otherId)];
+        const result = evaluateFantasyRealmsResolvedScore(hand, [], { ...emptySelections(), bookTargetId: id, bookSuit: suit });
+        expect(result.cardDeltas.find((entry) => entry.cardId === id)?.[field]).toBe(expected);
+    });
     it('终局确定计分严格使用玩家指定目标，不能自行改成最高分', () => {
         const choices: FantasyRealmsScoreSelections = {
             shapeshifterTargetId: null, mirageTargetId: null, doppelgangerTargetId: null,

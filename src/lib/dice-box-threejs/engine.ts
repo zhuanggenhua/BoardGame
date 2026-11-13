@@ -1,4 +1,5 @@
 import type DiceBoxModule from '@3d-dice/dice-box-threejs';
+import { registerDiceCanvas, unregisterDiceCanvas } from './canvasCapture';
 import {
     AdditiveBlending,
     BackSide,
@@ -768,6 +769,7 @@ export class DiceBoxThreeEngine {
         });
         await box.initialize();
         const engine = new DiceBoxThreeEngine(box, container, styleProfile, dieType, config?.canvasTestId);
+        registerDiceCanvas(box.renderer.domElement, () => box.renderer.render(box.scene, box.camera));
         engine.applyCameraProfile();
         box.renderer.setClearColor?.(0x000000, 0);
         box.renderer.setClearAlpha?.(0);
@@ -1466,6 +1468,7 @@ export class DiceBoxThreeEngine {
     }
 
     destroy(): void {
+        unregisterDiceCanvas(this.box.renderer.domElement);
         if (typeof window !== 'undefined' && this.debugCanvasTestId && this.debugSnapshotReader) {
             const debugWindow = window as unknown as {
                 __diceBoxThreeDebug?: Record<string, () => unknown>;

@@ -62,6 +62,8 @@ type BetrayalLatestDiscoverySurfaceProps = {
   onDismiss: () => void;
   onRollLatestDiscoveryEvent: () => void;
   onContinue: () => void;
+  presentationId: string | null;
+  onPanelMountedChange?: (presentationId: string | null) => void;
   onDiceSettledChange: (rollId: string, settled: boolean) => void;
 };
 
@@ -141,9 +143,40 @@ export function BetrayalLatestDiscoverySurface({
   onDismiss,
   onRollLatestDiscoveryEvent,
   onContinue,
+  presentationId,
+  onPanelMountedChange,
   onDiceSettledChange,
 }: BetrayalLatestDiscoverySurfaceProps) {
   const { t } = useTranslation("game-betrayal");
+  const panelPresentationFrameRef = React.useRef<number | null>(null);
+  const panelRef = React.useCallback(
+    (element: HTMLDivElement | null) => {
+      if (panelPresentationFrameRef.current !== null) {
+        window.cancelAnimationFrame(panelPresentationFrameRef.current);
+        panelPresentationFrameRef.current = null;
+      }
+      if (!element) {
+        onPanelMountedChange?.(null);
+        return;
+      }
+      panelPresentationFrameRef.current = window.requestAnimationFrame(() => {
+        panelPresentationFrameRef.current = window.requestAnimationFrame(() => {
+          panelPresentationFrameRef.current = null;
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          const isPresented =
+            element.isConnected &&
+            rect.width > 0 &&
+            rect.height > 0 &&
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            Number(style.opacity) > 0;
+          onPanelMountedChange?.(isPresented ? presentationId : null);
+        });
+      });
+    },
+    [onPanelMountedChange, panelPresentationFrameRef, presentationId],
+  );
 
   if (!visible || !discovery) {
     return null;
@@ -173,6 +206,7 @@ export function BetrayalLatestDiscoverySurface({
 
   return (
     <div
+      ref={panelRef}
       data-testid="betrayal-discovery-panel"
       data-card-testid="betrayal-discovery-card-reveal"
       data-tutorial-id="betrayal-latest-discovery"

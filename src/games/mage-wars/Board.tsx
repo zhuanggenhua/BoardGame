@@ -19,7 +19,9 @@ import { CardChoiceOverlay, ZoomPanViewport } from '../../components/game/framew
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { CardInspectButton as SharedCardInspectButton } from '../../components/common/overlays/CardInspectButton';
+import { InfoTooltip } from '../../components/common/overlays/InfoTooltip';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
+import './ui/cardInspect.css';
 import { BoardDamageStateOverlay } from '../../components/common/animations/BoardDamageStateOverlay';
 import { FxLayer, useFxAnchorRegistry, useFxBus, type FxAnchorRegistry, type FxBus } from '../../engine/fx';
 import { useRenderPipelineSettings } from '../../engine/renderPipeline';
@@ -350,7 +352,8 @@ function MageWarsCardInspectButton({
             variant="filled"
             placement={placement}
             alwaysVisible={alwaysVisible}
-            revealOnGroupHover={revealOnGroupHover}
+            revealOnGroupHover={false}
+            className={revealOnGroupHover ? 'mw-card-inspect' : undefined}
         />
     );
 }
@@ -670,6 +673,7 @@ const MAGE_WARS_PHASE_PROGRESS_RAIL_WIDTH = 'clamp(8.75rem, 8.5vw, 10.75rem)';
 function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
     const { t } = useTranslation('game-mage-wars');
     const currentIndex = Math.max(0, MAGE_WARS_PHASE_ORDER.indexOf(phase));
+    const [shownPhase, setShownPhase] = useState<MageWarsPhase | null>(null);
 
     return (
         <aside
@@ -697,7 +701,7 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
                             <li
                                 key={phaseId}
                                 className={cx(
-                                    'flex min-h-[1.68rem] min-w-0 items-center justify-start gap-1.5 rounded-r-[0.32rem] border-l-[0.18rem] px-1.5 py-0.5 text-left text-[0.72rem] font-bold leading-tight transition-[background-color,color,border-color,transform]',
+                                    'pointer-events-auto relative flex min-h-[1.9rem] min-w-0 items-center justify-start gap-1.5 rounded-r-[0.32rem] border-l-[0.18rem] px-1.5 py-0.5 text-left text-[0.85rem] font-bold leading-tight transition-[background-color,color,border-color,transform]',
                                     active
                                         ? 'translate-x-1 border-amber-300 bg-amber-200/88 text-stone-950 shadow-[0_0_12px_rgba(251,191,36,0.24)]'
                                         : complete
@@ -708,6 +712,11 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
                                 data-phase-id={phaseId}
                                 data-phase-active={active ? 'true' : 'false'}
                                 data-phase-complete={complete ? 'true' : 'false'}
+                                tabIndex={0}
+                                onMouseEnter={() => setShownPhase(phaseId)}
+                                onMouseLeave={() => setShownPhase(null)}
+                                onFocus={() => setShownPhase(phaseId)}
+                                onBlur={() => setShownPhase(null)}
                             >
                                 <span
                                     className={cx(
@@ -721,6 +730,7 @@ function MageWarsPhaseProgressIndicator({ phase }: { phase: MageWarsPhase }) {
                                     aria-hidden="true"
                                 />
                                 <span className="min-w-0 truncate">{t(`phases.${phaseId}`)}</span>
+                                <InfoTooltip title={t(`phases.${phaseId}`)} content={[t(`phaseDescriptions.${phaseId}`)]} isVisible={shownPhase === phaseId} position="right" />
                             </li>
                         );
                     })}
@@ -1361,7 +1371,7 @@ function PreparedSpellCard({
 
     if (hasPrimaryActionIntent) {
         return (
-            <div className={cx('group relative shrink-0 overflow-visible', cardSizeClass)} style={cardSizeStyle}>
+            <div className={cx('group mw-card-hover relative shrink-0 overflow-visible', cardSizeClass)} style={cardSizeStyle}>
                 <button
                     type="button"
                     className={cx(
@@ -1699,7 +1709,7 @@ function ZoneFieldCard({
         <div
             ref={fxAnchorRef}
             className={cx(
-                'group relative z-20 shrink-0 overflow-visible',
+                'group mw-card-hover relative z-20 shrink-0 overflow-visible',
                 cardHeightClass,
                 visualRelocating && 'invisible',
             )}
@@ -1879,7 +1889,7 @@ function ArenaAttachmentCard({
         );
 
         return (
-            <div className={cx('group relative shrink-0 overflow-visible', heightClass ?? 'w-full')} style={cardSizeStyle}>
+            <div className={cx('group mw-card-hover relative shrink-0 overflow-visible', heightClass ?? 'w-full')} style={cardSizeStyle}>
                 {primaryButton}
                 {hasSecondaryInspect ? (
                     <MageWarsCardInspectButton
@@ -2520,7 +2530,7 @@ function ZoneOccupant({
     return (
         <div
             className={cx(
-                'group relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150',
+                'group mw-card-hover relative z-20 shrink-0 rounded-[0.18rem] shadow-[0_14px_30px_rgba(0,0,0,0.48)] transition-[filter,box-shadow] duration-150',
                 portraitHeightClass,
                 role === 'source' && `-translate-y-2 ${SCENE_OBJECT_LEGAL_GLOW_CLASS}`,
                 role === 'target' && SCENE_OBJECT_LEGAL_GLOW_CLASS,
@@ -5226,6 +5236,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     baseScaleMode="cover"
                     panBoundsMode="free"
                     panToTarget={tutorialArenaPanTarget}
+                    skipPanWhenTargetVisible
                     containerTestId="mage-wars-arena-viewport"
                     contentTestId="mage-wars-arena-viewport-content"
                     scaleTestId="mage-wars-arena-viewport-scale"
@@ -5511,6 +5522,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 overlayTestId="mage-wars-card-magnify-overlay"
                 closeLabel={t('actions.close')}
                 containerClassName="max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] overflow-visible rounded-none"
+                closeButtonClassName="mw-magnify-close"
             >
                 {magnifiedPreview ? (
                     <div

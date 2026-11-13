@@ -75,6 +75,7 @@ const translateInterpolatedParam = (
 
 export const ChoiceModal = ({
     choice,
+    headingKey,
     canResolve,
     onResolve,
     onResolveWithValue,
@@ -84,6 +85,7 @@ export const ChoiceModal = ({
     playerNames,
 }: {
     choice: ChoiceData | null | undefined;
+    headingKey?: string;
     canResolve: boolean;
     /** 按钮模式：选择 optionId */
     onResolve: (optionId: string) => void;
@@ -144,7 +146,7 @@ export const ChoiceModal = ({
     return (
         <GameModal
             isOpen={isOpen}
-            title={t('choices.title')}
+            title={t(headingKey ?? 'choices.title')}
             width="md"
             closeOnBackdrop={false}
         >

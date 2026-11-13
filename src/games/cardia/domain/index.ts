@@ -132,7 +132,8 @@ export const CardiaDomain: DomainCore<CardiaCore, CardiaCommand, CardiaEvent> = 
         }
         
         // play 阶段：检查无牌可打的胜利条件
-        if (core.phase === 'play') {
+        const encounterHasStarted = core.playerOrder.some(playerId => core.players[playerId]?.hasPlayed);
+        if (core.phase === 'play' && !encounterHasStarted) {
             const playersWithoutCards = core.playerOrder.filter(playerId => {
                 const player = core.players[playerId];
                 return player.hand.length === 0 && player.deck.length === 0;

@@ -942,7 +942,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                     
                     {/* 能力按钮（居中显示） */}
                     {canActivateAbility && (
-                        <div className="absolute inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex justify-center md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
+                        <div className="absolute left-1/2 top-1/2 z-[300] flex -translate-x-1/2 -translate-y-1/2 justify-center">
                             {myCurrentCard && myCurrentCard.abilityIds[0] ? (
                                 <AbilityButton
                                     abilityId={myCurrentCard.abilityIds[0]}
@@ -964,7 +964,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                     
                     {/* 结束回合按钮（结束阶段显示） */}
                     {!isSpectator && phase === 'end' && core.currentPlayerId === myPlayerId && (
-                        <div className="absolute inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-10 flex justify-center md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
+                        <div className="absolute left-1/2 top-1/2 z-[300] flex -translate-x-1/2 -translate-y-1/2 justify-center">
                             <button
                                 data-testid="cardia-end-turn-btn"
                                 data-tutorial-id="cardia-end-turn-btn"

@@ -220,7 +220,7 @@ const bindManifestToExistingTutorialState = <TCore>(
         return state;
     }
 
-    const steps=tutorial.selectedBranch?manifest.steps.filter(step=>!step.branch||step.branch===tutorial.selectedBranch):manifest.steps;
+    const steps=manifest.replanAfterCommand && tutorial.steps.length ? tutorial.steps : tutorial.selectedBranch?manifest.steps.filter(step=>!step.branch||step.branch===tutorial.selectedBranch):manifest.steps;
     const effectiveManifest=steps===manifest.steps?manifest:{...manifest,steps};
     const stepIndex = Number.isInteger(tutorial.stepIndex) ? tutorial.stepIndex : 0;
     const manifestStep = effectiveManifest.steps[stepIndex];
@@ -247,6 +247,7 @@ const bindManifestToExistingTutorialState = <TCore>(
         skippedStepIds: tutorial.skippedStepIds,
         checkpoints: tutorial.checkpoints,
         selectedBranch:tutorial.selectedBranch,
+        route:tutorial.route,
     });
 };
 
@@ -405,6 +406,7 @@ const transitionTutorialStep = <TCore>(
                     ...resolveTutorialStep(state, manifest, deriveStepState(manifest, previousIndex, tutorial.randomPolicy?.cursor)),
                     checkpoints: tutorial.checkpoints,
                     selectedBranch:tutorial.selectedBranch,
+                    route:tutorial.route,
                 };
                 return {
                     state: applyTutorialState(state, previousTutorial),
@@ -456,6 +458,7 @@ const transitionTutorialStep = <TCore>(
         ...resolveTutorialStep(state, manifest, deriveStepState(manifest, nextIndex, tutorial.randomPolicy?.cursor)),
         checkpoints: tutorial.checkpoints,
         selectedBranch:tutorial.selectedBranch,
+        route:tutorial.route,
         ...(skippedStepIds.length > 0 ? { skippedStepIds } : {}),
     };
     const nextState = appendTutorialCheckpoint(
@@ -851,6 +854,19 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             }
 
             const timestamp = resolveTimestamp(command, events);
+
+            const activeManifest = resolveActiveManifest(tutorial);
+            if (command && step && activeManifest?.replanAfterCommand) {
+                const replanned = activeManifest.replanAfterCommand(currentState as MatchState<unknown>, step, command);
+                if (replanned) {
+                    if (replanned.steps[tutorial.stepIndex]?.id !== step.id) throw new Error('Tutorial replan must preserve the current step');
+                    // 已经历的节点必须保留原始教学语义；新计划只替换当前选择之后的续程。
+                    // 否则重新绑定或回退可能把原本的手动选择重解释成隐藏自动步骤。
+                    const steps = [...tutorial.steps.slice(0, tutorial.stepIndex + 1), ...replanned.steps.slice(tutorial.stepIndex + 1)];
+                    tutorial = { ...tutorial, steps, route: replanned.route };
+                    currentState = applyTutorialState(currentState, tutorial);
+                }
+            }
 
             // 如果当前步骤需要等待动画，不立即推进，设置等待标志
             if (tutorial.step?.waitForAnimation) {

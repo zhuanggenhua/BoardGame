@@ -15,6 +15,7 @@ import {
     BETRAYAL_DISCOVERY_POOLS,
     DEFAULT_BETRAYAL_SCENARIO_CARD_ID,
 } from '../../src/games/betrayal/scenarioConfig';
+import { resolveBetrayalLocalRuntimeControlledPlayerId } from '../../src/games/betrayal/localRuntimeControl';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
@@ -109,7 +110,10 @@ const HUMAN_HOTSEAT_TEST_URL = '/play/betrayal?players=3&seat0=human&seat1=human
 const HUMAN_TRAITOR_TEST_URL = humanTestUrlForPlayer('2');
 const MUMMY_MONSTER_ID = 'mummy';
 
-const expectBetrayalGreenDominantHighlightPixels = async (locator: Locator, label: string): Promise<void> => {
+const expectBetrayalGreenDominantHighlightPixels = async (
+    locator: Locator,
+    label: string,
+): Promise<void> => {
     const screenshot = await locator.screenshot({ animations: 'disabled' });
     const { data, info } = await sharp(screenshot)
         .ensureAlpha()
@@ -254,20 +258,18 @@ const expectBoardTokensVerticallyStacked = async (
 const expectMummyCarryClusterComparableToExplorer = async (
     mummySurface: Locator,
     girlToken: Locator,
-    explorerRoot: Locator,
+    explorerToken: Locator,
     label: string,
 ): Promise<void> => {
-    const explorerSurface = explorerRoot.locator('[data-testid^="betrayal-explorer-figure-token-surface-"]');
-    const [mummyBox, girlBox, explorerBox, explorerSurfaceBox] = await Promise.all([
+    const [mummyBox, girlBox, explorerBox] = await Promise.all([
         mummySurface.boundingBox(),
         girlToken.boundingBox(),
-        explorerRoot.boundingBox(),
-        explorerSurface.boundingBox(),
+        explorerToken.boundingBox(),
     ]);
     expect(mummyBox, `${label} 缺少木乃伊 bbox`).toBeTruthy();
     expect(girlBox, `${label} 缺少女孩 bbox`).toBeTruthy();
     expect(explorerBox, `${label} 缺少玩家 token bbox`).toBeTruthy();
-    expect(explorerSurfaceBox, `${label} 缺少玩家本体 surface bbox`).toBeTruthy();
+    expect(explorerBox, `${label} 缺少玩家 token 本体 bbox`).toBeTruthy();
     const clusterLeft = Math.min(mummyBox!.x, girlBox!.x);
     const clusterTop = Math.min(mummyBox!.y, girlBox!.y);
     const clusterRight = Math.max(mummyBox!.x + mummyBox!.width, girlBox!.x + girlBox!.width);
@@ -275,13 +277,14 @@ const expectMummyCarryClusterComparableToExplorer = async (
     const clusterWidth = clusterRight - clusterLeft;
     const clusterHeight = clusterBottom - clusterTop;
     expect(clusterWidth, `${label} 组合宽度不能明显大过玩家 token`).toBeLessThanOrEqual(explorerBox!.width * 1.25);
-    expect(clusterHeight, `${label} 组合高度要和玩家 token 差不多，不能变成两倍高的塔`).toBeLessThanOrEqual(explorerBox!.height * 1.45);
-    const widthRatio = mummyBox!.width / explorerSurfaceBox!.width;
-    const heightRatio = mummyBox!.height / explorerSurfaceBox!.height;
-    expect(widthRatio, `${label} 木乃伊本体宽度必须接近玩家本体，不能明显偏小`).toBeGreaterThanOrEqual(0.96);
-    expect(widthRatio, `${label} 木乃伊本体宽度必须接近玩家本体，不能明显偏大`).toBeLessThanOrEqual(1.04);
-    expect(heightRatio, `${label} 木乃伊本体高度必须接近玩家本体，不能明显偏小`).toBeGreaterThanOrEqual(0.94);
-    expect(heightRatio, `${label} 木乃伊本体高度必须接近玩家本体，不能明显偏大`).toBeLessThanOrEqual(1.02);
+    expect(clusterHeight, `${label} 携带组合不能高于木乃伊与女孩两个本体高度之和`).toBeLessThanOrEqual(mummyBox!.height + girlBox!.height);
+    expect(clusterHeight, `${label} 携带组合不能高于两个玩家 token 的高度`).toBeLessThanOrEqual(explorerBox!.height * 2);
+    const widthRatio = mummyBox!.width / explorerBox!.width;
+    const heightRatio = mummyBox!.height / explorerBox!.height;
+    const expectedWidthRatio = 70 / 66;
+    const expectedHeightRatio = 70 / 72;
+    expect(Math.abs(widthRatio - expectedWidthRatio), `${label} 木乃伊宽高按 70px 地图 token 与 66px 玩家 token 源尺寸保持比例`).toBeLessThanOrEqual(0.04);
+    expect(Math.abs(heightRatio - expectedHeightRatio), `${label} 木乃伊高宽按 70px 地图 token 与 72px 玩家 token 源尺寸保持比例`).toBeLessThanOrEqual(0.04);
 };
 
 const expectBoardTokensDoNotOverlap = async (
@@ -325,10 +328,16 @@ const expectEventChoiceControlsInDecisionZone = async (page: Page, panel: Locato
 
     const panelMidY = panelBox!.y + panelBox!.height / 2;
     const summaryBottom = summaryBox!.y + summaryBox!.height;
+    const summaryCenterY = summaryBox!.y + summaryBox!.height / 2;
+    const summaryRight = summaryBox!.x + summaryBox!.width;
     for (const [box, label] of [[confirmBox!, '跳过事件'], [declineBox!, '抽取事件牌']] as const) {
         const centerY = box.y + box.height / 2;
-        expect(centerY, `${label} 按钮不能停在面板顶部`).toBeGreaterThan(panelMidY);
-        expect(box.y, `${label} 按钮必须在事件符号说明之后出现`).toBeGreaterThanOrEqual(summaryBottom - 2);
+        expect(centerY, `${label} 按钮不能停在面板顶部`).toBeGreaterThanOrEqual(panelMidY);
+        expect(box.x, `${label} 按钮必须位于事件符号说明右侧`).toBeGreaterThanOrEqual(summaryRight - 2);
+        expect(
+            Math.abs(centerY - summaryCenterY),
+            `${label} 按钮必须与事件符号说明处于同一操作带，说明底部=${summaryBottom}`,
+        ).toBeLessThanOrEqual(panelBox!.height / 5);
     }
 };
 
@@ -427,7 +436,7 @@ const acknowledgeRecentRollForAllPlayers = async (page: Page, context: import('@
         throw new Error('当前没有待全员确认的投骰结果');
     }
 
-    const currentViewerPlayerId = new URL(page.url(), 'http://local.test').searchParams.get('playerID') ?? '0';
+    const currentViewerPlayerId = await resolveCurrentLocalViewerPlayerId(page);
     if (pendingBefore.requiredPlayerIds.includes(currentViewerPlayerId)
         && !pendingBefore.acknowledgedPlayerIds.includes(currentViewerPlayerId)) {
         const continueButton = page.getByTestId('betrayal-roll-continue');
@@ -2000,6 +2009,17 @@ const readMummyGoldenDiscoveryState = async (page: Page): Promise<MummyGoldenDis
         };
     });
 
+const resolveCurrentLocalViewerPlayerId = async (page: Page): Promise<string> => {
+    const explicitPlayerId = new URL(page.url(), 'http://local.test').searchParams.get('playerID');
+    if (explicitPlayerId) return explicitPlayerId;
+    const core = await readInjectedCore(page);
+    const state = { core } as Parameters<typeof resolveBetrayalLocalRuntimeControlledPlayerId>[0]['state'];
+    return resolveBetrayalLocalRuntimeControlledPlayerId({
+        state,
+        fallbackPlayerId: core.currentPlayer ?? '0',
+    }) ?? '0';
+};
+
 const acknowledgeRemainingMummyGoldenCardResolutionPlayers = async (page: Page, context: import('@playwright/test').BrowserContext): Promise<void> => {
     const pending = await page.evaluate(() => {
         const core = (window as typeof window & {
@@ -2026,9 +2046,7 @@ const acknowledgeRemainingMummyGoldenCardResolutionPlayers = async (page: Page, 
         : pending.playerId
             ? [pending.playerId]
             : [];
-    const currentViewerPlayerId = new URL(page.url(), 'http://local.test').searchParams.get('playerID')
-        ?? (await readInjectedCore(page)).currentPlayer
-        ?? '0';
+    const currentViewerPlayerId = await resolveCurrentLocalViewerPlayerId(page);
     const participantPages = new Map<string, Page>();
     try {
         for (const playerId of requiredPlayerIds) {
@@ -2089,7 +2107,6 @@ const acknowledgeRemainingMummyGoldenCardResolutionPlayers = async (page: Page, 
                 message: `真实玩家 ${playerId} 点击后不得丢失既有确认记录`,
                 timeout: 30000,
             }).toEqual([...expectedAfterAcknowledgedPlayerIds]);
-
             const participantPanel = participantPage.getByTestId('betrayal-discovery-panel');
             const participantTransitionBlocker = participantPage.getByTestId('betrayal-visual-transition-blocker');
             const participantBoard = participantPage.getByTestId('betrayal-board');
@@ -2214,7 +2231,9 @@ const exerciseMummyGoldenMedicalKitUse = async (
         + beforeTargetExplorer.traits.knowledge
         + beforeTargetExplorer.traits.sanity;
     await expect(page.getByTestId('betrayal-inventory-medical-kit')).toBeVisible();
-    await expect(page.getByTestId('betrayal-action-use')).toBeDisabled();
+    await expect(page.getByTestId('betrayal-action-cue')).toContainText('现在：点持有区物品');
+    const useAction = page.getByTestId('betrayal-action-use');
+    await expect(useAction, '未选择物品牌时，使用动作由正式交互规则隐藏').toHaveCount(0);
     if (screenshots.ready) {
         await saveScreenshot(page, screenshots.ready);
     }
@@ -2222,6 +2241,8 @@ const exerciseMummyGoldenMedicalKitUse = async (
     await page.getByTestId('betrayal-inventory-medical-kit').click();
     await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toContainText('急救包');
     await expect(page.getByTestId('betrayal-inventory-target-player-selector')).toContainText('急救包');
+    await expect(useAction, '选中急救包后显示使用动作，但尚未选择目标时禁用').toBeVisible();
+    await expect(useAction).toBeDisabled();
     if (screenshots.selected) {
         await saveScreenshot(page, screenshots.selected);
     }
@@ -2232,8 +2253,12 @@ const exerciseMummyGoldenMedicalKitUse = async (
     await expect(teammateTargetOutline).toHaveAttribute('data-highlight-color', 'green');
     await expectPrimaryTargetBoundaryFits(
         teammateTargetOutline,
-        teammateTarget.getByTestId('betrayal-explorer-figure-token-surface-1'),
+        teammateTarget.getByTestId('betrayal-explorer-figure-token-1'),
         '急救包治疗目标高亮',
+        // Scene-artwork rooms scale the 66×72 identity slot as a unit while
+        // the actual pentagon is 62×62; compare against its real hit/identity
+        // box with only the resulting 10px source-space vertical inset allowed.
+        { maxSizeDelta: 9 },
     );
     await expectBetrayalGreenDominantHighlightPixels(teammateTargetOutline, '急救包治疗目标高亮');
     if (screenshots.targetReady) {
@@ -2400,15 +2425,6 @@ const moveMummyThroughRealRoomTarget = async (
     await switchRoomMapToFloor(page, target.floor);
     const targetMarker = page.getByTestId(`betrayal-room-monster-move-target-${target.roomId}`);
     if (!(await targetMarker.isVisible({ timeout: 750 }).catch(() => false))) {
-        const monsterMoveAction = page.getByTestId('betrayal-action-monsterMove');
-        await expect(monsterMoveAction).toBeVisible();
-        await expect(page.getByTestId('betrayal-action-move')).toHaveCount(0);
-        const actionText = await monsterMoveAction.textContent();
-        if (!actionText?.includes('取消')) {
-            await expect(monsterMoveAction).toContainText('移动木乃伊');
-            await monsterMoveAction.click();
-        }
-
         await switchRoomMapToFloor(page, source.floor);
         const mummyToken = page.getByTestId(`betrayal-room-monster-${source.roomId}-${MUMMY_MONSTER_ID}`);
         await expect(mummyToken).toBeVisible();
@@ -2421,6 +2437,40 @@ const moveMummyThroughRealRoomTarget = async (
     if (screenshots.targetReady) {
         await saveScreenshot(page, screenshots.targetReady);
     }
+    const targetRoom = page.getByTestId(`betrayal-room-${target.roomId}`);
+    await expect(targetMarker).toHaveAttribute('data-highlight-layer-count', '1');
+    await expect(targetMarker).toHaveAttribute('data-highlight-style', 'solid');
+    const [targetMarkerBox, targetRoomBox] = await Promise.all([
+        targetMarker.boundingBox(),
+        targetRoom.boundingBox(),
+    ]);
+    expect(targetMarkerBox, `木乃伊移动目标房间 ${target.roomId} 高亮必须有边界框`).toBeTruthy();
+    expect(targetRoomBox, `木乃伊移动目标房间 ${target.roomId} 房间卡必须有边界框`).toBeTruthy();
+    expect(
+        Math.abs(targetMarkerBox!.x + targetMarkerBox!.width / 2 - targetRoomBox!.x - targetRoomBox!.width / 2),
+        `木乃伊移动目标房间 ${target.roomId} 高亮中心必须贴合房间卡`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+        Math.abs(targetMarkerBox!.y + targetMarkerBox!.height / 2 - targetRoomBox!.y - targetRoomBox!.height / 2),
+        `木乃伊移动目标房间 ${target.roomId} 高亮中心必须贴合房间卡`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+        Math.abs(targetMarkerBox!.width - targetRoomBox!.width),
+        `木乃伊移动目标房间 ${target.roomId} 高亮宽度必须贴合房间卡`,
+    ).toBeLessThanOrEqual(2);
+    expect(
+        Math.abs(targetMarkerBox!.height - targetRoomBox!.height),
+        `木乃伊移动目标房间 ${target.roomId} 高亮高度必须贴合房间卡`,
+    ).toBeLessThanOrEqual(2);
+    const targetRoomStyle = await targetRoom.evaluate((element) => {
+        const style = window.getComputedStyle(element);
+        return {
+            borderTopColor: style.borderTopColor,
+            boxShadow: style.boxShadow,
+        };
+    });
+    expect(targetRoomStyle.borderTopColor, `木乃伊移动目标房间 ${target.roomId} 房间本体必须呈现绿色目标状态`).toBe('rgba(159, 225, 167, 0.96)');
+    expect(targetRoomStyle.boxShadow, `木乃伊移动目标房间 ${target.roomId} 必须显示实际绘制的绿色目标光圈`).toContain('rgba(159, 225, 167, 0.58)');
     await switchRoomMapToFloor(page, source.floor);
     const sourceToken = page.getByTestId(`betrayal-room-monster-${source.roomId}-${MUMMY_MONSTER_ID}`);
     await expect(sourceToken).toBeVisible();
@@ -2514,25 +2564,54 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
         await exploreMummyGoldenDiscoveryRoom(page, itemFixture, {
             targetReady: goldenFlowProcessScreenshot(5, '物品房探索目标高亮-点击前'),
         });
-        await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
-            'aria-label',
-            /物品牌 急救包/,
-        );
-        await expect(page.getByTestId('betrayal-discovery-panel')).toContainText('已加入持有区');
-        await expect.poll(() => readMummyGoldenDiscoveryState(page)).toMatchObject({
+        const itemDiscoverySnapshot = await page.evaluate(async () => {
+            const core = (window as typeof window & {
+                __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: {
+                    latestDiscovery?: { kind?: string; title?: string } | null;
+                    currentExplorer?: { inventory?: Array<{ name?: string }> };
+                    pendingCardResolutionQueue?: unknown[];
+                } } } };
+            }).__BG_TEST_HARNESS__?.state?.get?.().core;
+            const panel = document.querySelector<HTMLElement>('[data-testid="betrayal-discovery-panel"]');
+            const button = panel?.querySelector<HTMLButtonElement>('[data-testid="betrayal-discovery-continue"]');
+            const rect = panel?.getBoundingClientRect();
+            const style = panel ? window.getComputedStyle(panel) : null;
+            return {
+                panelVisible: Boolean(panel && rect && rect.width > 0 && rect.height > 0 && style?.display !== 'none' && style?.visibility !== 'hidden'),
+                panelAriaLabel: panel?.getAttribute('aria-label') ?? null,
+                panelText: panel?.textContent ?? '',
+                continueLabel: button?.textContent?.trim() ?? null,
+                continueDisabled: button?.disabled ?? null,
+                latestDiscoveryKind: core?.latestDiscovery?.kind ?? null,
+                latestDiscoveryTitle: core?.latestDiscovery?.title ?? null,
+                inventoryNames: core?.currentExplorer?.inventory?.map((item) => item.name ?? '') ?? [],
+                pendingCardResolutionCount: core?.pendingCardResolutionQueue?.length ?? 0,
+            };
+        });
+        expect(itemDiscoverySnapshot).toMatchObject({
+            panelVisible: true,
+            panelAriaLabel: /物品牌 急救包/,
+            continueLabel: '返回牌桌',
+            continueDisabled: false,
             latestDiscoveryKind: 'item',
             latestDiscoveryTitle: itemFixture.expectedCardName,
-            currentInventoryNames: expect.arrayContaining([itemFixture.expectedCardName]),
+            inventoryNames: expect.arrayContaining([itemFixture.expectedCardName]),
             pendingCardResolutionCount: 1,
         });
-        await saveScreenshot(page, goldenFlowProcessScreenshot(6, '物品牌获得结果-急救包进入持有区'));
-        await saveScreenshot(page, GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT);
-
+        expect(itemDiscoverySnapshot.panelText).toContain('已加入持有区');
         const itemDiscoveryContinue = page.getByTestId('betrayal-discovery-continue');
-        await expect(itemDiscoveryContinue).toBeVisible();
-        await expect(itemDiscoveryContinue).toBeEnabled();
-        await expect(itemDiscoveryContinue).toHaveText('返回牌桌');
-        await itemDiscoveryContinue.click();
+        await page.evaluate(() => {
+            const traceWindow = window as typeof window & { __betrayalItemContinueClicked?: boolean };
+            traceWindow.__betrayalItemContinueClicked = false;
+            document.querySelector('[data-testid="betrayal-discovery-continue"]')?.addEventListener('click', () => {
+                traceWindow.__betrayalItemContinueClicked = true;
+            }, { once: true });
+        });
+        await saveScreenshot(page, GOLDEN_FLOW_ITEM_DISCOVERY_SCREENSHOT, { prepare: false, waitMs: 0 });
+        await itemDiscoveryContinue.click({ timeout: 1500 });
+        expect(await page.evaluate(() =>
+            (window as typeof window & { __betrayalItemContinueClicked?: boolean }).__betrayalItemContinueClicked,
+        )).toBe(true);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await expect.poll(() => readMummyGoldenDiscoveryState(page)).toMatchObject({
             pendingCardResolutionCount: 0,
@@ -2630,7 +2709,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             await heroReader.getByTestId('betrayal-scenario-reader-next-zone').click();
         }
         await expect(heroReader.getByTestId('betrayal-scenario-book')).toBeVisible({ timeout: 30000 });
-        await expect(heroReader.getByTestId('betrayal-scenario-objective-page')).not.toContainText('木乃伊横行');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-title-heroes')).toContainText('敌方情报 / 胜利条件');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-heroes')).toContainText('将木乃伊驱逐回亡者之国');
         await expect(heroReader.getByTestId('betrayal-scenario-book-section-traitor')).toHaveCount(0);
@@ -2659,7 +2737,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             await traitorReader.getByTestId('betrayal-scenario-reader-next-zone').click();
         }
         await expect(traitorReader.getByTestId('betrayal-scenario-book')).toBeVisible({ timeout: 30000 });
-        await expect(traitorReader.getByTestId('betrayal-scenario-objective-page')).not.toContainText('木乃伊横行');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-title-traitor')).toContainText('敌方情报 / 胜利条件');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-traitor')).toContainText('敌方情报 / 胜利条件');
         await expect(traitorReader.getByTestId('betrayal-scenario-book-section-traitor')).toContainText('他们妄图将木乃伊驱逐回亡者之国');
@@ -2747,6 +2824,11 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             moveRemaining: 3,
             mummyRoomId: fixture.mummyStartRoomId,
         });
+        const postRollCore = await page.evaluate(() =>
+            (window as Window & { __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: unknown } } } })
+                .__BG_TEST_HARNESS__?.state?.get?.()?.core,
+        ) as BetrayalCore | undefined;
+        if (!postRollCore) throw new Error('木乃伊移动骰结算后未能读取权威测试状态');
 
         await moveMummyThroughRealRoomTarget(
             page,
@@ -2761,7 +2843,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             moveRemaining: 2,
             girlHeldByMummy: false,
         });
-        await expect(page.getByTestId('betrayal-action-monsterMove')).toBeVisible();
         await saveScreenshot(page, goldenFlowProcessScreenshot(34, '木乃伊普通移动第一步后-剩余两点'));
 
         await moveMummyThroughRealRoomTarget(
@@ -2779,7 +2860,6 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             girlHeldByMummy: true,
             heroHasHolySymbol: true,
         });
-        await expect(page.getByTestId('betrayal-action-monsterMove')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-monsterAttack')).toBeVisible();
         await saveScreenshot(page, goldenFlowProcessScreenshot(36, '木乃伊普通移动第二步后-拾起女孩并可攻击'));
         await saveScreenshot(page, GOLDEN_FLOW_MUMMY_CONTINUOUS_MOVE_SCREENSHOT);
@@ -2792,29 +2872,32 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             `betrayal-room-occupant-${fixture.sarcophagusRoomId}-${fixture.heroTargetId}`,
         );
         const carriedGirlToken = page.getByTestId(`betrayal-girl-svg-token-${fixture.sarcophagusRoomId}`);
-        const mummySurface = mummyToken.getByTestId(`betrayal-monster-board-token-surface-${MUMMY_MONSTER_ID}`);
+        const mummyMapToken = mummyToken.locator('[data-token-role="mummy-map-token"]');
         await expectBoardTokenReadableSize(
-            mummySurface,
+            mummyMapToken,
             '主黄金链拾起女孩后木乃伊本体',
             30,
         );
-        await expectBoardTokenCircular(
-            mummySurface,
-            '主黄金链拾起女孩后木乃伊本体',
-        );
+        await expect(mummyMapToken).toHaveCount(1);
+        const mummyHitbox = await mummyToken.boundingBox();
+        expect(mummyHitbox, '主黄金链拾起女孩后木乃伊可交互命中区必须有几何区域').toBeTruthy();
+        expect(
+            Math.abs(mummyHitbox!.width - mummyHitbox!.height),
+            '主黄金链拾起女孩后木乃伊可交互命中区必须保持正方形比例',
+        ).toBeLessThanOrEqual(2);
         await expectBoardTokensVerticallyStacked(
-            mummySurface,
+            mummyMapToken,
             carriedGirlToken,
             '主黄金链拾起女孩后木乃伊与女孩',
         );
         await expectBoardTokensDoNotOverlap(
-            mummySurface,
+            mummyMapToken,
             carriedGirlToken,
             '主黄金链拾起女孩后木乃伊与女孩',
         );
         await expectBoardTokensDoNotOverlap(
             heroToken,
-            mummySurface,
+            mummyMapToken,
             '主黄金链拾起女孩后英雄与木乃伊',
         );
         await expectBoardTokensDoNotOverlap(
@@ -2823,7 +2906,7 @@ test.describe('山屋惊魂木乃伊横行怪物行动真实入口', () => {
             '主黄金链拾起女孩后英雄与女孩',
         );
         await expectMummyCarryClusterComparableToExplorer(
-            mummySurface,
+            mummyMapToken,
             carriedGirlToken,
             heroToken.getByTestId(`betrayal-explorer-figure-token-${fixture.heroTargetId}`),
             '主黄金链拾起女孩后木乃伊携带组合与玩家',

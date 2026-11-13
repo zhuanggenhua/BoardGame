@@ -634,8 +634,15 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await peerAvatar.hover();
     await expect(peerRow).toBeVisible();
     await peerRow.hover();
+    await page.evaluate(()=>{const w=window as any;w.__fateRailTrace=[];new MutationObserver(()=>{const visible=Boolean(document.querySelector('.fd-runtime-opponent-cards'));if(w.__fateRailVisible===visible)return;w.__fateRailVisible=visible;w.__fateRailTrace.push({visible,time:performance.now()});}).observe(document.body,{childList:true,subtree:true});});
     await page.mouse.move(8,8);
-    await expect(peerRow).toBeHidden({timeout:4000});
+    try { await expect(peerRow).toBeHidden({timeout:4000}); }
+    catch(error) { const eventuallyHidden=await peerRow.waitFor({state:'hidden',timeout:6000}).then(()=>true,()=>false);console.error('[Fate牌排独立诊断]',JSON.stringify({eventuallyHidden,trace:await page.evaluate(()=>(window as any).__fateRailTrace)}));throw error; }
+    for(let repeat=0;repeat<8;repeat++){
+        await peerAvatar.hover();await expect(peerRow).toBeVisible();await peerRow.hover();await page.mouse.move(8,8);
+        try { await expect(peerRow).toBeHidden({timeout:4000}); }
+        catch(error) { const eventuallyHidden=await peerRow.waitFor({state:'hidden',timeout:6000}).then(()=>true,()=>false);console.error('[Fate牌排独立诊断]',JSON.stringify({repeat,eventuallyHidden,trace:await page.evaluate(()=>(window as any).__fateRailTrace)}));throw error; }
+    }
     const beforeDetail=await snapshot(page);
     await peerAvatar.click();
     await expect(page.getByRole('dialog',{name:/详情/})).toBeVisible();

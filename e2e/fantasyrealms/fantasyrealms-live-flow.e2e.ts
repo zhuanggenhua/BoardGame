@@ -1409,6 +1409,20 @@ test.describe('FantasyRealms live flow', () => {
             const layoutEvidencePath = getEvidenceScreenshotPath(testInfo, '终局牌桌无弹层');
             await mkdir(dirname(layoutEvidencePath), { recursive: true });
             await page.screenshot({ path: layoutEvidencePath, fullPage: false });
+            const originalViewport = page.viewportSize();
+            await page.setViewportSize({ width: 1366, height: 768 });
+            await expect(page.getByTestId('fantasyrealms-live-center-row')).toBeVisible();
+            const compactRanking = await page.getByTestId('fantasyrealms-live-endgame').boundingBox();
+            expect(compactRanking).not.toBeNull();
+            for (const centerCard of await page.locator('.fr-card-button--live-center').all()) {
+                const cardRect = await centerCard.boundingBox();
+                if (cardRect && compactRanking && cardRect.y < compactRanking.y + compactRanking.height && cardRect.y + cardRect.height > compactRanking.y) {
+                    expect(cardRect.x + cardRect.width).toBeLessThanOrEqual(compactRanking.x - 8);
+                }
+            }
+            const smallerLayoutPath = getEvidenceScreenshotPath(testInfo, '终局牌桌1366x768');
+            await page.screenshot({ path: smallerLayoutPath, fullPage: false });
+            if (originalViewport) await page.setViewportSize(originalViewport);
             const winnerStanding = sortedStandings.find((standing) => standing.isWinner) ?? sortedStandings[0];
             if (!winnerStanding) {
                 throw new Error('Expected at least one Fantasy Realms final standing');

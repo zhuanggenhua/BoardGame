@@ -1,3 +1,5 @@
+import { LEADERBOARD_TIERS } from '../shared/leaderboardTiers';
+
 interface LeaderboardRecordPlayer {
     id: string;
     name?: string;
@@ -55,6 +57,9 @@ const MAX_LEADERBOARD_ENTRIES = 50;
 const AI_OPPONENT_RATING_WEIGHT = 1 / 3;
 
 function resolveLeaderboardPlayerKey(player: LeaderboardRecordPlayer): string | null {
+    if (!player.ownerKey && /^(?:游客|guest)\s*\d{4}$/i.test(player.name?.trim() ?? '')) {
+        return `guest:legacy:${player.name!.trim()}`;
+    }
     return player.ownerKey || (player.id !== '0' && player.id !== '1' ? player.id : null) || player.name || null;
 }
 
@@ -187,25 +192,7 @@ function applyRatingFloor(previousRating: number, nextRating: number, matchesBef
 }
 
 export function resolveLeaderboardTier(rating: number): LeaderboardTier {
-    if (rating >= 700) {
-        return 'master';
-    }
-    if (rating >= 500) {
-        return 'expert';
-    }
-    if (rating >= 300) {
-        return 'strong';
-    }
-    if (rating >= 200) {
-        return 'good';
-    }
-    if (rating >= 100) {
-        return 'average';
-    }
-    if (rating >= 1) {
-        return 'apprentice';
-    }
-    return 'beginner';
+    return LEADERBOARD_TIERS.find(tier => rating >= tier.min)?.id ?? 'beginner';
 }
 
 function createEmptyStats(player: LeaderboardRecordPlayer, key: string): LeaderboardStats {
@@ -250,7 +237,8 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
 
         const contexts = keyedPlayers.map(({ key, player, isHuman }) => {
             const statsKey = key.replace(/^human:/, '');
-            const playerStats = isHuman ? (stats[statsKey] ?? createEmptyStats(player, statsKey)) : null;
+            const playerStats = isHuman && !statsKey.startsWith('guest:')
+                ? (stats[statsKey] ?? createEmptyStats(player, statsKey)) : null;
             if (isHuman && playerStats) {
                 stats[statsKey] = playerStats;
             }
@@ -308,8 +296,9 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
         });
     });
 
-    return Object.values(stats)
-        .map((entry) => {
+    return Object.entries(stats)
+        .filter(([key]) => !key.startsWith('guest:'))
+        .map(([, entry]) => {
             const rating = Math.round(entry.rating);
             return {
                 name: entry.name,

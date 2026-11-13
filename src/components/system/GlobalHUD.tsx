@@ -227,7 +227,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
             event.preventDefault(); event.stopPropagation(); closeSettings();
         }}>
             {isHomeEntryRoute(location.pathname) && <HomeStyleSettings currentStyle={homeStyle} onSelectStyle={style => { persistHomeEntryStyle(style); closeSettings(); }} />}
-            <PlatformAudioSettings isDark={isHomeEntryRoute(location.pathname) || isDark}/>
+            <PlatformAudioSettings isDark={false}/>
         </div>;
         }
 
@@ -319,7 +319,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
             <FabMenu
                 className={isHomeEntryRoute(location.pathname) ? 'platform-global-fab' : undefined}
                 key={`global-hud-${location.pathname}`}
-                isDark={isHomeEntryRoute(location.pathname) || isDark}
+                isDark={false}
                 items={items}
                 position="bottom-right"
                 movePanelsWithMenu={isHomeEntryRoute(location.pathname)}

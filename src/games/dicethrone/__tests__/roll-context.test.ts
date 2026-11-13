@@ -1236,6 +1236,23 @@ describe('DiceThrone 单槽当前骰区', () => {
         expect(checkPlayCard(opened, '0', surprise, 'main1')).toEqual({ ok: true });
     });
 
+    it('伤害响应期间不能再用改骰牌改变已启动攻击的进攻骰', () => {
+        const state = roll(createCore(), [1, 2, 3, 4, 5]);
+        const giveHand = COMMON_CARDS.find((card) => card.id === 'card-give-hand')!;
+        const beforeDamage = {
+            ...state,
+            rollConfirmed: true,
+            pendingAttack: { attackerId: '0', defenderId: '1', sourceAbilityId: 'overclock', isDefendable: false, preDefenseResolved: true },
+            pendingDamage: { id: 'damage-1', sourcePlayerId: '0', targetPlayerId: '1', responderId: '1', originalDamage: 7, currentDamage: 7, responseType: 'beforeDamageReceived' },
+        } as DiceThroneCore;
+        beforeDamage.players['1'].hand = [giveHand];
+        expect(checkPlayCard({ ...beforeDamage, pendingDamage: null, pendingAttack: { ...beforeDamage.pendingAttack!, preDefenseResolved: false } }, '1', giveHand, 'offensiveRoll')).toEqual({ ok: true });
+        expect(checkPlayCard(beforeDamage, '1', giveHand, 'offensiveRoll')).toEqual({ ok: false, reason: 'rollContextLocked' });
+        expect(validateCommand(beforeDamage, {
+            type: 'PLAY_CARD', playerId: '1', payload: { cardId: giveHand.id }, timestamp: 1,
+        }, 'offensiveRoll')).toMatchObject({ valid: false, error: 'rollContextLocked' });
+    });
+
     it('奖励骰仍尊重当前骰区改骰开关', () => {
         const opened = reduce(createCore(), {
             type: 'BONUS_DICE_REROLL_REQUESTED',

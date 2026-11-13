@@ -1395,11 +1395,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             <AbilityChoiceModal
                 isOpen
                 options={abilityChoiceOptions}
+                emphasizeOptions={player.characterId === 'doctor_strange'}
                 onSelect={handleSelectAbilityChoice}
                 onSkip={handleCloseAbilityChoiceModal}
             />
         ),
-    }), [abilityChoiceOptions, handleCloseAbilityChoiceModal, handleSelectAbilityChoice]);
+    }), [abilityChoiceOptions, handleCloseAbilityChoiceModal, handleSelectAbilityChoice, player.characterId]);
 
     useSyncedModalStackEntry({
         enabled: modals.confirmSkip,

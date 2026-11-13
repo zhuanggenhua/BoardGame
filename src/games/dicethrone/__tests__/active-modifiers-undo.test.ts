@@ -13,7 +13,29 @@ import { describe, it, expect, vi } from 'vitest';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { findHeroCard } from '../heroes';
 import { RightSidebar } from '../ui/RightSidebar';
+import { DiceThroneDomain } from '../domain';
+import { createHeroMatchup, fixedRandom } from './test-utils';
+import { rebuildClientDiceMultistepInteraction } from '../ui/clientDiceMultistepInteraction';
+import { createDiceInteractionContract } from '../ui/diceInteractionContract';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
+
+// 按正式恢复与 Board 投影链构造侧栏合同，保留反馈中的原始交互快照。
+function HistoricalSidebarFixture(props: any) {
+    const { interaction, ...sidebarProps } = props;
+    const state = createHeroMatchup('thor', 'monk')(['0', '1'], fixedRandom);
+    state.sys.interaction = { ...state.sys.interaction, current: interaction, queue: [] };
+    const normalized = DiceThroneDomain.normalizeRuntimeState!(state);
+    const rebuilt = rebuildClientDiceMultistepInteraction(normalized.sys.interaction.current);
+    const controller = {
+        result: rebuilt?.data.initialResult ?? null,
+        stepCount: 0, canConfirm: false, step: vi.fn(), confirm: vi.fn(), cancel: vi.fn(),
+    };
+    const diceInteraction = createDiceInteractionContract({
+        interaction: rebuilt, controller, rootPlayerId: props.rootPlayerId,
+        teamIdByPlayerId: props.teamIdByPlayerId,
+    });
+    return React.createElement(RightSidebar, { ...sidebarProps, diceInteraction });
+}
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -381,7 +403,7 @@ describe('攻击修正指示器撤回测试', () => {
 
     it('RightSidebar 在 selectDie 交互中应根据 diceOwnerId 显示队友骰池提示', () => {
         const html = renderToStaticMarkup(
-            React.createElement(RightSidebar, {
+            React.createElement(HistoricalSidebarFixture, {
                 dice: [],
                 rollCount: 1,
                 rollLimit: 2,
@@ -420,6 +442,7 @@ describe('攻击修正指示器撤回测试', () => {
                         initialResult: { selectedDiceIds: [] },
                         meta: {
                             dtType: 'selectDie',
+                            selectionMode: 'reroll',
                             selectCount: 1,
                             diceOwnerId: '0',
                             targetOpponentDice: false,
@@ -434,7 +457,7 @@ describe('攻击修正指示器撤回测试', () => {
 
     it('反馈 6a3a97e8 的 any 改骰交互快照应能正常渲染右侧骰区', () => {
         const html = renderToStaticMarkup(
-            React.createElement(RightSidebar, {
+            React.createElement(HistoricalSidebarFixture, {
                 dice: [
                     { id: 0, value: 4, symbol: 'helm', symbols: ['helm'], isKept: false, definitionId: 'paladin-dice' },
                     { id: 1, value: 6, symbol: 'pray', symbols: ['pray'], isKept: true, definitionId: 'paladin-dice' },
@@ -498,7 +521,7 @@ describe('攻击修正指示器撤回测试', () => {
 
     it('反馈 6a3cb53f 的对手重掷交互快照缺少 initialResult 时也不应渲染崩溃', () => {
         const html = renderToStaticMarkup(
-            React.createElement(RightSidebar, {
+            React.createElement(HistoricalSidebarFixture, {
                 dice: [
                     { id: 0, value: 3, symbol: 'branch', symbols: ['branch'], isKept: false, definitionId: 'treant-dice' },
                     { id: 1, value: 6, symbol: 'spirit', symbols: ['spirit'], isKept: false, definitionId: 'treant-dice' },
@@ -563,7 +586,7 @@ describe('攻击修正指示器撤回测试', () => {
 
     it('改骰提示框应按内容撑高，不应被固定高度或裁剪样式截断', () => {
         const html = renderToStaticMarkup(
-            React.createElement(RightSidebar, {
+            React.createElement(HistoricalSidebarFixture, {
                 dice: [],
                 rollCount: 1,
                 rollLimit: 2,

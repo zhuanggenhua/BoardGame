@@ -219,12 +219,12 @@ function buildEffectiveCards(
     });
 }
 
-function applyDoppelganger(cards: readonly EffectiveCard[], targetInstanceId?: string): EffectiveCard[] {
+function applyDoppelganger(cards: readonly EffectiveCard[], targetInstanceId?: string, originalCards: readonly EffectiveCard[] = cards): EffectiveCard[] {
     if (!targetInstanceId) {
         return cards.map((card) => ({ ...card }));
     }
 
-    const target = cards.find((card) => card.instanceId === targetInstanceId);
+    const target = originalCards.find((card) => card.instanceId === targetInstanceId);
     if (!target) {
         return cards.map((card) => ({ ...card }));
     }
@@ -405,6 +405,10 @@ function countActiveSuit(activeCards: readonly EffectiveCard[], suit: FantasyRea
     return activeCards.filter((card) => card.effectiveSuit === suit).length;
 }
 
+function countOtherActiveSuit(activeCards: readonly EffectiveCard[], suit: FantasyRealmsSuit, instanceId: string): number {
+    return activeCards.filter((card) => card.instanceId !== instanceId && card.effectiveSuit === suit).length;
+}
+
 function countActiveName(activeCards: readonly EffectiveCard[], name: string): number {
     return activeCards.filter((card) => card.effectiveName === name).length;
 }
@@ -491,7 +495,6 @@ function resolveDemonBlankedIds(
 
     demonSources.forEach((source) => {
         cards.forEach((target) => {
-            if (target.instanceId === source.instanceId) return;
             if (target.effectiveSuit === '局外人') return;
             if (hasBlankingImmunity(target, cards, angelTargetId)) return;
             const suitCount = cards.filter((candidate) => candidate.effectiveSuit === target.effectiveSuit).length;
@@ -504,16 +507,31 @@ function resolveDemonBlankedIds(
     return blankedIds;
 }
 
-function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTargetId?: string, clearingCards: readonly EffectiveCard[] = cards): EffectiveCard[] {
+function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTargetId?: string, clearingCards: readonly EffectiveCard[] = cards, angelTargetId?: string): EffectiveCard[] {
     const attackSources = cards.filter((card) => hasAttackEffect(card, clearingCards, islandTargetId));
     const accepted = new Set<string>();
-    const rejected = new Set<string>();
+    const rejected = new Set(attackSources
+        .filter((card) => !hasBlankingImmunity(card, clearingCards, angelTargetId) && sourceAttacksTarget(card, card, clearingCards))
+        .map((card) => card.instanceId));
+    for (let index = 0; index < attackSources.length; index += 1) {
+        for (const other of attackSources.slice(index + 1)) {
+            const card = attackSources[index]!;
+            if (!hasBlankingImmunity(card, clearingCards, angelTargetId)
+                && !hasBlankingImmunity(other, clearingCards, angelTargetId)
+                && sourceAttacksTarget(card, other, clearingCards)
+                && sourceAttacksTarget(other, card, clearingCards)) {
+                rejected.add(card.instanceId);
+                rejected.add(other.instanceId);
+            }
+        }
+    }
 
     while (true) {
         const newlyAccepted = attackSources.filter((card) => {
             if (accepted.has(card.instanceId) || rejected.has(card.instanceId)) return false;
             const attackers = attackSources.filter((attacker) => (
                 attacker.instanceId !== card.instanceId
+                && !hasBlankingImmunity(card, clearingCards, angelTargetId)
                 && sourceAttacksTarget(attacker, card, clearingCards)
             ));
             return attackers.every((attacker) => rejected.has(attacker.instanceId));
@@ -526,7 +544,7 @@ function resolveAcceptedAttackSources(cards: readonly EffectiveCard[], islandTar
         newlyAccepted.forEach((card) => {
             accepted.add(card.instanceId);
             attackSources.forEach((target) => {
-                if (target.instanceId !== card.instanceId && sourceAttacksTarget(card, target, clearingCards)) {
+                if (target.instanceId !== card.instanceId && !hasBlankingImmunity(target, clearingCards, angelTargetId) && sourceAttacksTarget(card, target, clearingCards)) {
                     rejected.add(target.instanceId);
                 }
             });
@@ -543,7 +561,7 @@ function getActiveCards(
 ): EffectiveCard[] {
     const demonBlankedIds = resolveDemonBlankedIds(cards, angelTargetId);
     const cardsAfterDemon = cards.filter((card) => !demonBlankedIds.has(card.instanceId));
-    const acceptedAttackSources = resolveAcceptedAttackSources(cardsAfterDemon, islandTargetId, cards);
+    const acceptedAttackSources = resolveAcceptedAttackSources(cardsAfterDemon, islandTargetId, cards, angelTargetId);
     const attackedIds = new Set<string>();
 
     acceptedAttackSources.forEach((source) => {
@@ -551,7 +569,7 @@ function getActiveCards(
             if (
                 source.instanceId !== target.instanceId
                 && sourceAttacksTarget(source, target, cards)
-                && !hasBlankingImmunity(target, cardsAfterDemon, angelTargetId)
+                && !hasBlankingImmunity(target, cards, angelTargetId)
             ) {
                 attackedIds.add(target.instanceId);
             }
@@ -676,7 +694,7 @@ function computeBonus(
                 ? 100
                 : 0;
         case 'flame-fire-elemental':
-            return 15 * Math.max(0, countActiveSuit(activeCards, '烈焰') - 1);
+            return 15 * countOtherActiveSuit(activeCards, '烈焰', card.instanceId);
         case 'flame-forge':
             return 9 * (countActiveSuit(activeCards, '武器') + countActiveSuit(activeCards, '神器'));
         case 'flame-lightning':
@@ -696,9 +714,9 @@ function computeBonus(
             return eligible.length > 0 ? Math.max(...eligible) : 0;
         }
         case 'flood-water-elemental':
-            return 15 * Math.max(0, countActiveSuit(activeCards, '洪流') - 1);
+            return 15 * countOtherActiveSuit(activeCards, '洪流', card.instanceId);
         case 'land-earth-elemental':
-            return 15 * Math.max(0, countActiveSuit(activeCards, '土地') - 1);
+            return 15 * countOtherActiveSuit(activeCards, '土地', card.instanceId);
         case 'land-underground-caverns':
             return hasActiveName(activeCards, 'Dwarvish Infantry') || hasActiveName(activeCards, 'Dragon') ? 25 : 0;
         case 'land-forest':
@@ -713,7 +731,7 @@ function computeBonus(
             return 8 * (
                 countActiveSuit(activeCards, '军队')
                 + countActiveSuit(activeCards, '法师')
-                + Math.max(0, countActiveSuit(activeCards, '领袖') - 1)
+                + countOtherActiveSuit(activeCards, '领袖', card.instanceId)
             );
         case 'leader-warlord':
             return activeCards
@@ -734,7 +752,7 @@ function computeBonus(
                 ? 40
                 : hasActiveSuit(activeCards, '领袖') ? 10 : 0;
         case 'weather-air-elemental':
-            return 15 * Math.max(0, countActiveSuit(activeCards, '天象') - 1);
+            return 15 * countOtherActiveSuit(activeCards, '天象', card.instanceId);
         case 'weather-rainstorm':
             return 10 * countActiveSuit(activeCards, '洪流');
         case 'weather-whirlwind':
@@ -766,7 +784,7 @@ function computeBonus(
                 + (countActiveName(activeCards, 'Demon') * 5);
         }
         case 'building-castle': {
-            const otherBuildings = Math.max(0, countActiveSuit(activeCards, '建筑') - 1);
+            const otherBuildings = countOtherActiveSuit(activeCards, '建筑', card.instanceId);
             return (hasActiveSuit(activeCards, '领袖') ? 10 : 0)
                 + (hasActiveSuit(activeCards, '军队') ? 10 : 0)
                 + (hasActiveSuit(activeCards, '土地') ? 10 : 0)
@@ -801,7 +819,7 @@ function computeBonus(
         case 'undead-specter':
             return 6 * discardPile.filter((entry) => ['法师', '神器', '局外人'].includes(entry.suit)).length;
         case 'undead-lich':
-            return (hasActiveName(activeCards, 'Necromancer') ? 10 : 0) + (10 * countActiveSuit(activeCards, '不死族'));
+            return 10 * (countActiveName(activeCards, 'Necromancer') + countActiveSuit(activeCards, '不死族'));
         case 'undead-death-knight':
             return 7 * discardPile.filter((entry) => entry.suit === '武器' || entry.suit === '军队').length;
         default:
@@ -815,7 +833,7 @@ function computePenalty(card: EffectiveCard, activeCards: readonly EffectiveCard
 
     switch (card.penaltyRuleId) {
         case 'army-dwarvish-infantry':
-            return armyComponentEnabled ? 2 * Math.max(0, countActiveSuit(activeCards, '军队') - 1) : 0;
+            return armyComponentEnabled ? 2 * countOtherActiveSuit(activeCards, '军队', card.instanceId) : 0;
         case 'army-light-cavalry':
             return 2 * countActiveSuit(activeCards, '土地');
         case 'army-celestial-knights':
@@ -828,7 +846,7 @@ function computePenalty(card: EffectiveCard, activeCards: readonly EffectiveCard
                 + countActiveSuit(activeCards, '烈焰')
             );
         case 'leader-empress':
-            return 5 * Math.max(0, countActiveSuit(activeCards, '领袖') - 1);
+            return 5 * countOtherActiveSuit(activeCards, '领袖', card.instanceId);
         case 'weather-blizzard':
             return 5 * (
                 (armyComponentEnabled ? countActiveSuit(activeCards, '军队') : 0)
@@ -837,7 +855,7 @@ function computePenalty(card: EffectiveCard, activeCards: readonly EffectiveCard
                 + countActiveSuit(activeCards, '烈焰')
             );
         case 'wizard-warlock-lord':
-            return 10 * (countActiveSuit(activeCards, '领袖') + Math.max(0, countActiveSuit(activeCards, '法师') - 1));
+            return 10 * (countActiveSuit(activeCards, '领袖') + countOtherActiveSuit(activeCards, '法师', card.instanceId));
         default:
             return 0;
     }
@@ -928,13 +946,14 @@ function findBestScoreCandidate(
 
     for (const necromancerExtra of getNecromancerExtraChoices(hand, discardPile)) {
         const handWithExtra = necromancerExtra ? [...hand, necromancerExtra] : [...hand];
+        const originalCards = buildEffectiveCards(handWithExtra, undefined, undefined);
 
         for (const shapeshifterTargetId of getShapeshifterChoices(handWithExtra, setup)) {
             for (const mirageTargetId of getMirageChoices(handWithExtra, setup)) {
                 const baseCards = buildEffectiveCards(handWithExtra, shapeshifterTargetId, mirageTargetId);
 
                 for (const doppelTargetId of getDoppelgangerChoices(baseCards)) {
-                    const withDoppel = applyDoppelganger(baseCards, doppelTargetId);
+                    const withDoppel = applyDoppelganger(baseCards, doppelTargetId, originalCards);
 
                     for (const bookChoice of getBookOfChangesChoices(withDoppel, setup)) {
                         const withBook = applyBookOfChanges(withDoppel, bookChoice.targetInstanceId, bookChoice.suit);
@@ -1013,7 +1032,7 @@ export function evaluateFantasyRealmsResolvedScore(
 ): FantasyRealmsScoreEvaluation {
     const setup = resolveScoringSetup(hand, discardPile, options);
     const baseCards = buildEffectiveCards(hand, selections.shapeshifterTargetId ?? undefined, selections.mirageTargetId ?? undefined);
-    const copiedCards = applyDoppelganger(baseCards, selections.doppelgangerTargetId ?? undefined);
+    const copiedCards = applyDoppelganger(baseCards, selections.doppelgangerTargetId ?? undefined, buildEffectiveCards(hand, undefined, undefined));
     const effectiveCards = applyBookOfChanges(copiedCards, selections.bookTargetId ?? undefined, selections.bookSuit ?? undefined);
     const result = evaluateFixedCards(
         effectiveCards, discardPile, setup, new Set(hand.map((card) => card.id)),

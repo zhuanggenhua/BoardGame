@@ -108,7 +108,19 @@ export function trackQidahenSourceIdentity(page: Page, testSourcePath: string, a
                 servedSources.push({ path: file, url, responseHash, sourceHash: responseHash, mapping: 'raw-asset' });
                 return;
             }
-            const body = await response.text();
+            let body: string;
+            try {
+                body = await response.text();
+            } catch (error) {
+                // 短生命周期 worker 可能在消费响应体前退出；仅在原响应的 ETag 与
+                // 同 URL 重新获取的响应一致时，才使用后者继续完整源码映射。
+                if (!file.endsWith('.worker.ts') || !String(error).includes('has been closed')) throw error;
+                const originalEtag = response.headers().etag;
+                if (!originalEtag) throw error;
+                const retry = await page.request.get(url);
+                if (!retry.ok() || retry.headers().etag !== originalEtag) throw new Error(`Worker response ETag mismatch: ${file}`);
+                body = await retry.text();
+            }
             const local = readFileSync(file, 'utf8');
             let original: string | undefined;
             let mapping = 'unmapped';

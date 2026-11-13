@@ -2420,7 +2420,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             const entangleOption = tianshiStatusOwner.getByTestId(`dt-status-effect-1-${STATUS_IDS.ENTANGLE}`);
             const divineArrivalOption = tianshiStatusOwner.getByTestId(`dt-status-effect-1-${TOKEN_IDS.DIVINE_ARRIVAL}`);
             await expect(entangleOption).toBeVisible({ timeout: 10000 });
-            await expect(divineArrivalOption).toHaveCount(0);
+            await expect(divineArrivalOption).toBeVisible();
             await entangleOption.click();
             const hostConfirmButton = match.hostPage.getByRole('button', { name: /确认|Confirm/i }).last();
             await expect(hostConfirmButton).toBeEnabled({ timeout: 5000 });
@@ -2464,6 +2464,8 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             );
             await saveEvidenceScreenshot(match.hostPage, testInfo, '02-吸血鬼视角-自己起开行动日志卡图预览可见');
             await closeFabPanel(match.hostPage, 'action-log');
+
+            await closeCardSpotlight(match.guestPage);
 
             await injectGetAwayScene('1');
             await expectTianshiCardPreview(match.guestPage, 'card-get-away', 11);
@@ -2534,6 +2536,7 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
                 const confirmed = events.find((event) => (
                     event?.type === 'SYS_INTERACTION_CONFIRMED'
                     && asRecord(event.payload).sourceId === 'card-get-away'
+                    && asRecord(event.payload).playerId === '1'
                 ));
                 return {
                     mesmerize: asRecord(p0.tokens)[TOKEN_IDS.MESMERIZE] ?? 0,

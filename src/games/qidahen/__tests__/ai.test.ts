@@ -9,6 +9,8 @@ import type { MatchState } from '../../../engine/types';
 import { buildQidahenAiLegalActions } from '../ai';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { createInitialCore } from '../domain/initialCoreSetup';
+import { getMarriageSubjugationBlockedReason } from '../domain/pendingTargetActionBuilder';
+import { getActionChoicesForFaction } from '../domain/factionActionWindow';
 import { beginQidahenWheelRecruitTrain } from '../domain/wheelRecruitTrain';
 import type { QidahenCore } from '../domain/types';
 import { QidahenDomain } from '../domain';
@@ -59,14 +61,61 @@ describe('七大恨 AI', () => {
 
         expect(twoSpaceAction).toBeTruthy();
         const command = twoSpaceAction!.commands[0]!;
-        expect(command.payload.opponentFactionId).toBeTruthy();
-        expect(command.payload.opponentFactionId).not.toBe('ming');
+        const opponentFactionId = command.payload.opponentFactionId as keyof typeof core.factions;
+        expect(opponentFactionId).toBeTruthy();
+        expect(core.currentFactionOrder).toContain(opponentFactionId);
+        expect(opponentFactionId).not.toBe(core.currentFactionOrder[0]);
+        expect(core.factions[opponentFactionId].playerId).not.toMatch(/^qidahen-neutral-/);
         expect(QidahenDomain.validate(state, {
             type: command.type as never,
             playerId: core.currentPlayer,
             payload: command.payload as never,
             timestamp: 1,
         }).valid).toBe(true);
+    });
+
+    it('后金当前选中建州首都时，AI 应先选合法联姻目标再执行行动', () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true);
+        const state = createAiState({
+            ...baseCore,
+            currentPlayer: baseCore.factions.jin.playerId,
+            currentFactionOrder: ['mongol', 'jin', 'ming'],
+            actionChoices: getActionChoicesForFaction('jin'),
+            selectedRegionId: 'city-region-13',
+            confirmedActionId: null,
+            wheelActionUsed: true,
+            factionActionUsed: false,
+            turnPhase: 'action-window',
+            pendingScenarioCharacterChoices: [],
+            pendingScenarioArmamentChoices: [],
+        });
+
+        const actions = buildQidahenAiLegalActions({ playerId: state.core.currentPlayer, state });
+
+        const marriageAction = actions.find((action) => action.commands.some((command) => (
+            command.type === QIDAHEN_COMMANDS.EXECUTE_ACTION
+            && command.payload.actionId === 'marriage-subjugation'
+        )));
+        expect(marriageAction?.commands.map((command) => command.type)).toEqual([
+            QIDAHEN_COMMANDS.SELECT_REGION,
+            QIDAHEN_COMMANDS.EXECUTE_ACTION,
+        ]);
+        const selectedRegionId = marriageAction?.commands.find((command) => command.type === QIDAHEN_COMMANDS.SELECT_REGION)?.payload.regionId as string | undefined;
+        expect(selectedRegionId).toBeTruthy();
+        expect(getMarriageSubjugationBlockedReason(
+            state.core,
+            state.core.regions.find((region) => region.id === selectedRegionId),
+        )).toBeNull();
+        const resolvedState = applyAiResolution(state, {
+            playerId: state.core.currentPlayer,
+            action: marriageAction!,
+        } as NonNullable<Awaited<ReturnType<typeof resolveNextLocalAiAction>>>);
+        expect(resolvedState.core.factionActionUsed).toBe(true);
+        expect(resolvedState.core.pendingTargetAction?.actionId).toBe('marriage-subjugation');
+
+        const confirmedRaidState = createAiState({ ...state.core, confirmedActionId: 'raid' });
+        expect(buildQidahenAiLegalActions({ playerId: confirmedRaidState.core.currentPlayer, state: confirmedRaidState })
+            .some((action) => action.commands[0]?.type === QIDAHEN_COMMANDS.CANCEL_PREVIEW_ACTION)).toBe(true);
     });
 
     it('AI 能支付、执行征兵训练、选择目标、完成，并在教程式进度中持续产生合法动作', () => {

@@ -10,12 +10,14 @@ const punctuationExcerpt = (source:string,section:string,sourceQuote:string) => 
 /** 同语种只摘取当前所需原句；定位与操作说明保留在作者数据，不进入玩家正文。 */
 export const FATE_TUTORIAL_PASSAGES = {
     duration: excerpt(introduction, '如何进行游戏', '圣杯战争将持续11天【回合】。'),
+    overviewBattle: excerpt(introduction, '如何进行游戏', '每个夜晚【战力结算】，玩家将有机会与其他玩家战斗，以便在冬木市各地占领不同的目标，从而获得超越对手的优势。'),
+    overviewPoints: excerpt(introduction, '如何进行游戏', '他们在战斗中的取胜以及其他增加他们在圣杯战争中获胜机会的行动，如进行侦察，将具体地转化为战果点数 (VP) 用以衡量。'),
     victory: excerpt(introduction, '如何进行游戏', '在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。'),
     order: excerpt(play, '游戏流程', '当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。'),
     preparation: punctuationExcerpt(play, '准备阶段', '按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。'),
     deployment: paperExcerpt(play, '前哨阶段（白天）', '按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值（C）。'),
     deploymentPlaces: excerpt(play, '前哨阶段（白天）', '按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）'),
-    workshopOrder: excerpt(introduction, 'C –工房区', '玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。'),
+    workshopOrder: excerpt(play, '前哨阶段（白天）', '若部署于魔术工房，该玩家立即获得部署处所标注的魔力值'),
     terrainOrder: excerpt(introduction, 'D –地利区', '玩家若选择部署于此，由数字的由高到低依次部署并获得等于其数字的基础地利值，地利值将在计算战力时增加您的合计威力。'),
     terrain: paperExcerpt(play, '前哨阶段（白天）', '若部署于战场且位于地利位置（D），战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。'),
     outpostAbility: excerpt(play, '前哨阶段（白天）', '玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。'),
@@ -75,5 +77,8 @@ export function fateTutorialText(copy: FateTutorialCopy): string {
     const description = source?.attackId ? FATE_ATTACK_BY_ID[source.attackId]?.desc : source ? skills?.find(skill=>skill.id===source.skillId)?.desc : undefined;
     const ability = source?.clause==='action' ? description?.split('\n').filter(line=>line.includes('行动阶段：')).join('\n') : description;
     const observedMaster=copy.observer?.masterId?FATE_MASTERS.find(master=>master.id===copy.observer!.masterId):undefined;
-    return [...(copy.observer?[`对手玩家 ${Number(copy.observer.playerId)+1}${observedMaster?`（${observedMaster.name}）`:''}${copy.observer.abilityName?' · '+copy.observer.abilityName:''}`]:[]),...copy.passages.map(id => FATE_TUTORIAL_PASSAGES[id].quote), ...(ability ? [ability] : []), ...(copy.input ? [copy.input.text] : [])].join('\n\n');
+    const observer = copy.observer ? `玩家 ${Number(copy.observer.playerId)+1}${observedMaster?`（${observedMaster.name}）`:''}` : '';
+    const observedEvent = copy.lessonId === 'revelation' ? `${observer}已公开从者与技能牌。`
+        : copy.observer?.abilityName ? `${observer}发动「${copy.observer.abilityName}」。${ability?.includes('你')?'以下能力中的“你”指该玩家。':''}` : observer;
+    return [...(observedEvent?[observedEvent]:[]),...copy.passages.map(id => FATE_TUTORIAL_PASSAGES[id].quote), ...(ability ? [ability] : []), ...(copy.input ? [copy.input.text] : [])].join('\n\n');
 }

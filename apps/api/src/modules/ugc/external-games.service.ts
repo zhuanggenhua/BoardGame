@@ -4,6 +4,8 @@ import type { Model } from 'mongoose';
 import { createHash, randomUUID } from 'node:crypto';
 import { ExternalGameRecord, type ExternalGameDocument } from './schemas/external-game.schema';
 import { CreatorClaimRecord, type CreatorClaimDocument } from './schemas/creator-claim.schema';
+import { GameSubmission, type GameSubmissionDocument } from './schemas/game-submission.schema';
+import { User, type UserDocument } from '../auth/schemas/user.schema';
 import { EXTERNAL_GAME_SEEDS } from './external-game-seeds';
 import type { ExternalGame, ExternalGameFields, GameRulesDocument } from '../../../../../src/shared/externalGames';
 import type { CheckEmbedDto, ExternalGameEditDto } from './dtos/external-game.dto';
@@ -18,6 +20,8 @@ export class ExternalGamesService implements OnModuleInit {
     constructor(
         @InjectModel(ExternalGameRecord.name) private readonly games: Model<ExternalGameDocument>,
         @InjectModel(CreatorClaimRecord.name) private readonly claims: Model<CreatorClaimDocument>,
+        @InjectModel(GameSubmission.name) private readonly submissions: Model<GameSubmissionDocument>,
+        @InjectModel(User.name) private readonly users: Model<UserDocument>,
     ) {}
 
     async onModuleInit() {
@@ -30,6 +34,10 @@ export class ExternalGamesService implements OnModuleInit {
     private async project(records: ExternalGameDocument[]): Promise<ExternalGame[]> {
         const claims = await this.claims.find({ gameId: { $in: records.map(record => record.gameId) }, status: 'approved' }).select('gameId applicantId').lean();
         const owners = new Map(claims.map(claim => [claim.gameId, claim.applicantId]));
+        const submissions = await this.submissions.find({ submissionId: { $in: records.flatMap(record => record.submissionId ? [record.submissionId] : []) } }).select('submissionId ownerId').lean();
+        const users = await this.users.find({ _id: { $in: submissions.map(submission => submission.ownerId) } }).select('username').lean();
+        const names = new Map(users.map(user => [String(user._id), user.username]));
+        const uploaders = new Map(submissions.map(submission => [submission.submissionId, names.get(submission.ownerId) ?? null]));
         return records.map(record => ({
             gameId: record.gameId, name: record.name, url: record.url, category: record.category,
             minPlayers: record.minPlayers, maxPlayers: record.maxPlayers, durationMinutes: record.durationMinutes,
@@ -37,7 +45,9 @@ export class ExternalGamesService implements OnModuleInit {
             rules: record.rules, rulesDocument: record.rulesDocument, coverUrl: record.coverUrl, published: record.published,
             embedStatus: record.embedStatus, embedReason: record.embedReason,
             embedCheckedUrl: record.embedCheckedUrl, embedCheckedAt: record.embedCheckedAt?.toISOString(),
-            ownerUserId: owners.get(record.gameId) ?? null, updatedAt: record.updatedAt.toISOString(),
+            ownerUserId: owners.get(record.gameId) ?? null,
+            uploaderName: record.submissionId ? uploaders.get(record.submissionId) ?? null : null,
+            updatedAt: record.updatedAt.toISOString(),
         }));
     }
     async list() { return this.project(await this.games.find({ published: true }).sort({ createdAt: -1 })); }

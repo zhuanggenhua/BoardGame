@@ -10,6 +10,13 @@ type State = { regionTipVisible: boolean; at: number; phase: string | null; stat
 
 /** 只观察正式页面：连续采集实际视口，按墙钟间隔编码，不注入或重演投掷。 */
 export async function beginBattleRecording(page: Page, directory: string, flow: 'natural-flow' | 'representative-state' = 'natural-flow') {
+    // 仅诊断时采集同一真实页面的 CPU 栈，不更改截图缓存或战斗流程。
+    const cpuProfiler = process.env.QIDAHEN_BATTLE_CPU_PROFILE === 'true' ? await page.context().newCDPSession(page) : undefined;
+    if (cpuProfiler) {
+        await cpuProfiler.send('Profiler.enable');
+        await cpuProfiler.send('Profiler.setSamplingInterval', { interval: 1000 });
+        await cpuProfiler.send('Profiler.start');
+    }
     const requestedDiagnostics = process.env.QIDAHEN_BATTLE_CAPTURE_DIAGNOSTICS;
     if (requestedDiagnostics && requestedDiagnostics !== 'sync' && requestedDiagnostics !== 'queued') throw new Error('Invalid battle capture diagnostics mode');
     const diagnosticMode = requestedDiagnostics as CaptureMode | undefined;
@@ -73,6 +80,9 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         sample();
         (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation = { states, observer };
     });
+    const batchDiagnostic = process.env.QIDAHEN_BATCH_CLONE_DIAGNOSTIC === 'true'
+        ? await (await import('./feedbackBatchedCloneDiagnostic')).startBatchedCloneDiagnostic(page, directory)
+        : undefined;
     // 独立录制诊断：关闭本模块的 CDP screencast，交由 Playwright 原生视频记录真实页面。
     // 此路径明确失败退出，绝不能替代完整链或原采集合同的验收结果。
     if (process.env.QIDAHEN_DESKTOP_VIDEO_DIAGNOSTIC === 'true') {
@@ -159,6 +169,12 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
     await expect.poll(() => (diagnostics?.frames ?? screencastFrames).length).toBeGreaterThan(0);
     return async () => {
         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
+        if (batchDiagnostic) await batchDiagnostic();
+        if (cpuProfiler) {
+            const { profile } = await cpuProfiler.send('Profiler.stop');
+            writeFileSync(resolve(directory, 'battle-cpu-diagnostic.cpuprofile'), JSON.stringify(profile));
+            await cpuProfiler.detach();
+        }
         const exitAt = await page.evaluate(() => {
             const record = (window as unknown as { __annualBattleObservation: { states: State[] } }).__annualBattleObservation;
             return record.states.at(-1)!.at;
@@ -271,7 +287,9 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                 expect(candidates.length, phase + ' ' + state + ' painted frame inside its phase').toBeGreaterThan(0);
                 if (state === 'rolling') {
                     expect(candidates.length, phase + ' requires multiple real rolling frames').toBeGreaterThanOrEqual(4);
-                    const gaps = candidates.slice(1).map((frame, index) => frame.at - candidates[index].at);
+                    const gaps = [candidates[0].at - moment!.at,
+                        ...candidates.slice(1).map((frame, index) => frame.at - candidates[index].at),
+                        end!.at - candidates[candidates.length - 1].at];
                     expect(Math.max(...gaps), phase + ' rolling capture must not omit a long stretch').toBeLessThanOrEqual(0.5);
                 }
                 const frame = candidates[state === 'damage' ? candidates.length - 1 : Math.floor(candidates.length / 2)];

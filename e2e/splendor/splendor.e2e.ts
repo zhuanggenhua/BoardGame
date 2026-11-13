@@ -163,10 +163,10 @@ async function createSplendorRoomViaAPI(page: Page, guestId?: string): Promise<s
 
 async function createSplendorRoomViaUI(page: Page, startingPlayerId: string): Promise<string | null> {
     await page.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
-    await page.getByRole('heading', { name: /Splendor|璀璨宝石/i }).click();
+    await page.getByRole('button', { name: /Splendor|璀璨宝石/i }).click();
     await page.getByRole('button', { name: /Create Room|创建房间/i }).click();
     await expect(page.getByRole('heading', { name: /Create Room|创建房间/i })).toBeVisible({ timeout: 10000 });
-    await page.getByTestId('create-room-setup-startingPlayerId').selectOption(startingPlayerId);
+    await page.getByTestId('setup-option-select-startingPlayerId').selectOption(startingPlayerId);
     await page.getByRole('button', { name: /Confirm|确认/i }).click();
 
     try {
@@ -308,9 +308,9 @@ test.describe('Splendor E2E', () => {
             market: ['t1-blue-1', 't1-green-1', 't1-red-1'],
         });
 
-        await expect(page.getByTestId('splendor-action-log-row').first()).toContainText('Guest 1');
-        await expect(page.getByTestId('splendor-action-log-row').first()).toContainText('spends');
-        await expect(page.getByTestId('splendor-action-log-row').first()).toContainText('I-1');
+        const purchaseLog = page.getByTestId('splendor-action-log-row').filter({ hasText: 'I-1' });
+        await expect(purchaseLog).toContainText(/Guest 1|游客1/);
+        await expect(purchaseLog).toContainText(/spends|支付/);
 
         await game.screenshot('splendor-buy-open-after', testInfo);
     });
@@ -621,7 +621,8 @@ test.describe('Splendor E2E', () => {
         test.setTimeout(60000);
 
         await page.goto('/dev/slicer?foo=bar');
-        await page.getByRole('button', { name: 'Splendor 映射' }).click();
+        const mappingButton = page.getByRole('button', { name: /Splendor Mapping|Splendor 映射|璀璨宝石映射/ });
+        await mappingButton.click();
 
         await expect.poll(() => page.url(), { timeout: 5000 }).toContain('/dev/slicer?foo=bar&mode=splendor-mapping');
 
@@ -654,7 +655,7 @@ test.describe('Splendor E2E', () => {
         await expect.poll(() => page.url(), { timeout: 5000 }).toContain('/dev/slicer?foo=bar');
         await expect.poll(() => page.url(), { timeout: 5000 }).not.toContain('mode=splendor-mapping');
 
-        await page.getByRole('button', { name: 'Splendor 映射' }).click();
+        await mappingButton.click();
         await expect.poll(() => page.url(), { timeout: 5000 }).toContain('/dev/slicer?foo=bar&mode=splendor-mapping');
 
         await page.screenshot({
@@ -686,8 +687,14 @@ test.describe('Splendor E2E', () => {
 
         await waitStep('take-gems-action', 10000);
         await page.getByTestId('splendor-bank-token-white').click();
-        await expect(page.getByTestId('splendor-take-two-white')).toBeVisible({ timeout: 5000 });
-        await page.getByTestId('splendor-take-two-white').click();
+        await page.getByTestId('splendor-bank-token-blue').click();
+        await page.getByTestId('splendor-bank-token-green').click();
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.players['0'].tokens.white
+                + state.core.players['0'].tokens.blue
+                + state.core.players['0'].tokens.green;
+        }, { timeout: 10000, message: '三个不同宝石的实际玩家操作应结算并触发教程事件' }).toBe(3);
 
         await waitStep('player-status', 10000);
         await clickNext();
@@ -726,18 +733,18 @@ test.describe('Splendor E2E', () => {
 
         try {
             await expect(hostPage.getByTestId('splendor-start-game')).toBeVisible({ timeout: 15000 });
-            await expect(guestPage.getByText('Waiting for the host to start the game', { exact: true })).toBeVisible({ timeout: 15000 });
+            await expect(guestPage.getByText(/Waiting for the host to start the game|等待房主开始游戏/, { exact: true })).toBeVisible({ timeout: 15000 });
 
             const hostWhiteToken = hostPage.getByTestId('splendor-bank-token-white');
             await expect(hostWhiteToken).toBeDisabled();
-            await expect(hostPage.getByText('All seats are ready. The host can start the game now.', { exact: true })).toBeVisible();
+            await expect(hostPage.getByText(/All seats are ready\. The host can start the game now\.|所有座位都已就绪，请由房主点击开始游戏进入正式对局。/, { exact: true })).toBeVisible();
 
             await hostPage.screenshot({ path: testInfo.outputPath('splendor-online-before-start.png'), fullPage: true });
 
             await hostPage.getByTestId('splendor-start-game').click();
 
             await expect(hostPage.getByTestId('splendor-start-game')).toHaveCount(0, { timeout: 10000 });
-            await expect(guestPage.getByText('Waiting for the host to start the game', { exact: true })).toHaveCount(0, { timeout: 10000 });
+            await expect(guestPage.getByText(/Waiting for the host to start the game|所有玩家都已到齐，等待房主点击开始游戏。/, { exact: true })).toHaveCount(0, { timeout: 10000 });
             await expect(hostWhiteToken).toBeEnabled({ timeout: 10000 });
 
             await hostPage.getByTestId('splendor-bank-token-white').click();

@@ -136,9 +136,11 @@ export function resolveAnnualDispatchTutorialStep(state: MatchState<QidahenCore>
     if (step.id === 'opponent-retreat' || step.id === 'opponent-retreat-followup') return { ...step,
         aiActions: pending?.battleStep === 'retreat' ? opponentResponse(state, pending, ['rear-guard', 'rout']) : undefined };
     if ((step.id === 'battle-roll' || step.id === 'battle-roll-followup') && pending) {
-        const canPlayTactic = state.core.handCards.some(card => card.faction === pending.attackerFactionId && card.cardKind === 'tactic'
+        const playableTactic = state.core.handCards.find(card => card.faction === pending.attackerFactionId && card.cardKind === 'tactic'
             && card.status !== 'disabled' && isQidahenTacticCardPlayableForPendingBattle(state.core, card, pending, 'attacker'));
-        return { ...step, content: `${TEXT}${canPlayTactic ? 'battle-roll-dynamic' : 'battle-roll-no-tactic'}`,
+        return { ...step, content: `${TEXT}${playableTactic ? 'battle-roll-dynamic' : 'battle-roll-no-tactic'}`,
+            ...(playableTactic ? { highlightTarget: `qidahen-hand-card-${playableTactic.id}`,
+                tooltipAnchorTarget: `qidahen-hand-guide-${playableTactic.id}`, tooltipArrow: 'anchor' as const, position: 'top' as const } : {}),
             allowedTargets: undefined, allowedCommands: BATTLE_COMMANDS };
     }
     if (step.id === 'player-retreat' || step.id === 'player-retreat-followup' || step.id === 'occupy') return { ...step, allowedTargets: undefined };

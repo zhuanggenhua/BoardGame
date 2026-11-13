@@ -37,6 +37,7 @@ function createHarness(options?: {
     const recordedCircuit: unknown[] = [];
     const hooks: AuthoritativeQueuedCommandStaleRejectionHooks<AuthoritativeQueuedCommandStaleRejectionMatch> = {
         resolveSeatControllerType: vi.fn(() => options?.seatControllerType ?? 'human'),
+        emitPlayerError: vi.fn(),
         admitOnlineAiCircuitCommand: vi.fn(() => options?.admission ?? createAdmission()),
         recordOnlineAiCircuitFailure: vi.fn(async (args) => {
             recordedCircuit.push(args);
@@ -50,7 +51,7 @@ function createHarness(options?: {
 }
 
 describe('AuthoritativeQueuedCommandStaleRejectionCoordinator', () => {
-    it('真人排队命令过期时只丢弃，不记录 AI circuit failure', async () => {
+    it('真人排队命令过期时触发 stale_state 同步恢复，不记录 AI circuit failure', async () => {
         const match = createMatch();
         const harness = createHarness({ seatControllerType: 'human' });
 
@@ -61,11 +62,13 @@ describe('AuthoritativeQueuedCommandStaleRejectionCoordinator', () => {
                 payload: { step: 1 },
                 playerID: '0',
                 stateIDAtEnqueue: 1,
+                options: { commandId: 'cmd-host-select' },
             },
         });
 
         expect(harness.hooks.admitOnlineAiCircuitCommand).not.toHaveBeenCalled();
         expect(harness.recordedCircuit).toHaveLength(0);
+        expect(harness.hooks.emitPlayerError).toHaveBeenCalledWith(match, '0', 'stale_state', 'cmd-host-select');
     });
 
     it('AI 排队命令过期且 circuit 允许时记录 stale failure', async () => {
@@ -94,6 +97,7 @@ describe('AuthoritativeQueuedCommandStaleRejectionCoordinator', () => {
             stateID: 3,
         });
         expect(harness.recordedCircuit).toHaveLength(1);
+        expect(harness.hooks.emitPlayerError).not.toHaveBeenCalled();
         expect(harness.recordedCircuit[0]).toMatchObject({
             match,
             playerId: '1',

@@ -19,6 +19,8 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 
 读完后先判断：本轮是新增 owner、扩展已有 owner、拆分 owner、迁移测试夹具，还是只做紧急最小修复。没有完成这个判断，不得把新能力、新测试组或大段 UI 直接追加到既有文件。
 
+新增、重做或改变玩家操作顺序时，写代码或询问方案前必须下钻 [`rule-driven-interaction-design`](../../knowledge/standards/rule-driven-interaction-design.md)，先查同游戏已有同类交互并按该主源裁定复用或扩展。
+
 ## 任务规模
 
 | 规模 | 识别条件 | 读取深度 | 执行方式 |

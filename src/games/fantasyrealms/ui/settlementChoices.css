@@ -1,0 +1,97 @@
+.fr-settlement-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .78) 0%, rgba(0, 0, 0, .76) 69%, rgba(0, 0, 0, .18) 82%, transparent 100%);
+    pointer-events: none;
+}
+
+.fr-settlement-stage {
+    position: absolute;
+    inset: clamp(64px, 8vh, 90px) 3vw max(220px, 30vh);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(10px, 2vh, 22px);
+    color: #fff3cf;
+    pointer-events: auto;
+}
+
+.fr-settlement-prompt {
+    margin: 0;
+    color: #fff3cf;
+    text-align: center;
+    font-size: clamp(17px, 1.3vw, 25px);
+    font-weight: 700;
+    line-height: 1.35;
+    text-shadow: 0 2px 8px #000;
+}
+
+.fr-settlement-options {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: min(1320px, 100%);
+    flex-wrap: wrap;
+    align-content: safe center;
+    justify-content: center;
+    gap: clamp(12px, 1.2vw, 22px);
+    overflow-y: auto;
+    padding: 8px 14px;
+    scrollbar-color: #b69967 rgba(0, 0, 0, .35);
+    scrollbar-width: thin;
+}
+
+.fr-settlement-option {
+    width: clamp(122px, 10vw, 190px);
+    align-self: flex-start;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    transition: transform .15s ease, filter .15s ease;
+}
+
+.fr-settlement-option:hover,
+.fr-settlement-option:focus-visible,
+.fr-settlement-option--selected {
+    outline: none;
+    transform: translateY(-5px);
+    filter: drop-shadow(0 0 7px #f4d786);
+}
+
+.fr-settlement-options:has(.fr-settlement-option--selected) .fr-settlement-option:hover:not(.fr-settlement-option--selected) {
+    transform: none;
+    filter: none;
+}
+
+.fr-settlement-option .fr-card { width: 100%; }
+
+.fr-settlement-pages { display: flex; align-items: center; gap: 14px; color: #fff3cf; font-size: 16px; }
+.fr-settlement-pages button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: inherit; font-size: 32px; line-height: 1; cursor: pointer; }
+.fr-settlement-pages button:disabled { opacity: .35; cursor: default; }
+.fr-settlement-pages button:focus-visible { outline: 2px solid #f4d786; }
+.fr-settlement-suits { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.fr-settlement-suit,
+.fr-settlement-skip {
+    min-height: 44px;
+    padding: 8px 18px;
+    border: 1px solid #b49a6d;
+    border-radius: 6px;
+    background: #1b4039;
+    color: #fff3cf;
+    cursor: pointer;
+}
+.fr-settlement-suit:hover,
+.fr-settlement-suit:focus-visible,
+.fr-settlement-skip:hover,
+.fr-settlement-skip:focus-visible { background: #315c50; outline: 2px solid #f4d786; }
+
+@media (max-width: 700px), (max-height: 600px) {
+    .fr-settlement-stage { inset: 12px 8px 30vh; gap: 6px; }
+    .fr-settlement-prompt { font-size: 15px; }
+    .fr-settlement-options { gap: 8px; padding: 5px; }
+    .fr-settlement-option { width: clamp(96px, 18vw, 145px); }
+    .fr-settlement-suit, .fr-settlement-skip { min-height: 44px; padding: 6px 12px; }
+}

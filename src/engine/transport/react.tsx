@@ -27,6 +27,7 @@ import type { LatencyOptimizationConfig } from './latency/types';
 import type { AiSeatController } from '../ai/types';
 import type { LocalMatchSnapshot } from './localSession';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGameMode } from '../../contexts/GameModeContext';
 import {
     shouldSilentlyRetryOnlineAiBatchRejection,
 } from './onlineAiRecovery';
@@ -200,12 +201,14 @@ export function LocalGameProvider({
     shouldRestorePersistedSession,
     disableLocalAiAutomation = false,
 }: LocalGameProviderProps) {
+    const gameMode = useGameMode()?.mode ?? 'local';
     const value = useLocalGameProviderRuntime({
         config,
         numPlayers,
         seed,
         randomSeed,
         setupData,
+        setupContext: { mode: gameMode },
         onCommandRejected,
         seatControllers,
         playerNames,

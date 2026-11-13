@@ -33,11 +33,15 @@ export class FeedbackReplayCommandHistory {
         const entries = this.matches.get(record.matchId) ?? [];
         let frozenRecord: FeedbackReplayCommandRecord;
         try {
+            // 前后状态通常共享未变化的子树；一次克隆保留共享并避免重复复制。
+            const snapshot = structuredClone({
+                commandPayload: record.commandPayload,
+                stateBefore: record.stateBefore,
+                stateAfter: record.stateAfter,
+            });
             frozenRecord = {
                 ...record,
-                commandPayload: structuredClone(record.commandPayload),
-                stateBefore: structuredClone(record.stateBefore),
-                stateAfter: structuredClone(record.stateAfter),
+                ...snapshot,
                 capturedAt: this.now(),
             };
         } catch {

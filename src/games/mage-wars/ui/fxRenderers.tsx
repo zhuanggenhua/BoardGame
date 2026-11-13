@@ -585,11 +585,13 @@ function MageWarsEntitySlide({
     ]);
     const slideRef = useRef<HTMLDivElement>(null);
     const motionTokenRef = useRef('');
-    const previewRef = sourceSpellCardId != null
-        ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
-        : isMageId(mageId)
-            ? getMageWarsMagePreviewRef(mageId, 'portrait')
-            : null;
+    const previewRef = useMemo(() => (
+        sourceSpellCardId != null
+            ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
+            : isMageId(mageId)
+                ? getMageWarsMagePreviewRef(mageId, 'portrait')
+                : null
+    ), [sourceSpellCardId, mageId]);
     const cardAspect = sourceSpellCardId != null
         ? getMageWarsSpellCardAspectRatio(sourceSpellCardId)
         : isMageId(mageId)

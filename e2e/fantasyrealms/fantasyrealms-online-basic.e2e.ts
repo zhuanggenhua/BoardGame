@@ -1,13 +1,14 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 import type { MatchState } from '../../src/engine/types';
 import { FantasyRealmsDomain, evaluateFantasyRealmsScore } from '../../src/games/fantasyrealms/domain';
 import { getDeckDrawCount, requiresDiscardAfterTakingDiscard } from '../../src/games/fantasyrealms/domain/commands';
 import { evaluateFantasyRealmsResolvedScore } from '../../src/games/fantasyrealms/domain/scoring';
+import { getSettlementOptions } from '../../src/games/fantasyrealms/domain/settlement';
 import type { FantasyRealmsCore } from '../../src/games/fantasyrealms/domain';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
-import { getFantasyRealmsBaseHandLimit } from '../../src/games/fantasyrealms/foundation';
+import { createRuntimeDeck, getFantasyRealmsBaseHandLimit } from '../../src/games/fantasyrealms/foundation';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
     assertNoFatalFrontendErrors,
@@ -51,6 +52,27 @@ type FinalStanding = {
 
 const getFantasyRealmsDeckDrawButton = (page: Page) => page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
 
+async function captureSettlementChoice(page: Page, testInfo: TestInfo, name: string) {
+    const path = getEvidenceScreenshotPath(testInfo, name).replace(/\.jpe?g$/i, '.png');
+    await mkdir(dirname(path), { recursive: true });
+    await page.screenshot({ path, fullPage: false });
+}
+
+async function chooseSettlementCard(page: Page, cardId: string) {
+    const panel = page.getByTestId('fantasyrealms-settlement');
+    const card = panel.locator(`button:has([data-atlas-card-id="${cardId}"])`);
+    for (let index = 0; index < 20; index += 1) {
+        if (await card.isVisible()) {
+            await card.click();
+            return;
+        }
+        const next = panel.getByRole('button', { name: '下一页' });
+        if (!await next.isVisible() || !await next.isEnabled()) break;
+        await next.click();
+    }
+    throw new Error(`未找到终局候选牌: ${cardId}`);
+}
+
 async function clickFantasyRealmsDeckDrawButtonIfVisible(page: Page) {
     const deckButton = getFantasyRealmsDeckDrawButton(page);
     if (await deckButton.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -79,13 +101,14 @@ async function createFantasyRealmsRoom(
                 guestId: ownerGuestId,
                 ownerKey: `guest:${ownerGuestId}`,
                 ownerType: 'guest',
+                setupSelections: { variant: numPlayers === 2 ? 'duel' : 'standard', expansion: 'base' },
             },
             unlisted: false,
         },
     });
 
     if (!response.ok()) {
-        return null;
+        throw new Error(`Fantasy Realms create room failed (${response.status()}): ${await response.text()}`);
     }
 
     const data = (await response.json().catch(() => null)) as {
@@ -2194,21 +2217,16 @@ test.describe('FantasyRealms online basic flow', () => {
                 };
             }, {
                 timeout: 15000,
-                message: '等待双人 duel 变体切到手牌已满 7 的摸牌代表态',
+                message: '等待双人局无公开牌时完成唯一合法的摸牌动作',
             }).toEqual({
                 currentPlayer: '0',
                 turn: 5,
-                stage: 'draw',
-                hostHand: 7,
+                stage: 'discard',
+                hostHand: 8,
                 discardCount: 0,
             });
-
-            await completeOnlineDeckTurn({
-                matchId,
-                actingPlayer: host,
-                nextPlayer: guest,
-                observerPage: host.page,
-            });
+            expect((await readFantasyRealmsCore(matchId, host.page)).drawPile).toHaveLength(core.drawPile.length - 1);
+            await host.page.getByRole('button', { name: /弃置手牌/ }).first().click();
 
             await expectFantasyRealmsTurnSnapshot(
                 matchId,
@@ -2523,6 +2541,20 @@ test.describe('FantasyRealms online basic flow', () => {
                     }
                 });
             });
+            await host.page.evaluate((cardId) => {
+                document.addEventListener('animationend', (event) => {
+                    if (!(event.target as Element).matches('[data-testid="fantasyrealms-live-center-exit-card"]')) return;
+                    const target = Array.from(document.querySelectorAll<HTMLElement>('[data-tutorial-id]'))
+                        .find((element) => element.dataset.tutorialId === `fantasyrealms-card-hand-${cardId}`);
+                    if (!target) return;
+                    const from = (event.target as HTMLElement).getBoundingClientRect();
+                    const to = target.getBoundingClientRect();
+                    (window as Window & { __frArrivalDistance?: number }).__frArrivalDistance = Math.hypot(
+                        from.left + from.width / 2 - to.left - to.width / 2,
+                        from.top + from.height / 2 - to.top - to.height / 2,
+                    );
+                }, true);
+            }, selectedCardId);
             const otherButton = host.page.getByRole('button', { name: /拿取弃牌/ }).nth(1);
             const otherCardId = (await otherButton.getAttribute('data-tutorial-id'))?.replace('fantasyrealms-card-discard-', '');
             const selectedBefore = await discardButton.boundingBox();
@@ -2573,11 +2605,26 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await host.page.waitForTimeout(1600);
             expect(await host.page.evaluate(() => (window as Window & { __frExitAnimations?: number }).__frExitAnimations)).toBe(1);
+            const arrivalDistance = await host.page.evaluate(() => (window as Window & { __frArrivalDistance?: number }).__frArrivalDistance);
+            expect(arrivalDistance).toBeDefined();
+            expect(arrivalDistance!).toBeLessThan(4);
 
             await expect(host.page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '8');
 
             const handDiscardButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             const discardedCardId = (await handDiscardButton.getAttribute('data-tutorial-id'))?.replace('fantasyrealms-card-hand-', '');
+            const discardedBefore = await handDiscardButton.boundingBox();
+            expect(discardedBefore).not.toBeNull();
+            await host.page.evaluate((origin) => {
+                document.addEventListener('animationstart', (event) => {
+                    if (!(event.target as Element).matches('[data-testid="fantasyrealms-live-center-enter-card"]')) return;
+                    const rect = (event.target as HTMLElement).getBoundingClientRect();
+                    (window as Window & { __frDiscardStartDistance?: number }).__frDiscardStartDistance = Math.hypot(
+                        rect.left + rect.width / 2 - origin.x - origin.width / 2,
+                        rect.top + rect.height / 2 - origin.y - origin.height / 2,
+                    );
+                }, true);
+            }, discardedBefore!);
             await handDiscardButton.click();
 
             await expect.poll(async () => {
@@ -2603,10 +2650,35 @@ test.describe('FantasyRealms online basic flow', () => {
                 const finalCore = await readFantasyRealmsCore(matchId, host.page);
                 return finalCore.discardPile.find((card) => card.id === discardedCardId)?.discardSlot;
             }).toBe(0);
+            await expect.poll(() => host.page.evaluate(() => (window as Window & { __frDiscardStartDistance?: number }).__frDiscardStartDistance)).toBeDefined();
+            expect(await host.page.evaluate(() => (window as Window & { __frDiscardStartDistance: number }).__frDiscardStartDistance)).toBeLessThan(100);
             await expect.poll(async () => {
                 const box = await host.page.locator(`[data-tutorial-id="fantasyrealms-card-discard-${discardedCardId}"]`).boundingBox();
                 return box ? Math.round(box.x - selectedBefore!.x) : null;
             }).toBe(0);
+        } finally {
+            await Promise.all(players.map((player) => player.context.close().catch(() => {})));
+        }
+    });
+
+    test('三人在线取牌动画未结束时立即弃牌，取来的牌仍留在手牌', async ({ browser }, testInfo) => {
+        test.setTimeout(90000);
+        const match = await openOnlineFantasyRealmsMatch(browser, testInfo.project.use.baseURL as string | undefined, 3);
+        if (!match) throw new Error('Game server unavailable');
+        const { players, matchId } = match;
+        const [host] = players;
+        try {
+            const core = multiplayerTakeDiscardCore();
+            const state = await readFantasyRealmsMatchState(matchId, host.page);
+            await injectMatchState(matchId, { ...state, core, sys: { ...state.sys, matchId, turnOrder: [...core.playerIds], currentPlayerIndex: 0 } }, host.page);
+            const take = host.page.getByRole('button', { name: /拿取弃牌/ }).first();
+            await expect(take).toBeVisible();
+            const takenId = (await take.getAttribute('data-tutorial-id'))!.replace('fantasyrealms-card-discard-', '');
+            await take.click();
+            await expect(host.page.getByTestId('fantasyrealms-live-center-exit-card')).toBeVisible();
+            await host.page.getByRole('button', { name: /弃置手牌/ }).first().click();
+            await expect(host.page.locator(`[data-tutorial-id="fantasyrealms-card-hand-${takenId}"]`)).toBeVisible();
+            await expect.poll(async () => (await readFantasyRealmsCore(matchId, host.page)).currentPlayer).toBe('1');
         } finally {
             await Promise.all(players.map((player) => player.context.close().catch(() => {})));
         }
@@ -2641,15 +2713,21 @@ test.describe('FantasyRealms online basic flow', () => {
             await discard.click();
             const panel = host.page.getByTestId('fantasyrealms-settlement');
             await expect(panel).toContainText('死灵术士');
-            const evidencePath = getEvidenceScreenshotPath(testInfo, '终局死灵术士选择');
-            await mkdir(dirname(evidencePath), { recursive: true });
-            await host.page.screenshot({ path: evidencePath, fullPage: false });
+            await captureSettlementChoice(host.page, testInfo, '终局死灵术士选择');
             await expect(guest.page.getByTestId('fantasyrealms-settlement')).toContainText('等待');
-            await panel.locator('button:has([data-atlas-card-id="leader-queen"])').click();
+            await chooseSettlementCard(host.page, 'leader-queen');
             await expect(panel).toContainText('变形怪');
-            await panel.locator('button:has([data-atlas-card-id="leader-king"])').click();
+            await captureSettlementChoice(host.page, testInfo, '终局变形怪选择');
+            await panel.getByRole('button', { name: '下一页' }).click();
+            await captureSettlementChoice(host.page, testInfo, '终局变形怪下一页');
+            await panel.getByRole('button', { name: '上一页' }).click();
+            await host.page.setViewportSize({ width: 1366, height: 768 });
+            await captureSettlementChoice(host.page, testInfo, '终局变形怪小屏');
+            await host.page.setViewportSize({ width: 1920, height: 1080 });
+            await chooseSettlementCard(host.page, 'leader-king');
             await expect(panel).toContainText('岛屿');
-            await panel.locator('button:has([data-atlas-card-id="flame-wildfire"])').click();
+            await captureSettlementChoice(host.page, testInfo, '终局岛屿选择');
+            await chooseSettlementCard(host.page, 'flame-wildfire');
             await expect(host.page.getByLabel('最终排名')).toBeVisible({ timeout: 20000 });
             const result = await readFantasyRealmsCore(matchId, host.page);
             expect(result.players['0']!.hand.some((card) => card.id === 'leader-queen')).toBe(true);
@@ -2658,6 +2736,159 @@ test.describe('FantasyRealms online basic flow', () => {
             const finalState = await readFantasyRealmsMatchState(matchId, host.page);
             expect((finalState.sys?.gameover as { scores?: Record<string, number> } | undefined)?.scores?.['0']).toBe(expected.totalScore);
             await expect(guest.page.getByLabel('最终排名')).toBeVisible({ timeout: 10000 });
+        } finally {
+            await Promise.all(players.map((player) => player.context.close().catch(() => {})));
+        }
+    });
+
+    test('三人在线终局手动决定二重身、幻象、变形怪、变化之书和生命之泉', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const match = await openOnlineFantasyRealmsMatch(browser, testInfo.project.use.baseURL as string | undefined, 3);
+        if (!match) throw new Error('Game server unavailable');
+        const { players, matchId } = match;
+        const [host, guest] = players;
+        const byId = (id: string) => ({ ...OFFICIAL_FANTASY_REALMS_CARDS.find((card) => card.id === id)! });
+        try {
+            const state = await readFantasyRealmsMatchState(matchId, host.page);
+            const base = multiplayerTakeDiscardCore();
+            const hostIds = ['wild-doppelganger', 'wild-mirage', 'wild-shapeshifter', 'artifact-book-of-changes', 'flood-fountain-of-life', 'leader-king', 'flame-candle', 'army-elven-archers'];
+            const discardIds = ['leader-queen', 'army-light-cavalry', 'army-dwarvish-infantry', 'land-forest', 'land-mountain', 'weather-blizzard', 'weather-rainstorm', 'beast-hydra', 'weapon-warship'];
+            const used = new Set([...hostIds, ...discardIds]);
+            const others = OFFICIAL_FANTASY_REALMS_CARDS.filter((card) => !used.has(card.id) && !['野牌', '洪流'].includes(card.suit) && card.id !== 'wizard-necromancer').slice(0, 14);
+            const core: FantasyRealmsCore = {
+                ...base, currentPlayer: '0', stage: 'discard', discardPile: discardIds.map(byId),
+                players: {
+                    ...base.players,
+                    '0': { ...base.players['0']!, hand: hostIds.map(byId) },
+                    '1': { ...base.players['1']!, hand: others.slice(0, 7).map((card) => ({ ...card })) },
+                    '2': { ...base.players['2']!, hand: others.slice(7, 14).map((card) => ({ ...card })) },
+                },
+            };
+            await injectMatchState(matchId, { ...state, core, sys: { ...state.sys, matchId, turnOrder: [...core.playerIds], currentPlayerIndex: 0, gameover: null } }, host.page);
+            await host.page.locator('[data-tutorial-id="fantasyrealms-card-hand-army-elven-archers"]').click();
+            const panel = host.page.getByTestId('fantasyrealms-settlement');
+            await expect(panel).toContainText('二重身');
+            await captureSettlementChoice(host.page, testInfo, '终局二重身选择');
+            await expect(guest.page.getByTestId('fantasyrealms-settlement')).toContainText('等待');
+            await chooseSettlementCard(host.page, 'leader-king');
+            await expect(panel).toContainText('幻象');
+            await captureSettlementChoice(host.page, testInfo, '终局幻象选择');
+            await chooseSettlementCard(host.page, 'flood-swamp');
+            await expect(panel).toContainText('变形怪');
+            await chooseSettlementCard(host.page, 'leader-queen');
+            await expect(panel).toContainText('变化之书');
+            await captureSettlementChoice(host.page, testInfo, '终局变化之书选牌');
+            await chooseSettlementCard(host.page, 'flame-candle');
+            await expect(panel.locator('.fr-settlement-option--selected [data-atlas-card-id="flame-candle"]')).toBeVisible();
+            await host.page.mouse.move(0, 0);
+            await captureSettlementChoice(host.page, testInfo, '终局变化之书选花色');
+            await panel.getByRole('button', { name: '洪水', exact: true }).click();
+            await expect(panel).toContainText('生命之泉');
+            await captureSettlementChoice(host.page, testInfo, '终局生命之泉选择');
+            await chooseSettlementCard(host.page, 'flame-candle');
+            await expect(host.page.getByLabel('最终排名')).toBeVisible({ timeout: 20000 });
+            const finalState = await readFantasyRealmsMatchState(matchId, host.page);
+            const selections = finalState.core.settlement!.selections['0']!;
+            expect(selections).toMatchObject({ doppelgangerTargetId: 'leader-king', mirageTargetId: 'flood-swamp', shapeshifterTargetId: 'leader-queen', bookTargetId: 'flame-candle', bookSuit: '洪流', fountainTargetId: 'flame-candle' });
+            const expected = evaluateFantasyRealmsResolvedScore(finalState.core.players['0']!.hand, finalState.core.discardPile, selections, { playerCount: 3 });
+            expect(expected.cardDeltas.find((card) => card.cardId === 'flood-fountain-of-life')?.bonus).toBe(2);
+            expect((finalState.sys?.gameover as { scores?: Record<string, number> } | undefined)?.scores?.['0']).toBe(expected.totalScore);
+            await expect(guest.page.getByLabel('最终排名')).toBeVisible();
+        } finally {
+            await Promise.all(players.map((player) => player.context.close().catch(() => {})));
+        }
+    });
+
+    test('三人扩展局终局依次手动选灯灵、死灵术士与超限弃牌', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const match = await openOnlineFantasyRealmsMatch(browser, testInfo.project.use.baseURL as string | undefined, 3);
+        if (!match) throw new Error('Game server unavailable');
+        const { players, matchId } = match;
+        const [host, guest] = players;
+        const deck = createRuntimeDeck({ cursedHoardSuitsEnabled: true });
+        const byId = (id: string) => {
+            const card = deck.find((entry) => entry.id === id);
+            if (!card) throw new Error(`Missing expansion card ${id}`);
+            return { ...card };
+        };
+        try {
+            const state = await readFantasyRealmsMatchState(matchId, host.page);
+            const base = multiplayerTakeDiscardCore();
+            const hostIds = ['outsider-genie', 'outsider-leprechaun', 'wizard-necromancer-ch', 'undead-lich', 'flame-candle', 'army-rangers-ch', 'land-forest', 'beast-warhorse', 'weapon-magic-wand'];
+            const discardIds = ['undead-ghoul', 'army-light-cavalry', 'army-dwarvish-infantry', 'land-mountain', 'weather-blizzard', 'weather-rainstorm', 'beast-hydra', 'weapon-warship', 'flame-forge', 'building-dungeon', 'building-crypt'];
+            const used = new Set([...hostIds, ...discardIds, 'leader-queen', 'leader-princess']);
+            const excluded = new Set(['artifact-book-of-changes', 'flood-island', 'flood-fountain-of-life-ch', 'outsider-angel', 'outsider-leprechaun']);
+            const others = deck.filter((card) => !used.has(card.id) && !excluded.has(card.id) && card.suit !== '野牌').slice(0, 16);
+            expect(others).toHaveLength(16);
+            const core: FantasyRealmsCore = {
+                ...base,
+                setupConfig: { ...base.setupConfig, expansion: 'cursed-hoard-suits', cursedHoardSuitsEnabled: true },
+                currentPlayer: '0', stage: 'discard', drawPile: [byId('leader-princess'), byId('leader-queen')], discardPile: discardIds.map(byId),
+                players: {
+                    ...base.players,
+                    '0': { ...base.players['0']!, hand: hostIds.map(byId) },
+                    '1': { ...base.players['1']!, hand: [byId('outsider-angel'), ...others.slice(0, 7).map((card) => ({ ...card }))] },
+                    '2': { ...base.players['2']!, hand: others.slice(7, 15).map((card) => ({ ...card })) },
+                },
+            };
+            await injectMatchState(matchId, { ...state, core, sys: { ...state.sys, matchId, turnOrder: [...core.playerIds], currentPlayerIndex: 0, gameover: null } }, host.page);
+            await host.page.locator('[data-tutorial-id="fantasyrealms-card-hand-army-rangers-ch"]').click();
+            const panel = host.page.getByTestId('fantasyrealms-settlement');
+            await expect(panel).toContainText('灯灵');
+            await captureSettlementChoice(host.page, testInfo, '终局灯灵选择');
+            await expect(guest.page.getByTestId('fantasyrealms-settlement')).toContainText('等待');
+            const stableDiscard = host.page.locator('[data-tutorial-id="fantasyrealms-card-discard-weather-blizzard"]');
+            const beforeOverflow = await stableDiscard.boundingBox();
+            expect(beforeOverflow).not.toBeNull();
+            await expect.poll(async () => (await readFantasyRealmsCore(matchId, host.page)).players['0']!.hand.some((card) => card.id === 'leader-princess')).toBe(true);
+            await chooseSettlementCard(host.page, 'leader-queen');
+            await expect(panel).toContainText('超过九张');
+            await captureSettlementChoice(host.page, testInfo, '终局超限弃牌选择');
+            expect(getSettlementOptions(await readFantasyRealmsCore(matchId, host.page)).some((option) => option.choice.cardId === 'outsider-leprechaun')).toBe(false);
+            await expect(panel.locator('button:has([data-atlas-card-id="outsider-leprechaun"])')).toHaveCount(0);
+            await chooseSettlementCard(host.page, 'flame-candle');
+            await expect(panel).toContainText('死灵术士');
+            const afterOverflow = await stableDiscard.boundingBox();
+            expect(afterOverflow?.x).toBeCloseTo(beforeOverflow!.x, 0);
+            expect(afterOverflow?.y).toBeCloseTo(beforeOverflow!.y, 0);
+            await chooseSettlementCard(host.page, 'undead-ghoul');
+            await expect(panel).toContainText('超过九张');
+            const overflowOptions = getSettlementOptions(await readFantasyRealmsCore(matchId, host.page));
+            expect(overflowOptions.some((option) => ['outsider-genie', 'wizard-necromancer-ch'].includes(option.choice.cardId ?? ''))).toBe(false);
+            await expect(panel.locator('button:has([data-atlas-card-id="outsider-genie"])')).toHaveCount(0);
+            await expect(panel.locator('button:has([data-atlas-card-id="wizard-necromancer-ch"])')).toHaveCount(0);
+            await chooseSettlementCard(host.page, 'weapon-magic-wand');
+            const guestPanel = guest.page.getByTestId('fantasyrealms-settlement');
+            await expect(guestPanel).toContainText('天使');
+            await captureSettlementChoice(guest.page, testInfo, '终局天使选择');
+            await expect(panel).toContainText('等待');
+            await guestPanel.locator('button:has([data-atlas-card-id="outsider-angel"])').click();
+            await expect(host.page.getByLabel('最终排名')).toBeVisible({ timeout: 20000 });
+            const finalState = await readFantasyRealmsMatchState(matchId, host.page);
+            expect(finalState.core.players['0']!.hand).toHaveLength(9);
+            expect(finalState.core.players['0']!.hand.map((card) => card.id)).toEqual(expect.arrayContaining(['leader-princess', 'leader-queen', 'undead-ghoul']));
+            expect(finalState.core.discardPile.some((card) => card.id === 'flame-candle')).toBe(true);
+            expect(finalState.core.discardPile).toHaveLength(13);
+            expect(finalState.core.settlement?.selections['1']?.angelTargetId).toBe('outsider-angel');
+            await expect(host.page.getByTestId('fantasyrealms-live-topbar')).toContainText('13/12');
+            await expect(host.page.locator('[data-tutorial-id="fantasyrealms-card-discard-weapon-magic-wand"]')).toBeVisible();
+            await host.page.setViewportSize({ width: 1366, height: 768 });
+            const ranking = await host.page.getByTestId('fantasyrealms-live-endgame').boundingBox();
+            expect(ranking).not.toBeNull();
+            for (const card of await host.page.locator('.fr-card-button--live-center').all()) {
+                const box = await card.boundingBox();
+                if (box && ranking && box.y < ranking.y + ranking.height && box.y + box.height > ranking.y) {
+                    expect(box.x + box.width).toBeLessThanOrEqual(ranking.x - 8);
+                }
+            }
+            await expect(host.page.getByTestId('fantasyrealms-live-score-total')).toHaveAttribute('data-score-running', 'false', { timeout: 20000 });
+            const evidencePath = getEvidenceScreenshotPath(testInfo, '扩展终局13张公开牌1366x768');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await host.page.screenshot({ path: evidencePath, fullPage: false });
+            const expected = evaluateFantasyRealmsResolvedScore(finalState.core.players['0']!.hand, finalState.core.discardPile, finalState.core.settlement!.selections['0']!, { playerCount: 3, setupConfig: core.setupConfig });
+            expect((finalState.sys?.gameover as { scores?: Record<string, number> } | undefined)?.scores?.['0']).toBe(expected.totalScore);
+            await expect(host.page.getByTestId('fantasyrealms-live-score-total')).toHaveText(String(expected.totalScore));
+            await expect(guest.page.getByLabel('最终排名')).toBeVisible();
         } finally {
             await Promise.all(players.map((player) => player.context.close().catch(() => {})));
         }

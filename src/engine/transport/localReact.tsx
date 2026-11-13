@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { GameEngineConfig } from './engineConfig';
 import type { AiSeatController } from '../ai/types';
 import type { LocalMatchSnapshot } from './localSession';
+import { useGameMode } from '../../contexts/GameModeContext';
 import { useLocalGameProviderRuntime } from './useLocalGameProviderRuntime';
 import { GameClientContext } from './reactContext';
 
@@ -47,12 +48,14 @@ export function LocalGameProvider({
     persistGameId,
     shouldRestorePersistedSession,
 }: LocalGameProviderProps) {
+    const gameMode = useGameMode()?.mode ?? 'local';
     const value = useLocalGameProviderRuntime({
         config,
         numPlayers,
         seed,
         randomSeed,
         setupData,
+        setupContext: { mode: gameMode },
         onCommandRejected,
         seatControllers,
         playerNames,

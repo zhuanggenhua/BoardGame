@@ -1,4 +1,4 @@
-import type { DomainCore, PlayerId, RandomFn } from '../../../engine/types';
+import type { DomainCore, DomainSetupContext, PlayerId, RandomFn } from '../../../engine/types';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { SPLENDOR_NOBLE_DEFS } from './data';
@@ -17,8 +17,8 @@ function getGameMode(): string | undefined {
 export const SplendorDomain: DomainCore<SplendorCore, SplendorCommand, SplendorEvent> = {
     gameId: 'splendor',
 
-    setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown): SplendorCore => {
-        const mode = getGameMode();
+    setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown, context?: DomainSetupContext): SplendorCore => {
+        const mode = context?.mode ?? getGameMode();
         const autoStarted = mode === 'local' || mode === 'tutorial';
         const configuredStartingPlayer = (setupData as SplendorSetupData | undefined)?.startingPlayerId;
         const startingPlayerId = (typeof configuredStartingPlayer === 'string' && playerIds.includes(configuredStartingPlayer as PlayerId))

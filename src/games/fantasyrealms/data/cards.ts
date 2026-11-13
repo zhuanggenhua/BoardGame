@@ -217,7 +217,7 @@ const RAW_OFFICIAL_FANTASY_REALMS_CARDS = [
     { id: 'land-garden', suit: '土地', toneClass: 'fr-suit-land', name: 'Garden', score: 11, text: 'Bonus: +11 for each Leader and Beast; blanked by Undead, Necromancer, or Demon.' },
     { id: 'outsider-genie', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Genie', score: -50, text: 'Bonus: +10 per other player. At the end of the game, after Leprechaun, choose a card from the draw deck and add it to your hand.', extraCard: true },
     { id: 'outsider-judge', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Judge', score: 11, text: 'Bonus: +10 for each card with an active penalty.' },
-    { id: 'outsider-angel', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Angel', score: 16, text: 'Bonus: Prevent one other card from being blanked. Angel cannot be blanked.' },
+    { id: 'outsider-angel', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Angel', score: 16, text: 'Bonus: Prevent one card from being blanked. Angel cannot be blanked.' },
     { id: 'outsider-leprechaun', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Leprechaun', score: 20, text: 'Bonus: At the end of the game, before Genie, draw the top card of the draw deck into your hand.', extraCard: true },
     { id: 'outsider-demon', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Demon', score: 45, text: 'Blanks any non-Outsider card that is the only card of its suit.' },
     { id: 'undead-dark-queen', suit: '不死族', toneClass: 'fr-suit-undead', name: 'Dark Queen', score: 10, text: 'Bonus: +5 for each Land, Flood, Flame, and Weather card in discard; +5 more if Unicorn is in discard.' },
@@ -231,8 +231,8 @@ const RAW_OFFICIAL_FANTASY_REALMS_CARDS = [
     { id: 'army-rangers-ch', suit: '军队', toneClass: 'fr-suit-army', name: 'Rangers', score: 5, text: 'Bonus: +10 for each Land and Building; clears the word Army from all Penalties.', replacesBaseCardId: 'army-rangers' },
     { id: 'wizard-necromancer-ch', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Necromancer', score: 3, text: 'Bonus: At the end of the game, you may take one Army, Leader, Wizard, Beast, or Undead from the discard area and add it to your hand. Your Undead cannot be blanked.', extraCard: true, replacesBaseCardId: 'wizard-necromancer' },
     { id: 'artifact-world-tree-ch', suit: '神器', toneClass: 'fr-suit-artifact', name: 'World Tree', score: 2, text: 'Bonus: +70 if every active card in hand is a different suit.', replacesBaseCardId: 'artifact-world-tree' },
-    { id: 'wild-shapeshifter-ch', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Shapeshifter', score: 0, text: 'May take on the name and suit of any Artifact, Leader, Wizard, Weapon, Beast, or Undead. Does not take bonus or penalty.', replacesBaseCardId: 'wild-shapeshifter' },
-    { id: 'wild-mirage-ch', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Mirage', score: 0, text: 'May take on the name and suit of any Army, Building, Land, Weather, Flood, or Flame. Does not take bonus or penalty.', replacesBaseCardId: 'wild-mirage' },
+    { id: 'wild-shapeshifter-ch', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Shapeshifter', score: 0, text: 'May take on the name and suit of any Artifact, Leader, Wizard, Weapon, Beast, or Undead. Does not take base strength, bonus or penalty.', replacesBaseCardId: 'wild-shapeshifter' },
+    { id: 'wild-mirage-ch', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Mirage', score: 0, text: 'May take on the name and suit of any Army, Building, Land, Weather, Flood, or Flame. Does not take base strength, bonus or penalty.', replacesBaseCardId: 'wild-mirage' },
 ] as const;
 
 export const ALL_FANTASY_REALMS_CARDS = RAW_OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({

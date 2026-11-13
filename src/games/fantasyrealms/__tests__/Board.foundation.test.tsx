@@ -8,7 +8,7 @@ import { playSound } from '../../../lib/audio/useGameAudio';
 import { TutorialProvider } from '../../../contexts/TutorialContext';
 import { GameModeProvider, type GameMode } from '../../../contexts/GameModeContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
-import Board from '../Board';
+import Board, { buildMinimalLiveCenterSlots } from '../Board';
 import { ENDGAME_SCORE_STEP_KEY } from '../audio.config';
 import { FANTASY_REALMS_AUDIO_EVENT_KEYS } from '../domain/events';
 import type { FantasyRealmsCore } from '../domain';
@@ -532,6 +532,48 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-live-center-exit-card')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-center-selection-notice-badge')).not.toBeInTheDocument();
         });
+    });
+
+    it('取牌动画未结束就弃另一张牌时，取来的牌不会一直隐藏', async () => {
+        const taken = PUBLIC_CARDS[0]!;
+        const discarded = HAND_CARDS[0]!;
+        const base = makeCore({ stage: 'draw', discardPile: [{ ...taken }] });
+        const view = renderBoard(base);
+        const afterTake: FantasyRealmsCore = {
+            ...base, stage: 'discard', discardPile: [],
+            players: { ...base.players, '0': { ...base.players['0']!, hand: [...base.players['0']!.hand, { ...taken }] } },
+        };
+        const renderState = (core: FantasyRealmsCore) => <Board G={{ core, sys: {} } as MatchState<Record<string, unknown>>} dispatch={() => {}} playerID="0" isConnected />;
+        view.rerender(renderState(afterTake));
+        await waitFor(() => expect(screen.getByTestId('fantasyrealms-live-center-exit-card')).toBeInTheDocument());
+        expect(document.querySelector(`[data-tutorial-id="fantasyrealms-card-hand-${taken.id}"]`)).not.toBeVisible();
+        view.rerender(renderState({
+            ...afterTake, stage: 'draw', currentPlayer: '1', turn: afterTake.turn + 1,
+            discardPile: [{ ...discarded }],
+            players: { ...afterTake.players, '0': { ...afterTake.players['0']!, hand: afterTake.players['0']!.hand.filter((card) => card.id !== discarded.id) } },
+        }));
+        await waitFor(() => expect(document.querySelector(`[data-tutorial-id="fantasyrealms-card-hand-${taken.id}"]`)).toBeVisible());
+    });
+
+    it('减少动态时取牌直接落入手牌，不依赖动画结束事件', () => {
+        const originalMatchMedia = window.matchMedia;
+        window.matchMedia = vi.fn().mockImplementation(() => ({ matches: true })) as typeof window.matchMedia;
+        try {
+            const taken = PUBLIC_CARDS[0]!;
+            const base = makeCore({ stage: 'draw', discardPile: [{ ...taken }] });
+            const view = renderBoard(base);
+            const next = {
+                ...base,
+                stage: 'discard' as const,
+                discardPile: [],
+                players: { ...base.players, '0': { ...base.players['0']!, hand: [...base.players['0']!.hand, { ...taken }] } },
+            };
+            view.rerender(<Board G={{ core: next, sys: {} } as MatchState<Record<string, unknown>>} dispatch={() => {}} playerID="0" isConnected />);
+            expect(screen.queryByTestId('fantasyrealms-live-center-exit-card')).not.toBeInTheDocument();
+            expect(document.querySelector(`[data-tutorial-id="fantasyrealms-card-hand-${taken.id}"]`)).toBeVisible();
+        } finally {
+            window.matchMedia = originalMatchMedia;
+        }
     });
 
     it('其他玩家从中央弃牌拿走卡牌时，也会显示拿牌者并保留离场动画', async () => {
@@ -1775,9 +1817,9 @@ describe('FantasyRealms Board foundation', () => {
                 playerIds: ['0', '1'],
                 setupConfig: {
                     variant: 'duel',
-                    expansion: 'cursedHoardSuits',
+                    expansion: 'cursed-hoard-suits',
                     cursedHoardSuitsEnabled: true,
-                } as any,
+                },
                 discardPile: sourceCards,
             }));
 
@@ -1794,6 +1836,24 @@ describe('FantasyRealms Board foundation', () => {
             expect(secondRowButtons.every((button) => button.style.top === 'var(--fr-live-center-second-row-top)')).toBe(true);
             expect(Math.abs((topRowPositions[1]!.left - topRowPositions[0]!.left) - (topRowPositions[2]!.left - topRowPositions[1]!.left))).toBeLessThanOrEqual(2);
             expect(Math.abs((secondRowPositions[1]!.left - secondRowPositions[0]!.left) - (secondRowPositions[2]!.left - secondRowPositions[1]!.left))).toBeLessThanOrEqual(2);
+        });
+    });
+
+    it('终局额外取牌后超限弃牌使公开区超过阈值时，新增牌仍有独立槽位', () => {
+        withViewport(1440, 1024, () => {
+            const cards = HAND_CARDS.concat(PUBLIC_CARDS, HAND_CARDS).slice(0, 15)
+                .map((card, index) => ({ ...card, id: `${card.id}-overflow-${index}`, discardSlot: index }));
+            renderBoard(makeCore({
+                setupConfig: { variant: 'duel', expansion: 'cursed-hoard-suits', cursedHoardSuitsEnabled: true },
+                discardPile: cards,
+            }));
+            const buttons = screen.getAllByRole('button', { name: /拿取弃牌/ });
+            expect(buttons).toHaveLength(15);
+            const slots = buildMinimalLiveCenterSlots(cards, 15, 14);
+            expect(slots).toHaveLength(15);
+            expect(new Set(slots.map((slot) => `${slot.style.left}:${slot.style.top}`)).size).toBe(15);
+            const beforeOverflow = buildMinimalLiveCenterSlots(cards.slice(0, 14), 14, 14);
+            expect(slots.slice(0, 14).map((slot) => [slot.style.left, slot.style.top])).toEqual(beforeOverflow.map((slot) => [slot.style.left, slot.style.top]));
         });
     });
 

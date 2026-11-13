@@ -235,6 +235,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     // 状态效果选择模式
     // 玩家选择模式（选择目标玩家：授予 token / 移除所有状态等）
     const isPlayerSelection = interactionType === 'selectPlayer';
+    const compactSinglePlayerChoice = isDoctorStrangeInteraction && isPlayerSelection && targetPlayerIds.length === 1;
     // 卡牌选择模式（由持有者从手牌或抽牌堆自行选择）
     const isHandCardSelection = interactionType === 'selectHandCard';
     const isDeckCardSelection = interactionType === 'selectDeckCard';
@@ -604,8 +605,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     )}
                 </div>
             }
-            width={compactSingleStatusHolder ? 'sm' : compactWatoombStatusHolders ? 'lg' : 'xl'}
-            density={compactSingleStatusHolder || compactWatoombStatusHolders ? 'compact' : 'normal'}
+            width={compactSingleStatusHolder || compactSinglePlayerChoice ? 'sm' : compactWatoombStatusHolders ? 'lg' : 'xl'}
+            density={compactSingleStatusHolder || compactSinglePlayerChoice || compactWatoombStatusHolders ? 'compact' : 'normal'}
             closeOnBackdrop={false} // Force interaction
             allowBackgroundInteraction={allowBackgroundInteraction}
             footer={

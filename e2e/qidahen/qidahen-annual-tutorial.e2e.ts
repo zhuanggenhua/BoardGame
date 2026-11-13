@@ -96,6 +96,7 @@ async function probeDiplomacyCandidates(page: Page, ids: string[], selectId?: st
     for (let attempt = 0; attempt < 20; attempt++) {
         const currentView = await view();
         const dx = initialView.x - currentView.x, dy = initialView.y - currentView.y;
+        console.info('DIPLOMACY_VIEW_RECOVERY', JSON.stringify({ attempt, initialView, currentView, dx, dy }));
         if (Math.abs(dx) < 2 && Math.abs(dy) < 2) break;
         await dragQidahenMap(page, Math.max(-200, Math.min(200, dx)), Math.max(-150, Math.min(150, dy)));
     }
@@ -414,6 +415,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             let farmDone = false;
             let reclaimDone = false;
             let openingHandStage = 0;
+            let calloutBranchDone = false;
             const capturedUpkeepRegions = new Set<string>();
             const capturedPracticeStates = new Set<string>();
             page.on('request', request => pendingRequests.add(request.url()));
@@ -435,11 +437,12 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             const saveBlobDiagnostics = await trackQidahenBlobUrls(page, resolve(dir, 'blob-url-diagnostics.json'));
             moduleMark('blob');
             writeFileSync(resolve(dir, 'browser-renderer.json'), JSON.stringify(rendererInfo.gpu, null, 2));
-            const trace: { gameId: string; evidenceCategory: string; sourceRun: string; status: string; steps: object[]; uiStates: object[]; sourceIdentity?: object; captureContract?: object; chainId: string; sourceRevision: string; browserContextId: string; outcome?: object } = {
+            const trace: { gameId: string; evidenceCategory: string; sourceRun: string; status: string; steps: object[]; uiStates: object[]; sourceIdentity?: object; captureContract?: object; chainId: string; sourceRevision: string; browserContextId: string; outcome?: string; outcomeDetails?: object } = {
                 gameId: 'qidahen', evidenceCategory: 'tutorial', sourceRun: runId, status: 'RUNNING', steps: [], uiStates: [],
                 chainId: `qidahen-annual-${viewport.name}`, sourceRevision: `annual-revision-${QIDAHEN_ANNUAL_TUTORIAL.revision}`, browserContextId: `${runId}:${viewport.name}`,
             };
             const uiAssertions = new Map<string, ReturnType<typeof assertEqual>[]>();
+            let behaviorInstance = '';
             const capture = async (id: string, suffix = '', behaviorStepId = id) => {
                 progress = `capture:${id}${suffix}`;
                 await waitForQidahenVisualReady(page);
@@ -759,7 +762,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     ]);
                     writeFileSync(path, Buffer.from(pixels.data, 'base64'));
                 } finally { if (screenshotTimer) clearTimeout(screenshotTimer); }
-                trace.uiStates.push({ id: `${id}${suffix}`, stepId: behaviorStepId, path, viewport: viewport.name, sha256: createHash('sha256').update(readFileSync(path)).digest('hex') });
+                const change = await page.evaluate(() => document.querySelector('[data-pending-committed-selected="true"], [data-qidahen-hand-card-selected="true"]') ? 'interaction-mode' : 'panel');
+                trace.uiStates.push({ id: `${id}${suffix}`, stepId: behaviorInstance || behaviorStepId, tutorialStepId: behaviorStepId, change, path, viewport: viewport.name, sha256: createHash('sha256').update(readFileSync(path)).digest('hex') });
             };
             const browseHand = async () => {
                 const selected = () => page.locator('[data-qidahen-hand-card-selected="true"]').evaluateAll(elements => elements.map(element => element.getAttribute('data-testid')).sort());
@@ -813,6 +817,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         await expect.poll(() => stepId(page), { timeout: 60_000 }).not.toBe(step.id);
                         continue;
                     }
+                    behaviorInstance = `${step.id}#${guard + 1}`;
                     progress = step.id;
                     console.info('ANNUAL_STEP', step.id);
                     if (step.id === 'training-recruit-target') {
@@ -873,6 +878,49 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         else throw new Error(`Unknown diplomacy prompt: ${step.content}`);
                         expect(valid).toContain(dynamicTargets[0]);
                     }
+                    if (viewport.name === 'desktop' && !calloutBranchDone && step.id === 'opening-farm-cycle'
+                        && step.content.endsWith('reclaim-target-dynamic')) {
+                        // 真实存档克隆到独立浏览器，备选地区结算不改写主线对局。
+                        await expect.poll(async () => {
+                            const status = await readQidahenTutorialProgressStatus(page);
+                            return status.savedCoreHash === status.liveCoreHash && status.savedCoreHash !== '';
+                        }, { timeout: 60_000 }).toBe(true);
+                        const mainBefore = await read(page);
+                        const branchContext = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, storageState: await page.context().storageState() });
+                        try {
+                            const branch = await branchContext.newPage();
+                            await branch.addInitScript(() => { (window as any).__E2E_TEST_MODE__ = true; });
+                            const branchIdentity = trackQidahenSourceIdentity(branch, 'e2e/qidahen/qidahen-annual-tutorial.e2e.ts', ['e2e/qidahen/sourceIdentity.ts'], [
+                                ...QIDAHEN_VISUAL_SOURCE_PATHS, 'src/games/qidahen/Board.tsx', 'src/games/qidahen/annualTutorial.ts',
+                                'src/games/qidahen/annualFarmTutorial.ts', 'src/engine/systems/TutorialSystem.ts', 'public/locales/zh-CN/game-qidahen.json',
+                            ]);
+                            await branch.goto(page.url(), { waitUntil: 'domcontentloaded' });
+                            await branch.getByRole('button', { name: '从上次继续', exact: true }).click({ timeout: 90_000 });
+                            await branch.waitForFunction(() => Boolean((window as any).__BG_TEST_HARNESS__?.state), null, { timeout: 90_000 });
+                            await expect.poll(async () => (await read(branch)).tutorial.step?.content, { timeout: 90_000 }).toContain('reclaim-target-dynamic');
+                            const branchBefore = await read(branch);
+                            expect(branchBefore.core).toEqual(mainBefore.core);
+                            const tokenId = 'city-region-19-liaoxi-army-ming-post-sarhu-1619-liaoxi-regular-infantry-lv1__compat__1';
+                            await expect(branch.getByTestId(`qidahen-army-callout-${tokenId}`)).toBeAttached();
+                            const token = branch.getByTestId(`qidahen-map-token-${tokenId}`);
+                            await expect(token).toHaveAttribute('data-qidahen-map-region-choice', 'true');
+                            await token.click();
+                            await expect(branch.getByTestId('qidahen-turn-confirm')).toBeEnabled();
+                            await waitForQidahenVisualReady(branch);
+                            const path = resolve(dir, `${String(trace.uiStates.length).padStart(2, '0')}-callout-region-choice.png`);
+                            await branch.screenshot({ path });
+                            // 保留切换步骤前 worker 的响应体，避免页面状态转换后请求上下文销毁。
+                            await branchIdentity.flush();
+                            await branch.getByTestId('qidahen-turn-confirm').click();
+                            const liaoxiPopulation = (snapshot: Snapshot) => snapshot.core.regions.find(item => item.id === 'city-region-19-liaoxi')!.population;
+                            await expect.poll(async () => liaoxiPopulation(await read(branch)) - liaoxiPopulation(branchBefore), { timeout: 30_000 }).toBe(1);
+                            const identity = requireCompleteQidahenSourceIdentity(await branchIdentity());
+                            writeFileSync(resolve(dir, 'callout-branch-source-identity.json'), JSON.stringify(identity, null, 2));
+                            trace.uiStates.push({ id: 'callout-region-choice', stepId: behaviorInstance, tutorialStepId: step.id, change: 'interaction-mode', path, viewport: viewport.name, sha256: createHash('sha256').update(readFileSync(path)).digest('hex'), provenance: 'natural-checkpoint-independent-context' });
+                            expect((await read(page)).core).toEqual(mainBefore.core);
+                            calloutBranchDone = true;
+                        } finally { await branchContext.close(); }
+                    }
                     const beforeVisible = await page.locator('body').innerText();
                     if (step.id === 'new-order' || step.id === 'year-character') {
                         await expect(page.getByTestId('qidahen-player-float')).toContainText('本年先手');
@@ -908,6 +956,11 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         if (captureId) await capture(captureId, '', step.id);
                     }
                     const practice = step.id === 'training-practice' ? before.core.wheelRecruitTrainProgress : null;
+                    if (viewport.name === 'desktop' && (step.id === 'opening-farm-cycle' || practice?.phase === 'choose-recruit-target')) {
+                        const callouts = await page.locator('[data-testid^="qidahen-army-callout-"]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testid')));
+                        const selectable = await page.locator('[data-qidahen-map-region-choice="true"]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-testid')));
+                        if (callouts.length || selectable.length) console.info('REGION_CALLOUT_CANDIDATES', JSON.stringify({ step: step.id, phase: practice?.phase, callouts, selectable }));
+                    }
                     const practiceCaptureId = practice?.phase === 'choose-action' && practice.actionsCompleted === 0 ? 'training-kind'
                         : practice?.phase === 'choose-training-target' && practice.actionsCompleted === 0 ? 'training-target'
                         : practice?.phase === 'choose-training-target' && practice.actionsCompleted === 1 ? 'training-second-target'
@@ -1082,8 +1135,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         expect(battleLayout.distance, 'dice stay next to the actual battlefield').toBeLessThanOrEqual(24);
                         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toBeHidden({ timeout: 90_000 });
                         const recording = await finishBattleRecording!();
-                        for (const picture of recording.pictures) trace.uiStates.push({ ...picture, stepId: step.id, viewport: viewport.name, sha256: createHash('sha256').update(readFileSync(picture.path)).digest('hex') });
-                        trace.uiStates.push({ id: 'battle-real-time', stepId: step.id, path: recording.video, viewport: viewport.name,
+                        for (const picture of recording.pictures) trace.uiStates.push({ ...picture, stepId: behaviorInstance, tutorialStepId: step.id, change: 'animation-phase', viewport: viewport.name, sha256: createHash('sha256').update(readFileSync(picture.path)).digest('hex') });
+                        trace.uiStates.push({ id: 'battle-real-time', stepId: behaviorInstance, tutorialStepId: step.id, change: 'animation-phase', path: recording.video, viewport: viewport.name,
                             frameCount: recording.frameCount, durationSeconds: recording.durationSeconds, sha256: createHash('sha256').update(readFileSync(recording.video)).digest('hex') });
                     }
                     const dynamicPayment = step.id.startsWith('season-upkeep-player-') || step.id === 'season-chronology-payment' || step.id === 'diplomacy-cycle';
@@ -1095,7 +1148,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         { timeout: 60_000, message: `${step.id} must advance its formal payment interaction` }).not.toEqual({ step: step.id, interaction: before.interaction?.id });
                     else await expect.poll(() => stepId(page), { timeout: 60_000, message: `${step.id} should advance through its real event` }).not.toBe(step.id);
                     const after = await read(page);
-                    trace.steps.push({ id: step.id, action: step.infoStep ? 'manual-next' : dynamicCommand, targetIds: dynamicTargets,
+                    trace.steps.push({ id: behaviorInstance, tutorialStepId: step.id, action: step.infoStep ? 'manual-next' : dynamicCommand, targetIds: dynamicTargets,
                         before: { visible: { text: beforeVisible }, authoritative: summarize(before) },
                         after: { visible: { text: await page.locator('body').innerText() }, authoritative: summarize(after) },
                         assertions: [assertEqual('formal-event-advanced-input', after.tutorial.step?.id !== step.id || dynamicPayment && after.interaction?.id !== before.interaction?.id || step.id === 'opening-farm-cycle' && (after.interaction?.id !== before.interaction?.id || JSON.stringify(after.core) !== JSON.stringify(before.core)) || step.id === 'training-practice' && JSON.stringify(after.core.wheelRecruitTrainProgress) !== JSON.stringify(before.core.wheelRecruitTrainProgress), true), ...assertOutcome(step.id, before, after), ...(uiAssertions.get(step.id) ?? [])],
@@ -1108,7 +1161,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 expect(final.core.chronology.claimedCardIds.ming).toEqual([1301]);
                 expect(final.core.regions.find(region => region.id === 'city-region-7')?.controller).toBe('ming');
                 expect(final.core.pieces.find(piece => piece.id === 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1')?.level).toBe(2);
-                const played = trace.steps.filter(step => 'id' in step && step.id !== 'farm-alternative-checkpoint').map(step => 'id' in step ? step.id : undefined);
+                const played = trace.steps.filter(step => 'tutorialStepId' in step && step.tutorialStepId !== 'farm-alternative-checkpoint').map(step => 'tutorialStepId' in step ? step.tutorialStepId : undefined);
                 const indices = played.map(id => QIDAHEN_ANNUAL_TUTORIAL.steps.findIndex(step => step.id === id));
                 expect(indices.every((index, i) => index >= 0 && (i === 0 || index >= indices[i - 1])), '真实节点按课程顺序进行，同一动态步骤可分次支付').toBe(true);
                 await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
@@ -1118,6 +1171,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 await expect(page.getByTestId('qidahen-turn-choice')).toHaveCount(0);
                 if (viewport.name === 'desktop') {
                     const continued = await read(page);
+                    behaviorInstance = 'post-tutorial-continue';
                     trace.steps.push({ id: 'post-tutorial-continue', action: 'wheel-move-1-free',
                         before: { visible: { text: beforeContinueText }, authoritative: summarize(final) },
                         after: { visible: { text: await page.locator('body').innerText() }, authoritative: summarize(continued) },
@@ -1135,7 +1189,8 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 }
                 expect(readFileSync(captureContractPath).equals(captureContractBytes), 'capture contract changed during run').toBe(true);
                 trace.captureContract = { path: captureContractPath, sha256: createHash('sha256').update(captureContractBytes).digest('hex') };
-                trace.outcome = { tutorialActive: final.tutorial.active, year: final.core.currentYearIndex, claimed: final.core.chronology.claimedCardIds.ming, nextInputAccepted: true };
+                trace.outcome = '完成年度教程并在同局接受下一次轮盘输入';
+                trace.outcomeDetails = { tutorialActive: final.tutorial.active, year: final.core.currentYearIndex, claimed: final.core.chronology.claimedCardIds.ming, nextInputAccepted: true };
                 trace.status = 'PASS';
             } catch (error) {
                 trace.status = 'FAIL';

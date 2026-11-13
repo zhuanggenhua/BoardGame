@@ -6,6 +6,7 @@ import { DiceThroneDomain } from '../domain';
 import { reduce } from '../domain/reducer';
 import { getCustomActionHandler, type CustomActionContext } from '../domain/effects';
 import { getChoiceResolvedEventHandler } from '../domain/choiceResolvedEvents';
+import { getBonusDiceSettlementHandler } from '../domain/bonusDiceSettlement';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from '../domain/passiveAbility';
 import { getMjolnirHolder, collectThorCompanionFollowups } from '../domain/customActions/thor';
 import { isRemovableStatusId, isTransferableStatusId } from '../domain/statusRemoval';
@@ -72,6 +73,29 @@ describe('索尔独一同伴与状态授权', () => {
         const request = action(state, 'thor-hammer-moves', { count: 1 });
         const choice = request.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choice?.type === 'CHOICE_REQUESTED' && choice.payload.options.map(option => option.targetPlayerId)).toEqual(['1', '2']);
+    });
+
+    it('多人奥丁飞掷目标选择完成后才结算头盔和雷电奖励', () => {
+        let state = scene().core;
+        state.players['2'] = structuredClone(state.players['1']);
+        state.seatingOrder = ['0', '1', '2'];
+        const request = action(state, 'thor-odinforce-roll', { count: 5 }).find(event => event.type === 'BONUS_DICE_REROLL_REQUESTED');
+        if (!request || request.type !== 'BONUS_DICE_REROLL_REQUESTED') throw new Error('缺少奥丁效果骰');
+        request.payload.settlement.dice = [1, 1, 4, 4, 6].map((value, index) => ({
+            index, value, face: value === 1 ? FACE.HAMMER : value === 4 ? FACE.WORTHY : FACE.THUNDER,
+            effectKey: 'bonusDie.effect.thor.die',
+        }));
+        const result = getBonusDiceSettlementHandler('thor-odinforce-settle')!({ state, settlement: request.payload.settlement, timestamp: 2, random: fixedRandom });
+        const events = result?.followupEvents ?? [];
+        expect(events.some(event => event.type === 'CHOICE_REQUESTED')).toBe(true);
+        state = apply(state, events);
+        expect(state.players['0'].resources[RESOURCE.CP]).toBe(2);
+        expect(state.players['0'].tokens[TOKEN.ELECTROKINESIS] ?? 0).toBe(0);
+        state = choose(state, 'thor-mjolnir-move', 1);
+        expect(state.players['1'].resources[RESOURCE.HP]).toBe(49);
+        expect(state.players['0'].resources[RESOURCE.CP]).toBe(3);
+        expect(state.players['0'].tokens[TOKEN.ELECTROKINESIS]).toBe(1);
+        expect(getMjolnirHolder(state)).toBe('1');
     });
 
     it('多人局连锁闪电仍要求从多个附属伤害目标中选择', () => {

@@ -1282,6 +1282,30 @@ describe('Feedback Module (e2e)', () => {
             .expect(200);
         expect(privateReplayResponse.body.privateReplay).toBe(privateReplay);
     });
+    it('客户端异常只保留正式构建资源指纹和行列，写入与读取均不保留原始 URL 或堆栈', async () => {
+        const { adminToken } = await seedUsers();
+        const response = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                content: '[auto][window.error] error', source: 'client-window-error', type: 'bug', severity: 'high',
+                errorContext: { name: 'TypeError', source: 'https://easyboardgame.top/assets/index-AbCd1234.js:12:345', stack: 'private-stack-canary' },
+            }).expect(201);
+        expect(response.body.errorContext.location).toEqual({ bundle: 'AbCd1234', line: 12, column: 345 });
+        const stored = await feedbackModel.findById(response.body._id).lean();
+        expect(JSON.stringify(stored)).not.toContain('private-stack-canary');
+        expect(JSON.stringify(stored)).not.toContain('easyboardgame.top/assets');
+        const detail = await request(app.getHttpServer())
+            .get('/admin-api/feedback/' + response.body._id)
+            .set('Authorization', 'Bearer ' + adminToken).expect(200);
+        expect(detail.body.errorContext.location).toEqual({ bundle: 'AbCd1234', line: 12, column: 345 });
+        const list = await request(app.getHttpServer())
+            .get('/admin-api/feedback?limit=20')
+            .set('Authorization', 'Bearer ' + adminToken).expect(200);
+        expect(list.body.items.find((item: { _id: string }) => item._id === response.body._id).errorContext.location)
+            .toEqual({ bundle: 'AbCd1234', line: 12, column: 345 });
+    });
+
     it('普通反馈和系统反馈写入时都把兼容诊断字段投影为安全摘要', async () => {
         const { userToken } = await seedUsers();
         const canary = 'write-path-private-option-canary';

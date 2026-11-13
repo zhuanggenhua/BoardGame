@@ -3,6 +3,7 @@
  */
 
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { InteractionDescriptor as EngineInteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import { commitEventWithTimingOpportunities } from '../../../engine/TimingOpportunity';
 import { registerDiceDefinition } from './diceRegistry';
 import { doctorStrangeDiceDefinition } from '../heroes/doctor_strange/diceConfig';
@@ -372,13 +373,37 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
 
 function normalizeLegacyDiceThroneMatchState(state: MatchState<DiceThroneCore>): MatchState<DiceThroneCore> {
     const normalizedCore = normalizeLegacyDiceThroneCoreState(state.core, state.sys.eventStream?.entries);
-    if (normalizedCore === state.core) {
+    const interaction = state.sys.interaction;
+    const current = normalizeLegacyRerollInteraction(interaction?.current);
+    const queue = interaction?.queue.map(item => normalizeLegacyRerollInteraction(item)!);
+    const interactionChanged = current !== interaction?.current
+        || Boolean(queue?.some((item, index) => item !== interaction?.queue[index]));
+    if (normalizedCore === state.core && !interactionChanged) {
         return state;
     }
     return {
         ...state,
         core: normalizedCore,
+        sys: interactionChanged && interaction ? {
+            ...state.sys,
+            interaction: { ...interaction, current, queue: queue! },
+        } : state.sys,
     };
+}
+
+/** 旧版正式选骰交互只有重投语义，存档中尚无 selectionMode。 */
+function normalizeLegacyRerollInteraction(interaction?: EngineInteractionDescriptor): EngineInteractionDescriptor | undefined {
+    if (!interaction || interaction.kind !== 'multistep-choice' || !interaction.id.startsWith('dt-dice-select-')) return interaction;
+    const data = interaction.data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return interaction;
+    const record = data as Record<string, unknown>;
+    const meta = record.meta;
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return interaction;
+    const fields = meta as Record<string, unknown>;
+    if (fields.dtType !== 'selectDie' || fields.selectionMode !== undefined
+        || typeof fields.skipAbilityReselection !== 'boolean'
+        || typeof fields.targetOpponentDice !== 'boolean') return interaction;
+    return { ...interaction, data: { ...record, meta: { ...fields, selectionMode: 'reroll' } } };
 }
 
 type LegacyCompanionEvent = {

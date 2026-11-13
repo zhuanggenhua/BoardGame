@@ -87,6 +87,7 @@ function finishHammerMoves(ctx: Source, params: Params): DiceThroneEvent[] {
     const total = Math.min(getTokenStackLimit(ctx.state, ctx.attackerId, TOKEN.ELECTROKINESIS), oldElectro + electro);
     return [
         ...grant(ctx, TOKEN.GUARD_BREAK, Number(params.guardBreak ?? 0)),
+        ...cp(ctx, Number(params.cp ?? 0)),
         ...grant(ctx, TOKEN.ELECTROKINESIS, electro),
         ...(params.electrokinesisDamage ? bonus(ctx, total) : []),
         event('THOR_MJOLNIR_RESOLVED', { playerId: ctx.attackerId, sourceAbilityId: ctx.sourceAbilityId }, ctx.timestamp),
@@ -100,9 +101,12 @@ function hammerChoice(ctx: Source, params: Params): DiceThroneEvent[] {
     const destinations = holder === ctx.attackerId ? getOpponents(ctx.state, ctx.attackerId) : [ctx.attackerId];
     const options: ChoiceRequestedEvent['payload']['options'] = destinations.map(targetId => ({
         value: Object.keys(ctx.state.players).indexOf(targetId), customId: 'thor-mjolnir-move',
-        labelKey: holder === ctx.attackerId ? 'choices.thor.throwTo' : 'choices.thor.retrieve', ...targetPresentation(ctx.state, targetId),
+        labelKey: holder === ctx.attackerId ? 'choices.thor.throwTo' : 'choices.thor.retrieve',
+        ...(holder === ctx.attackerId ? { choiceKind: 'player' as const } : {}),
+        ...targetPresentation(ctx.state, targetId),
     }));
-    if (params.optional) options.push({ value: -1, customId: 'thor-mjolnir-move', labelKey: 'choices.thor.stop', labelParams: { player: '' } });
+    if (params.optional) options.push({ value: -1, customId: 'thor-mjolnir-move', labelKey: 'choices.thor.stop', labelParams: { player: '' },
+        ...(holder === ctx.attackerId ? { choiceKind: 'skip' as const } : {}) });
     if (options.length === 0) return finishHammerMoves(ctx, params);
     if (destinations.length === 1 && !params.optional) {
         return resolveHammerMove(ctx, { ...params, count }, destinations[0]);
@@ -203,13 +207,10 @@ export function registerThorCustomActions(): void {
         const count = (face: string) => settlement.dice.filter(d => d.face === face).length;
         const thunder = count(FACE.THUNDER);
         const total = Math.min(getTokenStackLimit(state, ctx.attackerId, TOKEN.ELECTROKINESIS), (state.players[ctx.attackerId].tokens[TOKEN.ELECTROKINESIS] ?? 0) + thunder);
-        const cp = state.players[ctx.attackerId].resources[RESOURCE_IDS.CP] ?? 0;
-        const followupEvents: DiceThroneEvent[] = [
-            ...grant(ctx, TOKEN.ELECTROKINESIS, thunder),
-            ...(count(FACE.WORTHY) >= 2 ? [event('CP_CHANGED', { playerId: ctx.attackerId, delta: Math.min(1, CP_MAX - cp), newValue: Math.min(CP_MAX, cp + 1), sourceAbilityId: ctx.sourceAbilityId }, timestamp)] : []),
-        ];
-        if (count(FACE.HAMMER) >= 2) followupEvents.push(...hammerChoice(ctx, { count: 1, electrokinesisDamage: true }));
-        else followupEvents.push(...bonus(ctx, total));
+        const cpReward = count(FACE.WORTHY) >= 2 ? 1 : 0;
+        const followupEvents: DiceThroneEvent[] = count(FACE.HAMMER) >= 2
+            ? hammerChoice(ctx, { count: 1, cp: cpReward, electrokinesis: thunder, electrokinesisDamage: true })
+            : [...cp(ctx, cpReward), ...grant(ctx, TOKEN.ELECTROKINESIS, thunder), ...bonus(ctx, total)];
         return { totalDamage: 0, followupEvents };
     });
 
@@ -239,7 +240,7 @@ export function registerThorCustomActions(): void {
         return [...bonus(ctx, value), event('CHOICE_REQUESTED', {
             playerId, sourceAbilityId, titleKey: 'choices.thor.collateralTitle',
             choiceContext: { collateral: Number(state.currentChoiceContext?.collateral ?? 2) },
-            options: opponents.map(id => ({ value: Object.keys(state.players).indexOf(id), customId: 'thor-chain-target', labelKey: 'choices.thor.target', ...targetPresentation(state, id) })),
+            options: opponents.map(id => ({ value: Object.keys(state.players).indexOf(id), customId: 'thor-chain-target', choiceKind: 'player' as const, labelKey: 'choices.thor.target', ...targetPresentation(state, id) })),
         }, timestamp)];
     });
     registerChoiceResolvedEventHandler('thor-chain-target', ({ state, playerId, sourceAbilityId, value, timestamp }) => {
@@ -253,10 +254,12 @@ export function registerThorCustomActions(): void {
         const hammers = faces.filter(face => face === FACE.HAMMER).length;
         const worthy = faces.filter(face => face === FACE.WORTHY).length;
         const upgraded = (ctx.action.params as Params | undefined)?.upgraded === true;
+        const thunderReward = faces.includes(FACE.THUNDER) ? (upgraded ? faces.filter(face => face === FACE.THUNDER).length : 1) : 0;
         return [
             ...(worthy ? [event('DAMAGE_SHIELD_GRANTED', { targetId: ctx.attackerId, value: worthy * 2, sourceId: ctx.sourceAbilityId }, ctx.timestamp)] : []),
-            ...(faces.includes(FACE.THUNDER) ? grant(ctx, TOKEN.ELECTROKINESIS, upgraded ? faces.filter(face => face === FACE.THUNDER).length : 1) : []),
-            ...(hammers >= 2 ? hammerChoice(ctx, { count: upgraded ? Math.floor(hammers / 2) : 1 }) : []),
+            ...(hammers >= 2
+                ? hammerChoice(ctx, { count: upgraded ? Math.floor(hammers / 2) : 1, electrokinesis: thunderReward })
+                : grant(ctx, TOKEN.ELECTROKINESIS, thunderReward)),
         ];
     }, { categories: ['defense', 'token', 'choice'] });
 

@@ -76,6 +76,16 @@
     "channelingShort": "聚 {{value}}",
     "damageShort": "伤 {{value}}"
   },
+  "phaseDescriptions": {
+    "reset": "重置本回合用过的行动和快速施法标记。",
+    "channel": "双方根据聚魔值获得法力。",
+    "upkeep": "处理持续效果、状态和需要维持的费用。",
+    "planning": "从法术书秘密准备本回合要使用的法术。",
+    "deployment": "通过召唤点部署生物。",
+    "initiativeQuickcast": "行动阶段前，双方有机会使用快速施法标记。",
+    "creatureAction": "双方轮流行动，激活法师或生物移动、攻击及施法。",
+    "finalQuickcast": "行动阶段后，双方有机会使用尚未用掉的快速施法标记。"
+  },
   "phases": {
     "reset": "重置",
     "channel": "聚魔",
@@ -304,7 +314,7 @@
     "targetOutOfRange": "目标不在当前范围内。",
     "wallEdgeOccupied": "这条边界已经有墙体，不能再放置墙体。",
     "missingTarget": "请先选择一个合法目标。",
-    "spellRequiresCodeSupport": "这个法术还没有进入当前可操作范围。",
+    "spellRequiresCodeSupport": "这个法术的效果尚未实现，暂时无法施放。",
     "resurrectionTargetNotLivingCreature": "起死回生只能选择弃牌堆中的活体生物。",
     "resurrectionTargetNotInSpellbook": "目标生物不在你的法术书中。",
     "resurrectionTargetNotDefeated": "目标生物不在被摧毁的活体生物牌池中。",

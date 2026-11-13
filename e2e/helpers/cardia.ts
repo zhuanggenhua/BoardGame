@@ -4,12 +4,14 @@
 
 import type { Page, BrowserContext } from '@playwright/test';
 import { expect } from '@playwright/test';
+import type { MatchState } from '../../src/engine/types';
 import {
     initContext,
     getGameServerBaseURL,
     ensureGameServerAvailable,
     seedMatchCredentials,
 } from './common';
+import { getMatchState, injectMatchState, waitForStateSync } from './state-injection';
 
 // Re-export commonly used functions
 // export { waitForTestHarness } from './common'; // Unused, commented out
@@ -644,12 +646,33 @@ export const setupCardiaTestScenario = async (
         });
         await tempPage.close();
         
-        const currentState = await readCoreState(setup.player1Page);
-        const newState = await buildStateFromScenario(setup.player1Page, currentState, scenario);
+        const authoritativeState = await getMatchState(setup.matchId, setup.player1Page);
+        const currentCoreState = authoritativeState.core as Record<string, unknown>;
+        const newCoreState = await buildStateFromScenario(setup.player1Page, currentCoreState, scenario);
+        const players = newCoreState.players as Record<string, unknown>;
+        const turnOrder = Object.keys(players);
+        const currentPlayerIndex = turnOrder.indexOf(String(newCoreState.currentPlayerId));
+        if (currentPlayerIndex < 0) {
+            throw new Error(`Cardia scenario currentPlayerId is not in turn order: ${String(newCoreState.currentPlayerId)}`);
+        }
+        const nextMatchState = {
+            ...authoritativeState,
+            core: newCoreState,
+            sys: {
+                ...((authoritativeState.sys as Record<string, unknown> | undefined) ?? {}),
+                matchId: setup.matchId,
+                turnOrder,
+                currentPlayerIndex,
+                ...(scenario.phase ? { phase: scenario.phase } : {}),
+            },
+        };
 
-        // 2. 注入状态到两个玩家页面
-        await applyCardiaScenarioToPage(setup.player1Page, scenario, newState);
-        await applyCardiaScenarioToPage(setup.player2Page, scenario, newState);
+        // Online player dispatch rejects SYS_CHEAT_*; use the authenticated E2E state endpoint once,
+        // then wait for both clients to receive the same authoritative state.
+        await injectMatchState(setup.matchId, nextMatchState as MatchState<unknown>, setup.player1Page);
+        await waitForStateSync(setup.player2Page, 5000, {
+            phase: scenario.phase,
+        });
         
         return setup;
     } catch (error) {

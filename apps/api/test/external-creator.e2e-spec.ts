@@ -74,7 +74,7 @@ describe('外链收录、作者认领与停留时间 HTTP 合同', () => {
         const author = await register('creator-author'), submitter = await register('creator-submitter'), admin = await register('creator-admin');
         await users.updateOne({ _id: admin.id }, { $set: { role: 'admin' } });
         const seeded = await api().get('/ugc/external-games').expect(200);
-        expect(seeded.body.items).toContainEqual(expect.objectContaining({ gameId: 'external-yuanyi-games', name: '山中小屋', author: '鸢一桑', embedStatus: 'blocked', authorProfileUrl: 'https://space.bilibili.com/31976469', ownerUserId: null }));
+        expect(seeded.body.items).toContainEqual(expect.objectContaining({ gameId: 'external-yuanyi-games', name: '山中小屋', author: '鸢一桑', embedStatus: 'blocked', authorProfileUrl: 'https://space.bilibili.com/31976469', ownerUserId: null, uploaderName: null }));
         await api().post('/ugc/external-games/external-yuanyi-games/sessions').auth(author.token, { type: 'bearer' }).expect(409);
         await api().get('/ugc/creator-review').expect(401);
         await api().get('/ugc/creator-review').auth(author.token, { type: 'bearer' }).expect(403);
@@ -97,7 +97,7 @@ describe('外链收录、作者认领与停留时间 HTTP 合同', () => {
         const approved = await api().post(`/ugc/creator-review/submissions/${submissionId}`).auth(admin.token, { type: 'bearer' })
             .send({ decision: 'approved', comment: '审核通过', revision: resubmitted.body.updatedAt }).expect(201);
         const gameId = approved.body.gameId as string;
-        expect((await api().get(`/ugc/external-games/${gameId}`).expect(200)).body).toMatchObject({ name: data.name, ownerUserId: null });
+        expect((await api().get(`/ugc/external-games/${gameId}`).expect(200)).body).toMatchObject({ name: data.name, ownerUserId: null, uploaderName: 'creator-submitter' });
 
         const claim = await submitClaim(author.token, gameId, 'creator-author');
         await api().post(`/ugc/creator-claims/${claim.claimId}/evidence`).auth(author.token, { type: 'bearer' }).attach('file', picture, 'changed.png').expect(403);
@@ -118,7 +118,7 @@ describe('外链收录、作者认领与停留时间 HTTP 合同', () => {
         await api().put(`/ugc/external-games/${gameId}`).auth(submitter.token, { type: 'bearer' }).send({ ...data, published: true }).expect(403);
         const edited = await api().put(`/ugc/external-games/${gameId}`).auth(author.token, { type: 'bearer' })
             .send({ ...data, name: '作者更新后的游戏', url: 'https://example.com/changed', minPlayers: null, maxPlayers: null, published: true, ownerUserId: submitter.id }).expect(200);
-        expect(edited.body).toMatchObject({ name: '作者更新后的游戏', ownerUserId: author.id, embedStatus: 'unknown' });
+        expect(edited.body).toMatchObject({ name: '作者更新后的游戏', ownerUserId: author.id, uploaderName: 'creator-submitter', embedStatus: 'unknown' });
         expect(edited.body.minPlayers).toBeUndefined();
 
         await api().put(`/ugc/creator-review/games/${gameId}/embed`).auth(admin.token, { type: 'bearer' })

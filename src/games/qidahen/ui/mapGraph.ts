@@ -1,8 +1,8 @@
-import printedRegionGraphData from '../data/region-graph.json';
-import authoritativeGuidesData from '../data/region-authoritative-guides.json';
-import printedRegionMaskRegionsData from '../data/region-mask-regions.json';
-import runtimeRegionGraphData from '../data/runtime-region-graph.json';
-import runtimeRegionMaskRegionsData from '../data/runtime-region-mask-regions.json';
+import printedRegionGraphData from '../data/region-graph.json' with { type: 'json' };
+import authoritativeGuidesData from '../data/region-authoritative-guides.json' with { type: 'json' };
+import printedRegionMaskRegionsData from '../data/region-mask-regions.json' with { type: 'json' };
+import runtimeRegionGraphData from '../data/runtime-region-graph.json' with { type: 'json' };
+import runtimeRegionMaskRegionsData from '../data/runtime-region-mask-regions.json' with { type: 'json' };
 import { extractQidahenFormalAuthoritativeGuideRuntimeRegionIds } from '../regionAuthoritativeGuideFormats';
 
 export type QidahenPassageBoundaryType =

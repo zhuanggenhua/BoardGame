@@ -349,13 +349,12 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, effectiveTutorialId);
     const nextTutorialId = currentTutorialEntry?.nextTutorialId;
     const completedTutorialCatalogId = resolveCompletedTutorialCatalogId(tutorialCatalog, effectiveTutorialId);
-    const restorableTutorialProgress = readRestorableTutorialProgress({
+    const shouldWaitForTutorialResumeDecision = !isActive && Boolean(readRestorableTutorialProgress({
         gameId,
         tutorialId,
         manifest: resolvedTutorialManifest,
         numPlayers: tutorialProgressNumPlayers,
-    });
-    const shouldWaitForTutorialResumeDecision = Boolean(restorableTutorialProgress) && !isActive;
+    }));
 
     useEffect(() => {
         const handleProgressStorageChanged = () => {

@@ -74,7 +74,7 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
     // aspectRatio > 1 = 横向卡牌，aspectRatio < 1 = 竖向卡牌
     const aspectRatio = 'aspectRatio' in previewRef
         ? previewRef.aspectRatio
-        : getCardPreviewAspectRatio(previewRef, locale);
+        : previewRef.type === 'renderer' ? getCardPreviewAspectRatio(previewRef, locale) : undefined;
     const previewSize = useMemo(() => {
         const maxDim = maxDimProp ?? 308; // 预览最大尺寸（像素）
         const ar = aspectRatio ?? (192 / 308); // 默认竖向卡牌比例

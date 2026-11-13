@@ -21,6 +21,7 @@ import {
     FeedbackStatus,
 } from './feedback.schema';
 import { AttachPrivateReplayDto, CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, QueryFeedbackDto, UpdateFeedbackStatusDto } from './dto';
+import { projectSafeErrorLocation } from './errorLocation';
 
 type FeedbackManagerScope = {
     actorUserId: string;
@@ -148,10 +149,12 @@ const projectFeedbackErrorContext = (value: unknown): Feedback['errorContext'] |
         ? rawName
         : reasonName;
     const message = projectFeedbackReasonCode(raw.message);
+    const location = projectSafeErrorLocation(raw.source, raw.location);
     const result = {
         ...(source ? { source } : {}),
         ...(name ? { name } : {}),
         ...(message ? { message } : {}),
+        ...(location ? { location } : {}),
     };
     return Object.keys(result).length > 0 ? result : undefined;
 };
@@ -1667,6 +1670,7 @@ export class FeedbackService {
                 source: '$errorContext.source',
                 name: '$errorContext.name',
                 message: '$errorContext.message',
+                location: '$errorContext.location',
             },
         };
     }

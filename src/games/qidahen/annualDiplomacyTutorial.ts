@@ -67,6 +67,7 @@ export function resolveAnnualDiplomacyTutorialStep(state: MatchState<QidahenCore
     return { ...base, content: `${TEXT}${content}`, position: 'right',
         highlightTarget: region ? `qidahen-map-region-focus-${region.id}` : 'qidahen-turn-choice',
         tooltipAnchorTarget: region ? 'qidahen-map-region-focus-name' : undefined,
+        tooltipMaxWidth: 248,
         recommendedTargets: region ? [region.id] : undefined,
         avoidOverlapSelectors: [...(step.avoidOverlapSelectors ?? []), ...MAP_CANDIDATE_PROTECTION] };
 }
