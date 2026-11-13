@@ -49,16 +49,16 @@ description: "BoardGame Android 打包、上传、发布和验包流程。用于
 
 `public/assets/**` 只允许正式运行时资源。
 
-Android embedded APK 可以保留经过白名单确认的最小首装/离线资源。OTA zip 不得复用 embedded 白名单，禁止进入 OTA：
+Android embedded APK 可以保留经过白名单确认的最小首装/离线资源。OTA 仅复用平台 Logo 白名单，不复用游戏素材白名单；禁止进入 OTA：
 
 - `public/assets/common/audio/**`
 - `public/assets/common/images/**`
 - `public/assets/atlas-configs/**`
 - `public/assets/i18n/**` 下除 `assets-manifest.json` 外的图片、音频和运行时配置
-- `public/logos/**`
+- `public/logos/**` 中未列入 `DIST_LOGOS_RETAIN_RELATIVE_PATHS` 的文件
 - 参考图、预览图、生成图、中间产物
 
-OTA 只允许 H5 代码、样式、`locales/zh-CN/**`、字体、必要小型公共文件和 `assets-manifest.json`。包体异常变大时，先查 `public/assets/**` 和 `dist/`，不要先猜 CDN、缓存或签名。
+OTA 只允许 H5 代码、样式、`locales/zh-CN/**`、字体、必要小型公共文件和 `assets-manifest.json`；平台 Logo 与支付二维码按 `DIST_LOGOS_RETAIN_RELATIVE_PATHS` 保留，供本地 WebView 使用。包体异常变大时，先查 `public/assets/**` 和 `dist/`，不要先猜 CDN、缓存或签名。
 
 ## 路径选择
 

@@ -11,6 +11,10 @@ test('OTA 保留 H5 代码、样式、字体和中文语言包', () => {
         'fonts/inter-400-latin.woff2',
         'locales/zh-CN/lobby.json',
         'game-data/summonerwars.layout.json',
+        'logos/weixin.jpg',
+        'logos/zhifubao.jpg',
+        'logos/logo_1_grid.png',
+        'logos/logo_1_grid.svg',
     ]) {
         assert.equal(classifyOtaBundleFile(relativePath), 'include', relativePath);
     }
@@ -33,9 +37,7 @@ test('OTA 仅保留资源清单，不携带嵌套游戏资源', () => {
         'assets/i18n/zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
         'assets/i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json',
         'assets/common/audio/bgm/compressed/theme.ogg',
-        'logos/weixin.jpg',
-        'logos/zhifubao.jpg',
-        'logos/logo_1_grid.png',
+        'logos/unlisted.png',
         'locales/en/lobby.json',
         'release-notes.md',
     ]) {
