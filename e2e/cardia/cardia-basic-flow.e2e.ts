@@ -95,74 +95,24 @@ test.describe('Cardia - Basic Flow', () => {
             // 能力阶段：失败者可以激活能力
             // ============================================================
             
-            // 双方都打出卡牌后，应该自动进入能力阶段
-            await expect(p1Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
-            await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
-            
-            // 等待能力阶段 UI 就绪
-            await p1Page.waitForTimeout(500);
-            
-            // 调试：检查游戏状态
-            const p1State = await p1Page.evaluate(() => {
-                const state = (window as any).__BG_STATE__;
-                if (!state) return null;
-                const myPlayerId = '0';
-                const myPlayer = state.core.players[myPlayerId];
-                const currentCard = myPlayer.playedCards.find((card: any) => card.encounterIndex === state.core.turnNumber);
-                return {
-                    phase: state.core.phase,
-                    myPlayerId,
-                    loserId: state.core.currentEncounter?.loserId,
-                    hasCurrentCard: !!currentCard,
-                    currentCardId: currentCard?.defId,
-                    hasAbility: currentCard?.abilityIds?.length > 0,
-                    abilityId: currentCard?.abilityIds?.[0],
-                    turnNumber: state.core.turnNumber,
-                    playedCardsCount: myPlayer.playedCards.length,
-                };
+            // 平局直接进入下一回合；有胜负时由失败者决定是否使用能力。
+            await p1Page.waitForFunction(() => {
+                const core = (window as any).__BG_STATE__?.core;
+                return core && (core.phase === 'ability' || (core.phase === 'play' && core.turnNumber > 1));
+            }, null, { timeout: 15000 });
+            const outcome = await p1Page.evaluate(() => {
+                const core = (window as any).__BG_STATE__.core;
+                return { phase: core.phase, loserId: core.currentEncounter?.loserId, encounter: core.encounterHistory[0] };
             });
-            console.log('[DEBUG] P1 State:', p1State);
-            
-            const p2State = await p2Page.evaluate(() => {
-                const state = (window as any).__BG_STATE__;
-                if (!state) return null;
-                const myPlayerId = '1';
-                const myPlayer = state.core.players[myPlayerId];
-                const currentCard = myPlayer.playedCards.find((card: any) => card.encounterIndex === state.core.turnNumber);
-                return {
-                    phase: state.core.phase,
-                    myPlayerId,
-                    loserId: state.core.currentEncounter?.loserId,
-                    hasCurrentCard: !!currentCard,
-                    currentCardId: currentCard?.defId,
-                    hasAbility: currentCard?.abilityIds?.length > 0,
-                    abilityId: currentCard?.abilityIds?.[0],
-                    turnNumber: state.core.turnNumber,
-                    playedCardsCount: myPlayer.playedCards.length,
-                };
-            });
-            console.log('[DEBUG] P2 State:', p2State);
-            
-            // 检查哪个玩家是失败者（可以激活能力）
-            // 使用 waitFor 确保按钮已渲染
-            const p1SkipButton = p1Page.locator('[data-testid="cardia-skip-ability-btn"]');
-            const p2SkipButton = p2Page.locator('[data-testid="cardia-skip-ability-btn"]');
-            
-            // 失败者跳过能力（等待按钮出现，超时 5 秒）
-            try {
-                await p1SkipButton.waitFor({ state: 'visible', timeout: 5000 });
-                console.log('[DEBUG] P1 是失败者，找到跳过按钮');
-                await p1SkipButton.click();
-                await p1Page.waitForTimeout(1000);  // 等待状态更新
-            } catch {
-                try {
-                    await p2SkipButton.waitFor({ state: 'visible', timeout: 5000 });
-                    console.log('[DEBUG] P2 是失败者，找到跳过按钮');
-                    await p2SkipButton.click();
-                    await p2Page.waitForTimeout(1000);  // 等待状态更新
-                } catch {
-                    console.log('[DEBUG] 没有找到跳过能力按钮，可能双方都是赢家或平局');
-                }
+            expect(outcome.encounter).toBeTruthy();
+            if (outcome.phase === 'ability') {
+                expect(['0', '1']).toContain(outcome.loserId);
+                await expect(p2Page.locator('[data-testid="cardia-phase-indicator"]')).toContainText(/Ability|能力/, { timeout: 10000 });
+                const loserPage = outcome.loserId === '0' ? p1Page : p2Page;
+                await loserPage.locator('[data-testid="cardia-skip-ability-btn"]').click({ timeout: 10000 });
+            } else {
+                expect(outcome.encounter.winnerId).toBeUndefined();
+                expect(outcome.encounter.loserId).toBeUndefined();
             }
             
             // ============================================================
