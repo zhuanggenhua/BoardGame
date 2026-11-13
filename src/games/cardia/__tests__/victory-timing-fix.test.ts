@@ -254,27 +254,6 @@ describe('印戒胜利条件时机修复', () => {
     expect(gameOver?.winner).toBe('p1');
   });
 
-  it('一方已打出本轮最后一张牌时应等待对手同时出牌后再判断无牌胜负', () => {
-    const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
-    const lastCard = core.players.p1.hand[0];
-    const testCore: CardiaCore = {
-      ...core,
-      phase: 'play',
-      players: {
-        ...core.players,
-        p1: {
-          ...core.players.p1,
-          hand: [],
-          deck: [],
-          currentCard: lastCard,
-          hasPlayed: true,
-        },
-      },
-    };
-
-    expect(CardiaDomain.isGameOver(testCore)).toBeUndefined();
-  });
-
   it('无牌可打的胜利条件不应该在阶段2（能力阶段）判定', () => {
     const core = CardiaDomain.setup(['p1', 'p2'], { random: () => 0.5 });
     

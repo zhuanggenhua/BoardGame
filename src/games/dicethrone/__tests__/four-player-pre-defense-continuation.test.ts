@@ -6,7 +6,7 @@ import { TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { DiceThroneCommand, DiceThroneCore } from '../domain/types';
 import { VENGEANCE_2 } from '../heroes/paladin/abilities';
-import { createQueuedRandom, fixedRandom, testSystems } from './test-utils';
+import { createQueuedRandom, fixedRandom, testSystems, getCardInteractionPrompt, expectNoPrompt } from './test-utils';
 
 it('四人无默认防御者时，选择目标后才完成防御前效果并继续结算', () => {
     const players = ['0', '1', '2', '3'];
@@ -36,12 +36,12 @@ it('四人无默认防御者时，选择目标后才完成防御前效果并继�
     send('CONFIRM_ROLL', '0');
     send('SELECT_ABILITY', '0', { abilityId: 'vengeance-2-main' });
     send('ADVANCE_PHASE', '0');
-    expect(state.sys.interaction.current?.playerId).toBe('0');
+    expect(getCardInteractionPrompt(state).playerId).toBe('0');
     expect(state.core.pendingAttack?.preDefenseResolved).not.toBe(true);
     send('RESOLVE_INTERACTION', '0', { selectedPlayerIds: ['2'] });
     expect(state.core.players['2'].tokens[TOKEN_IDS.RETRIBUTION]).toBe(1);
     expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(5);
-    expect(state.sys.interaction.current).toBeUndefined();
+    expectNoPrompt(state);
     expect(state.core.pendingAttack).toBeNull();
     expect(state.sys.phase).toBe('main2');
 });

@@ -21,6 +21,8 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 
 新增、重做或改变玩家操作顺序时，写代码或询问方案前必须下钻 [`rule-driven-interaction-design`](../../knowledge/standards/rule-driven-interaction-design.md)，先查同游戏已有同类交互并按该主源裁定复用或扩展。
 
+新增或修改游戏测试时，先读取 [`testing-tdd`](../../knowledge/standards/testing-tdd.md) 的交互测试与测试结构要求，再选择测试 owner 和公开交互入口。
+
 ## 任务规模
 
 | 规模 | 识别条件 | 读取深度 | 执行方式 |
