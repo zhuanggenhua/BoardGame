@@ -23,6 +23,9 @@ import { createCharacterDice, initHeroState } from '../../src/games/dicethrone/d
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import { buildAfterRollConfirmedSignature } from '../../src/games/dicethrone/domain/responseWindowGuards';
 import { getHeroDieFace } from '../../src/games/dicethrone/domain/rules';
+import { executePipeline } from '../../src/engine/pipeline';
+import { DiceThroneDomain } from '../../src/games/dicethrone/domain';
+import { createHeroMatchup, createQueuedRandom, getCardById, testSystems } from '../../src/games/dicethrone/__tests__/test-utils';
 
 type HarnessState = {
     sys?: {
@@ -894,6 +897,54 @@ const buildOnlineAiPaladinDamageState = (state: OnlineAiMatchState) => {
 };
 
 test.describe('DiceThrone 在线 AI 真链路', () => {
+    test('预置真人响应窗口后，枪手 AI 完成防御比骰并交回行动', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const setup = await setupDTOnlineAiRoom(browser, testInfo.project.use.baseURL as string | undefined);
+        if (!setup) throw new Error('在线 AI 房间无法创建');
+        try {
+            const { hostPage, matchId } = setup;
+            await waitForCharacterSelectionWithRetry(hostPage, 30000);
+            await waitForAiSeatCredential(hostPage, matchId, '1');
+            const ids = ['0', '1'];
+            const random = createQueuedRandom([1, 1, 1, 1, 1, 6, 1]);
+            let prepared = createHeroMatchup('monk', 'gunslinger')(ids, random);
+            const send = (type: string, playerId: string, payload: Record<string, unknown> = {}) => {
+                const result = executePipeline({ domain: DiceThroneDomain, systems: testSystems }, prepared,
+                    { type, playerId, payload, timestamp: Date.now() } as any, random, ids);
+                if (!result.success) throw new Error(`${type}: ${result.error}`);
+                prepared = result.state;
+            };
+            send('ADVANCE_PHASE', '0');
+            send('ROLL_DICE', '0');
+            send('CONFIRM_ROLL', '0');
+            if (prepared.sys.responseWindow?.current) send('RESPONSE_PASS', '0');
+            if (prepared.sys.responseWindow?.current) send('RESPONSE_PASS', '1');
+            send('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' });
+            send('ADVANCE_PHASE', '0');
+            prepared.core.players['0'].hand = [getCardById('card-give-hand')];
+            prepared.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
+            send('ROLL_DICE', '1');
+            send('CONFIRM_ROLL', '1');
+            prepared.core.seatControllers = { '0': { type: 'human' }, '1': { type: 'local-ai', minimumActionDelayMs: 100 } };
+            expect(prepared.sys.responseWindow?.current?.responderQueue).toEqual(['0']);
+            await applyOnlineAiMatchState(matchId, hostPage, live => ({
+                ...live,
+                core: { ...prepared.core, phase: 'defensiveRoll' },
+                sys: { ...live.sys, ...prepared.sys, matchId, turnOrder: ['0', '1'], currentPlayerIndex: 0 },
+            } as OnlineAiMatchState));
+            const pass = hostPage.getByTestId('dicethrone-response-pass-button');
+            await expect(pass).toBeVisible({ timeout: 15000 });
+            await hostPage.screenshot({ path: testInfo.outputPath('human-response-before.png') });
+            await pass.click();
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                return { phase: state.sys?.phase, pending: state.core?.pendingAttack ?? null };
+            }, { timeout: 30000 }).toEqual({ phase: 'main2', pending: null });
+            await hostPage.screenshot({ path: testInfo.outputPath('ai-defense-settled.png') });
+        } finally {
+            await setup.hostContext.close();
+        }
+    });
     test('僧侣 harmony + 枪手 duel：compare-roll 不应半弹后重开，伤害浮字应出现', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;

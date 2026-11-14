@@ -6,6 +6,7 @@ import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { syncQidahenCorePieceCollections } from './coreDerivedState';
 import { getQidahenEffectiveTotalPopulation } from './populationRules';
 import { getEffectiveKoreaTributeCardsForFaction } from './koreaTributeRules';
+import { isQidahenKoreaRuntimeRegionId } from './regionConfig';
 import { drawQidahenKoreaCards } from './koreaCardState';
 import { buildWheelDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';
 import { buildPendingTargetActionFromWheelDispatchChoice } from './actionWindowDispatch';
@@ -95,6 +96,9 @@ export function reduceQidahenTurnResolutionFact(core: QidahenCore, event: Qidahe
             break;
         }
         case 'upkeep': {
+            if (isQidahenKoreaRuntimeRegionId(fact.task.regionId) && fact.removedPieceIds.length > 0) {
+                throw new Error('朝鲜耗损须由手牌支付，不能以移除部队抵扣');
+            }
             next = { ...core, ...discardQidahenHandCards(core, fact.cardIds) };
             if (fact.removedPieceIds.length > 0) {
                 const regions = core.regions.filter(region => !region.isLogicalRegion).map(region => {

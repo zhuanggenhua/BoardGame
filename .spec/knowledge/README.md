@@ -76,7 +76,7 @@ metadata:
 | 文档 | 一句话 |
 | --- | --- |
 | [`_TEMPLATE.md`](features/_TEMPLATE.md) | 新功能文档模板：新增功能记录时照此建，放到对应领域或模块 |
-| [`home-modern-classic-switch-handoff.md`](features/home-modern-classic-switch-handoff.md) | 交接首页现代 / 经典风格切换实现与后续验收。 |
+| [`home-modern-classic-switch-handoff.md`](features/home-modern-classic-switch-handoff.md) | 2026-10-23 首页及相关游戏实施交接快照；现状须重新核对。 |
 
 ## lessons（经验教训 · 复发问题暂存区）
 

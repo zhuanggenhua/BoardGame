@@ -16,7 +16,7 @@
         pointer-events: none;
     }
 
-    .group\/modal:hover > .mw-magnify-close,
+    .group\/modal[data-close-pointer-ready="true"]:hover > .mw-magnify-close,
     .mw-magnify-close:focus-visible {
         opacity: 1;
         pointer-events: auto;

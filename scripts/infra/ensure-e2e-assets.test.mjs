@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -26,27 +27,59 @@ test('显式 PW_ASSET_GAME_IDS 覆盖文件路径推断', () => {
     );
 });
 
-test('--list 和显式跳过开关不会启动下载子进程', () => {
+test('--list 和显式跳过开关不会启动下载子进程', async () => {
     let spawnCalled = false;
     const runner = () => {
         spawnCalled = true;
         throw new Error('不应下载');
     };
 
-    const listResult = ensureE2EAssets({
+    const listResult = await ensureE2EAssets({
         targetPath: 'e2e/smashup/smashup-flow.e2e.ts',
         env: { PW_E2E_LIST_ONLY: 'true' },
         runner,
     });
     assert.deepEqual(listResult, { gameIds: ['smashup'], skipped: true });
 
-    const skippedResult = ensureE2EAssets({
+    const skippedResult = await ensureE2EAssets({
         targetPath: 'e2e/smashup/smashup-flow.e2e.ts',
         env: { PW_SKIP_ASSET_BOOTSTRAP: 'true' },
         runner,
     });
     assert.deepEqual(skippedResult, { gameIds: ['smashup'], skipped: true });
     assert.equal(spawnCalled, false);
+});
+
+test('并发素材准备串行写入共享清单，准备结束即释放', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'boardgame-e2e-bootstrap-'));
+    const moduleUrl = new URL('./ensure-e2e-assets.mjs', import.meta.url).href;
+    const gameRoot = path.join(root, 'public', 'assets', 'i18n', 'zh-CN', 'dicethrone');
+    const scriptsRoot = path.join(root, 'scripts', 'assets');
+    mkdirSync(gameRoot, { recursive: true });
+    mkdirSync(scriptsRoot, { recursive: true });
+    writeFileSync(path.join(gameRoot, 'assets-manifest.json'), JSON.stringify({ files: {} }));
+    writeFileSync(path.join(scriptsRoot, 'generate_asset_manifests.js'), `
+        const fs = require('node:fs');
+        fs.appendFileSync('calls.log', process.env.TEST_OWNER + '\\n');
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+    `);
+    const launch = (owner) => new Promise((resolve, reject) => {
+        const child = spawn(process.execPath, ['--input-type=module', '-e', `
+            const { ensureE2EAssets } = await import(${JSON.stringify(moduleUrl)});
+            await ensureE2EAssets({ env: { ...process.env, PW_ASSET_GAME_IDS: 'dicethrone' } });
+        `], { cwd: root, env: { ...process.env, TEST_OWNER: owner }, windowsHide: true, stdio: 'ignore' });
+        child.once('error', reject);
+        child.once('exit', (code) => code === 0 ? resolve() : reject(new Error(`素材准备进程退出: ${code}`)));
+    });
+    try {
+        await Promise.all([launch('A'), launch('B')]);
+        const calls = readFileSync(path.join(root, 'calls.log'), 'utf8').trim().split('\n');
+        assert.ok(calls.join('') === 'AAABBB' || calls.join('') === 'BBBAAA', calls.join(''));
+        await launch('C');
+        assert.equal(readFileSync(path.join(root, 'calls.log'), 'utf8').trim().split('\n').slice(-3).join(''), 'CCC');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
 });
 
 test('本地素材包完整时可作为 E2E 素材准备真相源', () => {

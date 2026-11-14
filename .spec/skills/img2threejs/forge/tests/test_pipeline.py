@@ -239,7 +239,7 @@ class PipelineTest(unittest.TestCase):
 
         # Recording a PASSING tier1 result (identical ref/render) unblocks it.
         run("stage4_review/diagnose_render.py", "--reference", self.ref, "--render", self.ref,
-            "--pass-id", "blockout", "--spec", self.spec, "--in-place")
+            "--map-stripped-render", self.ref, "--pass-id", "blockout", "--spec", self.spec, "--in-place")
         unblocked = run("stage3_build/orchestrate_passes.py", "check", self.spec, "--pass-id", "blockout")
         self.assertEqual(unblocked.returncode, 0, unblocked.stderr)
 
@@ -376,7 +376,9 @@ class PipelineTest(unittest.TestCase):
         # crashing. The instancing itself is applied by repetition systems (test below).
         run("stage2_spec/new_sculpt_spec.py", "Oak", "--out", self.spec)
         spec = json.loads(self.spec.read_text())
-        spec["componentTree"][0]["primitive"] = "instanced-cluster"
+        # root is an assembly pivot; use a child to exercise renderable geometry.
+        child = dict(spec["componentTree"][0], id="cluster", parent="root", primitive="instanced-cluster")
+        spec["componentTree"].append(child)
         self.spec.write_text(json.dumps(spec))
         out = self.dir / "createOakModel.ts"
         r = run("stage3_build/generate_threejs_factory.py", self.spec, "--out", out)
@@ -552,6 +554,11 @@ class PipelineTest(unittest.TestCase):
                           "--in-place")
         self.assertNotEqual(no_evidence.returncode, 0)
         self.assertIn("render-screenshot", no_evidence.stdout + no_evidence.stderr)
+        no_clay = run("stage4_review/append_review.py", self.spec, "--pass-id", "blockout",
+                      "--fidelity", "0.8", "--action", "continue", "--summary", "missing clay",
+                      "--render-screenshot", self.render, "--in-place")
+        self.assertNotEqual(no_clay.returncode, 0)
+        self.assertIn("map-stripped-render", no_clay.stdout + no_clay.stderr)
         # WITH evidence: the review is recorded.
         cmp = self.dir / "cmp.png"
         run("stage4_review/make_comparison_sheet.py", "--reference", self.ref,
@@ -573,6 +580,7 @@ class PipelineTest(unittest.TestCase):
                 "--fidelity", "0.8", "--action", "continue",
                 "--summary", "Blockout silhouette acceptable.",
                 "--render-screenshot", self.render, "--comparison-image", cmp,
+                "--map-stripped-render", self.render,
                 "--ai-vision-score", "0.8", "--layer-scores-json", layers,
                 "--feature-reviews-json", freviews,
                 "--camera-view", "front", "--in-place")

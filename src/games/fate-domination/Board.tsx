@@ -34,7 +34,7 @@ import { calculateFatePower } from './domain/power';
 import { validate } from './domain/commands';
 import {resolveFateAbilityDefinition,resolveFatePlayerAbility} from './domain/abilityRegistry';
 import {projectFateSkillCards} from './domain/playerView';
-import {hasLegalFateNormalPlay} from './domain/attackSelection';
+import {hasLegalFateNormalPlay, selectedFateAttackCost} from './domain/attackSelection';
 import {useFateMovementInteraction} from './ui/useFateMovementInteraction';
 import { FateMapSurface } from './ui/FateMapSurface';
 import { FateHandSurface, type FateSkillCardView } from './ui/FateHandSurface';
@@ -47,6 +47,7 @@ import { FatePlayerRail } from './ui/FatePlayerRail';
 import { servantSkillsFor } from './ui/playerPresentation';
 import './ui/runtime-table.css';
 import { placeFateInspection } from './ui/inspectionPlacement';
+import { fateIdentityTaken } from './domain/setup';
 type Props = GameBoardProps<FateDominationCore, FateDominationCommandMap>;
 type Inspection = {
     asset: string;
@@ -232,16 +233,17 @@ export const FateDominationBoard: React.FC<Props> = ({ G, dispatch, playerID, ma
     return <UndoProvider value={{ G: G as MatchState<unknown>, dispatch: send, playerID, isGameOver: core.phase === 'complete', isLocalMode: !isMultiplayer }}>
   <div className="fd-runtime-table" data-testid="fate-domination-board" data-played-count={playedCardCount} data-dragging-pawn={mapDrag.point?'true':undefined} onPointerDownCapture={mapDrag.onPointerDownCapture} onClickCapture={mapDrag.onClickCapture}>
    <FateFgoEffects state={G} viewerId={actorId} battleAnchors={fgoBattleAnchors}/>
-   {selectingIdentity && actor ? <FateIdentitySetup masterId={actor.masterId} servantId={actor.servantId}
-    available={(kind,id) => validate(attackDraft.state,kind==='master'?{type:'SELECT_MASTER',playerId:actor.id,payload:{masterId:id}}:{type:'SELECT_SERVANT',playerId:actor.id,payload:{servantId:id}}).valid}
-    onSelect={(kind,id) => send(kind==='master'?'SELECT_MASTER':'SELECT_SERVANT',kind==='master'?{masterId:id}:{servantId:id})}
-    onInspect={(asset,name) => inspect(asset,name,true,'detail')} onConfirm={()=>send('ADVANCE_PHASE',{})} confirmEnabled={primaryEnabled}/>
+   {selectingIdentity && actor ? <FateIdentitySetup key={actor.id} masterId={actor.masterId} servantId={actor.servantId}
+    available={(kind,id) => kind === 'master'
+      ? !fateIdentityTaken(core,actor.id,'masterId',id) && validate(attackDraft.state,{type:'SELECT_MASTER',playerId:actor.id,payload:{masterId:id}}).valid
+      : validate(attackDraft.state,{type:'SELECT_SERVANT',playerId:actor.id,payload:{servantId:id}}).valid}
+    onInspect={(asset,name) => inspect(asset,name,true,'detail')} onConfirm={identities=>send('ADVANCE_PHASE',{identities})} confirmEnabled={primaryEnabled}/>
     : <>
    <FateMapSurface core={core} viewerId={actorId} locale={i18n.language} legalLocations={targets} canUseLocation={(id,slot)=>{const command=movement.intent?movement.commandFor(id):deployment.commandFor(id,slot);return Boolean(command&&fateTutorialAllows(G.sys.tutorial,command.type,command.payload));}} movablePlayerId={!interactionBlocked && (movement.normalAvailable||movement.intent) ? actorId : null} moving={Boolean(movement.intent && !interactionBlocked)} movementOrigin={!interactionBlocked && movement.normalAvailable ? actor?.locationId : null} onPawn={() => {if(interactionBlocked)return;setInspection(null); if(movement.intent)movement.cancel();else beginNormalMovement();}} onInspect={(asset,name) => inspect(asset,name,true,'map')} onLocation={executeLocation} onBattleAnchorChange={registerFgoBattleAnchor}/>
    {mapDrag.point&&actor&&createPortal(<div className="fd-pawn-drag-ghost" style={{left:mapDrag.point.x,top:mapDrag.point.y}}><OptimizedImage src={fateTokenAsset(actor.masterId)} alt=""/></div>,document.body)}
    <header className="fd-runtime-top"><div><small>{t('brand')}</small><h1>{t('title')}</h1></div><div className="fd-runtime-round">{t('ui.board.roundNumber', { round: core.round })} <span>{t(`phases.${core.phase}`)}</span></div></header>
    <FatePlayerRail core={core} viewerId={actorId} selectedId={selectedSeat} nameFor={nameFor} onSelect={setSelectedSeat} onDetail={id => { setInspection(null); setDetail(id); setSelectedSeat(id); }} onInspect={(asset,name) => inspect(asset,name,true,'opponent')}/>
-   {actor && actorId && <FateSelfDock core={core} playerId={actorId} name={nameFor(actorId)} canActivateAbility={id=>abilityAvailable(actorId,id)} onActivateAbility={activateAbility} onAbilityTipChange={setMasterAbilityTip} pileInfo={pile && (pile === 'deck' || !actor.discard.length) ? `${pile === 'deck' ? '抽牌堆' : '弃牌堆'}剩余 ${actor[pile].length} 张` : undefined} sealEnabled={!interactionBlocked && current && core.phase === 'action' && actor.commandSpells > 0} onDetail={() => {setInspection(null);setDetail(actorId);}} onSeal={() => {if(interactionBlocked)return;setInspection(null);setUsingSeal(true);}} onPile={value => {setInspection(null);setPile(previous => previous === value ? null : value);}}/>}
+   {actor && actorId && <FateSelfDock core={core} playerId={actorId} name={nameFor(actorId)} draftManaCost={selectedFateAttackCost(actor)} canActivateAbility={id=>abilityAvailable(actorId,id)} onActivateAbility={activateAbility} onAbilityTipChange={setMasterAbilityTip} pileInfo={pile && (pile === 'deck' || !actor.discard.length) ? `${pile === 'deck' ? '抽牌堆' : '弃牌堆'}剩余 ${actor[pile].length} 张` : undefined} sealEnabled={!interactionBlocked && current && core.phase === 'action' && actor.commandSpells > 0} onDetail={() => {setInspection(null);setDetail(actorId);}} onSeal={() => {if(interactionBlocked)return;setInspection(null);setUsingSeal(true);}} onPile={value => {setInspection(null);setPile(previous => previous === value ? null : value);}}/>}
    {pile === 'discard' && actor && actor.discard.length > 0 && <FateDiscardInspection cards={actor.discard} onClose={()=>setPile(null)} onInspect={(asset,name) => inspect(asset,name,true,'discard')}/>}
    {actor && <FateHandSurface requestedCardId={fateTutorialAbilitySource(G.sys.tutorial)} rollbackRevision={G.sys.undo.rollbackRevision} player={actor} power={visibleFatePower(core, actor.id, actorId, [...new Set([...actor.activeAttackIds, ...actor.selectedAttackIds])])} skills={skillCards(actorId!)} canSelect={attackDraft.eligible} canSelectCard={attackDraft.canSelect} onSelect={selectCard} onRejectCard={rejectCard} onReject={reject} canPlayAbility={sourceId=>abilityAvailable(actor.id,sourceId)} onPlaySkill={activateAbility} onInspect={(asset, name, pinned = false) => inspect(asset, name, pinned)} onDismissHoverInspection={dismissHoverInspection} shouldSuppressFocusPreview={() => suppressRestoredFocusPreview.current} ridingChoice={ridingChoice ? {
        interactionId: ridingChoice.id,

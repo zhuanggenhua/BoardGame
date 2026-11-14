@@ -1,5 +1,8 @@
 # CS2 Item Anatomy Vocabulary — Gloves (Găng tay)
 
+> Research vocabulary only, with claims not independently verified here. Gloves are unsupported by
+> this copy's CS2 intake; this document does not authorize or implement that family.
+
 > Bộ từ vựng song ngữ để **gọi đúng tên từng bộ phận của găng tay** khi mô tả lỗi fidelity trong pipeline img2threejs.
 > Quy tắc dùng: **geometry/hình khối sai** → dùng tên bộ phận vật lý (mục 1–3). **Texture/màu/pattern sai** → dùng thuật ngữ skin CS2 (mục 4).
 > Lưu ý bối cảnh CS2: găng tay **chỉ tồn tại dạng skin** (không có "súng" gốc như dao/súng) — chúng phủ lên bàn tay/cẳng tay người chơi ở góc nhìn thứ nhất. Vùng nhìn thấy nhiều nhất là **mu bàn tay, khớp ngón, ngón tay và cổ găng**; lòng bàn tay gần như không thấy.

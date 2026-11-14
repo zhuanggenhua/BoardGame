@@ -7,7 +7,7 @@ Instructions for AI coding assistants using OpenSpec for spec-driven development
 - `proposal.md`、`design.md`、`tasks.md` 和规格正文默认使用简体中文，面向项目协作者的说明也使用中文。
 - OpenSpec 固定格式、章节关键字（例如 `## ADDED Requirements`、`#### Scenario:`）、命令、代码符号、路径和协议要求的英文标识保留原文。
 - 只有用户明确要求英文，或外部协议 / 工具格式强制要求英文时，才使用英文正文；此时仍应优先用中文补充项目语境说明。
-- 新游戏 proposal 获批后，默认先进入项目 Open Design 设计阶段，再进入 UI / runtime 实现；设计稿获批和真实入口基础 E2E 通过前，不得宣称该阶段完成。具体安装与流程见 [`create-new-game`](../.spec/skills/create-new-game/SKILL.md) 及其 UI 门禁。
+- 新游戏的 UI / runtime 实施按 [`create-new-game`](../.spec/skills/create-new-game/SKILL.md) 锁定规则、交互、设计依据与真实入口验证；设计工具和设计稿是否需要用户先审，遵循当前任务要求与已有授权。
 
 ## TL;DR Quick Checklist
 
@@ -65,7 +65,7 @@ Track these steps as TODOs and complete them one by one.
 6. **Update checklist** - After all work is done, set every task to `- [x]` so the list reflects reality
 7. **Approval gate** - Do not start implementation until the proposal is reviewed and approved
 
-新游戏 change 若包含 UI / runtime，批准后必须先完成项目 Open Design 设计稿及其批准记录，再定稿 UI-facing 数据模型和执行 UI 任务；执行到对应任务时缺少设计稿必须标记为 `blocked`，不能用临时实现、页面加载或夹具测试绕过。具体顺序与下载入口见项目 `create-new-game` workflow 和 [`docs/infra/open-design.md`](../docs/infra/open-design.md)。
+新游戏 change 若包含 UI / runtime，实施前按项目 [`create-new-game`](../.spec/skills/create-new-game/SKILL.md) 锁定规则、交互、设计依据及验证范围。只有用户明确将设计稿批准作为前提时才等待该裁定；页面加载或夹具通过不替代真实入口和图面验证。
 
 ### Stage 3: Archiving Changes
 After deployment, create separate PR to:

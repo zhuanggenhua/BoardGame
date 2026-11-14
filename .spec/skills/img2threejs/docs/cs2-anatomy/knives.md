@@ -1,5 +1,9 @@
 # CS2 Item Anatomy Vocabulary — Knives (Dao)
 
+> Reference terminology only: the synthesized claims and finish examples below are not independently
+> verified here. Check the actual reference and source before using them as facts; this catalogue does
+> not expand the supported subtypes in `../../forge/stage1_intake/cs2_manifest.py`.
+
 > Bộ từ vựng song ngữ để **gọi đúng tên từng bộ phận của dao** khi mô tả lỗi fidelity trong pipeline img2threejs.
 > Quy tắc dùng: **geometry/hình khối sai** → dùng tên bộ phận vật lý (mục 1–3). **Texture/màu/pattern sai** → dùng thuật ngữ skin CS2 (mục 5).
 >

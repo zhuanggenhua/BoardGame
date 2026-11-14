@@ -1,7 +1,7 @@
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest } from '../framework/evidenceScreenshots';
 import { closeDebugPanelIfOpen, dragDiceThroneHandCardToPlay } from '../helpers/dicethrone';
-import { dismissCardSpotlightWithBackdrop, shot } from '../helpers/dicethroneThorEvidence';
+import { dismissCardSpotlightWithBackdrop, shot, waitForDamageNumbersToSettle } from '../helpers/dicethroneThorEvidence';
 
 for (const entry of [
     { id: 'card-worthy-of-me', repeated: true, expected: [6, 1, 1, 1, 1] },
@@ -116,14 +116,23 @@ test('索尔实际两次飞掷后打出风暴来袭', async ({ page, game }, inf
         extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true, mjolnirThrowsThisTurn: {} } });
     await closeDebugPanelIfOpen(page);
     await page.getByTestId('passive-action-thor-mjolnir-0').click();
-    await page.locator('[data-testid="hand-area"] [data-card-id="card-double"]').click();
+    await expect(page.getByTestId('dicethrone-hand-discard-hint')).toBeVisible();
+    const firstDiscard = page.locator('[data-testid="hand-area"] [data-card-id="card-double"]');
+    await expect(firstDiscard).toHaveAttribute('data-is-flipped', 'true');
+    await firstDiscard.click();
     await expect.poll(async () => (await game.getState()).core.mjolnirThrowsThisTurn?.['0']).toBe(1);
     await dragDiceThroneHandCardToPlay(page, 'card-thor-hammer-time');
     await dismissCardSpotlightWithBackdrop(page);
     await expect.poll(async () => (await game.getState()).core.players['0'].tokens.mjolnir).toBe(1);
     await page.getByTestId('passive-action-thor-mjolnir-0').click();
-    await page.locator('[data-testid="hand-area"] [data-card-id="card-super-double"]').click();
+    await expect(page.getByTestId('dicethrone-hand-discard-hint')).toBeVisible();
+    const secondDiscard = page.locator('[data-testid="hand-area"] [data-card-id="card-super-double"]');
+    await expect(secondDiscard).toHaveAttribute('data-is-flipped', 'true');
+    await secondDiscard.click();
     await expect.poll(async () => (await game.getState()).core.mjolnirThrowsThisTurn?.['0']).toBe(2);
+    await expect.poll(async () => (await game.getState()).core.players['1'].resources.hp).toBe(48);
+    await expect(page.locator('[aria-label="HP 48"]')).toBeVisible();
+    await waitForDamageNumbersToSettle(page);
     await shot(page, info, '01-实际两次飞掷后风暴来袭可使用');
     await dragDiceThroneHandCardToPlay(page, 'card-thor-storm-brewing');
     await expect.poll(async () => {

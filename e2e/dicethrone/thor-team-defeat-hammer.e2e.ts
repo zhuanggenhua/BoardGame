@@ -72,6 +72,23 @@ test('四人队伍败北时持有者的姆乔尔尼尔自动返回索尔', async
         await test.step('目标投掷防御骰', async () => defender.locator('[data-tutorial-id="dice-roll-button"]').click({ timeout: 15000 }));
         await test.step('目标确认防御骰', async () => defender.locator('[data-tutorial-id="dice-confirm-button"]').click({ timeout: 15000 }));
         await test.step('目标结束防御', async () => defender.locator('[data-tutorial-id="advance-phase-button"]').click({ timeout: 15000 }));
+        // 防御后的伤害响应由当前玩家逐一处理，完成响应后才会结算败北。
+        await expect.poll(async () => {
+            const live = await current();
+            return Boolean(live.sys.responseWindow?.current) || live.core.teamHealth.B === 0;
+        }).toBe(true);
+        for (let i = 0; i < 8; i++) {
+            const window = (await current()).sys.responseWindow?.current;
+            if (!window) break;
+            const responderId = String(window.responderQueue[window.currentResponderIndex]);
+            const pass = pages[Number(responderId)].getByTestId('dicethrone-response-pass-button');
+            await expect(pass).toBeVisible();
+            await pass.click();
+            await expect.poll(async () => {
+                const next = (await current()).sys.responseWindow?.current;
+                return !next || String(next.responderQueue[next.currentResponderIndex]) !== responderId;
+            }).toBe(true);
+        }
         await expect.poll(async () => {
             const live = (await current()).core;
             return { health: live.teamHealth.B, owner: live.players['0'].tokens.mjolnir, holder: live.players['1'].tokens.mjolnir ?? 0 };

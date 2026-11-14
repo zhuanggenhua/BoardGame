@@ -283,12 +283,11 @@ describe('真实管线的轮盘落点与季节事务', () => {
                     expect(state.core.pieces.filter(piece => piece.regionId === 'city-region-1').every(piece => piece.level === 2)).toBe(true);
                     continue;
                 }
-                const koreaWithdrawal = {
-                    'city-region-18': 'ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1',
-                    'city-region-29': 'ming-post-sarhu-1619-hanseong-mercenary-infantry-lv2__compat__1',
-                }[data.upkeepTasks[data.upkeepIndex].regionId];
-                if (koreaWithdrawal) {
-                    state = choose(state, [koreaWithdrawal]);
+                if (data.upkeepTasks[data.upkeepIndex].reason === 'korea') {
+                    const card = options(state).find(option => state.core.handCards.some(item => item.id === option.id));
+                    if (!card) throw new Error('朝鲜耗损手牌不足，正式规则未明确处理方式');
+                    upkeepPayments.push(card.id);
+                    state = choose(state, [card.id]);
                     continue;
                 }
                 const remaining = data.upkeepRemaining ?? data.upkeepTasks[data.upkeepIndex].required;
@@ -304,7 +303,7 @@ describe('真实管线的轮盘落点与季节事务', () => {
             }
             else if (data.step === 'chronology') {
                 expect(getCurrentInteractionSummary(state).playerId).toBe('0');
-                expect(state.core.factions.ming.handCount).toBe(5);
+                expect(state.core.factions.ming.handCount).toBe(3);
                 state = choose(state, 'claim');
             }
             else if (data.step === 'chronology-payment') { const id = options(state)[0].id; chronologyPayments.push(id); state = choose(state, id); }
@@ -318,7 +317,7 @@ describe('真实管线的轮盘落点与季节事务', () => {
         expect(state.core.currentYearIndex).toBe(1);
         expect(state.core.yearCards.map(card => card.id)).toEqual(['current-year', 'next-year']);
         expect(state.core.chronology.claimedCardIds.ming).toEqual([1301]);
-        expect(state.core.factions.ming.handCount).toBe(2);
+        expect(state.core.factions.ming.handCount).toBe(1);
         send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
         state = finishWithoutHandAction(state);
         expect(state.core.currentPlayer).toBe('0');
@@ -351,7 +350,7 @@ describe('真实管线的轮盘落点与季节事务', () => {
         expect(state.core.factions.ming.handCount).toBe(handAfterTrainingFee);
         expect(state.core.wheelRecruitTrainProgress?.actionsCompleted).toBe(4);
         send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: 'finish' });
-        expect(state.core.factions.ming.handCount).toBe(1);
+        expect(state.core.factions.ming.handCount).toBe(0);
         state = finishWithoutHandAction(state);
         expect(state.core.currentPlayer).toBe('2');
         expect(state.sys.resolution).toBeUndefined();

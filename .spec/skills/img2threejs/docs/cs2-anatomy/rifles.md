@@ -1,5 +1,8 @@
 # CS2 Item Anatomy Vocabulary — Rifles (Súng trường)
 
+> Research vocabulary only; claims have not been independently verified here. Rifles are unsupported
+> by this copy's CS2 intake, and this reference does not enable their generation.
+
 > Bộ từ vựng song ngữ để **gọi đúng tên từng bộ phận của súng trường tấn công** khi mô tả lỗi fidelity trong pipeline img2threejs.
 > Quy tắc dùng: **geometry/hình khối sai** → dùng tên bộ phận vật lý (mục 1–3). **Texture/màu/pattern sai** → dùng thuật ngữ skin CS2 (mục 4).
 >

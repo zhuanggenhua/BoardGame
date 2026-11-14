@@ -1,6 +1,11 @@
 # 3D Technical Vocabulary Dictionary - CS2 Items Focus
 # Từ điển Thuật ngữ Kỹ thuật 3D - Tập trung vào CS2 Items
 
+> Historical terminology reference, not a current API, marketplace, Workshop, or pipeline contract.
+> Claims and changing details have not been independently verified here; check the relevant official
+> documentation and current implementation before using them. Mention of a format or feature does
+> not establish support in this copy of img2threejs.
+
 ---
 
 ## Table of Contents / Mục lục
@@ -92,7 +97,7 @@
 | English Term | Vietnamese | Definition |
 |--------------|------------|------------|
 | **Texture Resolution** | Độ phân giải texture | Pixel dimensions of a texture (e.g., 1024x1024, 2048x2048). Usually power-of-two. |
-| **Power-of-Two** | Lũy thừa của 2 | Texture dimensions that are powers of 2 (256, 512, 1024, 2048, 4096). Required for mipmapping. |
+| **Power-of-Two** | Lũy thừa của 2 | Texture dimensions that are powers of 2 (256, 512, 1024, 2048, 4096). Texture and mipmap restrictions depend on renderer and API version. |
 | **Mipmapping** | Mipmap | Pre-calculated lower-resolution copies of a texture. Improves quality and performance at distance. |
 | **Texture Filtering** | Lọc texture | How textures are sampled: Nearest (pixelated), Bilinear, Trilinear, Anisotropic. |
 | **Tiling** | Lặp | Repeating a texture across a surface. |
@@ -414,7 +419,7 @@ Two items with the same name can have different values based on float, pattern, 
 | Acronym | Full Form | Vietnamese |
 |---------|-----------|------------|
 | PBR | Physically Based Rendering | Render dựa trên vật lý |
-| UV | Ultraviolet (texture coordinates) | Tọa độ kết cấu |
+| UV | U and V texture coordinate axes | Tọa độ kết cấu |
 | LOD | Level of Detail | Chi tiết cấp độ |
 | AO | Ambient Occlusion | Che sáng môi trường |
 | FN | Factory New | Mới từ nhà máy |

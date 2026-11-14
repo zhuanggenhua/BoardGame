@@ -22,7 +22,7 @@ GitHub during a run (metadata only; not Valve's texture files):
 ```
 # live from GitHub (jsDelivr CDN — pin @<tag-or-commit> for reproducible runs, not @main)
 fetch_cs2_metadata.py --weapon Karambit --skin Doppler --paint-index 419 \
-    --index-url "https://cdn.jsdelivr.net/gh/ByMykel/CSGO-API@main/public/api/en/skins.json" \
+    --index-url "https://cdn.jsdelivr.net/gh/ByMykel/CSGO-API@<PINNED_REF>/public/api/en/skins.json" \
     --out metadata.json
 
 # or fully offline from a saved copy
@@ -37,7 +37,7 @@ ambiguity error lists each candidate's `paint_index` so you can re-run with `--p
 (e.g. `419` = Phase 2). This gives the precise paint index for a Tier-2 descriptor even without
 extracting textures.
 
-> Reproducibility & IP: `@main` is a moving target — pin a commit/tag for deterministic runs. The
+> Reproducibility & IP: Use a verified commit or tag in place of `<PINNED_REF>` for deterministic runs. The
 > metadata and the `image` preview (Steam CDN) are community data; Valve's actual paint textures are
 > **not** distributed via this source (use the local VPK path below, and never commit `cs2_textures/`).
 

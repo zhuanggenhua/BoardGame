@@ -26,15 +26,7 @@ if (-not $remoteSha) {
 }
 
 if (-not $remoteSha) {
-  $localRef = git rev-parse "origin/$Branch" 2>$null
-  if ($LASTEXITCODE -eq 0 -and $localRef) {
-    $remoteSha = ($localRef | Select-Object -First 1).Trim()
-    Write-Host "Warning: using local origin/$Branch ref because remote SHA lookup failed."
-  }
-}
-
-if (-not $remoteSha) {
-  Fail "Failed to read origin/$Branch SHA." 1
+  Fail "Failed to read the current remote $Branch SHA; local tracking refs cannot authorize deployment." 1
 }
 
 Write-Host "origin/$Branch = $remoteSha"

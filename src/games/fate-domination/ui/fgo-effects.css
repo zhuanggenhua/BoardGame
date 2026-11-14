@@ -1,3 +1,5 @@
 .fd-fgo-battle-anchor { position:absolute; z-index:4; pointer-events:none; }
 .fd-fgo-battle { position:absolute; inset:0; pointer-events:none; }
-.fd-fgo-noble { position:fixed; pointer-events:none; top:50%; left:50%; transform:translate(-50%, -50%); width:min(100vw, 177.7778vh); aspect-ratio:16/9; filter:opacity(1); }
+.fd-fgo-noble { position:fixed; pointer-events:none; inset:0; filter:opacity(1); }
+.fd-fgo-noble-canvas { position:absolute; inset:0; pointer-events:none; }
+.fd-fgo-noble-skip { position:absolute; top:1rem; right:1rem; pointer-events:auto; padding:.5rem 1rem; color:#fff; background:rgba(20,20,20,.78); border:1px solid rgba(255,255,255,.65); border-radius:.3rem; cursor:pointer; }

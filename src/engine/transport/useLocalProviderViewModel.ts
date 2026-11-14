@@ -58,6 +58,8 @@ export function useLocalProviderViewModel(args: {
             const runtimeControlledPlayerId = resolveLocalRuntimeControlledPlayerId?.({
                 state,
                 fallbackPlayerId: currentTurnPlayerId,
+                seatControllers,
+                localPlayerId,
             });
             if (runtimeControlledPlayerId) {
                 return runtimeControlledPlayerId;
@@ -72,6 +74,7 @@ export function useLocalProviderViewModel(args: {
         localPlayerId,
         localPregameControlledPlayerId,
         resolveLocalRuntimeControlledPlayerId,
+        seatControllers,
         state.core,
         state,
     ]);

@@ -9,7 +9,7 @@ description: BoardGame 项目内参考图生成 Three.js 程序化模型流程�
 
 ## 前置锁定
 
-动手前先按 [`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 锁定通用四项前提。本 skill 额外补齐图生模型专属内容：资产对象、参考图 / 官方案例来源、临时输出目录，以及交付类型（用法总结、结构拆解、临时原型、截图验收或正式资产候选）。未获明确授权前不要改正式游戏代码或 `public/assets/**`。
+动手前先按 [`conversation-handoff-target-lock`](../../knowledge/standards/conversation-handoff-target-lock.md) 锁定通用四项前提。本 skill 额外补齐图生模型专属内容：资产对象、参考图 / 官方案例来源、临时输出目录，以及交付类型（用法总结、结构拆解、临时原型、截图验收或正式资产候选）。按用户明确或任务本身已授权的交付范围确定是否修改正式游戏代码或 `public/assets/**`；只要求分析或原型时不擅自集成。
 
 ## 官方/案例读取
 

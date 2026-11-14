@@ -23,6 +23,8 @@ test('真实素材服务器下载后在浏览器中校验并复用', async ({ pa
   let finished = false;
   for (let attempt = 0; attempt < 5 && !finished; attempt += 1) {
     await download.click();
+    await expect(page.getByText(/战斗动画素材，完整素材大小约/)).toBeVisible({ timeout: 45000 });
+    await page.getByRole('button', { name: '确认', exact: true }).click();
     let lastLabel = '';
     await expect.poll(async () => {
       const label = await download.textContent() ?? '';

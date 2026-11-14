@@ -78,7 +78,7 @@
           "lock_problem_truth_entry_acceptance",
           "produce_exploration_baseline",
           "define_design_axes",
-          "produce_2_to_3_falsifiable_directions",
+          "derive_and_validate_authorized_design_direction",
           "score_decision_matrix",
           "converge_winning_direction",
           "define_screenshot_or_prototype_validation"

@@ -44,6 +44,4 @@ required evidence, not an exactness claim.
 The fixture metadata labels the image as `user-supplied-review-required`. Do not
 mark it rights-safe or commit extracted Valve pixels until provenance is verified.
 Local extraction remains outside the repository under the existing `cs2_textures/`
-IP boundary. Browser capture remains the responsibility of `runtime/cs2-preview`;
-the Python review gate accepts its metrics and screenshots but does not pretend to
-render them.
+IP boundary. The upstream `runtime/cs2-preview` is not present in this project copy. Capture must use an available, appropriate browser runtime; record its source and limitations. The Python review gate accepts metrics and screenshots but does not render them.

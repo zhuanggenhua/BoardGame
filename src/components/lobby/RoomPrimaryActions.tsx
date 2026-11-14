@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { DetailsPrimaryButton } from '../common/DetailsPrimaryButton';
 import clsx from 'clsx';
 import type { ActiveMatchInfo } from './roomActions';
 
@@ -59,14 +60,13 @@ export function RoomPrimaryActions({ compact = false, activeMatch, isActionLoadi
                     </div>
                 )}
                 {!activeMatch && (
-                    <button
+                    <DetailsPrimaryButton
                         onClick={onOpenCreateRoom}
                         disabled={isActionLoading}
                         data-testid="game-details-open-create-room"
-                        className="w-full py-3 bg-parchment-base-text hover:bg-parchment-brown text-parchment-card-bg font-bold rounded-[4px] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer text-sm uppercase tracking-widest"
                     >
                         {isActionLoading ? t('button.processing') : t('actions.createRoom')}
-                    </button>
+                    </DetailsPrimaryButton>
                 )}
             </div>
     );

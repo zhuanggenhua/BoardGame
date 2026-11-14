@@ -156,12 +156,12 @@ describe('索尔物理牌、升级和最终效果',()=>{
    expect(next.players['0'].tokens[T.MJOLNIR]).toBe(1);
    expect(next.players['0'].resources[R.CP]).toBe(3);
  });
- it.each([{value:1,electro:0,guard:0},{value:6,electro:2,guard:1}])('彩虹桥按最终骰值$value结算且始终抽一牌',({value,electro,guard})=>{
+ it.each([{value:1,electro:0,guard:0},{value:5,electro:0,guard:0},{value:6,electro:2,guard:1}])('彩虹桥按最终骰值$value结算且始终抽一牌',({value,electro,guard})=>{
    const state=scene().core;
    const roll=act(state,'thor-bifrost');
    const request=roll.find(e=>e.type==='BONUS_DICE_REROLL_REQUESTED')!;
    if(request.type!=='BONUS_DICE_REROLL_REQUESTED')throw Error('missing dice');
-   request.payload.settlement.dice[0]={...request.payload.settlement.dice[0],value,face:value===6?'thor_thunder':'thor_hammer'};
+   request.payload.settlement.dice[0]={...request.payload.settlement.dice[0],value,face:value===6?'thor_thunder':value>=4?'thor_worthy':'thor_hammer'};
    const events=getBonusDiceSettlementHandler('thor-bifrost-settle')!({state,settlement:request.payload.settlement,timestamp:11,random:fixedRandom})!.followupEvents!;
    const next=apply(state,events);
    expect(next.players['0'].hand).toHaveLength(1);

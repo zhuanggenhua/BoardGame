@@ -8,6 +8,7 @@ import {OptimizedImage} from '../../../components/common/media/OptimizedImage';
 import {FATE_ATTACK_BY_ID} from '../data';
 import type {CardInstance, PlayerState, SkillDefinition} from '../domain/types';
 import {projectFateHand} from '../domain/handView';
+import {fateAttackManaCost, resolveFateAttack} from '../domain/attackSelection';
 import './hand-surface.css';
 import {useTouchLongPress} from '../../../hooks/ui/useTouchLongPress';
 import {useTranslation} from 'react-i18next';
@@ -89,7 +90,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
     });
     const zones = projectFateHand(player);
     const ridingCandidateIds = new Set(ridingChoice?.candidateIds ?? []);
-    const ridingCost = ridingSelection.reduce((sum, id) => sum + (FATE_ATTACK_BY_ID[player.hand.find(card => card.id === id)?.definitionId ?? '']?.manaCost ?? Infinity), 0);
+    const ridingCost = ridingSelection.reduce((sum, id) => sum + (fateAttackManaCost(player, id) ?? Infinity), 0);
     const canConfirmRiding = Boolean(ridingChoice && ridingSelection.length <= 3
         && ridingSelection.every(id => ridingCandidateIds.has(id)) && ridingCost <= player.mana);
     const playedIds = [...new Set([...player.activeAttackIds, ...player.activeSkills, ...player.selectedAttackIds])];
@@ -98,6 +99,13 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
     const canUseHoverPreview = () => typeof window !== 'undefined'
         && typeof window.matchMedia === 'function'
         && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    const costAdjustment = (id: string, faceDown = false) => {
+        const printed = resolveFateAttack(player, id)?.definition.manaCost;
+        const current = fateAttackManaCost(player, id, faceDown);
+        if (printed === undefined || current === undefined || printed === current) return null;
+        return <span className="fd-card-cost-adjustment">{t('ui.hand.adjustedCost', { current, printed })}</span>;
+    };
 
     const renderSkill = ({skill, assetPath, available, abilityAvailable}: FateSkillCardView, active = false, stagedSkill = false) => (
         <div key={skill.id} className="fd-runtime-card-shell group">
@@ -132,6 +140,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             }}
         >
             <OptimizedImage src={assetPath} alt={skill.name}/>
+            {!active && costAdjustment(skill.id)}
         </motion.button>
         <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:skill.name})} sourceCardId={skill.id} onInspect={()=>onInspect(assetPath,skill.name,true)} buttonSize="32px" className="fd-card-inspect"/>
         </div>
@@ -147,7 +156,8 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             : isStaged ? t('ui.hand.actions.retract')
                 : committed ? abilityAvailable ? t('ui.hand.actions.activate') : t('ui.hand.actions.inspect')
                     : t('ui.hand.actions.select');
-        const ridingCardCost = definition.manaCost;
+        const ridingCardCost = fateAttackManaCost(player, card.id) ?? Infinity;
+        const faceDown = isStaged ? Boolean(player.selectedFaceDownIds?.includes(card.id)) : faceDownMode && !ridingChoice;
         const canToggleRiding = Boolean(ridingChoice && ridingCandidateIds.has(card.id) && (ridingSelected
             || (ridingSelection.length < 3 && ridingCost + ridingCardCost <= player.mana)));
         const selectable = ridingChoice ? canToggleRiding : canSelect && (canSelectCard?.(card.id, faceDownMode) ?? true);
@@ -194,6 +204,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                 aria-disabled={ridingChoice ? !selectable : !isStaged && !committed && !selectable}
             >
                 <CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name} style={{width: '100%'}}/>
+                {!committed && costAdjustment(card.id, faceDown)}
                 {((player.faceDownAttackIds ?? []).includes(card.id) || (player.selectedFaceDownIds ?? []).includes(card.id)) && <span className="fd-face-down-label">{t('ui.hand.faceDown')}</span>}
             </motion.button>
             <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:definition.name})} sourceCardId={card.id} onInspect={()=>onInspect(definition.assetPath,definition.name,true)} buttonSize="32px" className="fd-card-inspect"/>
@@ -234,13 +245,15 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                 <div className="fd-runtime-play-area" data-testid="fate-play-area">
                     <div className="fd-play-summary" data-testid="fate-play-summary">
                         {playedIds.length>0&&<span>{staged ? t('ui.hand.preparedToPlay') : t('ui.hand.played')} · {staged ? player.selectedAttackIds.length : playedIds.length}</span>}
-                        <strong className="fd-play-power">{staged ? t('ui.hand.expectedTotalPower') : t('ui.hand.totalPower')} {power}</strong>
+                        <div className="fd-play-summary-heading">
+                            {canSelect && !ridingChoice && <button type="button" className="fd-hand-mode" aria-label={t('ui.hand.selectionMode')} aria-pressed={faceDownMode} onClick={() => setFaceDownState(previous => ({scope: interactionScope, value: !(previous.scope === interactionScope && previous.value)}))}>{faceDownMode ? t('ui.hand.faceDownSelection') : t('ui.hand.faceUpSelection')}</button>}
+                            <strong className="fd-play-power">{staged ? t('ui.hand.expectedTotalPower') : t('ui.hand.totalPower')} {power}</strong>
+                        </div>
                     </div>
                     <div className="fd-runtime-card-row fd-hand-parallel fd-played-cards" data-testid="fate-played-cards" style={{'--card-count': Math.max(1, playedIds.length)} as CSSProperties}>
                         {playedIds.map(renderPlayed)}
                     </div>
                 </div>
-                {canSelect && !ridingChoice && <button type="button" className="fd-hand-mode" aria-label={t('ui.hand.selectionMode')} aria-pressed={faceDownMode} onClick={() => setFaceDownState(previous => ({scope: interactionScope, value: !(previous.scope === interactionScope && previous.value)}))}>{faceDownMode ? t('ui.hand.faceDownSelection') : t('ui.hand.faceUpSelection')}</button>}
                 <div className="fd-runtime-card-row fd-hand-parallel fd-attack-cards" data-testid="fate-domination-hand" style={{'--card-count': Math.max(1, zones.available.length)} as CSSProperties}>
                     {zones.available.map(card => renderAttack(card))}
                     {!zones.available.length && <span className="fd-runtime-empty-hand">{t('ui.hand.noAttackCards')}</span>}

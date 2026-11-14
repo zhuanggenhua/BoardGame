@@ -62,17 +62,17 @@ Dice Throne 角色 intake 必须先完成数据录入，再进行资源接线、
 
 - Dice Throne 新派系默认使用共享玩家板 `v2` 布局；只有已有证据证明仍是旧物理排版时，才允许显式登记 `v1`。
 - 新英雄接入共享 UI 前，必须在唯一布局注册表中显式登记正式玩家板原图的实际宽高和布局版本；不能依赖未知角色回退到其它英雄尺寸或旧版布局。
-- 实现前必须只读对照至少一个已收口英雄，逐项核对玩家板宽高比、左右技能槽、终极槽、提示板组合和放大预览；缺少对照证据时只能标 `blocked`，不得进入真实入口验收。
+- 实现前必须只读对照至少一个已收口英雄，逐项核对玩家板宽高比、左右技能槽、终极槽、提示板组合和放大预览；缺少对照证据时只能标 `blocked`，不得进入真实入口验收。 玩家板截图判 `PASS` 前还须在同一视口和牌桌状态对照，核对外框、提示板间距与技能覆盖 / 高亮位置；槽位错位或画面拉伸、偏斜不得通过。
 - 共享层缺少新英雄登记、仍命中默认回退、实际素材尺寸与注册尺寸不一致，或 `v2` 物理槽与底图标题不一致时，先修几何合同和测试，再谈资源 / 规则 / 截图通过。
 
 ## 资源完成判据
 
-Dice Throne 资源常被 `.gitignore` 忽略，不能只看 `git status`。资源已完成至少满足：
+Dice Throne 资源常被 `.gitignore` 忽略，不能只看 `git status`。本地资源完成至少满足：
 
 - 本地 `public/assets/i18n/zh-CN/dicethrone/images/<hero>/compressed/*.webp` 存在。
 - `public/assets/i18n/zh-CN/dicethrone/assets-manifest.json` 已重建。
 - 运行时代码引用已接入。
-- 代表性 `https://assets.easyboardgame.top/official/...` URL 返回 `200`，且内容来自服务器主源。
+- 若本轮授权发布资源，另行核验代表性 `https://assets.easyboardgame.top/official/...` URL 返回 `200` 且内容来自服务器主源；本地完成不等于远端已发布。
 - 若有 Token / 状态图标，`status-icons-atlas.json` 被运行时真实消费，徽章命中 sprite，不退成纯色 fallback。
 
 正式资源与核对产物必须分层：
@@ -101,11 +101,7 @@ Dice Throne 资源常被 `.gitignore` 忽略，不能只看 `git status`。资�
 
 生命周期的唯一规则来源是 [新增派系玩家可见生命周期](../add-new-faction/SKILL.md#玩家可见生命周期)，本专项只规定 DiceThrone 的落地方式：
 
-- `hidden`：实现或当前范围审计尚未完成时使用。角色保留在完整内部目录，但必须从真人选角、AI 自动选角和直接玩家命令中过滤。
-- `in_progress`：实现已经完成且当前范围审计 evidence 已完成后使用。角色才允许出现在真人选角入口，继续保留 `implementation_in_progress` 标记；AI 自动选角仍过滤。
-- 完成态：只有用户在当前轮明确批准进入完成态后，才能移除 `implementation_in_progress` 标记并允许 AI 自动选角。审计通过、测试通过、截图通过、任务勾选以及用户只说“继续”都不能替代这次真人确认。
-
-不得由测试、审计脚本、E2E、任务清单或 agent 自动把 `in_progress` 改成完成态；没有真人明确批准时，即使当前范围已经审计通过，也必须继续保留实施中状态。
+使用 `hidden`、`in_progress` 与完成态的条件及确认要求均以该主源为准；Dice Throne 使用既有 `implementation_in_progress` 标记实现对应状态。
 
 只完成静态接入或领域行为验证，只能说“某层已完成”；不得写“发布级完成”或“全流程完成”。
 
@@ -211,9 +207,9 @@ npm run assets:check
 npm run assets:upload
 ```
 
-至少回查代表性公开 URL：`player-board.webp`、`tip.webp`、`ability-cards.webp`、`dice.webp`，如适用再加 `status-icons-atlas.webp`、共享背景和角色头像。任一代表 URL 为 `404`，资源 intake 不算完成。atlas JSON 若不上传，必须在 evidence 写清本地路径、构建结果和真实消费证据。
+发布资源时回查代表性公开 URL：`player-board.webp`、`tip.webp`、`ability-cards.webp`、`dice.webp`，如适用再加 `status-icons-atlas.webp`、共享背景和角色头像。任一代表 URL 为 `404`，远端资源发布未完成。atlas JSON 若不上传，必须在 evidence 写清本地路径、构建结果和真实消费证据。
 
-**审计前置门禁**：只要角色的提示板、角色板、骰面、卡图或状态图标会被运行时消费，必须先完成对应正式压缩产物、manifest 登记、服务器上传和公开 URL `200` 回查，再进入规则审计、真实入口验收或“审计完成”口径。仅本地源图、仅本地 manifest、仅本地截图或上传前的 E2E 通过，都不能替代远端资源闭合；任一运行时资源未上传或公开 URL 非 `200`，该对象保持 `blocked`，先补资源链。
+**本地与远端边界**：规则审计和本地真实入口可使用已登记并实际消费的本地资源；远端发布和线上生效必须分别验证上传及公开 URL，不能由本地结果代替。未授权发布时记录远端未验证，不阻止独立的本地审计。
 
 ### 8. 机制实现前置
 
@@ -226,7 +222,7 @@ npm run assets:upload
 - 静态数据 / 机制实现：相关 Vitest。
 - 资源引用 / 预加载：资源、manifest 或 resolver 测试。
 - UI 卡图展示 / 手牌预览：真实 E2E 与截图证据；UI 展示改动必须人工看图。
-- 新增角色最低包：先完成运行时媒体压缩、`npm run assets:manifest`、`npm run assets:validate`、`npm run assets:upload` + 每个代表资源 URL 回查 `200`；再执行 ESLint、TypeScript、`npm run i18n:check`、角色 intake / registry / critical image 测试、`npm run build` 和按玩家可见生命周期执行真实入口 E2E。资源上传或 URL 回查未完成时，不得进入审计收口。
+- 新增角色按本轮范围验证运行时媒体、manifest、角色 intake / registry / critical image、类型、i18n、构建及玩家可见生命周期。若授权发布，另执行资源上传和代表 URL 回查；本地审计、远端发布及线上生效分别报告。
 
 最终交付至少包含：
 

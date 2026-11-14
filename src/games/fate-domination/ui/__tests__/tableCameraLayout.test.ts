@@ -1,5 +1,14 @@
 import {expect,it} from 'vitest';
-import {fitFateTableCamera, resizeFateTableCamera} from '../tableCameraLayout';
+import {constrainFateTableCamera, fitFateTableCamera, resizeFateTableCamera} from '../tableCameraLayout';
+
+it('在用户遇到问题的视口和缩放下，平移后棋盘仍与视口相交', () => {
+ const width=1169, height=719, mapWidth=1927, mapHeight=1179, zoom=.25;
+ for(const [panX,panY] of [[1500,-900],[-1000,850],[909,-265]]){
+  const pose=constrainFateTableCamera({zoom,panX,panY},width,height,mapWidth,mapHeight);
+  expect(Math.min(width,pose.panX+mapWidth*zoom)-Math.max(0,pose.panX)).toBeGreaterThanOrEqual(96);
+  expect(Math.min(height,pose.panY+mapHeight*zoom)-Math.max(0,pose.panY)).toBeGreaterThanOrEqual(96);
+ }
+});
 it.each([[1920,1080],[1366,768],[1180,757]] as const)('默认取景在%s×%s按完整视口居中适配，不因浮动牌区缩小棋盘', (width,height)=>{
  const pose=fitFateTableCamera(width,height,1927,1179);
  expect(pose.panX).toBeGreaterThanOrEqual(-.001);

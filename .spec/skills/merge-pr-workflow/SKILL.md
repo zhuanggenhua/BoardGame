@@ -36,20 +36,18 @@ description: "BoardGame PR 合并流程。用于合并 PR/分支、冲突处理�
 ## 合并顺序
 
 1. 读 [`references/git-merge-checklist.md`](references/git-merge-checklist.md)。
-2. 执行预检查：共同祖先、真实删除、旧分支漂移、冲突预测、权限和停止阈值。
-3. 阈值未触发且权限已锁定后，执行 `git fetch --all --prune` 和 `git merge <branch> --no-commit --no-ff`。
+2. 执行预检查：共同祖先、真实删除、旧分支漂移、冲突预测、权限和扩大审查阈值。
+3. 完成必要审查且权限已锁定后，执行 `git fetch --all --prune` 和 `git merge <branch> --no-commit --no-ff`。
 4. 有冲突时逐文件、逐块裁决；不得整份接受 ours / theirs 替代语义判断。
 5. 冲突解决后写 `evidence/merge-conflict-<pr-or-branch>-<YYYY-MM-DD>.md`。
 6. 运行合并审计：`npm run merge:audit -- HEAD` 与 `npm run merge:audit:strict -- HEAD`。
 7. 按改动范围运行验证：类型、lint、相关测试、E2E、spec lint、资源发布与远端回查。
-8. push 后关闭或确认 PR 状态；PR 未关闭时不得说合并完成。
+8. 若目标包含 push / PR 合并，完成外部动作并回查状态；仅请求本地合并时报告本地结果。
 
 ## 关键裁决
 
 - `git diff main...branch` 显示的删除不等于 PR 作者删除；必须先看共同祖先到 PR head 的真实改动。
 - 旧分支缺少主线后来新增的测试、规范、证据和资源时，默认保留主线内容。
-- 共享文件大范围差异时，从最新主线出发，只提取 PR 从共同祖先以来真实新增或有意修改的块。
-- 游戏规则、公开信息、交互权限、结算时机或资源发布冲突，必须回查规则源、OpenSpec、用户故事或 evidence；代码版本新旧不能单独裁决业务语义。
 - 两边都可能有效且真相源不能裁定时，停止自动合并，转用户决策包。
 
 ## 验证口径
@@ -65,7 +63,7 @@ npx eslint src/ --ext .ts,.tsx
 
 - 规则 / 引擎 / 游戏逻辑：跑相关单测、集成测试或 E2E。
 - 规范 / skill / knowledge：跑 `npm run spec:lint` 并扫过期入口和第二套规范。
-- 运行时资源：按 [`asset-pipeline`](../../knowledge/standards/asset-pipeline.md) 发布和远端回查。
+- 运行时资源：按 [`asset-pipeline`](../../knowledge/standards/asset-pipeline.md) 验证；目标包含远端发布时再发布和回查。
 - 冲突合并：合并审计必须通过，且没有未解释的单边覆盖。
 
 任一验证失败，只能称为“合并候选处理到某阶段”，不能宣告 PR 完成。

@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { EventStreamRollbackContext } from '../../../../engine/hooks/EventStreamRollbackContext';
 import type { MatchState } from '../../../../engine/types';
@@ -30,7 +30,7 @@ const draw = (entries: unknown[], seq: number, watermark: number | null) =>
   <EventStreamRollbackContext.Provider value={{ seq, watermark, reconcileSeq: 0 }}>
     <FateFgoEffects state={state(entries)} viewerId={null} />
   </EventStreamRollbackContext.Provider>;
-const noble = (id: number) => ({ id, event: { type: 'ATTACKS_CONFIRMED', payload: { playerId: '0', cardIds: ['sc_saber_np:1'] } } });
+const noble = (id: number) => ({ id, event: { type: 'LOCATION_RESOLVED', payload: { locationId: 'miyama', results: [], noblePlayerIds: ['0'] } } });
 
 beforeEach(() => { runtime.destroy.mockClear(); runtime.status = undefined; });
 
@@ -68,4 +68,18 @@ it('宝具淡出完成后结束纯白尾段，保留后续排队演出', () => {
   });
   expect(runtime.destroy).toHaveBeenCalledOnce();
   expect(screen.getByTestId('fate-fgo-noble')).toBeTruthy();
+});
+
+it('跳过当前宝具后播放下一项，旧回调不能跳过下一项', () => {
+  const view = render(draw([], 0, null));
+  view.rerender(draw([noble(1), noble(2)], 0, null));
+  const oldStatus = runtime.status;
+  fireEvent.click(screen.getByRole('button'));
+  expect(runtime.destroy).toHaveBeenCalledOnce();
+  expect(screen.getByTestId('fate-fgo-noble')).toBeTruthy();
+  act(() => oldStatus?.({ time: 18.5, duration: 18.5, phase: 'end', firedEvents: [], isPlaying: false }));
+  expect(screen.getByTestId('fate-fgo-noble')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button'));
+  expect(screen.queryByTestId('fate-fgo-noble')).toBeNull();
+  expect(runtime.destroy).toHaveBeenCalledTimes(2);
 });

@@ -12,6 +12,12 @@ test('PC 详情页下载战斗素材后重新进入对局使用本地缓存', as
   await expect(download).toBeVisible({ timeout: 45000 });
   await page.screenshot({ path: testInfo.outputPath('下载战斗素材入口.png') });
   await download.click();
+  await expect(page.getByText(/战斗动画素材，完整素材大小约/)).toBeVisible({ timeout: 45000 });
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+  await expect(download).toHaveText('下载');
+  await download.click();
+  await expect(page.getByText(/战斗动画素材，完整素材大小约/)).toBeVisible({ timeout: 45000 });
+  await page.getByRole('button', { name: '确认', exact: true }).click();
   await expect(download).toHaveText(/战斗素材已下载/, { timeout: 180000 });
   await page.screenshot({ path: testInfo.outputPath('战斗素材下载完成.png') });
   await page.reload({ waitUntil: 'domcontentloaded' });

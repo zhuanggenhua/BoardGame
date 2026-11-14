@@ -3,12 +3,11 @@ import type { AiDecisionContext, AiLegalAction, GameAiRuntime } from '../../engi
 import type { AiActionOutcome } from '../../engine/ai/actionOutcome';
 import type { Command, MatchState } from '../../engine/types';
 import { createSeededRandom } from '../../engine/pipeline';
-import { FATE_MASTERS, FATE_SERVANTS } from './data';
 import { FateDominationDomain } from './domain';
 import type { FateDominationCommand, FateDominationCore } from './domain';
 import { FATE_LOCATION_ORDER } from './domain';
 import { legalFateDeploymentSlots } from './domain/deployment';
-import { resolveFateAttack } from './domain/attackSelection';
+import { fateAttackManaCost, resolveFateAttack } from './domain/attackSelection';
 import { resolveFatePlayerAbility } from './domain/abilityRegistry';
 import { visibleFatePower } from './domain/playerView';
 import { isFateRidingChoice, validateFateRidingChoiceCommand } from './domain/ridingChoice';
@@ -51,11 +50,7 @@ export function buildFateAiLegalActions({ playerId, state: raw }: { playerId: st
         const candidate = action(type, payload, label, kind);
         if (FateDominationDomain.validate(state, { ...candidate.commands[0], playerId } as FateDominationCommand).valid) candidates.push(candidate);
     };
-    // 首轮选身份允许非当前席操作，不能用统一回合过滤将其删掉。
-    if (core.round === 1 && core.phase === 'preparation') {
-        for (const master of FATE_MASTERS) add('SELECT_MASTER', { masterId: master.id }, `选择${master.name}`, 'setup-select-character');
-        for (const servant of FATE_SERVANTS) add('SELECT_SERVANT', { servantId: servant.id }, `召唤${servant.name}`, 'setup-select-character');
-    }
+    // 电脑沿用开局分配的身份，等轮到自己时再完成准备。
     add('ADVANCE_PHASE', {}, '推进阶段');
     add('PASS_ACTION', {}, '结束行动');
     for (const locationId of FATE_LOCATION_ORDER) {
@@ -111,12 +106,11 @@ export function projectFateAiActionOutcome({ context, action: candidate }: { con
 
 export function chooseFateAiAction(context: AiDecisionContext) {
     const score = (candidate: AiLegalAction) => {
-        if (candidate.kind === 'setup-select-character') return -100;
         if (candidate.kind === 'riding-cancel') return -200;
         if (candidate.kind === 'riding-confirm') {
             const payload = candidate.commands[0].payload as { optionIds: string[] };
             const player = (context.visibleState as State).core.players[context.playerId];
-            return payload.optionIds.reduce((sum, id) => { const card = resolveFateAttack(player, id)?.definition; return sum + (card ? card.basePower * 2 - card.manaCost : 0); }, 0);
+            return payload.optionIds.reduce((sum, id) => { const card = resolveFateAttack(player, id)?.definition; return sum + (card ? card.basePower * 2 - (fateAttackManaCost(player, id) ?? 0) : 0); }, 0);
         }
         if (candidate.kind === 'post-battle-choice') return (candidate.commands[0].payload as { optionId: string }).optionId === 'restore' ? 10 : 0;
         if (['advance_phase', 'pass_action', 'resolve_location'].includes(candidate.kind)) return 0;

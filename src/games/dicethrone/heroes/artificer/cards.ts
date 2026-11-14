@@ -286,7 +286,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
                 conditionalEffects: [
                     {
                         face: ARTIFICER_DICE_FACE_IDS.WRENCH,
-                        heal: 2,
+                        cp: 2,
                         effectKey: 'bonusDie.effect.artificerOverdriveWrench',
                     },
                     {

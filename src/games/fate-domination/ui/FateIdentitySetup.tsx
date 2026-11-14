@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check, Maximize2 } from 'lucide-react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { FATE_MASTERS, FATE_SERVANTS } from '../data';
 import { FATE_MASTER_REFERENCE_COMPONENTS } from '../data/masterReferenceComponents';
@@ -11,9 +11,8 @@ interface Props {
     masterId: string;
     servantId: string;
     available: (kind: IdentityKind, id: string) => boolean;
-    onSelect: (kind: IdentityKind, id: string) => void;
     onInspect: (asset: string, name: string) => void;
-    onConfirm: () => void;
+    onConfirm: (identities: { masterId: string; servantId: string }) => void;
     confirmEnabled: boolean;
 }
 
@@ -21,19 +20,19 @@ type ReferenceKind = 'identity' | 'ability' | 'state' | 'resource' | 'item' | 's
 interface ReferenceCard { id: string; name: string; assetPath: string; kind: ReferenceKind; backAssetPath?: string }
 
 /** 选择资料只读原卡，不把关联物件当作开局已持有或已激活的对局状态。 */
-export function FateIdentitySetup({ masterId, servantId, available, onSelect, onInspect, onConfirm, confirmEnabled }: Props) {
+export function FateIdentitySetup({ masterId, servantId, available, onInspect, onConfirm, confirmEnabled }: Props) {
     const { t } = useTranslation('game-fate-domination');
     const [kind, setKind] = useState<IdentityKind>('master');
+    const [chosen, setChosen] = useState<Partial<Record<IdentityKind, string>>>({});
     const [reading, setReading] = useState<{scope: string; id: string; back: boolean} | null>(null);
-    const master = FATE_MASTERS.find(item => item.id === masterId)!;
-    const servant = FATE_SERVANTS.find(item => item.id === servantId)!;
+    const master = FATE_MASTERS.find(item => item.id === (chosen.master ?? masterId))!;
+    const servant = FATE_SERVANTS.find(item => item.id === (chosen.servant ?? servantId))!;
     const candidates = kind === 'master' ? FATE_MASTERS : FATE_SERVANTS;
-    const selected = kind === 'master' ? masterId : servantId;
     const identity = kind === 'master' ? master : servant;
-    const scope = `${kind}:${selected}`;
+    const scope = `${kind}:${identity.id}`;
     const references: ReferenceCard[] = [
         {id:'identity',name:identity.name,assetPath:identity.assetPath,kind:'identity'},
-        ...(kind === 'master' ? FATE_MASTER_REFERENCE_COMPONENTS[masterId] : servant.skillCards!.map((skill,index)=>({
+        ...(kind === 'master' ? FATE_MASTER_REFERENCE_COMPONENTS[master.id] : (servant.skillCards ?? []).map((skill,index)=>({
             id:skill.id!,name:skill.name,assetPath:servant.skillAssetPaths[index],kind:'servant-skill' as const,
         }))),
     ];
@@ -50,45 +49,59 @@ export function FateIdentitySetup({ masterId, servantId, available, onSelect, on
     };
     const roleLabel = kind === 'master' ? t('ui.identitySetup.master') : t('ui.identitySetup.servant');
     return <section className="fd-identity-setup" aria-label={t('ui.identitySetup.dialogLabel')} data-tutorial-id="fate-setup">
-        <header className="fd-identity-heading"><small>{t('brand')}</small><h1>{t('ui.identitySetup.title')}</h1></header>
+        <header className="fd-identity-heading"><h1>{t('ui.identitySetup.title')}</h1>
+            <nav role="tablist" aria-label={t('ui.identitySetup.identityType')}>
+                {(['master', 'servant'] as const).map(role => <button key={role} type="button" role="tab" aria-selected={kind === role} onClick={() => setKind(role)}>
+                    {t(`ui.identitySetup.${role}`)}{chosen[role] && <Check size={15} aria-hidden="true"/>}
+                </button>)}
+            </nav>
+        </header>
         <div className="fd-identity-workspace">
             <section className="fd-identity-roster" aria-label={t('ui.identitySetup.roster')}>
-                <nav role="tablist" aria-label={t('ui.identitySetup.identityType')}>
-                    <button type="button" role="tab" aria-selected={kind === 'master'} onClick={() => setKind('master')}>{t('ui.identitySetup.master')}</button>
-                    <button type="button" role="tab" aria-selected={kind === 'servant'} onClick={() => setKind('servant')}>{t('ui.identitySetup.servant')}</button>
-                </nav>
+                <p>{t(kind === 'master' ? 'ui.identitySetup.chooseMaster' : 'ui.identitySetup.chooseServant')}</p>
                 <div className="fd-identity-candidates" role="tabpanel" aria-label={kind === 'master' ? t('ui.identitySetup.masterCandidates') : t('ui.identitySetup.servantCandidates')}>
                     {candidates.map(candidate => {
                         const name = candidate.name;
-                        const enabled = candidate.id === selected || available(kind, candidate.id);
+                        const enabled = available(kind, candidate.id);
                         return <button key={candidate.id} type="button" className="fd-identity-candidate"
                             data-testid={`fate-setup-${kind}-${candidate.id}`} aria-label={t('ui.identitySetup.selectCandidate', { role: roleLabel, name })}
-                            aria-pressed={candidate.id === selected} disabled={!enabled} onClick={() => onSelect(kind, candidate.id)}>
-                            <OptimizedImage src={candidate.assetPath} alt={name}/>
+                            aria-pressed={chosen[kind] === candidate.id} disabled={!enabled} onClick={() => setChosen(current => ({ ...current, [kind]: candidate.id }))}>
+                            <OptimizedImage src={candidate.assetPath} alt=""/>
                             <span>{name}</span>
                         </button>;
                     })}
                 </div>
             </section>
             <section className="fd-identity-reader" aria-label={t('ui.identitySetup.currentCharacter')}>
+                <h2>{identity.name}</h2>
                 <button type="button" className="fd-identity-reader-art" aria-label={t('ui.identitySetup.enlargeCard', { name: current.name, side: back ? t('ui.identitySetup.cardBackSide') : '' })} onClick={() => onInspect(image,current.name)}>
                     <OptimizedImage src={image} alt={current.name}/>
+                    <Maximize2 size={18} aria-hidden="true"/>
                 </button>
                 {current.backAssetPath && <button type="button" className="fd-identity-flip" onClick={() => setReading({scope,id:current.id,back:!back})}>{back ? t('ui.identitySetup.viewFront') : t('ui.identitySetup.viewBack')}</button>}
             </section>
-            <section className="fd-identity-references" aria-label={kind === 'master' ? t('ui.identitySetup.masterReferences') : t('ui.identitySetup.servantReferences')} data-testid="fate-identity-references" data-master-id={kind === 'master' ? masterId : undefined}>
-                {references.map(card=><button key={card.id} type="button" className="fd-identity-reference"
+            <section className="fd-identity-reference-shelf" aria-label={kind === 'master' ? t('ui.identitySetup.masterReferences') : t('ui.identitySetup.servantReferences')} data-testid="fate-identity-references" data-master-id={kind === 'master' ? master.id : undefined}>
+                <h3>{t(kind === 'master' ? 'ui.identitySetup.masterReferences' : 'ui.identitySetup.servantReferences')}</h3>
+                <div className="fd-identity-references">{references.map(card=><button key={card.id} type="button" className="fd-identity-reference"
                     data-testid={`fate-identity-reference-${card.id}`} data-reference-kind={card.kind}
                     aria-label={t('ui.identitySetup.readCard', { name: card.name })} aria-pressed={current.id===card.id}
                     onClick={()=>setReading({scope,id:card.id,back:false})}>
+                    <OptimizedImage src={card.assetPath} alt=""/>
+                    <b>{card.name}</b>
                     <span>{referenceLabels[card.kind]}</span>
-                    <OptimizedImage src={card.assetPath} alt={card.name}/>
-                </button>)}
+                </button>)}</div>
             </section>
         </div>
         <footer className="fd-identity-footer">
-            <div className="fd-identity-party" aria-label={t('ui.identitySetup.selectedIdentities')}><span>{t('ui.identitySetup.master')} <b>{master.name}</b></span><span>{t('ui.identitySetup.servant')} <b>{servant.name}</b></span></div>
-            <button type="button" className="fd-identity-confirm" data-testid="fate-domination-primary-action" disabled={!confirmEnabled} onClick={onConfirm}>{t('ui.identitySetup.complete')}<ArrowRight size={20}/></button>
+            <div className="fd-identity-party" aria-label={t('ui.identitySetup.selectedIdentities')}>
+                <span>{t('ui.identitySetup.master')} <b>{chosen.master ? master.name : t('ui.identitySetup.notSelected')}</b></span>
+                <span>{t('ui.identitySetup.servant')} <b>{chosen.servant ? servant.name : t('ui.identitySetup.notSelected')}</b></span>
+            </div>
+            {chosen.master && !chosen.servant && kind === 'master'
+                ? <button type="button" className="fd-identity-confirm" onClick={() => setKind('servant')}>{t('ui.identitySetup.servant')}<ArrowRight size={20}/></button>
+                : <button type="button" className="fd-identity-confirm" data-testid="fate-domination-primary-action"
+                    disabled={!confirmEnabled || !chosen.master || !chosen.servant}
+                    onClick={() => onConfirm({masterId: master.id, servantId: servant.id})}>{t('ui.identitySetup.complete')}<ArrowRight size={20}/></button>}
         </footer>
     </section>;
 }

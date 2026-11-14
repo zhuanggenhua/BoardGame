@@ -17,7 +17,7 @@ Analyze the provided orthographic 2D reference images using this exact framework
 *   **Materials (PBR):** Extract strict Three.js `MeshStandardMaterial` / `MeshPhysicalMaterial` values.
     *   Identify if a texture is Solid Paint vs. Anodized Metal vs. Projected Skin.
     *   Identify Micro-surface data for Normal maps (e.g., hexagonal grip knurling, spine serrations).
-*   **Topology:** Define base primitives (Plane, Box, Cylinder) and modifiers (Extrusion profiles, Bevels for edge highlights, Boolean cuts for holes). Do not model micro-details (use normal maps).
+*   **Topology:** Define base primitives (Plane, Box, Cylinder) and modifiers (Extrusion profiles, Bevels for edge highlights, Boolean cuts for holes). Use geometry for details that materially change the visible silhouette; use material or normal maps for suitable sub-pixel detail, per `surface_topology.md`.
 
 ## Weathering & Surface Imperfections
 CS2 items rely heavily on wear and tear (Float values). Identify:
@@ -29,7 +29,7 @@ CS2 items rely heavily on wear and tear (Float values). Identify:
 
 Use `forge/tests/fixtures/knife_review_scene.json` as the versioned review-scene
 contract. It owns the camera, environment hash, exposure, tone mapping, resolution,
-background, renderer version, and calibrated knife thresholds. The report from
+background, renderer version, and initial knife thresholds; calibration remains pending until supported by labeled positive and negative renders. The report from
 `forge/stage4_review/cs2_review.py` must preserve family identity, route, exactness
 tier, painted-region scores, projection coverage, critical identity-detail scores,
 per-region confidence, hidden-region confidence, and approximation notes.

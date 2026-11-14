@@ -1,5 +1,9 @@
 # CS2 Item Anatomy Vocabulary — Snipers (Súng ngắm / Súng bắn tỉa)
 
+> Research vocabulary only; claims have not been independently verified here. Snipers are unsupported
+> by this copy's CS2 intake, and this reference does not enable their generation. In particular,
+> verify controls against the actual reference instead of inferring them solely from action type.
+
 > Bộ từ vựng song ngữ để **gọi đúng tên từng bộ phận của súng ngắm** khi mô tả lỗi fidelity trong pipeline img2threejs.
 > Quy tắc dùng: **geometry/hình khối sai** → dùng tên bộ phận vật lý (mục 1–3). **Texture/màu/pattern sai** → dùng thuật ngữ skin CS2 (mục 4).
 > Đặc điểm định danh của dòng này là **ống ngắm (scope/optic)** — nên nó có mục riêng (mục 2).

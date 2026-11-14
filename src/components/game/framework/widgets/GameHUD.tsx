@@ -457,9 +457,7 @@ export const GameHUD = ({
         ),
     };
 
-    // 0. 主按钮逻辑
-    // 在线/教程模式：聊天为主按钮
-    // 本地模式：无聊天主按钮，设置按钮应作为离主球最近的第一个卫星按钮
+    // 在线和教程使用相同的卫星按钮顺序；所有模式的主按钮均为聊天。
     const useChatAsMain = isOnline || isTutorial;
     const canForceEndAiPhase = Boolean(showForceEndAiPhase && onForceEndAiPhase);
     const topModalId = stack[stack.length - 1]?.id ?? null;
@@ -549,34 +547,32 @@ export const GameHUD = ({
         toast,
     ]);
 
-    if (useChatAsMain) {
-        // [0] 聊天（主按钮）
-        items.push({
-            id: 'chat',
-            mobilePopoverVerticalAnchor: viewportHeight < 480 ? 'viewport' : 'button',
-            icon: <MessageSquare size={20} />,
-            label: t('hud.actions.chat'),
-            active: unreadChatCount > 0,
-            // 预览：一行展示，格式“用户名：消息”
-            preview: unreadChatCount > 0 && latestIncomingMessage ? (
-                <div className="text-xs font-semibold text-white/90 truncate max-w-[220px]">
-                    {t('hud.chat.preview', {
-                        name: latestIncomingMessage.senderName || t('hud.chat.unknownPlayer'),
-                        message: latestIncomingMessage.text,
-                    })}
-                </div>
-            ) : undefined,
-            onActivate: chat.onOpenChange,
-            content: (
-                <MatchChatPanel
-                    chat={chat} isOnline={isOnline} isSpectator={isSpectator} matchId={matchId}
-                    players={players} myPlayerId={myPlayerId} myDisplayName={myDisplayName}
-                    emotes={availableEmotes} resolveEmote={resolveHudEmote} canUseEmotes={canUseSeatEmotes}
-                    localEmotes={localChatEmotes} onSendEmote={handleSendEmote}
-                />
-            )
-        });
-    }
+    // [0] 聊天（主按钮）
+    items.push({
+        id: 'chat',
+        mobilePopoverVerticalAnchor: viewportHeight < 480 ? 'viewport' : 'button',
+        icon: <MessageSquare size={20} />,
+        label: t('hud.actions.chat'),
+        active: unreadChatCount > 0,
+        // 预览：一行展示，格式“用户名：消息”
+        preview: unreadChatCount > 0 && latestIncomingMessage ? (
+            <div className="text-xs font-semibold text-white/90 truncate max-w-[220px]">
+                {t('hud.chat.preview', {
+                    name: latestIncomingMessage.senderName || t('hud.chat.unknownPlayer'),
+                    message: latestIncomingMessage.text,
+                })}
+            </div>
+        ) : undefined,
+        onActivate: chat.onOpenChange,
+        content: (
+            <MatchChatPanel
+                chat={chat} isOnline={isOnline} isSpectator={isSpectator} matchId={matchId}
+                players={players} myPlayerId={myPlayerId} myDisplayName={myDisplayName}
+                emotes={availableEmotes} resolveEmote={resolveHudEmote} canUseEmotes={canUseSeatEmotes}
+                localEmotes={localChatEmotes} onSendEmote={handleSendEmote}
+            />
+        )
+    });
 
     // 定义设置按钮
     const settingsAction: FabAction = {

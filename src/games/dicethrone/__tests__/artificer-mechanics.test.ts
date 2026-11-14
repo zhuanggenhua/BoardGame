@@ -1046,6 +1046,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             playerIds,
         );
         expect(responded.success).toBe(true);
+        console.log('[DEBUG-artificer-wrench]', JSON.stringify({ events: responded.events.map(e => ({ type: e.type, payload: e.payload, continuation: e.resolutionContinuation })), interaction: responded.state.sys.interaction, stack: responded.state.sys.resolution, pending: responded.state.core.pendingAttack }));
         expect(responded.state.core.pendingBonusDiceSettlement).toMatchObject({
             displayOnly: true,
             customResolutionId: 'artificer-wrench-strike-branch',
@@ -1391,18 +1392,20 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
     it('万能电流按扳手、齿轮、电能分支结算', () => {
         const wrenchState = createArtificerCardPlayState('card-artificer-overdrive');
         wrenchState.core.players['0'].resources[RESOURCE_IDS.HP] = 38;
+        wrenchState.core.players['0'].resources[RESOURCE_IDS.CP] = 2;
         const wrenchEvents = execute(wrenchState, command('PLAY_CARD', '0', {
             cardId: 'card-artificer-overdrive',
-        }), createQueuedRandom([1]));
+        }), createQueuedRandom([2]));
         const wrenchRolled = applyEvents(wrenchState.core, wrenchEvents);
         const { nextState: afterWrench } = confirmBonusDice(wrenchState, wrenchRolled, '0');
 
         expect(eventsOfType(wrenchEvents, 'BONUS_DIE_ROLLED')[0]?.payload).toMatchObject({
-            value: 1,
+            value: 2,
             face: 'wrench',
             effectKey: 'bonusDie.effect.artificerOverdriveWrench',
         });
-        expect(afterWrench.players['0'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(afterWrench.players['0'].resources[RESOURCE_IDS.HP]).toBe(38);
+        expect(afterWrench.players['0'].resources[RESOURCE_IDS.CP]).toBe(4);
 
         const gearState = createArtificerCardPlayState('card-artificer-overdrive');
         const gearEvents = execute(gearState, command('PLAY_CARD', '0', {
@@ -1584,6 +1587,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
 
         expect(confirmed.success).toBe(true);
         if (!confirmed.success) return;
+        console.log('[DEBUG-artificer-heal]', JSON.stringify({ events: confirmed.events.map(e => ({ type: e.type, payload: e.payload, continuation: e.resolutionContinuation })), interaction: confirmed.state.sys.interaction, stack: confirmed.state.sys.resolution, pending: confirmed.state.core.pendingAttack }));
         expect(eventsOfType(confirmed.events as DiceThroneEvent[], 'BONUS_DICE_SETTLED')).toHaveLength(1);
         expect(confirmed.state.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(confirmed.state.core.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(3);

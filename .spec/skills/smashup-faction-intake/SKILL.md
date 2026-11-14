@@ -50,7 +50,7 @@ intake 目标是交付可安全进入 implementation 的 handoff 包，至少包
 - 核对合同表：字段级主源、冲突和裁定。
 - faction / card / base 静态数据接入状态。
 - locale 对照表。
-- 资源本地路径、manifest、上传和远端回查结果。
+- 资源本地路径、manifest 和目标环境；涉及远端发布时记录上传与回查结果。
 - implementation 交接清单：可复用机制、需新实现对象、高风险点。
 
 ## 资源完成判据
@@ -60,7 +60,7 @@ intake 目标是交付可安全进入 implementation 的 handoff 包，至少包
 - 本地 `public/assets/i18n/zh-CN/smashup/**/compressed/*.webp` 存在。
 - 运行时代码已引用新 atlas。
 - 游戏级和根级 manifest 都出现对应键。
-- 运行时会请求的公开资源 URL 返回 `HEAD 200`，且来自服务器主源。
+- 目标包含远端发布时，运行时会请求的公开资源 URL 返回 `HEAD 200`，且来自服务器主源；本地完成不代表远端完成。
 
 如果某批基地实际复用既有 atlas，候选基地图不得留在正式运行时目录；应移到临时目录或删除，避免 `assets:upload` 误传。
 
@@ -95,7 +95,7 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 - `public/assets/i18n/zh-CN/smashup/cards/compressed/<atlas>.webp`
 - `public/assets/i18n/zh-CN/smashup/base/compressed/<atlas>.webp`
 
-压缩产物默认不一定进入 git diff，后续必须做服务器资源主源发布与公开 URL 回查。
+压缩产物默认不一定进入 git diff；目标包含远端发布时，后续还需完成服务器资源发布与公开 URL 回查。
 
 ### 3. 切片核对
 
@@ -150,7 +150,7 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 
 ### 8. 发布与回查
 
-按资源规范执行：
+仅当目标环境包含远端发布时按资源规范执行；本地任务记录远端未发布，不因此中断后续本地实现：
 
 - [`data-entry`](../../knowledge/standards/data-entry.md) 的资源上传收口。
 - `docs/deploy.md` 的服务器主源说明。
@@ -180,7 +180,7 @@ npm run typecheck
 
 至少检查：
 
-- 派系选择界面能看到新增派系。
+- 按生命周期检查派系选择界面：`hidden` 时玩家不可选；进入 `in_progress` 或完成态后可见可选。
 - 注入或真实入口牌桌能看到新增基地图与手牌图。
 - atlas shimmer / fallback 状态已清零。
 - `CardPreview` / atlas 渲染实际使用成功加载的单个 URL，不依赖多层 `background-image` fallback 冒充加载成功。

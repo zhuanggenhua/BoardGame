@@ -47,7 +47,7 @@ it('辽北十支展开兵牌和人口可以同时留在真实地区', async () =
     for (const [i, token] of armies.entries()) {
         const x = token.x * w, y = token.y * h, half = token.size! / 2;
         for (const dx of [-half, half]) for (const dy of [-half, half]) expect(owners[Math.round(y + dy) * w + Math.round(x + dx)]).toBe(regionId);
-        for (const other of armies.slice(i + 1)) expect(Math.abs((token.x - other.x) * w) >= 38 * scale - 1e-9 || Math.abs((token.y - other.y) * h) >= 38 * scale - 1e-9).toBe(true);
+        for (const other of armies.slice(i + 1)) expect(Math.abs((token.x - other.x) * w) >= 34 * scale - 1e-9 || Math.abs((token.y - other.y) * h) >= 34 * scale - 1e-9).toBe(true);
         // 地图放大时牌和角标同步保持屏幕尺寸，检查四种旋转均不被邻牌覆盖。
         for (const [badgeX, badgeY] of [[x - half + 3 * scale, y - half + 3 * scale], [x + half - 15 * scale, y - half + 3 * scale],
             [x - half + 3 * scale, y + half - 15 * scale], [x + half - 15 * scale, y + half - 15 * scale]]) {
@@ -60,6 +60,31 @@ it('辽北十支展开兵牌和人口可以同时留在真实地区', async () =
     }
     const population = getQidahenPopulationPlacements(regions, owners, result.tokens, sites).find(item => item.regionId === regionId);
     expect(population?.callout).toBe(false);
+});
+
+it('辽北不规则边界内十支展开兵牌在真实选择缩放下保持紧凑编组', async () => {
+    const w = 1265, h = 893;
+    const data = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer();
+    const owners = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), w, h);
+    const core = createInitialCore(['0', '1', '2']);
+    const regions = core.regions.map(item => item.id === regionId ? { ...item, troops: 10, specialTroops: [] } : item);
+    const tokens = syncQidahenMapTokensFromRegions(regions).filter(token => token.type !== 'control')
+        .map(token => token.type === 'army' ? { ...token, size: token.size! * .6404 } : token);
+    const sites = buildQidahenPopulationSites(owners, w, h, QIDAHEN_MAP_REGION_GEOMETRY);
+    const initial = layoutQidahenFieldArmies(tokens, sites, w, h);
+    const result = packExpandedArmiesWithinRegions(initial.tokens, initial.callouts, sites, w, h,
+        new Set([regionId]), new Set(regions.filter(item => item.population > 0).map(item => item.id)));
+    const armies = result.tokens.filter(token => token.type === 'army' && token.regionId === regionId && token.location === 'field');
+    expect(result.unresolvedRegionIds).toEqual([]);
+    expect(armies).toHaveLength(10);
+    const xs = armies.map(token => token.x * w), ys = armies.map(token => token.y * h);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(75);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(50);
+    for (const token of armies) {
+        const x = token.x * w, y = token.y * h, half = token.size! / 2;
+        for (const dx of [-half, half]) for (const dy of [-half, half]) expect(owners[Math.round(y + dy) * w + Math.round(x + dx)]).toBe(regionId);
+    }
+    expect(getQidahenPopulationPlacements(regions, owners, result.tokens, sites).find(item => item.regionId === regionId)?.callout).toBe(false);
 });
 
 it('拥挤地区兵堆保留阵营与数量，展开后仍可逐枚选择原始兵牌', () => {
@@ -144,6 +169,32 @@ it('大地区超过 1000 个候选时仍可原位展开而不误判放不下', (
     expect(result.unresolvedRegionIds).toEqual([]);
     expect(result.callouts).toEqual([]);
     expect(result.tokens.map(token => token.pieceId)).toEqual(tokens.map(token => token.pieceId));
+});
+
+it('没有外置引线时，逐兵操作也会把同区兵牌紧凑排列', () => {
+    const sites = buildQidahenPopulationSites(ownership(12, 12, 208, 208), width, height, [region]);
+    const tokens = Array.from({ length: 6 }, (_, index) => army(`compact-${index}`));
+    const result = packExpandedArmiesWithinRegions(tokens, [], sites, width, height, new Set([regionId]), new Set([regionId]));
+    expect(result.unresolvedRegionIds).toEqual([]);
+    const xs = result.tokens.map(token => token.x * width);
+    const ys = result.tokens.map(token => token.y * height);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(80);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(80);
+    expect(new Set(result.tokens.map(token => `${token.x},${token.y}`)).size).toBe(6);
+});
+
+it('目标选择时出兵牌相邻排列，不改变兵牌身份', () => {
+    const sites = buildQidahenPopulationSites(ownership(12, 12, 208, 208), width, height, [region]);
+    const tokens = ['stack', 'a', 'b', 'c'].map(army);
+    const selected = new Set(['a', 'b', 'c']);
+    const result = packExpandedArmiesWithinRegions(tokens, [], sites, width, height, new Set([regionId]), new Set(),
+        new Set([regionId]), selected);
+    const positions = result.tokens.filter(token => selected.has(token.pieceId!));
+    expect(positions.map(token => token.pieceId)).toEqual(['a', 'b', 'c']);
+    const xs = positions.map(token => token.x * width), ys = positions.map(token => token.y * height);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(51);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(51);
+    expect(tokens.map(token => token.pieceId)).toEqual(['stack', 'a', 'b', 'c']);
 });
 
 it('开局朵颜、山海关和宁远控制章互不重叠，城市章紧邻各自城名', async () => {

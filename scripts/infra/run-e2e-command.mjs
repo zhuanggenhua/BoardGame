@@ -640,7 +640,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         modeEnv.PW_TEST_TARGET = explicitTargetPath;
     }
 
-    ensureE2EAssets({
+    await ensureE2EAssets({
         targetPath: explicitTargetPath,
         env: {
             ...modeEnv,

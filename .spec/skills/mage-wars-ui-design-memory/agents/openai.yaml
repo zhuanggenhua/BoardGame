@@ -1,4 +1,4 @@
 interface:
   display_name: "Mage Wars UI 设计记忆"
   short_description: "Mage Wars UI user quote review gate"
-  default_prompt: "先读取 Mage Wars UI 设计记忆，再重构当前 Open Design 设计稿，并在送验前按用户原话逐条反思。"
+  default_prompt: "读取 Mage Wars UI 设计记忆，对照本轮对象与用户纠偏记录检查当前任务。"

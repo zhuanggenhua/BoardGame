@@ -19,6 +19,7 @@ import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUni
 import { resolveI18nList } from './utils';
 
 import { STATUS_IDS } from '../domain/ids';
+import { isArtificerBotTokenId } from '../domain/artificerBots';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
 import type { TokenDef } from '../domain/tokenTypes';
 
@@ -977,8 +978,14 @@ export const TokenBadge = ({
     dataTestId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const meta = getVisualMetaById(tokenId, resolveVisualDefinitions(characterId, visualDefinitions))
+    const baseMeta = getVisualMetaById(tokenId, resolveVisualDefinitions(characterId, visualDefinitions))
         || { color: 'from-gray-500 to-gray-600' };
+    const isRobot = isArtificerBotTokenId(tokenId);
+    // 机器人上限字段在运行时表达升级面，不代表可堆叠数量；基础面走原始单图，高级面走图集。
+    const meta = isRobot && (maxAmount ?? 1) < 2
+        ? { ...baseMeta, frameId: undefined, atlasId: undefined }
+        : baseMeta;
+    const visibleMaxAmount = isRobot ? undefined : maxAmount;
 
     let hasSprite = false;
     if (atlas && meta.frameId) {
@@ -1075,9 +1082,9 @@ export const TokenBadge = ({
                 {getStatusEffectIconNode(info, locale, size, atlas)}
             </div>
             {/* 有上限(>1)时始终显示 数量/上限；否则仅 amount>1 时显示数量 */}
-            {(maxAmount != null && maxAmount > 1) ? (
+            {(visibleMaxAmount != null && visibleMaxAmount > 1) ? (
                 <div className={STACK_BADGE_CLASS_NAME} style={stackBadgeStyle}>
-                    {amount}/{maxAmount}
+                    {amount}/{visibleMaxAmount}
                 </div>
             ) : amount > 1 ? (
                 <div className={STACK_BADGE_CLASS_NAME} style={stackBadgeStyle}>
@@ -1087,7 +1094,7 @@ export const TokenBadge = ({
 
             {!suppressTooltip && (
                 <InfoTooltip
-                    title={`${info.name}${maxAmount != null && maxAmount > 1 ? ` ${amount}/${maxAmount}` : amount > 1 ? ` ×${amount}` : ''}`}
+                    title={`${info.name}${visibleMaxAmount != null && visibleMaxAmount > 1 ? ` ${amount}/${visibleMaxAmount}` : amount > 1 ? ` ×${amount}` : ''}`}
                     content={info.description}
                     isVisible={isHovered}
                     position={tooltipPosition}

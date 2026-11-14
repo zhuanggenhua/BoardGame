@@ -3,50 +3,12 @@ name: brainstorming
 description: "BoardGame 创造性改动前置澄清。用于新功能、组件、行为修改和设计探索；先收敛意图、需求和方案，再进入实现。"
 ---
 
-# Brainstorming Ideas Into Designs
+# 创意需求收敛
 
-## Overview
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
+先读取当前项目上下文，明确用户目标、对象、约束和可验证的结果。对影响方案的关键不确定性，优先从现有资料寻找答案；确实缺失时提出简洁问题，并继续不依赖答案的工作。已有授权和明确目标足以决定的细节，直接采用合理方案。
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
+根据问题复杂度比较可行方向，说明推荐方案及关键取舍，避免为简单修复机械列举多个方案。设计需覆盖与任务相关的交互、职责、数据、错误处理和验证，不强制固定篇幅或逐段等待确认。
 
-## The Process
+用户要求先审设计、明确设置审批节点，或实现会超出已授权范围时，在对应节点等待；否则按用户请求继续执行和验证。需要设计记录时放到项目认可的文档位置；提交、分支及 worktree 按当前用户授权和项目 Git 流程执行，不因本 skill 自动创建或提交。
 
-### Understanding the idea
-1. Check out the current project state first (files, docs, recent commits)
-2. Ask questions one at a time to refine the idea
-3. Prefer multiple choice questions when possible, but open-ended is fine too
-4. Only one question per message - if a topic needs more exploration, break it into multiple questions
-5. Focus on understanding: purpose, constraints, success criteria
-
-### Exploring approaches
-1. Propose 2-3 different approaches with trade-offs
-2. Present options conversationally with your recommendation and reasoning
-3. Lead with your recommended option and explain why
-
-### Presenting the design
-1. Once you believe you understand what you're building, present the design
-2. Break it into sections of 200-300 words
-3. Ask after each section whether it looks right so far
-4. Cover: architecture, components, data flow, error handling, testing
-5. Be ready to go back and clarify if something doesn't make sense
-
-## After the Design
-
-### Documentation
-1. Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-2. Use `elements-of-style:writing-clearly-and-concisely` skill if available
-3. Commit the design document to git
-
-### Implementation (if continuing)
-1. Ask: "Ready to set up for implementation?"
-2. Use `superpowers:using-git-worktrees` to create isolated workspace
-3. Use `superpowers:writing-plans` to create detailed implementation plan
-
-## Key Principles
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design in sections, validate each
-- **Be flexible** - Go back and clarify when something doesn't make sense
+游戏设计判断可转 [`game-design`](../game-design/SKILL.md)，工程实现按对应项目 workflow 和规范执行。

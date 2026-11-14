@@ -74,7 +74,7 @@ metadata:
 - 只有确认本地拥有完整资源镜像时，才用 `npm run assets:manifest:full` / `npm run assets:validate:full`；full 模式会把 manifest 当成本地目录快照。
 - 语言目录内的游戏级 manifest 必须用对应语言根生成，例如 `--root public/assets/i18n/zh-CN --id <gameId>`，确保 `basePrefix` 指向 `official/i18n/<locale>/<gameId>/`。
 - 构建和开发注入的资源索引必须同时读取本地文件和 manifest；本地缺图但 manifest 已登记的远端资源应进入官方资源域名候选链。
-- 新增、移动或重建 manifest 后，必须展开新增或变更的运行时对象引用，回查对应 `compressed/*.webp`、`compressed/*.ogg`、运行时 JSON/SVG 是否已远端可达。
+- 新增、移动或重建 manifest 后，展开新增或变更的运行时对象引用并核对目标环境可达性；目标包含远端发布时，回查对应 `compressed/*.webp`、`compressed/*.ogg` 和运行时 JSON/SVG 的远端对象。本地验证不能冒充远端已发布。
 
 ## 服务器与移动包
 
@@ -83,7 +83,7 @@ metadata:
 - 若用户问题发生在线上、手机、已安装包或官方资源包，本地文件、manifest 和截图只能算本地准备；最终修复必须闭合到服务器对象、App file-index / manifest 或真机下载证据。
 - 上传失败必须明说未上传资源、失败原因和当前运行风险。`--asset-prefix` 指定后 0 个对象视为失败，不能解释成“已经传过”。
 - 对 `408`、`425`、`429`、`5xx`、`524` 以及连接重置/临时网络错误等传输级失败，`assets:upload` 必须先自动重试；若仍失败，自动降级为 `128 KiB` 分块、单并发再重试一次。只有恢复尝试全部失败，才能中断并报告实际未上传的对象；鉴权、路径、权限和对象 key 错误不得被吞掉或伪装成可恢复超时。
-- 服务器发布成功后 `current` 原子切换；历史 release 默认只保留最近 5 个，且必须保留当前 `current`。空间不足先核对 release 占用并清历史快照，再重跑原发布流程。
+- 服务器发布成功后 `current` 原子切换；历史 release 默认只保留最近 5 个，且必须保留当前 `current`。空间不足时先核对 release 对象、引用和实际占用，再按已授权范围处理历史快照并重跑发布；不得未经核对清理。
 - `npm run assets:download -- --game <gameId>` 只按游戏拉取运行时对象、语言目录、atlas 配置和共享运行时依赖；`--list`、无明确游戏目标和共享测试不得扩大为全站下载。
 - `dev:lite` 只证明本地代码和内存游戏服可跑；运行时媒体默认可走公开资源域名，不要求本地完整素材镜像。
 

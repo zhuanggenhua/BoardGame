@@ -69,6 +69,7 @@ export function projectFatePlayerView(state: FateDominationCore, viewerId: strin
             };
             return [id, { ...player, publicView, hand: [], deck: [], discard: [], selectedAttackIds: [], selectedFaceDownIds: [], faceDownAttackIds: [], activeAttackIds: [],
                 servantId: player.isRevealed ? player.servantId : '', skills: player.isRevealed ? player.skills : [], activeSkills: player.isRevealed ? player.activeSkills : [],
+                piercingSpearPlays: player.isRevealed ? player.piercingSpearPlays : undefined,
             }];
         })),
     };

@@ -181,8 +181,9 @@ for (const attacker of [
       { file: `${attacker.name}战斗后.png`, id: `${attacker.chainId}-after`, change: 'interaction-mode' }] });
 });
 
-test('代表态真实出牌确认释放誓约胜利之剑，宝具演出不拦截行动', async ({ page, context }, testInfo) => {
+for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续行动' : '代表态真实出牌确认释放誓约胜利之剑，宝具演出不拦截行动', async ({ page, context }, testInfo) => {
   test.setTimeout(240000);
+  if (!skip) await page.setViewportSize({ width: 1280, height: 800 });
   await initContext(context, { skipImageGate: false });
   await openBoard(page);
   await waitForAssets(page, true);
@@ -213,8 +214,18 @@ test('代表态真实出牌确认释放誓约胜利之剑，宝具演出不拦�
   const before = await fgoEvidenceSnapshot(page);
   await action.click();
   const noble = page.getByTestId('fate-fgo-noble');
+  await expect(noble).toHaveCount(0);
+  await prepareBattle(page);
+  await expect(action).toBeEnabled();
+  await action.click();
   await expect(noble).toBeVisible({ timeout: 15000 });
   await expect(noble.locator('canvas')).toHaveCount(1);
+  if (skip) {
+    await noble.getByRole('button', { name: /^(跳过|Skip)$/ }).click();
+    await expect(noble).toBeHidden();
+    await expect(action).toBeEnabled();
+    return;
+  }
   const presentation = await noble.evaluate(element => {
     const bounds = element.getBoundingClientRect();
     const canvas = element.querySelector('canvas')!;

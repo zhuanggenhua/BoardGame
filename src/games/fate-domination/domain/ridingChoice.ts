@@ -9,7 +9,7 @@ import { canUseFateAbility } from './mechanics';
 import { fateAbilityUsageKey } from './abilitySource';
 import { resolveFatePlayerAbility } from './abilityRegistry';
 import { projectFateHand } from './handView';
-import { resolveFateAttack } from './attackSelection';
+import { fateAttackManaCost, resolveFateAttack } from './attackSelection';
 import { canPlayAttack } from './movement';
 import { drawFateCards } from './cardDraw';
 import type {
@@ -144,7 +144,7 @@ export function calculateFateRidingSelectionCost(core: FateDominationCore, playe
             || !Number.isFinite(definition.basePower) || definition.basePower > 3
             || !projectFateHand(player).available.some(candidate => candidate.id === id)
             || !canPlayAttack(core, playerId, definition).valid) return undefined;
-        cost += definition.manaCost;
+        cost += fateAttackManaCost(player, id) ?? Infinity;
     }
     return cost;
 }

@@ -618,19 +618,19 @@
     "nanobot": {
       "name": "纳米机器人",
       "description": [
-        "同伴机器人，基础上限 1，升级后上限 2。维护阶段可激活并引爆所有纳米爆弹。"
+        "同伴机器人。维护阶段可激活并引爆所有纳米爆弹；每回合最多激活 1 次。基础版激活花费 2 合成器，高级版花费 1 个。"
       ]
     },
     "shock_bot": {
       "name": "电能机器人",
       "description": [
-        "同伴机器人，基础上限 1，升级后上限 2。进攻造成伤害后可激活，使攻击伤害 +3。"
+        "同伴机器人。进攻掷骰阶段发动攻击后可激活，使该次攻击伤害 +3；每回合最多激活 1 次。基础版激活花费 2 合成器，高级版花费 1 个。"
       ]
     },
     "heal_bot": {
       "name": "治疗机器人",
       "description": [
-        "同伴机器人，基础上限 1，升级后上限 2。受到至少 6 点攻击伤害后可激活并投骰治疗。"
+        "同伴机器人。受到至少 6 点攻击伤害后可激活并投骰治疗；每回合最多激活 2 次。基础版激活花费 2 合成器，高级版花费 1 个。"
       ]
     },
     "blood_power": {
@@ -1407,7 +1407,7 @@
       "cursedPirateSipMiss": "啜呼：1-2，无事发生",
       "artificerMasterpieceElectricity": "合成大师：电能获得 5 合成器",
       "artificerMasterpieceOther": "合成大师：否则抽 1 张牌",
-      "artificerOverdriveWrench": "万能电流：扳手治疗 2",
+      "artificerOverdriveWrench": "万能电流：扳手获得 2 CP",
       "artificerOverdriveGear": "万能电流：齿轮获得 1 合成器",
       "artificerOverdriveElectricity": "万能电流：电能对对手施加 1 个纳米爆弹",
       "artificerWrenchStrikeWrench": "扳手攻击：扳手使本次攻击伤害 +1",
@@ -1489,6 +1489,7 @@
     "requireMinDamageDealt": "本次攻击未造成足够伤害，无法打出此卡",
     "requireTokenStacks": "指定标记数量不足，无法打出此卡",
     "noStatusOnBoard": "场上没有任何状态效果，无法打出此卡",
+    "noTransferableStatusTarget": "没有可转移到其他玩家的状态效果，无法打出此卡",
     "requirePendingDamage": "需要存在待结算伤害才能打出此卡",
     "tutorial_manifest_invalid": "教程配置无效",
     "tutorial_command_blocked": "教程中禁止该操作",
@@ -4633,7 +4634,7 @@
     },
     "card-artificer-overdrive": {
       "effects": {
-        "roll": "投 1 骰：扳手治疗 2；齿轮获得合成器；电能施加纳米爆弹。"
+        "roll": "投 1 骰：扳手获得 2 CP；齿轮获得合成器；电能施加纳米爆弹。"
       }
     },
     "card-artificer-perfectly-calibrated": {
@@ -6107,9 +6108,9 @@
     },
     "card-artificer-overdrive": {
       "name": "万能电流！",
-      "description": "投掷 1 骰：扳手治疗 2；齿轮获得合成器；电能对 1 名对手施加纳米爆弹。",
+      "description": "投掷 1 骰：扳手获得 2 CP；齿轮获得合成器；电能对 1 名对手施加纳米爆弹。",
       "effects": {
-        "roll": "投 1 骰：扳手治疗 2；齿轮获得合成器；电能施加纳米爆弹。"
+        "roll": "投 1 骰：扳手获得 2 CP；齿轮获得合成器；电能施加纳米爆弹。"
       }
     },
     "card-artificer-perfectly-calibrated": {
@@ -7124,19 +7125,19 @@
     },
     "artificerWorkshop": {
       "buildNanobotShort": "制造纳米",
-      "buildNanobot": "花费 2 合成器制造 1 个纳米机器人使用机会",
+      "buildNanobot": "花费 2 合成器制造 1 个基础纳米机器人",
       "buildShockBotShort": "制造电能",
-      "buildShockBot": "花费 2 合成器制造 1 个电能机器人使用机会",
+      "buildShockBot": "花费 2 合成器制造 1 个基础电能机器人",
       "buildHealBotShort": "制造治疗",
-      "buildHealBot": "花费 2 合成器制造 1 个治疗机器人使用机会",
+      "buildHealBot": "花费 2 合成器制造 1 个基础治疗机器人",
       "upgradeNanobotShort": "升级纳米",
-      "upgradeNanobot": "花费 3 合成器将纳米机器人升级为 2 次使用机会",
+      "upgradeNanobot": "花费 3 合成器将基础纳米机器人升级为高级",
       "upgradeShockBotShort": "升级电能",
-      "upgradeShockBot": "花费 3 合成器将电能机器人升级为 2 次使用机会",
+      "upgradeShockBot": "花费 3 合成器将基础电能机器人升级为高级",
       "upgradeHealBotShort": "升级治疗",
-      "upgradeHealBot": "花费 3 合成器将治疗机器人升级为 2 次使用机会",
+      "upgradeHealBot": "花费 3 合成器将基础治疗机器人升级为高级",
       "activateNanobotAdvancedShort": "激活纳米",
-      "activateNanobotAdvanced": "花费 1 合成器并消耗 1 个高级纳米机器人，引爆所有纳米爆弹"
+      "activateNanobotAdvanced": "花费 1 合成器激活高级纳米机器人，引爆所有纳米爆弹"
     },
     "thor": {
       "name": "姆乔尔尼尔",

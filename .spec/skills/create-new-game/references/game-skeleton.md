@@ -6,7 +6,7 @@
 
 ## 必备目录
 
-以下是新游戏最终目录合同，不代表可以在设计稿前一次性创建全部正式运行时文件。Open Design 设计稿和 UI-facing 数据模型批准前，只能建立非 UI 骨架；`Board.tsx`、`ui/` 下的正式组件和运行时交互必须在设计门通过后创建。
+以下是新游戏目标目录示例；具体文件按规则、交互合同和本轮能力范围建立。用户明确要求设计稿先获批准时遵循该前提。
 
 ```text
 src/games/<gameId>/
@@ -27,7 +27,7 @@ src/games/<gameId>/
 
 - `manifest.ts`：清单元数据；`id` 必须与目录名一致，缩略图路径使用逻辑资源路径。
 - `game.ts`：组装领域内核和引擎系统；`commandTypes` 只列业务命令，系统命令由引擎适配层合并。不得承载规则事实、命令校验、事件生成、状态 reducer、读模型或测试夹具正文。
-- `Board.tsx`：设计门通过后的正式玩家 UI 入口；只做页面组合、React 状态绑定、handler wiring 和子 UI 挂载。超过约 `1,000` 行时先做体量审查；出现多职责区域且未通过白名单裁决时拆入 `ui/`、read model 或 controller hook。设计门通过前不得用占位 Board 冒充骨架完成。
+- `Board.tsx`：正式玩家 UI 入口；只做页面组合、React 状态绑定、handler wiring 和子 UI 挂载。超过约 `1,000` 行时先做体量审查；出现多职责区域且未通过白名单裁决时拆入 `ui/`、read model 或 controller hook。不得用占位 Board 冒充已验证的玩家入口。
 - `thumbnail.tsx`：缩略图组件；优先使用项目统一 thumbnail 组件，不自写资源 URL。
 - `tutorial.ts`、`audio.config.ts`：可先占位，但最终完成前必须按教程和音频规范裁定。
 - `domain/`：规则状态、命令、事件、校验、执行、reducer、流程钩子和共享工具。
@@ -75,11 +75,6 @@ src/games/<gameId>/
 
 ## 最小骨架验收
 
-设计门通过前的非 UI 骨架只能证明：
+非 UI 阶段只能报告已建立的目录职责、规则来源、资源索引与低层验证，不能宣称正式玩家入口已完成。当前 manifest 生成器对游戏类型要求 `game.ts` 和 `Board.tsx` 同时存在；缺任一文件时不能声称 manifest 可生成或大厅已可发现。
 
-- 非 UI 目录职责、规则来源和资源索引已建立，且没有把规则事实写进 UI 或占位文案。
-- manifest 可生成，大厅能发现游戏。
-- Domain setup、validate / execute / reduce / isGameOver 可以作为草稿或低层验证，但不得据此宣称正式游戏骨架完成。
-- tutorial、audio、critical image、debug 等占位项已登记到后续收尾清单，不被误报为完成。
-
-只有 Open Design 设计稿、UI-facing 数据模型和用户批准记录齐全后，才能补齐正式 Board / `ui/` 并进行完整 S1 骨架验收；此时还必须证明 Board 能从正式 route 挂载，不依赖隐藏调试命令。
+完成 S1 骨架验收时，验证 manifest 生成、正式 route 挂载和必要资源接线；不依赖隐藏调试命令，并如实报告尚未完成的规则和交互。

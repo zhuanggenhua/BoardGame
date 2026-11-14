@@ -42,7 +42,8 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 - 响应窗口能否闭合，取决于是否有合法响应、无响应 pass、不会因 stale queue / reopen 再卡住。
 - 必须区分：
   - human 自己回合且 human 在响应：watchdog 不得出手。
-  - AI 当前阶段被 human 响应窗口卡住：watchdog 可先强制关闭窗口，再继续 AI 阶段收口。
+  - AI 当前阶段、human 正常响应：自动 watchdog 等待真人，不得仅凭 AI 是当前玩家强关窗口。
+  - AI 可见交互与 human 响应窗口并存形成阻塞，或玩家手动强制结束 AI 阶段：按 [`response-window-watchdog`](references/response-window-watchdog.md) 区分当前恢复路径与其影响，不能视作正常响应自动超时。
   - AI 自己是 responder：AI 可发合法响应或 `RESPONSE_PASS`。
 
 ### 在线 AI 兜底链
@@ -57,6 +58,7 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 ### 1. AI 只能选合法动作
 
 - AI legal actions 必须和 `validate()` / `execute()` 同源一致。
+- 涉及选角时先查规则的身份占用合同。禁止重复的身份由权威状态在确认时拒绝，自动选角从仍可用的身份中选；规则允许重复时，有未占用的合法候选就优先避让。暗置身份的去重由权威端判断，不能为 AI 下发其他席的隐藏身份。
 - `disabled=true`、已失效目标、不可移除状态、已确认阶段的旧动作不得进入 AI 动作。
 - legal actions 为空时，必须走 cancel / pass / skip / advance 之一；不能继续等。
 - 真人在同一规则状态下能选择的并列合法动作，AI legal actions 也要枚举；策略不想选时在评分层降权，不在合法动作层删掉。
@@ -119,9 +121,9 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 
 - `minimumActionDelayMs` 只决定时长，不决定哪些动作延迟。
 - 可见动作是玩家肉眼会理解为“AI 正在操作 / 轮到我继续 / 流程还活着”的动作，例如摸牌、公开区变化、移动、目标高亮、确认提交、等待归属切换。
-- 静默动作是后台收口、hidden interaction skip / cancel、无响应 pass、纯阶段推进、watchdog 内部诊断。
+- 静默动作包括后台收口、hidden interaction skip / cancel、无响应 pass 和 watchdog 内部诊断；阶段推进是否可见应按实际动作语义与页面结果裁定。
 - 用户反馈“AI 瞬间 / 太快 / 1 秒无效”时，先跑真实页面行动权时间线；不得用静态分类直接否定。
-- 改延迟门控时必须同步 `src/engine/transport/react.tsx` 与 `e2e/src/engine/transport/react.tsx`，并用 `[LOCAL_AI_PERF]` 或在线 AI trace 证明静默动作不累计 gate、可见动作保留节奏。
+- 改延迟门控时先核对 `src/engine/ai/actionVisibility.ts`、`actionDelay.ts` 和 `src/engine/transport/localAiExecutionPrep.ts` 的分类与调度，以及 E2E 对应副本；用 `[LOCAL_AI_PERF]` 或在线 AI trace 证明静默动作不额外等待、可见动作保留节奏。
 
 ## 常见卡死归类
 
@@ -129,7 +131,7 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 - **Hidden interaction**：sharedState 看不到 current 但 `isBlocked=true`；必须检查 AI seat 的 `playerView()`。
 - **Response-window 重触发**：pass 后 reopen、音效循环或 pendingInteractionId 不一致；先查事件源，不先怪音频。
 - **重复动作循环**：undo / cancel / 撤回类动作被 AI 当收益动作；先在 `ai.ts` 阻断同一 source / interaction 的无限重试。
-- **真人被误影响**：watchdog 替 human pass / choose / close；除 AI 当前阶段被 human 响应窗口卡住的场景外，一律禁止。
+- **真人被误影响**：watchdog 替 human pass / choose / close；真人正常响应不得因当前回合属于 AI 而被强关，并存阻塞及手动恢复须按专项口径审查。
 
 ## 工作流
 
@@ -148,7 +150,7 @@ description: "BoardGame 游戏 AI 接入入口。用于 AI/机器人/自动玩�
 测试至少覆盖当前风险之一：
 
 - human 当前回合时 watchdog 不误触发。
-- AI 当前阶段 + human responder 时走强制关闭窗口 + follow-up。
+- AI 当前阶段 + human 正常响应时自动 watchdog 不强关；并存阻塞与手动强制结束分别覆盖。
 - hidden interaction 需要 seat view 才能识别。
 - 无解交互能 cancel / pass / skip。
 - 重复动作循环被 AI guard 或 watchdog 打断。
@@ -181,7 +183,7 @@ AI evidence 必须写清：
 
 - 每个新增 / 修改 AI 交互都有合法解或显式 skip / cancel / pass。
 - hidden 风险已验证 seat `playerView()`。
-- 已区分 human 自己回合与 AI 当前阶段 + human 响应窗口。
+- 已区分真人正常响应、AI 交互与真人响应并存阻塞，以及玩家手动强制结束。
 - 重复动作循环优先在 AI 层阻断，watchdog 只兜底。
 - 测试放入最相关现有文件。
 - `npx eslint <改动文件>` 或对应项目门禁已通过。

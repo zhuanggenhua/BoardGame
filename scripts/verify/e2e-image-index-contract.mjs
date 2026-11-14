@@ -432,6 +432,13 @@ const validateDistinctUIEvidence = ({ manifest, index, outOfScopeMedia, projectR
         if (requiredOrder.some((position, i) => i > 0 && position <= requiredOrder[i - 1])) throw new Error('必要动作顺序不一致');
         if (manifest.evidenceCategory === 'golden') {
             assertString(trace.browserContextId, '黄金链浏览器上下文');
+            assertString(trace.matchId, '黄金链在线房间 matchId');
+            const route = `/play/${encodeURIComponent(trace.gameId)}/match/${encodeURIComponent(trace.matchId)}`;
+            for (const step of [trace.steps[0], trace.steps.at(-1)]) {
+                const url = URL.canParse(step.after.visible.url) ? new URL(step.after.visible.url) : null;
+                if (!url || !['http:', 'https:'].includes(url.protocol) || url.pathname !== route
+                    || step.after.authoritative.matchId !== trace.matchId) throw new Error('黄金链首尾必须是同一正式在线房间及其服务端状态');
+            }
             const first = traces.values().next().value?.trace;
             if (first && ['sourceRun', 'sourceRevision', 'browserContextId'].some(key => first[key] !== trace[key])) throw new Error('黄金链必须同源同浏览器上下文');
             const terminal = trace.steps.find(step => step.id === trace.terminalStepId);
@@ -581,6 +588,7 @@ export const validateE2EImageIndex = ({ manifest, manifestPath, imagePaths = [],
             }
         }
     }
+    if (manifest.evidenceCategory === 'golden' && !distinctUI) throw new Error('黄金链必须提交正式在线房间的独特界面和行为证据');
     const indexDir = path.dirname(indexPath);
     const mediaEntries = index.media;
     const seenPaths = new Set();

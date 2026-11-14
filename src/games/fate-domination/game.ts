@@ -84,7 +84,11 @@ const systems = [
     }),
 ];
 
-const resolveFateLocalRuntimeControlledPlayerId:LocalRuntimeControlResolver = ({state,fallbackPlayerId}) => isFatePostBattleChoice(state.sys.interaction.current) ? state.sys.interaction.current.playerId : fallbackPlayerId;
+const resolveFateLocalRuntimeControlledPlayerId: LocalRuntimeControlResolver = ({state, fallbackPlayerId, seatControllers = {}, localPlayerId}) => {
+    const activeSeat = isFatePostBattleChoice(state.sys.interaction.current) ? state.sys.interaction.current.playerId : fallbackPlayerId;
+    if (!activeSeat || (seatControllers[activeSeat]?.type ?? 'human') === 'human') return activeSeat;
+    return localPlayerId ?? (state.core as FateDominationCore).playerIds.find(id => (seatControllers[id]?.type ?? 'human') === 'human');
+};
 
 export const engineConfig = { ...createGameEngine<FateDominationCore, FateDominationCommand, FateDominationEvent>({
     domain: FateDominationDomain,

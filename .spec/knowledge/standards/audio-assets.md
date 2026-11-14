@@ -16,7 +16,7 @@ metadata:
 
 | 层 | 职责 | 禁止 |
 | --- | --- | --- |
-| 通用注册表 | `src/assets/audio/registry.json` 是音频 key 与物理路径映射的唯一来源 | 游戏层重复声明资源、维护短 key 或私有 basePath |
+| 通用注册表 | 素材生成 `public/assets/common/audio/registry.json`，同步源码全量副本 `src/assets/audio/registry.json`；运行时由该副本生成并导入 `src/assets/audio/registry-slim.json`，开发试听页使用全量副本 | 游戏层重复声明资源、维护短 key 或私有 basePath；把全量副本存在误当作精简表已包含目标 key |
 | 事件策略 | 领域事件声明 `ui`、`immediate`、`fx`、`silent` 等播放策略 | 依赖命名猜测、按钮文案或组件位置决定音效 |
 | FX 系统 | 有动画的事件由 `FeedbackPack` 或 impact 回调在正确视觉时机播放 | 同一事件同时走即时音和动画音两条正式路径 |
 | UI 交互音 | 点击、拒绝、确认等本地交互走共享 UI 音效入口 | 在业务组件里散写游戏态音效逻辑 |

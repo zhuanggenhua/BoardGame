@@ -14,36 +14,78 @@
   "phases": [
     {
       "name": "lock_audit_target",
-      "required_artifacts": ["problem_object", "truth_source", "runtime_entry", "acceptance_contract"],
-      "gates": ["audit_prerequisites_locked"],
+      "required_artifacts": [
+        "problem_object",
+        "truth_source",
+        "runtime_entry",
+        "acceptance_contract"
+      ],
+      "gates": [
+        "audit_prerequisites_locked"
+      ],
       "on_fail": "halt"
     },
     {
       "name": "capture_same_source_runtime",
-      "required_artifacts": ["functional_result", "original_screenshots", "viewport_and_state"],
-      "gates": ["screenshot_is_current_and_same_source", "target_state_reached"],
+      "required_artifacts": [
+        "functional_result",
+        "original_screenshots",
+        "viewport_and_state"
+      ],
+      "gates": [
+        "screenshot_is_current_and_same_source",
+        "target_state_reached"
+      ],
       "on_fail": "revise"
     },
     {
       "name": "player_view_visual_audit",
-      "required_artifacts": ["score", "hard_failures", "issues", "verdict"],
-      "gates": ["original_image_visually_inspected", "all_dimensions_scored"],
+      "required_artifacts": [
+        "score",
+        "hard_failures",
+        "issues",
+        "verdict"
+      ],
+      "gates": [
+        "original_image_visually_inspected",
+        "all_dimensions_scored"
+      ],
       "on_fail": "revise"
     },
     {
       "name": "implementation_iteration",
-      "when": {"verdict": "REVISE"},
-      "required_artifacts": ["evidence_bound_fixes"],
-      "gates": ["fixes_address_observed_issues"],
+      "when": {
+        "verdict": "REVISE"
+      },
+      "required_artifacts": [
+        "evidence_bound_fixes"
+      ],
+      "gates": [
+        "fixes_address_observed_issues"
+      ],
       "on_fail": "halt",
       "next": "capture_same_source_runtime"
     },
     {
       "name": "final_delivery",
-      "when": {"verdict": "PASS"},
-      "required_artifacts": ["final_original_screenshot", "written_visual_judgment", "user_visible_open_result"],
-      "gates": ["score_at_least_90", "no_hard_failures", "final_image_opened_via_show_image_skill"],
-      "on_fail": "revise"
+      "when": {
+        "verdict": "PASS"
+      },
+      "required_artifacts": [
+        "final_original_screenshot",
+        "written_visual_judgment"
+      ],
+      "gates": [
+        "score_at_least_90",
+        "no_hard_failures",
+        "show_final_image_when_required_by_skill"
+      ],
+      "on_fail": "revise",
+      "conditional_artifacts": {
+        "when_user_visible_display_required": [
+          "user_visible_open_result"
+        ]
+      }
     }
   ],
   "verification_contract": {

@@ -13,6 +13,7 @@ interface Props {
     name: string;
     sealEnabled: boolean;
     pileInfo?: string;
+    draftManaCost?: number;
     onDetail: () => void;
     onSeal: () => void;
     onPile: (pile: 'deck' | 'discard') => void;
@@ -21,7 +22,7 @@ interface Props {
     onAbilityTipChange: (open: boolean) => void;
 }
 /** Identity and physical objects remain the action owners in the lower-left play area. */
-export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, onDetail, onSeal, onPile,canActivateAbility,onActivateAbility,onAbilityTipChange}: Props) {
+export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, draftManaCost = 0, onDetail, onSeal, onPile,canActivateAbility,onActivateAbility,onAbilityTipChange}: Props) {
     const { t } = useTranslation('game-fate-domination');
     const view = projectFatePlayer(core, playerId, playerId);
     return <aside data-tutorial-id="fate-self" className="fd-self-dock" aria-label={t('ui.selfDock.playerSeat')}>
@@ -37,7 +38,13 @@ export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, onDet
         </div>
         <div className="fd-self-character"><button type="button" className="fd-self-identity" aria-description={view.player.eliminated ? t('ui.selfDock.eliminatedSpectating') : undefined} aria-label={t('ui.selfDock.viewPlayerDetails', { name })} onClick={onDetail}>
             <span data-fate-drag-source={playerId} data-tutorial-id="fate-self-avatar" className="fd-runtime-avatar"><OptimizedImage draggable={false} className="fd-runtime-master-avatar" src={fateTokenAsset(view.player.masterId)} alt={view.master?.name ?? ''}/><OptimizedImage draggable={false} className="fd-runtime-servant-avatar" src={view.servant?.assetPath ?? 'fate-domination/backs/servant'} alt={view.servant?.name ?? ''}/>{view.player.eliminated && <span className="fd-avatar-elimination" aria-hidden="true"/>}</span>
-            <span className="fd-self-copy"><strong>{name}</strong><small>{view.master?.name} · {view.servant?.name ?? t('ui.selfDock.servant')}</small><span className="fd-self-stats"><span>{t('ui.selfDock.mana')} <b>{view.player.mana}</b></span><span>{t('ui.selfDock.victoryPoints')} <b>{view.player.victoryPoints}</b></span></span></span>
+            <span className="fd-self-copy"><strong>{name}</strong><small>{view.master?.name} · {view.servant?.name ?? t('ui.selfDock.servant')}</small><span className="fd-self-stats">
+                <span data-testid="fate-self-mana" aria-live="polite">
+                    {t('ui.selfDock.mana')} <b>{Math.max(0, view.player.mana - draftManaCost)}</b>
+                    {draftManaCost > 0 && <small>{t('ui.selfDock.manaDraft', { cost: draftManaCost })}</small>}
+                </span>
+                <span>{t('ui.selfDock.victoryPoints')} <b>{view.player.victoryPoints}</b></span>
+            </span></span>
         </button><FateMasterAbilities abilities={(view.master?.skills??[]).map(ability=>{
             const source=view.player.skills.find(skill=>skill.isMasterSkill&&skill.id.split(':')[0]===ability.id);
             return {id:source?.id??ability.id,name:ability.name,description:ability.desc,actionable:Boolean(source&&resolveFatePlayerAbility(core,playerId,source.id)),enabled:Boolean(source&&canActivateAbility(source.id))};

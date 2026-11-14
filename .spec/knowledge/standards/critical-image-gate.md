@@ -28,6 +28,7 @@ metadata:
 ## 变更落点
 
 - `src/components/game/framework/CriticalImageGate.tsx`：提供 `blockRendering` 能力。
-- `src/pages/MatchRoom.tsx`：联机模式使用后台预加载，教程模式继续阻塞。
+- `src/pages/useMatchRoomRuntimeSetup.ts`：计算房间的图片预加载阻塞策略。
+- `src/pages/matchRoomBoardRuntime.tsx`：将该策略传给 `CriticalImageGate`。
 - `src/games/<gameId>/criticalImageResolver.ts`：每个游戏自己的首屏关键图真相源。
 - `src/games/<gameId>/game.ts` 或 `manifest.client.generated.tsx`：确保解析器能在真实房间页进入首屏前被加载到链路中。

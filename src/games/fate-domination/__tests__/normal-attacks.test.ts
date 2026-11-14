@@ -3,6 +3,7 @@ import {createReplayAdapter} from '../../../engine/adapter';
 import {FateDominationDomain} from '../domain';
 import {FATE_SERVANTS} from '../data';
 import {calculateFatePower} from '../domain/power';
+import {fateAttackManaCost} from '../domain/attackSelection';
 import type {FateDominationCommand} from '../domain';
 const adapter=createReplayAdapter(FateDominationDomain,'normal-attack-contract');
 const fixture=()=>{
@@ -121,4 +122,42 @@ it('原子混合出牌与旧选择路径等价，费用变化后重验，旧失�
  const passed=adapter.execute(changed,pass).state;
  expect(passed.core.players['0'].selectedAttackIds).toEqual([]);
  expect(passed.core.players['0'].selectedFaceDownIds).toEqual([]);
+});
+
+it('小圣杯与风王结界的减费共同影响实付，暗置免费，真名解放后恢复对应费用', () => {
+ const state=fixture();
+ const player=state.core.players['0'];
+ const saber=FATE_SERVANTS.find(servant=>servant.id==='servant-saber')!;
+ player.masterId='m_iliya';
+ player.servantId=saber.id;
+ player.skills=saber.skillCards!;
+ player.isRevealed=false;
+ expect(fateAttackManaCost(player,'sc_saber_2')).toBe(1);
+ expect(fateAttackManaCost(player,'basic')).toBe(0);
+ const confirm=command('CONFIRM_ATTACK',{cardIds:['sc_saber_2','other'],faceDownIds:['other'],round:state.core.round});
+ const result=adapter.execute(state,confirm);
+ expect(result.state.core.players['0'].mana).toBe(11);
+ expect(fateAttackManaCost({...player,isRevealed:true},'sc_saber_2')).toBe(3);
+ player.mana=7;
+ expect(FateDominationDomain.validate(state,confirm)).toMatchObject({valid:false,error:'skillAttackUnavailable'});
+});
+
+it('穿刺死棘之枪按打出前的费用扣款，打出后才叠加，下次仍要用新费用验证', () => {
+ const state=fixture();
+ const player=state.core.players['0'];
+ const first=command('CONFIRM_ATTACK',{cardIds:['sc_cu_1','basic'],faceDownIds:['basic'],round:state.core.round});
+ const result=adapter.execute(state,first);
+ const after=result.state.core.players['0'];
+ const printed=fateAttackManaCost(player,'sc_cu_1')!;
+ expect(after.mana).toBe(12-printed);
+ expect(after.piercingSpearPlays).toBe(1);
+ expect(fateAttackManaCost(after,'sc_cu_1')).toBe(printed+2);
+ after.activeSkills=[];
+ after.activeAttackIds=[];
+ after.faceDownAttackIds=[];
+ after.normalAttackPlayed=false;
+ after.mana=8;
+ const second=adapter.execute(result.state,first);
+ expect(second.state.core.players['0'].mana).toBe(8-printed-2);
+ expect(fateAttackManaCost(second.state.core.players['0'],'sc_cu_1')).toBe(printed+4);
 });

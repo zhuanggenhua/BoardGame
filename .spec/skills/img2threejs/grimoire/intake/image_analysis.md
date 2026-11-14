@@ -1,6 +1,6 @@
 # Image Analysis Protocol
 
-Use this reference **first**, before `probe_image.py` and before the pre-spec assessment. It
+Use this reference before the pre-spec assessment. Image metadata may be probed before or alongside visual observation. It
 exists because the agent tends to glance at the whole image once and jump straight to code,
 skipping the disciplined observation that every later gate depends on. This is a **generic,
 object-agnostic** protocol — it applies to any subject (prop, tool, weapon, vehicle part,

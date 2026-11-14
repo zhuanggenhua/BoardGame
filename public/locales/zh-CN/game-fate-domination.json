@@ -1,5 +1,6 @@
 {
   "title": "命运支配",
+  "skipNobleAnimation": "跳过",
   "brand": "命运支配",
   "subtitle": "冬木市 · 圣杯战争牌桌",
   "dev": {
@@ -82,11 +83,15 @@
       "ridingSelectionSummary": "已选 {{selected}}/3 · 实付 {{cost}}/{{mana}} 魔力",
       "ridingStatus": "坐骑召唤 · 已选 {{selected}} 张（最多 {{maximum}} 张）· 实付 {{cost}} / {{mana}} 魔力 · 本次选牌固定明置",
       "selectionMode": "暗置选牌",
+      "adjustedCost": "实付 {{current}} · 原 {{printed}}",
       "skillAction": "{{action}} {{name}}",
       "skillCards": "技能牌",
       "totalPower": "合计威力"
     },
     "identitySetup": {
+      "notSelected": "未选择",
+      "chooseMaster": "选择一名御主，查看其能力与关联卡牌。",
+      "chooseServant": "选择一名从者，查看其概览与技能牌。",
       "cardBackSide": "牌背",
       "complete": "完成准备",
       "currentCharacter": "当前角色资料",
@@ -175,6 +180,7 @@
       "title": "战后恢复令咒"
     },
     "selfDock": {
+      "manaDraft": "预计 −{{cost}}",
       "commandSealAlt": "令咒",
       "discardPileCount": "弃牌堆 {{count}} 张",
       "drawPileCount": "抽牌堆 {{count}} 张",
@@ -264,6 +270,8 @@
     "gameOver": "对局已结束",
     "unknownMaster": "御主素材未登记",
     "unknownServant": "从者素材未登记",
+    "masterTaken": "该御主已被选择，请换一名御主。",
+    "servantTaken": "该从者已被选走，请换一名从者。",
     "wrongPhase": "当前阶段不可执行",
     "notYourTurn": "不是你的回合",
     "alreadyDeployed": "本轮已经部署",

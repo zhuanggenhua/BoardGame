@@ -33,16 +33,16 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 ## 现场和范围
 
-- 新游戏默认建议独立 worktree，但创建、切换或派生分支前必须得到用户当轮明确授权。
+- 只有当前任务确需隔离时才考虑独立 worktree；创建、切换或派生分支前须得到用户当轮明确授权。
 - 一旦选定执行现场，后续读写、验证、截图和 OpenSpec 更新都必须落在同一现场。
 - 共享基线改动和单游戏实现分开收口；误落到主工作区的新游戏实现不得顺手并入主线。
-- 未获授权创建 worktree 时，只做读取、规则 / 素材核对、计划和证据整理；实施确实依赖隔离现场时，说明后果和最小授权动作。
+- 未授权创建 worktree 时，若当前现场适合任务，就在当前现场实施并保留并行改动；确实依赖隔离时说明后果和最小授权动作。
 
 ## 阶段门槛
 
 ### S0 Intake
 
-未闭合以下内容前，不得进入目录骨架、Board/UI、机制实现、E2E、截图或完成汇报：
+整体完成前须闭合以下适用内容；已锁定且不依赖未决项的切片可按授权推进，未闭合部分不得宣称完成：
 
 - 规则源、对照源和用户指定真相源；
 - 对象全集、规则对象 × 素材数量对账；
@@ -61,7 +61,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 ### S1 骨架与 Manifest
 
-Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI 目录骨架、manifest、domain 草稿、规则文件和资源索引；不得创建正式 Board、运行时 HUD 或玩家交互。设计稿批准后，再按 `references/game-skeleton.md` 补齐 Board、thumbnail、tutorial、audio、critical image resolver 和基础测试。主 skill 不维护代码模板。
+按任务范围建立骨架、manifest、domain 和资源索引；涉及 UI 时先锁定规则对象、交互合同及适用设计依据，再按 `references/game-skeleton.md` 建立 Board 和相关接线。只有用户明确要求设计稿先批准，才等待该批准；主 skill 不维护代码模板。
 
 最低验收：
 
@@ -69,7 +69,7 @@ Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI �
 - 对应 `src/games/<gameId>` 冒烟测试通过；
 - 大厅可发现该游戏，且没有用错误资源路径、`compressed/` 硬编码或缺失 i18n 冒充接入。
 
-生命周期门禁：只要新游戏仍有 `in_progress`、`partial`、`deferred` 或其它未完成范围，`manifest.ts` 必须设置 `statusTag: 'under_construction'`。`enabled` 只控制是否可发现，不代表已完成；只有完成 closeout 且得到用户明确完成态确认后，才允许移除该标记。
+生命周期门禁：只要新游戏仍有 `in_progress`、`partial`、`deferred` 或其它未完成范围，`manifest.ts` 必须设置 `statusTag: 'under_construction'`。`enabled` 只控制是否可发现，不代表已完成；只有本轮范围内所需工作和验证已完成，且没有用户或规格要求继续保留时，才允许移除该标记。
 
 ### S2 机制与数据设计
 
@@ -77,7 +77,7 @@ Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI �
 
 S2 必须产出职责 owner 表：规则事实、正式状态、命令校验、命令执行、事件 reducer、读模型 / selector、UI Surface、动作列表 / action model、测试夹具和素材数据分别由哪个文件或目录承载。没有这张表时，不得进入 S3 领域内核或 S5 Board/UI；不得先把职责塞进 `game.ts` / `Board.tsx` 再承诺后续重构。
 
-若当前新游戏 change 包含 `board-ui`、`runtime-entry` 或玩家可见交互，S2 不能在没有已批准的 Open Design 设计稿 / 交互合同的情况下标记完成：规则事实可以先依据主规则源整理，但 UI-facing 状态、事件、命令、选择项、可见字段和溢出策略必须回填设计稿结论。缺设计稿时只能停在 `in_progress`，不得直接进入 UI 实施或把临时模型当正式模型。
+若本轮包含玩家可见交互，S2 应锁定 UI-facing 状态、事件、命令、选择项、可见字段和溢出策略及其规则 / 设计依据；按任务选择适用的设计产物。用户明确要求先批准设计稿时遵循该前提，不把临时模型当已验证的正式模型。
 
 一票否决：
 
@@ -117,7 +117,7 @@ S2 必须产出职责 owner 表：规则事实、正式状态、命令校验、�
 
 进入主 UI 前先读 `references/ui-implementation-gates.md`。新游戏默认按“桌面基线 -> 桌面真实 E2E -> 桌面截图复看 -> 移动适配 -> 移动截图复看”推进。
 
-S5 是硬阻塞步骤：当前 change 若包含 UI，执行到 UI 实施任务时必须检查 Open Design artifact、导出设计图、AI 图面核验、用户批准记录、UI 前置包和需求对齐表。任一缺失都必须停在 `blocked`，不得写 Board / runtime UI、不得启动实现 E2E，也不得用页面能打开或测试夹具通过替代设计稿门禁。
+S5 按本轮 UI 合同实施并在真实入口验证；涉及设计稿时按用户要求及 [`ui-design-pipeline`](../ui-design-pipeline/SKILL.md) 选择产物。用户明确要求先人工批准时才等待批准；页面能打开或测试夹具通过不能替代适用的图面验收。
 
 禁止：
 
@@ -132,7 +132,7 @@ S5 是硬阻塞步骤：当前 change 若包含 UI，执行到 UI 实施任务�
 最终完成前必须回查：
 
 - i18n、教学、音频、关键图片预加载、debug 配置、资源 manifest；
-- 资源是否压缩、上传到服务器素材主源并远端回查；
+- 资源压缩、manifest 与目标环境验证；目标包含远端发布时再上传并回查；
 - 本轮定义为基础体验的操作日志、撤回、音效、AI、教程、debug 是否在附加能力矩阵中逐项裁定；
 - 真实入口可玩性、截图、E2E 和规则对象素材矩阵是否一致。
 

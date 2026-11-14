@@ -204,7 +204,7 @@ describe('mage-wars tutorial', () => {
             infoStep: true,
             highlightTarget: 'mw-spellbook',
             visual: {
-                src: 'mage-wars/references/spell-card-legend',
+                src: 'mage-wars/references/compressed/spell-card-legend',
                 alt: 'game-mage-wars:tutorial.visuals.spellCardLegendAlt',
                 caption: 'game-mage-wars:tutorial.visuals.spellCardLegendCaption',
             },

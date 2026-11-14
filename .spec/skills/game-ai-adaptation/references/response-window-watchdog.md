@@ -1,6 +1,6 @@
 # AI 当前阶段 + human 响应窗口：专项口径
 
-> 本页只收一个高频误判：**当前 responder 是 human，不等于 watchdog 一律不能动。**
+> 本页区分真人正常响应、并存阻塞与用户手动恢复；不能仅因当前阶段属于 AI 就关闭真人响应窗口。
 
 ## 先分清 3 种场景
 
@@ -13,16 +13,12 @@
   - `SYS_RESPONSE_WINDOW_FORCE_CLOSE`
   - `ADVANCE_PHASE`
 
-### 场景 B：AI 当前阶段，但卡在 human 的响应窗口
+### 场景 B：AI 当前阶段，human 在响应
 
-- 这是本轮修过的重点场景
-- 正确做法：
-  1. 先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`
-  2. 再 follow-up advance / end-phase
-- 禁止：
-  - 直接无脑 `ADVANCE_PHASE`
-  - 替 human 发 `RESPONSE_PASS`
-  - 因为 `currentResponderId === human` 就直接返回 `null`
+- 正常等待真人响应时，自动 watchdog 返回 `null`，不得代替真人关闭或让过。
+- 当前实现对 AI 可见交互与真人响应窗口并存的阻塞有强制关闭恢复路径；先核对交互归属、窗口、实际卡住的原因和对真人选择的影响，不能把此特殊路径推广到普通等待。
+- 玩家明确触发手动强制结束 AI 阶段时，当前手动恢复路径可先关闭窗口，再按合同推进；这与自动 watchdog 是不同入口。
+- 不得直接无脑 `ADVANCE_PHASE`，也不得伪装成真人发出 `RESPONSE_PASS`。
 
 ### 场景 C：AI 自己是当前 responder
 
@@ -46,10 +42,11 @@
 
 ### 单测
 
-至少要补 2 条：
+至少覆盖：
 
 1. human 当前回合时 watchdog 不得误触发
-2. AI 当前阶段 + human responder 时 watchdog 应 `FORCE_CLOSE + follow-up`
+2. AI 当前阶段 + human 正常响应时自动 watchdog 不强关
+3. AI 交互与真人响应并存阻塞，以及玩家手动强制结束，分别核对对应恢复动作和后续结果
 
 ### E2E
 

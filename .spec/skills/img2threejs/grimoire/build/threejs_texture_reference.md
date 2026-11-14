@@ -11,7 +11,7 @@ the emitted `makeProceduralTextureSet` / material presets in `generate_threejs_f
 - `CanvasTexture`: `flipY = true` (default), auto `needsUpdate` on construct.
 - `DataTexture`: `flipY = false` (default) — memory (0,0) is bottom-left. Set `needsUpdate = true`.
 - After changing `wrapS/wrapT` on an already-used texture you MUST set `needsUpdate = true`.
-- `aoMap`/`lightMap` read UV channel 1 — geometry needs a 2nd UV set, or set `texture.channel = 1`.
+- `aoMap`/`lightMap` use the texture's selected UV channel. In the installed Three.js version `texture.channel` defaults to 0; set it to 1 only when the geometry actually provides `uv1`, and verify the target runtime version.
 - Tiling: `wrapS = wrapT = THREE.RepeatWrapping` + `repeat.set(u,v)`; set `anisotropy =
   renderer.capabilities.getMaxAnisotropy()` so oblique angles stay sharp.
 

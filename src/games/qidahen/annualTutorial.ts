@@ -30,7 +30,8 @@ const HUD_PROTECTION = ['[data-testid="qidahen-faction-actions"]', '[data-testid
     '[data-testid="qidahen-draw-anchor"]', '[data-testid="qidahen-discard-anchor"]', '[data-testid="qidahen-tactic-card-selection-panel"]'];
 // 仅保留正式UI已标记的当前来源、目标、全部候选、交战与维护上下文。
 const CURRENT_MAP_TASK_PROTECTION = ['[data-qidahen-map-protected-token="true"]', '[data-qidahen-map-protected-population="true"]',
-    '[data-pending-committed-selectable="true"]', '[data-testid="qidahen-map-tutorial-recommendation"]', '[data-qidahen-army-group-region]', '[data-testid="qidahen-map-region-focus-name"]', '[data-qidahen-map-context-space]', '[data-qidahen-fortification-context]'];
+    '[data-pending-committed-selectable="true"]', '[data-pending-committed-selectable="true"] [data-testid^="qidahen-unit-level-"]',
+    '[data-testid="qidahen-map-tutorial-recommendation"]', '[data-qidahen-army-group-region]', '[data-testid="qidahen-map-region-focus-name"]', '[data-qidahen-map-context-space]', '[data-qidahen-fortification-context]'];
 const PROTECTED_UI = [...HUD_PROTECTION, ...CURRENT_MAP_TASK_PROTECTION];
 
 const action = (id: string, command: string, event: string, highlightTarget: string, match?: Record<string, unknown>, extra: Partial<TutorialStep> = {}): TutorialStep => ({

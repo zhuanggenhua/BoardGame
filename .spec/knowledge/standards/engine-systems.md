@@ -74,8 +74,8 @@ metadata:
 ## 能力与交互
 
 - 新游戏涉及可配置技能、卡牌效果、Token 能力或等价能力注册需求时，使用 `AbilityRegistry` / `AbilityExecutorRegistry`，避免自建注册表或全局单例。能力存在触发、响应、替代、防止、持续或延迟生命周期时，用 `buildOpportunityFromAbilityDef` / `createAbilityOpportunity` 投影为 `Opportunity`；能力需要玩家或 AI 输入时，用 `createAbilityChoiceContract` 统一 request / candidate provenance，再按需求接 `ChoiceRequest`、response window、`ResolutionFrame` 或 `EventCommit`。
-- 通用约束写在 `AbilityDef.validation` / `constraints`，不要在 UI、validate 或 execute 里按 ability id 手写分支。
-- 技能按钮由 `AbilityDef.ui` 和通用组件消费，不在 UI 里硬编码 ability id。
+- 通用约束写在 `AbilityDef.constraints`，不要在 UI、validate 或 execute 里按 ability id 手写分支。
+- 技能按钮消费正式能力定义和通用组件，不依赖不存在的 `AbilityDef.ui` 字段。
 - 技能描述由 i18n 和 `AbilityDef.description` 指向，卡牌配置只保留 ability id。
 - 旧 `createSimpleChoice` 只作兼容；新阻塞交互按 [`rule-driven-interaction-design`](rule-driven-interaction-design.md) 和 [`engine-simple-choice`](engine-simple-choice.md) 裁决。
 - 当前是否忙碌优先消费 `sys.interaction.current`、response window 和共享 hook，不要在游戏 Board 自建另一套“等待玩家输入”状态机。

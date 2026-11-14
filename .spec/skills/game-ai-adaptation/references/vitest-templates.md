@@ -12,7 +12,8 @@
 | 场景 | 构造事实 | 必须断言 |
 | --- | --- | --- |
 | human 当前回合 | 当前玩家是 human，human 处在自己的响应或选择窗口 | watchdog 不发 `RESPONSE_PASS`、`SYS_RESPONSE_WINDOW_FORCE_CLOSE`、`ADVANCE_PHASE`；不记录 AI 误报 |
-| AI 当前阶段 + human responder | active player 是 AI，response window 当前 responder 是 human，human 有真实可响应场景 | 先 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`，后续才允许 advance / end-phase；不得替 human 发 `RESPONSE_PASS` |
+| AI 当前阶段 + human 正常响应 | active player 是 AI，response window 当前 responder 是 human，无并存 AI 可见交互 | 自动 watchdog 不强关或替 human 让过 |
+| AI 交互与 human 窗口并存 / 手动恢复 | 分别构造 AI 可见交互阻塞和玩家手动强制结束 | 按各入口核对恢复动作、阶段后续及对真人响应的影响；不能外推到正常等待 |
 | AI 自己是 responder | 当前 responder 是 AI，存在合法响应或可跳过 | AI 只发合法响应或 `RESPONSE_PASS`；response window 最终关闭或推进 |
 | 并列合法动作 | 同一规则状态下同时存在介入动作和确认 / 跳过 / done 收口动作 | AI legal actions 同时保留两类动作；去掉介入条件后只移除介入动作，不移除合法收口 |
 | 已确认阶段 | AI 已确认或应等待下一阶段 | legal actions 不再包含会重开上一阶段窗口的动作；若应推进，得到 advance / end-phase |

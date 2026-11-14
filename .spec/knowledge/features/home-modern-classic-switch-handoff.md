@@ -1,12 +1,14 @@
 ---
 name: home-modern-classic-switch-handoff
-description: 交接首页现代 / 经典风格切换实现与后续验收。
+description: 2026-10-23 首页及相关游戏实施交接快照；现状须重新核对。
 metadata:
   type: doc
-  status: 实施中
+  status: 历史归档
 ---
 
 # Home / Fate 实施交接
+
+> 这是 2026-10-23 的历史交接快照。下文的分支、授权、实现和验证只描述当时的状态；继续相关工作前须核对当前用户指令、工作区和目标环境，不能将旧记录视为当前授权或验收结论。
 
 ## 分支与提交
 

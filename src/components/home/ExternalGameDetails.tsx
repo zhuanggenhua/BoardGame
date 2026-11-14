@@ -16,6 +16,7 @@ import { writeSessionStorageItem } from '../../lib/browserStorage';
 import { canOpenExternalBrowser, openExternalBrowser } from '../../lib/mobile/externalBrowser';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
 import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
+import { DetailsPrimaryButton } from '../common/DetailsPrimaryButton';
 
 interface ExternalGameDetailsProps {
     gameId: string;
@@ -48,14 +49,14 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 thumbnail={thumbnail} playerOptions={playerOptionsFromRange(item.minPlayers, item.maxPlayers)} bestPlayers={[]}
                 onClose={onClose} tabs={[{ id: 'about' as const, label: t('platform.externalGamePage.about') }]} selectedTab={tab} onTab={setTab}
                 primaryActions={nativeBrowser
-                    ? <button type="button" data-testid="external-game-native-play" onClick={() => void openExternalBrowser(item!.url).catch(() => window.alert(t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })))}>{t('platform.externalGamePage.start')}</button>
+                    ? <DetailsPrimaryButton data-testid="external-game-native-play" onClick={() => void openExternalBrowser(item!.url).catch(() => window.alert(t('platform.externalGamePage.loadFailed', { message: t('platform.retry') })))}>{t('platform.externalGamePage.start')}</DetailsPrimaryButton>
                     : embed?.canEmbed
-                    ? <button type="button" data-testid="external-game-play" onClick={startPlay}>{t('platform.externalGamePage.start')}</button>
+                    ? <DetailsPrimaryButton data-testid="external-game-play" onClick={startPlay}>{t('platform.externalGamePage.start')}</DetailsPrimaryButton>
                     : isNativeAndroidRuntime()
                     ? <button type="button" onClick={() => requestAndroidNativeUpdateCheck({ interactive: true })}>{t('platform.externalGamePage.updateAppForBrowser')}</button>
-                    : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}
+                    : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); }}>{t('platform.externalGamePage.start')}</a>}
                 secondaryActions={<>
-                    {embed?.canEmbed && <a href={item.url} target="_blank" rel="noopener noreferrer">{t('platform.externalGamePage.openOriginal')} ↗</a>}
+                    {embed?.canEmbed && <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); }}>{t('platform.externalGamePage.openOriginal')} ↗</a>}
                     <PlatformFavoriteButton gameId={item.gameId} title={item.name} />
                 </>}
                 author={<ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}

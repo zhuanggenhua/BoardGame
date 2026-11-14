@@ -1,4 +1,6 @@
-reate a high-fidelity procedural Three.js 3D reconstruction of:
+> Historical example prompt only. Pistol generation is currently unsupported; see `../SKILL.md` before selecting a route.
+
+Create a high-fidelity procedural Three.js 3D reconstruction of:
 
       ★ Glock-18 | Ghost Protocol
       Wear condition: Well-Worn

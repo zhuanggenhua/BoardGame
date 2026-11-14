@@ -104,14 +104,14 @@ describe('年度教程开局的合法替代路线', () => {
                     const frame = getQidahenTurnResolutionFrame(state)!.metadata.qidahenTurn;
                     const preferred: Record<string, string> = {
                         'city-region-1': 'ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1',
-                        'city-region-18': 'ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1',
-                        'city-region-29': 'ming-post-sarhu-1619-hanseong-mercenary-infantry-lv2__compat__1',
                     };
                     const valid = data.options.filter(option => !option.disabled).map(option => option.id);
                     const cards = valid.filter(id => state.core.handCards.some(card => card.id === id));
-                    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1');
+                    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1' && id !== 'ming-post-sarhu-1619-liaobei-cavalry-cavalry-lv1__compat__1' && !id.startsWith('ming-farm-'));
                     const wanted = preferred[frame.upkeepTasks[frame.upkeepIndex].regionId];
-                    targets = wanted && valid.includes(wanted) ? [wanted] : cards.length && state.core.factions.ming.handCount > 3 ? [cards[0]] : [pieces[0]];
+                    targets = frame.upkeepTasks[frame.upkeepIndex].reason === 'korea' ? [cards[0]]
+                        : wanted && valid.includes(wanted) ? [wanted] : cards.length && (!pieces.length) ? [cards[0]] : [pieces[0]];
+                    expect(targets[0], '合法耗损候选').toBeDefined();
                 } else if (step.id === 'season-chronology-payment') targets = [data.options.find(option => !option.disabled)!.id];
                 const response = createRespondToPromptCommand(state, { playerId: prompt.playerId, ...(data.multi ? { optionIds: targets } : { optionId: targets[0] }) });
                 send(response.type, response.payload, response.playerId);

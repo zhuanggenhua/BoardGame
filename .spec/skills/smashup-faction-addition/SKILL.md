@@ -18,7 +18,7 @@ description: "Smash Up 新增派系端到端 adapter。用于从素材到可玩�
 用户要求“Smash Up 新增派系”“新派系增加流程”或“从图片做到可玩”时，默认连续完成：
 
 1. 锁定素材、规则、Wiki / 对照源和对象范围。
-2. 完成 intake：裁图、atlas、静态数据、locale、manifest、上传和远端回查。
+2. 完成 intake：裁图、atlas、静态数据、locale、manifest；目标包含远端发布时再完成上传和远端回查。
 3. 完成 gameplay implementation：按单派系闭环实现、测试、E2E 和 evidence。
 4. 完成统一审计：逐对象结论、共享链依据、残余范围和截图 / 测试证据。
 
@@ -27,7 +27,7 @@ description: "Smash Up 新增派系端到端 adapter。用于从素材到可玩�
 ## Smash Up 专属硬边界
 
 - `public/assets/**` 常被忽略，不能用 `git status` 判断图片资源是否完成。
-- Git 默认提交代码、数据、manifest、atlas 注册、locale、测试和 evidence；大图源文件、压缩图和正式卡图 / 基地图走服务器素材主源发布链路，除非用户明确要求才考虑强制入库。
+- 任务包含 Git 提交时，按授权范围检查代码、数据、manifest、atlas 注册、locale、测试和 evidence；大图源文件、压缩图和正式卡图 / 基地图按资源发布合同处理，除非用户明确要求才考虑强制入库。提交动作按 [`git-operations`](../git-operations/SKILL.md) 和用户授权执行。
 - 新 atlas 进入运行时前必须同时核对两层 manifest：
   - `public/assets/i18n/zh-CN/smashup/assets-manifest.json`
   - `public/assets/i18n/assets-manifest.json`
@@ -54,7 +54,7 @@ description: "Smash Up 新增派系端到端 adapter。用于从素材到可玩�
 - 图片 / Wiki / 对照源字段分工和 contract。
 - atlas 几何、row-major 索引、尾格 / 非卡牌格核对。
 - faction / card / base 静态数据、locale 和 UI metadata。
-- 两层 manifest、资源上传、公开 URL 回查。
+- 两层 manifest；目标包含远端发布时还需资源上传和公开 URL 回查。
 - implementation handoff：对象清单、规则关键词、可复用机制、待新实现机制和共享层风险。
 
 intake evidence 缺失时，不得声称可以安全进入 gameplay implementation。

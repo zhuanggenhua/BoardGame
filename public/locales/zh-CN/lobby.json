@@ -338,7 +338,10 @@
     "manageWorks": "管理我的作品"
   },
   "packageManager": {
-    "desktopFgoDownload": "下载战斗素材",
+    "desktopFgoDownload": "下载",
+    "desktopFgoConfirmTitle": "下载",
+    "desktopFgoConfirmButton": "确认",
+    "desktopFgoConfirmDescription": "下载游戏的战斗动画素材，完整素材大小约 {{size}} MB。",
     "desktopFgoProgress": "下载中 {{done}}/{{total}}",
     "desktopFgoComplete": "战斗素材已下载",
     "desktopFgoRetry": "重试下载战斗素材",
@@ -2720,7 +2723,8 @@
       "embedRestricted": "游戏网站暂不允许在本站内嵌。你仍可前往原网站游玩。",
       "insecureHttp": "当前网页不能内嵌不安全的 HTTP 网站，请前往原网站。",
       "sameOrigin": "该网址无法作为外部游戏内嵌，请联系管理员核对。",
-      "start": "开始游玩",
+      "start": "开始游戏",
+      "externalNavigationConfirm": "即将打开外部游戏网站，游玩时长将无法在易桌游内记录。是否继续？",
       "openOriginal": "前往原网站",
       "iframeTitle": "{{name}} 游戏",
       "playTime": "本站前台停留：{{time}}（估算）",

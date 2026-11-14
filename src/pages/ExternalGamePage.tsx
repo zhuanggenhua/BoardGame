@@ -26,6 +26,15 @@ function formatTime(seconds: number, format: (hours: number, minutes: number) =>
     const minutes = Math.floor(seconds / 60);
     return format(Math.floor(minutes / 60), minutes % 60);
 }
+// 已核验的游戏依赖原站来源；网址改变后不再授予额外权限。
+function externalFrame(gameId: string, url: string) {
+    const verifiedAlice = gameId === 'external-queen-alice' && url === 'https://queen-alice.onwardtool.com/';
+    const verifiedMageKnight = gameId === 'external-mage-knight-web' && url === 'http://e7-auto.7skyun.com:41956/';
+    return {
+        src: verifiedAlice ? 'https://onwardtool.com/queen-alice/' : url,
+        sandbox: `allow-scripts allow-forms allow-popups${verifiedAlice || verifiedMageKnight ? ' allow-same-origin' : ''}`,
+    };
+}
 export default function ExternalGamePage() {
     const { t } = useTranslation('lobby');
     const { gameId = '' } = useParams();
@@ -91,13 +100,13 @@ export default function ExternalGamePage() {
                     {sameOrigin && <p className="external-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
                     <div className="external-actions">
                         {canEmbed && <button className="external-primary" type="button" onClick={() => { setMenuOpen(false); setShowHelp(false); setPlayingGameId(gameId); }}>{t('platform.externalGamePage.start')}</button>}
-                        <a className="external-secondary" href={item.url} target="_blank" rel="noopener noreferrer" onClick={() => setPlayingGameId(null)}>{t('platform.externalGamePage.openOriginal')} ↗</a>
+                        <a className="external-secondary" href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); else setPlayingGameId(null); }}>{t('platform.externalGamePage.openOriginal')} ↗</a>
                     </div>
                 </section>
             </div>
         </div>}
         {playing && canEmbed && <div className="external-player" ref={container}>
-            <iframe key={frameKey} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} src={item.url} sandbox="allow-scripts allow-forms allow-popups" referrerPolicy="no-referrer" />
+            <iframe key={frameKey} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item.gameId, item.url)} referrerPolicy="no-referrer" />
             <div className="external-player-menu">
                 {menuOpen && <div className="external-player-panel">
                     <strong>{item.name}</strong><span>{t('platform.externalGamePage.playTime', { time: formatTime(play.seconds, (hours, minutes) => t('platform.externalGamePage.hoursMinutes', { hours, minutes })) })}</span>
@@ -113,7 +122,7 @@ export default function ExternalGamePage() {
                     <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>{t('platform.externalGamePage.notDisplayed')}</button>
                     {showHelp && <><small>{t('platform.externalGamePage.embedHelp')}</small><button type="button" onClick={() => setFrameKey(value => value + 1)}>{t('platform.externalGamePage.reload')}</button></>}
                     <button type="button" onClick={leave}>{t('platform.externalGamePage.endAndReturn')}</button>
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={() => setPlayingGameId(null)}>{t('platform.externalGamePage.openOriginal')} ↗</a>
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); else setPlayingGameId(null); }}>{t('platform.externalGamePage.openOriginal')} ↗</a>
                 </div>}
                 <button className="external-player-fab" type="button" aria-expanded={menuOpen} aria-label={menuOpen ? t('platform.externalGamePage.closeGameMenu') : t('platform.externalGamePage.openGameMenu')} onClick={() => setMenuOpen(!menuOpen)}>☰</button>
             </div>

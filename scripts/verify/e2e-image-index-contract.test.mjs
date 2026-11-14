@@ -367,6 +367,11 @@ const makeDistinctFixture = () => {
         { id: 'select', action: '真实页面选牌', before: { visible: { selected: 0 }, authoritative: { selected: 0 } }, after: { visible: { selected: 1 }, authoritative: { selected: 1 } }, assertions: [{ name: '选中一张', actual: 1, expected: 1 }] },
         { id: 'confirm', action: '真实页面确认', before: { visible: { selected: 1 }, authoritative: { selected: 1 } }, after: { visible: { gameOver: true }, authoritative: { gameOver: true } }, assertions: [{ name: 'terminal-gameover', actual: true, expected: true }] },
     ] };
+    trace.matchId = 'fixture-match';
+    for (const step of trace.steps) {
+        step.after.visible.url = 'http://127.0.0.1:6174/play/fixture/match/fixture-match';
+        step.after.authoritative.matchId = trace.matchId;
+    }
     writeFileSync(path.join(dir, 'behavior.json'), JSON.stringify(trace));
     manifest.behaviorChains = [{ chainId: trace.chainId, sourceRun: trace.sourceRun, sourceRevision: trace.sourceRevision, evidence: 'behavior.json', requiredSteps: ['select', 'confirm'] }];
     manifest.requirements = [{ requirement: '选牌与确认完整交互', status: 'PASS', evidence: ['behavior.json', manifest.media[0]] }];
@@ -380,6 +385,17 @@ const makeDistinctFixture = () => {
 test('独特界面策略以一张实质变化图和完整行为日志验收，不强制三图', () => {
     const f = makeDistinctFixture();
     assert.equal(f.validate().capturePolicy, 'distinct-ui-state');
+});
+
+test('黄金链拒绝浏览器本地入口及不一致的服务端房间', () => {
+    const f = makeDistinctFixture();
+    f.trace.steps[0].after.visible.url = 'http://127.0.0.1:6174/play/fixture?seat1=local-ai';
+    f.save();
+    assert.throws(f.validate, /正式在线房间/);
+    f.trace.steps[0].after.visible.url = 'http://127.0.0.1:6174/play/fixture/match/fixture-match';
+    f.trace.steps.at(-1).after.authoritative.matchId = 'different-match';
+    f.save();
+    assert.throws(f.validate, /正式在线房间/);
 });
 
 const addCaptureContract = (fixture) => {

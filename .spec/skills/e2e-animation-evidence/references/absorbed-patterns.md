@@ -24,4 +24,4 @@
 
 - 状态：方法已吸收进项目 skill，外部 skill 未安装。
 - 活跃入口：`.spec/skills/e2e-animation-evidence/SKILL.md`
-- 后续实现验证：必须回到正式 Mage Wars E2E，分别补远程和近战动态证据；旧远程 GIF 只能保留为历史 / 诊断材料，不能直接升级为当前 PASS。
+- 历史示例：Mage Wars 曾需分别补远程和近战动态证据；旧远程 GIF 只能作为历史 / 诊断材料。当前任务按其游戏、动作范围与最新证据决定验证内容。

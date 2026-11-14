@@ -213,6 +213,12 @@ describe('圣骑士 Token 定义', () => {
             sourceAbilityId: 'fist-attack',
             isDefendable: true,
         } as any;
+        expect(checkPlayCard(state.core, '1', flick, 'offensiveRoll', 'afterRollConfirmed'))
+            .toEqual({ ok: true });
+        expect(checkPlayCard(state.core, '1', nextTime, 'offensiveRoll', 'afterRollConfirmed'))
+            .toEqual({ ok: false, reason: 'requirePendingDamage' });
+
+        // 对仍有待伤害的响应窗口，保留既有的阶段兼容合同。
         state.core.pendingDamage = {
             id: 'next-time-damage',
             sourcePlayerId: '0',
@@ -223,13 +229,8 @@ describe('圣骑士 Token 定义', () => {
             responderId: '1',
             isFullyEvaded: false,
         };
-
-        expect(checkPlayCard(state.core, '1', flick, 'offensiveRoll', 'afterRollConfirmed'))
-            .toEqual({ ok: true });
         expect(checkPlayCard(state.core, '1', nextTime, 'offensiveRoll', 'afterRollConfirmed'))
             .toEqual({ ok: false, reason: 'wrongPhaseForCard' });
-
-        // 对仍有待伤害的响应窗口，保留既有的阶段兼容合同。
         expect(checkPlayCard(state.core, '1', nextTime, 'main2', 'afterAttackResolved'))
             .toEqual({ ok: true });
         // 结算结束后，不得把上一笔待伤害继续带进后续阶段。

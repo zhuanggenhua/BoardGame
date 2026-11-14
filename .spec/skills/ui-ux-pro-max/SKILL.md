@@ -31,7 +31,7 @@ description: 'UI/UX 专家入口。用于布局、组件、设计系统、排版
 
 ## 使用方式
 
-先确认本地 Python 可执行；不可用时报告阻塞，不在项目规范里指导安装系统软件。
+需要本地检索脚本时确认 Python 可执行；不可用时说明脚本能力缺口，继续不依赖它的规范和设计核对。
 
 生成设计系统：
 
@@ -89,7 +89,7 @@ python .spec/skills/ui-ux-pro-max/scripts/search.py "<keyword>" --stack <stack>
 - icon + text 默认用 `inline-flex items-center gap-* leading-none`；图标贴文字时优先 `h-[1em] w-[1em]`，先查 line-height 和 SVG viewBox，再用微小视觉偏移。
 - 点击目标要有 `cursor-pointer`、hover / focus / disabled / loading 状态；状态按钮和 segmented controls 必须写清影响对象。
 - 明暗模式分别检查文字、边框和透明层；浅色模式不能沿用低透明白玻璃。
-- 固定导航、浮层和边栏必须给内容留空间；移动端不得横向滚动。
+- 固定导航、浮层和边栏按层级与当前任务处理遮挡；移动端避免无意的整页横向溢出，有明确职责的局部横向浏览可保留。
 - 用户界面不要展示验收条款、实现证明、测试标签或内部 QA 文案。
 - 图表先按数据关系选型：趋势用线，比较用柱，组成用堆叠 / 份额，流程用漏斗或时间线。
 
@@ -99,11 +99,11 @@ python .spec/skills/ui-ux-pro-max/scripts/search.py "<keyword>" --stack <stack>
 
 - 主要交互元素可键盘访问，焦点可见。
 - 正常文本对比度达到 4.5:1。
-- 移动端可读、可点、无横向滚动。
+- 移动端可读、可点，无无意的整页横向溢出。
 - hover / loading / error / empty / disabled 状态完整。
 - 图标、字号、间距和容器宽度一致。
 - 动效尊重 `prefers-reduced-motion`。
-- 截图中没有内容重叠、按钮文字溢出、固定元素遮挡正文。
+- 截图中当前任务需要阅读或操作的内容未被错误遮挡，按钮文字未溢出；合法上层模态覆盖下层按层级判断。
 - 需要品牌 logo 时使用可查证来源，不手画猜测。
 
 ## 汇报

@@ -79,6 +79,8 @@ it('热座按交互本人而非最后战斗玩家显示，完成后回落到正�
     const resolve = engineConfig.resolveLocalRuntimeControlledPlayerId;
     expect(resolve).toBeDefined();
     expect(resolve!({ state: game.state, fallbackPlayerId: '2' })).toBe('0');
+    const seatControllers = { '0': { type: 'local-ai' as const }, '1': { type: 'local-ai' as const }, '2': { type: 'human' as const } };
+    expect(resolve!({ state: game.state, fallbackPlayerId: '0', seatControllers })).toBe('2');
     for(const playerId of ['0','1'])game.apply({type:'SYS_INTERACTION_RESPOND',playerId,payload:{interactionId:game.state.sys.interaction.current!.id,optionId:'decline'}});
     expect(resolve!({state:game.state,fallbackPlayerId:game.state.core.currentPlayerId})).toBe(game.state.core.currentPlayerId);
 });

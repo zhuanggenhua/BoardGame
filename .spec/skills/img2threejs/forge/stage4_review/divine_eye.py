@@ -2,14 +2,13 @@
 """The Divine Eye (đôi mắt thần) — deterministic multi-signal render↔reference evaluator.
 
 Plan 1.3 Phase 3 core (§3.1 ensemble, §3.3 combination + self-uncertainty). This is
-the single authority the correction loop asks "how close is this render to the
-reference, and what's wrong?". It is DETERMINISTIC and ZERO-TOKEN: pure Python +
-pixel math, reusing the Tier-1 primitives (diagnose_render) + the shared pHash. No
-LLM/VLM call lives here — the VLM layer (§3.4) is a separate, gated, subordinate step.
+a deterministic signal provider for the correction loop. It uses Python pixel math,
+Tier-1 primitives and pHash; no LLM/VLM call lives here. Its verdict does not replace
+visual review of object fidelity and 3D form.
 
 Signals (each → normalized [0,1] agreement + a defect tag when it fails):
-  HARD gates (a fail cannot be averaged away):
-    - silhouette IoU        (< 0.85 ⇒ reject)
+  HARD gates (subject to the explicitly defined reconstruction-mode exception):
+    - silhouette IoU        (< 0.85 normally rejects)
     - scale delta           (> 0.08 ⇒ reject)
   SOFT signals (ensemble-weighted):
     - proportion / aspect ratio
@@ -21,10 +20,10 @@ Signals (each → normalized [0,1] agreement + a defect tag when it fails):
     - flat-region ratio (QA: material reacting to light, not a dead flat fill)
     - tonal/contrast parity (QA: luma-histogram match)
 
-Deferred to later Phase-3 increments (documented, not silently missing):
-  Directional Chamfer Distance, OSIM objectness (numpy+weights, R-DEP/R-OSIM-EFFORT),
-  multi-angle browser capture (diagnose_render_multi_angle.py), CIE-Lab per-region ΔE
-  wiring (available via extract_part_color_recipe; folded in with per-feature §3.8).
+OSIM-lite objectness is included as a deterministic signal and can change an IoU-only
+rejection according to the reconstruction thresholds below. Directional Chamfer
+Distance and browser capture remain separate capabilities; per-region hue parity is
+report-only until calibrated. See the implementation for current conditions.
 """
 
 from __future__ import annotations

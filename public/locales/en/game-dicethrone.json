@@ -618,19 +618,19 @@
     "nanobot": {
       "name": "Nanobot",
       "description": [
-        "Companion bot, base limit 1, upgraded limit 2. Can activate during Upkeep to detonate all Nanobombs."
+        "Companion bot. Activate during Upkeep to detonate all Nanobombs, at most once per turn. Activation costs 2 Synth when basic or 1 when advanced."
       ]
     },
     "shock_bot": {
       "name": "Shock Bot",
       "description": [
-        "Companion bot, base limit 1, upgraded limit 2. Can activate after dealing attack damage to add +3 attack damage."
+        "Companion bot. After making an attack during the Offensive Roll Phase, activate to add 3 damage to that attack, at most once per turn. Activation costs 2 Synth when basic or 1 when advanced."
       ]
     },
     "heal_bot": {
       "name": "Heal Bot",
       "description": [
-        "Companion bot, base limit 1, upgraded limit 2. Can activate after receiving at least 6 attack damage and roll to heal."
+        "Companion bot. After receiving at least 6 attack damage, activate and roll to heal, at most twice per turn. Activation costs 2 Synth when basic or 1 when advanced."
       ]
     },
     "blood_power": {
@@ -1352,7 +1352,7 @@
       "cursedPirateSipMiss": "Sip: 1-2, nothing happens",
       "artificerMasterpieceElectricity": "Masterpiece: Electricity gains 5 Synth",
       "artificerMasterpieceOther": "Masterpiece: otherwise draw 1 card",
-      "artificerOverdriveWrench": "Overdrive: Wrench heals 2",
+      "artificerOverdriveWrench": "Overdrive: Wrench gains 2 CP",
       "artificerOverdriveGear": "Overdrive: Gear gains 1 Synth",
       "artificerOverdriveElectricity": "Overdrive: Electricity inflicts 1 Nanobomb on the opponent",
       "artificerWrenchStrikeWrench": "Wrench Strike: Wrench adds +1 damage to this attack",
@@ -1434,6 +1434,7 @@
     "requireMinDamageDealt": "Not enough damage dealt this attack to play this card",
     "requireTokenStacks": "Not enough required tokens to play this card",
     "noStatusOnBoard": "No status effects on the board, cannot play this card",
+    "noTransferableStatusTarget": "No status effect can be transferred to another player",
     "requirePendingDamage": "This card requires pending damage to be played",
     "tutorial_manifest_invalid": "Tutorial configuration is invalid",
     "tutorial_command_blocked": "This action is blocked in the tutorial",
@@ -4546,7 +4547,7 @@
     },
     "card-artificer-overdrive": {
       "effects": {
-        "roll": "Roll 1 die: Wrench heals 2; Gear gains Synth; Electricity inflicts Nanobomb."
+        "roll": "Roll 1 die: Wrench gains 2 CP; Gear gains Synth; Electricity inflicts Nanobomb."
       }
     },
     "card-artificer-perfectly-calibrated": {
@@ -6021,9 +6022,9 @@
     },
     "card-artificer-overdrive": {
       "name": "Overdrive!",
-      "description": "Roll 1 die: Wrench heals 2; Gear gains Synth; Electricity inflicts Nanobomb on 1 opponent.",
+      "description": "Roll 1 die: Wrench gains 2 CP; Gear gains Synth; Electricity inflicts Nanobomb on 1 opponent.",
       "effects": {
-        "roll": "Roll 1 die: Wrench heals 2; Gear gains Synth; Electricity inflicts Nanobomb."
+        "roll": "Roll 1 die: Wrench gains 2 CP; Gear gains Synth; Electricity inflicts Nanobomb."
       }
     },
     "card-artificer-perfectly-calibrated": {
@@ -7058,19 +7059,19 @@
     },
     "artificerWorkshop": {
       "buildNanobotShort": "Build Nano",
-      "buildNanobot": "Spend 2 Synth to build 1 Nanobot use",
+      "buildNanobot": "Spend 2 Synth to build a basic Nanobot",
       "buildShockBotShort": "Build Shock",
-      "buildShockBot": "Spend 2 Synth to build 1 Shock Bot use",
+      "buildShockBot": "Spend 2 Synth to build a basic Shock Bot",
       "buildHealBotShort": "Build Heal",
-      "buildHealBot": "Spend 2 Synth to build 1 Heal Bot use",
+      "buildHealBot": "Spend 2 Synth to build a basic Heal Bot",
       "upgradeNanobotShort": "Upgrade Nano",
-      "upgradeNanobot": "Spend 3 Synth to upgrade Nanobot to 2 uses",
+      "upgradeNanobot": "Spend 3 Synth to upgrade a basic Nanobot to advanced",
       "upgradeShockBotShort": "Upgrade Shock",
-      "upgradeShockBot": "Spend 3 Synth to upgrade Shock Bot to 2 uses",
+      "upgradeShockBot": "Spend 3 Synth to upgrade a basic Shock Bot to advanced",
       "upgradeHealBotShort": "Upgrade Heal",
-      "upgradeHealBot": "Spend 3 Synth to upgrade Heal Bot to 2 uses",
+      "upgradeHealBot": "Spend 3 Synth to upgrade a basic Heal Bot to advanced",
       "activateNanobotAdvancedShort": "Use Nano+",
-      "activateNanobotAdvanced": "Spend 1 Synth and 1 advanced Nanobot use to detonate all Nanobombs"
+      "activateNanobotAdvanced": "Spend 1 Synth to activate the advanced Nanobot and detonate all Nanobombs"
     },
     "thor": {
       "name": "Mjolnir",

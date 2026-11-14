@@ -556,7 +556,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  await page.getByTestId('rematch-play-again').click();await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible();
  expect((await state(page)).sys.tutorial.active).toBe(false);
  await expect(page.getByRole('combobox')).toHaveCount(0);await expect(page.getByRole('dialog')).toHaveCount(0);
- await chooseFateIdentity(page,'master','m_rin');await expect.poll(async()=>(await state(page)).core.players['0'].masterId).toBe('m_rin');
+ await chooseFateIdentity(page,'master','m_rin');await expect(page.getByTestId('fate-setup-master-m_rin')).toHaveAttribute('aria-pressed','true');
  const rinChoice=(await state(page)).core;
  await expect(page.getByLabel('御主关联组件')).toBeVisible();await expect(page.getByLabel('从者技能牌')).toHaveCount(0);
  await page.getByTestId('fate-identity-reference-gandr-shot').click();await expect(page.getByRole('button',{name:'放大阴炁弹',exact:true})).toBeVisible();
@@ -574,7 +574,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  await capture('identity-constrained','受限桌面滚至肯尼斯末张关联卡并阅读，候选及确认仍可达');await page.setViewportSize({width:1920,height:1080});
  await chooseFateIdentity(page,'master','m_tokiomi');await expect(page.locator('[data-reference-kind="item"]')).toHaveCount(4);
  await expect(page.locator('[data-reference-kind="skill-attack"]')).toHaveCount(1);await capture('identity-tokiomi','时臣四道具、追加技能攻击及升华资料不受三槽限制');
- await chooseFateIdentity(page,'servant','servant-rider');await expect.poll(async()=>(await state(page)).core.players['0'].servantId).toBe('servant-rider');
+ await chooseFateIdentity(page,'servant','servant-rider');await expect(page.getByTestId('fate-setup-servant-servant-rider')).toHaveAttribute('aria-pressed','true');
  trace.push({id:'after-completion',action:'教程退场后正式选角仍能作出新决定',before:beforeCompletion,after:await snapshot(page),assertions:[{name:'new-master-and-servant-choice-accepted',actual:true,expected:true}]});
  await assertNoFatalFrontendErrors([{label:'fate-tutorial',diagnostics}]);
  if(deploymentMapPanned)expect(seen.has('deployment-map-pan'),'真实发生的部署拖图必须有独立画面，不能被截图白名单静默漏掉').toBe(true);
@@ -604,8 +604,8 @@ test('教程中途从正式菜单退出，进入普通对局后教程状态与�
  await page.getByTestId('fab-panel-exit').getByRole('button',{name:/返回大厅/}).click();await expect(page).toHaveURL(/\/$/);
  await page.goto(baseURL+'/play/fate-domination?players=3&playerID=0&seed=tutorial-exit-cleanup&disableLocalAiAutomation=true',{waitUntil:'domcontentloaded'});
  await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible({timeout:30000});await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
- await chooseFateIdentity(page,'master','m_rin');await expect.poll(async()=>(await state(page)).core.players['0'].masterId).toBe('m_rin');
+ await chooseFateIdentity(page,'master','m_rin');await expect(page.getByTestId('fate-setup-master-m_rin')).toHaveAttribute('aria-pressed','true');
  const sourceIdentity=await captureEvidenceSourceIdentity(page,'fate-domination');
  await writeFile(path.join(run.stagingDir,'source-identity.json'),JSON.stringify(sourceIdentity,null,2));
- await writeFile(path.join(run.stagingDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision:sourceIdentity.sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-exit-cleanup',status:'PASS',visualStatus:'pending',outcome:'正式菜单退出后新局真实角色选择可用',steps:[{id:'exit-and-select',action:'退出教程后正式新局选择角色',before:beforeExit,after:await snapshot(page),assertions:[{name:'new-match-decision-accepted',actual:(await state(page)).core.players['0'].masterId,expected:'m_rin'}]}],uiStates:[]},null,2));
+ await writeFile(path.join(run.stagingDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision:sourceIdentity.sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-exit-cleanup',status:'PASS',visualStatus:'pending',outcome:'正式菜单退出后新局真实角色选择可用',steps:[{id:'exit-and-select',action:'退出教程后正式新局选择角色',before:beforeExit,after:await snapshot(page),assertions:[{name:'new-match-draft-selected',actual:await page.getByTestId('fate-setup-master-m_rin').getAttribute('aria-pressed'),expected:'true'}]}],uiStates:[]},null,2));
 });

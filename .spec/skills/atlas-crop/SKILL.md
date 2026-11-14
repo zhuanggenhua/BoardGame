@@ -43,12 +43,13 @@ description: 通用图集裁切与抽样验收流程；支持不规则网格配�
 2. **执行裁切脚本（在仓库根目录运行）**
    ```bash
    python ./.spec/skills/atlas-crop/scripts/extract-atlas-crops.py \
-     --image "public/assets/i18n/<locale>/<gameId>/<category>/compressed/<atlas>.webp" \
+     --image "<原始或同等清晰度的图集路径>" \
      --config "public/assets/atlas-configs/<gameId>/<atlas>.atlas.json" \
      --out "temp/<gameId>/atlas-crops-YYYYMMDD-HHMMSS/<batch>" \
      --shift-x -0.5 \
      --max-index 31
    ```
+   若使用压缩产物作为输入，先核对其与原始图集尺寸及关键细节等效；运行时图集另需核对相同配置和偏移。
 3. **抽样验收（必须）**
    - 先看整图理解结构，再看单卡是否偏移/被裁  
    - 如仍偏移：微调 `shift-x`/`shift-y`（0.5~1px 级别）后重跑

@@ -106,14 +106,15 @@ class Cs2ReviewGateTest(unittest.TestCase):
                 str(spec_path), "--pass-id", "optimization-pass", "--fidelity", "0.9",
                 "--action", "continue", "--summary", "ok", "--cs2-review-json", str(report_path),
                 "--review-scene-json", str(ROOT / "tests" / "fixtures" / "knife_review_scene.json"),
-                "--in-place",
+                "--force-out-of-order", "--in-place",
             ])
             persisted = json.loads(spec_path.read_text(encoding="utf-8"))
             self.assertEqual(persisted["reviewHistory"][0]["cs2Review"]["verdict"], "pass")
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, "CS2 review gate is blocking continuation"):
                 append_review_main([
                     str(spec_path), "--pass-id", "optimization-pass", "--fidelity", "0.9",
                     "--action", "continue", "--summary", "blocked", "--cs2-review-json", str(failed_path),
+                    "--force-out-of-order",
                 ])
 
 

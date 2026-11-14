@@ -1,5 +1,6 @@
 import { fateKireiForm, resolveFateAbilitySource, fateAbilityUsageKey } from './abilitySource';
 import { legalFateDeploymentSlots } from './deployment';
+import { fateIdentityTaken } from './setup';
 import { fateLateClimax, fateNoblePhantasmsForbidden } from './environmentRules';
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { FATE_ATTACK_BY_ID, FATE_MASTERS, FATE_SERVANT_BY_ID } from '../data';
@@ -8,7 +9,7 @@ import type { FateDominationCommand, FateDominationCore, LocationId } from './ty
 import { canPlayAttack, movementFailureToError, resolveFateMovement } from './movement';
 import { canUseFateAbility } from './mechanics';
 import { resolveFateAbilityDefinition, resolveFatePlayerAbility } from './abilityRegistry';
-import {resolveFateAttack,resolveFateAttackConfirmation,selectedFateAttackCost,hasLegalFateNormalPlay,canSelectFateAttack,hasAffordableFateFaceUpAttack} from './attackSelection';
+import {resolveFateAttack,resolveFateAttackConfirmation,fateAttackManaCost,selectedFateAttackCost,hasLegalFateNormalPlay,canSelectFateAttack,hasAffordableFateFaceUpAttack} from './attackSelection';
 
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
@@ -141,7 +142,7 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
             if (player.selectedAttackIds.length >= 2) return fail('tooManyAttackCards');
             const selection = canSelectFateAttack(core, command.playerId, command.payload.cardId, command.payload.faceDown);
             if (!selection.valid) return fail(selection.error ?? 'attackNotAllowed');
-            if (selectedFateAttackCost(player) + (command.payload.faceDown ? 0 : attack.definition.manaCost) > player.mana) return fail('notEnoughMana');
+            if (selectedFateAttackCost(player) + (fateAttackManaCost(player, command.payload.cardId, command.payload.faceDown) ?? Infinity) > player.mana) return fail('notEnoughMana');
             return ok();
         }
         case 'CONFIRM_ATTACK': {
@@ -167,6 +168,17 @@ export function validate(state: MatchState<FateDominationCore>, command: FateDom
         }
         case 'ADVANCE_PHASE':
             if (!isCurrentPlayer(core, command)) return fail('notYourTurn');
+            if (command.payload?.identities !== undefined) {
+                const { identities } = command.payload;
+                if (!identities || typeof identities.masterId !== 'string') return fail('unknownMaster');
+                if (typeof identities.servantId !== 'string') return fail('unknownServant');
+                const master = validate(state, { ...command, type: 'SELECT_MASTER', payload: { masterId: identities.masterId } });
+                if (!master.valid) return master;
+                const servant = validate(state, { ...command, type: 'SELECT_SERVANT', payload: { servantId: identities.servantId } });
+                if (!servant.valid) return servant;
+                if (fateIdentityTaken(core, command.playerId, 'masterId', identities.masterId)) return fail('masterTaken');
+                if (fateIdentityTaken(core, command.playerId, 'servantId', identities.servantId)) return fail('servantTaken');
+            }
             if (core.phase === 'preparation') return ok();
             if (core.phase === 'outpost') {
                 return core.players[command.playerId].locationId ? ok() : fail('deploymentRequired');

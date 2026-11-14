@@ -28,7 +28,7 @@ description: "BoardGame Android 打包、上传、发布和验包流程。用于
 默认口径：
 
 - “更新网站下载的 App / 发原生更新”默认走 native 发布，不部署网站。
-- “只改 H5 内容”走 OTA，不顺手 bump 原生版本。
+- 本轮已授权发布且只涉及 H5 内容时走 OTA，不顺手 bump 原生版本；仅修改或调查不自动发布。
 - “改原生壳、插件、权限、系统栏、返回键、方向映射、网站下载 APK”走 native。
 - “更新部署 / 部署最新 / 发线上”默认包含服务器生产部署 + Android stable OTA；除非用户明确排除 OTA。
 - 真机安装只在用户明确要求设备验收时做；线上修复默认回到正式 OTA/native 发布链和线上回查。
@@ -109,7 +109,7 @@ npm run mobile:android:build:release
 
 项目方向不变量：游戏默认强制横屏；未配置或非法方向回退横屏。只有 manifest / 方向映射明确登记为竖屏且通过验收的游戏，才允许 `portrait`。
 
-若同轮还改 H5 样式/交互，同时发布 stable OTA 和 stable native。发布后直接检查线上 APK 内 `assets/game-orientation-map.json`，再回目标游戏真实 App 页面验证方向；源码或 OTA manifest 不能替代用户可见验收。
+若同轮还改 H5 样式/交互且用户授权发布对应渠道，分别发布 stable OTA 和 stable native；仅本地修改或诊断不自动发布。发布后直接检查线上 APK 内 `assets/game-orientation-map.json`，再回目标游戏真实 App 页面验证方向；源码或 OTA manifest 不能替代用户可见验收。
 
 ## “更新部署”组合发布
 
@@ -209,7 +209,7 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
 
 - 新包 `versionCode` 不大于设备当前版本。
 - 用户需要的是 OTA 还是 native 更新未分清。
-- 历史错误高游标导致新包被判旧包时，必须发布高于历史值的 stable 桥接 OTA，并保持后续游标单调递增；当前 Android OTA 内部游标不得低于 `6.0.0`。
+- 历史错误高游标导致新包被判旧包时，必须发布高于历史值的 stable 桥接 OTA，并保持后续游标单调递增；当前下限以 `scripts/mobile/ota-publish-config.mjs` 的 `ANDROID_OTA_VERSION_FLOOR` 为准。
 
 OTA latest.json 有内容但手机仍提示没有更新：
 

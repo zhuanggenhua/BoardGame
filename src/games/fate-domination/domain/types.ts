@@ -135,6 +135,7 @@ export interface PlayerState {
     revealedSkillIds: string[];
     normalAttackPlayed: boolean;
     normalMoveCompleted: boolean;
+    piercingSpearPlays?: number;
     skills: SkillDefinition[];
 }
 
@@ -228,7 +229,7 @@ export type ConfirmAttackCommand = Command<'CONFIRM_ATTACK', {
     round?: number;
 }>;
 export type InspectCardCommand = Command<'INSPECT_CARD', { cardId: string }>;
-export type AdvancePhaseCommand = Command<'ADVANCE_PHASE', Record<string, never>>;
+export type AdvancePhaseCommand = Command<'ADVANCE_PHASE', { identities?: { masterId: string; servantId: string } }>;
 export type MovePlayerCommand = Command<'MOVE_PLAYER', { locationId: LocationId }>;
 export type PassActionCommand = Command<'PASS_ACTION', Record<string, never>>;
 export type ResolveLocationCommand = Command<'RESOLVE_LOCATION', { locationId: LocationId }>;
@@ -297,7 +298,7 @@ export type PlayerMovedEvent = GameEvent<'PLAYER_MOVED', {
     };
 }>;
 export type ActionPassedEvent = GameEvent<'ACTION_PASSED', { playerId: PlayerId }>;
-export type LocationResolvedEvent = GameEvent<'LOCATION_RESOLVED', { locationId: LocationId; results: BattleResult[] }>;
+export type LocationResolvedEvent = GameEvent<'LOCATION_RESOLVED', { locationId: LocationId; results: BattleResult[]; noblePlayerIds?: PlayerId[] }>;
 export type SkillPlayedEvent = GameEvent<'SKILL_PLAYED', { playerId: PlayerId; skillId: string; manaSpent: number; targetPlayerId?: PlayerId; targetLocationId?: LocationId; targetCardId?: string }>;
 export type FateAbilityUsedEvent = GameEvent<'FATE_ABILITY_USED', {playerId:PlayerId;skillId:string;usageKey?:string;manaSpent?:number}>;
 export type FateRidingChoiceRequestedEvent = GameEvent<'FATE_RIDING_CHOICE_REQUESTED', {playerId:PlayerId;skillId:string;round:number;generation:string;frameId:string}>;

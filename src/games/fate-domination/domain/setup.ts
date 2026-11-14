@@ -11,6 +11,21 @@ export const createFateAttackDeck = (playerId: PlayerId, servantId: string): Car
     return ids.map((definitionId, index) => ({ id: `${playerId}:${definitionId}:${index}`, definitionId }));
 };
 
+/** 只有完成选角的座位占用实体角色，开局预览身份不占用。 */
+export function fateIdentityTaken(core: FateDominationCore, playerId: PlayerId, kind: 'masterId' | 'servantId', identityId: string): boolean {
+    return core.playerIds.some(id => id !== playerId && core.players[id][kind] === identityId
+        && (core.initialAttackHandDealtPlayerIds?.includes(id) || core.phaseCompletedPlayerIds?.includes(id)));
+}
+
+export function resolveAvailableFateIdentities(core: FateDominationCore, playerId: PlayerId) {
+    const player = core.players[playerId];
+    const masterId = fateIdentityTaken(core, playerId, 'masterId', player.masterId)
+        ? FATE_MASTERS.find(master => !fateIdentityTaken(core, playerId, 'masterId', master.id))!.id : player.masterId;
+    const servantId = fateIdentityTaken(core, playerId, 'servantId', player.servantId)
+        ? FATE_SERVANTS.find(servant => !fateIdentityTaken(core, playerId, 'servantId', servant.id))!.id : player.servantId;
+    return { masterId, servantId };
+}
+
 const createBattlefield = (): Record<LocationId, BattlefieldState> => ({
     workshop: { id: 'workshop', label: '魔术工房', movementCost: 0, terrainPower: 0, competitionVictoryPoints: 0, capacity: 4, playerIds: [], eventCards: [] },
     miyama: { id: 'miyama', label: '深山町', movementCost: 1, terrainPower: 0, competitionVictoryPoints: 2, capacity: null, playerIds: [], eventCards: [] },

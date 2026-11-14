@@ -1,5 +1,5 @@
 import { canViewFateHiddenShinto } from '../domain/playerView';
-import { fitFateTableCamera, resizeFateTableCamera } from './tableCameraLayout';
+import { constrainFateTableCamera, fitFateTableCamera, resizeFateTableCamera } from './tableCameraLayout';
 import React from 'react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { PixiMapSceneHost, type MapSceneSprite, type MapViewportState } from '../../../engine/mapRenderer';
@@ -49,15 +49,31 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
     const miyamaAnchor = React.useCallback((element: HTMLDivElement | null) => onBattleAnchorChange?.('miyama', element), [onBattleAnchorChange]);
     const shintoAnchor = React.useCallback((element: HTMLDivElement | null) => onBattleAnchorChange?.('shinto', element), [onBattleAnchorChange]);
     const [size, setSize] = React.useState({ w: 0, h: 0 });
-    const [pose, setPose] = React.useState<MapViewportState>({ zoom: .65, panX: 0, panY: 0 });
+    const [{pose, revision}, setCameraRequest] = React.useState({
+        pose: { zoom: .65, panX: 0, panY: 0 }, revision: 0,
+    });
+    const livePose = React.useRef(pose);
+    const [zoomPercent, setZoomPercent] = React.useState(65);
+    const observeCamera = React.useCallback((next: MapViewportState) => {
+        livePose.current = next;
+        setZoomPercent(Math.round(next.zoom * 100));
+    }, []);
+    const requestCamera = React.useCallback((next: MapViewportState) => {
+        observeCamera(next);
+        setCameraRequest(current => ({ pose: next, revision: current.revision + 1 }));
+    }, [observeCamera]);
+    const constrainViewport = React.useCallback((next: MapViewportState) => constrainFateTableCamera(next, size.w, size.h, WIDTH, HEIGHT), [size.w, size.h]);
+    const manualCamera = React.useRef(false);
+    const onManualCameraInteraction = React.useCallback(() => { manualCamera.current = true; }, []);
     const previousFit = React.useRef<MapViewportState | null>(null);
     const focusDeployment = React.useRef<() => void>(() => {});
     const reset = React.useCallback(() => {
         if (!size.w || !size.h)
             return;
-        setPose(fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT));
+        manualCamera.current = false;
+        requestCamera(fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT));
         requestAnimationFrame(() => focusDeployment.current());
-    }, [size]);
+    }, [size, requestCamera]);
     React.useLayoutEffect(() => {
         if (!host)
             return;
@@ -74,14 +90,15 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             const nextFit = fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT);
             const before = previousFit.current;
             previousFit.current = nextFit;
-            setPose(current => resizeFateTableCamera(current,before,nextFit));
+            requestCamera(constrainViewport(resizeFateTableCamera(livePose.current,before,nextFit)));
         }
-    }, [size]);
+    }, [size, constrainViewport, requestCamera]);
     const needsDeploymentTargets = core.phase === 'outpost' && viewerId === core.currentPlayerId && legalLocations.includes('shinto');
     React.useLayoutEffect(() => {
         if (!host || !needsDeploymentTargets) return;
         // 只在进入可部署状态时调整地图，不移动手牌或改变卡牌尺寸。
         const focus = () => {
+            if (manualCamera.current) return;
             const target = host.querySelector<HTMLElement>('[data-testid="fate-domination-location-shinto"]');
             if (!target) return;
             const bounds = target.getBoundingClientRect();
@@ -93,15 +110,13 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             const slot = slotIndex === null ? undefined : DEPLOYMENT_SLOTS.shinto?.[slotIndex];
             if (!slot) return;
             const availableHeight = Math.min(...blockers.map(card => card.top)) - host.getBoundingClientRect().top - 12;
-            setPose(current => {
-                const zoom = Math.max(.25, Math.min(current.zoom, availableHeight / (slot.pawnY + 44)));
-                return {...current, zoom, panX:(host.clientWidth-WIDTH*zoom)/2, panY:0};
-            });
+            const zoom = Math.max(.25, Math.min(livePose.current.zoom, availableHeight / (slot.pawnY + 44)));
+            requestCamera({ zoom, panX:(host.clientWidth-WIDTH*zoom)/2, panY:0 });
         };
         focusDeployment.current = focus;
         const frame = requestAnimationFrame(focus);
         return () => { cancelAnimationFrame(frame); focusDeployment.current = () => {}; };
-    }, [host, needsDeploymentTargets]);
+    }, [host, needsDeploymentTargets, requestCamera]);
     const project = React.useCallback((display: MapViewportState) => {
         if (overlay.current)
             overlay.current.style.transform = `translate(${display.panX}px, ${display.panY}px) scale(${display.zoom})`;
@@ -121,8 +136,8 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
         ...cards.map(card => ({ id: card.id, textureUrls: getRuntimeImageCandidateUrls(card.assetPath, locale), x: card.x, y: card.y, width: card.w, height: card.h, imageFit: 'contain' as const })),
     ], [cards, locale]);
     return <div className="fd-runtime-map" data-tutorial-id="fate-map" ref={setHost}>
-        <PixiMapSceneHost inputElement={host} sprites={sprites} mapWidth={WIDTH} mapHeight={HEIGHT} viewport={pose} onViewportChange={setPose} onDisplayViewportChange={project} minimumZoom={.25} maximumZoom={2.5} interactive regionSelectionEnabled={false} canvasTestId="fate-pixi-map-canvas" ariaLabel="冬木市地图，可拖动和缩放"/>
-        <div ref={overlay} className="fd-runtime-map-overlay" data-moving={moving ? 'true' : undefined} style={{ width: WIDTH, height: HEIGHT, transform: `translate(${pose.panX}px, ${pose.panY}px) scale(${pose.zoom})` }}>
+        <PixiMapSceneHost inputElement={host} sprites={sprites} mapWidth={WIDTH} mapHeight={HEIGHT} viewport={pose} viewportRevision={revision} onViewportChange={observeCamera} constrainViewport={constrainViewport} onDisplayViewportChange={project} onManualCameraInteraction={onManualCameraInteraction} minimumZoom={.25} maximumZoom={2.5} inertiaEnabled={false} interactive regionSelectionEnabled={false} canvasTestId="fate-pixi-map-canvas" ariaLabel="冬木市地图，可拖动和缩放"/>
+        <div ref={overlay} className="fd-runtime-map-overlay" data-moving={moving ? 'true' : undefined} style={{ width: WIDTH, height: HEIGHT }}>
             {(['miyama', 'shinto'] as const).map(id => <div key={`battle-${id}`} ref={id === 'miyama' ? miyamaAnchor : shintoAnchor}
                 className="fd-fgo-battle-anchor" data-testid={`fate-fgo-anchor-${id}`}
                 style={{ left: ROOMS[id].x, top: ROOMS[id].y, width: ROOMS[id].w, height: ROOMS[id].h }} />)}
@@ -149,6 +164,6 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             <span className="fd-event-deck-count" style={{left: 285, top: 704}}>{core.eventDeckCount}</span>
             {cards.map(card => <button key={card.id} type="button" className="fd-runtime-map-card-hit" style={{ left: card.x, top: card.y, width: card.w, height: card.h }} aria-label={`检视${card.name}`} onClick={() => onInspect(card.assetPath, card.name)}/>)}
         </div>
-        <div className="fd-runtime-camera-controls"><span>{Math.round(pose.zoom * 100)}%</span><button type="button" onClick={reset}>{t('ui.map.reset')}</button></div>
+        <div className="fd-runtime-camera-controls"><span>{zoomPercent}%</span><button type="button" onClick={reset}>{t('ui.map.reset')}</button></div>
     </div>;
 }

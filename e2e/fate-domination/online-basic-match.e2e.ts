@@ -120,14 +120,13 @@ test('真实联网自然基础对局：浏览器主视角及两名正式传输�
         await page.goto(`/play/fate-domination/match/${matchId}?playerID=0`, {waitUntil: 'domcontentloaded'});
         await expect(page.getByTestId('fate-domination-board')).toBeVisible({timeout: 45000});
         await record('真实浏览器选择韦伯与伊斯坎达尔', async () => {
-            const setup = page.getByRole('region', {name: '选择御主与从者'});
             await chooseFateIdentity(page,'master','m_waver');
-            await expect.poll(async () => (await read()).core.players['0'].masterId).toBe('m_waver');
             await chooseFateIdentity(page,'servant','servant-rider');
-            await expect.poll(async () => (await read()).core.players['0'].servantId).toBe('servant-rider');
+            await expect(page.getByTestId('fate-setup-servant-servant-rider')).toHaveAttribute('aria-pressed','true');
         });
         await capture('主视角真实联网选角准备', 'panel');
         await clickPrimary();
+        await expect.poll(async () => [(await read()).core.players['0'].masterId, (await read()).core.players['0'].servantId]).toEqual(['m_waver', 'servant-rider']);
         await sendPeer('1', 'ADVANCE_PHASE'); await sendPeer('2', 'ADVANCE_PHASE');
         await capture('三名真实客户端准备完成', 'layout');
         while (!(await read()).sys.gameover && steps.length < 450) {
@@ -237,11 +236,11 @@ test('真实联网自然基础对局：浏览器主视角及两名正式传输�
         await capture('真实联网多轮对局正式终局', 'panel');
         expect(peerErrors).toEqual([]); assertNoFatalFrontendErrors([{label: 'Fate-main-browser', diagnostics}]);
         const uiStates = shots.map(shot => ({id: shot.id, stepId: shot.stepId, change: shot.change, viewport: 'desktop', sha256: createHash('sha256').update(readFileSync(shot.path)).digest('hex')}));
-        const evidence = {gameId: 'fate-domination', evidenceCategory: 'golden', chainId: CHAIN, sourceRun: run.runId, sourceRevision, browserContextId: `${matchId}:player-0-browser`,
+        const evidence = {gameId: 'fate-domination', evidenceCategory: 'independent', chainId: CHAIN, sourceRun: run.runId, sourceRevision, browserContextId: `${matchId}:player-0-browser`,
             status: 'PASS', outcome: '真人主视角浏览器与两名正式网络客户端从选角自然推进多轮至共同终局，无中途状态注入；两名测试玩家只提交正式合法命令，不代表策略AI。',
             matchId, covered: {rounds: [...rounds], postBattleChoices, capturedPostBattle, eliminated: final.core.playerIds.filter(id => final.core.players[id].eliminated)}, steps, terminalStepId: 'terminal', uiStates};
         await writeFile(path.join(run.stagingDir, 'online-basic-match.trace.json'), JSON.stringify(evidence, null, 2));
-        await promoteEvidenceScreenshotRun(run, {gameId: 'fate-domination', evidenceCategory: 'golden', capturePolicy: 'distinct-ui-state', media: shots.map((shot, index) => ({
+        await promoteEvidenceScreenshotRun(run, {gameId: 'fate-domination', evidenceCategory: 'independent', capturePolicy: 'distinct-ui-state', media: shots.map((shot, index) => ({
             path: path.relative(process.cwd(), path.join(run.stableDir, path.basename(shot.path))).replace(/\\/g, '/'), chainId: CHAIN, chainStep: String(index + 1).padStart(2, '0'),
             stage: '独特界面态', role: 'main-flow', viewport: 'desktop', transition: shot.description, description: shot.description, uiStateId: shot.id, uiChange: shot.change,
             uiChangeReason: shot.description, behaviorStepId: shot.stepId, sourceRevision, requirements: ['真实联网主视角从选角自然推进多轮至终局', '草稿与移动选择仅在确认后提交权威状态', '御主能力和令咒通过正式界面操作'],

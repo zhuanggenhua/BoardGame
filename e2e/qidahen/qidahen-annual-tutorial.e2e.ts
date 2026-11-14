@@ -13,8 +13,9 @@ import { beginBattleRecording } from './battleRecording';
 import { clickVisibleButton } from './tutorialPointer';
 import { waitForQidahenVisualReady } from './visualReady';
 import { QIDAHEN_VISUAL_SOURCE_PATHS, requireCompleteQidahenSourceIdentity, trackQidahenSourceIdentity } from './sourceIdentity';
-import { readQidahenStoredTutorialStep, readQidahenTutorialProgressStatus } from './tutorialPersistence';
+import { qidahenTutorialProgressIdentity, readQidahenStoredTutorialStep, readQidahenTutorialProgressStatus } from './tutorialPersistence';
 import { QIDAHEN_ANNUAL_TUTORIAL } from '../../src/games/qidahen/annualTutorial';
+import { isQidahenKoreaRuntimeRegionId } from '../../src/games/qidahen/domain/regionConfig';
 
 // 七大恨的图集地图与物理骰子按正常浏览器GPU呈现；不继承Windows软件光栅化测试开关。
 test.use({ channel: process.env.QIDAHEN_DIAGNOSTIC_BROWSER_CHANNEL || 'chromium', launchOptions: { args: [] } });
@@ -316,13 +317,14 @@ function annualDynamicTargets(snapshot: Snapshot): string[] {
     const regionId = step.highlightTarget?.replace('qidahen-map-region-focus-', '') ?? '';
     const special: Record<string, string> = {
         'city-region-1': 'ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1',
-        'city-region-18': 'ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1',
-        'city-region-29': 'ming-post-sarhu-1619-hanseong-mercenary-infantry-lv2__compat__1',
     };
     if (special[regionId] && valid.includes(special[regionId])) return [special[regionId]];
     const cards = valid.filter(id => snapshot.core.handCards.some(card => card.id === id));
-    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1');
-    return [cards.length && snapshot.core.factions.ming.handCount > 3 ? cards[0] : pieces[0]];
+    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1' && id !== 'ming-post-sarhu-1619-liaobei-cavalry-cavalry-lv1__compat__1' && !id.startsWith('ming-farm-'));
+    const korea = isQidahenKoreaRuntimeRegionId(regionId);
+    const target = korea ? cards[0] : cards.length && (!pieces.length) ? cards[0] : pieces[0];
+    if (!target) throw new Error(`耗损没有可支付的合法候选: ${regionId}`);
+    return [target];
 }
 
 
@@ -334,6 +336,16 @@ function assertEqual(name: string, actual: unknown, expected: unknown) { expect(
 function assertOutcome(id: string, before: Snapshot, after: Snapshot) {
     const region = (state: Snapshot, regionId: string) => state.core.regions.find(item => item.id === regionId)!;
     const result: ReturnType<typeof assertEqual>[] = [];
+    if (id.startsWith('season-upkeep-player-')) {
+        const regionId = before.tutorial.step.highlightTarget?.replace('qidahen-map-region-focus-', '') ?? '';
+        if (isQidahenKoreaRuntimeRegionId(regionId)) {
+            const [cardId] = annualDynamicTargets(before);
+            result.push(assertEqual(`korea-upkeep-card-selected:${regionId}`, before.core.handCards.some(card => card.id === cardId && card.faction === 'ming'), true),
+                assertEqual(`korea-upkeep-card-consumed:${regionId}`, after.core.handCards.some(card => card.id === cardId), false),
+                assertEqual(`korea-upkeep-hand-count:${regionId}`, after.core.factions.ming.handCount, before.core.factions.ming.handCount - 1),
+                assertEqual(`korea-upkeep-troops-preserved:${regionId}`, region(after, regionId).troops, region(before, regionId).troops));
+        }
+    }
     if (id === 'recruit-troops') result.push(assertEqual('recruit-six-level-two', region(after, 'city-region-15').troops - region(before, 'city-region-15').troops, 6));
     if (id === 'farm-target') result.push(assertEqual('farm-one-troop', region(after, 'city-region-15').troops - region(before, 'city-region-15').troops, 1), assertEqual('farm-two-actual-cards', after.core.factions.ming.handCount - before.core.factions.ming.handCount, 2));
     if (id === 'reclaim-target') result.push(assertEqual('reclaim-one-population', region(after, 'city-region-15-liaodong').population - region(before, 'city-region-15-liaodong').population, 1));
@@ -580,6 +592,23 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     const hint = (await page.getByTestId('tutorial-overlay-card').boundingBox())!;
                     const troops = await page.locator('[data-pending-committed-selectable="true"]').all();
                     expect(troops.length).toBeGreaterThan(0);
+                    if (!suffix) {
+                        await expect.poll(() => readQidahenStoredTutorialStep(page), { timeout: 60_000 }).toBe('dispatch-troops');
+                        const saved = await page.evaluate(seed => localStorage.getItem(`local_match_snapshot_v1:qidahen:${seed}`), qidahenTutorialProgressIdentity.seed);
+                        expect(saved, '诊断检查点来自本次正式对局').toBeTruthy();
+                        writeFileSync(resolve(dir, 'dispatch-checkpoint.encoded'), saved!);
+                        const geometry = await page.evaluate(() => {
+                            const rect = (element: Element) => { const r = element.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
+                            const map = document.querySelector('[data-testid="qidahen-map-content"]')!;
+                            const layer = document.querySelector('[data-testid="qidahen-map-layer"]')!;
+                            return { map: rect(map), zoom: layer.getAttribute('data-map-zoom'),
+                                troops: [...document.querySelectorAll('[data-pending-committed-selectable="true"]')].map(element => ({
+                                    id: element.getAttribute('data-testid'), region: element.getAttribute('data-qidahen-map-token-region'),
+                                    bounds: rect(element), style: element.getAttribute('style'),
+                                })) };
+                        });
+                        writeFileSync(resolve(dir, 'dispatch-layout-diagnostic.json'), JSON.stringify({ core: snapshot.core, geometry }, null, 2));
+                    }
                     for (const troop of troops) {
                         const rect = (await troop.boundingBox())!;
                         expect(rect.y, 'whole selectable troop above screen edge').toBeGreaterThanOrEqual(0);
@@ -589,7 +618,12 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         const pieceId = snapshot.core.mapTokens.find(token => token.id === tokenId)?.pieceId;
                         const piece = snapshot.core.pieces.find(piece => piece.id === pieceId)!;
                         await expect(troop).toHaveAttribute('data-qidahen-unit-level', String(piece.level));
-                        await expect(page.getByTestId(`qidahen-unit-level-${tokenId}`)).toHaveText(String(piece.level));
+                        const level = page.getByTestId(`qidahen-unit-level-${tokenId}`);
+                        await expect(level).toHaveText(String(piece.level));
+                        const badge = (await level.boundingBox())!;
+                        const badgeCovered = hint.x < badge.x + badge.width && hint.x + hint.width > badge.x
+                            && hint.y < badge.y + badge.height && hint.y + hint.height > badge.y;
+                        expect(badgeCovered, 'tutorial text must not cover the selectable troop level').toBe(false);
                     }
                     if (suffix === '-selected') await expect(page.getByTestId('qidahen-committed-troop-check')).toHaveCount(dynamicTargets.length);
                     await expect(page.locator('[data-qidahen-tutorial-recommended="true"]')).toHaveCount((snapshot.tutorial.step.recommendedTargets ?? snapshot.tutorial.step.allowedTargets ?? []).length);
@@ -1154,6 +1188,10 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                         assertions: [assertEqual('formal-event-advanced-input', after.tutorial.step?.id !== step.id || dynamicPayment && after.interaction?.id !== before.interaction?.id || step.id === 'opening-farm-cycle' && (after.interaction?.id !== before.interaction?.id || JSON.stringify(after.core) !== JSON.stringify(before.core)) || step.id === 'training-practice' && JSON.stringify(after.core.wheelRecruitTrainProgress) !== JSON.stringify(before.core.wheelRecruitTrainProgress), true), ...assertOutcome(step.id, before, after), ...(uiAssertions.get(step.id) ?? [])],
                     });
                     writeFileSync(resolve(dir, 'behavior-trace.json'), JSON.stringify(trace, null, 2));
+                }
+                for (const regionId of ['xian-xing', 'city-region-18', 'city-region-29']) {
+                    expect(trace.steps.some(step => 'assertions' in step && step.assertions?.some(assertion => assertion.name === `korea-upkeep-troops-preserved:${regionId}`)),
+                        `朝鲜驻军必须完成手牌支付 ${regionId}`).toBe(true);
                 }
                 const final = await read(page);
                 expect(final.tutorial.active).toBe(false);

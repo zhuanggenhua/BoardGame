@@ -2156,10 +2156,10 @@ const buildInteractionActions = (
         if (data.type === 'selectHandCard' || data.type === 'selectDeckCard') {
             const player = state.core.players[playerId];
             const sourceCards = data.type === 'selectDeckCard' ? player?.deck : player?.hand;
-            const selectedCardId = sourceCards?.[0]?.id;
+            const cardIds = [...new Set(sourceCards?.map(card => card.id) ?? [])];
             const actionKind = data.type === 'selectDeckCard' ? 'select-deck-card' : 'select-hand-card';
-            return selectedCardId
-                ? [{
+            return cardIds.length > 0
+                ? cardIds.map(selectedCardId => ({
                     actionId: createAiLegalActionId('interaction', current.id, actionKind, selectedCardId),
                     kind: 'interaction-choice',
                     label: data.type === 'selectDeckCard'
@@ -2173,7 +2173,7 @@ const buildInteractionActions = (
                         interactionId: current.id,
                         selectedCardIds: [selectedCardId],
                     },
-                }]
+                }))
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
         }
 
@@ -3286,6 +3286,24 @@ export function buildDiceThroneAiLegalActions(args: {
 
     if (state.sys.responseWindow?.current || hasPendingTokenResponseForPlayer(state, args.playerId)) {
         return buildResponseActions(state, args.playerId, phase);
+    }
+
+    const compareRoll = state.core.currentRollContext;
+    if (compareRoll?.kind === 'compare' && compareRoll.status !== 'settled') {
+        const actions = [
+            ...buildPassiveActions(state, args.playerId, phase, { rerollOnly: true }),
+            ...buildPhaseActions(state, args.playerId, phase).filter(action => action.kind === 'play-card'),
+        ];
+        if (compareRoll.ownerPlayerId === args.playerId) {
+            appendAction(actions, state, args.playerId, {
+                actionId: createAiLegalActionId('compare-roll', compareRoll.id, 'confirm'),
+                kind: 'interaction-choice',
+                label: '确认比骰结果',
+                commands: [{ type: 'CONFIRM_COMPARE_ROLL', payload: {} }],
+                metadata: {},
+            });
+        }
+        return actions;
     }
 
     if (hasActiveBonusDiceSettlement) {

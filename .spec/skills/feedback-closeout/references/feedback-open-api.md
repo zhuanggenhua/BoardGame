@@ -21,7 +21,7 @@
 ### 认证要求
 
 - `GET /admin-api/feedback`
-  - 当前线上允许无凭证读取列表，但这只证明“能看见线上真实反馈”，**不等于**有正式回写权限。
+  - 当前源码允许匿名查询，但匿名只能读取 SYSTEM 安全摘要；不能据此认为能读取全部玩家反馈或拥有回写权限。线上行为必须以目标环境实际响应核实。
 - `PATCH /admin-api/feedback/:id/status`
   - 必须携带 `Authorization: Bearer <token>`。
   - 当前项目脚本统一使用 `BOARDGAME_FEEDBACK_TOKEN` 或 `--token` 传入。

@@ -1,7 +1,8 @@
 import type { DiceThroneCore } from './types';
 import type { TokenDef } from './tokenTypes';
 import { STATUS_IDS } from './ids';
-import { areTeammates, getTokenStackLimit } from './rules';
+import { areTeammates } from './rollContextPolicy';
+import { getTokenStackLimit } from './tokenLimits';
 
 const findTokenDefinition = (state: DiceThroneCore, statusId: string): TokenDef | undefined =>
     (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
@@ -67,4 +68,15 @@ export const canReceiveTransferredStatus = (
     const sourceKind = fromStatusStacks > 0 ? 'statusEffects' : 'tokens';
     const targetStacks = toPlayer[sourceKind][statusId] ?? 0;
     return targetStacks < getTokenStackLimit(state, toPlayerId, statusId);
+};
+
+/** 与转移命令共用来源、权限和目标容量规则，避免出牌后产生无解交互。 */
+export const hasTransferableStatusTarget = (state: DiceThroneCore, playerId: string): boolean => {
+    const ids = Object.keys(state.players);
+    return ids.some(fromId => {
+        const source = state.players[fromId];
+        const statusIds = new Set([...Object.keys(source.statusEffects ?? {}), ...Object.keys(source.tokens ?? {})]);
+        return [...statusIds].some(statusId => canTransferStatus(state, playerId, fromId, statusId)
+            && ids.some(toId => toId !== fromId && canReceiveTransferredStatus(state, fromId, toId, statusId)));
+    });
 };

@@ -1,6 +1,6 @@
 # Manifest 字段约定
 
-本 skill 只接受以下字段命名，不接受别名。
+本页列出移动适配的核心字段，不接受这些字段的自造别名。完整类型以 [`gameManifest.types.ts`](../../../../src/shared/gameManifest.types.ts) 为准；其中还有 `mobileBattlefieldZoom`、`mobileHudPlacement`、`mobileDelivery`，使用前须核对对应实现和任务范围，不因本页未展开就视为非法字段。
 
 ## 批准字段
 
@@ -29,7 +29,7 @@ mobileBoardShellLayout?: {
 - `none`
   - 不建议手机使用，只保留桌面降级或暂不暴露到壳。
 - `landscape-adapted`
-  - 默认值。
+  - 复杂桌游的推荐选项；运行时未声明 `mobileProfile` 时实际回退为 `none`，不能据此宣称已适配。
   - 适用于 PC 为主、信息密度较高、需要保留主棋盘或主桌面的复杂游戏。
 - `portrait-adapted`
   - 只给天生适合竖屏的小型、轻量、低信息密度游戏。
@@ -44,7 +44,7 @@ mobileBoardShellLayout?: {
 ### `mobileLayoutPreset`
 
 - `board-shell`
-  - 默认值。
+  - `landscape-adapted` 未声明布局预设时的运行时默认值；不是所有游戏的默认值。
   - 适用于“保留桌面主画布 + 外围 HUD/侧栏/预览改为移动壳”的模式。
 - `portrait-simple`
   - 只给本来就能在竖屏单列完成主循环的简单游戏。

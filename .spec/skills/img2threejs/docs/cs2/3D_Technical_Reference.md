@@ -1,6 +1,11 @@
 # 3D Technical Reference — CS2 to Three.js Mapping
 # Từ điển Kỹ thuật 3D — Mapping CS2 sang Three.js
 
+> Historical research notes, not a verified API reference or executable implementation. Presets,
+> channel descriptions, performance costs and item examples require checking against the actual
+> source map, installed Three.js version and reference image. Code blocks are illustrative sketches;
+> unsupported CS2 families listed here are not enabled by this project copy.
+
 > NotebookLM Research ID: `30ec3dba-5a20-4980-8886-ce89b506b634`
 > Last updated: July 2026
 
@@ -423,7 +428,7 @@ CS2 restricts float ranges per skin via `wear_remap_min` / `wear_remap_max` in `
 }
 ```
 
-This means a skin with `wear_remap_max: 0.80` can NEVER reach Battle-Scarred (0.45+).
+With the ranges illustrated above, a maximum of `0.80` includes Battle-Scarred values (0.45+).
 
 ### Three.js Wear Implementation
 
@@ -437,7 +442,7 @@ const material = new THREE.ShaderMaterial({
     wearMap: { value: wearTexture },
     normalMap: { value: normalTexture },
     wearNormalMap: { value: wearNormalTexture },
-    float: { value: 0.223 }, // The item's float value
+    wearValue: { value: 0.223 }, // The item's float value
     roughnessClean: { value: 0.3 },
     roughnessWorn: { value: 0.7 },
   },
@@ -445,7 +450,7 @@ const material = new THREE.ShaderMaterial({
   fragmentShader: `
     uniform sampler2D baseColorMap;
     uniform sampler2D wearMap;
-    uniform float float;
+    uniform float wearValue;
     varying vec2 vUv;
 
     void main() {
@@ -454,7 +459,7 @@ const material = new THREE.ShaderMaterial({
 
       // Wear alpha: 0 at edges, 1 in center
       // Float value controls blend
-      float wearAlpha = smoothstep(0.0, 0.5, float);
+      float wearAlpha = smoothstep(0.0, 0.5, wearValue);
 
       vec4 color = mix(clean, worn, wearAlpha);
       gl_FragColor = color;
@@ -487,14 +492,14 @@ const material = new THREE.MeshPhysicalMaterial({
   roughnessMap: wearRoughnessTexture, // Rougher where worn
   metalnessMap: wearMetalnessTexture, // More metallic where paint removed
   normalMap: combinedNormalTexture,    // Scratch normals
-  metalness: 0.0,                     // Base: non-metallic (painted)
+  metalness: 1.0,                     // Map controls local metalness; 0 would multiply it away
   roughness: 0.4,                     // Base: semi-gloss
 });
 ```
 
 ### Paint Channels (RGB Masks)
 
-CS2 uses RGB channels to control different wear behaviors:
+Illustrative mask layout only; verify the channels in the actual source texture:
 
 | Channel | Controls | Three.js Mapping |
 |---------|----------|------------------|
@@ -617,7 +622,7 @@ Float Value (0.000-1.000)
 | Trigger Guard | `ExtrudeGeometry` | Thin arc | Union: to frame |
 | Magazine | `BoxGeometry` | 0.8:0.2:2.5 | Subtract: feed lips |
 | Sights (×2) | `BoxGeometry` | Small | Union: to slide |
-| Grip Texture | Normal map | — | NOT geometry |
+| Grip Texture | Normal map or geometry | — | Choose based on visible relief and silhouette |
 
 ### Rifle Components (AK-47, M4, AWP)
 
@@ -651,7 +656,7 @@ Float Value (0.000-1.000)
 | Sawback teeth | All hard | No smoothing groups |
 | Guard corners | Hard | BoxGeometry naturally hard |
 | Handle scales | Smooth | Subdivision or smooth normals |
-| Grip checkering | Normal map | NOT geometry |
+| Grip checkering | Normal map or geometry | Choose based on visible relief and silhouette |
 
 ---
 

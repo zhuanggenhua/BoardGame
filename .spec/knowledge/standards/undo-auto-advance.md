@@ -21,7 +21,7 @@ metadata:
 
 - 引擎层 UndoSystem 恢复快照时设置 `state.sys.undo.restoredRandomCursor`。
 - FlowSystem 在 `afterEvents` 中看到该标记时，直接跳过自动推进检查。
-- UndoSystem 在下一个会产生快照的命令执行前清理该标记。
+- 权威命令提交和本地 AI 执行路径通过 `consumeRestoredRandomCursor` 消费标记并恢复随机游标；它不是由 UndoSystem 在下一条快照命令前清理。具体入口仍需按实际运行模式核对。
 - 游戏层 `onAutoContinueCheck` 不需要也不应该重复检查撤回标记。
 
 ## 职责边界
@@ -38,7 +38,7 @@ metadata:
 - 撤回到玩家操作阶段后，不自动推进。
 - 撤回到自动阶段后，不自动推进。
 - 撤回到战斗、选择、setup 或等价阻塞阶段后，不自动推进。
-- 撤回后执行下一条普通命令时，`restoredRandomCursor` 被清理。
+- 相关运行入口消费 `restoredRandomCursor` 后恢复随机游标并清理标记。
 - 清理后，正常自动推进逻辑恢复。
 
 测试断言看现实结果：撤回后的阶段、当前玩家、活动 interaction / response window 和 undo 标记状态。不要只断言命令通过。
@@ -46,7 +46,7 @@ metadata:
 ## 排查口径
 
 - 如果撤回后发生自动推进，先查 FlowSystem 是否绕过了 `restoredRandomCursor`。
-- 如果撤回后永远不再自动推进，先查下一条快照命令前标记是否被清理。
+- 如果撤回后永远不再自动推进，先查当前运行入口是否消费并清理恢复标记，以及后续命令是否正常触发推进。
 - 如果只有某个游戏异常，先查该游戏是否在自动推进 hook 中复制了撤回守卫、手工改 sys，或把流程控制状态塞进业务数据。
 
 ## 相关入口

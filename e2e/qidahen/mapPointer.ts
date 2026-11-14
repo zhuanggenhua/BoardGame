@@ -5,7 +5,11 @@ export async function dragQidahenMap(page: Page, dx: number, dy: number) {
     if (Math.hypot(dx, dy) < 1) return;
 
     const start = await page.evaluate(({ dx, dy }) => {
-        for (const y of [innerHeight * .5, innerHeight * .4, innerHeight * .6]) for (const x of [innerWidth * .5, innerWidth * .3, innerWidth * .6]) {
+        const points: Array<{ x: number; y: number }> = [];
+        for (let y = 90; y < innerHeight - 120; y += 32) for (let x = 10; x < innerWidth - 10; x += 32) points.push({ x, y });
+        points.sort((a, b) => Math.hypot(a.x - innerWidth / 2, a.y - innerHeight / 2)
+            - Math.hypot(b.x - innerWidth / 2, b.y - innerHeight / 2));
+        for (const { x, y } of points) {
             if (x + dx < 10 || x + dx > innerWidth - 10 || y + dy < 90 || y + dy > innerHeight - 120) continue;
             const hit = document.elementFromPoint(x, y);
             if (hit?.closest('[data-testid="qidahen-map-layer"]') && !hit.closest('button,[role="button"],[data-qidahen-map-token-region]')) return { x,y };

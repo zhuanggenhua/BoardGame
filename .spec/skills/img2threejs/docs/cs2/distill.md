@@ -1,5 +1,10 @@
 # CS2 Research Distill — Consolidated Findings from 13 NotebookLM Sessions
 
+> Historical research notes, not a validated implementation contract. Numerical estimates, source
+> claims, channel layouts, legal assertions and model-specific examples below require independent
+> verification. Supported families and actual pipeline behavior are defined by `../../SKILL.md` and
+> the current code; unsupported families listed here are reference vocabulary only.
+
 > Sources: 13 notebooks, ~130 sources total
 > Generated: 2026-07-24
 > Notebook IDs: 3302413b, 7b0376c6, ed67e020, 8430ab72, e20b3968, f783b110, 7b0376c6, 3302413b, 3a1c3eb9, 3957b5dc, e9c7dbee, 370faecc, ee512cf3
@@ -17,7 +22,7 @@
 | **M9 Bayonet** | Clip-point + sawback serrations (11 teeth) | `ExtrudeGeometry` + `BoxGeometry` ×11 | Tooth spacing ≈ 14mm, depth ≈ 15mm |
 
 ### Universal Knife Details (from all anatomy notebooks)
-- **Jimping**: Notches on spine for thumb traction → Normal map, NOT geometry
+- **Jimping**: Notches on spine for thumb traction → use geometry when silhouette or relief requires it; otherwise consider a normal map.
 - **Choil**: Notch near heel for sharpening → Small boolean subtract
 - **Handle Belly**: Swell curving outward from centerline for palm grip
 - **Tang types**: Full tang (visible at handle edges), Hidden tang (rat-tail), Skeletonized tang
@@ -60,10 +65,10 @@
 
 ---
 
-## 4. PBR Properties — Strict CS2 Ranges
+## 4. PBR Properties — Unverified Example Ranges
 
-### Binary Metalness Rule (CRITICAL)
-> **CS2 uses a strict two-bit metalness model**: surfaces are either `0.0` (dielectric: wood, polymer, fabric) or `1.0` (conductive: steel, gold, chrome). Intermediate values cause lighting artifacts.
+### Metalness heuristic
+> Pure dielectric and conductive regions often use endpoints; transitions and mixed texels may use intermediate values. The ranges below are estimates, not a proven engine rule.
 
 ### Albedo Ranges
 | Material | Albedo RGB Range | Metalness | Roughness |
@@ -74,7 +79,7 @@
 | **Patina (Case Hardened)** | [100, 200] | 0.80–0.95 | 0.20–0.35 |
 
 ### Environment Requirements
-- **HDR cubemap** mandatory for anodized/chrome finishes
+- An environment source is needed for convincing view-dependent finishes; the current pipeline may use its generated environment rather than an HDR cubemap.
 - `renderer.toneMapping = THREE.ACESFilmicToneMapping`
 - `.colorSpace = THREE.SRGBColorSpace` for albedo/emissive maps
 - `NoColorSpace` for normalMap, roughnessMap, metalnessMap
@@ -153,8 +158,7 @@
 ## 9. 3D Reconstruction Pipeline Insights
 
 ### Channel Packing (Source 2 → Three.js)
-- Roughness + Metalness packed in single texture (R + G channels)
-- Must unpack in shader: `roughness = texture2D(rmMap, uv).g; metalness = texture2D(rmMap, uv).b;`
+- Source maps and renderer conventions may use different channels; inspect the actual map and destination material convention before repacking. The examples in these historical notes do not establish a universal mapping.
 
 ### Structured Image Description Protocol (from 370faecc)
 1. **Observation before inference** — state observable facts separately from inferences
@@ -182,13 +186,12 @@
 
 ### Valve Texture Format
 - VTF → PNG conversion via Source2Viewer-CLI
-- Channel packing: Roughness (R) + Metalness (G) in single file
-- Must tangle channels for Three.js MeshPhysicalMaterial
+- Inspect source channel packing and convert as required by the actual destination material.
 
 ### Legal Note
 - Extracted textures are Valve IP — stay in local `cs2_textures/` workspace
 - Never commit or redistribute
-- "Extractive use" doctrine may apply for personal/research use
+- Any reuse or distribution requires checking the applicable rights and terms; this note is not a legal determination.
 
 ---
 

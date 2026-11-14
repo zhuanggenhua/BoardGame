@@ -1,5 +1,6 @@
 {
   "title": "Fate / Domination",
+  "skipNobleAnimation": "Skip",
   "brand": "FATE / DOMINATION",
   "subtitle": "Fuyuki City · Holy Grail War tabletop",
   "dev": {
@@ -82,11 +83,15 @@
       "ridingSelectionSummary": "Selected {{selected}}/3 · Cost {{cost}}/{{mana}} mana",
       "ridingStatus": "Ride summon · {{selected}} selected (maximum {{maximum}}) · Cost {{cost}}/{{mana}} mana · selected cards are always face up",
       "selectionMode": "Card selection mode",
+      "adjustedCost": "Cost {{current}} · Printed {{printed}}",
       "skillAction": "{{action}} {{name}}",
       "skillCards": "Skill cards",
       "totalPower": "Total power"
     },
     "identitySetup": {
+      "notSelected": "Not selected",
+      "chooseMaster": "Choose a Master and review their abilities and associated cards.",
+      "chooseServant": "Choose a Servant and review their profile and skill cards.",
       "cardBackSide": " (back)",
       "complete": "Finish setup",
       "currentCharacter": "Current character details",
@@ -175,6 +180,7 @@
       "title": "Restore a Command Seal after battle"
     },
     "selfDock": {
+      "manaDraft": "Pending −{{cost}}",
       "commandSealAlt": "Command Seal",
       "discardPileCount": "Discard pile · {{count}} cards",
       "drawPileCount": "Draw pile · {{count}} cards",
@@ -264,6 +270,8 @@
     "gameOver": "The game is over",
     "unknownMaster": "Master asset is not registered",
     "unknownServant": "Servant asset is not registered",
+    "masterTaken": "This Master has been claimed. Choose another Master.",
+    "servantTaken": "This Servant has been claimed. Choose another Servant.",
     "wrongPhase": "This action is not available in the current phase",
     "notYourTurn": "It is not your turn",
     "alreadyDeployed": "You have already deployed this round",

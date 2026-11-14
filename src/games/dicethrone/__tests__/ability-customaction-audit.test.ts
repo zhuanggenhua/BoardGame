@@ -22,6 +22,7 @@ import {
 } from '../domain/effects';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
+import { THOR_CARDS } from '../heroes/thor/cards';
 
 const HEROES = Object.keys(CHARACTER_DATA_MAP);
 
@@ -35,6 +36,8 @@ const CARD_LOOKUP_RANDOM = {
 const ALL_CARDS: AbilityCard[] = [
     ...Object.values(CHARACTER_DATA_MAP).flatMap(data => data.getStartingDeck(CARD_LOOKUP_RANDOM as any)),
     ...COMMON_CARDS,
+    // 彩虹桥是正式推广卡，不在默认起始牌库中。
+    ...THOR_CARDS,
 ];
 
 const BOARD_FACES_TO_AUDIT: Array<HeroState['playerBoardFace']> = [
@@ -278,6 +281,9 @@ describe('CustomAction 覆盖完整性审计', () => {
         'gunslinger-card-high-noon-resolve',
         'samurai-card-you-should-be-ashamed-resolve',
         'artificer-synth-inflict-nanobomb-selected',
+        // 索尔先选择弃置的手牌，再由交互描述的回调续接飞掷或召回。
+        'thor-mjolnir-paid-throw',
+        'thor-mjolnir-paid-retrieve',
         // 战术家：地毯式轰炸选目标后回调伤害结算
         'zhanshujia-carpet-bombing-target-damage',
     ]);

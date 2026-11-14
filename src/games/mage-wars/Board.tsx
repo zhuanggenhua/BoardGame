@@ -3005,7 +3005,14 @@ function ArenaStage({
                         : largestLaneCount <= 2
                             ? 'dense'
                             : 'packed';
-                const ownerLaneLayoutClassName = getZoneOwnerLaneLayoutClassName(entityDensity);
+                // 教程底行双单位并排，避免召唤物或法师被底部法术书遮住。
+                const tutorialBottomPair = Boolean(tutorialHighlightTarget)
+                    && isBottomArenaRowZone(zone.id)
+                    && leftSeatFieldObjects.length + leftSeatZoneOccupants.length === 2
+                    && rightSeatFieldObjects.length + rightSeatZoneOccupants.length === 0;
+                const ownerLaneLayoutClassName = tutorialBottomPair
+                    ? 'flex flex-row flex-nowrap items-start justify-center gap-2 pt-3'
+                    : getZoneOwnerLaneLayoutClassName(entityDensity);
                 const ownerLaneOverflowMode = getZoneOwnerLaneOverflowMode(entityDensity);
                 const resolveAttachmentRole = (object: MageWarsArenaObjectState): FieldCardRole | undefined => {
                     const isSpellObjectTarget = isSelectedSpellObjectTarget(object);
@@ -3377,7 +3384,7 @@ function ArenaStage({
                         >
                         {usesOwnershipLanes ? (
                             <div
-                                className="absolute inset-[1.4%] grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[3.5%]"
+                                className={cx('absolute inset-[1.4%] grid gap-[3.5%]', tutorialBottomPair ? 'grid-cols-[minmax(0,1fr)_0px]' : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)]')}
                                 data-testid="mage-wars-zone-ownership-lanes"
                                 data-zone-id={zone.id}
                                 data-layout-axis="horizontal"
@@ -5235,6 +5242,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                     maxScale={2.6}
                     baseScaleMode="cover"
                     panBoundsMode="free"
+                    fitInsets={boardTutorialActive ? { bottom: Math.min(144, window.innerHeight * 0.14) } : undefined}
                     panToTarget={tutorialArenaPanTarget}
                     skipPanWhenTargetVisible
                     containerTestId="mage-wars-arena-viewport"
@@ -5523,6 +5531,7 @@ export default function MageWarsBoard({ G, playerID, dispatch, reset, matchData,
                 closeLabel={t('actions.close')}
                 containerClassName="max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] overflow-visible rounded-none"
                 closeButtonClassName="mw-magnify-close"
+                revealCloseAfterPointerMove
             >
                 {magnifiedPreview ? (
                     <div

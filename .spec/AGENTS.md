@@ -4,6 +4,8 @@ BoardGame 是多桌游 Web / 移动平台。`.spec/` 是 AI 规范唯一真相�
 
 知识导航（`knowledge/README.md`）与硬红线（`rules/system.md`）是本规范核心：Claude Code 由 `CLAUDE.md` 强制载入；其它宿主读完本文件后继续读取这两份。`spec-steward` 负责维护 `.spec` 文件、索引和落点。
 
+读取规范或 skill 时，若工具报错、输出截断或缺少本任务必需的段落，必须调整输出预算或按标题 / 行段重新读取缺失部分，核对覆盖后再据其执行或裁决；不能把部分输出当作已完整读取。仍无法读取时说明具体缺口及影响。
+
 ## 项目是什么
 
 - 前端：React / TypeScript / Vite，多游戏运行时。

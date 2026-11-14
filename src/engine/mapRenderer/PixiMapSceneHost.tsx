@@ -46,6 +46,8 @@ export interface PixiMapSceneHostProps {
     mapHeight: number;
     viewport: MapViewportState;
     onViewportChange?: (viewport: MapViewportState) => void;
+    constrainViewport?: (viewport: MapViewportState) => MapViewportState;
+    viewportRevision?: number;
     minimumZoom?: number;
     maximumZoom?: number;
     /** Zoom-in multiplier per 120px wheel notch; omitted preserves existing sensitivity. */
@@ -170,6 +172,8 @@ const CameraWorld: React.FC<{
     mapHeight: number;
     viewport: MapViewportState;
     onViewportChange?: (viewport: MapViewportState) => void;
+    constrainViewport?: (viewport: MapViewportState) => MapViewportState;
+    viewportRevision?: number;
     minimumZoom: number;
     maximumZoom: number;
     wheelZoomFactor?: number;
@@ -198,6 +202,8 @@ const CameraWorld: React.FC<{
     mapHeight,
     viewport,
     onViewportChange,
+    constrainViewport,
+    viewportRevision,
     minimumZoom,
     maximumZoom,
     wheelZoomFactor,
@@ -278,16 +284,19 @@ const CameraWorld: React.FC<{
         pendingEmitRef.current = null;
     }, []);
 
+    const previousViewportRevision = React.useRef(viewportRevision);
     React.useEffect(() => {
         const nextPose = copyPose(viewport);
+        const externalRequest = previousViewportRevision.current !== viewportRevision;
+        previousViewportRevision.current = viewportRevision;
         const isOwnUpdate = poseDistance(nextPose, lastEmittedPoseRef.current) < 0.001;
-        if (!cameraActiveRef.current || !isOwnUpdate) {
+        if (externalRequest || !cameraActiveRef.current || !isOwnUpdate) {
             desiredPoseRef.current = nextPose;
             if (prefersReducedMotion || !cameraActiveRef.current) {
                 renderedPoseRef.current = copyPose(nextPose);
             }
         }
-    }, [prefersReducedMotion, viewport.panX, viewport.panY, viewport.zoom]);
+    }, [prefersReducedMotion, viewport.panX, viewport.panY, viewport.zoom, viewportRevision]);
 
     const getMapPoint = React.useCallback((screen: CameraPoint): MapScenePoint => {
         const point = mapPointAtScreen(screen, renderedPoseRef.current, origin, baseScale);
@@ -311,10 +320,11 @@ const CameraWorld: React.FC<{
             panX: nextPose.panX,
             panY: nextPose.panY,
         };
-        desiredPoseRef.current = clampedPose;
+        const next = constrainViewport?.(clampedPose) ?? clampedPose;
+        desiredPoseRef.current = next;
         cameraActiveRef.current = true;
-        emitViewport(clampedPose);
-    }, [emitViewport, maximumZoom, minimumZoom]);
+        emitViewport(next);
+    }, [constrainViewport, emitViewport, maximumZoom, minimumZoom]);
 
     const beginDrag = React.useCallback((pointerId: number, point: CameraPoint) => {
         dragPointerIdRef.current = pointerId;
@@ -437,10 +447,11 @@ const CameraWorld: React.FC<{
         cameraActiveRef.current = true;
         notifyManualCameraInteraction();
         setIsDragging(true);
-        desiredPoseRef.current = nextPose;
-        emitViewport(nextPose);
+        const next = constrainViewport?.(nextPose) ?? nextPose;
+        desiredPoseRef.current = next;
+        emitViewport(next);
         lastPointerRef.current = { point, timestamp: now };
-    }, [baseScale, emitViewport, interactive, maximumZoom, minimumZoom, notifyManualCameraInteraction, origin, setDesiredPose, updateHoveredRegion]);
+    }, [baseScale, constrainViewport, emitViewport, interactive, maximumZoom, minimumZoom, notifyManualCameraInteraction, origin, setDesiredPose, updateHoveredRegion]);
 
     const handlePointerUp = React.useCallback((event: CameraPointerEvent) => {
         if (!interactive) return;
@@ -741,6 +752,8 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
     mapHeight,
     viewport,
     onViewportChange,
+    constrainViewport,
+    viewportRevision,
     minimumZoom = 0.5,
     maximumZoom = 5,
     wheelZoomFactor,
@@ -869,6 +882,8 @@ export const PixiMapSceneHost: React.FC<PixiMapSceneHostProps> = ({
                     mapHeight={mapHeight}
                     viewport={viewport}
                     onViewportChange={onViewportChange}
+                    constrainViewport={constrainViewport}
+                    viewportRevision={viewportRevision}
                     minimumZoom={minimumZoom}
                     maximumZoom={maximumZoom}
                     wheelZoomFactor={wheelZoomFactor}

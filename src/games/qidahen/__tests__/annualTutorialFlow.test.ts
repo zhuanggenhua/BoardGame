@@ -179,17 +179,17 @@ describe('连续年度教程正式管线', () => {
                     const regionId = frame.upkeepTasks[frame.upkeepIndex].regionId;
                     const special: Record<string, string> = {
                         'city-region-1': 'ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1',
-                        'city-region-18': 'ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1',
-                        'city-region-29': 'ming-post-sarhu-1619-hanseong-mercenary-infantry-lv2__compat__1',
                     };
                     const valid = data.options.filter(option => !option.disabled).map(option => option.id);
                     const preferred = special[regionId];
                     const farm = variation === 'remove-farm' && regionId === 'city-region-7'
                         ? state.core.pieces.find(piece => piece.sourceStackId.startsWith('ming-farm-') && piece.regionId === regionId)?.id : undefined;
                     const cards = valid.filter(id => state.core.handCards.some(card => card.id === id));
-                    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1');
-                    targets = farm && valid.includes(farm) ? [farm] : preferred && valid.includes(preferred) ? [preferred]
-                        : cards.length && (variation === 'zero-hand' || state.core.factions.ming.handCount > 3) ? [cards[0]] : [pieces[0]];
+                    const pieces = valid.filter(id => !cards.includes(id) && id !== 'ming-post-sarhu-1619-liaobei-regular-artillery-lv1__compat__1' && id !== 'ming-post-sarhu-1619-liaobei-cavalry-cavalry-lv1__compat__1' && !id.startsWith('ming-farm-'));
+                    targets = frame.upkeepTasks[frame.upkeepIndex].reason === 'korea' ? [cards[0]]
+                        : farm && valid.includes(farm) ? [farm] : preferred && valid.includes(preferred) ? [preferred]
+                        : cards.length && (variation === 'zero-hand' || !pieces.length) ? [cards[0]] : [pieces[0]];
+                    expect(targets[0], `合法耗损候选 ${regionId}`).toBeDefined();
                 } else if (step.id === 'season-chronology-payment') targets = [data.options.find(option => !option.disabled)!.id];
                 const response = createRespondToPromptCommand(state, {
                     playerId: prompt.playerId,

@@ -1,5 +1,8 @@
 # CS2 Item Anatomy Vocabulary — SMGs (Súng ngắn liên thanh)
 
+> Research vocabulary only; claims have not been independently verified here. SMGs are unsupported
+> by this copy's CS2 intake, and this reference does not enable their generation.
+
 > Bộ từ vựng song ngữ để **gọi đúng tên từng bộ phận của súng ngắn liên thanh (SMG)** khi mô tả lỗi fidelity trong pipeline img2threejs.
 > Quy tắc dùng: **geometry/hình khối sai** → dùng tên bộ phận vật lý (mục 1–2). **Texture/màu/pattern sai** → dùng thuật ngữ skin CS2 (mục 3).
 >

@@ -85,8 +85,8 @@ describe('DiceThrone configReviewAdapter', () => {
       && row.cpCost === 0
     ));
     const arcShield = zeroCostUpgrades.find((row) => row.objectId === 'upgrade-artificer-shock-bot-2');
+    const thorHammer = zeroCostUpgrades.find((row) => row.objectId === 'upgrade-thor-hammer-2');
 
-    expect(zeroCostUpgrades.map((row) => row.objectId)).toEqual(['upgrade-artificer-shock-bot-2']);
     expect(arcShield).toMatchObject({
       characterId: 'artificer',
       cardType: 'upgrade',
@@ -96,6 +96,8 @@ describe('DiceThrone configReviewAdapter', () => {
     });
     expect(arcShield && isDiceThroneResponseOnlyUpgradeRow(arcShield)).toBe(true);
     expect(getDiceThroneConfigReviewCellValue(arcShield!, 'cardType')).toBe('upgrade');
+    expect(thorHammer).toMatchObject({ characterId: 'thor', cardType: 'upgrade', cpCost: 0 });
+    expect(thorHammer && isDiceThroneResponseOnlyUpgradeRow(thorHammer)).toBe(false);
   });
 
   it('主表只显示玩家需要录入或修正的静态字段，不暴露内部调试和素材索引', () => {

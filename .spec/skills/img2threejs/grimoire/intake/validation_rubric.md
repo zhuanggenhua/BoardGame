@@ -32,12 +32,12 @@ Use this reference when the suitability decision is unclear.
 Do not blanket-reject a subject for being hair- or cloth-fold-dominant. If the form language is character-like (humanoid silhouette, skin/cloth/hair materials), classify it `character-conditional -> stylized` instead of `reject`. Route through `grimoire/character/reconstruction.md` (proportions, landmarks, pose, stylized materials) by default.
 
 - **character-conditional -> stylized**: humanoid subject, at least one clear frontal view, pose readable, hair/cloth is present but the user accepts the stylized-clump/fold-normal treatment rather than photoreal strands or drape simulation. Proceed with the standard character pipeline.
-- **character-conditional -> maximum likeness**: user explicitly wants the closest possible match to a specific person/character. Confirm this intent before starting, then route through `grimoire/character/likeness_maximization.md` (projection-first: template fit, camera match, de-lighting, texture projection). State up front that a single image cannot guarantee 100 percent likeness; report per-region confidence instead of claiming an exact match.
+- **character-conditional -> maximum likeness**: user explicitly wants the closest possible match to a specific person/character. When that intent is already explicit, route through `grimoire/character/likeness_maximization.md` (projection-first: template fit, camera match, de-lighting, texture projection). State up front that a single image cannot guarantee 100 percent likeness; report per-region confidence instead of claiming an exact match.
 - **still reject**: no humanoid silhouette is discernible at all, the figure is fully occluded/cropped below usable proportions, or the request demands photoreal skin/hair microstructure from a single low-resolution image with no willingness to provide more views or accept stylization.
 
 Before committing to a character spec:
 
-- confirm which stylization level the user accepts (realistic ~7.5 heads / stylized 5-6 / chibi 2-3) — do not assume realistic by default
+- use the user-specified or reference-supported stylization level (realistic ~7.5 heads / stylized 5-6 / chibi 2-3); ask only when materially ambiguous
 - request front, side, and back (or full-body) views whenever the visible view cannot support pose, proportion, or back-of-head/body inference
 - if maximum likeness is requested but only one low-quality view is available, say so explicitly and offer the stylized fallback as the practical alternative
 
@@ -73,7 +73,7 @@ If these cannot be inferred from the image, mark the spec `conditional` and list
 
 **Rule:** Get the item's real market name/identity EARLY, and pull official references FIRST before authoring geometry:
 
-1. **Ask the user for the exact market name** up front, not only a visual description.
+1. **Identify the exact market name** from the request or available evidence; ask only if it remains unresolved.
 2. **Use `fetch_cs2_metadata.py`** to resolve paint index + official CDN render + confirm the skin exists
 3. **Fetch official + vanilla renders** before authoring geometry — these show the base model features (sawback, clip point, tang, guard style) that skin names don't reveal
 4. **Never infer stock features from skin names alone** — the vanilla render is the source of truth for base model geometry

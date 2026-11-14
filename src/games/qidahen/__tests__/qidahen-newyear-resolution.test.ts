@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createInitialCore } from '../domain/initialCoreSetup';
 import { buildQidahenUpkeepTasks, canMaintainQidahenFortification, getQidahenFortificationMaintenanceCost } from '../domain/seasonTasks';
 import { reduceQidahenTurnResolutionFact } from '../domain/turnResolutionFacts';
+import { buildQidahenTurnChoice, isQidahenTurnChoiceSelectionValid } from '../domain/turnResolutionChoices';
+import type { QidahenTurnResolutionData } from '../domain/turnResolutionTypes';
 import { buildMercenaryTroopStack, buildRegularTroopStack } from '../domain/troopStacks';
 import { expandSpecialTroopStacksToCompatPieces } from '../domain/troopCompat';
 import { resolveQidahenPrimaryRuntimeRegionId } from '../domain/regionConfig';
@@ -24,6 +26,34 @@ const task = (core: QidahenCore, regionId: string, location = 'field') => buildQ
 
 // 完整正常命令/事务往返由turnResolution.test覆盖；这里迁移有效季节边界，废弃自动扣费和自动减员期望。
 describe('新年维护与由所属玩家分配的耗损', () => {
+    it('朝鲜驻军耗损只能用手牌支付，不能选择或结算移除部队', () => {
+        const core = initial();
+        const region = force(core, 'city-region-18', 'ming', 2, 0);
+        const upkeep = task(core, region.id)!;
+        const piece = expandSpecialTroopStacksToCompatPieces(region.specialTroops)[0];
+        const data = { step: 'upkeep', factionId: 'ming', upkeepTasks: [upkeep], upkeepIndex: 0 } as QidahenTurnResolutionData;
+        const choice = buildQidahenTurnChoice(core, data)!;
+        expect(choice.candidates.some(candidate => candidate.id === piece.id)).toBe(false);
+        expect(isQidahenTurnChoiceSelectionValid(core, data, core.factions.ming.playerId, [piece.id])).toBe(false);
+        expect(() => applyFact(core, { kind: 'upkeep', task: upkeep, cardIds: [], removedPieceIds: [piece.id] })).toThrow();
+        const card = core.handCards.find(item => item.faction === 'ming' && item.status !== 'disabled')!;
+        expect(isQidahenTurnChoiceSelectionValid(core, data, core.factions.ming.playerId, [card.id])).toBe(true);
+        const paid = applyFact(core, { kind: 'upkeep', task: upkeep, cardIds: [card.id], removedPieceIds: [] });
+        expect(paid.regions.find(item => item.id === region.id)?.troops).toBe(2);
+        expect(paid.handCards.some(item => item.id === card.id && item.faction === 'ming')).toBe(false);
+    });
+    it('朝鲜围城进攻方同样不能以减员抵扣', () => {
+        const core = initial();
+        const region = force(core, 'city-region-18', 'jin', 0, 0);
+        const troops = [buildRegularTroopStack('ming', 'korean-siege', 1)];
+        region.siegeState = { attackerFactionId: 'ming', attackerTroops: 1, attackerSpecialTroops: troops, sourceRegionId: 'city-region-15' };
+        const upkeep = task(core, region.id, 'siege')!;
+        expect(upkeep.reason).toBe('siege');
+        const piece = expandSpecialTroopStacksToCompatPieces(troops)[0];
+        const data = { step: 'upkeep', factionId: 'ming', upkeepTasks: [upkeep], upkeepIndex: 0 } as QidahenTurnResolutionData;
+        expect(buildQidahenTurnChoice(core, data)!.candidates.some(candidate => candidate.id === piece.id)).toBe(false);
+        expect(() => applyFact(core, { kind: 'upkeep', task: upkeep, cardIds: [], removedPieceIds: [piece.id] })).toThrow();
+    });
     it('阿敏只为后金实际控制的朝鲜区域额外朝贡，友好中立不计入', () => {
         const core = initial();
         for (const id of ['xian-xing', 'city-region-18']) core.regions.find(region => region.id === id)!.controller = 'jin';

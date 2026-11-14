@@ -12,7 +12,7 @@ vi.mock('../../fgo-runtime/fgoPreload', () => ({
 vi.mock('../../fgo-runtime/fgoCharacterRuntime', () => ({ createFgoBattleRuntime: vi.fn() }));
 vi.mock('../../fgo-runtime/fgoSceneRuntime', () => ({ createFgoSceneRuntime: vi.fn() }));
 
-import { fateFgoSequenceFor } from '../fgoSequence';
+import { fateFgoSequenceFor, fateFgoSequencesFor } from '../fgoSequence';
 
 const player = (servantId: string, isRevealed: boolean, deploymentSlot: number | null = null) => ({ servantId, isRevealed, deploymentSlot });
 const core = { players: {
@@ -68,13 +68,12 @@ describe('Fate 角色演出事件', () => {
     expect(fateFgoSequenceFor(location(tied, 'recon'), core)).toBeUndefined();
   });
 
-  it('仅确认誓约胜利之剑且真名公开、素材就绪时播放宝具', () => {
+  it('行动确认不播放宝具，地点结算时播放事件记录的宝具', () => {
     const confirmed = event('ATTACKS_CONFIRMED', { playerId: '0', cardIds: ['sc_saber_np:2', 'other'] });
     expect(fateFgoSequenceFor(confirmed, core)).toBeUndefined();
     ready.noble = true;
-    expect(fateFgoSequenceFor(confirmed, core)).toEqual({ id: 42, kind: 'noble' });
-    const hidden = { players: { ...core.players, '0': player('servant-saber', false) } } as unknown as FateDominationCore;
-    expect(fateFgoSequenceFor(confirmed, hidden)).toBeUndefined();
+    expect(fateFgoSequencesFor(confirmed, core)).toEqual([]);
+    expect(fateFgoSequencesFor(event('LOCATION_RESOLVED', { locationId: 'miyama', results: [], noblePlayerIds: ['0'] }), core)).toEqual([{ id: 42, kind: 'noble' }]);
     expect(fateFgoSequenceFor(event('ATTACKS_CONFIRMED', { playerId: '0', cardIds: ['sc_saber_2:1'] }), core)).toBeUndefined();
   });
 });

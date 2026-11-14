@@ -22,6 +22,8 @@ export type LocalPregameControlResolver = (args: LocalPregameControlContext) => 
 export type LocalRuntimeControlResolver = (args: {
     state: MatchState<unknown>;
     fallbackPlayerId: string | null;
+    seatControllers?: Readonly<Record<string, SeatControllerLike>>;
+    localPlayerId?: string | null;
 }) => string | null | undefined;
 
 export function resolveFollowCurrentTurnPlayerId(core: unknown): string | null {

@@ -4,12 +4,12 @@ Use this reference when a procedural Three.js reconstruction has a browser-rende
 
 ## Capture Rule
 
-Each visual build pass should produce at least one rendered screenshot from a named review viewpoint. Use your agent's browser/screenshot tool (Claude Code browser MCP, your agent's in-app browser/preview, or the project's own preview) first. Do not install or download Playwright/Chromium just for this skill; use Playwright or another browser automation path only when the user explicitly allows it or the project already depends on it. If the in-app Browser is unavailable, ask for a screenshot path or use browser tooling that is already present in the target project.
+Each visual build pass should produce at least one rendered screenshot from a named review viewpoint. Use your agent's browser/screenshot tool (Claude Code browser MCP, your agent's in-app browser/preview, or the project's own preview) first. Prefer the available in-app browser or the project's existing browser tooling. If one route fails, inspect the other authorized routes and continue independent work; ask for missing input only when necessary.
 
 Create a side-by-side review image after capture:
 
 ```bash
-../../forge/stage4_review/make_comparison_sheet.py \
+python forge/stage4_review/make_comparison_sheet.py \
   --reference reference.png \
   --render render.png \
   --out comparison.png \

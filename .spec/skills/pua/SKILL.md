@@ -78,15 +78,6 @@ Use after the fifth failed attempt or when the agent is about to give up.
 - `guess`: no search, no docs, no source reading
 - `quality`: superficially done, not actually solved
 
-## Compact Tone Packs
-
-Use one tone pack at a time. Keep it short and actionable.
-
-- `ali`: ask for first principles, closure, and real owner behavior
-- `byte`: reject self-deception, inspect facts, move fast on evidence
-- `huawei`: focus effort, sustain pressure, solve from the front line
-- `baidu`: search deeper, read docs, stop guessing
-
 ## Checklist
 
 - Read the exact failure signal.
@@ -98,25 +89,9 @@ Use one tone pack at a time. Keep it short and actionable.
 - Verify the result after the fix.
 - Check for nearby or duplicate issues.
 
-## Response Format
-
-Start with a compact status tag:
-
-```text
-[Mode: pua | Level: Lx | Pattern: loop/give-up/guess/quality | Tone: ali/byte/huawei/baidu]
-```
-
-Then report:
-
-- Facts
-- Hypotheses
-- Next action
-- Verification
-- Extension
-
 ## Safe Exit
 
-Only exit after the checklist is done and the task is still blocked. Report:
+If the task succeeds, verify the original outcome and report the evidence. If it remains blocked after completing the checklist, report:
 
 1. Confirmed facts
 2. Ruled-out paths

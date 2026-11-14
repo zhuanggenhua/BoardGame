@@ -13,7 +13,7 @@ description: "BoardGame 生产更新最短路径。用于更新部署、发生�
 
 - 用户只说“更新部署 / 部署生产 / 更新线上”：直接执行“CI 构建后直传镜像到服务器并 `update-local` + Android stable OTA”，不再让本机先拉 GHCR。
 - 用户说“检查修改没问题就更新部署 / 看下改动没问题再发生产 / 检查后部署”：先按 [`git-operations`](../git-operations/SKILL.md) 审查当前改动范围，再决定是否能进入部署；不能把本地未提交改动、未推送提交或未归属脏改默认当成已经会被生产部署包含。
-- 用户明确说“看 CI / CI 好了 / 查 CI / 等 CI”：先查远端 `origin/main` 对应的 Docker 镜像 CI；只有成功才执行服务器更新与 OTA。
+- 用户只要求“看 CI / 查 CI / 等 CI”时，只查询并汇报，不启动部署；如果当前会话已授权 CI 成功后部署，再在匹配版本成功后执行已授权的服务器更新与 OTA。
 - 用户明确说“只更新服务器 / 不发 OTA”：显式加 `-SkipOta`。
 - 用户指定 tag：默认只建议用于服务器镜像更新；若同时要发 OTA，必须确认 OTA 的 git ref 与本次要发的代码一致。
 
@@ -31,22 +31,22 @@ description: "BoardGame 生产更新最短路径。用于更新部署、发生�
 使用本 skill 的包装脚本：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1
 ```
 
 只更新服务器，不发 OTA：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -SkipOta
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -SkipOta
 ```
 
 指定 tag 且只更新服务器：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3 -SkipOta
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3 -SkipOta
 ```
 
-脚本默认会触发 Docker workflow，CI 构建完成后直接把镜像 tar 输送到服务器并执行 `update-local`，再在本地发布 Android `stable` OTA：
+脚本默认会触发 Docker workflow，CI 构建完成后直接把镜像 tar 输送到服务器并执行 `update-local`，再触发 Android `stable` OTA workflow：
 
 ```powershell
 node scripts/release/deploy-and-ota.mjs --skip-wait --ota-channel stable
@@ -72,7 +72,7 @@ node scripts/release/deploy-and-ota.mjs --skip-wait --ota-channel stable
 ```
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -ChangelogFile .\temp\release-notes.json
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -ChangelogFile .\temp\release-notes.json
 ```
 
 部署成功后，流程使用现有后台账号发布网页日志，并将相同标题、正文传给 OTA manifest；重复运行只复用已公开的相同记录，未发布草稿不会阻止发布。若文件含可公开日志，必须通过 `-ChangelogApiBaseUrl`、`BG_CHANGELOG_API_BASE_URL` 或 `VITE_BACKEND_URL` 明确日志 API 地址；缺少配置会在服务器部署前报错，不会静默使用本机默认 API。空文件或全被过滤的日志无需配置 API。账号凭据仍由现有环境配置或隐藏交互输入提供。
@@ -87,24 +87,20 @@ gh workflow run docker-publish.yml --ref main -f stream_to_server=true -f deploy
 
 只有用户明确要求“本机输送 / 不触发 CI 直传”时，才传 `-DeployMode stream`，让底层改用 `stream-images-to-server.mjs` 本机 fallback。只有用户明确要求“服务器直接拉镜像 / 不走镜像输送”时，才传 `-DeployMode remote`，让底层改用 `deploy-image.sh update` 旧链路。
 
-## 查 CI 后部署
+## 已授权的 CI 后部署
 
-使用一条包装命令：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi
-```
-
-指定 tag：
+仅在部署已获授权时使用包装命令；仅查询 CI 走下方“只查 CI”。
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -Tag v1.2.3 -SkipOta
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi
 ```
+
+`-CheckCi` 检查的是当前远端 main，不能证明指定 tag 的 CI；指定 tag 时使用上面的直接部署入口，并核对实际触发的 tag workflow 和镜像结果。
 
 验证流程但不执行生产更新：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -DryRun
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -DryRun
 ```
 
 CI 检查口径：
@@ -114,12 +110,12 @@ CI 检查口径：
 - 必须成功的 workflow：`Build & Push Docker Images`
 - 必须匹配远端 `main` 当前 SHA
 
-若 Docker 镜像 CI 仍在运行、缺失或失败，停止，不执行部署。
+若无法读取远端当前 SHA，或匹配的 Docker 镜像 CI 仍在运行、缺失或失败，停止，不执行部署；本地跟踪引用不证明远端当前版本。
 
 ## 只查 CI
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\check-remote-ci.ps1
+pwsh -NoProfile -File .spec\skills\deploy-after-ci\scripts\check-remote-ci.ps1
 ```
 
 ## 强制边界
@@ -131,5 +127,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci
 - 指定 tag 时，不要在未确认 OTA git ref 与该 tag 对齐的情况下顺手发 OTA。
 - 不要为没有玩家可感知内容的完整部署生成玩家日志；不要把部署用的共享日志回退成另一份自动提交摘要。
 - 不要把服务器热更新绑到 `package.json.version` 自增；商业产品版本、OTA 包版本和原生壳版本是三类不同版本。
-- 不要默认执行本地测试、lint、构建或额外审计。
+- 按改动风险和用户要求执行必要校验；只部署已验证的目标版本，不机械增加无关检查。
 - 部署失败时只报告：执行了哪个脚本、远端脚本失败位置、下一步最小补救。

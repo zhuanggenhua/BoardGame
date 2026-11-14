@@ -28,11 +28,11 @@ function context(state: MatchState<FateDominationCore>, playerId: string): AiDec
         difficulty: { level: 'normal', searchDepth: 1, shortlistSize: 8, simulationBudgetMs: 50, randomness: 0, beliefSampleCount: 1, evaluatorProfile: 'basic' } };
 }
 
-it('非当前席保留合法选角，当前席优先完成准备而不循环重选', () => {
+it('电脑等待当前玩家完成准备，轮到自己时按开局分配的身份完成准备', () => {
     const game = match('fate-ai-setup');
     const offTurn = context(game.state, '1');
-    expect(offTurn.legalActions.some(action => action.commands[0].type === 'SELECT_MASTER')).toBe(true);
-    expect(offTurn.legalActions.some(action => action.commands[0].type === 'ADVANCE_PHASE')).toBe(false);
+    expect(offTurn.legalActions).toEqual([]);
+    expect(chooseFateAiAction(offTurn)).toBeNull();
     const current = context(game.state, '0');
     const decision = chooseFateAiAction(current)!;
     expect(current.legalActions.find(action => action.actionId === decision.actionId)?.commands[0].type).toBe('ADVANCE_PHASE');

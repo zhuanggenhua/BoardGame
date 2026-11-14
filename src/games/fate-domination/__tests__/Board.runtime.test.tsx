@@ -85,8 +85,19 @@ it('首轮已完成准备的玩家收起选角弹窗，未准备的玩家仍可�
  expect(screen.getByRole('tab',{name:'御主'})).toBeTruthy();
  expect(screen.getByRole('tab',{name:'从者'})).toBeTruthy();
  expect(screen.queryByRole('combobox')).toBeNull();
+ expect((screen.getByTestId('fate-domination-primary-action') as HTMLButtonElement).disabled).toBe(true);
  fireEvent.click(screen.getByTestId(`fate-setup-master-${FATE_MASTERS[0].id}`));
- expect(dispatch).toHaveBeenCalledWith('SELECT_MASTER',{masterId:FATE_MASTERS[0].id});
+ expect(dispatch).not.toHaveBeenCalledWith('SELECT_MASTER',expect.anything());
+ fireEvent.click(screen.getByRole('button',{name:'从者',exact:true}));
+ expect(screen.getByRole('tab',{name:'从者'}).getAttribute('aria-selected')).toBe('true');
+ expect((screen.getByTestId('fate-domination-primary-action') as HTMLButtonElement).disabled).toBe(true);
+ fireEvent.click(screen.getByTestId(`fate-setup-servant-${FATE_SERVANTS[0].id}`));
+ expect(dispatch).not.toHaveBeenCalledWith('SELECT_SERVANT',expect.anything());
+ expect((screen.getByTestId('fate-domination-primary-action') as HTMLButtonElement).disabled).toBe(true);
+ const ready = {...G,core:{...G.core,currentPlayerId:'1'}};
+ rerender(<FateDominationBoard {...({...base,G:ready,playerID:'1'} as never)}/>);
+ fireEvent.click(screen.getByTestId('fate-domination-primary-action'));
+ expect(dispatch).toHaveBeenCalledWith('ADVANCE_PHASE',{identities:{masterId:FATE_MASTERS[0].id,servantId:FATE_SERVANTS[0].id}});
 });
 
 it('骑乘由 Board 从技能入口接入内联手牌事务，并在待选时锁住阶段/地图动作', () => {

@@ -5,9 +5,9 @@ search. Each non-empty line is exactly one UTF-8 JSON object. A collection may
 have no record file yet, but every row in a present record file must satisfy
 this contract.
 
-## Future ingestion seam
+## Ingestion
 
-Todo 3 must expose `load_jsonl_records(path: Path)` from
+`load_jsonl_records(path: Path)` is provided by
 `forge._shared.spec_search`. It returns validated records and raises
 `SpecRecordValidationError` for malformed JSON, a non-object JSON value, a
 missing required field, or a value with the wrong type. The error identifies
@@ -15,6 +15,9 @@ the input path and one-based line number. Invalid rows are never skipped or
 silently repaired.
 
 ## Canonical row
+
+The following is an illustrative schema example; its identifiers, paths, and
+claims are not evidence that those exact source files or measurements exist.
 
 ```json
 {

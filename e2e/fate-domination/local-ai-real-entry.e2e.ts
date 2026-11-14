@@ -5,6 +5,7 @@ import {expect,test,type Page} from '@playwright/test';
 import {mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {initContext,attachPageDiagnostics,assertNoFatalFrontendErrors} from '../helpers/common';
+import {chooseFateIdentity} from './identitySelection';
 import {buildFateAiLegalActions} from '../../src/games/fate-domination/ai';
 import type {MatchState} from '../../src/engine/types';
 import type {FateDominationCore} from '../../src/games/fate-domination/domain';
@@ -29,6 +30,8 @@ test('正式本地自动玩家独立出牌并交还真人，完成自然一轮�
  await page.waitForFunction(()=>(window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.(),undefined,{timeout:30000});
  await expect(page.getByTestId('fate-domination-board')).toBeVisible();
  const initial=await read(page);expect(initial.core.currentPlayerId).toBe('0');
+ await chooseFateIdentity(page,'master','m_waver');
+ await chooseFateIdentity(page,'servant','servant-rider');
  await page.getByTestId('fate-domination-primary-action').click();
  await expect.poll(async()=>{const s=await read(page);return s.core.phase==='outpost'&&s.core.currentPlayerId==='0';},{timeout:30000}).toBe(true);
  expect((await read(page)).core.phaseCompletedPlayerIds).toEqual([]);

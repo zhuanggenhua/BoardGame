@@ -338,7 +338,10 @@
     "manageWorks": "Manage my works"
   },
   "packageManager": {
-    "desktopFgoDownload": "Download battle assets",
+    "desktopFgoDownload": "Download",
+    "desktopFgoConfirmTitle": "Download",
+    "desktopFgoConfirmButton": "Confirm",
+    "desktopFgoConfirmDescription": "Download the game's battle animation assets. Full size: approximately {{size}} MB.",
     "desktopFgoProgress": "Downloading {{done}}/{{total}}",
     "desktopFgoComplete": "Battle assets downloaded",
     "desktopFgoRetry": "Retry battle asset download",
@@ -2711,7 +2714,8 @@
       "embedRestricted": "This game website does not allow embedding here. You can still play on its original site.",
       "insecureHttp": "This page cannot embed an insecure HTTP website. Open the original site instead.",
       "sameOrigin": "This address cannot be embedded as an external game. Contact an administrator to review it.",
-      "start": "Start playing",
+      "start": "Start game",
+      "externalNavigationConfirm": "You are about to open an external game website. Easy Board Game cannot record your play time there. Continue?",
       "openOriginal": "Open original site",
       "iframeTitle": "{{name}} game",
       "playTime": "Time on this site: {{time}} (estimated)",

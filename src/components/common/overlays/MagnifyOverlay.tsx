@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ export const MagnifyOverlay = ({
   overlayClassName = "",
   closeLabel,
   closeButtonClassName = "",
+  revealCloseAfterPointerMove = false,
   overlayTestId,
   interactive = true,
   closeOnBackdrop = true,
@@ -25,6 +26,7 @@ export const MagnifyOverlay = ({
   overlayClassName?: string;
   closeLabel?: string;
   closeButtonClassName?: string;
+  revealCloseAfterPointerMove?: boolean;
   overlayTestId?: string;
   interactive?: boolean;
   closeOnBackdrop?: boolean;
@@ -32,6 +34,8 @@ export const MagnifyOverlay = ({
   renderInPlace?: boolean;
 }) => {
   const { t } = useTranslation("common");
+  const [pointerMoved, setPointerMoved] = useState(false);
+  useEffect(() => { setPointerMoved(false); }, [isOpen]);
   const portalRoot = useMemo(() => {
     if (typeof document === "undefined") return null;
     return document.getElementById("modal-root") ?? document.body;
@@ -58,6 +62,10 @@ export const MagnifyOverlay = ({
       <div className="relative inline-flex max-h-full max-w-full" onClick={(e) => e.stopPropagation()}>
         <div
           className={`relative rounded-[1vw] overflow-hidden group/modal ${containerClassName}`}
+          data-close-pointer-ready={!revealCloseAfterPointerMove || pointerMoved ? "true" : "false"}
+          onPointerMove={(event) => {
+            if (revealCloseAfterPointerMove && ((event.movementX || 0) !== 0 || (event.movementY || 0) !== 0)) setPointerMoved(true);
+          }}
         >
           {children}
           {isOpen && (

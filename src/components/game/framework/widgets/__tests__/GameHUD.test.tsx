@@ -44,6 +44,7 @@ vi.mock('../../../../system/FabMenu', () => ({
             <div
                 data-testid="fab-menu-stub"
                 data-fab-position={position}
+                data-fab-main={items[0]?.id}
                 data-fab-storage-key={storageKey}
                 data-fab-offset-top={initialOffset?.top}
             >
@@ -167,6 +168,18 @@ describe('GameHUD', () => {
             {node}
         </MemoryRouter>,
     );
+
+    it('本地对局主悬浮球与在线一致，退出和设置保留在菜单中', () => {
+        renderHud(<GameHUD mode="local" gameId="tictactoe" myPlayerId="0" />);
+        expect(screen.getByTestId('fab-menu-stub')).toHaveAttribute('data-fab-main', 'chat');
+        expect(screen.getByTestId('fab-action-exit')).toBeInTheDocument();
+        expect(screen.getAllByTestId('fab-action-settings')).toHaveLength(1);
+    });
+
+    it('在线对局主悬浮球为聊天', () => {
+        renderHud(<GameHUD mode="online" gameId="tictactoe" matchId="match-1" myPlayerId="0" />);
+        expect(screen.getByTestId('fab-menu-stub')).toHaveAttribute('data-fab-main', 'chat');
+    });
 
     it('联机正式进行阶段不再显示等待对手加入横幅', () => {
         renderHud(

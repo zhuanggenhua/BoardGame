@@ -151,10 +151,10 @@ texture-only structure, and pass credit assigned to the wrong layer.
 - For clip-point blades, also thin the false edge near the tip
 - Implementation example: Z-warp the projected face plates via a `grindWarp` function that applies `halfThk * grind(height)` per vertex
 
-**Do NOT eyeball proportions — extract 1-to-1 from reference.** Eyeballed shapes (guard, pommel, curves) are consistently wrong. Instead:
+**Measure visible proportions against the reference.** Image tracing measures a projection, not hidden 3D geometry. Record camera and occlusion uncertainty. Example techniques:
 - Trace each part's exact outline from the reference image (foreground / colour-masked top & bottom per image column)
 - Use a fixed image→world mapping function: `X = (nx - 0.5) * SX`, `Y = (CY - ny) * SY` (adjust SX, SY, CY to your reference dimensions)
-- Sample exact colours as RGB medians from reference regions, never guess visually
+- Sample observed RGB medians from reference regions; lighting and color management affect them
 - Store traced points as coordinate arrays (world space) and use them directly in Shape constructors
 - For smooth curves, use `splineThru` through traced points rather than manual control point tuning
 
@@ -164,9 +164,9 @@ texture-only structure, and pass credit assigned to the wrong layer.
 - Record sampled RGB and derived hex values for traceability
 - Store these sampled values in comments for traceability and verification
 
-**Parts must physically connect, not just be near each other.** Adjacent components must overlap at their shared seam:
+**Parts must physically connect, not just be near each other.** Adjacent components should meet or overlap at their shared seam as appropriate:
 - Check XY overlap between adjacent components (e.g., guard ↔ handle, blade ↔ guard)
-- Fix: extend one or both shapes so they overlap by at least 0.02-0.05 world units at the seam
+- Example fix: extend one or both shapes slightly at the seam, using an amount appropriate to model scale
 - Verify overlap by checking that `partA.end >= partB.start` for each axis where they meet
 
 **Projection core poke-through prevention.** When using photo-projected face plates over a solid core:

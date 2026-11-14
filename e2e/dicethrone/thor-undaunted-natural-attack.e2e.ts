@@ -66,6 +66,12 @@ for (const input of [
             return { target: damage?.targetPlayerId, amount: damage?.currentDamage, source: damage?.sourceAbilityId };
         }).toEqual({ target: '0', amount: 5, source: 'lotus-palm' });
         await continueAttackShowcaseIfVisible(match.hostPage);
+        const responseCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${input.cardId}"]`);
+        await expect(responseCard).toHaveAttribute('data-is-flipped', 'true');
+        await expect(responseCard.locator('.atlas-shimmer')).toHaveCount(0, { timeout: 15000 });
+        await expect.poll(() => responseCard.locator('img').evaluateAll(images => (
+            images.some(image => image.complete && image.naturalWidth > 0)
+        )), { timeout: 15000 }).toBe(true);
         await shot(match.hostPage, info, '01-实际攻击生成致命伤害响应');
         await dragDiceThroneHandCardToPlay(match.hostPage, input.cardId);
         let expectedHp = 5;

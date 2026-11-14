@@ -103,6 +103,43 @@ describe('Fate/Domination foundation domain', () => {
         expect(state.core.phaseCompletedPlayerIds).toEqual([]);
     });
 
+    it('正式选角一次提交两个身份，按所选从者发牌并拒绝非法组合或重复提交', () => {
+        const initial = adapter.setup(['0', '1', '2']);
+        const identities = { masterId: 'm_waver', servantId: 'servant-rider' };
+        const confirm = command('ADVANCE_PHASE', '0', { identities });
+        const invalid = command('ADVANCE_PHASE', '0', { identities: { ...identities, servantId: 'unknown' } });
+        expect(FateDominationDomain.validate(initial, invalid)).toEqual({ valid: false, error: 'unknownServant' });
+        expect(initial.core.players['0'].masterId).not.toBe(identities.masterId);
+        expect(initial.core.players['0'].hand).toHaveLength(0);
+        const state = apply(initial, confirm);
+        const player = state.core.players['0'];
+        expect(player).toMatchObject(identities);
+        expect(player.hand).toHaveLength(3);
+        expect([...player.hand, ...player.deck].map(card => card.definitionId).sort())
+            .toEqual([...FATE_SERVANTS.find(servant => servant.id === identities.servantId)!.deck].sort());
+        expect(state.core.phaseCompletedPlayerIds).toEqual(['0']);
+        expect(FateDominationDomain.validate(state, confirm).valid).toBe(false);
+    });
+
+    it('按确认顺序占用实体角色，电脑准备时避开已占用身份，隐藏从者仍对其他席保密', () => {
+        let state = adapter.setup(['0', '1', '2']);
+        const { masterId, servantId } = state.core.players['1'];
+        state = apply(state, command('ADVANCE_PHASE', '0', { identities: { masterId, servantId } }));
+        const choose = (master: string, servant: string) => command('ADVANCE_PHASE', '1', { identities: { masterId: master, servantId: servant } });
+        expect(FateDominationDomain.validate(state, choose(masterId, 'servant-rider')).error).toBe('masterTaken');
+        expect(FateDominationDomain.validate(state, choose('m_waver', servantId)).error).toBe('servantTaken');
+        expect(applyPlayerViewToState(engineConfig, state, '1').core).toMatchObject({ players: { '0': { masterId, servantId: '' } } });
+        state = apply(state, command('ADVANCE_PHASE', '1', {}));
+        const player = state.core.players['1'];
+        expect(player.masterId).not.toBe(masterId);
+        expect(player.servantId).not.toBe(servantId);
+        expect([...player.hand, ...player.deck].map(card => card.definitionId).sort())
+            .toEqual([...FATE_SERVANTS.find(servant => servant.id === player.servantId)!.deck].sort());
+        state = apply(state, command('ADVANCE_PHASE', '2', {}));
+        expect(new Set(Object.values(state.core.players).map(seat => seat.masterId)).size).toBe(3);
+        expect(new Set(Object.values(state.core.players).map(seat => seat.servantId)).size).toBe(3);
+    });
+
     it('同 ID 与 A→B→A 预选不发牌；三人确认只转入部署一次', () => {
         let state = adapter.setup(['0','1','2']);
         for (const servantId of ['servant-saber','servant-saber','servant-archer','servant-saber']) {
@@ -416,7 +453,8 @@ describe('Fate/Domination foundation domain', () => {
         [hand[hand.length - 1], deck[costlyIndex]] = [deck[costlyIndex], hand[hand.length - 1]];
         const expensiveCard = hand.find((card) => (FATE_ATTACK_BY_ID[card.definitionId]?.manaCost ?? 0) > 0);
         expect(expensiveCard).toBeDefined();
-        state = apply(state, command('SELECT_ATTACK_CARD', '0', { cardId: hand[0].id }));
+        const otherCard = hand.find(card => card.id !== expensiveCard!.id)!;
+        state = apply(state, command('SELECT_ATTACK_CARD', '0', { cardId: otherCard.id }));
         state = apply(state, command('SELECT_ATTACK_CARD', '0', { cardId: expensiveCard!.id }));
         const depleted = {
             ...state,

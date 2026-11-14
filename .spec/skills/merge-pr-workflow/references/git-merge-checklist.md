@@ -49,9 +49,9 @@ git merge-tree "$(git merge-base main branch-name)" main branch-name
 - 分支落后主线提交数。
 - 冲突预测中的共享核心、UI、规范、资源和测试文件。
 
-## 3. 停止阈值
+## 3. 扩大审查阈值
 
-命中以下情况时停止自动合并并汇报：
+命中以下情况时，扩大内容级审查并记录影响；数量或落后提交数本身不自动要求用户重新授权。无法从现有真相源裁定有效内容取舍时，再请求用户判断：
 
 - PR 实际删除文件超过 50 个。
 - PR 实际删除测试文件。
@@ -123,7 +123,7 @@ npx eslint src/ --ext .ts,.tsx
 
 - 规则 / 引擎 / 游戏逻辑：相关单测、集成测试或 E2E。
 - 规范 / skill / knowledge：`npm run spec:lint`，并扫过期入口和第二套规范。
-- 资源：按 [`asset-pipeline`](../../../knowledge/standards/asset-pipeline.md) 发布和远端回查。
+- 资源：按 [`asset-pipeline`](../../../knowledge/standards/asset-pipeline.md) 验证；仅在目标包含远端发布时执行发布和回查。
 - 冲突合并：`npm run merge:audit -- HEAD` 与 `npm run merge:audit:strict -- HEAD`。
 
 验证失败时，合并不得宣告完成；汇报要写清现实影响、证据和最小补救动作。
@@ -153,6 +153,6 @@ git diff <merge-base> branch-name
 - PR 真实意图和旧分支漂移已拆开。
 - 冲突裁决有证据，且没有未解释的单边覆盖。
 - 必要验证已通过。
-- 需要 push / close PR 的外部动作已经完成并回查真实结果。
+- 用户要求的 push / PR 状态变更已经完成并回查真实结果；仅请求本地合并时如实报告本地结果。
 
 任何一步缺失，都只能称为“合并候选已处理到某阶段”，不能宣告 PR 已完成。

@@ -8,15 +8,6 @@ export type FgoSequence = { id: number; kind: 'battle'; locationId: LocationId; 
 
 /** 临时表现只消费已经确认的事件；未就绪的素材在事件发生时直接跳过。 */
 export function fateFgoSequenceFor(entry: EventStreamEntry, core: FateDominationCore): FgoSequence | undefined {
-  if (entry.event.type === 'ATTACKS_CONFIRMED') {
-    const payload = entry.event.payload as { playerId: string; cardIds: string[] };
-    const player = core.players[payload.playerId];
-    if (player?.isRevealed && player.servantId === 'servant-saber'
-      && payload.cardIds.some(id => id.split(':')[0] === 'sc_saber_np') && loadedFgoNoble()) {
-      return { id: entry.id, kind: 'noble' };
-    }
-    return;
-  }
   if (entry.event.type !== 'LOCATION_RESOLVED') return;
   const { locationId, results } = (entry.event as LocationResolvedEvent).payload;
   if (locationId === 'recon' || results.length < 2) return;
@@ -37,4 +28,13 @@ export function fateFgoSequenceFor(entry: EventStreamEntry, core: FateDomination
       facing: targetLane < lane ? 'left' as const : 'right' as const }];
   });
   return actors.length ? { id: entry.id, kind: 'battle', locationId, laneCount: positions.length, actors } : undefined;
+}
+
+export function fateFgoSequencesFor(entry: EventStreamEntry, core: FateDominationCore): FgoSequence[] {
+  if (entry.event.type !== 'LOCATION_RESOLVED') return [];
+  const payload = (entry.event as LocationResolvedEvent).payload;
+  const noble: FgoSequence[] = loadedFgoNoble()
+    ? (payload.noblePlayerIds ?? []).map(() => ({ id: entry.id, kind: 'noble' as const })) : [];
+  const battle = fateFgoSequenceFor(entry, core);
+  return battle ? [...noble, battle] : noble;
 }

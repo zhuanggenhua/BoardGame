@@ -22,6 +22,7 @@ body .platform-details-cover .betrayal-game-thumbnail img { object-fit: cover; o
 .platform-details-primary button { min-height: 44px; border-radius: 0; }
 .platform-details-primary [data-testid="game-details-open-create-room"],
 .platform-details-primary [data-testid="external-game-play"],
+.platform-details-primary [data-testid="external-game-native-play"],
 .platform-details-primary [data-testid="external-game-open-site"] { background: #ff008a; border: 3px solid #000; color: #fff; box-shadow: 5px 5px #000; padding: 10px 24px; max-width: 260px; }
 .platform-details-primary [data-testid="external-game-open-site"] { display: inline-flex; align-items: center; justify-content: center; font: inherit; font-weight: 800; text-decoration: none; }
 .platform-details-secondary a { min-height: 44px; padding: 8px 16px; border: 2px solid #000; color:var(--platform-night-text,#000); background:var(--platform-night-surface,#fff); font: inherit; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; }
@@ -51,6 +52,7 @@ body .platform-details-cover .betrayal-game-thumbnail img { object-fit: cover; o
     .platform-details-primary { width:100%; }
     .platform-details-primary [data-testid="game-details-open-create-room"],
     .platform-details-primary [data-testid="external-game-play"],
+    .platform-details-primary [data-testid="external-game-native-play"],
     .platform-details-primary [data-testid="external-game-open-site"] { max-width: none; }
     .platform-details-secondary { display:flex; flex:none; gap:8px; }
     .platform-details-secondary button { padding: 8px 4px; font-size: 12px; }

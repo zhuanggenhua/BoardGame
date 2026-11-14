@@ -84,7 +84,7 @@ The proper fix is a Divine-Eye **reconstruction mode** (reference==photo ⇒ dro
 `objectness` signal (`objectness.py`, OSIM-lite — bg/pose/scale/brightness-invariant HOG cosine) and,
 when a photo-vs-procedural render fails *only* the IoU hard gate but objectness says "same object"
 (≥0.48), it downgrades the confident reject to `probe` and sets `reconstructionModeSuspected:true`. So the
-Eye no longer hard-rejects a faithful reconstruction on framing alone — but still never auto-passes it.
+Current code can return `pass` when the soft score, scale, and aspect thresholds also pass; otherwise it returns `probe`. This is a metric verdict, not proof of fidelity or a substitute for visual review.
 
 ---
 

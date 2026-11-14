@@ -189,7 +189,9 @@ public class MainActivity extends BridgeActivity {
         if (url == null || url.isEmpty()) {
             return;
         }
-        final boolean isGamePage = extractGameId(url) != null;
+        final List<String> pathSegments = android.net.Uri.parse(url).getPathSegments();
+        final boolean isExternalGamePage = pathSegments.size() >= 2 && "external".equals(pathSegments.get(0));
+        final boolean isGamePage = extractGameId(url) != null || isExternalGamePage;
         final boolean isHomeV2Page = isHomeV2Route(url);
         final boolean needsImmersiveWindow = isGamePage || isHomeV2Page;
         final int requestedOrientation = resolveRequestedOrientation(url);

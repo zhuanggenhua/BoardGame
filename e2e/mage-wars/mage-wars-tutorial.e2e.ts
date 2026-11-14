@@ -1283,6 +1283,11 @@ async function screenshotTutorialStep(page: Page, stepId: string, path: string) 
         await waitForTutorialArenaPanSettled(page, highlightTarget);
     }
     await expect(page.getByTestId('tutorial-overlay-content')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('教程当前步骤不允许这个操作，请先按提示完成当前步骤。')).toBeHidden({ timeout: 15_000 });
+    await page.getByTestId('tutorial-overlay-card').evaluate(async (element) => {
+        const animations = element.getAnimations({ subtree: true }).filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity);
+        await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
+    });
     await screenshot(page, path);
 }
 
@@ -1620,6 +1625,11 @@ test.describe('Mage Wars tutorial', () => {
         }, { timeout: 15_000 }).toEqual({ zoneId: 'a3', actionReady: false });
         const summonedWolf = page.locator('[data-tutorial-id="mw-field-object-2819"]');
         await expect(summonedWolf).toBeVisible({ timeout: 10_000 });
+        const wolfBounds = await summonedWolf.boundingBox();
+        const spellbookBounds = await page.getByTestId('mage-wars-desktop-spellbook-shelf').boundingBox();
+        expect(wolfBounds).not.toBeNull();
+        expect(spellbookBounds).not.toBeNull();
+        expect(wolfBounds!.y + wolfBounds!.height, '召唤后的灰狼应完整露出在法术书上方').toBeLessThanOrEqual(spellbookBounds!.y + 1);
         await expect(summonedWolf).toHaveAttribute('data-action-ready', 'false');
         await expect(summonedWolf).toHaveAttribute('data-action-token-state', 'spent');
         await expect(summonedWolf).not.toHaveAttribute('data-visual-action-state', 'spent');

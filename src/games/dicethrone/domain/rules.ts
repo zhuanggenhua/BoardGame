@@ -21,7 +21,7 @@ import type {
 } from './types';
 import { HAND_LIMIT, MAX_HEALTH, PHASE_ORDER, SKIRMISH_MAX_HEALTH } from './types';
 import { RESOURCE_IDS } from './resources';
-import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
+import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
 import { CHARACTER_DATA_MAP } from './characters';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
@@ -40,6 +40,8 @@ import {
 import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 
 import { getGameMode } from './utils';
+import { hasTransferableStatusTarget } from './statusRemoval';
+export { getTokenStackLimit } from './tokenLimits';
 
 // ============================================================================
 // 骰子规则
@@ -277,23 +279,6 @@ export const getAttackMaxDuplicateValueCount = (state: DiceThroneCore): number =
  * - 回退到 tokenDefinitions.stackLimit
  * - stackLimit=0 表示无限
  */
-export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, tokenId: string): number => {
-    const player = state.players[playerId];
-
-    if (tokenId === STATUS_IDS.CURSED_COIN) {
-        return player?.characterId === 'cursed_pirate' ? 5 : 3;
-    }
-
-    const override = player?.tokenStackLimits?.[tokenId];
-    if (typeof override === 'number') {
-        return override === 0 ? Infinity : override;
-    }
-
-    const def = (state.tokenDefinitions ?? []).find(t => t.id === tokenId);
-    const base = def?.stackLimit;
-    if (base === 0) return Infinity;
-    return base ?? 99;
-};
 
 // ============================================================================
 // 团队模式规则（2v2）
@@ -876,6 +861,7 @@ export const CARD_PLAY_FAIL_REASONS = [
     'requireLethalAttack',
     'requireTokenStacks',
     'noStatusOnBoard',
+    'noTransferableStatusTarget',
     'rollContextLocked',
     'requirePendingDamage',
 ] as const;
@@ -1272,6 +1258,12 @@ const checkStandardCardPlay = (
             || !matchesPendingDamagePlayCondition(state, playerId, cond.pendingDamage, phase))) {
             return { ok: false, reason: 'requirePendingDamage' };
         }
+    }
+
+    if (card.effects?.some(effect => effect.action?.type === 'custom'
+        && effect.action.customActionId === 'transfer-status')
+        && !hasTransferableStatusTarget(state, playerId)) {
+        return { ok: false, reason: 'noTransferableStatusTarget' };
     }
 
     return { ok: true };

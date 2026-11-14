@@ -10,6 +10,15 @@ export interface FgoAssetManifest {
 
 const urlFor = (path: string) => `${getAssetsBaseUrl().replace(/\/$/, '')}/${ROOT}/${path}`;
 
+/** 下载确认展示清单的完整体积，不以已缓存体积冒充下载包大小。 */
+export async function getFgoAssetSize(): Promise<number> {
+  const response = await fetchFgoAsset(urlFor('manifest.json'), { cache: 'no-cache' });
+  if (!response.ok) throw new Error(`素材清单加载失败：HTTP ${response.status}`);
+  const manifest = await response.json() as FgoAssetManifest;
+  if (manifest.version !== 'v2' || !Array.isArray(manifest.files) || manifest.files.some(file => !Number.isSafeInteger(file.bytes) || file.bytes < 0)) throw new Error('素材清单格式错误');
+  return manifest.files.reduce((total, file) => total + file.bytes, 0);
+}
+
 /** 网关错误和浏览器网络失败可能是短暂的；重试耗尽仍交给调用方处理。 */
 async function fetchWithRetry(url: string, options?: RequestInit): Promise<Response> {
   for (let attempt = 0; ; attempt += 1) {

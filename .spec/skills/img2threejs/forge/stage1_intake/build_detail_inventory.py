@@ -3,8 +3,7 @@
 
 Scans the reference zone by zone (a uniform grid, or named component regions) so small
 identity-defining marks are not missed by a single glance at the whole image. Writes one
-crop PNG per zone plus a detailInventory skeleton JSON (see docs/UPGRADE_PLAN.md 4.1 and
-grimoire/intake/detail_inventory.md) with one detail stub per zone for the agent to classify,
+crop PNG per zone plus a detailInventory skeleton JSON (see grimoire/intake/detail_inventory.md) with one detail stub per zone for the agent to classify,
 describe, and link to a component/material field. This script only scaffolds zones and
 crops; it does not judge what is in them.
 """

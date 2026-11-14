@@ -248,6 +248,24 @@ describe('MongoStorage 行为', () => {
         if (mongo) await mongo.stop(); // 防御性检查
     });
 
+    it('setState 持久化最近一次撤回快照且不修改正在运行的对局', async () => {
+        await mongoStorage.createMatch('match-undo-pruning', buildCreateData('user:undo-pruning'));
+        const state: StoredMatchState = {
+            G: {
+                core: { hp: 10, optional: undefined },
+                sys: { undo: { snapshots: [{ core: { hp: 12 } }, { core: { hp: 11, optional: undefined } }, undefined], maxSnapshots: 10 } },
+            },
+            _stateID: 2,
+        };
+        await mongoStorage.setState('match-undo-pruning', state);
+        const result = await mongoStorage.fetch('match-undo-pruning', { state: true });
+        expect(result.state?.G).toEqual({
+            core: { hp: 10 },
+            sys: { undo: { snapshots: [{ core: { hp: 11 } }], maxSnapshots: 10 } },
+        });
+        expect((state.G as { sys: { undo: { snapshots: unknown[] } } }).sys.undo.snapshots).toHaveLength(3);
+    });
+
     it('同一 ownerKey 创建新房间会自动清理旧房间', async () => {
         await mongoStorage.createMatch('match-1', buildCreateData('user:1'));
         // 新行为：自动覆盖旧房间，不再抛异常

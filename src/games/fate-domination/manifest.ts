@@ -19,12 +19,12 @@ const entry: GameManifestEntry = {
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
     mobileLayoutPreset: 'map-shell',
+    pageShell: { keepBoardMountedOnPlayerViewChange: true },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {
         capture: true,
         localAi: true,
         remoteAi: false,
-        manualSetupSelection: true,
         defaultLocalAiSeats: 'all-opponents',
     },
 };

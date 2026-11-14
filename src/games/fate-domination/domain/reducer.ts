@@ -13,7 +13,7 @@ import type { FateDominationCommand, FateDominationCore, FateDominationEvent, Lo
 import { resolveFateMovement } from './movement';
 import { executeFateAbility, resolveFatePlayerAbility } from './abilityRegistry';
 import { fateRidingFrameId, fateRidingGeneration } from './ridingChoice';
-import { createFateAttackDeck } from './setup';
+import { createFateAttackDeck, resolveAvailableFateIdentities } from './setup';
 import {
     addFateRuleModifier,
     canSufferFateDefeat,
@@ -115,7 +115,12 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
         case 'RESOLVE_LOCATION': {
             const locationId = command.payload.locationId;
             const results = fateLocationResults(core, locationId);
-            const events: FateDominationEvent[] = [{ type: 'LOCATION_RESOLVED', payload: { locationId, results }, ...meta }];
+            const noblePlayerIds = results.filter(result => {
+                const player = core.players[result.playerId];
+                return player.isRevealed && player.servantId === 'servant-saber'
+                    && player.activeSkills.some(id => id.split(':')[0] === 'sc_saber_np');
+            }).map(result => result.playerId);
+            const events: FateDominationEvent[] = [{ type: 'LOCATION_RESOLVED', payload: { locationId, results, noblePlayerIds }, ...meta }];
             const projectedResults = [...core.resolvedResults, ...results];
             const resolvedCount = core.resolvedLocations.includes(locationId)
                 ? core.resolvedLocations.length
@@ -131,9 +136,14 @@ export function execute(state: MatchState<FateDominationCore>, command: FateDomi
                 const initialHandAlreadyDealt = (core.initialAttackHandDealtPlayerIds ?? []).includes(command.playerId)
                     || (Array.isArray(player?.hand) && player.hand.length > 0);
                 if (!initialHandAlreadyDealt) {
+                    const identities = command.payload?.identities ?? resolveAvailableFateIdentities(core, command.playerId);
+                    if (identities.masterId !== player.masterId)
+                        events.push({ type: 'MASTER_SELECTED', payload: { playerId: command.playerId, masterId: identities.masterId }, ...meta });
+                    if (identities.servantId !== player.servantId)
+                        events.push({ type: 'SERVANT_SELECTED', payload: { playerId: command.playerId, servantId: identities.servantId }, ...meta });
                     events.push({
                         type: 'INITIAL_ATTACK_HAND_DEALT',
-                        payload: { playerId: command.playerId, deck: random.shuffle(createFateAttackDeck(command.playerId, player.servantId)) },
+                        payload: { playerId: command.playerId, deck: random.shuffle(createFateAttackDeck(command.playerId, identities.servantId)) },
                         ...meta,
                     });
                 }
@@ -456,7 +466,9 @@ export function reduce(state: FateDominationCore, event: FateDominationEvent): F
             const attacks=event.payload.cardIds.filter(id=>resolveFateAttack(player,id)?.kind==='hand');
             const skills=event.payload.cardIds.filter(id=>resolveFateAttack(player,id)?.kind==='skill');
             const revealsName=skills.some(id=>player.skills.find(skill=>skill.id===id)?.desc?.includes('【真名解放】'));
+            const playedPiercingSpear = skills.some(id => id.split(':')[0] === 'sc_cu_1');
             const updatedPlayer = { ...player, mana: player.mana - event.payload.manaSpent, selectedAttackIds: [], selectedFaceDownIds: [],
+                ...(playedPiercingSpear && { piercingSpearPlays: (player.piercingSpearPlays ?? 0) + 1 }),
                 faceDownAttackIds: [...(player.faceDownAttackIds ?? []), ...(event.payload.faceDownIds ?? [])],
                 forcedRevealedHand: event.payload.revealHand ? [...player.hand] : player.forcedRevealedHand,
                 activeAttackIds: [...player.activeAttackIds,...attacks], activeSkills:[...player.activeSkills,...skills], revealedSkillIds:[...new Set([...player.revealedSkillIds,...(revealsName ? player.skills.filter(skill=>resolveFateAttack(player,skill.id)?.kind==='skill').map(skill=>skill.id) : skills)])], isRevealed:player.isRevealed||revealsName, normalAttackPlayed:true };

@@ -8,6 +8,7 @@ import { getQidahenDispatchDraftTargets, getQidahenDispatchSourcePieces, getQida
 import { getQidahenCharacterCommittedTroopLimit } from './pendingBattleCommittedTroops';
 import { canMaintainQidahenFortification, getQidahenFortificationMaintenanceCost, getQidahenUpkeepForce } from './seasonTasks';
 import { expandSpecialTroopStacksToCompatPieces } from './troopCompat';
+import { isQidahenKoreaRuntimeRegionId } from './regionConfig';
 import { getQidahenChronologyCharacterCandidates, getQidahenEunuchCandidates } from './chronologyResolution';
 import type { QidahenCore, QidahenFactionId } from './types';
 import type { QidahenTurnResolutionData, QidahenTurnResolutionFact } from './turnResolutionTypes';
@@ -124,8 +125,9 @@ export function buildQidahenTurnChoice(core: QidahenCore, data: QidahenTurnResol
             if (!task) return null;
             const force = getQidahenUpkeepForce(core, task);
             const payableCards = !hasActiveCharacter(core, task.factionId, 'ming-wei-zhongxian') ? cards(task.factionId) : [];
-            const removable = expandSpecialTroopStacksToCompatPieces(force.specialTroops);
-            return { title: `${core.regions.find(region => region.id === task.regionId)!.name} · 需支持或移除${data.upkeepRemaining ?? task.required}支部队`,
+            const korea = isQidahenKoreaRuntimeRegionId(task.regionId);
+            const removable = korea ? [] : expandSpecialTroopStacksToCompatPieces(force.specialTroops);
+            return { title: `${core.regions.find(region => region.id === task.regionId)!.name} · ${korea ? '需以手牌支持' : '需支持或移除'}${data.upkeepRemaining ?? task.required}支部队`,
                 factionId: task.factionId, min: 1, max: data.upkeepRemaining ?? task.required,
                 candidates: [
                     ...payableCards.map(card => ({ id: card.id, label: card.label, value: card.id, displayMode: 'card' as const })),

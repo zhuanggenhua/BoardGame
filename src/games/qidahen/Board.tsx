@@ -1419,7 +1419,7 @@ const MapToken: React.FC<{
                     transform: `translate(-50%, -3px) rotate(${-(token.rotationDeg ?? 0)}deg)` }}>{stackMixed ? `${t('board.map.mixedArmyShort')} ${stackSize}` : stackSize}</span> : null}
             {pendingCommittedSelected ? (
                 <span aria-hidden="true" data-testid="qidahen-committed-troop-check" className="pointer-events-none absolute z-10 grid place-items-center rounded-full bg-[#ffe191] leading-none text-[#33210f]"
-                    style={{ right: -4 * tokenScale, top: -4 * tokenScale, width: 10 * tokenScale, height: 10 * tokenScale,
+                    style={{ right: 0, top: 0, width: 10 * tokenScale, height: 10 * tokenScale,
                         fontSize: 8 * tokenScale, transform: `rotate(${-(token.rotationDeg ?? 0)}deg)` }}>✓</span>
             ) : null}
             {showTokenImage ? (
@@ -1479,7 +1479,7 @@ const MapToken: React.FC<{
             ) : null}
             {isArmyToken && revealFront && unitLevel != null ? <span
                 className="pointer-events-none absolute z-10 grid place-items-center rounded-sm bg-[#f3e7c4] leading-none text-[#2a1f15]"
-                data-testid={`qidahen-unit-level-${token.id}`} style={{ left: inspectionView ? -9 : -8 * tokenScale, top: 0,
+                data-testid={`qidahen-unit-level-${token.id}`} style={{ left: inspectionView ? -9 : 0, top: 0,
                     width: inspectionView ? 9 : 8 * tokenScale, height: inspectionView ? 9 : 8 * tokenScale,
                     fontSize: inspectionView ? 8 : 7 * tokenScale, transform: `rotate(${-(token.rotationDeg ?? 0)}deg)` }}>{unitLevel}</span> : null}
             {pincerAdvanceSelectable ? (
@@ -1638,7 +1638,7 @@ const MapSceneLayer: React.FC<{
     const selectionEntryZoom = React.useRef(viewport.zoom);
     if (selectableArmyRegionIds.size === 0) selectionEntryZoom.current = viewport.zoom;
     const armyScreenScale = Math.max(getArmyScreenScale(viewport.zoom, selectionEntryZoom.current),
-        45 / (26 * mapBaseScreenScale * viewport.zoom));
+        64 / (26 * mapBaseScreenScale * viewport.zoom));
     const visualMapTokens = React.useMemo(() => core.mapTokens.filter(token => token.type !== 'control').map(token =>
         token.type === 'army' && selectableArmyRegionIds.size > 0
             ? { ...token, size: (token.size ?? 26) * armyScreenScale } : token), [core.mapTokens, selectableArmyRegionIds, armyScreenScale]);
@@ -1690,8 +1690,8 @@ const MapSceneLayer: React.FC<{
         QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT), [compactedArmies.tokens, interiorSites]);
     const packedArmies = React.useMemo(() => packExpandedArmiesWithinRegions(visibleFieldArmyLayout.tokens,
         visibleFieldArmyLayout.callouts, interiorSites, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, expandedRegions,
-        new Set(core.regions.filter(region => region.population > 0).map(region => region.id))),
-        [visibleFieldArmyLayout, interiorSites, expandedRegions, core.regions]);
+        new Set(core.regions.filter(region => region.population > 0).map(region => region.id)), selectiveRegions, preservedBattlePieces),
+        [visibleFieldArmyLayout, interiorSites, expandedRegions, core.regions, selectiveRegions, preservedBattlePieces]);
     const overflowArmies = React.useMemo(() => compactCrowdedArmies(packedArmies.tokens,
         new Set(packedArmies.unresolvedRegionIds), new Set(), visibleFaceKey), [packedArmies, visibleFaceKey]);
     const overflowRegionSet = React.useMemo(() => new Set(packedArmies.unresolvedRegionIds), [packedArmies.unresolvedRegionIds]);
@@ -1739,8 +1739,18 @@ const MapSceneLayer: React.FC<{
             { ...armyGroupView, protectedRegionIds: protectedMapRegionIdsKey.split('|').filter(Boolean) }) : visibleBaseArmyLayout;
     }, [armyGroupView, visibleBaseArmyLayout, interiorSites, protectedMapRegionIdsKey]);
     const mapTokens = armyLayout.tokens;
-    const populationPlacements = React.useMemo(() => getQidahenPopulationPlacements(core.regions, runtimeRegionOwnership, mapTokens, interiorSites, armyLayout.groups),
-        [core.regions, runtimeRegionOwnership, mapTokens, interiorSites, armyLayout.groups]);
+    const populationReservedAreas = React.useMemo(() => [
+        ...armyLayout.groups,
+        ...mapTokens.filter(token => (overflowArmies.stackSizes.get(token.id) ?? compactedArmies.stackSizes.get(token.id) ?? 0) > 1)
+            .map(token => {
+                const scale = (token.size ?? 26) / 26;
+                return { left: token.x * QIDAHEN_MAP_WIDTH - 20 * scale,
+                    top: token.y * QIDAHEN_MAP_HEIGHT - (token.size ?? 26) / 2 - 12 * scale - 3,
+                    width: 40 * scale, height: 12 * scale + 3 };
+            }),
+    ], [armyLayout.groups, mapTokens, overflowArmies.stackSizes, compactedArmies.stackSizes]);
+    const populationPlacements = React.useMemo(() => getQidahenPopulationPlacements(core.regions, runtimeRegionOwnership, mapTokens, interiorSites, populationReservedAreas),
+        [core.regions, runtimeRegionOwnership, mapTokens, interiorSites, populationReservedAreas]);
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const regionTipHoverLockRef = React.useRef(false);
     const [maskVersion, setMaskVersion] = React.useState(0);
@@ -3164,7 +3174,7 @@ const MapSceneLayer: React.FC<{
                 </svg>
                 {mapTokens.filter(token => !(overflowRegionId && token.type === 'army' && token.location === 'field'
                     && token.regionId === overflowRegionId)).map(token => renderMapToken(token))}
-                <QidahenMapPopulationLayer regions={core.regions} placements={populationPlacements} reservedAreas={armyLayout.groups}
+                <QidahenMapPopulationLayer regions={core.regions} placements={populationPlacements} reservedAreas={populationReservedAreas}
                     protectedRegionIds={currentMapReadingRegionIds} candidateRegionIds={mapSelectionCandidateIds.flatMap(expandRuntimeRegionIds)} />
                 {activeResultFeedback != null ? (() => {
                     const resultRegion = core.regions.find((region) => region.id === activeResultFeedback.regionId);

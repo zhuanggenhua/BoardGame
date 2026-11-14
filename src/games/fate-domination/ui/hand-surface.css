@@ -144,6 +144,7 @@
 .fd-played-cards { --fd-hand-card-width: 120px; }
 .fd-played-cards.fd-hand-parallel { justify-content: flex-start; }
 .fd-hand-parallel { justify-content: center; overflow: visible; }
+.fd-attack-cards, .fd-skill-cards { justify-content: flex-start; }
 .fd-hand-parallel > .fd-runtime-card-shell + .fd-runtime-card-shell,
 .fd-hand-parallel > .fd-skill-slot + .fd-skill-slot { margin-left: min(8px, calc((100cqw - var(--fd-hand-card-width) * var(--card-count)) / max(1, var(--card-count) - 1))); }
 .fd-hand-parallel > .fd-runtime-card-shell,
@@ -155,7 +156,9 @@
 .fd-runtime-hand-zone:hover { z-index: 4; }
 
 .fd-runtime-empty-hand { min-height: 80px; display: grid; place-items: center; color: #b9ad8b; font-size: 13px; }
-.fd-hand-mode { align-self: flex-start; padding: 3px 8px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 13px; white-space:nowrap; pointer-events: auto; }
+.fd-play-summary-heading { display:flex; align-items:center; gap:6px; }
+.fd-hand-mode { padding: 3px 6px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 12px; white-space:nowrap; pointer-events: auto; }
+.fd-card-cost-adjustment { position:absolute; top:22px; left:4px; padding:2px 5px; color:#dcffdc; background:#10251dec; font-size:12px; }
 .fd-hand-mode[aria-pressed="true"] { background: #d2dccb; color: #14221b; }
 .fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
 .fd-runtime-card.is-riding-selected { outline: 2px solid #dcc68c; outline-offset: -2px; }

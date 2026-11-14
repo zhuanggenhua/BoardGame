@@ -128,13 +128,17 @@ function collectFrameworkBackedTests(rootDir: string): string[] {
 function collectForbiddenLocalModeSpecs(rootDir: string): string[] {
     const matches: string[] = [];
     const forbiddenPattern = /\/play\/[^/\s'"]+\/local\b/;
+    const usesLocalGame = /\/play\/(?:\$\{[^}]+\}|[\w-]+)(?=[?'"`])|\bopenTestGame\s*\(/;
+    const isGolden = (file: string, source: string) => /(?:^|[-/\\])golden(?:[-.]|$)/i.test(file)
+        || /evidenceCategory\s*:\s*['"]golden['"]/.test(source);
+    const violates = (file: string, source: string) => forbiddenPattern.test(source) || (isGolden(file, source) && usesLocalGame.test(source));
     // 标准单文件入口只检查该用例的实际导入闭包，其他任务的诊断文件不属于本次执行。
     const explicitTarget = process.env.PW_TEST_TARGET?.trim();
     if (explicitTarget && fs.existsSync(explicitTarget) && fs.statSync(explicitTarget).isFile()) {
         const result = buildSync({ entryPoints: [explicitTarget], bundle: true, write: false,
             metafile: true, platform: 'node', format: 'esm', packages: 'external', logLevel: 'silent' });
         return Object.keys(result.metafile!.inputs).filter(file => /\.[cm]?[jt]sx?$/.test(file)
-            && forbiddenPattern.test(fs.readFileSync(file, 'utf8')));
+            && violates(file, fs.readFileSync(file, 'utf8')));
     }
 
     const walk = (currentDir: string) => {
@@ -151,7 +155,7 @@ function collectForbiddenLocalModeSpecs(rootDir: string): string[] {
             }
 
             const content = fs.readFileSync(absolutePath, 'utf-8');
-            if (!forbiddenPattern.test(content)) {
+            if (!violates(absolutePath, content)) {
                 continue;
             }
 
@@ -246,9 +250,8 @@ if (!allowFullRun && !hasExplicitTarget) {
 if (forbiddenLocalModeSpecs.length > 0) {
     throw new Error(
         [
-            '检测到 E2E 仍在尝试使用已废弃的本地模式入口 `/play/:gameId/local`。',
-            '项目规范要求开发和测试统一走联机入口或测试入口，禁止再用本地模式充数。',
-            '请改用 `setupOnlineMatch` 或 `/play/:gameId` 测试入口，并清理以下文件：',
+            '禁止在 E2E 使用 `/play/:gameId/local`，或在黄金链使用浏览器本地测试入口。',
+            '黄金链请改用正式在线房间 `/play/:gameId/match/:matchId`。涉及文件：',
             ...forbiddenLocalModeSpecs.map((specPath) => `- ${specPath}`),
         ].join('\n'),
     );

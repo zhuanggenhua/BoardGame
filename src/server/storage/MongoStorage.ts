@@ -243,7 +243,19 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             logger.warn('[MongoStorage] sanitize: state 不是对象');
             return state;
         }
-        const cleanedState = stripUndefinedForStorage(state) as StoredMatchState;
+        // 旧快照最终不会持久化，先裁剪再深度清理，避免每次写入都复制整段撤回历史。
+        const sourceG = (state as { G?: unknown }).G;
+        const sourceSys = isPlainRecord(sourceG) ? sourceG.sys : undefined;
+        const sourceUndo = isPlainRecord(sourceSys) ? sourceSys.undo : undefined;
+        let stateToClean = state;
+        if (isPlainRecord(sourceG) && isPlainRecord(sourceSys) && isPlainRecord(sourceUndo) && Array.isArray(sourceUndo.snapshots)) {
+            const snapshots = sourceUndo.snapshots.filter((snapshot) => typeof snapshot !== 'undefined').slice(-1);
+            stateToClean = {
+                ...state,
+                G: { ...sourceG, sys: { ...sourceSys, undo: { ...sourceUndo, snapshots } } },
+            } as StoredMatchState;
+        }
+        const cleanedState = stripUndefinedForStorage(stateToClean) as StoredMatchState;
         // 状态结构是 { G: { sys, core }, _stateID, ... }
         // 游戏状态在 G 里面，G 的结构是 { sys, core }
         const G = (cleanedState as { G?: Record<string, unknown> }).G;

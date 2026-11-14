@@ -41,7 +41,23 @@ export function resolveFateAttack(player: PlayerState, id: string): {kind:'hand'
         sourceStatus:servant.sourceStatus,
     }};
 }
-export const selectedFateAttackCost=(player:PlayerState)=>player.selectedAttackIds.reduce((sum,id)=>sum+((player.selectedFaceDownIds??[]).includes(id)?0:resolveFateAttack(player,id)?.definition.manaCost??0),0);
+/** Evaluate payable cost against the same pre-play state used for confirmation. */
+export function fateAttackManaCost(player: PlayerState, id: string, faceDown = false): number | undefined {
+    const attack = resolveFateAttack(player, id);
+    if (!attack) return undefined;
+    if (faceDown && attack.kind === 'hand') return 0;
+    const smallGrailDiscount = player.masterId === 'm_iliya' ? 1 : 0;
+    const skillId = attack.skill?.id.split(':')[0];
+    const hiddenNameDiscount = skillId === 'sc_saber_2' && !player.isRevealed ? 2 : 0;
+    const spearIncrease = skillId === 'sc_cu_1'
+        ? (player.piercingSpearPlays ?? 0) * 2
+        : 0;
+    return Math.max(0, attack.definition.manaCost + spearIncrease - smallGrailDiscount - hiddenNameDiscount);
+}
+
+export const selectedFateAttackCost = (player: PlayerState) => player.selectedAttackIds.reduce(
+    (sum, id) => sum + (fateAttackManaCost(player, id, player.selectedFaceDownIds?.includes(id)) ?? 0), 0,
+);
 
 /** Printed attacks may be placed face down without paying; skills cannot. */
 export function canSelectFateAttack(core:import('./types').FateDominationCore,playerId:string,id:string,faceDown=false) {
@@ -56,13 +72,13 @@ export function canSelectFateAttack(core:import('./types').FateDominationCore,pl
 }
 export function hasAffordableFateFaceUpAttack(core:import('./types').FateDominationCore,playerId:string):boolean {
  const player=core.players[playerId];
- return [...player.hand.map(card=>card.id),...player.skills.map(skill=>skill.id)].some(id=>canSelectFateAttack(core,playerId,id).valid && (resolveFateAttack(player,id)?.definition.manaCost??Infinity)<=player.mana);
+ return [...player.hand.map(card=>card.id),...player.skills.map(skill=>skill.id)].some(id=>canSelectFateAttack(core,playerId,id).valid && (fateAttackManaCost(player,id)??Infinity)<=player.mana);
 }
 /** Includes legal mixed/face-down pairs; compulsory play cannot be skipped just for lack of mana. */
 export function hasLegalFateNormalPlay(core:import('./types').FateDominationCore,playerId:string):boolean {
  const player=core.players[playerId];
  const ids=[...player.hand.map(card=>card.id),...player.skills.map(skill=>skill.id)];
- const choices=ids.flatMap(id=>[false,true].filter(faceDown=>canSelectFateAttack(core,playerId,id,faceDown).valid).map(faceDown=>({id,faceDown,cost:faceDown?0:resolveFateAttack(player,id)!.definition.manaCost})));
+ const choices=ids.flatMap(id=>[false,true].filter(faceDown=>canSelectFateAttack(core,playerId,id,faceDown).valid).map(faceDown=>({id,faceDown,cost:fateAttackManaCost(player,id,faceDown)??Infinity})));
  const mustFaceUp=['miyama','shinto'].includes(player.locationId??'')&&hasAffordableFateFaceUpAttack(core,playerId);
  return choices.some((a,i)=>choices.slice(i+1).some(b=>a.id!==b.id&&a.cost+b.cost<=player.mana&&(!mustFaceUp||!a.faceDown||!b.faceDown)));
 }

@@ -27,9 +27,9 @@ description: Turn an object or character reference image into a quality-gated, a
 
 ## 核心流程
 
-脚本从 skill 根目录运行，Python 3.10+ stdlib 即可。脚本负责 gate 和状态，视觉判断由 agent 完成。
+脚本从 skill 根目录运行，Python 3.10+ stdlib 即可。Windows 中使用 UTF-8 模式并让子进程继承（PowerShell：`$env:PYTHONUTF8 = "1"`）；脚本负责 gate 和状态，视觉判断由 agent 完成。脚本存在不代表整条流水线已验证。
 
-1. **状态入口**：先运行 `python3 forge/next.py <spec>`，确认当前解锁 pass、下一条命令和未满足标准。
+1. **状态入口**：已有 spec 时运行 `python3 forge/next.py <spec>`，确认当前解锁 pass、下一条命令和未满足标准；新任务先完成图面观察并创建 assessment / spec。
 2. **读图与适配性**：按 `grimoire/intake/validation_rubric.md` 判断图是否适合 3D 重建；再用 `forge/stage1_intake/probe_image.py <image>` 只读元数据。
 3. **图面观察**：先按 `grimoire/intake/image_analysis.md` 做 macro -> meso -> micro 分解，列部件、材料、拓扑、身份特征和单视角缺失。
 4. **本地知识检索**：需要领域 anatomy、PBR、wear、runtime 或 physics 规格时，运行 pre-spec assessment 的 local spec search；CS2 走 `cs2` collection，其它对象走 `core_3d`。
@@ -40,7 +40,7 @@ description: Turn an object or character reference image into a quality-gated, a
 9. **锁 pass 构建**：只改当前解锁 pass，使用 `forge/stage3_build/orchestrate_passes.py` 和 `forge/stage3_build/generate_threejs_factory.py`。
 10. **渲染截图**：在浏览器 / 项目 preview 中渲染当前 pass，截当前 review viewpoint。
 11. **对比审查**：`forge/stage4_review/make_comparison_sheet.py` 生成参考图 + render 对比图；agent 必须逐图判断。
-12. **记录结论**：`forge/stage4_review/append_review.py ... --action continue|refine-spec|refine-code|request-input|stop --in-place`。
+12. **记录结论**：`forge/stage4_review/append_review.py ... --action continue|refine-spec|refine-code|request-input|stop --in-place`。blockout 通过还需提供无材质贴图的 `--map-stripped-render` 证据；具体参数以脚本 `--help` 为准。
 
 每轮只能选一个下一动作：
 
@@ -94,6 +94,10 @@ CS2 细节只在需要时下钻：
 - **Attachment**：子部件必须有 parent socket、localStart / localEnd、contactType、embedDepth / overlap 和 gapTolerance，禁止悬空。
 - **材质 / 灯光**：PBR 通道独立，真实灯光和 tone mapping 可解释，不用单 diffuse 图冒充材质。
 - **有界修正循环**：发现 repeated defect、oscillation、plateau 或 hard ceiling 时转 `request-input`，不得无限微调。
+
+## 当前工具链验证缺口
+
+2026-11-13 在 Windows、`PYTHONUTF8=1` 下运行 `forge/tests/test_pipeline.py`：修正测试对无贴图证据和根节点的过期假设后 56 项通过。该结果只证明脚本测试，不代表真实参考图建模、浏览器渲染或视觉验收已通过。
 
 ## 汇报口径
 

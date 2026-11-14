@@ -79,7 +79,7 @@ export const MageWarsTutorial: TutorialManifest = {
             id: 'spell-card-reading',
             content: 'game-mage-wars:tutorial.steps.spellCardReading',
             visual: {
-                src: 'mage-wars/references/spell-card-legend',
+                src: 'mage-wars/references/compressed/spell-card-legend',
                 alt: 'game-mage-wars:tutorial.visuals.spellCardLegendAlt',
                 caption: 'game-mage-wars:tutorial.visuals.spellCardLegendCaption',
             },

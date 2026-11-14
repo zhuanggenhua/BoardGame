@@ -601,7 +601,9 @@ describe('Property 9: 4 人玩家目标交互验证', () => {
             interaction,
         );
 
-        expect(validate(3)).toMatchObject({ valid: false, error: 'invalid_die_value' });
+        for (const value of [1, 2, 3, 6]) {
+            expect(validate(value)).toMatchObject({ valid: false, error: 'invalid_die_value' });
+        }
         expect(validate(4)).toEqual({ valid: true });
         expect(validate(5)).toEqual({ valid: true });
     });

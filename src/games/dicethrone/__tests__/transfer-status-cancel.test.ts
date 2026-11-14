@@ -13,9 +13,45 @@ import {
 import { STATUS_IDS } from '../domain/ids';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent } from '../domain/types';
 import type { DiceThroneExpectation } from './test-utils';
+import { createHeroMatchup, getCardById } from './test-utils';
+import { executePipeline } from '../../../engine/pipeline';
+import { TOKEN_IDS } from '../domain/ids';
+import { buildDiceThroneAiLegalActions } from '../ai';
 
 describe('状态操作类卡牌 - 有效性门控', () => {
     const CARD_ID = 'card-transfer-status';
+
+    it('双方守护均满时不能打出转移牌，释放目标容量后可正常转移', () => {
+        let state = createHeroMatchup('paladin', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.sys.phase = 'main2';
+        state.core.activePlayerId = '1';
+        state.core.players['1'].hand = [getCardById(CARD_ID)];
+        state.core.players['1'].resources.cp = 5;
+        state.core.players['0'].tokens = { [TOKEN_IDS.PROTECT]: 1 };
+        state.core.players['1'].tokens = { [TOKEN_IDS.PROTECT]: 1 };
+        state.core.players['0'].statusEffects = {};
+        state.core.players['1'].statusEffects = {};
+        const play = () => executePipeline({ domain: DiceThroneDomain, systems: testSystems }, state,
+            { type: 'PLAY_CARD', playerId: '1', payload: { cardId: CARD_ID }, timestamp: 100 } as DiceThroneCommand,
+            fixedRandom, ['0', '1']);
+        const rejected = play();
+        expect(rejected.success).toBe(false);
+        expect(rejected.error).toBe('noTransferableStatusTarget');
+        expect(state.core.players['1'].resources.cp).toBe(5);
+        expect(buildDiceThroneAiLegalActions({ state, playerId: '1' })
+            .some(action => action.commands.some(command => command.payload?.cardId === CARD_ID))).toBe(false);
+
+        state.core.players['0'].tokens[TOKEN_IDS.PROTECT] = 0;
+        const played = play();
+        expect(played.success).toBe(true);
+        state = played.state;
+        const result = executePipeline({ domain: DiceThroneDomain, systems: testSystems }, state,
+            { type: 'TRANSFER_STATUS', playerId: '1', payload: { fromPlayerId: '1', toPlayerId: '0', statusId: TOKEN_IDS.PROTECT }, timestamp: 101 } as DiceThroneCommand,
+            fixedRandom, ['0', '1']);
+        expect(result.success).toBe(true);
+        expect(result.state.core.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+        expect(result.state.core.players['1'].tokens[TOKEN_IDS.PROTECT]).toBe(0);
+    });
 
     const createRunner = (mutate?: (core: DiceThroneCore) => void) => {
         const setup = createSetupWithHand([CARD_ID], {

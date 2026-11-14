@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core/ui/zIndex';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
 import { useEventStreamCursor } from '../../../engine/hooks/useEventStreamCursor';
@@ -9,7 +10,7 @@ import type { FateDominationCore, LocationId } from '../domain/types';
 import { FGO_SERVANTS, loadedFgoCharacter, loadedFgoNoble, preloadFgoCharacter, preloadFgoNoble, retainFgoAssets } from '../fgo-runtime/fgoPreload';
 import { createFgoBattleRuntime } from '../fgo-runtime/fgoCharacterRuntime';
 import { createFgoSceneRuntime } from '../fgo-runtime/fgoSceneRuntime';
-import { fateFgoSequenceFor, type FgoSequence } from './fgoSequence';
+import { fateFgoSequencesFor, type FgoSequence } from './fgoSequence';
 import './fgo-effects.css';
 
 const reportPreloadFailure = (label: string) => (error: unknown) => {
@@ -38,11 +39,17 @@ function BattleMotion({ sequence, onComplete }: { sequence: Extract<FgoSequence,
 
 function NobleMotion({ onComplete }: { onComplete: () => void }) {
   const host = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation('game-fate-domination');
+  const finished = useRef(false);
+  const finish = useCallback(() => {
+    if (finished.current) return;
+    finished.current = true;
+    onComplete();
+  }, [onComplete]);
   useEffect(() => {
     const loaded = loadedFgoNoble();
-    if (!host.current || !loaded) { onComplete(); return; }
+    if (!host.current || !loaded) { finish(); return; }
     let alive = true;
-    let finished = false;
     const fade = loaded.effects.timeline.filter(event => event.type === 'fade').sort((a, b) => b.time - a.time)[0];
     const fadeKeys = fade && (Array.isArray(fade.fadeCurve) ? fade.fadeCurve : fade.fadeCurve?.m_Curve);
     const endAt = fade && fadeKeys?.at(-1)?.value === 1
@@ -51,17 +58,20 @@ function NobleMotion({ onComplete }: { onComplete: () => void }) {
       const runtime = createFgoSceneRuntime(host.current, loaded, {
         autoplay: true, shouldAttach: () => alive,
         onStatus: status => {
-          if (alive && !finished && status.time >= endAt) { finished = true; onComplete(); }
+          if (alive && status.time >= endAt) finish();
         },
       });
       return () => { alive = false; runtime.destroy(); };
     } catch (error) {
       console.warn('Fate 宝具演出无法播放', error instanceof Error ? error.stack : String(error));
-      onComplete();
+      finish();
       return () => { alive = false; };
     }
-  }, [onComplete]);
-  return <div ref={host} className="fd-fgo-noble" style={{ zIndex: UI_Z_INDEX.cinematic }} data-testid="fate-fgo-noble" aria-hidden="true" />;
+  }, [finish]);
+  return <div className="fd-fgo-noble" style={{ zIndex: UI_Z_INDEX.cinematic }} data-testid="fate-fgo-noble">
+    <div ref={host} className="fd-fgo-noble-canvas" aria-hidden="true" />
+    <button type="button" className="fd-fgo-noble-skip" onClick={finish}>{t('skipNobleAnimation')}</button>
+  </div>;
 }
 
 export function FateFgoEffects({ state, viewerId, battleAnchors }: {
@@ -92,10 +102,7 @@ export function FateFgoEffects({ state, viewerId, battleAnchors }: {
   }, [selected, selectedRevealed]);
   useEffect(() => {
     const result = consumeNew();
-    const sequences = result.entries.flatMap(entry => {
-      const sequence = fateFgoSequenceFor(entry, state.core);
-      return sequence ? [sequence] : [];
-    });
+    const sequences = result.entries.flatMap(entry => fateFgoSequencesFor(entry, state.core));
     if (sequences.length || result.didReset || result.didOptimisticRollback) {
       setQueue(current => {
         const lastValid = result.didReset ? (entries.at(-1)?.id ?? -1)

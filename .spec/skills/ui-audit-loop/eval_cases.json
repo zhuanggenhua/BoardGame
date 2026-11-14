@@ -7,8 +7,15 @@
       "expected": {
         "trigger": true,
         "verdict": "REVISE",
-        "hard_failures": ["asset_not_rendered", "target_occluded"],
-        "must_not_accept": ["dom_visible", "click_succeeded", "e2e_passed"]
+        "hard_failures": [
+          "asset_not_rendered",
+          "target_occluded"
+        ],
+        "must_not_accept": [
+          "dom_visible",
+          "click_succeeded",
+          "e2e_passed"
+        ]
       }
     },
     {
@@ -18,7 +25,13 @@
       "expected": {
         "trigger": true,
         "verdict": "REVISE",
-        "required_actions": ["inspect_original_screenshot", "fix_overlap", "enforce_44px_targets", "recapture_same_state", "reaudit"]
+        "required_actions": [
+          "inspect_original_screenshot",
+          "fix_overlap",
+          "enforce_44px_targets",
+          "recapture_same_state",
+          "reaudit"
+        ]
       }
     },
     {
@@ -34,7 +47,10 @@
       "expected": {
         "trigger": true,
         "verdict": "PASS",
-        "required_actions": ["write_visual_judgment", "open_final_original_with_show_image_to_user"]
+        "required_actions": [
+          "write_visual_judgment",
+          "open_final_original_with_show_image_to_user"
+        ]
       }
     },
     {
@@ -51,23 +67,36 @@
     {
       "id": "partial-centering-is-not-composition-centering",
       "type": "positive",
-      "prompt": "目标房间在屏幕中央，但顶部指令条从屏幕中线向右展开。E2E 只检查了房间中心和指令条高度，这张图能过吗？",
+      "prompt": "用户要求目标房间、顶部指令条和关键操作共享屏幕中轴，但指令条从屏幕中线向右展开。E2E 只检查了房间中心和指令条高度，这张图能过吗？",
       "expected": {
         "trigger": true,
         "verdict": "REVISE",
-        "hard_failures": ["task_elements_do_not_share_composition_axis"],
-        "required_actions": ["measure_banner_center", "measure_target_center", "assert_shared_viewport_axis", "recapture_and_reaudit"]
+        "hard_failures": [
+          "task_elements_do_not_share_composition_axis"
+        ],
+        "required_actions": [
+          "measure_banner_center",
+          "measure_target_center",
+          "assert_shared_viewport_axis",
+          "recapture_and_reaudit"
+        ]
       }
     },
     {
       "id": "readable-skill-showcase-auto-dismiss",
       "type": "positive",
-      "prompt": "其他玩家的进攻技能特写刚出现就自己关闭了，代码里有 3 秒 autoDismiss。E2E 只检查它出现过一瞬间，这张 UI 能过吗？",
+      "prompt": "规则要求玩家读完后手动关闭的对手技能特写刚出现就因 3 秒 timer 自动关闭，E2E 只检查它出现过一瞬间，这能通过吗？",
       "expected": {
         "trigger": true,
         "verdict": "REVISE",
-        "hard_failures": ["readable_showcase_auto_dismissed"],
-        "required_actions": ["remove_short_timer", "assert_still_visible_after_old_timeout", "assert_explicit_close_only"]
+        "hard_failures": [
+          "readable_showcase_auto_dismissed"
+        ],
+        "required_actions": [
+          "remove_short_timer",
+          "assert_still_visible_after_old_timeout",
+          "assert_explicit_close_only"
+        ]
       }
     },
     {
