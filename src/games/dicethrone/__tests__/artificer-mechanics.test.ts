@@ -1046,7 +1046,6 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             playerIds,
         );
         expect(responded.success).toBe(true);
-        console.log('[DEBUG-artificer-wrench]', JSON.stringify({ events: responded.events.map(e => ({ type: e.type, payload: e.payload, continuation: e.resolutionContinuation })), interaction: responded.state.sys.interaction, stack: responded.state.sys.resolution, pending: responded.state.core.pendingAttack }));
         expect(responded.state.core.pendingBonusDiceSettlement).toMatchObject({
             displayOnly: true,
             customResolutionId: 'artificer-wrench-strike-branch',
@@ -1587,7 +1586,6 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
 
         expect(confirmed.success).toBe(true);
         if (!confirmed.success) return;
-        console.log('[DEBUG-artificer-heal]', JSON.stringify({ events: confirmed.events.map(e => ({ type: e.type, payload: e.payload, continuation: e.resolutionContinuation })), interaction: confirmed.state.sys.interaction, stack: confirmed.state.sys.resolution, pending: confirmed.state.core.pendingAttack }));
         expect(eventsOfType(confirmed.events as DiceThroneEvent[], 'BONUS_DICE_SETTLED')).toHaveLength(1);
         expect(confirmed.state.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(confirmed.state.core.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(3);
