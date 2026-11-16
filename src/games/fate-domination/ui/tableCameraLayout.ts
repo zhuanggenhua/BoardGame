@@ -2,10 +2,10 @@ import type { MapViewportState } from '../../../engine/mapRenderer';
 
 export function constrainFateTableCamera(pose: MapViewportState, width: number, height: number, mapWidth: number, mapHeight: number): MapViewportState {
     if (!width || !height) return pose;
-    const visible = 96;
     const constrain = (offset: number, view: number, map: number) => {
-        const margin = Math.min(visible, view / 2, map / 2);
-        return Math.max(margin - map, Math.min(offset, view - margin));
+        // 棋盘缩小时仍保留主体，大于视口时允许轻微越界以便检视边缘。
+        const visible = Math.min(view, map) * 0.85;
+        return Math.max(visible - map, Math.min(offset, view - visible));
     };
     return { ...pose, panX: constrain(pose.panX, width, mapWidth * pose.zoom), panY: constrain(pose.panY, height, mapHeight * pose.zoom) };
 }

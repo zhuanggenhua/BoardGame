@@ -175,9 +175,12 @@ if (
     status: { $in: ['open', 'in_progress', 'resolved'] }
   }, { _id: 1 });
   if (conflictingActive) {
-    throw new Error('同一聚合键已存在活跃反馈，不能直接重新打开归档记录');
+    if (current.source !== 'infra-cpu-watch') {
+      throw new Error('同一聚合键已存在活跃反馈，不能直接重新打开归档记录');
+    }
+  } else {
+    input.set.aggregationActiveKey = current.aggregationKey;
   }
-  input.set.aggregationActiveKey = current.aggregationKey;
 }
 const update = { $set: input.set };
 if (input.unset && Object.keys(input.unset).length > 0) {

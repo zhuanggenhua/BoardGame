@@ -13,6 +13,7 @@ import {engineConfig} from '../../src/games/fate-domination/game';
 import {initContext, getGameServerBaseURL, joinMatchViaAPI, seedMatchCredentials, attachPageDiagnostics, assertNoFatalFrontendErrors} from '../helpers/common';
 import {getMatchState, injectMatchState} from '../helpers/state-injection';
 import {createEvidenceScreenshotRun, getEvidenceScreenshotPathInDirectory, promoteEvidenceScreenshotRun} from '../framework/evidenceScreenshots';
+import {sampleFateMapMotion} from './mapContinuityEvidence';
 
 type State = MatchState<FateDominationCore>;
 const ids = ['0', '1', '2'];
@@ -122,7 +123,17 @@ for (const round of [10, 11]) test(`真实联网战后选择先收口再${round 
         await record('complete-peer-choice', '第二席经正式传输确认放弃，最后选择完成才进入淘汰或终局', async () => {
             const choice = (await read()).sys.interaction.current!;
             await expect.poll(() => (peer.latestState as State).sys.interaction.current?.id).toBe(choice.id);
-            expect(peer.sendCommand('SYS_INTERACTION_RESPOND', {interactionId: choice.id, optionId: 'decline'})).toBe(true);
+            if (round === 10) {
+                await expect(page.getByTestId('fate-pixi-map-canvas-host')).toHaveAttribute('data-map-resource-status', 'ready');
+                await sampleFateMapMotion(page, path.join(run.stagingDir, 'map-next-day-frames.json'), async () => {
+                    expect(peer.sendCommand('SYS_INTERACTION_RESPOND', {interactionId: choice.id, optionId: 'decline'})).toBe(true);
+                    await expect(page.locator('.fd-runtime-round')).toContainText(/第\s*11\s*回合/);
+                    await expect(page.locator('.fd-runtime-player-rail .fd-avatar-elimination')).toBeVisible();
+                    await page.waitForTimeout(650);
+                });
+            } else {
+                expect(peer.sendCommand('SYS_INTERACTION_RESPOND', {interactionId: choice.id, optionId: 'decline'})).toBe(true);
+            }
             await expect.poll(async () => (await read()).sys.interaction.current).toBeUndefined();
             const state = await read(); expect(state.core.players['1'].commandSpells).toBe(2);
             if (round === 10) {

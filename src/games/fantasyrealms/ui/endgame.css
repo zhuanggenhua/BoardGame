@@ -1,0 +1,134 @@
+.fr-endgame {
+    --fr-ink: #17382e;
+    --fr-rule: #7c684d32;
+    flex: none;
+    width: 100%;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    border: 1px solid #d2bb88;
+    border-radius: 1rem;
+    background: radial-gradient(ellipse at 50% 5%, #fffbef 0%, #f5ead3 90%);
+    color: var(--fr-ink);
+    box-shadow: 0 0 0 4px #1a3b2d, 0 18px 52px #071c15b3;
+}
+
+.fr-endgame__heading {
+    display: grid;
+    justify-items: center;
+    gap: 0.65rem;
+    padding-bottom: 0.95rem;
+    text-align: center;
+}
+
+.fr-endgame__heading h2 {
+    margin: 0;
+    font: 700 clamp(2.1rem, 4vw, 3rem)/1.1 Georgia, "Songti SC", "SimSun", serif;
+    letter-spacing: 0.08em;
+}
+
+.fr-endgame[data-outcome="defeat"] h2 { color: #7c3c37; }
+
+.fr-endgame__heading::after {
+    content: "";
+    width: 3.25rem;
+    height: 0.4rem;
+    background:
+        linear-gradient(45deg, #9d763a, #9d763a) center / 0.4rem 0.4rem no-repeat,
+        linear-gradient(90deg, transparent, #a47c41 48%, transparent) center / 100% 1px no-repeat;
+    clip-path: polygon(0 40%, 44% 40%, 50% 0, 56% 40%, 100% 40%, 100% 60%, 56% 60%, 50% 100%, 44% 60%, 0 60%);
+}
+
+.fr-endgame__ledger h3 {
+    margin: 0 0 0.45rem;
+    color: #655946;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+}
+
+.fr-endgame__standings {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--fr-rule);
+}
+
+.fr-endgame__standing {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.65rem;
+    padding-inline: 0.65rem;
+    border-bottom: 1px solid var(--fr-rule);
+}
+
+.fr-endgame__standing[data-winner="true"] {
+    background: linear-gradient(90deg, #e6d5ac91, #e6d5ac39);
+}
+
+.fr-endgame__standing svg { color: #876235; }
+
+.fr-endgame__rank,
+.fr-endgame__score {
+    font-family: Georgia, serif;
+    font-variant-numeric: tabular-nums;
+}
+
+.fr-endgame__rank { color: #695b43; text-align: center; font-weight: 700; }
+.fr-endgame__score { font-size: 1.25rem; }
+
+.fr-endgame__actions {
+    display: flex;
+    justify-content: center;
+    padding-top: 1.15rem;
+}
+
+.fr-endgame__actions [data-testid="rematch-actions"] { gap: 0.6rem; }
+.fr-endgame__actions [data-testid="rematch-waiting"] { color: #4b5f51; }
+.fr-endgame__actions [data-testid="rematch-vote-dots"] { background: #263e33; padding: 0.25rem; border-radius: 1rem; }
+
+.fr-endgame__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.4rem 0.95rem;
+    border: 1px solid #9e8d68;
+    border-radius: 0.4rem;
+    color: var(--fr-ink);
+    background: #fff9e9a6;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: filter 160ms, transform 160ms;
+}
+
+.fr-endgame__button--primary {
+    min-width: 7.6rem;
+    border-color: #163b2c;
+    background: linear-gradient(#2f614c, #204535);
+    color: #fff4d8;
+    box-shadow: 0 2px #142f24;
+}
+
+button.fr-endgame__button:hover:enabled { filter: brightness(1.09); }
+button.fr-endgame__button:active:enabled { transform: translateY(1px); }
+.fr-endgame__button:focus-visible { outline: 2px solid #245b45; outline-offset: 2px; }
+.fr-endgame__button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+@media (max-height: 440px) {
+    .fr-endgame { padding-block: 0.85rem; }
+    .fr-endgame__heading { gap: 0.35rem; padding-bottom: 0.45rem; }
+    .fr-endgame__heading h2 { font-size: 2.05rem; }
+    .fr-endgame__standing { min-height: 2.1rem; }
+    .fr-endgame__actions { padding-top: 0.65rem; }
+}
+
+@media (max-height: 400px) {
+    .fr-endgame { padding-block: 0.6rem; }
+    .fr-endgame__heading { gap: 0.25rem; padding-bottom: 0.35rem; }
+    .fr-endgame__heading h2 { font-size: 1.65rem; }
+    .fr-endgame__ledger h3 { margin-bottom: 0.3rem; }
+    .fr-endgame__standing { min-height: 2rem; }
+    .fr-endgame__actions { padding-top: 0.55rem; }
+}

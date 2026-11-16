@@ -225,6 +225,19 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
             ['0', '1'],
         );
         expect(confirmed.success, confirmed.error).toBe(true);
+        const selectedDuringResponse = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, confirmed.state,
+            { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'shadow-shank' }, timestamp: 4 } as DiceThroneCommand,
+            random, ['0', '1'],
+        );
+        expect(selectedDuringResponse.success).toBe(false);
+        expect(selectedDuringResponse.state.core.pendingAttack?.sourceAbilityId).toBe('shadow-shank');
+        const skipped = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, selectedDuringResponse.state,
+            { type: 'SKIP_TOKEN_RESPONSE', playerId: '0', payload: { pendingDamageId }, timestamp: 5 } as DiceThroneCommand,
+            random, ['0', '1'],
+        );
+        expect(skipped.success, skipped.error).toBe(true);
         const postBonusActions = buildDiceThroneAiLegalActions({
             playerId: '0',
             state: confirmed.state as MatchState<DiceThroneCore>,

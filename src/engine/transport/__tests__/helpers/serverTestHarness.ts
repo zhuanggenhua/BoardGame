@@ -1,4 +1,5 @@
 import type { GameEngineConfig } from '../../engineConfig';
+import { createInitialSystemState } from '../../../pipeline';
 import { createInteractionSystem, createSimpleChoice } from '../../../systems/InteractionSystem';
 import { createSimpleChoiceSystem } from '../../../systems/SimpleChoiceSystem';
 import type {
@@ -313,7 +314,7 @@ export const createInteractiveEngineConfig = (): GameEngineConfig => ({
 export const createStoredState = (): StoredMatchState => ({
     G: {
         core: { currentPlayer: '0' },
-        sys: { phase: 'main', turnNumber: 1 },
+        sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
     },
     _stateID: 0,
     randomSeed: 'seed',

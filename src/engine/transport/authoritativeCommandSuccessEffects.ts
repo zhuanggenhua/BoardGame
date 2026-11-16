@@ -33,7 +33,6 @@ export async function runAuthoritativeCommandSuccessEffects<FeedbackPayload = un
 ): Promise<void> {
     const { match } = args;
     if (args.captureTrainingData !== false) {
-        const postTrainingState = args.buildPostTrainingState();
         args.trainingDataCapture.recordDecisionSample({
             match: {
                 matchID: match.matchID,
@@ -46,7 +45,7 @@ export async function runAuthoritativeCommandSuccessEffects<FeedbackPayload = un
             stateIdBefore: args.stateIdBefore,
             stateIdAfter: args.stateIdAfter,
             preState: args.preTrainingState,
-            postState: postTrainingState,
+            getPostState: args.buildPostTrainingState,
             gameOver: args.gameOver,
         });
     }

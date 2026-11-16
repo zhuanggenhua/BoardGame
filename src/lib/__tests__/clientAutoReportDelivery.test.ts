@@ -50,6 +50,17 @@ describe('自动反馈投递', () => {
         vi.restoreAllMocks();
     });
 
+    it('CSS 状态码不可用时记录网络状态和性能条目字段，不假定服务器是否响应', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.spyOn(performance, 'getEntriesByName').mockReturnValue([{ startTime: 100, responseStart: 0, duration: 40, transferSize: 0, encodedBodySize: 0, decodedBodySize: 0 }] as any);
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        await reportClientAutoFeedbackOnce('css-no-response', { ...payload, errorMessage: 'Unable to preload CSS for /assets/HomeEntry-abc.css' });
+        const body = JSON.parse(feedbackCalls(fetchMock)[0][1].body);
+        expect(body.clientContext.failedAsset).toEqual(expect.objectContaining({ online: navigator.onLine, timingResponseStartPresent: false, encodedBodySize: 0, decodedBodySize: 0 }));
+        vi.restoreAllMocks();
+    });
+
     it('首次请求返回 HTTP 失败时自动重发同一份现场，成功后才去重', async () => {
         let attempts = 0;
         const fetchMock = vi.fn(async (url: unknown) => url === '/feedback' && attempts++ === 0

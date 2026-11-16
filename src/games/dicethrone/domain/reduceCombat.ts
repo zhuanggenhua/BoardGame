@@ -44,6 +44,7 @@ const appendAttackBonusDamageSource = (
     const existingIndex = current.findIndex(entry =>
         entry.sourceId === source.sourceId
         && entry.sourceName === source.sourceName
+        && entry.expiresWithAttack === source.expiresWithAttack
     );
     if (existingIndex < 0) return [...current, source];
     return current.map((entry, index) => index === existingIndex
@@ -503,9 +504,11 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
     state,
     event
 ) => {
-    const { playerId, amount, sourceCardId } = event.payload;
+    const { playerId, amount, sourceCardId, sourceId, sourceName } = event.payload;
     if (amount === 0) return state;
-    const bonusDamageSource = buildAttackBonusDamageSource(amount, sourceCardId);
+    const bonusDamageSource = sourceId
+        ? { amount, sourceId, sourceName, expiresWithAttack: true }
+        : buildAttackBonusDamageSource(amount, sourceCardId);
 
     if (state.pendingAttack && state.pendingAttack.attackerId === playerId) {
         const pendingDamage = state.pendingDamage?.sourcePlayerId === playerId
@@ -751,7 +754,8 @@ export const handleAbilityReselectionRequired: EventHandler<Extract<DiceThroneEv
     }
 
     const attackModifierBonusDamage = pendingAttack.attackModifierBonusDamage ?? 0;
-    const attackModifierBonusDamageSources = pendingAttack.bonusDamageSources ?? [];
+    const attackModifierBonusDamageSources = (pendingAttack.bonusDamageSources ?? [])
+        .filter(source => !source.expiresWithAttack);
     if (attackModifierBonusDamage <= 0 && attackModifierBonusDamageSources.length === 0) {
         return { ...state, pendingAttack: null, rollConfirmed: false };
     }
@@ -941,6 +945,12 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         pendingAttack = {
             ...pendingAttack,
             bonusDamage: (pendingAttack.bonusDamage ?? 0) + damageModifier,
+            bonusDamageSources: appendAttackBonusDamageSource(pendingAttack.bonusDamageSources, {
+                amount: damageModifier,
+                sourceId: tokenId,
+                sourceName: `tokens.${tokenId}.name`,
+                expiresWithAttack: true,
+            }),
         };
     }
 

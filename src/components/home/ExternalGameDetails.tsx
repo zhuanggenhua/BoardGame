@@ -56,7 +56,6 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                     ? <button type="button" onClick={() => requestAndroidNativeUpdateCheck({ interactive: true })}>{t('platform.externalGamePage.updateAppForBrowser')}</button>
                     : <a data-testid="external-game-open-site" className="platform-details-open-site" href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); }}>{t('platform.externalGamePage.start')}</a>}
                 secondaryActions={<>
-                    {embed?.canEmbed && <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); }}>{t('platform.externalGamePage.openOriginal')} ↗</a>}
                     <PlatformFavoriteButton gameId={item.gameId} title={item.name} />
                 </>}
                 author={<ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}

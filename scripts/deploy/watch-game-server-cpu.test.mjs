@@ -24,7 +24,9 @@ test('持续高 CPU 时必须在重启前保留进程和线程现场', () => {
     const fakeBin = path.join(fixtureRoot, 'bin');
     const evidenceDir = path.join(fixtureRoot, 'evidence');
     const dockerCommandLog = path.join(fixtureRoot, 'docker-commands.log');
+    const shellEnv = path.join(fixtureRoot, 'bash-env.sh');
     mkdirSync(fakeBin, { recursive: true });
+    writeFileSync(shellEnv, 'curl() { return 0; }\nexport -f curl\n');
 
     writeExecutable(path.join(fakeBin, 'docker'), `#!/usr/bin/env bash
 set -eu
@@ -35,7 +37,12 @@ case "${'${1:-}'} ${'${2:-}'}" in
   "stats --no-stream") printf '99.00%% 100MiB / 1GiB 11\\n' ;;
   "ps ") printf 'CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES\\n' ;;
   "top ") printf 'UID PID PPID C STIME TTY TIME CMD\\nroot 4242 1 99 00:00 ? 00:01 node server.mjs\\n' ;;
-  "exec boardgame-game-server") printf '# fake container process snapshot\\nTID=1 CPU=99\\n' ;;
+  "exec boardgame-game-server")
+    if [[ "$*" == *"online-ai-slow-decision"* ]]; then
+      printf '{"message":"[GameTransport] online-ai-slow-decision","matchId":"example","decisionMs":1200}\\n'
+    else
+      printf '# fake container process snapshot\\nTID=1 CPU=99\\n'
+    fi ;;
   "restart boardgame-game-server") printf 'boardgame-game-server\\n' ;;
   *) exit 0 ;;
 esac
@@ -56,7 +63,10 @@ esac
             BG_GAME_SERVER_CPU_SAMPLE_COUNT: '1',
             BG_GAME_SERVER_CPU_SAMPLE_INTERVAL_SECONDS: '0',
             BG_GAME_SERVER_CPU_WATCH_RESTART: '1',
-            BG_GAME_SERVER_CPU_FEEDBACK: '0',
+            BG_GAME_SERVER_CPU_FEEDBACK: '1',
+            BG_GAME_SERVER_CPU_FEEDBACK_TOKEN: 'test-only-token',
+            BG_GAME_SERVER_CPU_FEEDBACK_STATE_FILE: path.join(fixtureRoot, 'last-feedback'),
+            BASH_ENV: bashPath(shellEnv),
             BG_GAME_SERVER_CPU_PROFILE_INSPECTOR_PORT: '19229',
             BG_GAME_SERVER_CPU_EVIDENCE_DIR: evidenceDir,
             BG_GAME_SERVER_CPU_HISTORY_LOG: path.join(evidenceDir, 'history.log'),
@@ -81,7 +91,14 @@ esac
         assert.match(evidence, /cpuProfileFile=.*\.cpuprofile/);
         assert.match(evidence, /profileInspectorPort=9229/);
         assert.match(evidence, /fake container process snapshot/);
+        assert.match(evidence, /online-ai-slow-decision/);
+        assert.match(evidence, /"matchId":"example"/);
         assert.match(evidence, /# decision/);
+        const feedbackFile = readdirSync(evidenceDir).find((fileName) => fileName.endsWith('-feedback.json'));
+        assert.ok(feedbackFile, 'CPU 告警必须生成可重发的反馈文件');
+        const feedback = JSON.parse(readFileSync(path.join(evidenceDir, feedbackFile), 'utf8'));
+        assert.match(feedback.diagnosticPacket.captureId, /^cpu-[a-f0-9]{64}$/);
+        assert.equal(feedback.diagnosticPacket.source, 'server');
         const commandLog = readFileSync(dockerCommandLog, 'utf8');
         assert.ok(
             commandLog.indexOf('docker exec boardgame-game-server') < commandLog.indexOf('docker restart boardgame-game-server'),
@@ -89,6 +106,11 @@ esac
         );
         assert.ok(
             commandLog.indexOf('docker cp boardgame-game-server:/tmp/boardgame-cpu-profile-') < commandLog.indexOf('docker restart boardgame-game-server'),
+            commandLog,
+        );
+        assert.ok(
+            commandLog.indexOf('online-ai-slow-decision') >= 0
+                && commandLog.indexOf('online-ai-slow-decision') < commandLog.indexOf('docker restart boardgame-game-server'),
             commandLog,
         );
     } finally {

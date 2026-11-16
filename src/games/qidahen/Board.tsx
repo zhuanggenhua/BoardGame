@@ -87,6 +87,7 @@ import { QidahenInspectPanel, type QidahenInspectTarget } from './ui/QidahenInsp
 import { QidahenMapPopulationLayer, QIDAHEN_MAP_REGION_GEOMETRY, getQidahenPopulationPlacements } from './ui/QidahenMapPopulationLayer';
 import { buildQidahenPopulationSites, QIDAHEN_POPULATION_SIZE } from './ui/populationLayout';
 import { getArmyScreenScale, layoutQidahenFieldArmies, packExpandedArmiesWithinRegions } from './ui/fieldArmyLayout';
+import { fitRegionObjects } from './ui/regionObjectLayout';
 import { compactCrowdedArmies, groupCrowdedArmies, layoutOverflowArmyStacks, type ArmyGroupView } from './ui/armyGroupLayout';
 import { useOverflowArmyDialog } from './ui/useOverflowArmyDialog';
 import { QidahenOperationBanner } from './ui/QidahenOperationBanner';
@@ -1325,6 +1326,7 @@ const MapToken: React.FC<{
             data-qidahen-map-region-choice={regionChoice ? String(regionChoice.allowed) : undefined}
             data-qidahen-map-token-faction={token.faction}
             data-qidahen-map-token-region={token.regionId}
+            data-qidahen-map-piece-id={token.pieceId}
             data-qidahen-map-protected-token={layoutProtected ? "true" : undefined}
             data-qidahen-candidate-object={candidateRegion ? 'true' : undefined}
             data-qidahen-map-token-troop-kind={isArmyToken ? token.troopKind : undefined}
@@ -1609,13 +1611,20 @@ const MapSceneLayer: React.FC<{
             if (!tutorialMapTokenFocusId) overlaySelectors.push('tutorial-overlay-card');
             const overlays = [...document.querySelectorAll(overlaySelectors.map(id => `[data-testid="${id}"]`).join(', '))]
                 .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0).map(toMap);
+            // 手牌容器包含大片透明区；地图对象只避让实际露出的牌，而不是整个容器。
+            const preciseSelectors = overlaySelectors.filter(id => id !== 'qidahen-hand-zone')
+                .map(id => `[data-testid="${id}"]`).concat('[data-testid^="qidahen-hand-card-shell-"]');
+            const preciseOverlays = [...document.querySelectorAll(preciseSelectors.join(', '))]
+                .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0).map(toMap);
             // 当前决策兵牌和推荐标签属于对应地区；别的地区面板不得盖住它们，自己的面板不能把它们当障碍。
-            overlays.push(...Array.from(document.querySelectorAll('[data-testid="qidahen-map-tutorial-recommendation"], [data-qidahen-map-protected-token="true"]')).flatMap(element => {
+            const protectedOverlays = Array.from(document.querySelectorAll('[data-testid="qidahen-map-tutorial-recommendation"], [data-qidahen-map-protected-token="true"]')).flatMap(element => {
                 const rect = element.getBoundingClientRect();
                 const regionId = element.closest('[data-qidahen-map-token-region]')?.getAttribute('data-qidahen-map-token-region');
                 return rect.width > 0 && rect.height > 0 && regionId ? [{ ...toMap(rect), excludeRegionId: regionId }] : [];
-            }));
-            const next = { visible, overlays };
+            });
+            overlays.push(...protectedOverlays);
+            preciseOverlays.push(...protectedOverlays);
+            const next = { visible, overlays, preciseOverlays };
             setArmyGroupView(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
         };
         measure();
@@ -1626,6 +1635,16 @@ const MapSceneLayer: React.FC<{
     const interiorSites = React.useMemo(() => runtimeRegionOwnership
         ? buildQidahenPopulationSites(runtimeRegionOwnership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_GEOMETRY)
         : new Map(), [runtimeRegionOwnership]);
+    const expandRuntimeRegionIds = React.useCallback((regionId: string | null | undefined): string[] => {
+        if (!regionId) return [];
+        const region = core.regions.find(item => item.id === regionId);
+        if (region) {
+            const ids = Array.from(new Set((region.isLogicalRegion ? region.runtimeRegionIds : [region.id]).filter(Boolean)));
+            return ids.length > 0 ? ids : [regionId];
+        }
+        const ids = getQidahenRuntimeRegionIdsForPrintedRegionId(regionId);
+        return ids.length > 0 ? ids : [regionId];
+    }, [core.regions]);
     // 归属和外交由地区颜色与检视承接；底层状态仍完整保留供规则与交互使用。
     const selectableTokenIdsKey = JSON.stringify(turnSelectableTokenIds);
     const selectablePieceIdsKey = JSON.stringify(turnSelectablePieceIds);
@@ -1738,19 +1757,37 @@ const MapSceneLayer: React.FC<{
         return needsReflow ? groupCrowdedArmies(visibleBaseArmyLayout.tokens, visibleBaseArmyLayout.callouts, interiorSites, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT,
             { ...armyGroupView, protectedRegionIds: protectedMapRegionIdsKey.split('|').filter(Boolean) }) : visibleBaseArmyLayout;
     }, [armyGroupView, visibleBaseArmyLayout, interiorSites, protectedMapRegionIdsKey]);
-    const mapTokens = armyLayout.tokens;
+    const baseMapTokens = armyLayout.tokens;
     const populationReservedAreas = React.useMemo(() => [
         ...armyLayout.groups,
-        ...mapTokens.filter(token => (overflowArmies.stackSizes.get(token.id) ?? compactedArmies.stackSizes.get(token.id) ?? 0) > 1)
+        ...baseMapTokens.filter(token => (overflowArmies.stackSizes.get(token.id) ?? compactedArmies.stackSizes.get(token.id) ?? 0) > 1)
             .map(token => {
                 const scale = (token.size ?? 26) / 26;
                 return { left: token.x * QIDAHEN_MAP_WIDTH - 20 * scale,
                     top: token.y * QIDAHEN_MAP_HEIGHT - (token.size ?? 26) / 2 - 12 * scale - 3,
                     width: 40 * scale, height: 12 * scale + 3 };
             }),
-    ], [armyLayout.groups, mapTokens, overflowArmies.stackSizes, compactedArmies.stackSizes]);
-    const populationPlacements = React.useMemo(() => getQidahenPopulationPlacements(core.regions, runtimeRegionOwnership, mapTokens, interiorSites, populationReservedAreas),
-        [core.regions, runtimeRegionOwnership, mapTokens, interiorSites, populationReservedAreas]);
+    ], [armyLayout.groups, baseMapTokens, overflowArmies.stackSizes, compactedArmies.stackSizes]);
+    // 训练时教程推荐的兵牌带外扩高亮，人口不能压住该高亮。
+    const populationObstacles = React.useMemo(() => baseMapTokens.map(token => {
+        const trainingTarget = core.wheelRecruitTrainProgress?.phase === 'choose-training-target'
+            || core.wheelRecruitTrainProgress?.phase === 'extra-training-target';
+        const recommended = trainingTarget && token.type === 'army' && token.pieceId != null
+            && tutorialRecommendedPieceIds.includes(token.pieceId);
+        return recommended ? { ...token, size: (token.size ?? 26) * 38 / 26 } : token;
+    }), [core.wheelRecruitTrainProgress?.phase, baseMapTokens, tutorialRecommendedPieceIds]);
+    const basePopulationPlacements = React.useMemo(() => getQidahenPopulationPlacements(core.regions, runtimeRegionOwnership, populationObstacles, interiorSites, populationReservedAreas),
+        [core.regions, runtimeRegionOwnership, populationObstacles, interiorSites, populationReservedAreas]);
+    const regionObjectLayout = React.useMemo(() => fitRegionObjects(baseMapTokens, armyLayout.callouts, basePopulationPlacements,
+        interiorSites, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, populationReservedAreas,
+        new Set(populationObstacles.filter((token, index) => token.size !== baseMapTokens[index].size).map(token => token.id)),
+        armyGroupView?.preciseOverlays ?? [], populationObstacles,
+        new Set([...mapSelectionCandidateIds.flatMap(expandRuntimeRegionIds), ...battleProtectedRegionIds, ...expandedRegions,
+            ...(tutorialRegionFocus ? [tutorialRegionFocus.regionId] : []), ...(core.explicitRegionId ? [core.explicitRegionId] : [])])),
+        [baseMapTokens, armyLayout.callouts, basePopulationPlacements, interiorSites, populationReservedAreas, populationObstacles, armyGroupView,
+            mapSelectionCandidateIds, battleProtectedRegionIds, expandedRegions, tutorialRegionFocus, core.explicitRegionId, expandRuntimeRegionIds]);
+    const mapTokens = regionObjectLayout.tokens;
+    const populationPlacements = regionObjectLayout.populations;
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const regionTipHoverLockRef = React.useRef(false);
     const [maskVersion, setMaskVersion] = React.useState(0);
@@ -1848,20 +1885,6 @@ const MapSceneLayer: React.FC<{
     const tutorialGrantPardonFocusChoice = tutorialGrantPardonTargetRegionId
         ? grantPardonMapChoices.find((choice) => choice.targetRegionId === tutorialGrantPardonTargetRegionId) ?? null
         : null;
-
-    const expandRuntimeRegionIds = React.useCallback((regionId: string | null | undefined): string[] => {
-        if (!regionId) {
-            return [];
-        }
-        const region = core.regions.find((item) => item.id === regionId);
-        if (region) {
-            const runtimeRegionIds = region.isLogicalRegion ? region.runtimeRegionIds : [region.id];
-            const uniqueRuntimeRegionIds = Array.from(new Set(runtimeRegionIds.filter(Boolean)));
-            return uniqueRuntimeRegionIds.length > 0 ? uniqueRuntimeRegionIds : [regionId];
-        }
-        const runtimeRegionIds = getQidahenRuntimeRegionIdsForPrintedRegionId(regionId);
-        return runtimeRegionIds.length > 0 ? runtimeRegionIds : [regionId];
-    }, [core.regions]);
 
     const tutorialRegionBounds = React.useMemo(() => (
         runtimeRegionOwnership && tutorialRegionFocus
@@ -3159,7 +3182,7 @@ const MapSceneLayer: React.FC<{
                                 y={token.y * QIDAHEN_MAP_HEIGHT - size / 2 - 4} width={size + 8} height={size + 8} fill="black" />;
                         })}
                     </mask></defs>
-                    {armyLayout.callouts.map(({ tokenId, point, anchor }) => <g key={tokenId} mask={`url(#${armyCalloutMaskId})`}>
+                    {regionObjectLayout.callouts.map(({ tokenId, point, anchor }) => <g key={tokenId} mask={`url(#${armyCalloutMaskId})`}>
                         <path data-testid={`qidahen-army-callout-${tokenId}`} d={`M ${point.x} ${point.y} L ${anchor.x} ${anchor.y}`}
                             stroke="#1a1208" strokeWidth={2} fill="none" />
                         <circle cx={anchor.x} cy={anchor.y} r={3} fill="#ffe566" stroke="#1a1208" />
@@ -7208,6 +7231,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                     protectedRects: core.postBattleSelection && !battlePresentation.active ? [] : protectedRects,
                     padding: 8 * Math.max(scaleX, scaleY), reservedLabelHeight: 24 * scaleY,
                     preferredZoom: turnInput.pieceIds.length > 0 ? Math.max(3.35, selectionEntryMapZoom.current)
+                        : tutorialStep?.content?.endsWith('farm-target-dynamic') ? 1.6
                         : (core.postBattleSelection && !battlePresentation.active) || tutorialStep?.id === 'frontier-target'
                             || (tutorialStep?.id === 'dispatch-target' && turnInput.dispatchSourceRegionId)
                             || ['training-target', 'training-second-target', 'training-third-target', 'training-recruit-target', 'training-finish'].includes(tutorialStep?.id ?? '') ? 1.2
@@ -7268,7 +7292,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             window.removeEventListener('resize', fitAfterResize);
             cancelAnimationFrame(resizeFrame);
         };
-    }, [displayCore.mapTokens, tutorialMapTokenFocusId, battleFocusKey, battleDiceFrame, battlePresentation.active, battlePresentation.identity, core.postBattleSelection, autoFocusMapTargetKey, autoFocusMapTargetRegionIdsKey, tutorialMapRegionFocusId, manualViewportScope,
+    }, [displayCore.mapTokens, tutorialMapTokenFocusId, battleFocusKey, battleDiceFrame, battlePresentation.active, battlePresentation.identity, core.postBattleSelection, autoFocusMapTargetKey, autoFocusMapTargetRegionIdsKey, tutorialMapRegionFocusId, manualViewportScope, tutorialStep?.content,
         tutorialRegionFocus?.regionId, mapFocusBounds, getTopLevelGuideRegionMapPoint, turnInput.pieceIds.length, turnInput.dispatchSourceRegionId,
         wheelDispatchSelection?.sourceRegionId, core.gaoDiDispatchSelection?.sourceRegionId,
         internalDispatchSelection?.sourceRegionId, grantPardonSelection?.sourceRegionId]);
@@ -7516,6 +7540,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 targetName={battlePresentation.battle?.targetRegionName ?? ''}
                 sourceRegionId={battlePresentation.battle?.sourceRegionId ?? null}
                 targetRegionId={battlePresentation.battle?.targetRuntimeRegionId ?? battlePresentation.battle?.targetRegionId ?? null}
+                committedPieceIds={battlePresentation.committedPieceIds}
                 attacker={{ name: core.factions[battleParticipants!.attackerFactionId].name, markerSrc: factionTone[battleParticipants!.attackerFactionId].chip }}
                 defender={{ name: battleParticipants!.defenderFactionId === 'neutral' ? battleParticipants!.defenderLabel : core.factions[battleParticipants!.defenderFactionId].name,
                     markerSrc: battleParticipants!.defenderFactionId === 'neutral' ? undefined : factionTone[battleParticipants!.defenderFactionId].chip }}

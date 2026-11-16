@@ -4,6 +4,11 @@ import { Crown, Search } from 'lucide-react';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorialBridge } from '../../contexts/TutorialContext';
 import { useGameMode } from '../../contexts/GameModeContext';
+import { useMatchRoomExit } from '../../contexts/MatchRoomExitContext';
+import { useEndgame } from '../../hooks/game/useEndgame';
+import { RematchActions } from '../../components/game/framework/widgets/RematchActions';
+import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
+import { FantasyRealmsEndgameContent, renderFantasyRealmsButton } from './ui/EndgameContent';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { DEFAULT_TUTORIAL_STATE, type TutorialState, type TutorialStepSnapshot } from '../../engine/types';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
@@ -573,8 +578,9 @@ function renderCardMagnifyButton(
     );
 }
 
-export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, isMultiplayer }: Props) {
+export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, isMultiplayer, reset }: Props) {
     const { t, i18n } = useTranslation('game-fantasyrealms');
+    const { t: tCommon } = useTranslation('common');
     const locale = i18n.language || 'zh-CN';
     const tutorialState = ((G?.sys as { tutorial?: TutorialState | null } | undefined)?.tutorial ?? DEFAULT_TUTORIAL_STATE);
     const runtimeDispatch = React.useMemo(
@@ -1262,6 +1268,38 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         displayedPlayerId ? core.settlement?.selections[displayedPlayerId] : undefined,
     );
     const activeEndgameScoreStep = endgameScoreSequence.activeStep;
+
+    // 计分动画播完后再展示计分签，重赛操作复用通用投票和重置链路。
+    const matchRoomExit = useMatchRoomExit();
+    const { overlayProps: endgameProps } = useEndgame({
+        result: gameOver,
+        playerID,
+        reset,
+        matchData,
+        isMultiplayer,
+    });
+    const handleEndgameBackToLobby = React.useCallback(() => {
+        if (matchRoomExit?.exitToLobby) {
+            void matchRoomExit.exitToLobby();
+            return;
+        }
+        window.location.assign('/');
+    }, [matchRoomExit]);
+    const endgameActions = isSpectatorView
+        ? renderFantasyRealmsButton({
+            role: 'backToLobby',
+            label: tCommon('rematch.backToLobby'),
+            onClick: handleEndgameBackToLobby,
+        })
+        : (
+            <RematchActions
+                {...endgameProps}
+                playerID={playerID ?? null}
+                onBackToLobby={handleEndgameBackToLobby}
+                renderButton={renderFantasyRealmsButton}
+                className="flex-wrap justify-center"
+            />
+        );
     React.useEffect(() => {
         if (
             !isGameOver
@@ -3637,15 +3675,28 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 @media (min-width: 1024px) {
                     .fr-board--minimal-live .fr-live-table--gameover .fr-live-center-row {
+                        position: absolute;
+                        inset: clamp(54px, 8vh, 92px) 0 0;
                         --fr-live-center-row-width: calc(var(--fr-live-content-width) - 250px * var(--fr-live-desktop-ui-scale));
-                        --fr-live-center-card-width: min(${LIVE_CENTER_CARD_WIDTH_PX}px, max(${LIVE_CENTER_CARD_MIN_WIDTH_PX}px, calc(var(--fr-live-center-row-width) / ${LIVE_CENTER_CARD_WIDTH_FIT_UNITS})));
+                        --fr-live-center-card-width: min(28vh, calc((var(--fr-live-center-row-width) - 250px * var(--fr-live-desktop-ui-scale)) / 6.6));
                         --fr-live-center-card-height: calc(var(--fr-live-center-card-width) / 0.72);
                         --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) * ${LIVE_CENTER_CARD_STRIDE_MULTIPLIER});
                         --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + var(--fr-live-center-card-height) - (var(--fr-live-center-card-width) * ${LIVE_CENTER_SECOND_ROW_OVERLAP_MULTIPLIER}));
                     }
                     .fr-board--minimal-live .fr-live-table--gameover .fr-discard-row--live-center {
+                        --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) * ${LIVE_CENTER_CARD_STRIDE_MULTIPLIER});
+                        --fr-live-center-card-height: calc(var(--fr-live-center-card-width) / 0.72);
+                        --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + var(--fr-live-center-card-height) - (var(--fr-live-center-card-width) * ${LIVE_CENTER_SECOND_ROW_OVERLAP_MULTIPLIER}));
                         transform: translateX(calc(-125px * var(--fr-live-desktop-ui-scale)));
                     }
+                    .fr-board--minimal-live .fr-live-table--gameover .fr-live-hand-zone {
+                        grid-row: 3;
+                        z-index: 2;
+                    }
+                }
+                @media (min-width: 1024px) {
+                    .fr-board--minimal-live .fr-live-table--gameover .fr-live-hand-zone .fr-card-row--live-hand-zone { width: min(calc(22vh * var(--fr-live-hand-slots, 7) + 12px * (var(--fr-live-hand-slots, 7) - 1)), calc(var(--fr-live-content-width) - 16px)); }
+                    .fr-board--minimal-live .fr-live-table--gameover .fr-card-button--live-hand { max-width: 22vh; }
                 }
                 .fr-board--minimal-live .fr-live-table--opening {
                     grid-template-rows: 132px minmax(0, 1fr) 0;
@@ -4754,6 +4805,17 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     {magnifiedCard ? <FantasyRealmsCard card={magnifiedCard} t={t} locale={locale} /> : null}
                 </div>
             </MagnifyOverlay>
+            <EndgameOverlay
+                {...endgameProps}
+                isGameOver={isGameOver && !endgameScoreSequence.isRunning}
+                renderContent={(contentProps) => (
+                    <FantasyRealmsEndgameContent {...contentProps} standings={finalStandings} actions={endgameActions} />
+                )}
+                renderActions={() => null}
+                backdropClassName="bg-[#071a15]/62 backdrop-blur-sm"
+                contentWrapperClassName="max-w-[34rem]"
+                scrollMode="content"
+            />
             </div>
         </UndoProvider>
     );

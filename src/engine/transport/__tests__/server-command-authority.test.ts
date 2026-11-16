@@ -585,6 +585,10 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
         };
         server.start();
 
+        // 此用例使用专门构造的简化状态；同步时不应调用真实游戏 AI 消费该状态。
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'idle', idleReason: 'manual-force-end-setup',
+        });
         const socket = new MockSocket('socket-manual-force-end-ai-human-response-window');
         io.gameNamespace.connectSocket(socket);
         await socket.clientEmit('sync', matchID, '0', 'cred-0');
@@ -606,7 +610,7 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
             },
         }).G;
         const executed: string[] = [];
-        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch');
+        resolutionSpy.mockReset();
         resolutionSpy
             .mockResolvedValueOnce({
                 kind: 'idle',

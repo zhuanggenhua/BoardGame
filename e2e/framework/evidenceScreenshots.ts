@@ -44,6 +44,7 @@ export interface EvidenceScreenshotIndexEntry {
 }
 
 export interface EvidenceScreenshotIndexOptions {
+    version?: 1 | 2;
     gameId: string;
     evidenceCategory: 'golden' | 'tutorial' | 'independent';
     /** New captures use distinct-ui-state; omitted only for historical callers. */
@@ -237,7 +238,7 @@ export async function promoteEvidenceScreenshotRun(
 
         const sourceDir = relative(process.cwd(), run.stableDir).split(sep).join('/');
         const index = {
-            version: 1,
+            version: indexOptions.version ?? 1,
             gameId: indexOptions.gameId,
             evidenceCategory: indexOptions.evidenceCategory,
             acceptanceMode: 'behavioral-chain',

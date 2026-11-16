@@ -95,6 +95,8 @@ services:
     ports:
       # Host nginx owns 80/443 and proxies the app to 127.0.0.1:18081.
       - "18081:80"
+    volumes:
+      - ./runtime/retained-web-assets:/app/retained-web-assets:ro
 
 volumes:
   mongodb_data:

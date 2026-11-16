@@ -22,13 +22,17 @@ import { SPLENDOR_MANIFEST } from './manifest';
 import { buildActionLogRows } from '../../components/game/utils/actionLogFormat';
 import { ActionLogSegments } from '../../components/game/framework/widgets/ActionLogSegments';
 import { useMatchPlayerViewModel } from '../../components/game/framework';
+import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
+import { RematchActions } from '../../components/game/framework/widgets/RematchActions';
+import { useEndgame } from '../../hooks/game/useEndgame';
+import { SPLENDOR_ENDGAME_FRAME_CLASS, SplendorEndgameContent, renderSplendorButton, type SplendorEndgameStanding } from './ui/EndgamePanel';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../components/game/registry/cardPreviewRegistry';
 
 type Props = GameBoardProps<SplendorCore, SplendorCommandMap>;
 
 const TIERS: CardTier[] = [3, 2, 1];
 
-export default function SplendorBoard({ G, dispatch, playerID, matchData, isMultiplayer }: Props) {
+export default function SplendorBoard({ G, dispatch, playerID, matchData, isMultiplayer, reset }: Props) {
     const { t, i18n } = useTranslation('game-splendor');
     const playerView = useMatchPlayerViewModel({
         core: G.core,
@@ -83,7 +87,7 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
             currentPlayer: G.core.currentPlayer,
             pendingType: pending?.type ?? null,
             endgameTriggered: G.core.endgame.triggered,
-            isGameOver: !!G.core.gameResult,
+            isGameOver: !!G.sys.gameover,
         },
         eventEntries: G.sys.eventStream.entries,
     });
@@ -98,6 +102,29 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
     const renderPlayerName = useCallback((id: string) =>
         playerView.getPlayerName(id), [playerView]);
     const startingPlayerName = playerView.getPlayerName(G.core.startingPlayerId);
+
+    // 终局与重赛：按 engine-gameover 标准，Board 只读 G.sys.gameover。
+    const gameOverResult = G.sys.gameover;
+    const { overlayProps: endgameProps, isSpectator: isEndgameSpectator } = useEndgame({
+        result: gameOverResult,
+        playerID,
+        reset,
+        matchData,
+        isMultiplayer,
+    });
+    const endgameStandings = useMemo<SplendorEndgameStanding[]>(() => {
+        if (!gameOverResult) return [];
+        const winnerIds = new Set((gameOverResult.winners ?? (gameOverResult.winner !== undefined ? [gameOverResult.winner] : [])).map(String));
+        return G.core.playerOrder
+            .map((id) => ({
+                id,
+                name: renderPlayerName(id),
+                score: gameOverResult.scores?.[id] ?? 0,
+                cardCount: G.core.players[id]?.purchasedCardIds.length ?? 0,
+                isWinner: winnerIds.has(String(id)),
+            }))
+            .sort((left, right) => right.score - left.score || left.cardCount - right.cardCount);
+    }, [G.core, gameOverResult, renderPlayerName]);
 
     const getCardPreviewRef = useMemo(() => getCardPreviewGetter(SPLENDOR_MANIFEST.id), []);
     const cardPreviewMaxDim = useMemo(() => getCardPreviewMaxDim(SPLENDOR_MANIFEST.id), []);
@@ -220,7 +247,10 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
     }, [dispatchNextFrame]);
 
     return (
-        <div className="relative h-full min-h-full overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top,#1e293b,#020617_60%)] p-2 text-white md:p-3 xl:p-4">
+        <div
+            className="relative h-full min-h-full overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top,#1e293b,#020617_60%)] p-2 text-white md:p-3 xl:p-4"
+            data-testid="splendor-board"
+        >
             <div className="absolute inset-0 opacity-20">
                 <OptimizedImage src={SPLENDOR_ASSETS.BOARD_DESK} alt="" className="h-full w-full object-cover" />
             </div>
@@ -248,8 +278,8 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
                             </p>
                         </div>
                         <div className="text-sm text-white/70">
-                            {G.core.gameResult
-                                ? t('status.gameOver', { winners: G.core.gameResult.winners?.map(renderPlayerName).join(' / ') })
+                            {G.sys.gameover
+                                ? t('status.gameOver', { winners: G.sys.gameover.winners?.map(renderPlayerName).join(' / ') })
                                 : isOnlineMatch && !G.core.hostStarted
                                     ? (areAllSeatsOccupied ? t('status.waitHostStart') : t('status.waitPlayers'))
                                 : pending?.type === 'discardToLimit'
@@ -544,6 +574,27 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
 
                 </div>
             </div>
+            <EndgameOverlay
+                {...endgameProps}
+                scrollMode="content"
+                backdropClassName="bg-[#040a17]/75 backdrop-blur-sm"
+                contentWrapperClassName={SPLENDOR_ENDGAME_FRAME_CLASS}
+                renderContent={(contentProps) => (
+                    <SplendorEndgameContent {...contentProps} standings={endgameStandings} />
+                )}
+                renderActions={(actionsProps) => (
+                    <footer className="splendor-endgame__actions">
+                        <RematchActions
+                            {...actionsProps}
+                            renderButton={(button) => {
+                                if ((isSpectator || isEndgameSpectator) && button.role !== 'backToLobby') return null;
+                                return renderSplendorButton(button);
+                            }}
+                            className="flex-wrap justify-center"
+                        />
+                    </footer>
+                )}
+            />
         </div>
     );
 }

@@ -18,7 +18,7 @@ test('合法战斗检查点记录真实骰子阶段', async ({ page }) => {
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
     const identity = trackQidahenSourceIdentity(page, 'e2e/qidahen/battle-recording-check.diagnostic.ts',
-        ['e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', checkpoint], QIDAHEN_VISUAL_SOURCE_PATHS);
+        ['e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', 'e2e/qidahen/battleFramePixels.ts', 'e2e/qidahen/battleCaptureDiagnostics.ts', checkpoint], QIDAHEN_VISUAL_SOURCE_PATHS);
     await setChineseLocale(page); await disableAudio(page);
     await page.setViewportSize({ width: 1920, height: 1080 });
     const encoded = encodeLocalMatchSnapshot(JSON.parse(readFileSync(checkpoint, 'utf8')));

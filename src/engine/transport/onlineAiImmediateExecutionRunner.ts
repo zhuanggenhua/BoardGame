@@ -37,6 +37,7 @@ export type OnlineAiImmediateExecutionTrace = {
     stateIdBefore: number;
     candidateReason: ForceEndTurnStalledAiResolution['reason'] | 'immediate-ai';
     decisionMs: number;
+    delayMs?: number;
     executionMs: number;
     actionKind: string | null;
     commandTypes: string[];
@@ -215,7 +216,8 @@ export class OnlineAiImmediateExecutionRunner<TMatch extends OnlineAiImmediateEx
                         stateIdBefore: stepStateIdBefore,
                         candidateReason: 'immediate-ai',
                         decisionMs: immediateAction.decisionMs,
-                        executionMs: Date.now() - stepStartedAt - immediateAction.decisionMs,
+                        delayMs: immediateAction.delayMs ?? 0,
+                        executionMs: Date.now() - stepStartedAt - immediateAction.decisionMs - (immediateAction.delayMs ?? 0),
                         actionKind: immediateAction.actionKind,
                         commandTypes: immediateAction.executedCommandTypes,
                         outcome: `normal:${trigger}`,

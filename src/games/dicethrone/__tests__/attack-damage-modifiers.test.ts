@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import { applyCurrentAttackDamageModifiers } from '../domain/attackDamageModifiers';
 import type { DamageDealtEvent } from '../domain/types';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { handleAbilityReselectionRequired } from '../domain/reduceCombat';
 
 it('当前攻击伤害只计算一次眩光，并不修改独立伤害或反击', () => {
     const state = createHeroMatchup('cursed_pirate', 'treant')(['0', '1'], createQueuedRandom([1])).core;
@@ -19,4 +20,21 @@ it('当前攻击伤害只计算一次眩光，并不修改独立伤害或反击'
     const direct = { ...event, payload: { ...event.payload, damageScope: 'direct' as const } };
     expect(applyCurrentAttackDamageModifiers(state, direct, '0')).toEqual(direct);
     expect(applyCurrentAttackDamageModifiers(state, event, '1')).toEqual(event);
+});
+
+it('重选技能时保留攻击修正牌增伤，不转移已激活机器人或爆弹的增伤来源', () => {
+    const state = createHeroMatchup('artificer', 'monk')(['0', '1'], createQueuedRandom([1])).core;
+    state.pendingAttack = {
+        attackerId: '0', defenderId: '1', isDefendable: true, bonusDamage: 8,
+        attackModifierBonusDamage: 2,
+        bonusDamageSources: [
+            { amount: 2, sourceId: 'card-damage-boost' },
+            { amount: 3, sourceId: 'shock_bot', expiresWithAttack: true },
+            { amount: 3, sourceId: 'nanobomb', expiresWithAttack: true },
+        ],
+    };
+    const result = handleAbilityReselectionRequired(state);
+    expect(result.pendingAttack).toBeNull();
+    expect(result.players['0'].pendingBonusDamage).toBe(2);
+    expect(result.players['0'].pendingBonusDamageSources).toEqual([{ amount: 2, sourceId: 'card-damage-boost' }]);
 });

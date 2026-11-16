@@ -98,7 +98,7 @@ function printedBasicType(definition: { id: string; type?: string }): string | u
 const BASIC_ATTACK_TYPES = new Set(['力量', '敏捷', '魔术', '远隔操作', '疾行', '幸运']);
 
 export function isFateBasicAttackDefinition(definition: { id: string; type?: string; desc?: string }): boolean {
-    if (Object.hasOwn(VERIFIED_SPECIAL_BASIC_TYPES, definition.id)) return true;
+    if (Object.prototype.hasOwnProperty.call(VERIFIED_SPECIAL_BASIC_TYPES, definition.id)) return true;
     return definition.desc === '基础攻击卡牌' && BASIC_ATTACK_TYPES.has(printedBasicType(definition) ?? '');
 }
 

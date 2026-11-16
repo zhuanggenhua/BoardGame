@@ -10,6 +10,8 @@ type Obstacle = { x: number; y: number; size?: number };
 export interface PopulationSite {
     anchor: Point;
     candidates: Point[];
+    /** 完整方块位于本区的较密采样，仅供联合布局使用。 */
+    compactCandidates?: Point[];
     clearance: number;
 }
 export interface PopulationPlacement {
@@ -17,6 +19,7 @@ export interface PopulationPlacement {
     point: Point;
     anchor: Point;
     callout: boolean;
+    size?: number;
 }
 
 /** 与命中检测共用像素归属；计算方块到异区的棋盘距离，而非可能落区外的算术质心。 */
@@ -50,7 +53,7 @@ export function buildQidahenPopulationSites(
         const point = { x: i % width, y: Math.floor(i / width) };
         let site = sites.get(id);
         if (!site) {
-            site = { anchor: point, candidates: [], clearance: 0 };
+            site = { anchor: point, candidates: [], compactCandidates: [], clearance: 0 };
             sites.set(id, site);
         }
         const preferred = { x: region.x * width, y: region.y * height };
@@ -60,6 +63,9 @@ export function buildQidahenPopulationSites(
         }
         // 三像素采样只减少候选数量，不改变归属或完整方块的内部性判断。
         if (distance[i] >= CLEARANCE && point.x % 3 === 0 && point.y % 3 === 0) site.candidates.push(point);
+        // 窄区可使用完整落区的方块，去掉区界外的额外留白并加密纵向采样。
+        if (distance[i] >= QIDAHEN_POPULATION_SIZE / 2 + 1 && distance[i] < CLEARANCE + 3 && point.x % 3 === 0)
+            site.compactCandidates!.push(point);
     }
     return sites;
 }

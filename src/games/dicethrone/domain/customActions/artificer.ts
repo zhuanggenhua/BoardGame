@@ -267,6 +267,8 @@ function handleNanobotDetonate({ state, attackerId, sourceAbilityId, timestamp }
                 payload: {
                     playerId: attackerId,
                     amount: damage,
+                    sourceId: STATUS_IDS.NANOBOMB,
+                    sourceName: 'statusEffects.nanobomb.name',
                 },
                 sourceCommandType: 'ABILITY_EFFECT',
                 timestamp,
@@ -686,23 +688,6 @@ function handleWrenchStrikeBranch({ attackerId, sourceAbilityId, state, timestam
     const player = state.players[attackerId];
     if (!player || !sourceAbilityId || !state.pendingAttack || !random) return [];
 
-    const followUpChoice = state.pendingAttack.followUpChoiceBySourceAbilityId?.[sourceAbilityId];
-    if (followUpChoice === WRENCH_STRIKE_ROLL_CHOICE_ID) {
-        const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? ARTIFICER_DICE_FACE_IDS.WRENCH;
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, face, timestamp, value);
-    }
-
-    if (followUpChoice === WRENCH_STRIKE_SPEND_WRENCH_CHOICE_ID) {
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.WRENCH, timestamp, 1, 'choice');
-    }
-    if (followUpChoice === WRENCH_STRIKE_SPEND_GEAR_CHOICE_ID) {
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.GEAR, timestamp, 4, 'choice');
-    }
-    if (followUpChoice === WRENCH_STRIKE_SPEND_ELECTRICITY_CHOICE_ID) {
-        return buildWrenchStrikeBonusEvents(state, attackerId, sourceAbilityId, ARTIFICER_DICE_FACE_IDS.ELECTRICITY, timestamp, 6, 'choice');
-    }
-
     const synth = player.tokens[TOKEN_IDS.SYNTH] ?? 0;
     if (synth <= 0) {
         const value = random.d(6);
@@ -1096,18 +1081,21 @@ const WRENCH_STRIKE_CHOICE_IDS = new Set([
 ]);
 
 for (const choiceId of WRENCH_STRIKE_CHOICE_IDS) {
-    registerChoiceEffectHandler(choiceId, ({ state, sourceAbilityId }) => {
-        if (!sourceAbilityId || !isWrenchStrikeAbilityId(sourceAbilityId) || !state.pendingAttack) return undefined;
-        return {
-            pendingAttack: {
-                ...state.pendingAttack,
-                preDefenseResolved: false,
-                followUpChoiceBySourceAbilityId: {
-                    ...(state.pendingAttack.followUpChoiceBySourceAbilityId ?? {}),
-                    [sourceAbilityId]: choiceId,
-                },
-            },
+    registerChoiceResolvedEventHandler(choiceId, ({ state, playerId, sourceAbilityId, random, timestamp }) => {
+        if (!sourceAbilityId || !isWrenchStrikeAbilityId(sourceAbilityId) || !state.pendingAttack) return [];
+        if (choiceId === WRENCH_STRIKE_ROLL_CHOICE_ID) {
+            if (!random) return [];
+            const value = random.d(6);
+            const face = getPlayerDieFace(state, playerId, value) ?? ARTIFICER_DICE_FACE_IDS.WRENCH;
+            return buildWrenchStrikeBonusEvents(state, playerId, sourceAbilityId, face, timestamp, value);
+        }
+        const branches = {
+            [WRENCH_STRIKE_SPEND_WRENCH_CHOICE_ID]: { face: ARTIFICER_DICE_FACE_IDS.WRENCH, value: 1 },
+            [WRENCH_STRIKE_SPEND_GEAR_CHOICE_ID]: { face: ARTIFICER_DICE_FACE_IDS.GEAR, value: 4 },
+            [WRENCH_STRIKE_SPEND_ELECTRICITY_CHOICE_ID]: { face: ARTIFICER_DICE_FACE_IDS.ELECTRICITY, value: 6 },
         };
+        const branch = branches[choiceId as keyof typeof branches];
+        return branch ? buildWrenchStrikeBonusEvents(state, playerId, sourceAbilityId, branch.face, timestamp, branch.value, 'choice') : [];
     });
 }
 

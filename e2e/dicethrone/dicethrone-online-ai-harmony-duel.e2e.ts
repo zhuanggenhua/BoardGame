@@ -1,19 +1,13 @@
+import { setupDTOnlineAiRoom } from '../helpers/dicethrone-online-ai';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import type { Browser, BrowserContext, Page, TestInfo } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 import { expect, test } from '../framework';
 import { getEvidenceScreenshotDir, sanitizeEvidencePathSegment } from '../framework/evidenceScreenshots';
 import {
-    ensureGameServerAvailable,
-    getGameServerBaseURL,
-    initContext,
-    setChineseLocale,
     waitForTestHarness,
 } from '../helpers/common';
 import {
-    claimDTSeatViaAPI,
-    createDTRoomViaAPI,
-    seedDTMatchCredentials,
     waitForCharacterSelection,
 } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
@@ -394,90 +388,6 @@ async function waitForCharacterSelectionWithRetry(page: Page, timeout = 60000): 
     throw new Error('等待角色选择页超时');
 }
 
-async function setupDTOnlineAiRoom(
-    browser: Browser,
-    baseURL: string | undefined,
-): Promise<{ hostPage: Page; hostContext: BrowserContext; matchId: string } | null> {
-    const hostContext = await browser.newContext({ baseURL });
-    await initContext(hostContext, {
-        storageKey: '__dicethrone_storage_reset_online_ai',
-        skipTutorial: false,
-        skipImageGate: true,
-        gameServerBaseURL: getGameServerBaseURL(),
-    });
-    await setChineseLocale(hostContext);
-    const hostPage = await hostContext.newPage();
-
-    await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
-    if (!(await ensureGameServerAvailable(hostPage, getGameServerBaseURL()))) {
-        await hostContext.close();
-        return null;
-    }
-
-    const guestId = `dt_online_ai_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    await hostPage.addInitScript(
-        (id) => {
-            localStorage.setItem('guest_id', id);
-            sessionStorage.setItem('guest_id', id);
-            document.cookie = `bg_guest_id=${encodeURIComponent(id)}; path=/; SameSite=Lax`;
-        },
-        guestId,
-    );
-
-    const matchId = await createDTRoomViaAPI(hostPage, {
-        guestId,
-        numPlayers: 2,
-        gameServerBaseURL: getGameServerBaseURL(),
-        setupData: {
-            enableAi: true,
-            seatControllers: {
-                '1': {
-                    type: 'local-ai',
-                    minimumActionDelayMs: 2000,
-                },
-            },
-        },
-    });
-    if (!matchId) {
-        await hostContext.close();
-        return null;
-    }
-
-    const credentials = await claimDTSeatViaAPI(hostPage, matchId, '0', {
-        guestId,
-        playerName: 'Host-Online-AI',
-        gameServerBaseURL: getGameServerBaseURL(),
-    });
-    if (!credentials) {
-        await hostContext.close();
-        return null;
-    }
-
-    const aiCredentials = await claimDTSeatViaAPI(hostPage, matchId, '1', {
-        guestId,
-        playerName: 'AI-Online-AI',
-        gameServerBaseURL: getGameServerBaseURL(),
-    });
-    if (!aiCredentials) {
-        await hostContext.close();
-        return null;
-    }
-    const aiSeatCredentials = { '1': aiCredentials };
-    await hostContext.addInitScript(({ targetMatchId, credentials }) => {
-        localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(credentials));
-        window.dispatchEvent(new Event('match-credentials-changed'));
-    }, { targetMatchId: matchId, credentials: aiSeatCredentials });
-    await hostPage.evaluate(({ targetMatchId, credentials }) => {
-        localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(credentials));
-        window.dispatchEvent(new Event('match-credentials-changed'));
-    }, { targetMatchId: matchId, credentials: aiSeatCredentials });
-
-    await seedDTMatchCredentials(hostContext, matchId, '0', credentials);
-    await hostPage.goto(`/play/dicethrone/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-    await waitForTestHarness(hostPage, 20000);
-
-    return { hostPage, hostContext, matchId };
-}
 
 const installOnlineAiAuditProbe = async (page: Page) => {
     await page.evaluate(() => {
@@ -899,7 +809,7 @@ const buildOnlineAiPaladinDamageState = (state: OnlineAiMatchState) => {
 test.describe('DiceThrone 在线 AI 真链路', () => {
     test('预置真人响应窗口后，枪手 AI 完成防御比骰并交回行动', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
-        const setup = await setupDTOnlineAiRoom(browser, testInfo.project.use.baseURL as string | undefined);
+        const setup = await setupDTOnlineAiRoom(browser, testInfo.project.use.baseURL as string | undefined, { guestPrefix: 'dt_online_ai', hostName: 'Host-Online-AI', aiName: 'AI-Online-AI' });
         if (!setup) throw new Error('在线 AI 房间无法创建');
         try {
             const { hostPage, matchId } = setup;
@@ -948,7 +858,7 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
     test('僧侣 harmony + 枪手 duel：compare-roll 不应半弹后重开，伤害浮字应出现', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const setup = await setupDTOnlineAiRoom(browser, baseURL);
+        const setup = await setupDTOnlineAiRoom(browser, baseURL, { guestPrefix: 'dt_online_ai', hostName: 'Host-Online-AI', aiName: 'AI-Online-AI' });
         if (!setup) {
             test.skip(true, '游戏服务器不可用或在线 AI 房间创建失败');
             return;
@@ -1170,7 +1080,7 @@ test.describe('DiceThrone 在线 AI 真链路', () => {
     test('圣骑士 blessing-of-might：在线 AI 伤害浮字应稳定挂载', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const setup = await setupDTOnlineAiRoom(browser, baseURL);
+        const setup = await setupDTOnlineAiRoom(browser, baseURL, { guestPrefix: 'dt_online_ai', hostName: 'Host-Online-AI', aiName: 'AI-Online-AI' });
         if (!setup) {
             test.skip(true, '游戏服务器不可用或在线 AI 房间创建失败');
             return;

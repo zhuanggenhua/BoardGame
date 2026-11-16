@@ -185,6 +185,8 @@ type DiceTargetPlan = {
     profileFitScore: number;
 };
 
+type DicePlanStaticScores = Pick<DiceTargetPlan, 'strategicScore' | 'ambitionScore' | 'profileFitScore'>;
+
 type DiceChaseContext = {
     plans: DiceTargetPlan[];
     availablePlan: DiceTargetPlan | null;
@@ -855,8 +857,9 @@ const getAbilityProfileFitScore = (
     playerId: PlayerId,
     abilityId: string,
     phase: TurnPhase,
+    cachedProfile?: AiStrategyProfile<DiceThroneStrategyTag>,
 ): number => {
-    const profile = getDiceThroneStrategyProfile(state, playerId, phase);
+    const profile = cachedProfile ?? getDiceThroneStrategyProfile(state, playerId, phase);
     const fit = scoreActionAgainstStrategyProfile({
         profile,
         actionTags: buildAbilityStrategyTags(state, playerId, abilityId),
@@ -904,6 +907,8 @@ const buildDiceTargetPlans = (
     playerId: PlayerId,
     phase: TurnPhase,
     diceOverride?: DiceThroneCore['dice'],
+    cachedProfile?: AiStrategyProfile<DiceThroneStrategyTag>,
+    staticScores?: Map<string, DicePlanStaticScores>,
 ): DiceTargetPlan[] => {
     const player = state.core.players[playerId];
     if (!player) return [];
@@ -912,11 +917,20 @@ const buildDiceTargetPlans = (
     const expectedType = phase === 'defensiveRoll' ? 'defensive' : phase === 'offensiveRoll' ? 'offensive' : undefined;
     const dice = diceOverride ?? getAiActiveDice(state, phase);
     const plans: DiceTargetPlan[] = [];
+    const profile = cachedProfile ?? getDiceThroneStrategyProfile(state, playerId, phase);
 
     const pushPlan = (abilityId: string, trigger: TriggerCondition | undefined) => {
-        const strategicScore = getAbilityStrategicScore(state, playerId, abilityId, phase);
-        const ambitionScore = getAbilityAmbitionScore(state, playerId, abilityId, trigger);
-        const profileFitScore = getAbilityProfileFitScore(state, playerId, abilityId, phase);
+        const scoreKey = staticScores ? `${abilityId}:${JSON.stringify(trigger)}` : '';
+        let scores = staticScores?.get(scoreKey);
+        if (!scores) {
+            scores = {
+                strategicScore: getAbilityStrategicScore(state, playerId, abilityId, phase),
+                ambitionScore: getAbilityAmbitionScore(state, playerId, abilityId, trigger),
+                profileFitScore: getAbilityProfileFitScore(state, playerId, abilityId, phase, profile),
+            };
+            staticScores?.set(scoreKey, scores);
+        }
+        const { strategicScore, ambitionScore, profileFitScore } = scores;
         const requirements = extractDiceRequirements(trigger);
         if (requirements.length === 0) {
             if (!availableIds.has(abilityId)) return;
@@ -999,8 +1013,10 @@ const getBestDiceTargetPlan = (
     playerId: PlayerId,
     phase: TurnPhase,
     diceOverride?: DiceThroneCore['dice'],
+    cachedProfile?: AiStrategyProfile<DiceThroneStrategyTag>,
+    staticScores?: Map<string, DicePlanStaticScores>,
 ): DiceTargetPlan | null => {
-    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride);
+    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride, cachedProfile, staticScores);
     if (plans.length === 0) return null;
 
     return [...plans].sort((left, right) => {
@@ -1017,8 +1033,10 @@ const getBestAvailableDiceTargetPlan = (
     playerId: PlayerId,
     phase: TurnPhase,
     diceOverride?: DiceThroneCore['dice'],
+    cachedProfile?: AiStrategyProfile<DiceThroneStrategyTag>,
+    staticScores?: Map<string, DicePlanStaticScores>,
 ): DiceTargetPlan | null => {
-    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride).filter((plan) => plan.available);
+    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride, cachedProfile, staticScores).filter((plan) => plan.available);
     if (plans.length === 0) return null;
 
     return [...plans].sort((left, right) => {
@@ -5018,23 +5036,31 @@ const evaluateDiceProjection = (
     targetOpponentDice: boolean,
     projectedDice: DiceThroneCore['dice'],
     targetDiceOwnerId?: PlayerId,
+    cachedProfile?: AiStrategyProfile<DiceThroneStrategyTag>,
+    staticScores?: Map<string, DicePlanStaticScores>,
+    baseline?: { currentPlan: DiceTargetPlan | null },
 ): DiceProjectionSummary => {
     const currentDice = getAiActiveDice(state, phase);
     const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice, targetDiceOwnerId);
+    const profile = cachedProfile ?? getDiceThroneStrategyProfile(state, anchorPlayerId, phase);
     const useConfirmedOpponentThreat = targetOpponentDice
         && state.core.rollConfirmed
         && state.sys.responseWindow?.current?.windowType === 'afterRollConfirmed';
-    const currentPlan = useConfirmedOpponentThreat
-        ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase)
-        : getBestDiceTargetPlan(state, anchorPlayerId, phase);
+    const currentPlan = baseline
+        ? baseline.currentPlan
+        : (useConfirmedOpponentThreat
+            ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase, undefined, profile, staticScores)
+            : getBestDiceTargetPlan(state, anchorPlayerId, phase, undefined, profile, staticScores));
     const projectedPlan = useConfirmedOpponentThreat
-        ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase, projectedDice)
-        : getBestDiceTargetPlan(state, anchorPlayerId, phase, projectedDice);
-    const projectedAvailablePlan = getBestAvailableDiceTargetPlan(
+        ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase, projectedDice, profile, staticScores)
+        : getBestDiceTargetPlan(state, anchorPlayerId, phase, projectedDice, profile, staticScores);
+    const projectedAvailablePlan = useConfirmedOpponentThreat ? projectedPlan : getBestAvailableDiceTargetPlan(
         state,
         anchorPlayerId,
         phase,
         projectedDice,
+        profile,
+        staticScores,
     );
     const projectedUltimatePlan = isUltimateDiceTargetPlan(
         state,
@@ -5168,6 +5194,17 @@ const evaluateExpectedRerollSelection = (
     }
 
     const baseDice = getAiActiveDice(state, phase);
+    const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice, targetDiceOwnerId);
+    const profile = getDiceThroneStrategyProfile(state, anchorPlayerId, phase);
+    const staticScores = new Map<string, DicePlanStaticScores>();
+    const useConfirmedOpponentThreat = targetOpponentDice
+        && state.core.rollConfirmed
+        && state.sys.responseWindow?.current?.windowType === 'afterRollConfirmed';
+    const baseline = {
+        currentPlan: useConfirmedOpponentThreat
+            ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase, undefined, profile, staticScores)
+            : getBestDiceTargetPlan(state, anchorPlayerId, phase, undefined, profile, staticScores),
+    };
     const totals = {
         score: 0,
         rawDelta: 0,
@@ -5182,7 +5219,7 @@ const evaluateExpectedRerollSelection = (
             dieId: die.id,
             newValue: outcomeValues[index],
         })));
-        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice, targetDiceOwnerId);
+        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice, targetDiceOwnerId, profile, staticScores, baseline);
         totals.score += summary.score;
         totals.rawDelta += summary.rawDelta;
         totals.planDelta += summary.planDelta;

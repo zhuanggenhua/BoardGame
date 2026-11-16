@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import { execFileSync, spawn } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
 import { BattleCaptureDiagnosticsError, createBattleCaptureDiagnostics, type CaptureMode } from './battleCaptureDiagnostics';
+import { countNewResultInk } from './battleFramePixels';
 
 type Bounds = { left: number; top: number; width: number; height: number };
-type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: Bounds | null; regions: Bounds[]; objects: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
+type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; links: Array<{ side: string | null; pieceId: string | null }>; armyFaces: Array<{ id: string | null; face: string | null; imageReady: boolean; hiddenBack: boolean }>; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; left: number; top: number; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: Bounds | null; regions: Bounds[]; objects: Bounds[] }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
 
 /** 只观察正式页面：连续采集实际视口，按墙钟间隔编码，不注入或重演投掷。 */
 export async function beginBattleRecording(page: Page, directory: string, flow: 'natural-flow' | 'representative-state' = 'natural-flow') {
@@ -25,8 +26,12 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         const battle = core.pendingTargetAction ?? core.postBattleSelection;
         if (!battle) throw new Error('Recording must begin at a real engagement');
         const defender = battle.defenderFactionId ?? battle.originalController;
+        const attackerPieceIds: string[] = battle.selectedPieceIds ?? battle.forceCommitments?.flatMap((force: any) => force.selectedSpecialPieceIds ?? []) ?? [];
+        const attackerKinds: Record<string, string> = Object.fromEntries(core.pieces.filter((piece: any) => attackerPieceIds.includes(piece.id))
+            .map((piece: any) => [piece.id, piece.troopKind]));
         return { attacker: core.factions[battle.attackerFactionId].name,
-            defender: defender === 'neutral' ? battle.defenderLabel ?? battle.originalControlLabel : core.factions[defender].name };
+            defender: defender === 'neutral' ? battle.defenderLabel ?? battle.originalControlLabel : core.factions[defender].name,
+            attackerPieceIds, attackerKinds };
     });
     const frameDirectory = resolve(tmpdir(), 'BoardGame-qidahen-annual-20261030', basename(dirname(directory)), basename(directory), 'battle-frames');
     mkdirSync(frameDirectory, { recursive: true });
@@ -37,11 +42,13 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             const panel = document.querySelector<HTMLElement>('[data-testid="qidahen-battle-roll-sequence"]');
             const next: State = { regionTipVisible: document.querySelector('[data-testid="qidahen-map-region-tip"]') != null, at: Date.now() / 1000, phase: panel?.getAttribute('data-battle-roll-phase') ?? null,
                 state: panel?.getAttribute('data-battle-roll-state') ?? null, text: panel?.innerText ?? '', armyFaces: [],
+                links: [...document.querySelectorAll('[data-qidahen-battle-link-piece-id]')].map(node => ({
+                    side: node.getAttribute('data-qidahen-battle-link-side'), pieceId: node.getAttribute('data-qidahen-battle-link-piece-id') })),
                 labels: [...(panel?.querySelectorAll<HTMLElement>('[data-qidahen-battle-label]') ?? [])].map(element => {
                     const style = getComputedStyle(element); const rect = element.getBoundingClientRect();
                     return { id: element.getAttribute('data-qidahen-battle-label'), text: element.innerText, color: style.color,
                         fill: style.webkitTextFillColor, font: style.font, visibility: style.visibility, opacity: style.opacity,
-                        width: rect.width, height: rect.height };
+                        left: rect.left, top: rect.top, width: rect.width, height: rect.height };
                 }),
                 surfaces: panel ? [panel, ...panel.querySelectorAll('[data-testid^="qidahen-battle-side-"], [data-testid^="qidahen-battle-dice-"]')].map(element => {
                     const style = getComputedStyle(element);
@@ -145,28 +152,16 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             categories: 'devtools.timeline,disabled-by-default-devtools.timeline,v8,blink.console' });
         await page.evaluate(() => console.timeStamp(`QIDAHEN_BATTLE_CLOCK_${Date.now()}`));
     }
-    let streamFailure: unknown;
-    const streamAcks: Promise<void>[] = [];
-    const diagnostics = diagnosticMode ? createBattleCaptureDiagnostics({
-        mode: diagnosticMode,
+    // 收到真实合成帧后先确认、再有界排队写盘，避免同步磁盘写入阻塞下一帧。
+    const captureSink = createBattleCaptureDiagnostics({
+        mode: diagnosticMode ?? 'queued',
         pathForIndex: index => resolve(frameDirectory, `stream-${String(index).padStart(5, '0')}.jpg`),
         ack: sessionId => streamSession.send('Page.screencastFrameAck', { sessionId }),
-    }) : undefined;
-    streamSession.on('Page.screencastFrame', event => {
-        if (diagnostics) { diagnostics.receive(event); return; }
-        try {
-            const at = event.metadata.timestamp;
-            if (typeof at !== 'number' || Math.abs(at - Date.now() / 1000) > 60) throw new Error('Missing or invalid compositor timestamp');
-            const path = resolve(frameDirectory, `stream-${String(screencastFrames.length).padStart(5, '0')}.jpg`);
-            writeFileSync(path, Buffer.from(event.data, 'base64'));
-            // 不抽帧：静止伤害状态可能只有一张新的合成帧，按固定间隔过滤会漏掉它。
-            screencastFrames.push({ path, at, startedAt: at, endedAt: at, source: 'screencast' });
-        } catch (error) { streamFailure = error; }
-        streamAcks.push(streamSession.send('Page.screencastFrameAck', { sessionId: event.sessionId }).then(() => undefined).catch(error => { streamFailure = error; }));
     });
+    streamSession.on('Page.screencastFrame', event => captureSink.receive(event));
     await streamSession.send('Page.startScreencast', { format: 'jpeg', quality: 90, everyNthFrame: 1 });
     // 只用一条带时间戳的合成流。并发全屏截图会卡住合成器，遗漏正在投掷的实帧。
-    await expect.poll(() => (diagnostics?.frames ?? screencastFrames).length).toBeGreaterThan(0);
+    await expect.poll(() => captureSink.frames.length).toBeGreaterThan(0);
     return async () => {
         await expect(page.getByTestId('qidahen-battle-roll-sequence')).toHaveCount(0);
         if (batchDiagnostic) await batchDiagnostic();
@@ -179,7 +174,7 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             const record = (window as unknown as { __annualBattleObservation: { states: State[] } }).__annualBattleObservation;
             return record.states.at(-1)!.at;
         });
-        await expect.poll(() => (diagnostics?.frames ?? screencastFrames).at(-1)!.at, { timeout: 10_000, message: 'actual composed viewport after dice exit must be captured' }).toBeGreaterThanOrEqual(exitAt);
+        await expect.poll(() => captureSink.frames.at(-1)!.at, { timeout: 10_000, message: 'actual composed viewport after dice exit must be captured' }).toBeGreaterThanOrEqual(exitAt);
         await streamSession.send('Page.stopScreencast');
         if (traceSession) {
             await page.evaluate(() => console.timeStamp(`QIDAHEN_BATTLE_END_${Date.now()}`));
@@ -197,27 +192,27 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
             await traceSession.send('IO.close', { handle: stream });
             await traceSession.detach();
         }
-        if (diagnostics) {
-            let capture: Awaited<ReturnType<typeof diagnostics.finish>>;
+        {
+            let capture: Awaited<ReturnType<typeof captureSink.finish>>;
             let diagnosticFailure: BattleCaptureDiagnosticsError | undefined;
-            try { capture = await diagnostics.finish(); }
+            try { capture = await captureSink.finish(); }
             catch (error) {
                 if (!(error instanceof BattleCaptureDiagnosticsError)) throw error;
                 diagnosticFailure = error;
                 capture = error.report;
             }
             screencastFrames.push(...capture.frames);
-            const raf = await page.evaluate(() => {
-                const record = (window as any).__annualBattleRafDiagnostics as { frames: number[]; active: boolean };
-                record.active = false;
-                return record.frames;
-            });
-            writeFileSync(resolve(directory, 'battle-capture-diagnostics.json'), JSON.stringify({ ...capture, raf, failure: diagnosticFailure?.message, rafTimebase: 'UTC milliseconds (page performance time origin + RAF timestamp)' }, null, 2));
+            if (diagnosticMode) {
+                const raf = await page.evaluate(() => {
+                    const record = (window as any).__annualBattleRafDiagnostics as { frames: number[]; active: boolean };
+                    record.active = false;
+                    return record.frames;
+                });
+                writeFileSync(resolve(directory, 'battle-capture-diagnostics.json'), JSON.stringify({ ...capture, raf, failure: diagnosticFailure?.message, rafTimebase: 'UTC milliseconds (page performance time origin + RAF timestamp)' }, null, 2));
+            }
             if (diagnosticFailure) throw diagnosticFailure;
         }
-        await Promise.all(streamAcks);
         await streamSession.detach();
-        if (streamFailure) throw streamFailure;
         const states = await page.evaluate(() => {
             const record = (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation;
             record.observer.disconnect(); return record.states;
@@ -238,6 +233,19 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
         expect(frames.length).toBeGreaterThan(15);
         expect(states.flatMap(state => state.dice).filter(die => die.failure)).toEqual([]);
         expect(states.filter(state => state.phase != null && state.regionTipVisible), 'map hover information must leave before battle playback').toEqual([]);
+        if (participants.attackerPieceIds.length) {
+            const links = states.flatMap(state => state.links).filter(link => link.side === 'attacker');
+            expect(links.length, 'a battle link identifies the committed attackers').toBeGreaterThan(0);
+            expect(links.filter(link => !participants.attackerPieceIds.includes(link.pieceId)), 'attack links never point to uncommitted armies').toEqual([]);
+            for (const phase of ['artillery', 'cavalry', 'infantry']) {
+                const expected = participants.attackerPieceIds.filter(id => participants.attackerKinds[id] === phase);
+                if (expected.length && states.some(state => state.phase === phase && state.state === 'rolling')) {
+                    expect(states.some(state => state.phase === phase && state.state === 'rolling'
+                        && state.links.some(link => link.side === 'attacker' && link.pieceId != null && expected.includes(link.pieceId))),
+                    `${phase} attack link reaches a committed unit of that phase`).toBe(true);
+                }
+            }
+        }
         const pictures: Array<{ id: string; path: string }> = [];
         const selectedFrames: Array<{ id: string; sourceFrameIndex: number; sourceFramePath: string; captureStartedAt: number; captureEndedAt: number; windowStart: number; windowEnd: number }> = [];
         for (const phase of ['artillery', 'cavalry', 'infantry']) {
@@ -292,7 +300,29 @@ export async function beginBattleRecording(page: Page, directory: string, flow: 
                         end!.at - candidates[candidates.length - 1].at];
                     expect(Math.max(...gaps), phase + ' rolling capture must not omit a long stretch').toBeLessThanOrEqual(0.5);
                 }
-                const frame = candidates[state === 'damage' ? candidates.length - 1 : Math.floor(candidates.length / 2)];
+                let frame = candidates[Math.floor(candidates.length / 2)];
+                if (state === 'damage') {
+                    // 静止结果可能只有一帧。比较同阶段滚动帧与结果文字区域的真实像素，拒绝只更新 DOM 的旧画面。
+                    const rolling = states.find(item => item.phase === phase && item.state === 'rolling' && item.dice.length > 0);
+                    const baseline = frames.find(item => rolling && item.at >= rolling.at && item.at < moment!.at);
+                    expect(baseline, phase + ' rolling baseline for result pixels').toBeDefined();
+                    const resultLabels = moment!.labels.filter(label => /-(total|damage)$/.test(label.id ?? '') && label.visibility === 'visible');
+                    expect(resultLabels.length, phase + ' visible result labels').toBeGreaterThan(0);
+                    const viewport = page.viewportSize()!;
+                    const crop = (file: string, label: typeof resultLabels[number]) => {
+                        const left = Math.max(0, Math.floor(label.left)), top = Math.max(0, Math.floor(label.top));
+                        const width = Math.min(viewport.width - left, Math.ceil(label.width));
+                        const height = Math.min(viewport.height - top, Math.ceil(label.height));
+                        if (width <= 0 || height <= 0) throw new Error(`Result label outside viewport: ${label.id}`);
+                        return execFileSync(ffmpeg, ['-v', 'error', '-threads', '1', '-i', file, '-vf', `format=rgb24,crop=${width}:${height}:${left}:${top}`,
+                            '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'], { maxBuffer: width * height * 3 + 1024 });
+                    };
+                    const baselinePixels = resultLabels.map(label => crop(baseline!.path, label));
+                    const painted = candidates.slice().reverse().find(candidate => resultLabels.every((label, index) =>
+                        countNewResultInk(crop(candidate.path, label), baselinePixels[index]) >= 10));
+                    expect(painted, phase + ' result labels must have actual new visible pixels').toBeDefined();
+                    frame = painted!;
+                }
                 const path = resolve(directory, `battle-${phase}-${state}.jpg`);
                 copyFileSync(frame!.path, path); pictures.push({ id: `battle-${phase}-${state}`, path });
                 selectedFrames.push({ id: `battle-${phase}-${state}`, sourceFrameIndex: frames.indexOf(frame!), sourceFramePath: frame!.path, captureStartedAt: frame!.startedAt, captureEndedAt: frame!.endedAt, windowStart: moment!.at, windowEnd: end!.at });

@@ -106,10 +106,21 @@ capture_high_cpu_root_cause_evidence() {
     echo "diagnosticContract=trigger-condition-and-process-snapshot-only"
     echo "note=This section is not a root cause by itself. It preserves process/thread/container evidence so the next incident can be diagnosed instead of only restarted."
     echo
-    echo "## host process identity"
+  } >>"$evidence_file"
+
+  {
+    echo "## recent slow AI decisions from application logs"
+    # 游戏服务把日志写进容器文件；只提取有限的慢决策摘要，避免复制其他对局日志。
+    docker exec "$CONTAINER_NAME" sh -c '
+      for file in /app/logs/app-*.log; do
+        [ -f "$file" ] && tail -n 5000 "$file"
+      done | grep -F "online-ai-slow-decision" | tail -n 50
+    ' 2>&1 || true
+    echo
   } >>"$evidence_file"
 
   local host_pid
+  echo "## host process identity" >>"$evidence_file"
   host_pid="$(docker inspect --format '{{.State.Pid}}' "$CONTAINER_NAME" 2>/dev/null || true)"
   if [[ -n "$host_pid" && "$host_pid" != "0" ]]; then
     {
@@ -295,6 +306,8 @@ report_high_cpu_feedback() {
   host_name="$(hostname 2>/dev/null || echo unknown-host)"
   local content="[system][infra-cpu-watch] environment=${ENVIRONMENT} host=${HOST_ID} game-server CPU sustained high: average=${average_cpu}% highSamples=${high_samples}/${SAMPLE_COUNT} threshold=${THRESHOLD_PERCENT}% decision=${decision} restarted=${restarted}"
   local incident_key="infra-cpu-watch:${ENVIRONMENT}:${HOST_ID}:${CONTAINER_NAME}:${THRESHOLD_PERCENT}"
+  local capture_id
+  capture_id="cpu-$(printf '%s' "${incident_key}:${timestamp}:$$" | sha256sum | awk '{print $1}')"
   local profile_evidence="process_thread_snapshot_in_evidence_file"
   if [[ "$cpu_profile_status" == "captured" ]]; then
     profile_evidence="process_thread_snapshot_and_v8_cpu_profile"
@@ -317,6 +330,15 @@ report_high_cpu_feedback() {
   "contactInfo": "system:infra-cpu-watch",
   "actionLog": "$(json_escape "$action_log")",
   "stateSnapshot": "$(json_escape "$state_snapshot")",
+  "diagnosticPacket": {
+    "schemaVersion": 1,
+    "captureId": "${capture_id}",
+    "capturedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    "source": "server",
+    "collectionStatus": "partial",
+    "replayability": "unreplayable",
+    "missingFields": []
+  },
   "clientContext": {
     "route": "host-cpu-watch",
     "mode": "$(json_escape "${ENVIRONMENT}")",

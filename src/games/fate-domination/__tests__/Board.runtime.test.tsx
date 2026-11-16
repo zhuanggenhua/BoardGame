@@ -142,6 +142,34 @@ it('部署目标包含魔术工房，不能误用仅战斗地点的列表', () =
  render(<FateDominationBoard {...({G,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
  expect(screen.getByTestId('shared-map').getAttribute('data-legal-locations')?.split(',')).toEqual(['workshop','miyama','shinto']);
 });
+it('本人草稿暂存实付费用，撤回恢复读数，确认才交给游戏服', () => {
+    const G=preparedBoardState('draft-mana-readout');
+    G.core.phase='action';
+    const actor=G.core.players['0'];
+    actor.locationId='workshop';
+    actor.mana=8;
+    actor.hand=[{id:'rushing',definitionId:'cardSurveil'},{id:'basic',definitionId:'cardB1'}];
+    const dispatch=vi.fn();
+    render(<FateDominationBoard {...({G,dispatch,playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
+    const mana=screen.getByTestId('fate-self-mana');
+    const hand=screen.getByTestId('fate-domination-hand');
+    const play=screen.getByTestId('fate-play-area');
+    expect(mana.querySelector('b')).toHaveTextContent('8');
+    fireEvent.click(hand.querySelector('[data-card-id="rushing"]')!);
+    expect(mana.querySelector('b')).toHaveTextContent('7');
+    expect(mana).toHaveTextContent('预计 −1');
+    expect(actor.mana).toBe(8);
+    expect(actor.selectedAttackIds).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+    fireEvent.click(play.querySelector('[data-card-id="rushing"]')!);
+    expect(mana.querySelector('b')).toHaveTextContent('8');
+    fireEvent.click(hand.querySelector('[data-card-id="rushing"]')!);
+    fireEvent.click(hand.querySelector('[data-card-id="basic"]')!);
+    fireEvent.click(screen.getByTestId('fate-domination-primary-action'));
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('CONFIRM_ATTACK', {
+        cardIds:['rushing','basic'],faceDownIds:[],round:G.core.round,
+    });
+});
 it('令咒先选择效果，唯一确认才发送一次领域命令', () => {
  const G=preparedBoardState('seal-ui', ['0','1','2']);G.core.phase='action';
  const dispatch=vi.fn();

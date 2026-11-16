@@ -111,6 +111,31 @@ REQUIRE_PUBLIC_ENTRY_SYNC="${REQUIRE_PUBLIC_ENTRY_SYNC:-1}"
 CLOUDFLARE_PURGE_MODE="${CLOUDFLARE_PURGE_MODE:-auto}"
 DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-1800}"
 
+preserve_current_web_assets() {
+  if [ "${BG_WEB_ASSETS_ALREADY_RETAINED:-0}" = "1" ] && [ "${1:-}" != "force" ]; then
+    return 0
+  fi
+  local helper="$DEPLOY_SCRIPT_DIR/preserve-web-assets.mjs"
+  if [ ! -f "$helper" ]; then
+    log "❌ 缺少静态资源保留工具 $helper；旧页面在更新后会丢失按需加载的资源"
+    return 1
+  fi
+  local compose_dir
+  compose_dir="$(cd "$(dirname "$COMPOSE_FILE")" && pwd)"
+  node "$helper" --container "$WEB_CONTAINER_NAME" --destination "${compose_dir}/runtime/retained-web-assets"
+}
+
+verify_web_assets_mount() {
+  local compose_file="${1:-$COMPOSE_FILE}"
+  local helper="$DEPLOY_SCRIPT_DIR/preserve-web-assets.mjs"
+  if [ ! -f "$helper" ]; then
+    die "缺少静态资源保留工具 $helper，无法检查历史资源挂载"
+  fi
+  local compose_dir
+  compose_dir="$(cd "$(dirname "$compose_file")" && pwd)"
+  node "$helper" --verify-compose "$compose_file" --destination "${compose_dir}/runtime/retained-web-assets"
+}
+
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
 ROLLBACK_READY="0"
@@ -269,6 +294,49 @@ ensure_compose_file() {
       rm -f "$tmp_file"
     fi
   fi
+}
+
+# 流式部署的本地镜像与其内置 Compose 来自同一构建；旧镜像无此文件时保留原下载路径。
+ensure_compose_from_local_image() {
+  local tag="${1:-latest}"
+  local image_ref="${WEB_IMAGE_REPO}:${tag}"
+  local container_id tmp_file copy_error copy_status=0
+  validate_tag "$tag"
+  container_id="$(docker create --pull=never "$image_ref" 2>/dev/null)" || return 1
+  if [[ ! "$container_id" =~ ^[0-9a-f]{12,64}$ ]]; then
+    die "目标镜像临时容器标识无效"
+  fi
+  if ! tmp_file="$(mktemp "${COMPOSE_FILE}.image.XXXXXX")"; then
+    docker rm "$container_id" >/dev/null || true
+    die "无法创建目标镜像 Compose 的临时文件"
+  fi
+  copy_error="$(docker cp "${container_id}:/app/deploy/docker-compose.prod.yml" "$tmp_file" 2>&1)" || copy_status=$?
+  if ! docker rm "$container_id" >/dev/null; then
+    rm -f "$tmp_file"
+    die "清理目标镜像临时容器失败: ${container_id}"
+  fi
+  if [ "$copy_status" -ne 0 ]; then
+    rm -f "$tmp_file"
+    if [[ "$copy_error" == *"Could not find the file /app/deploy/docker-compose.prod.yml in container "* ]]; then
+      return 1
+    fi
+    die "无法从目标镜像复制 Compose，部署已停止: ${copy_error}"
+  fi
+  if ! verify_web_assets_mount "$tmp_file"; then
+    rm -f "$tmp_file"
+    die "目标镜像内的 Compose 缺少正确历史资源挂载"
+  fi
+  if [ -f "$COMPOSE_FILE" ] && ! diff -q "$COMPOSE_FILE" "$tmp_file" >/dev/null; then
+    if ! cp "$COMPOSE_FILE" "${COMPOSE_FILE}.bak.$(date +%s)"; then
+      rm -f "$tmp_file"
+      die "无法备份原 Compose 文件"
+    fi
+  fi
+  if ! mv "$tmp_file" "$COMPOSE_FILE"; then
+    rm -f "$tmp_file"
+    die "无法启用目标镜像内的 Compose 文件"
+  fi
+  log "✅ 使用目标镜像内的 Compose: ${image_ref}"
 }
 
 validate_tag() {
@@ -826,6 +894,7 @@ rollback_to_snapshot() {
   fi
 
   log "开始自动回退到部署前镜像引用"
+  preserve_current_web_assets force || log "⚠️ 无法保留当前版本资源，继续恢复服务"
   log "  - web: ${PREVIOUS_WEB_IMAGE_REF}"
   log "  - game-server: ${PREVIOUS_GAME_IMAGE_REF}"
 
@@ -998,34 +1067,41 @@ EOF
 }
 
 # ============================================================
-# 端口冲突检测与清理
+# 端口冲突检测
 # ============================================================
 
 ensure_port_available() {
-  local port=80
-
-  # 检查是否有进程占用 80 端口
-  if command -v ss &>/dev/null; then
-    local pid
-    pid=$(ss -tlnp "sport = :${port}" 2>/dev/null | grep -oP 'pid=\K\d+' | head -1 || true)
-    if [ -n "$pid" ]; then
-      local proc_name
-      proc_name=$(ps -p "$pid" -o comm= 2>/dev/null || echo "unknown")
-      log "⚠️  端口 ${port} 被占用（PID=${pid}, ${proc_name}）"
-
-      # 如果是 Nginx，停止并禁用它
-      if [[ "$proc_name" == "nginx" ]]; then
-        log "检测到宿主机 Nginx 占用 80 端口，正在停止..."
-        $SUDO systemctl stop nginx 2>/dev/null || true
-        $SUDO systemctl disable nginx 2>/dev/null || true
-        log "✅ 已停止并禁用宿主机 Nginx（不再需要，web 容器直接监听 80）"
-      elif [[ "$proc_name" == "docker-proxy" ]] && docker container inspect "$WEB_CONTAINER_NAME" >/dev/null 2>&1; then
-        log "检测到当前 web 容器正在占用 80 端口，允许继续更新部署"
-      else
-        die "端口 ${port} 被 ${proc_name}(PID=${pid}) 占用，请先释放"
-      fi
-    fi
+  local helper="$DEPLOY_SCRIPT_DIR/preserve-web-assets.mjs"
+  local ports protocol port listeners pids pid proc_name current_ports flags
+  if ! ports="$(node "$helper" --published-web-ports "$COMPOSE_FILE")"; then
+    die "无法读取 web 服务映射端口，不能继续部署"
   fi
+  [ -z "$ports" ] && return 0
+  command -v ss >/dev/null 2>&1 || die "缺少 ss，无法检查 web 服务映射端口"
+  while read -r protocol port; do
+    [ -z "$port" ] && continue
+    flags='-Hltnp'
+    [ "$protocol" = 'udp' ] && flags='-Hlunp'
+    if [ -n "$SUDO" ]; then
+      if ! listeners="$($SUDO -n ss "$flags" "sport = :${port}" 2>/dev/null)"; then
+        die "无法检查 ${protocol} 端口 ${port}"
+      fi
+    elif ! listeners="$(ss "$flags" "sport = :${port}" 2>/dev/null)"; then
+      die "无法检查 ${protocol} 端口 ${port}"
+    fi
+    [ -z "$listeners" ] && continue
+    pids="$(printf '%s\n' "$listeners" | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u || true)"
+    [ -n "$pids" ] || die "端口 ${port} 已被占用，但无法确认进程归属"
+    for pid in $pids; do
+      proc_name="$(ps -p "$pid" -o comm= 2>/dev/null || echo unknown)"
+      if [[ "$proc_name" == 'docker-proxy' ]] && current_ports="$(docker port "$WEB_CONTAINER_NAME" 2>/dev/null)" \
+        && printf '%s\n' "$current_ports" | grep -Eq "^[0-9]+/${protocol} -> .*:${port}$"; then
+        log "端口 ${port} 由当前 web 容器占用，允许继续更新"
+      else
+        die "端口 ${port} 被 ${proc_name}(PID=${pid}) 占用，请先检查"
+      fi
+    done
+  done <<< "$ports"
 }
 
 # ============================================================
@@ -1135,11 +1211,15 @@ EOF
 deploy() {
   local tag="${1:-latest}"
   local image_source="${2:-remote}"
-  ensure_compose_file
   ensure_env_file
+  if [ "$image_source" != "local" ] || ! ensure_compose_from_local_image "$tag"; then
+    ensure_compose_file
+  fi
+  verify_web_assets_mount
   check_docker_mirror_config
   ensure_port_available
   snapshot_current_runtime_refs
+  preserve_current_web_assets
   set_compose_image_tag "$tag"
 
   # 清理旧镜像和构建缓存（在拉取新镜像之前）
@@ -1217,6 +1297,7 @@ rollback() {
 
   ensure_compose_file
   snapshot_current_runtime_refs
+  preserve_current_web_assets
 
   log "回滚到版本 ${tag}"
 
@@ -1245,6 +1326,7 @@ rollback() {
 rollback_last() {
   ensure_compose_file
   load_deploy_state
+  preserve_current_web_assets
 
   log "回滚到上次成功部署版本"
   log "  - 当前记录 web: ${DEPLOY_STATE_CURRENT_WEB_IMAGE_REF}"

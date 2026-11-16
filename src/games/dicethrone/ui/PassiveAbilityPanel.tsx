@@ -137,7 +137,7 @@ const PassiveActionButton: React.FC<{
             className={`
                 !min-h-0 flex min-w-0 flex-col items-center overflow-hidden
                 ${isSelecting ? 'ring-2 ring-amber-400 animate-pulse' : ''}
-                ${isUsable && !isSelecting ? 'cursor-pointer !border-emerald-300/80 !bg-emerald-500/20 ring-2 ring-emerald-300/80 ring-offset-1 ring-offset-slate-950 !shadow-[0_0_18px_rgba(16,185,129,0.45)] hover:!bg-emerald-500/30 hover:!border-emerald-200' : ''}
+                ${isUsable && !isSelecting ? 'cursor-pointer !border-amber-300/80 !bg-amber-500/20 ring-2 ring-amber-300/80 ring-offset-1 ring-offset-slate-950 !shadow-[0_0_18px_rgba(251,191,36,0.45)] hover:!bg-amber-500/30 hover:!border-amber-200' : ''}
             `}
             style={{
                 paddingInline: dtUnit(0.28),

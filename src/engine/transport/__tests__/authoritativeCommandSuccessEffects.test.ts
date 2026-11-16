@@ -3,6 +3,7 @@ import {
     runAuthoritativeCommandSuccessEffects,
     type AuthoritativeCommandSuccessEffectsMatch,
 } from '../authoritativeCommandSuccessEffects';
+import { TrainingDataCapture } from '../trainingDataCapture';
 
 function createMatch(): AuthoritativeCommandSuccessEffectsMatch {
     return {
@@ -22,6 +23,25 @@ function createMatch(): AuthoritativeCommandSuccessEffectsMatch {
 }
 
 describe('runAuthoritativeCommandSuccessEffects', () => {
+    it('未配置训练记录器时不构建训练快照，正常推进并广播命令', async () => {
+        const buildPostTrainingState = vi.fn(() => ({ state: 'unused' }));
+        const broadcastState = vi.fn();
+        const capture = new TrainingDataCapture({
+            defaultMinCompletedMatchDurationMs: 1,
+            rulesVersion: null,
+            gameManifests: {},
+        });
+        await runAuthoritativeCommandSuccessEffects({
+            match: createMatch(), playerID: '0', commandType: 'TEST_CMD', payload: {},
+            stateIdBefore: 0, stateIdAfter: 1, preTrainingState: {}, buildPostTrainingState,
+            gameOver: undefined, trainingDataCapture: capture,
+            reportOnlineAiRecoveryFeedback: vi.fn(), broadcastState,
+            clearOnlineAiCircuitBreaker: vi.fn(), persistMetadata: vi.fn(),
+        });
+        expect(buildPostTrainingState).not.toHaveBeenCalled();
+        expect(broadcastState).toHaveBeenCalledTimes(1);
+    });
+
     it('记录训练样本、上报恢复反馈，并在未抑制时广播状态', async () => {
         const match = createMatch();
         const recordDecisionSample = vi.fn();
@@ -61,7 +81,7 @@ describe('runAuthoritativeCommandSuccessEffects', () => {
             stateIdBefore: 4,
             stateIdAfter: 5,
             preState,
-            postState,
+            getPostState: expect.any(Function),
             gameOver: undefined,
         });
         expect(reportOnlineAiRecoveryFeedback).toHaveBeenCalledWith(feedback);

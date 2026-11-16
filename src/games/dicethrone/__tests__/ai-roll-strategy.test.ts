@@ -133,4 +133,14 @@ describe('DiceThrone 本地 AI 掷骰策略', () => {
 
         expect(decision?.actionId).toBe('play-card:card-surprise');
     });
+
+    it('自己已有三个终极骰且持有重掷牌时，仍能评估并选择该牌', async () => {
+        const state = setBarbarianOffensiveRoll([6, 6, 6, 1, 2], [true, true, true, false, false]);
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-i-can-again')];
+
+        const decision = await decide(state);
+
+        expect(decision?.actionId).toBe('play-card:card-i-can-again');
+    });
 });

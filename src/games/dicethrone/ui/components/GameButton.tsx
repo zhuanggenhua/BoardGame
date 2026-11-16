@@ -81,6 +81,7 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
                 fullWidth && "w-full",
                 className
             )}
+            animate={{ filter: disabled ? 'grayscale(1)' : 'none' }}
             whileHover={{
                 scale: disabled || isOption ? 1 : 1.01,
                 filter: "brightness(1.05)"

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,20 +43,17 @@ describe('外链页与计时生命周期', () => {
         await act(async () => { await router.navigate('/external/external-queen-alice'); });
         expect((await screen.findByTitle('变更地址 游戏')).getAttribute('sandbox')).not.toContain('allow-same-origin');
     });
-    it('取消外站提示时不打开原网站', async () => {
-        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    it('内嵌游戏保留返回菜单并在后台计时', async () => {
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/external/external-test']}><Routes>
             <Route path="/external/:gameId" element={<ExternalGamePage />} />
         </Routes></MemoryRouter></QueryClientProvider>);
         await screen.findByTitle('测试游戏 游戏');
+        expect(screen.queryByRole('link', { name: /platform.externalGamePage.openOriginal/ })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'platform.externalGamePage.openGameMenu' }));
-        const link = screen.getByRole('link', { name: /platform.externalGamePage.openOriginal/ });
-        const click = createEvent.click(link);
-        fireEvent(link, click);
-        expect(confirm).toHaveBeenCalled();
-        expect(click.defaultPrevented).toBe(true);
-        confirm.mockRestore();
+        expect(screen.getByRole('button', { name: 'platform.externalGamePage.endAndReturn' })).toBeTruthy();
+        expect(screen.queryByText('platform.externalGamePage.playTime')).toBeNull();
+        expect(mocks.play).toHaveBeenLastCalledWith('external-test', 'test-token', true);
     });
     it('后台下架或详情重取失败时卸载 iframe 并结束计时', async () => {
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

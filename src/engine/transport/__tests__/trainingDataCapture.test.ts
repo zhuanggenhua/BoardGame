@@ -101,7 +101,7 @@ describe('TrainingDataCapture', () => {
             stateIdBefore: 1,
             stateIdAfter: 2,
             preState: createState('0'),
-            postState: createState('1'),
+            getPostState: () => createState('1'),
         });
         capture.recordDecisionSample({
             match: createMatch({
@@ -118,7 +118,7 @@ describe('TrainingDataCapture', () => {
             stateIdBefore: 2,
             stateIdAfter: 3,
             preState: createState('1'),
-            postState: createState('0'),
+            getPostState: () => createState('0'),
         });
 
         expect(recorder.pending.get('match-1')).toHaveLength(1);
@@ -162,7 +162,7 @@ describe('TrainingDataCapture', () => {
             stateIdBefore: 1,
             stateIdAfter: 2,
             preState: createState('1'),
-            postState: createState('0'),
+            getPostState: () => createState('0'),
         });
 
         expect(recorder.pending.get('match-1')).toHaveLength(1);
@@ -191,7 +191,7 @@ describe('TrainingDataCapture', () => {
             stateIdBefore: 1,
             stateIdAfter: 2,
             preState: createState(),
-            postState: createState(),
+            getPostState: () => createState(),
         });
         capture.recordDecisionSample({
             match: createMatch({ createdAt: 1_000 }),
@@ -201,7 +201,7 @@ describe('TrainingDataCapture', () => {
             stateIdBefore: 2,
             stateIdAfter: 3,
             preState: createState(),
-            postState: createState(),
+            getPostState: () => createState(),
             gameOver: { winner: '0' },
         });
 
@@ -229,7 +229,7 @@ describe('TrainingDataCapture', () => {
             stateIdBefore: 1,
             stateIdAfter: 2,
             preState: createState(),
-            postState: createState(),
+            getPostState: () => createState(),
             gameOver: { winner: '0' },
         });
 
@@ -261,7 +261,7 @@ describe('TrainingDataCapture', () => {
                 stateIdBefore: 1,
                 stateIdAfter: 2,
                 preState: createState(),
-                postState: createState(),
+                getPostState: () => createState(),
                 gameOver: { winner: '0' },
             });
         }).not.toThrow();

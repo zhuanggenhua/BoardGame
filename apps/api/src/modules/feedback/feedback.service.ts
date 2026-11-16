@@ -216,6 +216,10 @@ const projectFeedbackClientContext = (value: unknown): Feedback['clientContext']
             ...(safeContextNumber(failedAsset.responseStatus) !== undefined && Number(failedAsset.responseStatus) >= 100 && Number(failedAsset.responseStatus) <= 599 ? { responseStatus: Number(failedAsset.responseStatus) } : {}),
             ...(safeContextNumber(failedAsset.durationMs) !== undefined ? { durationMs: safeContextNumber(failedAsset.durationMs) } : {}),
             ...(safeContextNumber(failedAsset.transferSize) !== undefined ? { transferSize: safeContextNumber(failedAsset.transferSize) } : {}),
+            ...(safeContextNumber(failedAsset.encodedBodySize) !== undefined ? { encodedBodySize: safeContextNumber(failedAsset.encodedBodySize) } : {}),
+            ...(safeContextNumber(failedAsset.decodedBodySize) !== undefined ? { decodedBodySize: safeContextNumber(failedAsset.decodedBodySize) } : {}),
+            ...(typeof failedAsset.timingResponseStartPresent === 'boolean' ? { timingResponseStartPresent: failedAsset.timingResponseStartPresent } : {}),
+            ...(typeof failedAsset.online === 'boolean' ? { online: failedAsset.online } : {}),
         } } : {}),
         ...(safeRoute ? { route: safeRoute } : {}),
         ...(safeContextString(raw.mode, 32) && ['online', 'local', 'spectator', 'tutorial'].includes(String(raw.mode).toLowerCase())
@@ -746,7 +750,7 @@ export class FeedbackService {
         if (status === FeedbackStatus.RESOLVED && !resolvedMethod) {
             throw new BadRequestException('解决方式不能为空');
         }
-        const shouldRestoreAggregationActiveKey = Boolean(
+        let shouldRestoreAggregationActiveKey = Boolean(
             current.aggregationKey
             && (current.source === WATCHDOG_AGGREGATION_SOURCE || current.reporterType === FeedbackReporterType.SYSTEM),
         );
@@ -758,7 +762,11 @@ export class FeedbackService {
                 status: { $in: [FeedbackStatus.OPEN, FeedbackStatus.IN_PROGRESS, FeedbackStatus.RESOLVED] },
             }).select({ _id: 1 }).lean();
             if (conflictingActive) {
-                throw new ConflictException('同一聚合键已存在活跃反馈，不能直接重新打开归档记录');
+                if (current.source !== INFRA_CPU_WATCH_SOURCE) {
+                    throw new ConflictException('同一聚合键已存在活跃反馈，不能直接重新打开归档记录');
+                }
+                // 不同窗口的 CPU 告警各自处理；旧告警不抢占新窗口的聚合入口。
+                shouldRestoreAggregationActiveKey = false;
             }
         }
         const updatePayload: Record<string, unknown> = shouldRestoreAggregationActiveKey
@@ -1259,7 +1267,13 @@ export class FeedbackService {
         const captureId = typeof dto.diagnosticPacket?.captureId === 'string'
             && dto.diagnosticPacket.captureId.length <= 128 ? dto.diagnosticPacket.captureId : undefined;
 
-        // 先查找活跃 canonical；若已超过去重窗口，先归档旧 canonical 再新开。
+        if (source === INFRA_CPU_WATCH_SOURCE && captureId) {
+            // 新窗口建立后，旧现场的重发仍应命中原记录而不是污染当前告警。
+            const alreadyRecorded = await this.feedbackModel.findOne({ aggregationKey, diagnosticCaptureIds: captureId }).exec();
+            if (alreadyRecorded) return alreadyRecorded;
+        }
+
+        // 先查找当前聚合记录；窗口结束后释放聚合入口并新建记录。
         let existing = await this.feedbackModel.findOne({
             aggregationActiveKey,
             status: { $ne: FeedbackStatus.CLOSED },
@@ -1295,10 +1309,15 @@ export class FeedbackService {
             const baselineMs = baseline instanceof Date ? baseline.getTime() : new Date(baseline).getTime();
             const isWithinWindow = Number.isFinite(baselineMs)
                 && baselineMs >= aggregationPlan.windowStartedAt.getTime();
-            if (!isWithinWindow) {
+            const newCpuIncidentAfterResolution = source === INFRA_CPU_WATCH_SOURCE
+                && existing.status === FeedbackStatus.RESOLVED
+                && dto.status !== FeedbackStatus.RESOLVED;
+            if (!isWithinWindow || newCpuIncidentAfterResolution) {
                 await this.feedbackModel.updateOne(
                     { _id: existing._id, status: { $ne: FeedbackStatus.CLOSED } },
-                    { $set: { status: FeedbackStatus.CLOSED }, $unset: { aggregationActiveKey: '' } },
+                    source === INFRA_CPU_WATCH_SOURCE
+                        ? { $unset: { aggregationActiveKey: '' } }
+                        : { $set: { status: FeedbackStatus.CLOSED }, $unset: { aggregationActiveKey: '' } },
                 );
                 existing = null;
             }
@@ -1452,6 +1471,7 @@ export class FeedbackService {
                     $match: {
                         source: WATCHDOG_AGGREGATION_SOURCE,
                         reporterType: FeedbackReporterType.SYSTEM,
+                        status: { $in: [FeedbackStatus.RESOLVED, FeedbackStatus.CLOSED] },
                     },
                 },
                 {
@@ -1489,6 +1509,7 @@ export class FeedbackService {
             const deleteFilter: Record<string, unknown> = {
                 source: WATCHDOG_AGGREGATION_SOURCE,
                 reporterType: FeedbackReporterType.SYSTEM,
+                status: { $in: [FeedbackStatus.RESOLVED, FeedbackStatus.CLOSED] },
             };
             if (keepIds.length > 0) {
                 deleteFilter._id = { $nin: keepIds };

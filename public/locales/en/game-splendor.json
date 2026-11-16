@@ -31,6 +31,11 @@
     "playerStatus": "Player Status",
     "actionLog": "Action Log"
   },
+  "endgame": {
+    "standings": "Final standings",
+    "points": "{{count}} pts",
+    "cards": "{{count}} development cards"
+  },
   "status": {
     "currentTurn": "Current turn: {{player}} · Round {{round}}",
     "gameOver": "Game over: {{winners}}",

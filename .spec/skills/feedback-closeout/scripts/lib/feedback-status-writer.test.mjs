@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import vm from 'node:vm';
 
 import {
     selectFeedbackStatusWriter,
@@ -10,6 +11,44 @@ import {
 
 const FEEDBACK_ID = '64f0c0ffee00000000000001';
 const FEEDBACK_ID_2 = '64f0c0ffee00000000000002';
+
+test('Mongo 回写允许独立处理旧 CPU 告警且不占用新窗口聚合入口', async () => {
+    const rows = [
+        { _id: FEEDBACK_ID, source: 'infra-cpu-watch', reporterType: 'system', aggregationKey: 'cpu-key', status: 'closed' },
+        { _id: FEEDBACK_ID_2, source: 'infra-cpu-watch', reporterType: 'system', aggregationKey: 'cpu-key', aggregationActiveKey: 'cpu-key', status: 'open' },
+    ];
+    let stdout = '';
+    const result = await updateFeedbackStatusViaBestAvailableWriter({
+        baseUrl: 'https://api.easyboardgame.top', token: '', id: FEEDBACK_ID, status: 'open',
+    }, {
+        spawnSync(_command, _args, options) {
+            const feedbacks = {
+                findOne(filter) {
+                    if (typeof filter._id === 'string') return rows.find(row => row._id === filter._id) ?? null;
+                    return rows.find(row => row._id !== filter._id.$ne
+                        && row.aggregationActiveKey === filter.aggregationActiveKey
+                        && filter.status.$in.includes(row.status)) ?? null;
+                },
+                updateOne(filter, update) {
+                    const row = rows.find(item => item._id === filter._id);
+                    Object.assign(row, update.$set);
+                    for (const field of Object.keys(update.$unset ?? {})) delete row[field];
+                    return { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
+                },
+            };
+            vm.runInNewContext(options.input, {
+                db: { feedbacks }, ObjectId: value => value,
+                print: value => { stdout += `${value}\n`; }, quit() {},
+            });
+            return { status: 0, stdout, stderr: '' };
+        },
+    });
+    assert.equal(result.status, 'open');
+    assert.equal(rows[0].status, 'open');
+    assert.equal(rows[0].aggregationActiveKey, undefined);
+    assert.equal(rows[1].status, 'open');
+    assert.equal(rows[1].aggregationActiveKey, 'cpu-key');
+});
 
 test('线上无 token 时选择生产 Mongo 写入口', () => {
     const selected = selectFeedbackStatusWriter({

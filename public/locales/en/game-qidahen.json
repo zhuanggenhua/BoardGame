@@ -596,7 +596,7 @@
         "training-move-recovery": "Move the wheel three spaces to reach recruitment and training.",
         "farm-hand-menu-dynamic": "The wheel action is complete. You may perform a hand action or skip it.",
         "farm-target-dynamic": "Choose an eligible homeland region to establish a level-2 regular unit and draw 2 cards.",
-        "reclaim-target-dynamic": "Choose up to 5 eligible regions to increase their population.",
+        "reclaim-target-dynamic": "The number beside the people shows local population. Choose up to 5 regions to increase their population.",
         "hand-raid-rule": "Discard 1 card and attack; redeployment is not permitted.",
         "hand-recruit-rule": "Discard 1 card to establish 6 level-2 units or 2 level-4 Sichuan infantry units.",
         "hand-grant-rule": "Discard 3 cards and designate an opponent. They choose one of their units adjacent to a Ming-controlled region, move it into an adjacent Ming-controlled region and transfer it to Ming.",

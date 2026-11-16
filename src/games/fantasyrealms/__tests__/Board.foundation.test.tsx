@@ -68,6 +68,12 @@ vi.mock('../../../lib/audio/useGameAudio', () => ({
     useGameAudio: vi.fn(),
 }));
 
+// 终局操作条里的 RematchActions 依赖路由上下文；本文件只关心棋盘行为，导航打桩即可。
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...await importOriginal<typeof import('react-router-dom')>(),
+    useNavigate: () => vi.fn(),
+}));
+
 // 默认样例是“已有公开弃牌的中盘态”，不是开局。
 function makeCore(overrides: Partial<FantasyRealmsCore> = {}): FantasyRealmsCore {
     return {

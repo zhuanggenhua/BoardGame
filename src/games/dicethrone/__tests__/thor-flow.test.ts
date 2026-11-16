@@ -182,6 +182,19 @@ describe('索尔正式命令流程',()=>{
     expect(state.core.players['1'].resources[R.HP]).toBe(hp);
     expect(state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(electrokinesis);
  });
+ it.each([
+   {ability:'thor-power-of-thunder', upgrade:false, expectedHp:39},
+   {ability:'thor-power-of-thunder-2', upgrade:THOR_POWER_OF_THUNDER_2, expectedHp:37},
+ ])('$ability 有驭电时不把驭电额外计入主伤害',({ability,upgrade,expectedHp})=>{
+    let state=begin(ability,[1,2,3,4,5],upgrade,current=>{
+      current.core.players['0'].tokens[T.ELECTROKINESIS]=2;
+    });
+    state=send(state,'ROLL_DICE',{},'1');
+    state=send(state,'CONFIRM_ROLL',{},'1');
+    state=send(state,'ADVANCE_PHASE',{},'1');
+    expect(state.core.players['1'].resources[R.HP]).toBe(expectedHp);
+    expect(state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(4);
+ });
  it('持锤对手被正常攻击击败后，神锤自动召回且获得一枚驭电',()=>{
     let state=begin('thor-thunder-strike',[1,2,3,4,4],false,current=>{
       current.core.players['0'].tokens[T.MJOLNIR]=0;
@@ -439,6 +452,17 @@ describe('索尔正式命令流程',()=>{
     expect(state.core.players['1'].resources[R.HP]).toBe(43);
     expect(state.sys.phase).toBe('main2');
  });
+ it('瓶中闪电在破防已满时先结算获得，再允许消耗',()=>{
+    let state=begin('thor-bottled-lightning',[6,6,6,6,1],false,current=>{
+      current.core.players['0'].tokens[T.GUARD_BREAK]=2;
+    });
+    state=choose(state,'thor-mjolnir-move',-1);
+    expect(state.core.players['0'].tokens[T.GUARD_BREAK]).toBe(2);
+    state=choose(state,'use-guard_break',1);
+    expect(state.core.players['0'].tokens[T.GUARD_BREAK]).toBe(1);
+    state=send(state,'CONFIRM_ROLL');
+    expect(state.core.players['0'].tokens[T.GUARD_BREAK]).toBe(1);
+ });
  it.each([1,2,3,4,5,6])('破防效果骰点数 %i 仅4或5使攻击不可防御',value=>{
     let state=begin('thor-bottled-lightning',[6,6,6,6,1]);
     state=choose(state,'thor-mjolnir-move',-1);
@@ -546,6 +570,15 @@ describe('索尔正式命令流程',()=>{
     expect(state.core.players['0'].tokens[T.GUARD_BREAK]).toBe(1);
     expect(state.core.players['1'].resources[R.HP],JSON.stringify({attack:state.core.pendingAttack,prompt:state.sys.interaction.current,phase:state.sys.phase})).toBe(36);
     expect(state.core.pendingAttack).toBeNull();
+ });
+ it('终极有驭电时仍固定14伤害且不消耗驭电',()=>{
+    let state=begin('thor-for-asgard',[6,6,6,6,6],false,current=>{
+      current.core.players['0'].tokens[T.ELECTROKINESIS]=2;
+    });
+    state=choose(state,'thor-mjolnir-move',-1);
+    expect(state.core.players['1'].resources[R.HP]).toBe(36);
+    expect(state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(2);
+    expect(state.sys.phase).toBe('main2');
  });
  it('雷神之锤飞掷后保留普通主攻击和防御入口',()=>{
     let state=begin('thor-hammer-5',[1,1,1,1,1]);

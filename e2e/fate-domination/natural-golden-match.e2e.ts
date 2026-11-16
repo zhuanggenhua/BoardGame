@@ -10,10 +10,28 @@ import type { MatchState } from '../../src/engine/types';
 import { buildFateAiLegalActions } from '../../src/games/fate-domination/ai';
 import { resolveFateMovement } from '../../src/games/fate-domination/domain/movement';
 import { fateAttackManaCost } from '../../src/games/fate-domination/domain/attackSelection';
+import { sampleFateMapMotion } from './mapContinuityEvidence';
 import type { FateDominationCore } from '../../src/games/fate-domination/domain';
 
 type State = MatchState<FateDominationCore>;
 const chainId = 'fate-natural-online-golden';
+const requiredScreens = {
+    initial: '开局御主候选',
+    master: '御主关联攻击和道具',
+    servant: '独立从者选择',
+    paired: '身份组合待确认',
+    'deployment-targets': '按可用点位部署',
+    deployed: '部署后出现御主能力',
+    move: '常规移动高亮合法地点',
+    seal: '令咒效果确认',
+    'inspection-closed-control-hidden': '鼠标离开放大对象，关闭叉号隐藏',
+    'inspection-close-hover': '鼠标悬浮放大对象，关闭叉号可见',
+    draft: '常规混选与正费用魔力预览',
+    'confirmed-attack': '确认后已出牌与游戏服扣费',
+    battle: '战斗阶段按地点结算',
+    'opponent-cards': '悬浮对手公开出牌与一级威力',
+    terminal: '同一在线房间的正式终局',
+};
 
 test.use({ viewport: { width: 1600, height: 900 }, actionTimeout: 15000, trace: 'retain-on-failure' });
 
@@ -23,6 +41,12 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
     const release = await startSourceSession(context, baseURL!);
     const diagnostics = attachPageDiagnostics(page);
     const run = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+    const captureContract = JSON.stringify({
+        version: 1, gameId: 'fate-domination', evidenceCategory: 'golden', reviewFile: 'visual-review.json',
+        reviewerKind: 'primary-agent',
+        requiredStates: Object.entries(requiredScreens).map(([uiStateId, reason]) => ({ chainId, uiStateId, reason, viewport: 'desktop' })),
+    }, null, 2);
+    await writeFile(path.join(run.stagingDir, 'capture-contract.json'), captureContract);
     const browserContextId = randomUUID();
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.locator('[data-game-id="fate-domination"] .platform-game-open').first().click({ timeout: 45000 });
@@ -76,16 +100,16 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 && rect.left < innerWidth && rect.top < innerHeight && img.checkVisibility();
             return !visible || img.loading === 'lazy' || img.complete;
         }), undefined, { timeout: 12000 });
-        if (id !== 'opponent-cards') await page.mouse.move(12, 12);
+        if (!['opponent-cards', 'inspection-close-hover'].includes(id)) await page.mouse.move(12, 12);
         const file = String(shots.length + 1).padStart(2, '0') + '-' + shot[0] + '.png';
         await page.screenshot({ path: path.join(run.stagingDir, file), animations: 'disabled' });
         const sha256 = createHash('sha256').update(await readFile(path.join(run.stagingDir, file))).digest('hex');
         const viewport = page.viewportSize()!;
         shots.push({
             path: path.relative(process.cwd(), path.join(run.stableDir, file)).replace(/\\/g, '/'),
-            chainId, chainStep: shots.length + 1, stage: '独特界面态', role: 'main-flow',
+            chainId, chainStep: shots.length + 1, stage: '独特界面态', role: 'main-flow', transition: action,
             viewport: 'desktop', viewportSize: `${viewport.width}x${viewport.height}`, description: shot[0],
-            uiStateId: id, uiChange: shot[1], uiChangeReason: shot[0], behaviorStepId: id, sha256,
+            uiStateId: id, uiChange: shot[1], uiChangeReason: shot[0], behaviorStepId: id, requirements: [shot[0]], sha256,
         });
     };
     const clickPrimary = async () => {
@@ -128,6 +152,7 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
 
         const rounds = new Set<number>();
         const seen = new Set<string>();
+        const motionFrameCounts: Record<string, number> = {};
         let iterations = 0;
         while (iterations++ < 220) {
             await expect.poll(async () => {
@@ -159,19 +184,31 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                     const projection = board.locator('.fd-runtime-map-overlay');
                     await expect(canvasHost).toHaveAttribute('data-map-resource-status', 'ready');
                     const bounds = (await canvas.boundingBox())!;
-                    await page.mouse.move(bounds.width * .53, bounds.height * .38);
-                    await page.mouse.wheel(0, 2400);
-                    await expect(board.locator('.fd-runtime-camera-controls span')).toHaveText('25%');
-                    await page.mouse.move(bounds.width * .34, bounds.height * .45);
-                    await page.mouse.down();
-                    await page.mouse.move(bounds.width - 3, 7, { steps: 12 });
-                    await page.mouse.up();
-                    await expect.poll(async () => projection.evaluate((node) => {
-                        const map = node.getBoundingClientRect();
-                        return Math.min(map.bottom, innerHeight) - Math.max(map.top, 0);
-                    })).toBeGreaterThanOrEqual(95);
-                    await page.getByRole('button', { name: '复位', exact: true }).click();
-                    await expect(board.locator('.fd-runtime-camera-controls span')).not.toHaveText('25%');
+                    motionFrameCounts.drag = await sampleFateMapMotion(page, path.join(run.stagingDir, 'map-drag-frames.json'), async () => {
+                        await page.mouse.move(bounds.width * .53, bounds.height * .38);
+                        await page.mouse.wheel(0, 2400);
+                        await expect(board.locator('.fd-runtime-camera-controls span')).toHaveText('25%');
+                        const beforeDrag = await projection.evaluate(node => getComputedStyle(node).transform);
+                        await page.mouse.move(bounds.width * .34, bounds.height * .45);
+                        await page.mouse.down();
+                        await page.mouse.move(bounds.width - 3, 7, { steps: 22 });
+                        await page.mouse.up();
+                        await expect.poll(() => projection.evaluate(node => getComputedStyle(node).transform)).not.toBe(beforeDrag);
+                        await expect.poll(() => projection.evaluate((node) => {
+                            const map = node.getBoundingClientRect();
+                            const width = Math.min(map.right, innerWidth) - Math.max(map.left, 0);
+                            const height = Math.min(map.bottom, innerHeight) - Math.max(map.top, 0);
+                            return Math.min(width / Math.min(map.width, innerWidth), height / Math.min(map.height, innerHeight));
+                        })).toBeGreaterThanOrEqual(.84);
+                        await page.getByRole('button', { name: '复位', exact: true }).click();
+                        await expect(board.locator('.fd-runtime-camera-controls span')).not.toHaveText('25%');
+                        await expect.poll(() => projection.evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThan(bounds.height * .82);
+                    });
+                    const openDeployments = board.locator('button.fd-runtime-deployment-slot:not(:disabled)');
+                    await expect.poll(() => openDeployments.evaluateAll(nodes => nodes.every(node => {
+                        const rect = node.getBoundingClientRect();
+                        return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) === node;
+                    }))).toBe(true);
                     await mark('deployment-targets', '确认组合、起手牌入手，电脑完成准备后显示合法部署点', [
                         check('御主从者确认', [actor.masterId, actor.servantId], ['m_waver', 'servant-rider']),
                         check('尚未部署', Boolean(actor.locationId), false),
@@ -213,22 +250,47 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 }
                 const actions = buildFateAiLegalActions({ state, playerId: '0' }).filter(action => action.commands[0].type === 'CONFIRM_ATTACK');
                 const hand = new Set(actor.hand.map(card => card.id));
-                const choices = actions.map(action => action.commands[0].payload as { cardIds: string[]; faceDownIds: string[] })
-                    .filter(pair => pair.cardIds.every(id => hand.has(id)));
+                const choices = actions.map(action => action.commands[0].payload as { cardIds: string[]; faceDownIds: string[] });
                 const costOf = (pair: typeof choices[number]) => pair.cardIds.reduce((sum, id) =>
                     sum + (fateAttackManaCost(actor, id, pair.faceDownIds.includes(id)) ?? 0), 0);
-                const pair = choices.find(choice => choice.faceDownIds.length === 1 && costOf(choice) > 0)
+                const mixesHandAndSkill = (choice: typeof choices[number]) => choice.cardIds.some(id => hand.has(id)) && choice.cardIds.some(id => !hand.has(id));
+                const pair = (!seen.has('attack') ? choices.find(choice => choice.faceDownIds.length === 1 && mixesHandAndSkill(choice) && costOf(choice) > 0)
+                    ?? choices.find(choice => choice.faceDownIds.length === 1 && costOf(choice) > 0)
+                    ?? choices.find(choice => costOf(choice) > 0) : undefined)
                     ?? choices.find(choice => choice.faceDownIds.length === 1) ?? choices[0];
                 if (pair) {
+                    const card = (id: string, staged = false) => hand.has(id)
+                        ? board.locator(`[data-card-zone="${staged ? 'staged' : 'hand'}"][data-card-id="${id}"]`)
+                        : board.locator(`[data-card-zone="${staged ? 'staged-skill' : 'skill'}"][data-focus-card="skill-0-${id}"]`);
+                    if (!seen.has('inspection')) {
+                        const inspectable = board.locator('[data-card-zone="hand"]').last();
+                        await inspectable.click({ button: 'right' });
+                        const close = page.getByTestId('fate-inspection-close');
+                        await page.mouse.move(12, 12);
+                        await expect(close).toHaveCSS('opacity', '0');
+                        await mark('inspection-closed-control-hidden', '右击攻击牌打开检视，鼠标移出卡面', [
+                            check('关闭叉号隐藏', await close.evaluate(node => getComputedStyle(node).opacity), '0'),
+                        ], ['放大卡牌移开鼠标隐藏叉号', 'panel']);
+                        await page.getByTestId('fate-runtime-inspection').hover();
+                        await expect(close).toHaveCSS('opacity', '1');
+                        await mark('inspection-close-hover', '移入放大牌面，显示关闭按钮', [
+                            check('关闭叉号出现', await close.evaluate(node => getComputedStyle(node).opacity), '1'),
+                        ], ['悬浮放大卡牌显示关闭叉号', 'interaction-mode']);
+                        await close.click();
+                        await expect(close).toHaveCount(0);
+                        seen.add('inspection');
+                    }
                     const select = async (id: string) => {
                         const mode = page.getByRole('button', { name: '暗置选牌', exact: true });
                         if ((await mode.getAttribute('aria-pressed') === 'true') !== pair.faceDownIds.includes(id)) await mode.click();
-                        await board.locator('[data-card-zone="hand"][data-card-id="' + id + '"]').click();
+                        const candidate = card(id);
+                        await candidate.click({ position: { x: 12, y: 70 } });
                     };
                     for (const id of pair.cardIds) await select(id);
-                    if (!seen.has('attack')) {
+                    const cost = costOf(pair);
+                    const capturePaidAttack = !seen.has('attack') && cost > 0;
+                    if (capturePaidAttack) {
                         const mana = board.getByTestId('fate-self-mana');
-                        const cost = costOf(pair);
                         await expect(mana.locator('b')).toHaveText(String(actor.mana - cost));
                         await mark('draft', '真人选出两张攻击牌并检查合计威力', [
                             check('暂存两张', (await snapshot()).visible.draftCount, 2),
@@ -237,16 +299,18 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                             check('预计剩余魔力已显示', await mana.locator('b').textContent(), String(actor.mana - cost)),
                         ], ['两张攻击草稿与合计威力', 'interaction-mode']);
                         const withdrawn = pair.cardIds.find(id => !pair.faceDownIds.includes(id)) ?? pair.cardIds[0];
-                        await board.locator('[data-card-zone="staged"][data-card-id="' + withdrawn + '"]').click();
+                        await card(withdrawn, true).click();
                         await expect.poll(async () => (await snapshot()).visible.draftCount).toBe(1);
                         await expect(mana.locator('b')).toHaveText(String(actor.mana - cost + (fateAttackManaCost(actor, withdrawn, pair.faceDownIds.includes(withdrawn)) ?? 0)));
                         await select(withdrawn);
                     }
                     await clickPrimary();
                     await expect.poll(async () => (await read()).core.players['0'].normalAttackPlayed).toBe(true);
-                    if (!seen.has('attack')) {
+                    if (capturePaidAttack) {
+                        const paid = (await read()).core.players['0'];
                         await mark('confirmed-attack', '撤回后重新选牌并确认正式攻击', [
-                            check('两张攻击已提交', [...(await read()).core.players['0'].activeAttackIds].sort(), [...pair.cardIds].sort()),
+                            check('两张攻击已提交', [...paid.activeAttackIds, ...paid.activeSkills].sort(), [...pair.cardIds].sort()),
+                            check('服务端实付符合预览', paid.mana, actor.mana - cost),
                         ], ['确认攻击后的出牌区', 'interaction-mode']);
                         seen.add('attack');
                     }
@@ -270,12 +334,25 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
                 await page.mouse.move(12, 12);
                 seen.add('battle');
             }
+            if (core.phase === 'action' && actor.normalAttackPlayed && !motionFrameCounts.handoff) {
+                motionFrameCounts.handoff = await sampleFateMapMotion(page, path.join(run.stagingDir, 'map-handoff-frames.json'), async () => {
+                    await clickPrimary();
+                    await expect.poll(async () => {
+                        const next = (await read()).core;
+                        return next.round !== core.round || next.phase !== core.phase || next.currentPlayerId !== '0';
+                    }, { timeout: 15000 }).toBe(true);
+                    // 收入浏览器呈现交接后的时间，不能在服务器接受命令的同一刻停止。
+                    await page.waitForTimeout(950);
+                });
+                continue;
+            }
             await clickPrimary();
         }
         const { core, sys } = await read();
         await expect(result).toBeVisible();
         expect(core.round).toBeGreaterThan(1);
-        expect(['deploy', 'seal', 'attack', 'battle'].every(id => seen.has(id))).toBe(true);
+        expect(['deploy', 'move', 'seal', 'inspection', 'attack', 'battle'].every(id => seen.has(id))).toBe(true);
+        expect(motionFrameCounts.handoff).toBeGreaterThanOrEqual(6);
         await mark('terminal', '同一局自然推进到正式胜负结算', [
             check('正式终局阶段', core.phase, 'complete'), check('引擎记录终局', Boolean(sys.gameover)),
             check('领域与引擎结果相同', core.gameResult, sys.gameover),
@@ -286,13 +363,15 @@ test('真实在线房自选御主从者与正式电脑对局至圣杯战争结�
         await writeFile(path.join(run.stagingDir, 'behavior-trace.json'), JSON.stringify({
             gameId: 'fate-domination', evidenceCategory: 'golden', chainId, sourceRun: run.runId, ...identity, browserContextId, matchId,
             status: 'PASS', visualStatus: 'pending', fixtureBoundary: { kind: 'natural-flow', injections: [] },
+            captureContract: { sha256: createHash('sha256').update(captureContract).digest('hex') },
+            motionFrameCounts,
             outcome: '一名真人通过正式在线房间 UI 自选角色，与两名正式 AI 自然对局至服务器终局',
             coverage: { actions: [...seen], rounds: [...rounds], deferred: ['真人多端', '骑乘专属响应', '所有角色与效果分支'] },
             steps, terminalStepId: 'terminal',
             uiStates: shots.map(shot => ({ id: shot.uiStateId, stepId: shot.behaviorStepId, change: shot.uiChange, viewport: shot.viewport, viewportSize: shot.viewportSize, sha256: shot.sha256 })),
         }, null, 2));
         await promoteEvidenceScreenshotRun(run, {
-            gameId: 'fate-domination', evidenceCategory: 'golden', capturePolicy: 'distinct-ui-state',
+            version: 2, gameId: 'fate-domination', evidenceCategory: 'golden', capturePolicy: 'distinct-ui-state',
             media: shots.map(({ sha256: _sha256, ...shot }) => ({ ...shot, sourceRevision: identity.sourceRevision })),
         });
         console.log('[Fate golden] 证据目录', run.stableDir);

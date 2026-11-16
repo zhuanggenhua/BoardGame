@@ -1582,7 +1582,12 @@ export class GameTransportServer {
         });
     }
     private logOnlineAiExecutionTrace(trace: OnlineAiExecutionTrace): void {
-        logger.info('[GameTransport] online-ai-execution', trace);
+        // 生产日志默认保留 warn；慢决策需保留对局和动作关联，便于对照 CPU 采样。
+        if (trace.decisionMs >= 1000) {
+            logger.warn('[GameTransport] online-ai-slow-decision', trace);
+        } else {
+            logger.info('[GameTransport] online-ai-execution', trace);
+        }
     }
 
     private async handleOnlineAiRecoveryFailure(

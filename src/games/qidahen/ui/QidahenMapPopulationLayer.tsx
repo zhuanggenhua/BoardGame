@@ -63,17 +63,17 @@ export const QidahenMapPopulationLayer: React.FC<{
             </mask></defs>
             {placements.filter(placement => placement.callout).map(({ regionId, point, anchor }) => (
                 <g key={regionId} stroke="#1a1208" strokeWidth={2} mask={`url(#${populationMaskId})`}>
-                    <path d={`M ${anchor.x} ${anchor.y} L ${point.x} ${point.y}`} />
+                    <path data-testid={`qidahen-population-callout-${regionId}`} d={`M ${anchor.x} ${anchor.y} L ${point.x} ${point.y}`} />
                     <circle cx={anchor.x} cy={anchor.y} r={3} fill="#ffe566" />
                 </g>
             ))}
         </svg>
-        {placements.map(({ regionId, point, anchor, callout }) => {
+        {placements.map(({ regionId, point, anchor, callout, size = QIDAHEN_POPULATION_SIZE }) => {
             const region = regionById.get(regionId)!;
             return (
                 <div
                     key={region.id}
-                    className="pointer-events-none absolute grid place-items-center font-black tabular-nums"
+                    className="pointer-events-none absolute flex items-center justify-center font-black tabular-nums"
                     data-testid={`qidahen-map-population-${region.id}`}
                     data-qidahen-map-population="true"
                     data-qidahen-map-population-faction={region.controller}
@@ -88,20 +88,25 @@ export const QidahenMapPopulationLayer: React.FC<{
                     style={{
                         left: point.x,
                         top: point.y,
-                        width: QIDAHEN_POPULATION_SIZE,
-                        height: QIDAHEN_POPULATION_SIZE,
+                        width: size,
+                        height: size,
                         transform: 'translate(-50%, -50%)',
                         border: '2.5px solid #1a1208',
                         borderRadius: 3,
                         background: 'linear-gradient(180deg, #ffe566 0%, #f0b21a 58%, #c47d0c 100%)',
                         color: '#1a1208',
-                        fontSize: 15,
+                        fontSize: Math.max(10, 14 * size / QIDAHEN_POPULATION_SIZE),
                         lineHeight: 1,
                         boxShadow: 'inset 0 2px 0 #fff3a8, inset 0 -3px 0 rgba(120,60,0,0.38), 0 0 0 2px #fff6d0, 0 3px 7px rgba(20,12,4,0.55)',
                         zIndex: 14,
                     }}
                 >
-                    {region.population}
+                    <svg aria-hidden="true" viewBox="0 0 10 14" style={{ width: size * 10 / QIDAHEN_POPULATION_SIZE, height: size * 14 / QIDAHEN_POPULATION_SIZE, flex: 'none' }}>
+                        <circle cx="3.3" cy="3" r="2" fill="currentColor" />
+                        <circle cx="7.4" cy="3.8" r="1.5" fill="currentColor" />
+                        <path d="M.5 11c0-2.8 1-4.7 2.8-4.7S6.1 8.2 6.1 11v1H.5zm5.6 1v-1c0-1.3-.2-2.5-.7-3.3.5-.5 1.1-.7 1.8-.7C9 7 9.7 8.5 9.7 11v1z" fill="currentColor" />
+                    </svg>
+                    <span>{region.population}</span>
                 </div>
             );
         })}

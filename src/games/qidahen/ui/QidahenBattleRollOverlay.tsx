@@ -6,6 +6,7 @@ import { QidahenBattleRollSequence, type QidahenBattleActor } from './QidahenBat
 import { QidahenBattleReport } from './QidahenBattleReport';
 import { useTranslation } from 'react-i18next';
 import { getHudPortalRoot, UI_Z_INDEX } from '../../../core';
+import { routeArmyGroupConnector } from './armyGroupConnector';
 
 export type QidahenBattleDiceFrame = { left: number; top: number; width: number; height: number };
 /** 骰盘排座与地图取景共用常驻界面的实际占位。 */
@@ -21,6 +22,7 @@ interface Props {
     targetName: string;
     sourceRegionId: string | null;
     targetRegionId: string | null;
+    committedPieceIds?: readonly string[];
     attacker: QidahenBattleActor;
     defender: QidahenBattleActor;
     onFrameChange: (frame: QidahenBattleDiceFrame | null) => void;
@@ -80,9 +82,9 @@ function BattleLayoutReport({ rolls, attacker, defender, onComplete }: Pick<Prop
 }
 
 /** 战斗是当前结算主体，在地图空位投掷；双方军队、手牌和常驻HUD保持可见。 */
-export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceRegionId, targetRegionId, ...sequence }: Props) {
+export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceRegionId, targetRegionId, committedPieceIds = [], ...sequence }: Props) {
     const [frame, setFrame] = React.useState<QidahenBattleDiceFrame | null>(null);
-    const [links, setLinks] = React.useState<Array<{ x1: number; y1: number; x2: number; y2: number }>>([]);
+    const [links, setLinks] = React.useState<Array<{ side: string; pieceId: string; points: Array<{ x: number; y: number }> }>>([]);
     const [spaceUnavailable, setSpaceUnavailable] = React.useState(false);
     // 外层以战斗身份挂载；播放开始后，重排只改布局，不卸载物理序列重投。
     const [started, setStarted] = React.useState(false);
@@ -178,23 +180,38 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceReg
         const measure = () => {
             const root = document.querySelector('[data-testid="qidahen-battle-roll-sequence"]');
             const damage = root?.getAttribute('data-battle-roll-state') === 'damage';
+            const phase = root?.getAttribute('data-battle-roll-phase');
+            const stage = sequence.rolls.stages.find(item => item.phase === phase);
             const next = (['attacker', 'defender'] as const).flatMap(side => {
                 const label = root?.querySelector(damage ? `[data-testid="qidahen-battle-result-${side}"]` : `[data-qidahen-battle-label="${side}"]`);
                 if (!label) return [];
-                const regionId = damage ? (side === 'attacker' ? targetRegionId : sourceRegionId) : (side === 'attacker' ? sourceRegionId : targetRegionId);
-                if (!regionId) return [];
+                const targetSide = damage ? (side === 'attacker' ? 'defender' : 'attacker') : side;
+                const pieceIds = new Set(targetSide === 'attacker'
+                    ? [...committedPieceIds, ...Object.keys(sequence.rolls.attackerMorale.remainingLevels)]
+                    : Object.keys(sequence.rolls.defenderMorale.remainingLevels));
+                if (!pieceIds.size) return [];
                 const from = label.getBoundingClientRect();
                 const cx = (from.left + from.right) / 2, cy = (from.top + from.bottom) / 2;
-                const targets = [...document.querySelectorAll('[data-qidahen-map-token-region], [data-qidahen-army-group-region]')]
-                    .filter(element => (element.getAttribute('data-qidahen-map-token-region') ?? element.getAttribute('data-qidahen-army-group-region')) === regionId)
-                    .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0)
-                    .map(rect => ({ x: Math.max(rect.left, Math.min(rect.right, cx)), y: Math.max(rect.top, Math.min(rect.bottom, cy)) }))
+                const kinds = new Set<string>((targetSide === 'attacker' ? stage?.attackerRolls : stage?.defenderRolls)?.map(roll => roll.troopKind) ?? []);
+                const pieces = [...document.querySelectorAll('[data-qidahen-map-piece-id]')]
+                    .filter(element => pieceIds.has(element.getAttribute('data-qidahen-map-piece-id') ?? ''));
+                const phasePieces = pieces.filter(element => kinds.has(element.getAttribute('data-qidahen-map-token-troop-kind') ?? ''));
+                const targets = (phasePieces.length ? phasePieces : pieces)
+                    .map(element => ({ rect: element.getBoundingClientRect(), pieceId: element.getAttribute('data-qidahen-map-piece-id')! }))
+                    .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+                    .map(({ rect, pieceId }) => ({ x: Math.max(rect.left, Math.min(rect.right, cx)), y: Math.max(rect.top, Math.min(rect.bottom, cy)), pieceId }))
                     .sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy));
                 const target = targets[0];
                 if (!target) return [];
                 const dx = target.x - cx, dy = target.y - cy;
                 const edge = Math.min(dx === 0 ? Infinity : from.width / 2 / Math.abs(dx), dy === 0 ? Infinity : from.height / 2 / Math.abs(dy), 1);
-                return [{ x1: cx + dx * edge, y1: cy + dy * edge, x2: target.x, y2: target.y }];
+                const start = { x: cx + dx * edge, y: cy + dy * edge };
+                const obstacles = [...(root?.querySelectorAll('[data-qidahen-battle-label], [data-testid^="qidahen-battle-result-"]') ?? [])]
+                    .filter(element => element !== label && !label.contains(element) && !element.contains(label))
+                    .filter(element => { const style = getComputedStyle(element); return style.visibility !== 'hidden' && style.display !== 'none'; })
+                    .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+                const points = routeArmyGroupConnector(start, target, obstacles);
+                return points ? [{ side: targetSide, pieceId: target.pieceId, points }] : [];
             });
             setLinks(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
         };
@@ -204,12 +221,15 @@ export function QidahenBattleRollOverlay({ onFrameChange, layoutReady, sourceReg
         observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-battle-roll-state', 'data-battle-roll-phase'] });
         schedule();
         return () => { cancelAnimationFrame(scheduled); observer.disconnect(); };
-    }, [frame, sourceRegionId, targetRegionId, spaceUnavailable]);
+    }, [frame, sourceRegionId, targetRegionId, spaceUnavailable, committedPieceIds, sequence.rolls]);
     React.useLayoutEffect(() => { onFrameChange(frame); }, [frame, onFrameChange]);
     React.useLayoutEffect(() => () => onFrameChange(null), [onFrameChange]);
     if (spaceUnavailable) return <BattleLayoutReport {...sequence} />;
     return frame ? createPortal(<><svg aria-hidden="true" className="pointer-events-none fixed inset-0 z-[169] h-full w-full">
-        {links.map((link, index) => <g key={index}><line x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke="#2a160b" strokeWidth="5" /><line x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke="#f6d48b" strokeWidth="2" /><circle cx={link.x2} cy={link.y2} r="4" fill="#f6d48b" stroke="#2a160b" /></g>)}
+        {links.map((link, index) => {
+            const points = link.points.map(point => `${point.x},${point.y}`).join(' '), end = link.points[link.points.length - 1];
+            return <g key={index} data-qidahen-battle-link-side={link.side} data-qidahen-battle-link-piece-id={link.pieceId}><polyline points={points} fill="none" stroke="#2a160b" strokeWidth="5" /><polyline points={points} fill="none" stroke="#f6d48b" strokeWidth="2" /><circle cx={end.x} cy={end.y} r="4" fill="#f6d48b" stroke="#2a160b" /></g>;
+        })}
     </svg><div data-testid="qidahen-battle-roll-overlay" className="pointer-events-none fixed z-[170] [--spacing:4px]"
         style={{ left: frame.left, top: frame.top, width: frame.width, height: frame.height, '--qidahen-battle-panel-height': `${frame.height}px` } as React.CSSProperties}>
         {started ? <QidahenBattleRollSequence {...sequence} /> : null}

@@ -29,7 +29,7 @@ export enum FeedbackReporterType {
 }
 
 export interface FeedbackClientContext {
-    failedAsset?: { path: string; observedAt: string; responseStatus?: number; durationMs?: number; transferSize?: number };
+    failedAsset?: { path: string; observedAt: string; responseStatus?: number; durationMs?: number; transferSize?: number; encodedBodySize?: number; decodedBodySize?: number; timingResponseStartPresent?: boolean; online?: boolean };
     boardPlayers?: { count: number; playerIdPresent: boolean; playerExists?: boolean };
     route?: string;
     mode?: string;

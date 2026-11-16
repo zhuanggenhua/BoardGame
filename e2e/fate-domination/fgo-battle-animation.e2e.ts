@@ -221,6 +221,8 @@ for (const skip of [false, true]) test(skip ? '代表态可跳过宝具并继续
   await expect(noble).toBeVisible({ timeout: 15000 });
   await expect(noble.locator('canvas')).toHaveCount(1);
   if (skip) {
+    await expect.poll(() => page.evaluate(() => (window as any).__FGO_SOURCE_SCENE__?.snapshot().time ?? 0), { timeout: 30000 }).toBeGreaterThan(2.5);
+    await page.screenshot({ path: testInfo.outputPath('宝具跳过入口.png') });
     await noble.getByRole('button', { name: /^(跳过|Skip)$/ }).click();
     await expect(noble).toBeHidden();
     await expect(action).toBeEnabled();

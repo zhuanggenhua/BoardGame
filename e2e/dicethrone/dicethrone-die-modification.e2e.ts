@@ -11,6 +11,7 @@ import {
     getRightTrayDiceTray,
     expectRightTrayBonusDiceConfirmation,
     settleCurrentBonusDice,
+    waitForDiceThroneVisualIdle,
 } from './bonus-dice-flow';
 
 const HUMAN_DICE_MODIFICATION_QUERY = { playerID: '0', disableLocalAiAutomation: true };
@@ -82,7 +83,7 @@ async function openActionLogPanel(page: any): Promise<any> {
 
     const actionLogButton = page.locator('[data-fab-id="action-log"]').first();
     if (!await actionLogButton.isVisible().catch(() => false)) {
-        const mainButton = page.locator('[data-fab-id="exit"]').first();
+        const mainButton = page.locator('[data-fab-id="chat"]').first();
         if (await mainButton.isVisible().catch(() => false)) {
             await mainButton.click();
         }
@@ -172,6 +173,8 @@ test.describe('DiceThrone - 选择骰子修改', () => {
         await incrementButton.click();
         await expect(lockedDie).toHaveAttribute('data-display-value', '4', { timeout: 5000 });
         await expect(lockedDie.getByTestId('dice-2d')).toHaveAttribute('data-face-value', '4', { timeout: 5000 });
+        await expectDiceInteractionConfirmEnabled(page);
+        await waitForDiceThroneVisualIdle(page);
         await game.screenshot('弹一手-锁定骰改面待确认', testInfo);
 
         await confirmDiceInteraction(page);

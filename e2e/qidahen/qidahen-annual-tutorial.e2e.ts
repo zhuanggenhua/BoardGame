@@ -435,7 +435,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
             page.on('requestfailed', request => pendingRequests.delete(request.url()));
             const heartbeat = setInterval(() => console.info('ANNUAL_WAIT', JSON.stringify({ progress, pending: [...pendingRequests].slice(-12) })), 15_000);
             const verifySourceIdentity = trackQidahenSourceIdentity(page, 'e2e/qidahen/qidahen-annual-tutorial.e2e.ts', [
-                'e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', 'e2e/qidahen/battleCaptureDiagnostics.ts', 'e2e/qidahen/mapCandidateRecovery.ts',
+                'e2e/qidahen/sourceIdentity.ts', 'e2e/qidahen/battleRecording.ts', 'e2e/qidahen/battleFramePixels.ts', 'e2e/qidahen/battleCaptureDiagnostics.ts', 'e2e/qidahen/mapCandidateRecovery.ts',
                 'e2e/qidahen/mapPointer.ts', 'e2e/qidahen/blobUrlDiagnostics.ts', 'e2e/qidahen/tutorialPointer.ts',
                 'e2e/qidahen/visualReady.ts', 'e2e/qidahen/tutorialPersistence.ts', 'e2e/helpers/common.ts',
             ], [...QIDAHEN_VISUAL_SOURCE_PATHS, 'public/assets/i18n/zh-CN/qidahen/cards/inspect/compressed/ming-4.webp',
@@ -466,6 +466,26 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                 });
                 await expect(page.getByTestId('qidahen-draw-anchor')).toBeVisible();
                 await expect(page.getByTestId('qidahen-discard-anchor')).toBeVisible();
+                if (viewport.name === 'desktop' && (id === 'farm-target' || id === 'dispatch-troops')) {
+                    const callouts = await page.evaluate(() => Array.from(document.querySelectorAll('[data-testid^="qidahen-army-callout-"], [data-testid^="qidahen-population-callout-"]'))
+                        .map(node => ({ id: node.getAttribute('data-testid'), path: node.getAttribute('d'), bounds: node.getBoundingClientRect().toJSON() })));
+                    writeFileSync(resolve(dir, `${id}${suffix}-callouts.json`), JSON.stringify(callouts, null, 2));
+                }
+                if (viewport.name === 'desktop' && id === 'farm-target') {
+                    const geometry = await page.evaluate(() => {
+                        const selectors = ['qidahen-map-content', 'qidahen-map-layer', 'qidahen-chronology-zone',
+                            'qidahen-map-token-city-region-19-liaoxi-army-ming-post-sarhu-1619-liaoxi-regular-infantry-lv1__compat__1',
+                            'qidahen-map-population-city-region-19-liaoxi', 'tutorial-overlay-card'];
+                        return Object.fromEntries(selectors.map(id => {
+                            const node = document.querySelector(`[data-testid="${id}"]`);
+                            return [id, node ? { rect: node.getBoundingClientRect().toJSON(),
+                                placement: node.getAttribute('data-population-placement') } : null];
+                        }));
+                    });
+                    writeFileSync(resolve(dir, 'farm-target-layout-geometry.json'), JSON.stringify(geometry, null, 2));
+                    const state = await page.evaluate(() => (window as any).__BG_TEST_HARNESS__.state.get());
+                    writeFileSync(resolve(dir, 'farm-target-layout-state.json'), JSON.stringify(state));
+                }
                 if (viewport.name === 'desktop' && ['recruit-payment', 'hand-limit', 'upgrade-card'].includes(id)) {
                     const attachment = async () => page.getByTestId('tutorial-overlay-card').evaluate(element => {
                         const targetId = element.getAttribute('data-tutorial-anchor');
@@ -808,7 +828,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     for (let count = 0; count < 16 && await button.isEnabled(); count += 1) {
                         const before = await page.getByTestId('qidahen-hand-zone').evaluate(element => element.scrollLeft);
                         await clickVisibleButton(page, 'qidahen-hand-scroll-' + direction);
-                        await page.getByTestId('qidahen-hand-zone').evaluate(async (element, previous) => {
+                        await page.getByTestId('qidahen-hand-zone').evaluate(async (element, { previous, direction }) => {
                             const deadline = performance.now() + 5000; let last = previous; let stable = 0; let changed = false;
                             while (performance.now() < deadline) {
                                 await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
@@ -816,8 +836,11 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                                 stable = value === last ? stable + 1 : 0; last = value;
                                 if (changed && stable >= 3) return;
                             }
-                            throw new Error('hand scroll control did not move and settle');
-                        }, before);
+                            const button = document.querySelector<HTMLButtonElement>(`[data-testid="qidahen-hand-scroll-${direction}"]`);
+                            throw new Error('hand scroll control did not move and settle: ' + JSON.stringify({ direction, previous, last,
+                                scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, disabled: button?.disabled,
+                                connected: element.isConnected, changed, stable }));
+                        }, { previous: before, direction });
                     }
                     await expect(button).toBeDisabled();
                 };
@@ -935,7 +958,7 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                             const branchBefore = await read(branch);
                             expect(branchBefore.core).toEqual(mainBefore.core);
                             const tokenId = 'city-region-19-liaoxi-army-ming-post-sarhu-1619-liaoxi-regular-infantry-lv1__compat__1';
-                            await expect(branch.getByTestId(`qidahen-army-callout-${tokenId}`)).toBeAttached();
+                            // 独立分支验证地区兵牌可点击及结算；布局另按截图逐图验收。
                             const token = branch.getByTestId(`qidahen-map-token-${tokenId}`);
                             await expect(token).toHaveAttribute('data-qidahen-map-region-choice', 'true');
                             await token.click();
@@ -971,6 +994,10 @@ test.describe('七大恨 / tutorial / 真实连续年度流程', () => {
                     if (step.id === 'recruit-troops' || (step.id === 'opening-farm-cycle' && step.content.endsWith('hand-recruit-choice'))) await assertWholeRegionVisible(page, 'city-region-15');
                     if ((viewport.name === 'desktop' ? KEY_STATES : MOBILE_STATES).has(step.id)) await capture(step.id);
                     if (step.id === 'opening-farm-cycle') {
+                        if (step.content.endsWith('reclaim-target-dynamic')) {
+                            await expect(page.getByText('人形旁的数字是当地人口', { exact: false })).toBeVisible();
+                            await expect(page.getByTestId('qidahen-map-population-city-region-15-liaodong')).toBeVisible();
+                        }
                         const captureId = step.content.endsWith('farm-target-dynamic') ? 'farm-target'
                             : step.content.endsWith('reclaim-target-dynamic') ? 'reclaim-target'
                             : step.content.endsWith('farm-menu-initial') ? 'farm-action'

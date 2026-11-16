@@ -80,7 +80,7 @@ export function BoardBridge<
     const boardPlayers = playerMap ? {
         count: Object.keys(playerMap).length,
         playerIdPresent,
-        ...(playerIdPresent ? { playerExists: Object.hasOwn(playerMap, props.playerID!) } : {}),
+        ...(playerIdPresent ? { playerExists: Object.prototype.hasOwnProperty.call(playerMap, props.playerID!) } : {}),
     } : undefined;
 
     if (activeRenderer.kind === 'react') {

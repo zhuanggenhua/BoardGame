@@ -465,13 +465,17 @@ const setupArtificerPreDamageBotChoiceScene = async (
     options: {
         tokenId: typeof TOKEN_IDS.SHOCK_BOT | typeof TOKEN_IDS.HEAL_BOT;
         randomQueue?: number[];
+        humanDefender?: boolean;
     },
 ): Promise<void> => {
-    await game.openTestGame('dicethrone', { playerID: '0' });
+    await game.openTestGame('dicethrone', options.humanDefender
+        ? { playerID: '0', seat0: 'human', seat1: 'human', disableLocalAiAutomation: true }
+        : { playerID: '0' });
     await game.setupScene({
         gameId: 'dicethrone',
         randomQueue: options.randomQueue,
         player0: {
+            ...(options.humanDefender ? { hand: [] } : {}),
             resources: { [RESOURCE_IDS.CP]: 10, [RESOURCE_IDS.HP]: 40 },
             tokens: {
                 [TOKEN_IDS.SYNTH]: 2,
@@ -482,6 +486,7 @@ const setupArtificerPreDamageBotChoiceScene = async (
         },
         player1: {
             resources: { [RESOURCE_IDS.CP]: 10, [RESOURCE_IDS.HP]: 50 },
+            ...(options.humanDefender ? { hand: [], tokens: { [TOKEN_IDS.TAIJI]: 1 } } : {}),
         },
         currentPlayer: '0',
         phase: 'offensiveRoll',
@@ -1416,8 +1421,8 @@ const prepareArtificerOverclockUpgradeBoardScene = async (page: Page): Promise<v
     });
 };
 
-const prepareArtificerOverclock2MainHealBotBoardScene = async (page: Page): Promise<void> => {
-    await page.evaluate(({ shockBotId, healBotId, synthId, nanobombId }) => {
+const prepareArtificerOverclock2MainHealBotBoardScene = async (page: Page, useNanobot = false): Promise<void> => {
+    await page.evaluate(({ shockBotId, healBotId, synthId, nanobombId, initialNanobombs }) => {
         const harness = (window as Window & {
             __BG_TEST_HARNESS__?: {
                 state?: {
@@ -1505,7 +1510,7 @@ const prepareArtificerOverclock2MainHealBotBoardScene = async (page: Page): Prom
                         },
                         statusEffects: {
                             ...(player1.statusEffects ?? {}),
-                            [nanobombId]: 0,
+                            [nanobombId]: initialNanobombs,
                         },
                     },
                 },
@@ -1532,9 +1537,10 @@ const prepareArtificerOverclock2MainHealBotBoardScene = async (page: Page): Prom
         });
     }, {
         shockBotId: TOKEN_IDS.SHOCK_BOT,
-        healBotId: TOKEN_IDS.HEAL_BOT,
+        healBotId: useNanobot ? TOKEN_IDS.NANOBOT : TOKEN_IDS.HEAL_BOT,
         synthId: TOKEN_IDS.SYNTH,
         nanobombId: STATUS_IDS.NANOBOMB,
+        initialNanobombs: useNanobot ? 1 : 0,
     });
 };
 
@@ -2532,7 +2538,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
     });
 
     test('伤害前机器人选择链应可免费选择电能机器人并把加伤并入当前攻击', async ({ page, game }, testInfo) => {
-        await setupArtificerPreDamageBotChoiceScene(game, { tokenId: TOKEN_IDS.SHOCK_BOT });
+        await setupArtificerPreDamageBotChoiceScene(game, { tokenId: TOKEN_IDS.SHOCK_BOT, humanDefender: true });
         await game.screenshot('artificer-pre-damage-shock-bot-choice-open', testInfo);
 
         await clickSimpleChoiceByCustomId(page, game, 'artificer-activate-bot-resolve');
@@ -2561,6 +2567,11 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await game.screenshot('artificer-pre-damage-shock-bot-after-choice', testInfo);
 
         await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+        await expect.poll(async () => (await game.getState() as JsonRecord)?.sys?.phase).toBe('defensiveRoll');
+        await setHarnessRandomQueue(page, [1, 1, 1, 1, 1]);
+        await dispatchHarnessCommand(page, 'ROLL_DICE', '1');
+        await dispatchHarnessCommand(page, 'CONFIRM_ROLL', '1');
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '1');
 
         const pendingDamageId = await expect.poll(async () => {
             const state = await game.getState() as JsonRecord;
@@ -3520,6 +3531,34 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         });
 
         await game.screenshot('artificer-overclock-2-after-energy-boost', testInfo);
+    });
+
+    test('超频运行 II 的行动日志应区分电能机器人和纳米爆弹两笔加伤', async ({ page, game }, testInfo) => {
+        await setupArtificerMainHandScene(game, ['upgrade-artificer-overclock-2']);
+        await dragHandCardToPlay(page, 'upgrade-artificer-overclock-2');
+        await prepareArtificerOverclock2MainHealBotBoardScene(page, true);
+        await clickResolvedAbilitySlot(page, 'lightning', 'overclock-2-main');
+        await page.locator('#modal-root').getByRole('button', { name: /超频运行 II（4个电流）/ }).click();
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+        await clickSimpleChoiceByIndex(page, game, 1);
+        await clickSimpleChoiceByIndex(page, game, 0);
+        await expect.poll(async () => (await game.getState() as JsonRecord)?.core?.players?.['1']?.resources?.hp).toBe(38);
+
+        const logButton = page.locator('[data-fab-id="action-log"]').first();
+        if (!await logButton.isVisible().catch(() => false)) {
+            const menuButton = page.locator('[data-fab-id="chat"], [data-fab-id="exit"], [data-testid="fab-menu"] [data-fab-id]').first();
+            await menuButton.click();
+        }
+        await expect(logButton).toBeVisible();
+        await logButton.click();
+        const panel = page.getByTestId('fab-panel-action-log').first();
+        await expect(panel).toBeVisible();
+        const damageRow = panel.getByTestId('hud-action-log-row').filter({ hasText: '12' }).last();
+        await expect(damageRow).toBeVisible();
+        await damageRow.getByText('12', { exact: true }).hover();
+        await expect(page.getByText('电能机器人', { exact: true }).last()).toBeVisible();
+        await expect(page.getByText('纳米爆弹', { exact: true }).last()).toBeVisible();
+        await game.screenshot('artificer-overclock-damage-log-breakdown', testInfo);
     });
 
     test('超频运行 II 主分支选择治疗机器人后应普通确认右侧奖励骰盘并继续激活另一个机器人', async ({ page, game }, testInfo) => {

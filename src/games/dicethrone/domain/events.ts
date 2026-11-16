@@ -615,6 +615,9 @@ export interface BonusDamageAddedEvent extends GameEvent<'BONUS_DAMAGE_ADDED'> {
         playerId: PlayerId;
         amount: number;
         sourceCardId?: string;
+        /** 非卡牌增伤的日志来源，不计入攻击修正卡汇总。 */
+        sourceId?: string;
+        sourceName?: string;
         /** 攻击伤害已提交后追加的修正；共享事件系统需将增量落入同一次攻击的正式伤害。 */
         applyToResolvedAttack?: boolean;
     };

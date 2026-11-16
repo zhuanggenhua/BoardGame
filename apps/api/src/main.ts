@@ -17,6 +17,7 @@ import { createAdminTestLatencyMiddleware } from './modules/admin/admin-test-lat
 import { AdminTestLatencyService } from './modules/admin/admin-test-latency.service';
 import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filter';
 import logger from '../../../server/logger';
+import { createRetainedWebAssetsMiddleware } from './retained-web-assets';
 import { isNoCacheSpaEntryPath, shouldProxyGameServerRequest, shouldServeSpaFallback } from './spa-fallback';
 import {
     LONG_CACHE_IMMUTABLE_HEADER,
@@ -279,6 +280,7 @@ async function bootstrap() {
             maxAge: LONG_CACHE_MAX_AGE,
             immutable: true,
         }));
+        expressApp.use('/assets', createRetainedWebAssetsMiddleware(join(process.cwd(), 'retained-web-assets')));
         expressApp.use('/fonts', express.static(join(distPath, 'fonts'), {
             maxAge: LONG_CACHE_MAX_AGE,
             immutable: true,

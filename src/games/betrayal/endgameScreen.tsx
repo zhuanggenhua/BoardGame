@@ -3,6 +3,7 @@ import { BookOpen, ChevronRight, Footprints, House, RotateCcw, Search } from "lu
 import { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
+import { buildBoardShellScreenPixelValue } from "../../shared/runtimeLayoutUnits";
 import type { BetrayalCore, BetrayalTraitKey } from "./game";
 import { CinematicNarrationPanel } from "./cinematicNarrationSurface";
 import {
@@ -21,14 +22,43 @@ import {
 const ENDGAME_MEDALLION_CLIP_PATH =
   "polygon(50% 2%, 91% 25%, 91% 73%, 50% 98%, 9% 73%, 9% 25%)";
 
+const REPORT_ACTION_CLASS =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-sm border px-4 py-2 text-[15px] font-semibold tracking-wide transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f2cf82]";
+const REPORT_PRIMARY_ACTION_CLASS =
+  REPORT_ACTION_CLASS + " border-[#e3c58a] bg-[linear-gradient(180deg,#e7cc96,#b99156)] text-[#221b12] shadow-[0_2px_0_#6f5433] enabled:hover:brightness-110 enabled:active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60";
+const REPORT_SECONDARY_ACTION_CLASS =
+  REPORT_ACTION_CLASS + " border-[#7d643a] bg-[#111c17] text-[#e6c995] hover:border-[#ddb774] hover:text-[#f2dfb5]";
+const REPORT_ACTION_SIZE: React.CSSProperties = {
+  minHeight: buildBoardShellScreenPixelValue(44),
+  minWidth: buildBoardShellScreenPixelValue(44),
+  fontSize: "max(15px, " + buildBoardShellScreenPixelValue(13) + ")",
+};
+const REPORT_PRIMARY_ACTION_SIZE = { ...REPORT_ACTION_SIZE, minWidth: "max(9rem, " + REPORT_ACTION_SIZE.minWidth + ")" };
+const REPORT_ACTION_ICON_SIZE = "max(17px, " + buildBoardShellScreenPixelValue(13) + ")";
+const REPORT_ACTION_ICON_STYLE = { width: REPORT_ACTION_ICON_SIZE, height: REPORT_ACTION_ICON_SIZE, flexShrink: 0 };
+
+export interface BetrayalEndgameRematchAction {
+  /** 按钮文案（单人=再来一局，多人=投票/取消投票/重开中） */
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  /** 辅助提示，如「等待对手确认…」 */
+  hint?: string;
+}
+
 export function EndgameScreen({
   core,
   matchData,
   effectiveLocale,
+  rematch,
+  onBackToLobby,
 }: {
   core: BetrayalCore;
   matchData?: MatchPlayerInfo[];
   effectiveLocale: string;
+  /** 重赛操作；传 null 表示当前视角不可重赛（如旁观者），此时隐藏重赛按钮 */
+  rematch?: BetrayalEndgameRematchAction | null;
+  onBackToLobby?: () => void;
 }) {
   const { t } = useTranslation("game-betrayal");
   const result = core.endgameResult;
@@ -147,7 +177,8 @@ export function EndgameScreen({
                 type="button"
                 data-testid="betrayal-endgame-ending-continue"
                 onClick={() => setEndingNarrationOpen(false)}
-                className="inline-flex min-h-11 min-w-[168px] items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 text-[12px] font-black uppercase tracking-[0.22em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)]"
+                style={{ ...REPORT_ACTION_SIZE, minWidth: "max(168px, " + REPORT_ACTION_SIZE.minWidth + ")" }}
+                className="inline-flex items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 font-black uppercase tracking-[0.14em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)]"
               >
                 {t("board.endgame.continueToReport")}
                 <ChevronRight size={16} aria-hidden="true" />
@@ -505,26 +536,48 @@ export function EndgameScreen({
                 </div>
               </div>
 
-              <div className="flex shrink-0 gap-3 pb-1">
-                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
-                  <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
-                  <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
-                  <RotateCcw size={22} />
-                  <span>{t("board.endgame.rematch")}</span>
-                </button>
-                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
-                  <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
-                  <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
-                  <House size={22} />
-                  <span>{t("board.endgame.lobby")}</span>
-                </button>
-                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
-                  <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
-                  <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
-                  <BookOpen size={22} />
-                  <span>{t("board.endgame.logs")}</span>
-                </button>
-              </div>
+              <footer className="flex w-full max-w-[728px] shrink-0 flex-col items-center gap-2 border-t border-[#7d643a]/40 px-3 pb-2 pt-3">
+                <div className="flex flex-wrap justify-center gap-2">
+                  {rematch !== null ? (
+                    <button
+                      type="button"
+                      data-testid="betrayal-endgame-rematch"
+                      onClick={rematch?.onClick}
+                      disabled={rematch?.disabled}
+                      style={REPORT_PRIMARY_ACTION_SIZE}
+                      className={REPORT_PRIMARY_ACTION_CLASS}
+                    >
+                      <RotateCcw style={REPORT_ACTION_ICON_STYLE} aria-hidden="true" />
+                      <span>{rematch?.label ?? t("board.endgame.rematch")}</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    data-testid="betrayal-endgame-lobby"
+                    onClick={onBackToLobby}
+                    style={REPORT_ACTION_SIZE}
+                    className={REPORT_SECONDARY_ACTION_CLASS}
+                  >
+                    <House style={REPORT_ACTION_ICON_STYLE} aria-hidden="true" />
+                    <span>{t("board.endgame.lobby")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="betrayal-endgame-logs"
+                    onClick={() => setEndingNarrationOpen(true)}
+                    style={REPORT_ACTION_SIZE}
+                    className={REPORT_SECONDARY_ACTION_CLASS}
+                  >
+                    <BookOpen style={REPORT_ACTION_ICON_STYLE} aria-hidden="true" />
+                    <span>{t("board.endgame.logs")}</span>
+                  </button>
+                </div>
+                {rematch?.hint ? (
+                  <div role="status" data-testid="betrayal-endgame-rematch-hint" className="text-center text-sm text-[#ddcbaa]">
+                    {rematch.hint}
+                  </div>
+                ) : null}
+              </footer>
             </section>
 
             <section className="relative flex min-h-0 flex-col gap-3 px-2 pb-1 pt-1 pl-4">

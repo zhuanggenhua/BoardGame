@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "reviewFile": "required-visual-review.json",
+  "reviewerKind": "primary-agent",
+  "requiredStates": [
+    { "chainId": "奇异博士在线角色选择界面", "uiStateId": "doctor-strange-available-desktop-selection", "viewport": "desktop", "reason": "选角列表保留实施中标记和角色位置" },
+    { "chainId": "房主选择奇异博士", "uiStateId": "doctor-strange-selected-by-host", "viewport": "desktop", "reason": "选中角色后显示玩家板和席位" },
+    { "chainId": "宇宙感知从弃牌堆选择法术-desktop", "uiStateId": "doctor-strange-desktop-spell-choice", "viewport": "desktop", "reason": "弃牌法术候选及确认入口" },
+    { "chainId": "宇宙感知从弃牌堆选择法术-desktop", "uiStateId": "doctor-strange-desktop-spell-choice-selected", "viewport": "desktop", "reason": "法术选中反馈及确认状态" },
+    { "chainId": "瓦图姆之风直接选择状态效果", "uiStateId": "doctor-strange-remove-status-candidates", "viewport": "desktop", "reason": "状态候选与说明不遮挡操作" },
+    { "chainId": "多持有人状态选择", "uiStateId": "doctor-strange-status-multiple-812", "viewport": "mobile", "reason": "横屏区分两个状态持有人" },
+    { "chainId": "星际侵入奖励骰确认", "uiStateId": "doctor-strange-astral-bonus-dice", "viewport": "desktop", "reason": "奖励骰结果及确认入口" },
+    { "chainId": "公开准备区浏览", "uiStateId": "doctor-strange-public-prepared-browse", "viewport": "desktop", "reason": "多张准备法术的槽位和翻页入口" },
+    { "chainId": "弃牌直接施放", "uiStateId": "doctor-strange-discard-cast-candidates", "viewport": "desktop", "reason": "桌面多张法术候选与搜索操作" },
+    { "chainId": "弃牌直接施放", "uiStateId": "doctor-strange-discard-cast-phone-candidates", "viewport": "mobile", "reason": "横屏多张法术候选与搜索操作" },
+    { "chainId": "弃牌直接施放", "uiStateId": "doctor-strange-discard-cast-phone-scrolled", "viewport": "mobile", "reason": "横屏浏览末张候选及操作区" }
+  ]
+}

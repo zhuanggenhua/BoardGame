@@ -291,15 +291,15 @@ const translationMap: Record<string, string> = {
     'ota.footer.bundleLabel': '更新号 {{version}}',
     'ota.footer.appLabel': 'App {{version}}',
     'ota.footer.latestLabel': '最新更新 {{version}}',
-    'ota.footer.mismatchUpdateNow': 'OTA 未对齐，点击立即更新',
+    'ota.footer.mismatchUpdateNow': '有新版本，点击立即更新',
     'ota.footer.checkNow': '检查更新',
     'ota.footer.currentBundleTitle': 'current update number {{version}}',
     'ota.footer.currentAppShellTitle': 'app version {{version}}',
     'ota.footer.latestOtaTitle': 'latest update number {{version}}',
-    'ota.footer.statusMismatchUpdateNow': 'versions are not aligned',
+    'ota.footer.statusMismatchUpdateNow': 'a new version is available',
     'ota.footer.statusCheckNow': 'check for updates now',
     'ota.footer.ariaBundleAndApp': 'current update number {{bundleVersion}}, app version {{appVersion}}',
-    'ota.footer.ariaBundleAndAppMismatch': 'current update number {{bundleVersion}}, app version {{appVersion}}, latest update number {{latestVersion}}, versions are not aligned',
+    'ota.footer.ariaBundleAndAppMismatch': 'current update number {{bundleVersion}}, app version {{appVersion}}, latest update number {{latestVersion}}, a new version is available',
 };
 
 const mockAndroidLiveUpdatesModule = () => {
@@ -1589,7 +1589,7 @@ describe('Home native runtime footer', () => {
         expect(screen.queryByText(/^Bundle /)).toBeNull();
         expect(screen.queryByText(/^App /)).toBeNull();
         expect(screen.queryByText(/^Latest /)).toBeNull();
-        expect(screen.queryByText('OTA 未对齐')).toBeNull();
+        expect(screen.queryByText('有新版本，点击立即更新')).toBeNull();
     });
 
     it('原生 Android 下即使快照未返回也显示 Bundle/App 骨架信息', async () => {
@@ -1628,10 +1628,10 @@ describe('Home native runtime footer', () => {
         expect(screen.getByText('App 0.5.1')).toBeInTheDocument();
         expect(screen.getByText('最新更新 601')).toBeInTheDocument();
         expect(screen.queryByText(/0\.5\.1-ota-2026-04-04/)).toBeNull();
-        expect(screen.getByText('OTA 未对齐，点击立即更新')).toBeInTheDocument();
+        expect(screen.getByText('有新版本，点击立即更新')).toBeInTheDocument();
     });
 
-    it('点击 OTA 未对齐角标时直接触发即时 OTA 检查', async () => {
+    it('点击有新版本角标时直接触发即时 OTA 检查', async () => {
         nativeAndroidRuntimeState.value = true;
         androidLiveUpdateSnapshotState.value = {
             enabled: true,
@@ -1649,7 +1649,7 @@ describe('Home native runtime footer', () => {
         await renderHomeVersionFooter();
 
         const footerButton = await screen.findByRole('button', {
-            name: /versions are not aligned/i,
+            name: /a new version is available/i,
         });
 
         await act(async () => {

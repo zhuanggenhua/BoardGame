@@ -66,13 +66,12 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
     const manualCamera = React.useRef(false);
     const onManualCameraInteraction = React.useCallback(() => { manualCamera.current = true; }, []);
     const previousFit = React.useRef<MapViewportState | null>(null);
-    const focusDeployment = React.useRef<() => void>(() => {});
+    const fitDeployment = React.useRef((camera: MapViewportState) => camera);
     const reset = React.useCallback(() => {
         if (!size.w || !size.h)
             return;
         manualCamera.current = false;
-        requestCamera(fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT));
-        requestAnimationFrame(() => focusDeployment.current());
+        requestCamera(fitDeployment.current(fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT)));
     }, [size, requestCamera]);
     React.useLayoutEffect(() => {
         if (!host)
@@ -90,32 +89,37 @@ export function FateMapSurface({ core, locale, viewerId, legalLocations, onLocat
             const nextFit = fitFateTableCamera(size.w,size.h,WIDTH,HEIGHT);
             const before = previousFit.current;
             previousFit.current = nextFit;
-            requestCamera(constrainViewport(resizeFateTableCamera(livePose.current,before,nextFit)));
+            const next = constrainViewport(resizeFateTableCamera(livePose.current,before,nextFit));
+            requestCamera(manualCamera.current ? next : fitDeployment.current(next));
         }
     }, [size, constrainViewport, requestCamera]);
     const needsDeploymentTargets = core.phase === 'outpost' && viewerId === core.currentPlayerId && legalLocations.includes('shinto');
     React.useLayoutEffect(() => {
         if (!host || !needsDeploymentTargets) return;
-        // 只在进入可部署状态时调整地图，不移动手牌或改变卡牌尺寸。
-        const focus = () => {
-            if (manualCamera.current) return;
+        // 用即将使用的镜头投影点位。复位时画布仍可能在渲染上一帧。
+        const fit = (camera: MapViewportState) => {
             const target = host.querySelector<HTMLElement>('[data-testid="fate-domination-location-shinto"]');
-            if (!target) return;
-            const bounds = target.getBoundingClientRect();
+            if (!target) return camera;
+            const hostBounds = host.getBoundingClientRect();
+            const left = hostBounds.left + camera.panX + target.offsetLeft * camera.zoom;
+            const top = hostBounds.top + camera.panY + target.offsetTop * camera.zoom;
+            const right = left + target.offsetWidth * camera.zoom;
+            const bottom = top + target.offsetHeight * camera.zoom;
             const cards = Array.from(host.closest('.fd-runtime-table')?.querySelectorAll<HTMLElement>('.fd-runtime-hand-grid .fd-runtime-card') ?? []);
             const blockers = cards.map(card => card.getBoundingClientRect()).filter(card =>
-                card.left < bounds.right && card.right > bounds.left && card.top < bounds.bottom && card.bottom > bounds.top);
-            if (!blockers.length) return;
-            const slotIndex = nextFateDeploymentSlot(core, 'shinto');
-            const slot = slotIndex === null ? undefined : DEPLOYMENT_SLOTS.shinto?.[slotIndex];
-            if (!slot) return;
-            const availableHeight = Math.min(...blockers.map(card => card.top)) - host.getBoundingClientRect().top - 12;
-            const zoom = Math.max(.25, Math.min(livePose.current.zoom, availableHeight / (slot.pawnY + 44)));
-            requestCamera({ zoom, panX:(host.clientWidth-WIDTH*zoom)/2, panY:0 });
+                card.left < right && card.right > left && card.top < bottom && card.bottom > top);
+            if (!blockers.length) return camera;
+            const availableHeight = Math.min(...blockers.map(card => card.top)) - hostBounds.top - 12;
+            const zoom = Math.max(.25, Math.min(camera.zoom, availableHeight / (target.offsetTop + target.offsetHeight)));
+            return { zoom, panX: (host.clientWidth - WIDTH * zoom) / 2, panY: 0 };
         };
-        focusDeployment.current = focus;
-        const frame = requestAnimationFrame(focus);
-        return () => { cancelAnimationFrame(frame); focusDeployment.current = () => {}; };
+        fitDeployment.current = fit;
+        const frame = requestAnimationFrame(() => {
+            if (manualCamera.current) return;
+            const fitted = fit(livePose.current);
+            if (fitted !== livePose.current) requestCamera(fitted);
+        });
+        return () => { cancelAnimationFrame(frame); fitDeployment.current = camera => camera; };
     }, [host, needsDeploymentTargets, requestCamera]);
     const project = React.useCallback((display: MapViewportState) => {
         if (overlay.current)

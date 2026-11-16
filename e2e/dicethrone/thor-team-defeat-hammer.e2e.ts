@@ -72,22 +72,21 @@ test('四人队伍败北时持有者的姆乔尔尼尔自动返回索尔', async
         await test.step('目标投掷防御骰', async () => defender.locator('[data-tutorial-id="dice-roll-button"]').click({ timeout: 15000 }));
         await test.step('目标确认防御骰', async () => defender.locator('[data-tutorial-id="dice-confirm-button"]').click({ timeout: 15000 }));
         await test.step('目标结束防御', async () => defender.locator('[data-tutorial-id="advance-phase-button"]').click({ timeout: 15000 }));
-        // 防御后的伤害响应由当前玩家逐一处理，完成响应后才会结算败北。
-        await expect.poll(async () => {
-            const live = await current();
-            return Boolean(live.sys.responseWindow?.current) || live.core.teamHealth.B === 0;
-        }).toBe(true);
+        // 防御后可能先出现状态效果响应，也可能出现普通响应窗口；都从玩家可见的跳过入口继续。
         for (let i = 0; i < 8; i++) {
-            const window = (await current()).sys.responseWindow?.current;
-            if (!window) break;
-            const responderId = String(window.responderQueue[window.currentResponderIndex]);
-            const pass = pages[Number(responderId)].getByTestId('dicethrone-response-pass-button');
-            await expect(pass).toBeVisible();
+            await expect.poll(async () => {
+                if ((await current()).core.teamHealth.B === 0) return true;
+                return (await Promise.all(pages.map(page => page.getByTestId('dicethrone-response-pass-button').isVisible()))).some(Boolean);
+            }, { timeout: 15000 }).toBe(true);
+            if ((await current()).core.teamHealth.B === 0) break;
+            const visible = await Promise.all(pages.map(page => page.getByTestId('dicethrone-response-pass-button').isVisible()));
+            const pass = pages[visible.indexOf(true)].getByTestId('dicethrone-response-pass-button');
+            const before = JSON.stringify({ interaction: (await current()).sys.interaction, response: (await current()).sys.responseWindow, damage: (await current()).core.pendingDamage });
             await pass.click();
             await expect.poll(async () => {
-                const next = (await current()).sys.responseWindow?.current;
-                return !next || String(next.responderQueue[next.currentResponderIndex]) !== responderId;
-            }).toBe(true);
+                const live = await current();
+                return JSON.stringify({ interaction: live.sys.interaction, response: live.sys.responseWindow, damage: live.core.pendingDamage });
+            }).not.toBe(before);
         }
         await expect.poll(async () => {
             const live = (await current()).core;

@@ -30,7 +30,7 @@ export type RecordTrainingDecisionSampleArgs = {
     stateIdBefore: number;
     stateIdAfter: number;
     preState: unknown;
-    postState: unknown;
+    getPostState: () => unknown;
     gameOver?: unknown;
 };
 
@@ -106,7 +106,7 @@ export class TrainingDataCapture {
                 commandType: args.commandType,
                 payload: args.payload,
                 preState: args.preState,
-                postState: args.postState,
+                postState: args.getPostState(),
                 legalActions: buildAiDecisionContext({
                     gameId: args.match.gameId,
                     matchId: args.match.matchID,

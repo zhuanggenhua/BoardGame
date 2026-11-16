@@ -12,7 +12,7 @@ export interface ArmyGroup {
     height: number;
 }
 type Rect = { left: number; top: number; width: number; height: number; excludeRegionId?: string };
-export type ArmyGroupView = { visible: Rect; overlays: readonly Rect[]; protectedRegionIds?: readonly string[] };
+export type ArmyGroupView = { visible: Rect; overlays: readonly Rect[]; preciseOverlays?: readonly Rect[]; protectedRegionIds?: readonly string[] };
 
 /** 分阵营稳定放置地区内的超容量兵堆，找不到位置时显式返回未解决地区。 */
 export function layoutOverflowArmyStacks(

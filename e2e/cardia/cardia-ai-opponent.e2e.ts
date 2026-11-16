@@ -9,14 +9,14 @@ import {
  * Cardia AI 对手系统 E2E 测试
  * 
  * 测试覆盖：
- * 1. AI vs AI 完整对局：验证两个 AI 能够完成完整游戏流程
+ * 1. AI vs AI 对局推进：检查开始对局和出现出牌记录
  * 2. AI 打牌阶段决策：验证 AI 能够选择卡牌
  * 3. AI 能力阶段决策：验证 AI 能够激活或跳过能力
  * 4. AI 不生成非法动作：验证 AI 决策符合游戏规则
  * 5. 游戏正常结束：验证 AI 对局能够达到胜利条件
  */
 test.describe('Cardia AI 对手系统', () => {
-    test('AI vs AI 完整对局：验证两个 AI 能够完成完整游戏', async ({ browser }) => {
+    test('AI vs AI 对局推进：验证开始对局并出现出牌记录', async ({ browser }) => {
         test.setTimeout(120000); // 增加超时时间到 120 秒
         
         console.log('\n=== 创建 AI vs AI 对局 ===');
@@ -46,20 +46,6 @@ test.describe('Cardia AI 对手系统', () => {
             console.log(`回合数: ${initialState.core.turnNumber}`);
             console.log(`P1 手牌数: ${initialState.core.players['0'].hand.length}`);
             console.log(`P2 手牌数: ${initialState.core.players['1'].hand.length}`);
-
-            // 检查 AI 座位凭据
-            const aiCredentials = await setup.player1Page.evaluate(({ matchId }) => {
-                const raw = localStorage.getItem(`match_ai_creds_${matchId}`);
-                return raw ? JSON.parse(raw) : null;
-            }, { matchId: setup.matchId });
-            console.log('AI 座位凭据:', JSON.stringify(aiCredentials));
-
-            // 检查 match info
-            const matchInfo = await setup.player1Page.evaluate(async ({ gameId, matchId }) => {
-                const response = await fetch(`http://127.0.0.1:18000/games/${gameId}/${matchId}`);
-                return response.json();
-            }, { gameId: 'cardia', matchId: setup.matchId });
-            console.log('Match setupData:', JSON.stringify(matchInfo.setupData));
 
             // 等待 AI 完成多个回合
             console.log('\n=== 等待 AI 执行多个回合 ===');

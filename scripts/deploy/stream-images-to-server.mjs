@@ -81,17 +81,24 @@ if (!remoteDir) {
 const gameRef = `ghcr.io/zhuanggenhua/boardgame-game:${tag}`;
 const webRef = `ghcr.io/zhuanggenhua/boardgame-web:${tag}`;
 const imageRefs = [gameRef, webRef];
+const remoteDeployScriptTempPath = `/tmp/boardgame-deploy-image-${process.pid}.sh`;
+const remoteDeployScriptStagedPath = path.posix.join(remoteDir, 'scripts', 'deploy', `.deploy-image-${process.pid}.sh`);
 const remoteDeployCommand = deployCommandOverride
-  || `cd ${shellQuote(remoteDir)} && bash scripts/deploy/deploy-image.sh update-local ${shellQuote(tag)}`;
+  || `cd ${shellQuote(remoteDir)} && BG_WEB_ASSETS_ALREADY_RETAINED=1 bash ${shellQuote(remoteDeployScriptStagedPath)} update-local ${shellQuote(tag)}`;
 const localArchivePath = path.join(os.tmpdir(), `boardgame-images-${tag}-${process.pid}.tar`);
 const remoteArchivePath = `/tmp/boardgame-images-${tag}-${process.pid}.tar`;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const localWatchdogScriptPath = path.join(scriptDir, 'watch-game-server-cpu.sh');
 const localCpuProfileHelperPath = path.join(scriptDir, 'capture-node-cpu-profile.mjs');
+const localWebAssetHelperPath = path.join(scriptDir, 'preserve-web-assets.mjs');
+const localDeployScriptPath = path.join(scriptDir, 'deploy-image.sh');
 const remoteWatchdogTempPath = `/tmp/boardgame-game-server-cpu-watch-${process.pid}.sh`;
 const remoteCpuProfileHelperTempPath = `/tmp/boardgame-cpu-profile-${process.pid}.mjs`;
+const remoteWebAssetHelperTempPath = `/tmp/boardgame-web-asset-retention-${process.pid}.mjs`;
 const remoteWatchdogPath = path.posix.join(remoteDir, 'scripts', 'deploy', 'watch-game-server-cpu.sh');
 const remoteCpuProfileHelperPath = path.posix.join(remoteDir, 'scripts', 'deploy', 'capture-node-cpu-profile.mjs');
+const remoteWebAssetHelperPath = path.posix.join(remoteDir, 'scripts', 'deploy', 'preserve-web-assets.mjs');
+const remoteWebAssetDestination = path.posix.join(remoteDir, 'runtime', 'retained-web-assets');
 const remoteWatchdogInstallCommand = [
   'set -eu',
   `source=${shellQuote(remoteWatchdogTempPath)}`,
@@ -113,6 +120,26 @@ const remoteCpuProfileHelperInstallCommand = [
   'node --check "$source"',
   'install -m 755 "$source" "$staged"',
   'mv -f "$staged" "$target"',
+].join('; ');
+const remoteWebAssetHelperInstallCommand = [
+  'set -eu',
+  `source=${shellQuote(remoteWebAssetHelperTempPath)}`,
+  `target=${shellQuote(remoteWebAssetHelperPath)}`,
+  'staged="${target}.new.$$"',
+  'cleanup() { rm -f "$source" "$staged"; }',
+  'trap cleanup EXIT',
+  'node --check "$source"',
+  'install -m 755 "$source" "$staged"',
+  'mv -f "$staged" "$target"',
+].join('; ');
+const remotePreserveWebAssetsCommand = `node ${shellQuote(remoteWebAssetHelperPath)} --container boardgame-web --destination ${shellQuote(remoteWebAssetDestination)}`;
+const remoteDeployScriptInstallCommand = [
+  'set -eu',
+  `source=${shellQuote(remoteDeployScriptTempPath)}`,
+  `target=${shellQuote(remoteDeployScriptStagedPath)}`,
+  'bash -n "$source"',
+  'install -m 755 "$source" "$target"',
+  'rm -f "$source"',
 ].join('; ');
 
 const runCommand = (command, args, label) => new Promise((resolve, reject) => {
@@ -248,6 +275,9 @@ const main = async () => {
   console.log(`[stream-images] 本地临时 tar: ${localArchivePath}`);
   console.log(`[stream-images] 远端临时 tar: ${remoteArchivePath}`);
   if (shouldDeploy) {
+    if (!deployCommandOverride) console.log(`[stream-images] 发布前准备当前版本部署脚本: ssh ${host} "${remoteDeployScriptInstallCommand}"`);
+    console.log(`[stream-images] 发布前上传静态资源保留工具: scp ${localWebAssetHelperPath} ${host}:${remoteWebAssetHelperTempPath}`);
+    console.log(`[stream-images] 发布前安装并保留旧版静态资源: ssh ${host} "${remoteWebAssetHelperInstallCommand}; ${remotePreserveWebAssetsCommand}"`);
     console.log(`[stream-images] 发布前上传宿主 CPU 采集脚本: scp ${localWatchdogScriptPath} ${host}:${remoteWatchdogTempPath}`);
     console.log(`[stream-images] 发布前校验并原子安装宿主 CPU 采集脚本: ssh ${host} "${remoteWatchdogInstallCommand}"`);
     console.log(`[stream-images] 发布前上传容器内 Node CPU 采样工具: scp ${localCpuProfileHelperPath} ${host}:${remoteCpuProfileHelperTempPath}`);
@@ -267,6 +297,13 @@ const main = async () => {
     await loadArchiveOnRemote();
 
     if (shouldDeploy) {
+      if (!deployCommandOverride) {
+        await runCommand('scp', [...sshClientArgs, localDeployScriptPath, `${host}:${remoteDeployScriptTempPath}`], '上传当前版本部署脚本');
+        await runCommand('ssh', [...sshClientArgs, host, remoteDeployScriptInstallCommand], '校验并准备当前版本部署脚本');
+      }
+      await runCommand('scp', [...sshClientArgs, localWebAssetHelperPath, `${host}:${remoteWebAssetHelperTempPath}`], '上传静态资源保留工具');
+      await runCommand('ssh', [...sshClientArgs, host, remoteWebAssetHelperInstallCommand], '校验并安装静态资源保留工具');
+      await runCommand('ssh', [...sshClientArgs, host, remotePreserveWebAssetsCommand], '保留旧版静态资源');
       if (!skipWatchdogSync) {
         await uploadWatchdogToRemote();
         await installWatchdogOnRemote();
@@ -276,6 +313,14 @@ const main = async () => {
       await runCommand('ssh', [...sshClientArgs, host, remoteDeployCommand], '远端 update-local 部署');
     }
   } finally {
+    if (shouldDeploy) {
+      try { await runCommand('ssh', [...sshClientArgs, host, `rm -f ${shellQuote(remoteWebAssetHelperTempPath)}`], '清理临时静态资源保留工具'); }
+      catch (error) { console.warn(`[stream-images] 清理临时静态资源保留工具失败: ${error instanceof Error ? error.message : String(error)}`); }
+      if (!deployCommandOverride) {
+        try { await runCommand('ssh', [...sshClientArgs, host, `rm -f ${shellQuote(remoteDeployScriptTempPath)} ${shellQuote(remoteDeployScriptStagedPath)}`], '清理临时部署脚本'); }
+        catch (error) { console.warn(`[stream-images] 清理临时部署脚本失败: ${error instanceof Error ? error.message : String(error)}`); }
+      }
+    }
     if (shouldDeploy && !skipWatchdogSync) {
       await cleanupRemoteWatchdog();
       await cleanupRemoteCpuProfileHelper();

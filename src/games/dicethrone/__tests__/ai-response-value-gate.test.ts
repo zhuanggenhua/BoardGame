@@ -85,6 +85,12 @@ describe('DiceThrone AI 响应收益门槛', () => {
         expect(decision?.actionId).toBe('response:play-card:card-surprise');
     });
 
+    it('对手投出大招时仍会完整评估多骰重投并选择有效的干扰牌', async () => {
+        const state = createAfterRollConfirmedResponseState([6, 6, 6, 6, 6], 'card-i-can-again');
+        const decision = await decideForResponder(state);
+        expect(decision?.actionId).toBe('response:play-card:card-i-can-again');
+    });
+
     it('统一局面价值应显著反映致命伤害压力', () => {
         const safeState = createAfterRollConfirmedResponseState([1, 2, 3, 4, 5], 'card-surprise');
         const pressuredState = createAfterRollConfirmedResponseState([1, 2, 3, 4, 5], 'card-surprise');

@@ -10,7 +10,8 @@ import sharp from 'sharp';
 import { createInitialCore } from '../domain/initialCoreSetup';
 import { syncQidahenMapTokensFromRegions } from '../domain/mapTokens';
 import { buildQidahenRuntimeRegionIdByPixel } from '../ui/runtimeRegionOwnership';
-import { QIDAHEN_MAP_NAMEPLATE_OBSTACLES, QIDAHEN_PRINTED_NAMEPLATE_BOUNDS, QIDAHEN_RUNTIME_REGION_BY_ID } from '../ui/mapGraph';
+import { QIDAHEN_MAP_NAMEPLATE_OBSTACLES, QIDAHEN_PRINTED_NAMEPLATE_BOUNDS, QIDAHEN_RUNTIME_REGION_BY_ID, QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../ui/mapGraph';
+import { fitRegionObjects } from '../ui/regionObjectLayout';
 
 const width = 220, height = 220, regionId = 'city-region-15';
 const region = { id: regionId, x: .5, y: .5, population: 0, isLogicalRegion: false };
@@ -19,6 +20,68 @@ const ownership = (left: number, top: number, right: number, bottom: number) => 
     return x >= left && x < right && y >= top && y < bottom ? regionId : null;
 });
 const army = (id: string): QidahenMapToken => ({ id, type: 'army', faction: 'ming', location: 'field', regionId, x: .5, y: .5, size: 26, pieceId: id });
+
+it('辽西兵牌和人口可以避开地图字牌同时放入真实边界', async () => {
+    const w = 1265, h = 893, id = 'city-region-19-liaoxi';
+    const data = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer();
+    const owners = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), w, h);
+    const sites = buildQidahenPopulationSites(owners, w, h, QIDAHEN_MAP_REGION_GEOMETRY);
+    const token = { ...army('liaoxi'), regionId: id, x: 662 / w, y: 457 / h };
+    const anchor = { x: 698, y: 473 };
+    const result = fitRegionObjects([token], [{ tokenId: token.id, point: { x: 662, y: 457 }, anchor }],
+        [{ regionId: id, point: { x: 736, y: 491 }, anchor, callout: true }], sites, w, h);
+    expect(result.callouts).toHaveLength(0);
+    expect(result.populations[0].callout).toBe(false);
+    expect(result.tokens[0].size).toBe(26);
+    const population = result.populations[0];
+    expect(population.size).toBe(26);
+    const objects = [{ x: result.tokens[0].x * w, y: result.tokens[0].y * h, half: 13 },
+        { ...population.point, half: population.size! / 2 }];
+    for (const object of objects) for (let y = -object.half; y <= object.half; y++) for (let x = -object.half; x <= object.half; x++)
+        expect(owners[(Math.round(object.y + y)) * w + Math.round(object.x + x)]).toBe(id);
+    for (const object of objects) for (const city of QIDAHEN_RUNTIME_REGION_DEFINITIONS.filter(item => item.mapRole === 'city' && item.markerBounds)) {
+        const marker = city.markerBounds!;
+        expect(object.x + object.half + 6 <= marker.left || object.x - object.half - 6 >= marker.left + marker.width
+            || object.y + object.half + 6 <= marker.top || object.y - object.half - 6 >= marker.top + marker.height).toBe(true);
+    }
+    expect(Math.abs(objects[0].x - objects[1].x) >= objects[0].half + objects[1].half + 3
+        || Math.abs(objects[0].y - objects[1].y) >= objects[0].half + objects[1].half + 3).toBe(true);
+    const armyDistance = (objects[1].x - objects[0].x) ** 2 + (objects[1].y - objects[0].y) ** 2;
+    for (const city of QIDAHEN_RUNTIME_REGION_DEFINITIONS.filter(item => item.mapRole === 'city' && item.markerBounds)) {
+        const marker = city.markerBounds!;
+        expect((objects[1].x - marker.left - marker.width / 2) ** 2
+            + (objects[1].y - marker.top - marker.height / 2) ** 2).toBeGreaterThanOrEqual(armyDistance);
+    }
+    const card = { left: 620, top: 480, width: 130, height: 70 };
+    const unobscured = fitRegionObjects([token], [{ tokenId: token.id, point: { x: 662, y: 457 }, anchor }],
+        [{ regionId: id, point: { x: 736, y: 491 }, anchor, callout: true }], sites, w, h, [], new Set(), [card]);
+    expect(unobscured.callouts).toHaveLength(0);
+    const armyPoint = { x: unobscured.tokens[0].x * w, y: unobscured.tokens[0].y * h };
+    for (const [point, half] of [[armyPoint, 13], [unobscured.populations[0].point, unobscured.populations[0].size! / 2]] as const)
+        expect(point.x + half + 2 <= card.left || point.x - half - 2 >= card.left + card.width
+            || point.y + half + 2 <= card.top || point.y - half - 2 >= card.top + card.height).toBe(true);
+    const hud = { left: 600, top: 400, width: 180, height: 180 };
+    const input = [token] as const, callouts = [{ tokenId: token.id, point: { x: 662, y: 457 }, anchor }];
+    const populations = [{ regionId: id, point: { x: 736, y: 491 }, anchor, callout: true }];
+    expect(fitRegionObjects(input, callouts, populations, sites, w, h, [], new Set(), [hud], input, new Set([id])).callouts).toHaveLength(1);
+    const background = fitRegionObjects(input, callouts, populations, sites, w, h, [], new Set(), [hud], input, new Set());
+    expect(background.callouts).toHaveLength(0);
+    expect(background.populations[0].callout).toBe(false);
+});
+
+it('朵颜人口可避开真实地名字牌并以原尺寸回到地区内', async () => {
+    const w = 1265, h = 893, id = 'duoyan';
+    const data = await sharp('src/games/qidahen/data/region-mask.png').ensureAlpha().raw().toBuffer();
+    const owners = buildQidahenRuntimeRegionIdByPixel(new Uint8ClampedArray(data), w, h);
+    const sites = buildQidahenPopulationSites(owners, w, h, QIDAHEN_MAP_REGION_GEOMETRY);
+    const anchor = sites.get(id)!.anchor;
+    const result = fitRegionObjects([], [], [{ regionId: id, point: { x: 544, y: 476 }, anchor, callout: true }], sites, w, h);
+    const population = result.populations[0];
+    expect(population.callout).toBe(false);
+    expect(population.size ?? 26).toBe(26);
+    for (let y = -13; y <= 13; y++) for (let x = -13; x <= 13; x++)
+        expect(owners[(population.point.y + y) * w + population.point.x + x]).toBe(id);
+});
 
 it('逐兵选择地图缩放过基准时兵牌屏幕尺寸连续，且不低于原图', () => {
     expect(getArmyScreenScale(1.719999, 1.72)).toBe(1);

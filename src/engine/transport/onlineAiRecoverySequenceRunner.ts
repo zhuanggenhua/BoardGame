@@ -74,6 +74,7 @@ export type OnlineAiRecoverySequenceExecutionTrace = {
     stateIdBefore: number;
     candidateReason: ForceEndTurnStalledAiResolution['reason'] | 'immediate-ai';
     decisionMs: number;
+    delayMs?: number;
     executionMs: number;
     actionKind: string | null;
     commandTypes: string[];

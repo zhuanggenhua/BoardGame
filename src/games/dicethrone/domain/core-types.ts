@@ -341,6 +341,8 @@ export interface AttackBonusDamageSource {
     amount: number;
     sourceId?: string;
     sourceName?: string;
+    /** 只属于当前攻击的增伤，不在攻击取消后转移到下次攻击。 */
+    expiresWithAttack?: boolean;
 }
 
 export interface PendingAttack {
@@ -438,8 +440,6 @@ export interface PendingAttack {
      * 默认未设置时沿用 ATTACK_INITIATED 的普通攻击口径；仅规则明确将已选分支裁定为非攻击时置为 false。
      */
     countsAsOffensiveAttackMade?: boolean;
-    /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */
-    followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */
     treantDivinePreventDebuffChoice?: 'prevent' | 'skip';
     /** 教会税 II 在技能激活后等待状态判定/响应窗口收口再发放的 CP。 */

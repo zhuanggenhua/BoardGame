@@ -31,6 +31,11 @@
     "playerStatus": "玩家状态",
     "actionLog": "操作记录"
   },
+  "endgame": {
+    "standings": "最终排名",
+    "points": "{{count}} 分",
+    "cards": "{{count}} 张发展卡"
+  },
   "status": {
     "currentTurn": "当前回合：{{player}} · 第 {{round}} 轮",
     "gameOver": "游戏结束：{{winners}}",

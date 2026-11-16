@@ -3,6 +3,7 @@ import { applyPlayerViewToState } from '../../../engine/ai/playerView';
 import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine';
 import { FATE_SERVANTS } from '../data';
 import { FateDominationDomain } from '../domain';
+import { isFateBasicAttackDefinition } from '../domain/ridingChoice';
 import type { FateDominationCore } from '../domain';
 import { emptyFateBattleResult } from '../domain/battleAwards';
 import { engineConfig } from '../game';
@@ -11,6 +12,18 @@ import type { Command, MatchState } from '../../../engine/types';
 
 const playerIds = ['0', '1', '2'];
 const rideSource = 'sc_iskandar_1';
+
+it('旧 WebView 缺少 Object.hasOwn 时仍可识别基础攻击', () => {
+    const original = Object.hasOwn;
+    let result: boolean;
+    try {
+        Object.hasOwn = undefined as unknown as typeof Object.hasOwn;
+        result = isFateBasicAttackDefinition({ id: 'cardB1', type: '力量', desc: '基础攻击卡牌' });
+    } finally {
+        Object.hasOwn = original;
+    }
+    expect(result!).toBe(true);
+});
 
 function ridingGame(seed = 'iskandar-riding') {
     const random = createSeededRandom(seed);

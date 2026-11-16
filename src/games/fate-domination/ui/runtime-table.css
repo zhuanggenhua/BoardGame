@@ -76,6 +76,7 @@
 
 .fd-self-copy strong { color:#efcf78; }
 .fd-self-stats { display:flex; gap:12px; margin-top:6px; font-size:10px; }
+.fd-self-stats > span { background:#101717ed; box-shadow:0 0 0 3px #101717ed; border-radius:2px; }
 .fd-self-stats b { display:block; color:#e7b943; font-size:13px; }
 .fd-self-stats small { margin:0; font-size:10px; white-space:nowrap; }
 .fd-phase-copy { text-align:right; text-shadow:0 2px 7px #000; }

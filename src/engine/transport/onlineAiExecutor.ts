@@ -134,6 +134,7 @@ export type OnlineAiImmediateActionResult = {
     actionKind: string | null;
     executedCommandTypes: string[];
     decisionMs: number;
+    delayMs?: number;
     commandFailureReason: string | null;
 };
 
@@ -279,7 +280,8 @@ export async function tryExecuteOnlineAiImmediateAction(args: {
         playerId: resolution.playerId,
         actionKind: resolution.action.kind,
         executedCommandTypes: sequence.executedCommandTypes,
-        decisionMs: decisionMs + delayResult.waitedMs,
+        decisionMs,
+        delayMs: delayResult.waitedMs,
         commandFailureReason: null,
     };
 }

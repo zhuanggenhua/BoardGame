@@ -292,11 +292,16 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await card.hover();
     const magnify=card.locator('..').getByTestId('card-inspect-button');
     await expect(magnify).toBeVisible();
-    await capture('手牌悬浮通用放大镜，卡牌主操作仍独立','desktop-card-magnifier','悬浮手牌后右上出现通用放大镜，本体仍承接选牌。');
+    await capture('手牌悬浮通用放大镜，卡牌主操作仍独立','desktop-card-magnifier','悬浮手牌后出现通用放大镜，本体仍承接选牌。');
     await magnify.click();
     await expect(page.getByRole('dialog',{name:/卡牌检视/})).toBeVisible();
     expect((await snapshot(page)).authoritative).toEqual(beforeMagnify.authoritative);
-    await page.getByTestId('fate-inspection-close').click();
+    const desktopClose=page.getByTestId('fate-inspection-close');
+    await page.mouse.move(8,8);
+    await expect(desktopClose).toHaveCSS('opacity','0');
+    await page.getByTestId('fate-runtime-inspection').hover();
+    await expect(desktopClose).toHaveCSS('opacity','1');
+    await desktopClose.click();
     await expect(page.getByRole('dialog',{name:/卡牌检视/})).toHaveCount(0);
     steps.push({id:'desktop-card-magnifier',action:'悬浮手牌并点击通用放大镜，关闭后回到同一牌桌',before:beforeMagnify,after:await snapshot(page),assertions:[assertion('magnifier-does-not-select-pay-or-activate',(await snapshot(page)).authoritative,beforeMagnify.authoritative)]});
     const beforeSelect=await snapshot(page);
@@ -544,6 +549,7 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     const inspectionFace=page.getByTestId('fate-inspection-card-face');
     const inspectionBox=await inspectionFace.boundingBox();
     const inspectionClose=page.getByTestId('fate-inspection-close');
+    await page.getByTestId('fate-runtime-inspection').hover();
     const closeBox=await inspectionClose.boundingBox();
     const inspectionMetrics={face:inspectionBox,close:closeBox,fonts:await page.evaluate(()=>{
         const title=document.querySelector<HTMLElement>('.fd-runtime-inspection');

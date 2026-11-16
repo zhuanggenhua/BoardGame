@@ -30,6 +30,31 @@ function mount(ready = true) {
 }
 afterEach(() => { cleanup(); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalViewport.width }); Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalViewport.height }); onFrameChange.mockClear(); });
 describe('骰盘排座与地图取景分工', () => {
+    it('战斗连线只指向实际参战兵牌，伤害指向承受方', async () => {
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 915 });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
+        const sequence = node('qidahen-battle-roll-sequence', rect(250, 100, 300, 200));
+        sequence.dataset.battleRollState = 'rolling';
+        sequence.dataset.battleRollPhase = 'cavalry';
+        const label = node('attacker-label', rect(300, 100, 80, 30)); label.dataset.qidahenBattleLabel = 'attacker';
+        const result = node('qidahen-battle-result-attacker', rect(300, 200, 80, 30));
+        const otherResult = node('qidahen-battle-result-defender', rect(460, 230, 70, 80));
+        sequence.append(label, result, otherResult);
+        const attacker = node('selected-army', rect(600, 100, 40, 40)); attacker.dataset.qidahenMapPieceId = 'selected'; attacker.dataset.qidahenMapTokenRegion = 'source';
+        attacker.dataset.qidahenMapTokenTroopKind = 'cavalry';
+        const cannon = node('selected-cannon', rect(500, 100, 40, 40)); cannon.dataset.qidahenMapPieceId = 'cannon'; cannon.dataset.qidahenMapTokenTroopKind = 'artillery';
+        const unselected = node('unselected-stack', rect(400, 100, 40, 40)); unselected.dataset.qidahenMapPieceId = 'unselected'; unselected.dataset.qidahenMapTokenRegion = 'source';
+        const defender = node('defender-army', rect(650, 300, 40, 40)); defender.dataset.qidahenMapPieceId = 'defender'; defender.dataset.qidahenMapTokenRegion = 'target';
+        defender.dataset.qidahenMapTokenTroopKind = 'cavalry';
+        document.body.append(sequence, attacker, cannon, unselected, defender);
+        const rolls = { stages: [{ phase: 'cavalry', attackerRolls: [{ troopKind: 'cavalry' }], defenderRolls: [{ troopKind: 'cavalry' }] }], attackerMorale: { remainingLevels: { selected: 1, cannon: 1 } }, defenderMorale: { remainingLevels: { defender: 1 } } } as unknown as QidahenBattleRolls;
+        render(<QidahenBattleRollOverlay {...props} rolls={rolls} sourceRegionId="source" targetRegionId="target" committedPieceIds={['selected', 'cannon']} layoutReady />);
+        await waitFor(() => expect(document.querySelector('[data-qidahen-battle-link-side="attacker"]')?.getAttribute('data-qidahen-battle-link-piece-id')).toBe('selected'));
+        act(() => { sequence.dataset.battleRollState = 'damage'; });
+        await waitFor(() => expect(document.querySelector('[data-qidahen-battle-link-side="defender"]')?.getAttribute('data-qidahen-battle-link-piece-id')).toBe('defender'));
+        const routed = document.querySelector('[data-qidahen-battle-link-side="defender"] polyline')?.getAttribute('points');
+        expect(routed?.split(' ').length).toBeGreaterThan(2);
+    });
     it('双方兵牌之间的空地优先投掷，背景人口标记不把骰子挤到其它地区', () => {
         Object.defineProperty(window, 'innerWidth', { configurable: true, value: 640 });
         Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
@@ -116,8 +141,10 @@ describe('骰盘排座与地图取景分工', () => {
         const region = node('qidahen-battle-region-space-target', battlefield); region.dataset.qidahenBattleRegionSpace = 'target';
         const troop = node('qidahen-map-token-target', battlefield); troop.dataset.qidahenMapTokenRegion = 'target';
         act(() => { map.append(region, troop); });
-        await waitFor(() => expect(overlap(frame(), battlefield)).toBe(false));
-        expect(battlefield.left - frame().right).toBeLessThanOrEqual(16);
+        await waitFor(() => {
+            expect(overlap(frame(), battlefield)).toBe(false);
+            expect(battlefield.left - frame().right).toBeLessThanOrEqual(16);
+        });
         expect(onFrameChange).toHaveBeenCalledWith(expect.objectContaining({ left: frame().left, width: frame().width }));
     });
     it('骰子在实际HUD之间保持完整可见，不借地图外空白摆放', () => {

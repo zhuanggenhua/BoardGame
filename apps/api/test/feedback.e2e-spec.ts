@@ -851,7 +851,7 @@ describe('Feedback Module (e2e)', () => {
                     route: '/play/smashup/match/lazy-load',
                     gameId: 'smashup',
                     appVersion: 'test-build',
-                    failedAsset: { path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0, privateField: 'secret-asset-canary' },
+                    failedAsset: { path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0, encodedBodySize: 0, decodedBodySize: 0, timingResponseStartPresent: false, online: true, privateField: 'secret-asset-canary' },
                     boardPlayers: { count: 2, playerIdPresent: true, playerExists: false, privateField: 'secret-board-canary' },
                     performance: {
                         capturedAt: '2026-10-06T10:00:01.000Z',
@@ -920,7 +920,7 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.hasErrorContext).toBe(true);
         expect(summaryItem.clientContext?.route).toBe('/play/:game/match');
         expect(summaryItem.clientContext?.performance?.network?.connectionRttMs).toBe(160);
-        expect(summaryItem.clientContext?.failedAsset).toEqual({ path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0 });
+        expect(summaryItem.clientContext?.failedAsset).toEqual({ path: '/assets/HomeEntry-test.css', observedAt: '2026-10-06T10:00:01.000Z', responseStatus: 404, durationMs: 25, transferSize: 0, encodedBodySize: 0, decodedBodySize: 0, timingResponseStartPresent: false, online: true });
         expect(summaryItem.clientContext?.boardPlayers).toEqual({ count: 2, playerIdPresent: true, playerExists: false });
         expect(summaryItem.errorContext?.name).toBe('TypeError');
         expect(summaryItem.errorContext?.message).toBe('pipeline_error');
@@ -1536,6 +1536,99 @@ describe('Feedback Module (e2e)', () => {
         expect(docs[0].occurrenceCount).toBe(2);
         expect(docs[0].latestIncidentKey).toBe('tracker-b');
         expect(docs[0].resolvedMethod).toBe('系统已自动推进停滞的 AI 座位，让对局继续进行。');
+    });
+
+    it('CPU 告警跨聚合窗口仍保留未解决状态，且旧告警可独立处理', async () => {
+        const { adminToken } = await seedUsers();
+        const payload = {
+            content: '[system][infra-cpu-watch] game-server CPU sustained high',
+            source: 'infra-cpu-watch', type: 'bug', severity: 'high', status: 'open',
+            autoReportKind: 'cpu-sustained-high', incidentKey: 'cpu-window-a', gameName: 'infra',
+            clientContext: { gameId: 'infra', route: 'host-cpu-watch', mode: 'production' },
+            errorContext: { source: 'infra-cpu-watch', name: 'cpu-sustained-high', message: 'sustained_high_cpu' },
+        };
+        const first = await request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN).send(payload).expect(201);
+        const old = new Date(Date.now() - WATCHDOG_AGGREGATION_WINDOW_MS - 1000);
+        await feedbackModel.findByIdAndUpdate(first.body._id, { firstOccurredAt: old, lastOccurredAt: old });
+        const second = await request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ ...payload, incidentKey: 'cpu-window-b' }).expect(201);
+        expect(second.body._id).not.toBe(first.body._id);
+        const previous = await feedbackModel.findById(first.body._id).lean();
+        expect(previous?.status).toBe('open');
+        expect(previous?.aggregationActiveKey).toBeUndefined();
+
+        await request(app.getHttpServer()).patch(`/admin-api/feedback/${first.body._id}/status`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ status: 'resolved', resolvedMethod: '已完成旧 CPU 告警的定位和验证' }).expect(200);
+        const previousAfter = await feedbackModel.findById(first.body._id).lean();
+        const current = await feedbackModel.findById(second.body._id).lean();
+        expect(previousAfter?.status).toBe('resolved');
+        expect(previousAfter?.aggregationActiveKey).toBeUndefined();
+        expect(current?.status).toBe('open');
+        expect(current?.aggregationActiveKey).toBeTruthy();
+        await request(app.getHttpServer()).patch(`/admin-api/feedback/${first.body._id}/status`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ status: 'closed', closedReason: '归档测试' }).expect(200);
+        await request(app.getHttpServer()).patch(`/admin-api/feedback/${first.body._id}/status`)
+            .set('Authorization', `Bearer ${adminToken}`).send({ status: 'open' }).expect(200);
+        const reopened = await feedbackModel.findById(first.body._id).lean();
+        expect(reopened?.status).toBe('open');
+        expect(reopened?.aggregationActiveKey).toBeUndefined();
+        const third = await request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ ...payload, incidentKey: 'cpu-window-c' }).expect(201);
+        expect(third.body._id).toBe(second.body._id);
+        expect(third.body.occurrenceCount).toBe(2);
+    });
+
+    it('已解决的 CPU 告警再次发生时新开未解决记录，重发旧现场仍保持幂等', async () => {
+        const { adminToken } = await seedUsers();
+        const payload = {
+            content: '[system][infra-cpu-watch] game-server CPU sustained high',
+            source: 'infra-cpu-watch', type: 'bug', severity: 'high', status: 'open',
+            autoReportKind: 'cpu-sustained-high', incidentKey: 'same-host', gameName: 'infra',
+            clientContext: { gameId: 'infra', route: 'host-cpu-watch', mode: 'production' },
+            errorContext: { source: 'infra-cpu-watch', name: 'cpu-sustained-high', message: 'sustained_high_cpu' },
+            diagnosticPacket: { schemaVersion: 1, captureId: 'cpu-incident-a', source: 'server', capturedAt: '2026-11-15T00:00:00.000Z', collectionStatus: 'partial', replayability: 'unreplayable', missingFields: [] },
+        };
+        const post = (body: typeof payload) => request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN).send(body).expect(201);
+        const first = await post(payload);
+        await request(app.getHttpServer()).patch(`/admin-api/feedback/${first.body._id}/status`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ status: 'resolved', resolvedMethod: '原告警已完成根因修复和验证' }).expect(200);
+        const oldRetry = await post(payload);
+        expect(oldRetry.body._id).toBe(first.body._id);
+        expect(oldRetry.body.status).toBe('resolved');
+        const second = await post({ ...payload, diagnosticPacket: { ...payload.diagnosticPacket, captureId: 'cpu-incident-b' } });
+        expect(second.body._id).not.toBe(first.body._id);
+        expect(second.body.status).toBe('open');
+        expect(second.body.occurrenceCount).toBe(1);
+        const retryAfterNew = await post(payload);
+        expect(retryAfterNew.body._id).toBe(first.body._id);
+        expect((await feedbackModel.findById(second.body._id).lean())?.occurrenceCount).toBe(1);
+    });
+
+    it('旧版 CPU 守护程序未携带现场标识时，已解决后再次上报也不能隐藏新告警', async () => {
+        const { adminToken } = await seedUsers();
+        const payload = {
+            content: '[system][infra-cpu-watch] game-server CPU sustained high',
+            source: 'infra-cpu-watch', type: 'bug', severity: 'high', status: 'open',
+            autoReportKind: 'cpu-sustained-high', incidentKey: 'same-host', gameName: 'infra',
+            clientContext: { gameId: 'infra', route: 'host-cpu-watch', mode: 'production' },
+            errorContext: { source: 'infra-cpu-watch', name: 'cpu-sustained-high', message: 'sustained_high_cpu' },
+        };
+        const post = () => request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN).send(payload).expect(201);
+        const first = await post();
+        await request(app.getHttpServer()).patch(`/admin-api/feedback/${first.body._id}/status`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ status: 'resolved', resolvedMethod: '原告警已完成修复' }).expect(200);
+        const second = await post();
+        expect(second.body._id).not.toBe(first.body._id);
+        expect(second.body.status).toBe('open');
     });
 
     it('infra-cpu-watch 相同 CPU 高水位系统反馈应聚合到同一条记录并累计次数', async () => {
@@ -2155,7 +2248,55 @@ describe('Feedback Module (e2e)', () => {
         expect(retainedClosed?.status).toBe('closed');
     });
 
-    it('online-ai-watchdog 近3天内也只保留最近100条，超出上限时应自动删除更旧记录', async () => {
+    it('online-ai-watchdog 清理过期或超额归档时保留未解决反馈', async () => {
+        const staleOccurredAt = new Date(Date.now() - WATCHDOG_RECENT_RETENTION_MS - 60_000);
+        const oldOpen = await feedbackModel.create({
+            content: 'old open watchdog feedback', type: 'bug', severity: 'high',
+            source: 'online-ai-watchdog', reporterType: 'system', status: 'open',
+            lastOccurredAt: staleOccurredAt,
+        });
+        const oldInProgress = await feedbackModel.create({
+            content: 'old in-progress watchdog feedback', type: 'bug', severity: 'high',
+            source: 'online-ai-watchdog', reporterType: 'system', status: 'in_progress',
+            lastOccurredAt: staleOccurredAt,
+        });
+        const oldClosed = await feedbackModel.create({
+            content: 'old closed watchdog feedback', type: 'bug', severity: 'high',
+            source: 'online-ai-watchdog', reporterType: 'system', status: 'closed',
+            lastOccurredAt: staleOccurredAt,
+        });
+        const recentClosed = await feedbackModel.create({
+            content: 'recent closed watchdog feedback', type: 'bug', severity: 'high',
+            source: 'online-ai-watchdog', reporterType: 'system', status: 'closed',
+            lastOccurredAt: new Date(),
+        });
+        await feedbackModel.insertMany(Array.from({ length: WATCHDOG_MAX_RECENT_RECORDS + 1 }, (_, index) => ({
+            content: `recent open watchdog feedback ${index}`, type: 'bug', severity: 'high',
+            source: 'online-ai-watchdog', reporterType: 'system', status: 'open',
+            lastOccurredAt: new Date(),
+        })));
+
+        await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                content: '[system][online-ai-watchdog] force-end-turn-failed retention check',
+                source: 'online-ai-watchdog', type: 'bug', severity: 'high',
+                autoReportKind: 'force-end-turn-failed', gameName: 'smashup',
+                incidentKey: 'retention-open-check',
+                clientContext: { gameId: 'smashup', route: 'server-watchdog', mode: 'online' },
+            })
+            .expect(201);
+
+        expect(await feedbackModel.exists({ _id: oldOpen._id, status: 'open' })).toBeTruthy();
+        expect(await feedbackModel.exists({ _id: oldInProgress._id, status: 'in_progress' })).toBeTruthy();
+        expect(await feedbackModel.exists({ _id: oldClosed._id })).toBeNull();
+        expect(await feedbackModel.exists({ _id: recentClosed._id, status: 'closed' })).toBeTruthy();
+        expect(await feedbackModel.countDocuments({ source: 'online-ai-watchdog', status: 'open' }))
+            .toBe(WATCHDOG_MAX_RECENT_RECORDS + 3);
+    });
+
+    it('online-ai-watchdog 近3天内的已解决记录只保留最近100条，超出上限时清理更旧记录', async () => {
         await feedbackModel.deleteMany({ source: 'online-ai-watchdog' });
 
         const basePayload = {
@@ -2163,6 +2304,7 @@ describe('Feedback Module (e2e)', () => {
             source: 'online-ai-watchdog',
             type: 'bug',
             severity: 'high',
+            status: 'resolved',
             autoReportKind: 'force-end-turn-failed',
             gameName: 'smashup',
             clientContext: {

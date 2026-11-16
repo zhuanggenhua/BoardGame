@@ -396,6 +396,10 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
             observedAt: new Date().toISOString(),
             ...(status > 0 ? { responseStatus: status } : {}),
             ...(entry ? { durationMs: entry.duration, transferSize: entry.transferSize } : {}),
+            ...(entry && Number.isFinite(entry.encodedBodySize) ? { encodedBodySize: entry.encodedBodySize } : {}),
+            ...(entry && Number.isFinite(entry.decodedBodySize) ? { decodedBodySize: entry.decodedBodySize } : {}),
+            ...(entry && Number.isFinite(entry.responseStart) ? { timingResponseStartPresent: entry.responseStart > 0 } : {}),
+            ...(typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' ? { online: navigator.onLine } : {}),
         };
     }
     const privateReplayRequired = mode === 'online' && Boolean(matchId && playerId);

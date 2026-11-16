@@ -35,6 +35,18 @@ describe('BoardBridge remountKey', () => {
         window.localStorage.clear();
     });
 
+    it('旧 WebView 缺少 Object.hasOwn 时仍能为玩家打开棋盘', () => {
+        const original = Object.hasOwn;
+        const Board = ({ playerID }: GameBoardProps<unknown>) => <div data-testid="legacy-board">{playerID}</div>;
+        try {
+            Object.hasOwn = undefined as unknown as typeof Object.hasOwn;
+            render(<LocalGameProvider config={testConfig} numPlayers={2} seed="legacy-has-own"><GameClientOverrideProvider playerId="0"><BoardBridge board={Board} /></GameClientOverrideProvider></LocalGameProvider>);
+            expect(screen.getByTestId('legacy-board')).toHaveTextContent('0');
+        } finally {
+            Object.hasOwn = original;
+        }
+    });
+
     it('remountKey 为 false 时，playerID 切换只更新 props，不重挂载 Board', () => {
         const mountSpy = vi.fn();
         const unmountSpy = vi.fn();

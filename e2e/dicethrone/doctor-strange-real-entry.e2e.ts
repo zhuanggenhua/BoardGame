@@ -34,6 +34,11 @@ const DICE_THRONE_PREPARE_RANDOM = {
 
 const PREPARE_SPELL_ID = 'spell-fangs-of-farallah';
 const HAND_CARD_ID = 'card-strange-see-the-future';
+const requiredUiStatesPath = join(process.cwd(), 'e2e/dicethrone/doctor-strange-required-ui-states.json');
+const requiredUiStatesBytes = readFileSync(requiredUiStatesPath);
+const requiredUiStates = JSON.parse(requiredUiStatesBytes.toString('utf8')) as {
+    requiredStates: Array<{ chainId: string; uiStateId: string; viewport: string }>;
+};
 const DOCTOR_STRANGE_E2E_SOURCE_REVISION = createHash('sha256')
     .update(readFileSync(fileURLToPath(import.meta.url)))
     .digest('hex');
@@ -347,6 +352,11 @@ async function promoteTracedEvidenceScreenshotRun(
         mediaByChain.set(entry.chainId, chain);
     }
     for (const [chainId, chainMedia] of mediaByChain) {
+        expect(readFileSync(requiredUiStatesPath).equals(requiredUiStatesBytes), '必要截图合同在采集期间不得改变').toBe(true);
+        for (const required of requiredUiStates.requiredStates.filter(state => state.chainId === chainId)) {
+            expect(chainMedia.some(entry => entry.uiStateId === required.uiStateId && entry.viewport === required.viewport),
+                `缺少必要界面状态 ${chainId}/${required.uiStateId}`).toBe(true);
+        }
         const chainStepIds = new Set(chainMedia.map(entry => entry.behaviorStepId!));
         const trace = {
             gameId: 'dicethrone',
@@ -357,6 +367,7 @@ async function promoteTracedEvidenceScreenshotRun(
             e2eSourceRevision,
             status: 'PASS',
             outcome,
+            captureContract: { sha256: createHash('sha256').update(requiredUiStatesBytes).digest('hex') },
             steps: recorder.steps.filter(step => chainStepIds.has(step.id)),
             uiStates: chainMedia.map(entry => ({
                 id: entry.uiStateId!,
@@ -369,7 +380,7 @@ async function promoteTracedEvidenceScreenshotRun(
         await writeFile(join(run.stagingDir, `${chainId}.trace.json`), `${JSON.stringify(trace, null, 2)}\n`, 'utf8');
     }
     await promoteEvidenceScreenshotRun(run, {
-        gameId: 'dicethrone', evidenceCategory: 'independent', capturePolicy: 'distinct-ui-state', media: interactionMedia,
+        version: 2, gameId: 'dicethrone', evidenceCategory: 'independent', capturePolicy: 'distinct-ui-state', media: interactionMedia,
     });
 }
 

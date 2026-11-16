@@ -2729,6 +2729,33 @@ test.describe('FantasyRealms online basic flow', () => {
             await captureSettlementChoice(host.page, testInfo, '终局岛屿选择');
             await chooseSettlementCard(host.page, 'flame-wildfire');
             await expect(host.page.getByLabel('最终排名')).toBeVisible({ timeout: 20000 });
+            const reviewState = await readFantasyRealmsMatchState(matchId, host.page);
+            const reviewCore = reviewState.core as FantasyRealmsCore;
+            const reviewHand = reviewCore.players['0']!.hand;
+            await injectMatchState(matchId, {
+                ...reviewState,
+                core: {
+                    ...reviewCore,
+                    discardPile: [...reviewCore.discardPile, reviewHand[reviewHand.length - 1]],
+                    players: { ...reviewCore.players, '0': { ...reviewCore.players['0']!, hand: reviewHand.slice(0, -1) } },
+                },
+            }, host.page);
+            await host.page.setViewportSize({ width: 2560, height: 1440 });
+            await expect.poll(async () => (await host.page.locator('.fr-card-button--live-center').first().boundingBox())?.width ?? 0).toBeGreaterThan(240);
+            await captureSettlementChoice(host.page, testInfo, '终局复盘大屏');
+            await host.page.setViewportSize({ width: 1366, height: 768 });
+            const layers = await host.page.evaluate(() => {
+                const center = document.querySelector<HTMLElement>('.fr-live-center-row')!;
+                const hand = document.querySelector<HTMLElement>('.fr-live-hand-zone')!;
+                const card = hand.querySelector<HTMLElement>('.fr-card-button--live-hand')!;
+                const rect = card.getBoundingClientRect();
+                const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                return { centerBottom: center.getBoundingClientRect().bottom, handBottom: hand.getBoundingClientRect().bottom, handHit: Boolean(hit && card.contains(hit)) };
+            });
+            expect(layers.centerBottom).toBeGreaterThanOrEqual(layers.handBottom - 2);
+            expect(layers.handHit).toBe(true);
+            await captureSettlementChoice(host.page, testInfo, '终局复盘小屏');
+            await injectMatchState(matchId, reviewState, host.page);
             const result = await readFantasyRealmsCore(matchId, host.page);
             expect(result.players['0']!.hand.some((card) => card.id === 'leader-queen')).toBe(true);
             expect(result.settlement?.selections['0']).toMatchObject({ shapeshifterTargetId: 'leader-king', islandTargetId: 'flame-wildfire' });

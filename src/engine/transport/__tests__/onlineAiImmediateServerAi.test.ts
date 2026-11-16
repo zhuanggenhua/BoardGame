@@ -713,6 +713,7 @@ describe('online AI immediate server-side execution', () => {
         const serverInternal = server as unknown as {
             loadMatch: (matchID: string) => Promise<any>;
             runOnlineAiImmediateExecution: (match: any, trigger: 'command-succeeded' | 'sync') => Promise<void>;
+            logOnlineAiExecutionTrace: (trace: { actionKind: string | null; decisionMs: number; delayMs?: number; executionMs: number }) => void;
             executeCommandInternal: (
                 match: any,
                 playerID: string,
@@ -721,6 +722,7 @@ describe('online AI immediate server-side execution', () => {
                 options?: unknown,
             ) => Promise<boolean>;
         };
+        const traceSpy = vi.spyOn(serverInternal, 'logOnlineAiExecutionTrace');
         const match = await serverInternal.loadMatch('match-summonerwars-visible-action-interval');
         const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (
             activeMatch,
@@ -798,10 +800,16 @@ describe('online AI immediate server-side execution', () => {
             await vi.advanceTimersByTimeAsync(1);
             await runPromise;
             expect(executeSpy).toHaveBeenCalledTimes(2);
+            const actionTraces = traceSpy.mock.calls.map(([trace]) => trace).filter(trace => trace.actionKind === 'summon-unit');
+            expect(actionTraces).toHaveLength(2);
+            for (const trace of actionTraces) {
+                expect(trace).toMatchObject({ decisionMs: 0, delayMs: 1000, executionMs: 0 });
+            }
 
             expect(match.state.core.lastVisibleCommandType).toBe('VISIBLE_TWO');
         } finally {
             executeSpy.mockRestore();
+            traceSpy.mockRestore();
             consoleSpy.mockRestore();
             resolutionSpy.mockRestore();
             vi.useRealTimers();

@@ -777,8 +777,8 @@ const validateSelectAbility = (
         return fail('player_mismatch');
     }
     
-    // offensiveRoll 内的 pendingAttack 表示“已选攻击候选”，玩家仍未点推进/确认攻击。
-    // 真正进入 targetingRoll/defensiveRoll/结算后会离开 offensiveRoll，此时自然不能再走进攻 SELECT_ABILITY。
+    // 伤害响应可在 offensiveRoll 中暂停结算；此时不可覆盖正在结算的攻击。
+    if (state.pendingDamage) return fail('attack_already_initiated');
     
     // 晕眩状态不阻止进攻技能：攻击方有晕眩时仍可攻击，晕眩在攻击结算后触发额外攻击
     // 晕眩只阻止防御行为（见上方 defensiveRoll 分支）

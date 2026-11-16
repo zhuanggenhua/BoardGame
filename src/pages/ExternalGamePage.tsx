@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LogOut, Menu } from 'lucide-react';
 import { getExternalGame, getOwnedGame } from '../api/external-games';
 import { useAuth } from '../contexts/AuthContext';
 import { ExternalGameText } from '../components/external/ExternalGameText';
@@ -9,6 +10,7 @@ import { GameRulesDocumentLink } from '../components/external/GameRulesDocumentL
 import { useExternalPlay } from '../components/external/useExternalPlay';
 import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
 import { resolveExternalEmbed } from '../shared/externalGames';
+import { FabMenu, type FabAction } from '../components/system/FabMenu';
 import './external-game-page.css';
 
 function hasControlCharacters(value: string) {
@@ -21,10 +23,6 @@ function safeReturnPath(value: string | null) {
     if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || hasControlCharacters(value)) return '/';
     try { return new URL(value, window.location.origin).origin === window.location.origin ? value : '/'; }
     catch { return '/'; }
-}
-function formatTime(seconds: number, format: (hours: number, minutes: number) => string) {
-    const minutes = Math.floor(seconds / 60);
-    return format(Math.floor(minutes / 60), minutes % 60);
 }
 // 已核验的游戏依赖原站来源；网址改变后不再授予额外权限。
 function externalFrame(gameId: string, url: string) {
@@ -42,12 +40,6 @@ export default function ExternalGamePage() {
     const navigate = useNavigate();
     const { token, user, isLoading: authLoading } = useAuth();
     const [playingGameId, setPlayingGameId] = useState<string | null>(null);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [showHelp, setShowHelp] = useState(false);
-    const [frameKey, setFrameKey] = useState(0);
-    const [fullScreenError, setFullScreenError] = useState('');
-    const [fullscreen, setFullscreen] = useState(false);
-    const container = useRef<HTMLDivElement>(null);
     const preview = search.get('preview') === '1';
     const game = useQuery({ queryKey: ['external-game', gameId, preview ? token : null],
         queryFn: () => preview && token ? getOwnedGame(token, gameId) : getExternalGame(gameId), enabled: Boolean(gameId) && !authLoading });
@@ -59,13 +51,8 @@ export default function ExternalGamePage() {
     const canEmbed = Boolean(embed?.canEmbed);
     const autoPlay = Boolean(item && canEmbed && !preview && game.isSuccess);
     const playing = playingGameId === gameId || autoPlay;
-    const play = useExternalPlay(gameId, token ?? null, playing && !authLoading && game.isSuccess && canEmbed);
+    useExternalPlay(gameId, token ?? null, playing && !authLoading && game.isSuccess && canEmbed);
     const returnPath = safeReturnPath(search.get('from'));
-    useEffect(() => {
-        const update = () => setFullscreen(document.fullscreenElement === container.current);
-        document.addEventListener('fullscreenchange', update);
-        return () => document.removeEventListener('fullscreenchange', update);
-    }, []);
     useEffect(() => {
         if (playing && (game.isError || (game.isSuccess && !canEmbed))) setPlayingGameId(null);
     }, [canEmbed, game.isError, game.isSuccess, playing]);
@@ -75,12 +62,17 @@ export default function ExternalGamePage() {
     }, [canEmbed, game.isSuccess, gameId, item, navigate, preview]);
     const leave = () => {
         setPlayingGameId(null);
-        if (document.fullscreenElement === container.current) void document.exitFullscreen().catch(() => undefined);
         navigate(returnPath);
     };
     if (game.isPending) return <main className="external-game-message" role="status">{t('platform.externalGamePage.loading')}</main>;
     if (game.isError || !item) return <main className="external-game-message"><p role="alert">{t('platform.externalGamePage.loadFailed', { message: game.error instanceof Error ? game.error.message : t('platform.retry') })}</p><button onClick={() => void game.refetch()}>{t('platform.retry')}</button><button onClick={leave}>{t('platform.externalGamePage.back')}</button></main>;
     if (!preview && !canEmbed) return <main className="external-game-message" role="status">{t('platform.externalGamePage.openingDetails')}</main>;
+    const items: FabAction[] = [{
+        id: 'menu', icon: <Menu size={20} />, label: t('platform.externalGamePage.openGameMenu'),
+        content: <button type="button" onClick={leave} className="w-full flex items-center gap-3 px-3 py-2.5 rounded bg-[#f4f1eb] hover:bg-[#eeeae2] text-[#433422] border border-[#d3ccba] transition-all font-bold text-xs">
+            <LogOut size={16} />{t('platform.externalGamePage.endAndReturn')}
+        </button>,
+    }];
     return <main className="external-page">
         {!playing && <div className="external-details">
             <button className="external-back" type="button" onClick={leave}>← {t('platform.externalGamePage.back')}</button>
@@ -99,33 +91,14 @@ export default function ExternalGamePage() {
                     {!safeHttps && <p className="external-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
                     {sameOrigin && <p className="external-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
                     <div className="external-actions">
-                        {canEmbed && <button className="external-primary" type="button" onClick={() => { setMenuOpen(false); setShowHelp(false); setPlayingGameId(gameId); }}>{t('platform.externalGamePage.start')}</button>}
-                        <a className="external-secondary" href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); else setPlayingGameId(null); }}>{t('platform.externalGamePage.openOriginal')} ↗</a>
+                        {canEmbed && <button className="external-primary" type="button" onClick={() => setPlayingGameId(gameId)}>{t('platform.externalGamePage.start')}</button>}
                     </div>
                 </section>
             </div>
         </div>}
-        {playing && canEmbed && <div className="external-player" ref={container}>
-            <iframe key={frameKey} title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item.gameId, item.url)} referrerPolicy="no-referrer" />
-            <div className="external-player-menu">
-                {menuOpen && <div className="external-player-panel">
-                    <strong>{item.name}</strong><span>{t('platform.externalGamePage.playTime', { time: formatTime(play.seconds, (hours, minutes) => t('platform.externalGamePage.hoursMinutes', { hours, minutes })) })}</span>
-                    {play.syncError && <small role="alert">{t('platform.externalGamePage.syncFailed')}</small>}
-                    <button type="button" onClick={async () => {
-                        try {
-                            if (document.fullscreenElement === container.current) await document.exitFullscreen();
-                            else await container.current?.requestFullscreen();
-                            setFullScreenError('');
-                    } catch { setFullScreenError(t('platform.externalGamePage.fullscreenFailed')); }
-                    }}>{fullscreen ? t('platform.externalGamePage.exitFullscreen') : t('platform.externalGamePage.fullscreen')}</button>
-                    {fullScreenError && <small role="alert">{fullScreenError}</small>}
-                    <button type="button" onClick={() => setShowHelp(!showHelp)} aria-expanded={showHelp}>{t('platform.externalGamePage.notDisplayed')}</button>
-                    {showHelp && <><small>{t('platform.externalGamePage.embedHelp')}</small><button type="button" onClick={() => setFrameKey(value => value + 1)}>{t('platform.externalGamePage.reload')}</button></>}
-                    <button type="button" onClick={leave}>{t('platform.externalGamePage.endAndReturn')}</button>
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" onClick={event => { if (!window.confirm(t('platform.externalGamePage.externalNavigationConfirm'))) event.preventDefault(); else setPlayingGameId(null); }}>{t('platform.externalGamePage.openOriginal')} ↗</a>
-                </div>}
-                <button className="external-player-fab" type="button" aria-expanded={menuOpen} aria-label={menuOpen ? t('platform.externalGamePage.closeGameMenu') : t('platform.externalGamePage.openGameMenu')} onClick={() => setMenuOpen(!menuOpen)}>☰</button>
-            </div>
+        {playing && canEmbed && <div className="external-player">
+            <iframe title={t('platform.externalGamePage.iframeTitle', { name: item.name })} {...externalFrame(item.gameId, item.url)} referrerPolicy="no-referrer" />
+            <FabMenu className="platform-global-fab external-game-fab" items={items} isDark={false} zIndex={1100} storageKey="external_game_fab_position" />
         </div>}
     </main>;
 }

@@ -22,6 +22,8 @@ import {
 } from "../../lib/audio/useGameAudio";
 import { TutorialSelectionGate, useVisualSequenceGate } from "../../components/game/framework";
 import { useGameMode } from "../../contexts/GameModeContext";
+import { useMatchRoomExit } from "../../contexts/MatchRoomExitContext";
+import { useEndgame } from "../../hooks/game/useEndgame";
 import { SPECTATOR_PLAYER_ID } from "../../engine/playerView";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
@@ -371,11 +373,13 @@ export default function BetrayalBoard({
   isMultiplayer,
   seatControllers,
   locale,
+  reset,
 }: Props) {
   const { t } = useTranslation(["game-betrayal", "common"]);
   const gameMode = useGameMode();
   const runtimeViewport = useRuntimeViewport();
   const useViewportAnchoredHud =
+    G?.core?.phase !== "endgame" &&
     BETRAYAL_MANIFEST.mobileHudPlacement === "portal" &&
     runtimeViewport.width > 0 &&
     runtimeViewport.height > 0 &&
@@ -569,6 +573,59 @@ export default function BetrayalBoard({
       : { ...baseCore, ...playerViewCore };
   }, [baseCore, playerID, viewerPlayerId]);
   const isGameOver = Boolean(G?.sys?.gameover) || baseCore.phase === "endgame";
+  // 终局页沿用游戏自研的 EndgameScreen，这里接通重赛投票/重置与返回大厅。
+  const matchRoomExit = useMatchRoomExit();
+  const isEndgameSpectator =
+    gameMode?.isSpectator === true || (isMultiplayer === true && playerID == null);
+  const { rematchState: endgameRematchState, vote: endgameVote } = useEndgame({
+    result: G?.sys?.gameover ?? undefined,
+    playerID,
+    reset,
+    matchData,
+    isMultiplayer,
+  });
+  const endgameMyVote =
+    playerID != null ? endgameRematchState.votes[playerID] ?? false : false;
+  const handleEndgameRematch = React.useCallback(() => {
+    if (isMultiplayer) {
+      endgameVote();
+      return;
+    }
+    reset?.();
+  }, [endgameVote, isMultiplayer, reset]);
+  const handleEndgameBackToLobby = React.useCallback(() => {
+    if (matchRoomExit?.exitToLobby) {
+      void matchRoomExit.exitToLobby();
+      return;
+    }
+    window.location.assign("/");
+  }, [matchRoomExit]);
+  const endgameRematchAction = React.useMemo(() => {
+    if (isEndgameSpectator) return null;
+    if (!isMultiplayer) {
+      return { label: t("board.endgame.rematch"), onClick: handleEndgameRematch };
+    }
+    return {
+      label: endgameRematchState.ready
+        ? t("common:rematch.restarting")
+        : endgameMyVote
+          ? t("common:rematch.cancelVote")
+          : t("common:rematch.votePlayAgain"),
+      onClick: handleEndgameRematch,
+      disabled: endgameRematchState.ready,
+      hint:
+        !endgameRematchState.ready && endgameMyVote
+          ? t("common:rematch.waitingForOpponent")
+          : undefined,
+    };
+  }, [
+    endgameMyVote,
+    endgameRematchState.ready,
+    handleEndgameRematch,
+    isEndgameSpectator,
+    isMultiplayer,
+    t,
+  ]);
   const undoProviderValue = React.useMemo(
     () => ({
       G,
@@ -7135,7 +7192,8 @@ export default function BetrayalBoard({
                   }
                 />
 
-                {visibleActionItems.length > 0 &&
+                {core.phase !== "endgame" &&
+                visibleActionItems.length > 0 &&
                 !isEndgameExorciseRollReview &&
                 !renderedEventChoice &&
                 !shouldHideTableChromeForBlockingOverlay ? (
@@ -7525,6 +7583,8 @@ export default function BetrayalBoard({
             core={core}
             matchData={matchData}
             effectiveLocale={effectiveLocale}
+            rematch={endgameRematchAction}
+            onBackToLobby={handleEndgameBackToLobby}
           />
         ) : null}
       </div>
