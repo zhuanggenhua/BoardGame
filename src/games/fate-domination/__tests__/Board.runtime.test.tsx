@@ -2,7 +2,7 @@ import './helpers/i18n';
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { createReplayAdapter } from '../../../engine/adapter';
-import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { FateDominationDomain } from '../domain';
 import { FateDominationBoard } from '../Board';
 import {fateTokenAsset} from '../data/identityArtwork';
@@ -118,7 +118,7 @@ it('骑乘由 Board 从技能入口接入内联手牌事务，并在待选时锁
  const first=createSimpleChoice('fate:riding-choice:4:0:sc_iskandar_1:0','0','坐骑召唤',[
   {id:'remote2',label:'远隔操作',value:'remote2'},
  ],{sourceId:'fate:riding-choice',fateContext:{skillId:ridingSkillId},multi:{min:0,max:3},targetType:'hand'});
- const pending=structuredClone(G);pending.sys.interaction.current={...first,data:{...first.data,fateContext:{skillId:ridingSkillId}},resolutionFrameId:'riding-frame'};
+ const pending=queueInteraction(structuredClone(G),{...first,data:{...first.data,fateContext:{skillId:ridingSkillId}},resolutionFrameId:'riding-frame'});
  view.rerender(<FateDominationBoard {...({...props,G:pending} as never)}/>);
  expect(screen.getByTestId('fate-domination-primary-action')).toHaveAttribute('aria-label','确认坐骑召唤');
  expect(screen.getByTestId('shared-map').getAttribute('data-legal-locations')).toBe('');
@@ -129,7 +129,7 @@ it('骑乘由 Board 从技能入口接入内联手牌事务，并在待选时锁
  const second=createSimpleChoice('fate:riding-choice:4:0:sc_iskandar_1:0','0','坐骑召唤',[
   {id:'remote2',label:'远隔操作',value:'remote2'},
  ],{sourceId:'fate:riding-choice',fateContext:{skillId:ridingSkillId},multi:{min:0,max:3},targetType:'hand'});
- const renewed=structuredClone(G);renewed.sys.interaction.current={...second,data:{...second.data,fateContext:{skillId:ridingSkillId}},resolutionFrameId:'riding-frame'};
+ const renewed=queueInteraction(structuredClone(G),{...second,data:{...second.data,fateContext:{skillId:ridingSkillId}},resolutionFrameId:'riding-frame'});
  view.rerender(<FateDominationBoard {...({...props,G:renewed} as never)}/>);
  fireEvent.click(screen.getByRole('button',{name:'选择坐骑召唤 远隔操作'}));
  fireEvent.click(screen.getByTestId('fate-domination-primary-action'));

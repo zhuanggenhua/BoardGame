@@ -10,18 +10,18 @@ import type { CardiaCore } from '../domain/types';
 import { cardiaAiRuntime, resolveCardiaDecisionPlayerId } from '../ai';
 import { createTagContainer } from '../../../engine/primitives/tags';
 import { createModifierStack } from '../../../engine/primitives/modifier';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_COMMANDS, createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 
 describe('Cardia AI - 动作生成', () => {
     it('一方出牌后交给未出牌的对手，强制出牌顺序优先，能力交互归属对应玩家', () => {
-        const state = {
+        let state = {
             core: {
                 players: { '0': { hasPlayed: false }, '1': { hasPlayed: false } },
                 playerOrder: ['0', '1'],
                 forcedPlayOrderNextEncounter: null,
                 currentEncounter: { loserId: '1' },
             },
-            sys: { phase: 'play', interaction: { current: null } },
+            sys: { phase: 'play', interaction: { queue: [] } },
         } as unknown as MatchState<CardiaCore>;
         const resolve = () => resolveCardiaDecisionPlayerId({ state, fallbackPlayerId: '0' });
         expect(resolve()).toBe('0');
@@ -35,7 +35,7 @@ describe('Cardia AI - 动作生成', () => {
         expect(resolve()).toBe('1');
         state.sys.phase = 'ability';
         expect(resolve()).toBe('1');
-        state.sys.interaction.current = { playerId: '0' } as typeof state.sys.interaction.current;
+        state = queueInteraction(state, createSimpleChoice('ai-choice', '0', '选择', [{ id: 'ok', label: '确定', value: 'ok' }]));
         expect(resolve()).toBe('0');
     });
     describe('打牌阶段', () => {
