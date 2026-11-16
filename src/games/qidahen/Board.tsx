@@ -85,7 +85,7 @@ import { QidahenFactionSelectionScreen } from './ui/QidahenFactionSelectionScree
 import { QidahenHoverTip, QidahenHoverTipBody } from './ui/QidahenHoverTip';
 import { QidahenInspectPanel, type QidahenInspectTarget } from './ui/QidahenInspectPanel';
 import { QidahenMapPopulationLayer, QIDAHEN_MAP_REGION_GEOMETRY, getQidahenPopulationPlacements } from './ui/QidahenMapPopulationLayer';
-import { buildQidahenPopulationSites, QIDAHEN_POPULATION_SIZE } from './ui/populationLayout';
+import { buildQidahenPopulationSites } from './ui/populationLayout';
 import { getArmyScreenScale, layoutQidahenFieldArmies, packExpandedArmiesWithinRegions } from './ui/fieldArmyLayout';
 import { fitRegionObjects } from './ui/regionObjectLayout';
 import { compactCrowdedArmies, groupCrowdedArmies, layoutOverflowArmyStacks, type ArmyGroupView } from './ui/armyGroupLayout';
