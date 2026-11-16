@@ -22,7 +22,7 @@ export interface SplendorEndgameContentProps extends ContentSlotProps {
 
 export const SPLENDOR_ENDGAME_FRAME_CLASS = 'splendor-endgame-frame';
 
-export function renderSplendorButton({ role, label, onClick, disabled }: RematchButtonProps): React.ReactNode {
+export function SplendorRematchButton({ role, label, onClick, disabled }: RematchButtonProps): React.ReactNode {
     if (role === 'restarting') {
         return (
             <div data-testid="rematch-restarting" role="status" className="splendor-endgame__button">

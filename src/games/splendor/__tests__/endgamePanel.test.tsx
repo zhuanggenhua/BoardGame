@@ -2,7 +2,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { SplendorEndgameContent, renderSplendorButton, type SplendorEndgameStanding } from '../ui/EndgamePanel';
+import { SplendorEndgameContent, SplendorRematchButton, type SplendorEndgameStanding } from '../ui/EndgamePanel';
 import commonLocale from '../../../../public/locales/zh-CN/common.json';
 import splendorLocale from '../../../../public/locales/zh-CN/game-splendor.json';
 
@@ -56,7 +56,7 @@ describe('璀璨宝石终局面板', () => {
 
     it('再来一局按钮透传点击回调', () => {
         const onClick = vi.fn();
-        render(<>{renderSplendorButton({ role: 'playAgain', label: '再来一局', onClick })}</>);
+        render(<SplendorRematchButton role="playAgain" label="再来一局" onClick={onClick} />);
         fireEvent.click(screen.getByTestId('splendor-endgame-playAgain'));
         expect(onClick).toHaveBeenCalledTimes(1);
     });

@@ -25,7 +25,7 @@ import { useMatchPlayerViewModel } from '../../components/game/framework';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { RematchActions } from '../../components/game/framework/widgets/RematchActions';
 import { useEndgame } from '../../hooks/game/useEndgame';
-import { SPLENDOR_ENDGAME_FRAME_CLASS, SplendorEndgameContent, renderSplendorButton, type SplendorEndgameStanding } from './ui/EndgamePanel';
+import { SPLENDOR_ENDGAME_FRAME_CLASS, SplendorEndgameContent, SplendorRematchButton, type SplendorEndgameStanding } from './ui/EndgamePanel';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../components/game/registry/cardPreviewRegistry';
 
 type Props = GameBoardProps<SplendorCore, SplendorCommandMap>;
@@ -588,7 +588,7 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
                             {...actionsProps}
                             renderButton={(button) => {
                                 if ((isSpectator || isEndgameSpectator) && button.role !== 'backToLobby') return null;
-                                return renderSplendorButton(button);
+                                return <SplendorRematchButton {...button} />;
                             }}
                             className="flex-wrap justify-center"
                         />

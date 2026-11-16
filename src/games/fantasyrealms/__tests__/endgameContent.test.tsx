@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import {
     FantasyRealmsEndgameContent,
-    renderFantasyRealmsButton,
+    FantasyRealmsRematchButton,
 } from '../ui/EndgameContent';
 import { RematchActions } from '../../../components/game/framework/widgets/RematchActions';
 import commonLocale from '../../../../public/locales/zh-CN/common.json';
@@ -104,7 +104,7 @@ describe('幻想国度终局内容面板', () => {
     });
 });
 
-describe('幻想国度终局按钮（renderFantasyRealmsButton）', () => {
+describe('幻想国度终局按钮（FantasyRealmsRematchButton）', () => {
     function renderActions(options?: {
         isMultiplayer?: boolean;
         reset?: () => void;
@@ -120,7 +120,7 @@ describe('幻想国度终局按钮（renderFantasyRealmsButton）', () => {
                     totalPlayers={2}
                     rematchState={options?.rematchState}
                     onVote={options?.onVote}
-                    renderButton={renderFantasyRealmsButton}
+                    renderButton={(button) => <FantasyRealmsRematchButton {...button} />}
                 />
             </MemoryRouter>,
         );

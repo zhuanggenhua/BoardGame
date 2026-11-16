@@ -17,7 +17,7 @@ export interface FantasyRealmsEndgameContentProps extends ContentSlotProps {
     actions?: React.ReactNode;
 }
 
-export function renderFantasyRealmsButton({ role, label, onClick, disabled }: RematchButtonProps): React.ReactNode {
+export function FantasyRealmsRematchButton({ role, label, onClick, disabled }: RematchButtonProps): React.ReactNode {
     if (role === 'restarting') {
         return (
             <div data-testid="rematch-restarting" role="status" className="fr-endgame__button">

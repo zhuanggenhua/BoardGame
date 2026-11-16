@@ -8,7 +8,7 @@ import { useMatchRoomExit } from '../../contexts/MatchRoomExitContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { RematchActions } from '../../components/game/framework/widgets/RematchActions';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
-import { FantasyRealmsEndgameContent, renderFantasyRealmsButton } from './ui/EndgameContent';
+import { FantasyRealmsEndgameContent, FantasyRealmsRematchButton } from './ui/EndgameContent';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { DEFAULT_TUTORIAL_STATE, type TutorialState, type TutorialStepSnapshot } from '../../engine/types';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
@@ -1286,17 +1286,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         window.location.assign('/');
     }, [matchRoomExit]);
     const endgameActions = isSpectatorView
-        ? renderFantasyRealmsButton({
-            role: 'backToLobby',
-            label: tCommon('rematch.backToLobby'),
-            onClick: handleEndgameBackToLobby,
-        })
+        ? <FantasyRealmsRematchButton role="backToLobby" label={tCommon('rematch.backToLobby')} onClick={handleEndgameBackToLobby} />
         : (
             <RematchActions
                 {...endgameProps}
                 playerID={playerID ?? null}
                 onBackToLobby={handleEndgameBackToLobby}
-                renderButton={renderFantasyRealmsButton}
+                renderButton={(button) => <FantasyRealmsRematchButton {...button} />}
                 className="flex-wrap justify-center"
             />
         );
