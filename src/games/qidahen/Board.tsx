@@ -1435,11 +1435,11 @@ const MapToken: React.FC<{
               <span className="pointer-events-auto absolute left-0 top-full flex w-full items-center justify-between whitespace-nowrap rounded bg-[#25180e] text-[#fff2d0]"
                 style={{ fontSize: 6 * tokenScale, lineHeight: `${9 * tokenScale}px` }}
                 onClick={event => event.stopPropagation()} onPointerDown={event => event.stopPropagation()}>
-                <button type="button" aria-label="减少出兵数量" disabled={dispatchGroup.count === 0}
+                <button type="button" aria-label={t('board.map.decreaseDispatch')} disabled={dispatchGroup.count === 0}
                     data-testid={`qidahen-dispatch-group-decrease-${token.id}`}
                     onClick={() => dispatchGroup.change(dispatchGroup.count - 1)}>−</button>
-                <span aria-label={`已选 ${dispatchGroup.count} 支，共 ${dispatchGroup.total} 支`}>{dispatchGroup.count}/{dispatchGroup.total}</span>
-                <button type="button" aria-label="增加出兵数量" disabled={dispatchGroup.count === dispatchGroup.total}
+                <span aria-label={t('board.map.dispatchCount', { count: dispatchGroup.count, total: dispatchGroup.total })}>{dispatchGroup.count}/{dispatchGroup.total}</span>
+                <button type="button" aria-label={t('board.map.increaseDispatch')} disabled={dispatchGroup.count === dispatchGroup.total}
                     data-testid={`qidahen-dispatch-group-increase-${token.id}`}
                     onClick={() => dispatchGroup.change(dispatchGroup.count + 1)}>＋</button>
               </span>
@@ -1503,7 +1503,7 @@ const MapToken: React.FC<{
                 className="pointer-events-none absolute z-10 grid place-items-center rounded-sm bg-[#f3e7c4] leading-none text-[#2a1f15]"
                 data-testid={`qidahen-unit-level-${token.id}`} style={{ left: inspectionView ? -9 : 0, top: 0,
                     width: inspectionView ? 16 : 14 * tokenScale, height: inspectionView ? 9 : 8 * tokenScale,
-                    fontSize: inspectionView ? 8 : 7 * tokenScale, transform: `rotate(${-(token.rotationDeg ?? 0)}deg)` }}>{unitLevel}级</span> : null}
+                    fontSize: inspectionView ? 8 : 7 * tokenScale, transform: `rotate(${-(token.rotationDeg ?? 0)}deg)` }}>{t('board.map.unitLevel', { level: unitLevel })}</span> : null}
             {pincerAdvanceSelectable ? (
                 <span
                     aria-hidden="true"
