@@ -67,7 +67,7 @@ export function SplendorEndgameContent({ result, playerID, standings }: Splendor
         >
             <header className="splendor-endgame__hero">
                 <h2 id="splendor-result" data-testid="splendor-endgame-title">
-                    {tCommon('endgame.' + outcome)}
+                    {outcome === 'draw' ? tCommon('endgame.draw') : outcome === 'victory' ? tCommon('endgame.victory') : outcome === 'defeat' ? tCommon('endgame.defeat') : tCommon('endgame.gameOver')}
                 </h2>
                 <div className="splendor-endgame__medallion" aria-hidden="true">
                     <OptimizedImage src={SPLENDOR_ASSETS.TOKEN_BLUE} alt="" className="splendor-endgame__gem" />

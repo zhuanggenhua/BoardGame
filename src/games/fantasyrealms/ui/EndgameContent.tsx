@@ -62,7 +62,7 @@ export function FantasyRealmsEndgameContent({ result, playerID, standings, actio
         >
             <header className="fr-endgame__heading">
                 <h2 id="fantasyrealms-result" data-testid="fantasyrealms-endgame-title">
-                    {tCommon('endgame.' + outcome)}
+                    {outcome === 'draw' ? tCommon('endgame.draw') : outcome === 'victory' ? tCommon('endgame.victory') : outcome === 'defeat' ? tCommon('endgame.defeat') : tCommon('endgame.gameOver')}
                 </h2>
             </header>
             <div className="fr-endgame__ledger">
